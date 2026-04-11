@@ -1,25 +1,24 @@
 package de.aivot.GoverBackend.asset.controllers;
 
-import de.aivot.GoverBackend.asset.entities.AssetEntity;
-import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.asset.entities.VStorageIndexItemWithAssetEntity;
+import de.aivot.GoverBackend.asset.entities.VStorageIndexItemWithAssetEntityId;
+import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.GoverConfig;
-import de.aivot.GoverBackend.models.config.StorageConfig;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.HttpServletResponse;
+import jakarta.annotation.Nonnull;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.InvalidMediaTypeException;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
-import java.net.URLEncoder;
+import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -30,20 +29,14 @@ import java.util.UUID;
         description = OpenApiConstants.Tags.AssetsDescription
 )
 public class CitizenAssetController {
-    private final AssetStorageService assetStorageService;
-    private final AssetRepository assetRepository;
-    private final GoverConfig goverConfig;
-    private final StorageConfig storageConfig;
+    private final StorageService storageService;
+    private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
 
     @Autowired
-    public CitizenAssetController(AssetStorageService assetStorageService,
-                                  AssetRepository assetRepository,
-                                  GoverConfig goverConfig,
-                                  StorageConfig storageConfig) {
-        this.assetStorageService = assetStorageService;
-        this.assetRepository = assetRepository;
-        this.goverConfig = goverConfig;
-        this.storageConfig = storageConfig;
+    public CitizenAssetController(StorageService storageService,
+                                  VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository) {
+        this.storageService = storageService;
+        this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
     }
 
     /**
@@ -51,118 +44,123 @@ public class CitizenAssetController {
      *
      * @param assetId The id of the asset to retrieve.
      */
-    @GetMapping("{assetId}")
+    @GetMapping("{assetId}/")
     @Operation(
-            summary = "Retrieve Public Asset by ID",
-            description = "Retrieves a public asset by its ID. Redirects to the actual file location."
+            summary = "Retrieve Public Asset by key",
+            description = "Retrieves a public asset by its key and streams the file directly."
     )
-    public void retrievePublicById(
+    public ResponseEntity<InputStreamResource> retrievePublicById(
             @PathVariable String assetId,
-            @RequestParam(defaultValue = "false") boolean download,
-            HttpServletResponse response
-    ) throws IOException, ResponseException {
-        var asset = getPublicAssetById(assetId);
-
-        var urlEncodedFilename = URLEncoder
-                .encode(asset.getFilename(), StandardCharsets.UTF_8);
-
-        var targetUrl = goverConfig.createUrl(
-                "/api/public/assets/" + assetId + "/" + urlEncodedFilename + "?download=" + download
-        );
-
-        response.sendRedirect(targetUrl);
-    }
-
-    @GetMapping("{assetId}/{filename}")
-    @Operation(
-            summary = "Retrieve Public Asset File",
-            description = "Retrieves the actual file of a public asset by its ID and filename. Redirects to the storage location or serves the file directly if local storage is enabled."
-    )
-    public void retrievePublicFile(
-            @PathVariable String assetId,
-            @PathVariable String filename,
-            @RequestParam(defaultValue = "false") boolean download,
-            HttpServletResponse response
-    ) throws IOException, ResponseException {
-        var asset = getPublicAssetById(assetId);
-
-        if (storageConfig.localStorageEnabled()) {
-            var urlEncodedFilename = URLEncoder
-                    .encode(asset.getFilename(), StandardCharsets.UTF_8);
-            var targetUrl = goverConfig.createUrl(
-                    "/api/public/assets/local/" + assetId + "/" + urlEncodedFilename + "?download=" + download
-            );
-            response.sendRedirect(targetUrl);
-        } else {
-            var storageUrl = download
-                    ? assetStorageService.getAssetDownloadUrl(asset)
-                    : assetStorageService.getAssetUrl(asset);
-
-            response.sendRedirect(storageUrl);
-        }
-    }
-
-
-    @GetMapping("local/{assetId}/{filename}")
-    @Operation(
-            summary = "Retrieve Public Asset File from Local Storage",
-            description = "Retrieves the actual file of a public asset stored in local storage by its ID and filename."
-    )
-    public ResponseEntity<Resource> retrievePublicLocalFile(
-            @PathVariable String assetId,
-            @PathVariable String filename,
             @RequestParam(defaultValue = "false") boolean download
     ) throws ResponseException {
-        // Check if the assetId is a valid UUID.
-        var asset = getPublicAssetById(assetId);
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(assetId);
+        } catch (Exception e) {
+            throw ResponseException.notFound();
+        }
 
-        var assetBytes = assetStorageService
-                .getAssetData(asset);
+        var asset = vStorageIndexItemWithAssetRepository
+                .findByAssetKey(uuid)
+                .orElseThrow(ResponseException::notFound);
 
-        Resource resource = new ByteArrayResource(assetBytes);
+        ensurePublicFile(asset);
+
+        return createFileContentResponse(asset, download);
+    }
+
+    /**
+     * Retrieve a single asset as an anonymous user by its storage provider id and path from root.
+     *
+     * @param storageProviderId The id of the storage provider containing the asset.
+     * @param request           The request containing the asset path after the files marker.
+     */
+    @GetMapping("{storageProviderId}/files/**")
+    @Operation(
+            summary = "Retrieve Public Asset by storage provider id and path",
+            description = "Retrieves a public asset by its storage provider id and path from root and streams the file directly."
+    )
+    public ResponseEntity<InputStreamResource> retrievePublicByPath(
+            @Nonnull @PathVariable Integer storageProviderId,
+            @RequestParam(defaultValue = "false") boolean download,
+            @Nonnull HttpServletRequest request
+    ) throws ResponseException {
+        var filePath = getNormalizedFileContentPath(request);
+
+        var asset = vStorageIndexItemWithAssetRepository
+                .findById(VStorageIndexItemWithAssetEntityId.of(storageProviderId, filePath))
+                .orElseThrow(ResponseException::notFound);
+
+        ensurePublicFile(asset);
+
+        return createFileContentResponse(asset, download);
+    }
+
+    private void ensurePublicFile(@Nonnull VStorageIndexItemWithAssetEntity asset) throws ResponseException {
+        // Private assets are not public.
+        // Directories are not public.
+        // Missing assets are not public.
+        if (
+                Boolean.FALSE.equals(asset.getAssetIsPrivate())
+                        && Boolean.FALSE.equals(asset.getDirectory())
+                        && Boolean.FALSE.equals(asset.getMissing())
+        ) {
+            return;
+        }
+        throw ResponseException.notFound();
+    }
+
+    @Nonnull
+    private ResponseEntity<InputStreamResource> createFileContentResponse(@Nonnull VStorageIndexItemWithAssetEntity asset,
+                                                                          boolean download) throws ResponseException {
+        var inputStream = storageService
+                .getDocumentContent(asset.getStorageProviderId(), asset.getPathFromRoot());
 
         MediaType mediaType;
         try {
-            mediaType = MediaType.parseMediaType(asset.getContentType());
+            mediaType = MediaType.parseMediaType(asset.getMimeType());
         } catch (InvalidMediaTypeException e) {
             mediaType = MediaType.APPLICATION_OCTET_STREAM;
         }
 
-        if (resource.exists() && resource.isReadable()) {
-            ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
+        ResponseEntity.BodyBuilder responseBuilder = ResponseEntity.ok().contentType(mediaType);
+        var contentDispositionType = download ? "attachment" : "inline";
+        var contentDisposition = ContentDisposition
+                .builder(contentDispositionType)
+                .filename(asset.getFilename(), StandardCharsets.UTF_8)
+                .build();
+        responseBuilder.header(
+                "Content-Disposition",
+                contentDisposition.toString()
+        );
 
-            if (download) {
-                responseBuilder.header("Content-Disposition", "attachment; filename=\"" + asset.getFilename() + "\"");
-            }
-
-            return responseBuilder.body(resource);
-        }
-
-        throw ResponseException.notFound();
+        return responseBuilder.body(new InputStreamResource(inputStream));
     }
 
-    private AssetEntity getPublicAssetById(String assetId) throws ResponseException {
-        var asset = getAssetById(assetId);
+    private static String getNormalizedFileContentPath(@Nonnull HttpServletRequest request) throws ResponseException {
+        var requestUrl = request
+                .getRequestURL()
+                .toString();
 
-        if (asset.getPrivate()) {
-            throw ResponseException.notFound();
+        var marker = "/files/";
+        var markerIndex = requestUrl.indexOf(marker);
+        if (markerIndex < 0) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
         }
 
-        return asset;
-    }
-
-    private AssetEntity getAssetById(String assetId) throws ResponseException {
-        try {
-            var uuid = UUID.fromString(assetId);
-            return getAssetById(uuid);
-        } catch (Exception e) {
-            throw ResponseException.notFound();
+        var normalizedPath = requestUrl.substring(markerIndex + marker.length());
+        if (normalizedPath.isBlank()) {
+            throw ResponseException.notAcceptable("Der Root eines Speichers kann keine Datei sein.");
         }
-    }
 
-    private AssetEntity getAssetById(UUID assetId) throws ResponseException {
-        return assetRepository
-                .findById(assetId)
-                .orElseThrow(ResponseException::notFound);
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+
+        if (normalizedPath.endsWith("/")) {
+            throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
+        }
+
+        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
     }
 }

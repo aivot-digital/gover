@@ -1,32 +1,70 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
+import Fuse from 'fuse.js';
 import {type Preset} from '../../../models/entities/preset';
 import {type BaseTabProps} from './base-tab-props';
-import {Box, DialogContent, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Typography} from '@mui/material';
+import {Alert, Box, Typography} from '@mui/material';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {cloneElement} from '../../../utils/clone-element';
-import {AlertComponent} from '../../../components/alert/alert-component';
 import {Link} from 'react-router-dom';
 import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {useApi} from '../../../hooks/use-api';
-import {filterItems} from '../../../utils/filter-items';
-import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {SearchInput} from '../../../components/search-input/search-input';
 import {PresetsApiService} from '../../../modules/presets/presets-api-service';
 import {PresetVersionApiService} from '../../../modules/presets/preset-version-api-service';
+import {SelectionListRow} from '../../../components/selection-dialog/selection-list-row';
 
-export function PresetTab(props: BaseTabProps) {
+function getPresetSummary(preset: Preset): string {
+    if (preset.publishedVersion != null && preset.draftedVersion != null) {
+        return `Veröffentlicht als Version ${preset.publishedVersion}, Entwurf ${preset.draftedVersion}`;
+    }
+
+    if (preset.publishedVersion != null) {
+        return `Veröffentlicht als Version ${preset.publishedVersion}`;
+    }
+
+    if (preset.draftedVersion != null) {
+        return `Entwurf in Version ${preset.draftedVersion}`;
+    }
+
+    return 'Noch ohne veröffentlichte Version.';
+}
+
+export function PresetTab(props: BaseTabProps & {
+    showPresetInfo: (preset: Preset) => void;
+    highlightedPresetKey?: string;
+}) {
     const api = useApi();
     const [presets, setPresets] = useState<Preset[]>();
     const [search, setSearch] = useState('');
 
-    const presetsApiService = new PresetsApiService(api);
-
     useEffect(() => {
+        const presetsApiService = new PresetsApiService(api);
+
         presetsApiService.listAll({
             published: true,
         })
-            .then(page => setPresets(page.content))
+            .then((page) => setPresets(page.content))
             .catch(() => setPresets([]));
-    }, [props.parentType, setPresets]);
+    }, [api]);
+
+    const filteredPresets = useMemo(() => {
+        const trimmedSearch = search.trim();
+        if (trimmedSearch.length === 0) {
+            return presets ?? [];
+        }
+
+        const fuse = new Fuse(presets ?? [], {
+            threshold: 0.3,
+            ignoreLocation: true,
+            keys: [
+                {name: 'title', weight: 0.7},
+                {name: 'key', weight: 0.3},
+            ],
+        });
+
+        return fuse.search(trimmedSearch).map((entry) => entry.item);
+    }, [presets, search]);
 
     const addPresetElement = (preset: Preset): void => {
         if (preset.publishedVersion == null) {
@@ -43,80 +81,107 @@ export function PresetTab(props: BaseTabProps) {
                     name: preset.title,
                 }, true));
             })
-            .catch(() => console.error("Fehler beim Laden der Preset-Version"));
+            .catch(() => console.error('Fehler beim Laden der Preset-Version'));
     };
 
     if (presets == null) {
+        return <LoadingPlaceholder/>;
+    }
+
+    if (presets.length === 0) {
         return (
-            <LoadingPlaceholder/>
-        );
-    } else if (presets.length === 0) {
-        return (
-            <DialogContent tabIndex={0}>
-                <AlertComponent
-                    title="Keine Vorlagen gefunden"
-                    text="Es existieren noch keine lokalen Vorlagen."
-                    color="info"
-                />
+            <Box
+                sx={{
+                    p: 3,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                }}
+            >
+                <Alert severity="info">
+                    Es existieren noch keine lokalen Vorlagen.
+                </Alert>
 
                 <Typography>
-                    Sie können neue Vorlagen erstellen, in dem Sie bestehende Elemente im Bearbeitungs-Modus durch einen
-                    Klick auf die Schaltfläche &bdquo;Als Vorlage speichern&rdquo; am unteren Bildschirmrand hinzufügen.
-                    Alternativ können Sie im Bereich <Link
-                    to="/presets"
-                    target="_blank"
-                >Vorlagen</Link> neue Vorlagen anlegen und bearbeiten.
+                    Sie können neue Vorlagen erstellen, indem Sie bestehende Elemente im Bearbeitungsmodus über die
+                    Schaltfläche „Als Vorlage speichern“ sichern.
                 </Typography>
-            </DialogContent>
-        );
-    } else {
-        const filteredPresets = filterItems(presets, 'title', search);
 
-        return (
-            <>
-                <Box
-                    sx={{
-                        px: 4,
-                    }}
-                >
-                    <TextFieldComponent
-                        label="Vorlage suchen"
-                        value={search}
-                        onChange={(val) => {
-                            setSearch(val ?? '');
-                        }}
-                        placeholder="Suchen…"
-                    />
-                </Box>
-
-                <List dense>
-                    {
-                        filteredPresets
-                            .map((preset) => {
-                                return (
-                                    <ListItem
-                                        key={preset.title}
-                                        disablePadding
-                                    >
-                                        <ListItemButton
-                                            onClick={() => {
-                                                addPresetElement(preset);
-                                            }}
-                                        >
-                                            <ListItemIcon sx={{pl: 1.5}}>
-                                                <MenuOutlinedIcon/>
-                                            </ListItemIcon>
-                                            <ListItemText
-                                                primary={preset.title}
-                                                secondary={`Aktuelle Version ${preset.publishedVersion ?? ''}`}
-                                            />
-                                        </ListItemButton>
-                                    </ListItem>
-                                );
-                            })
-                    }
-                </List>
-            </>
+                <Typography>
+                    Alternativ können Sie im Bereich <Link to="/presets" target="_blank">Vorlagen</Link> neue Vorlagen anlegen
+                    und bearbeiten.
+                </Typography>
+            </Box>
         );
     }
+
+    return (
+        <Box
+            sx={{
+                height: '100%',
+                display: 'flex',
+                flexDirection: 'column',
+            }}
+        >
+            <Box
+                sx={{
+                    p: 2,
+                    borderBottom: '1px solid',
+                    borderColor: 'divider',
+                }}
+            >
+                <SearchInput
+                    label="Vorlage suchen"
+                    value={search}
+                    onChange={setSearch}
+                    placeholder="Name der Vorlage eingeben"
+                />
+            </Box>
+
+            <Box
+                sx={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    pb: 1.5,
+                }}
+            >
+                {
+                    filteredPresets.length === 0 &&
+                    <Box sx={{px: 2, pt: 2}}>
+                        <Alert severity="info">
+                            Es wurden keine Vorlagen gefunden, die zu Ihrer Suche passen.
+                        </Alert>
+                    </Box>
+                }
+
+                {
+                    filteredPresets.map((preset, index) => (
+                        <React.Fragment key={preset.key}>
+                            <SelectionListRow
+                                icon={<MenuOutlinedIcon sx={{fontSize: 20, color: 'text.secondary'}}/>}
+                                title={preset.title}
+                                description={getPresetSummary(preset)}
+                                selected={props.highlightedPresetKey === preset.key}
+                                primaryActionLabel={props.primaryActionLabel}
+                                primaryActionIcon={props.primaryActionIcon}
+                                detailsIcon={<InfoOutlinedIcon sx={{fontSize: 18}}/>}
+                                onShowDetails={() => {
+                                    props.showPresetInfo(preset);
+                                }}
+                                onPrimaryAction={() => {
+                                    addPresetElement(preset);
+                                }}
+                            />
+                            {
+                                index < filteredPresets.length - 1 &&
+                                <Box sx={{mx: 2}}>
+                                    <Box sx={{borderBottom: '1px solid', borderColor: 'divider'}}/>
+                                </Box>
+                            }
+                        </React.Fragment>
+                    ))
+                }
+            </Box>
+        </Box>
+    );
 }

@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
 import de.aivot.GoverBackend.enums.ConditionOperator;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.utils.NumberUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -18,7 +19,6 @@ import java.util.Objects;
 public class NumberInputElement extends BaseInputElement<BigDecimal> implements PrintableElement<BigDecimal> {
     public static final BigDecimal AbsoluteMaxValue = BigDecimal.valueOf(Math.pow(2, 31));
     public static final BigDecimal AbsoluteMinValue = AbsoluteMaxValue.multiply(BigDecimal.valueOf(-1));
-    public static final int DEFAULT_SCALE = 0;
 
     @Nullable
     private String placeholder;
@@ -36,7 +36,7 @@ public class NumberInputElement extends BaseInputElement<BigDecimal> implements 
     @Nullable
     @Override
     public BigDecimal formatValue(@Nullable Object value) {
-        return _formatValue(value, decimalPlaces != null ? decimalPlaces : DEFAULT_SCALE);
+        return _formatValue(value, decimalPlaces != null ? decimalPlaces : NumberUtils.DEFAULT_SCALE);
     }
 
     @Override
@@ -66,7 +66,7 @@ public class NumberInputElement extends BaseInputElement<BigDecimal> implements 
             return "Keine Angabe";
         }
 
-        return formatGermanNumber(value, decimalPlaces != null ? decimalPlaces : DEFAULT_SCALE);
+        return formatGermanNumber(value, decimalPlaces != null ? decimalPlaces : NumberUtils.DEFAULT_SCALE);
     }
 
     @Nonnull
@@ -94,7 +94,7 @@ public class NumberInputElement extends BaseInputElement<BigDecimal> implements 
 
     @Nullable
     public static BigDecimal _formatValue(Object value) {
-        return _formatValue(value, DEFAULT_SCALE);
+        return _formatValue(value, NumberUtils.DEFAULT_SCALE);
     }
 
     @Nullable
@@ -126,44 +126,40 @@ public class NumberInputElement extends BaseInputElement<BigDecimal> implements 
         return res == null ? null : res.setScale(scale, RoundingMode.HALF_UP);
     }
 
+    /**
+     ** @deprecated User {@link NumberUtils} instead
+     */
+    @Deprecated
     @Nonnull
     public static String formatGermanNumber(@Nonnull Number value) {
-        return formatGermanNumber(value, DEFAULT_SCALE);
+        return NumberUtils.formatGermanNumber(value);
     }
 
+    /**
+     * @deprecated User {@link NumberUtils} instead
+     */
+    @Deprecated
     @Nonnull
     public static String formatGermanNumber(@Nonnull Number value, int scale) {
-        Locale locale = Locale.GERMAN;
-        NumberFormat formatter = NumberFormat.getNumberInstance(locale);
-        formatter.setMinimumFractionDigits(scale);
-        formatter.setMaximumFractionDigits(scale);
-        return formatter.format(value);
+        return NumberUtils.formatGermanNumber(value, scale);
     }
 
+    /**
+     * @deprecated User {@link NumberUtils} instead
+     */
+    @Deprecated
     @Nullable
     public static BigDecimal parseGermanNumber(@Nonnull String value) {
-        return parseGermanNumber(value, DEFAULT_SCALE);
+        return NumberUtils.parseGermanNumber(value);
     }
 
+    /**
+     * @deprecated User {@link NumberUtils} instead.
+     */
+    @Deprecated
     @Nullable
     public static BigDecimal parseGermanNumber(@Nonnull String value, int scale) {
-        var normalizedValue = value
-                .replaceAll("\\.", "")
-                .replace(",", ".");
-
-        try {
-            return new BigDecimal(normalizedValue)
-                    .setScale(scale, RoundingMode.HALF_UP);
-        } catch (NumberFormatException exp) {
-            try {
-                var iVal = new BigInteger(normalizedValue);
-                return BigDecimal
-                        .valueOf(iVal.doubleValue())
-                        .setScale(scale, RoundingMode.HALF_UP);
-            } catch (NumberFormatException ignored2) {
-                return null;
-            }
-        }
+        return NumberUtils.parseGermanNumber(value, scale);
     }
 
     // region Hash & Equals

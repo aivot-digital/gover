@@ -1,3 +1,5 @@
+import {AuthoredElementValues} from '../../../models/element-data';
+
 export interface ProcessNodeEntity {
     id: number;
     processId: number;
@@ -7,9 +9,10 @@ export interface ProcessNodeEntity {
     name: string | null;
     description: string | null;
     dataKey: string;
-    configuration: Record<string, any>;
+    configuration: AuthoredElementValues;
     outputMappings: Record<string, any>;
     timeLimitDays: number | null;
     requirements: string | null;
     notes: string | null;
+    savedWithErrors: boolean;
 }

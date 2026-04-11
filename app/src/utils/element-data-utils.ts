@@ -1,459 +1,553 @@
-import {ElementData, ElementDataObject, newElementDataObject} from '../models/element-data';
+import {
+    AuthoredElementValues,
+    ComputedElementState,
+    ComputedElementStates,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+    EffectiveElementValues,
+    isAuthoredElementValues,
+    isElementStates,
+} from '../models/element-data';
 import {AnyElement} from '../models/elements/any-element';
-import {ElementType} from '../data/element-type/element-type';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-customer-input-key';
-import {isRootElement} from '../models/elements/root-element';
+import {ElementType} from '../data/element-type/element-type';
+import {deepEquals} from './equality-utils';
 
-export function resolveOverride(originalElement: AnyElement, data: ElementData): AnyElement {
-    const elementId = originalElement.id;
-    const elementDataObject: ElementDataObject | undefined = data[elementId];
-    if (elementDataObject && elementDataObject.computedOverride) {
-        return elementDataObject.computedOverride;
-    }
-    return originalElement;
+export function resolveElementState(element: AnyElement, derivedData: DerivedRuntimeElementData): ComputedElementState | undefined {
+    return derivedData.elementStates[element.id];
 }
 
-export function resolveValue(originalElement: AnyElement, data: ElementData): any | undefined | null {
-    const element = resolveOverride(originalElement, data);
-    return resolveValueForResolvedOverride(element, data);
+export function resolveOverride(originalElement: AnyElement, derivedData: DerivedRuntimeElementData): AnyElement {
+    return resolveElementState(originalElement, derivedData)?.override ?? originalElement;
 }
 
-export function resolveValueForResolvedOverride(element: AnyElement, data: ElementData): any | undefined | null {
-    const elementId = element.id;
-    const elementDataObject: ElementDataObject | undefined = data[elementId];
-
-    if (elementDataObject) {
-        if (isAnyInputElement(element) && (element.disabled || element.technical)) {
-            return elementDataObject.computedValue;
-        }
-
-        if (elementDataObject.isDirty) {
-            return elementDataObject.inputValue;
-        }
-
-        return elementDataObject.inputValue ?? elementDataObject.computedValue;
-    }
-
-    return undefined;
+export function resolveValue(
+    originalElement: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    derivedData: DerivedRuntimeElementData,
+): any | undefined | null {
+    const element = resolveOverride(originalElement, derivedData);
+    return resolveValueForResolvedOverride(element, authoredElementValues, derivedData);
 }
 
-export function resolveErrors(element: AnyElement, data: ElementData): string[] | undefined | null {
-    const elementId = element.id;
-    const elementDataObject: ElementDataObject | undefined = data[elementId];
+export function resolveValueForResolvedOverride(
+    element: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    derivedData: DerivedRuntimeElementData,
+): any | undefined | null {
+    const elementState = resolveElementState(element, derivedData);
+    const effectiveValue = derivedData.effectiveValues[element.id];
+    const authoredValue = authoredElementValues[element.id];
 
-    if (elementDataObject != null) {
-        return elementDataObject.computedErrors;
+    if (isAnyInputElement(element) && (element.disabled || element.technical)) {
+        return effectiveValue;
     }
 
-    return undefined;
-}
-
-export function resolveVisibility(element: AnyElement, data: ElementData): boolean {
-    const elementId = element.id;
-    const elementDataObject: ElementDataObject | undefined = data[elementId];
-
-    if (elementDataObject != null) {
-        return elementDataObject.isVisible ?? true;
+    if (elementState?.valueSource === 'Derived') {
+        return effectiveValue;
     }
 
-    return true; // Default visibility is true if no data is found
+    return authoredValue;
 }
 
-export function resolvePrefill(element: AnyElement, data: ElementData): boolean {
-    const elementId = element.id;
-    const elementDataObject: ElementDataObject | undefined = data[elementId];
-
-    if (elementDataObject != null) {
-        return elementDataObject.isPrefilled ?? false;
+export function resolveErrors(element: AnyElement, derivedData: DerivedRuntimeElementData): string[] | undefined | null {
+    const error = resolveElementState(element, derivedData)?.error;
+    if (error == null || error.length === 0) {
+        return undefined;
     }
 
-    return false; // Default prefill is false if no data is found
+    return [error];
 }
 
-export interface MergeOptions {
-    dontOverwriteErrors?: boolean;
+export function resolveVisibility(element: AnyElement, derivedData: DerivedRuntimeElementData): boolean {
+    return resolveElementState(element, derivedData)?.visible ?? true;
 }
 
-const ADDITIONAL_MERGE_KEYS = [
-    IdentityCustomerInputKey,
-];
+export function resolveReplicatingContainerItemDerivedData(
+    element: AnyElement,
+    derivedData: DerivedRuntimeElementData,
+    index: number,
+): DerivedRuntimeElementData {
+    const rowEffectiveValues = derivedData.effectiveValues[element.id];
+    const rowElementStates = resolveElementState(element, derivedData)?.subStates;
 
-export function mergeDerivedElementDataWithLocal(derivedElementData: ElementData, localElementData: ElementData, rootElement: AnyElement, options: MergeOptions): ElementData {
-    const mergedData = _mergeDerivedElementDataWithLocal(derivedElementData, localElementData, rootElement, options);
+    return createDerivedRuntimeElementData({
+        effectiveValues: Array.isArray(rowEffectiveValues) && isAuthoredElementValues(rowEffectiveValues[index]) ?
+            rowEffectiveValues[index] as EffectiveElementValues :
+            {},
+        elementStates: Array.isArray(rowElementStates) && isAuthoredElementValues(rowElementStates[index]) ?
+            rowElementStates[index] as ComputedElementStates :
+            {},
+    });
+}
 
-    for (const additionalKey of ADDITIONAL_MERGE_KEYS) {
-        const localElementDataObject = localElementData[additionalKey] || newElementDataObject(ElementType.Text);
-        const derivedElementDataObject = derivedElementData[additionalKey] || newElementDataObject(ElementType.Text);
+export interface DestinationPathSyncResult {
+    authoredElementValues: AuthoredElementValues;
+    triggeringElementIds: string[];
+}
 
-        mergedData[additionalKey] = {
-            ...localElementDataObject,
-            inputValue: derivedElementDataObject.isVisible ? localElementDataObject.inputValue : null,
-            previousInputValue: derivedElementDataObject.previousInputValue,
-            isVisible: derivedElementDataObject.isVisible,
-            computedValue: derivedElementDataObject.computedValue,
-            computedErrors: options.dontOverwriteErrors ? localElementDataObject.computedErrors : derivedElementDataObject.computedErrors,
-            computedOverride: derivedElementDataObject.computedOverride,
+/**
+ * Mirrors a user edit to all authored-controlled inputs that currently resolve to the same
+ * destination path inside the derived subtree.
+ * <p>
+ * Destination-path synchronization has to be driven by the concrete edited element instance rather
+ * than by the schema element id alone. Replicating containers reuse the same child ids in every row,
+ * but each row receives its own resolved destination path. Comparing the previous and next authored
+ * values against the matching computed state lets the frontend identify the exact edited instance
+ * before propagating the new value to its path-equivalent peers.
+ */
+export function synchronizeAuthoredElementValuesByDestinationPath(
+    rootElement: AnyElement,
+    previousAuthoredElementValues: AuthoredElementValues,
+    nextAuthoredElementValues: AuthoredElementValues,
+    derivedData: DerivedRuntimeElementData,
+    triggeringElementIds: string[],
+): DestinationPathSyncResult {
+    const sourceElementId = triggeringElementIds[0];
+    if (sourceElementId == null) {
+        return {
+            authoredElementValues: nextAuthoredElementValues,
+            triggeringElementIds,
         };
     }
 
-    return mergedData;
+    let sourceDestinationPath: string | null | undefined;
+    let sourceNextValue: any | undefined;
+
+    walkAuthoredElementValuesWithStates(
+        rootElement,
+        previousAuthoredElementValues,
+        nextAuthoredElementValues,
+        derivedData.elementStates,
+        (element, previousValue, nextValue, state) => {
+            if (sourceDestinationPath != null) {
+                return;
+            }
+
+            if (!isAnyInputElement(element) || element.id !== sourceElementId) {
+                return;
+            }
+
+            const destinationPath = state?.destinationPath;
+            if (destinationPath == null || state?.valueSource === 'Derived') {
+                return;
+            }
+
+            if (deepEquals(previousValue, nextValue)) {
+                return;
+            }
+
+            sourceDestinationPath = destinationPath;
+            sourceNextValue = nextValue;
+        },
+    );
+
+    if (sourceDestinationPath == null) {
+        return {
+            authoredElementValues: nextAuthoredElementValues,
+            triggeringElementIds,
+        };
+    }
+
+    const synchronizedTriggeringElementIds = new Set(triggeringElementIds);
+    const synchronizedAuthoredElementValues = mapAuthoredElementValuesWithStates(
+        rootElement,
+        nextAuthoredElementValues,
+        derivedData.elementStates,
+        (element, value, state) => {
+            if (!isAnyInputElement(element)) {
+                return value;
+            }
+
+            if (state?.destinationPath !== sourceDestinationPath || state?.valueSource === 'Derived') {
+                return value;
+            }
+
+            if (deepEquals(value, sourceNextValue)) {
+                return value;
+            }
+
+            // Adding the synchronized element id to the trigger set ensures that derivation rules
+            // referencing the mirrored field are re-evaluated in the same update cycle.
+            synchronizedTriggeringElementIds.add(element.id);
+            return sourceNextValue;
+        },
+    );
+
+    return {
+        authoredElementValues: synchronizedAuthoredElementValues,
+        triggeringElementIds: Array.from(synchronizedTriggeringElementIds),
+    };
 }
 
-function _mergeDerivedElementDataWithLocal(derivedElementData: ElementData, localElementData: ElementData, rootElement: AnyElement, options: MergeOptions): ElementData {
-    const {
-        id: elementId,
-        type: elementType,
-    } = rootElement;
+export function walkAuthoredElementValues(
+    currentElement: AnyElement,
+    currentElementValues: AuthoredElementValues,
+    callback: (element: AnyElement, value: any | null | undefined) => void,
+): void {
+    const value = currentElementValues[currentElement.id];
+    callback(currentElement, value);
 
-    const derivedElementDataObject: ElementDataObject = derivedElementData[elementId] ?? newElementDataObject(elementType);
+    if (isReplicatingContainerLayout(currentElement)) {
+        if (Array.isArray(value)) {
+            for (const childElementValues of value) {
+                if (!isAuthoredElementValues(childElementValues)) {
+                    continue;
+                }
 
-    const localElementDataObject: ElementDataObject = localElementData[elementId] ?? newElementDataObject(elementType);
+                for (const child of currentElement.children || []) {
+                    walkAuthoredElementValues(child, childElementValues, callback);
+                }
+            }
+        }
 
-    // If the element is visible. If not, inputValue should be null.
-    // If the element is visible, check is it was previously not visible and has a restored inputValue, then use that.
-    // Otherwise, use the local inputValue.
-    const inputValue =  derivedElementDataObject.isVisible ?
-        ((localElementDataObject.inputValue == null && !localElementDataObject.isVisible && derivedElementDataObject.inputValue != null) ?
-            derivedElementDataObject.inputValue :
-            localElementDataObject.inputValue
-        ) :
-        null;
+        return;
+    }
 
-    const mergedElementDataObject: ElementDataObject = {
-        ...localElementDataObject,
-        inputValue: inputValue,
-        previousInputValue: derivedElementDataObject.previousInputValue,
-        isVisible: derivedElementDataObject.isVisible,
-        computedValue: derivedElementDataObject.computedValue,
-        computedErrors: options.dontOverwriteErrors ? localElementDataObject.computedErrors : derivedElementDataObject.computedErrors,
-        computedOverride: derivedElementDataObject.computedOverride,
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            walkAuthoredElementValues(child, currentElementValues, callback);
+        }
+    }
+}
+
+export function mapAuthoredElementValues(
+    currentElement: AnyElement,
+    currentElementValues: AuthoredElementValues,
+    callback: (element: AnyElement, value: any | null | undefined, path: Array<AnyElement | number>) => any | undefined,
+    parents: Array<AnyElement | number> = [],
+): AuthoredElementValues {
+    const currentValue = currentElementValues[currentElement.id];
+    const mappedValue = callback(currentElement, currentValue, parents);
+
+    let mappedElementValues: AuthoredElementValues = {
+        ...currentElementValues,
     };
 
-    let mergedElementData: ElementData = {
-        [elementId]: mergedElementDataObject,
-    };
+    if (mappedValue === undefined) {
+        delete mappedElementValues[currentElement.id];
+    } else {
+        mappedElementValues[currentElement.id] = mappedValue;
+    }
 
-    if (isRootElement(rootElement)) {
-        if (rootElement.introductionStep != null) {
-            mergedElementData = {
-                ...mergedElementData,
-                ..._mergeDerivedElementDataWithLocal(
-                    derivedElementData,
-                    localElementData,
-                    rootElement.introductionStep,
-                    options,
-                ),
+    const nextCurrentValue = mappedValue === undefined ? currentValue : mappedValue;
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        if (Array.isArray(nextCurrentValue)) {
+            const mappedChildValues = nextCurrentValue.map((childValues, index) => {
+                if (!isAuthoredElementValues(childValues)) {
+                    return childValues;
+                }
+
+                let updatedChildValues = {
+                    ...childValues,
+                };
+
+                for (const child of currentElement.children || []) {
+                    updatedChildValues = mapAuthoredElementValues(child, updatedChildValues, callback, [...parents, currentElement, index]);
+                }
+
+                return updatedChildValues;
+            });
+
+            mappedElementValues = {
+                ...mappedElementValues,
+                [currentElement.id]: mappedChildValues,
             };
         }
 
-        if (rootElement.summaryStep != null) {
-            mergedElementData = {
-                ...mergedElementData,
-                ..._mergeDerivedElementDataWithLocal(
-                    derivedElementData,
-                    localElementData,
-                    rootElement.summaryStep,
-                    options,
-                ),
-            };
-        }
+        return mappedElementValues;
+    }
 
-        if (rootElement.submitStep != null) {
-            mergedElementData = {
-                ...mergedElementData,
-                ..._mergeDerivedElementDataWithLocal(
-                    derivedElementData,
-                    localElementData,
-                    rootElement.submitStep,
-                    options,
-                ),
-            };
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            mappedElementValues = mapAuthoredElementValues(child, mappedElementValues, callback, [...parents, currentElement]);
         }
     }
 
-    if (isAnyElementWithChildren(rootElement) && rootElement.children != null) {
-        if (rootElement.type === ElementType.ReplicatingContainer) {
-            const localChildInputValue = localElementDataObject.inputValue as ElementData[] | null | undefined;
-            const derivedChildInputValue = derivedElementDataObject.inputValue as ElementData[] | null | undefined;
+    return mappedElementValues;
+}
 
-            if (localChildInputValue != null) {
-                for (let i = 0; i < localChildInputValue.length; i++) {
-                    let localChildElementData = localChildInputValue[i];
-                    const derivedChildElementData: ElementData | undefined = derivedChildInputValue != null ? derivedChildInputValue[i] : undefined;
+export function filterAuthoredElementValues(
+    currentElement: AnyElement,
+    currentElementValues: AuthoredElementValues,
+    callback: (element: AnyElement, value: any | null | undefined, path: Array<AnyElement | number>) => boolean,
+    parents: Array<AnyElement | number> = [],
+): AuthoredElementValues {
+    const currentValue = currentElementValues[currentElement.id];
+    const shouldKeepCurrentValue = callback(currentElement, currentValue, parents);
 
-                    for (const childElement of rootElement.children) {
-                        const childMergedData = _mergeDerivedElementDataWithLocal(
-                            derivedChildElementData ?? {},
-                            localChildElementData,
-                            childElement,
-                            options,
-                        );
+    let filteredValues: AuthoredElementValues = {};
 
-                        localChildElementData = {
-                            ...localChildElementData,
-                            ...childMergedData,
+    if (shouldKeepCurrentValue && currentValue !== undefined) {
+        filteredValues[currentElement.id] = currentValue;
+    }
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        if (Array.isArray(currentValue)) {
+            const filteredChildValues = currentValue
+                .map((childValues, index) => {
+                    if (!isAuthoredElementValues(childValues)) {
+                        return undefined;
+                    }
+
+                    let filteredChildValue: AuthoredElementValues = {};
+                    for (const child of currentElement.children || []) {
+                        filteredChildValue = {
+                            ...filteredChildValue,
+                            ...filterAuthoredElementValues(child, childValues, callback, [...parents, currentElement, index]),
                         };
                     }
 
-                    localChildInputValue[i] = localChildElementData;
-                }
-            }
-        } else {
-            for (const childElement of rootElement.children) {
-                const childMergedData = _mergeDerivedElementDataWithLocal(
-                    derivedElementData,
-                    localElementData,
-                    childElement,
-                    options,
-                );
-
-                mergedElementData = {
-                    ...mergedElementData,
-                    ...childMergedData,
-                };
-            }
-        }
-    }
-
-    return mergedElementData;
-}
-
-export function walkElementData(
-    currentElement: AnyElement,
-    currentElementData: ElementData,
-    callback: (elem: AnyElement, value: any | null | undefined, dataObject: ElementDataObject | null | undefined) => void,
-): void {
-    const dataObject: ElementDataObject | null | undefined = currentElementData[currentElement.id];
-    const val = resolveValue(currentElement, currentElementData);
-    callback(currentElement, val, dataObject);
-
-    if (isReplicatingContainerLayout(currentElement)) {
-        if (Array.isArray(val)) {
-            for (const childElementData of val || []) {
-                for (const child of currentElement.children || []) {
-                    walkElementData(child, childElementData, callback);
-                }
-            }
-        }
-    } else if (isAnyElementWithChildren(currentElement)) {
-        for (const child of currentElement.children || []) {
-            walkElementData(child, currentElementData, callback);
-        }
-    }
-}
-
-export function mapElementData(
-    currentElement: AnyElement,
-    currentElementData: ElementData,
-    callback: (elem: AnyElement, value: ElementDataObject | null | undefined, path: Array<AnyElement | number>) => ElementDataObject | null | undefined,
-    parents: Array<AnyElement | number> = [],
-): ElementData {
-    const elementDataObject: ElementDataObject = currentElementData[currentElement.id] ?? newElementDataObject(currentElement.type);
-
-    const callbackedElementDataObject = callback(currentElement, elementDataObject, parents);
-
-    let newElementData: ElementData = {
-        ...currentElementData,
-        [currentElement.id]: callbackedElementDataObject != null ? callbackedElementDataObject : elementDataObject,
-    };
-
-    const val = resolveValue(currentElement, newElementData);
-
-    if (isRootElement(currentElement)) {
-        if (currentElement.introductionStep != null) {
-            const childMappedData = mapElementData(currentElement.introductionStep, newElementData, callback, [...parents, currentElement]);
-            newElementData = {
-                ...newElementData,
-                ...childMappedData,
-            };
-        }
-
-        if (currentElement.summaryStep != null) {
-            const childMappedData = mapElementData(currentElement.summaryStep, newElementData, callback, [...parents, currentElement]);
-            newElementData = {
-                ...newElementData,
-                ...childMappedData,
-            };
-        }
-
-        if (currentElement.submitStep != null) {
-            const childMappedData = mapElementData(currentElement.submitStep, newElementData, callback, [...parents, currentElement]);
-            newElementData = {
-                ...newElementData,
-                ...childMappedData,
-            };
-        }
-    }
-
-
-    if (isReplicatingContainerLayout(currentElement)) {
-        if (Array.isArray(val)) {
-            const mapped = val.map((childData, index) => {
-                const childMappedData: ElementData = {};
-                for (const child of currentElement.children || []) {
-                    const childMappedValue = mapElementData(child, childData, callback, [...parents, currentElement, index]);
-                    Object.assign(childMappedData, childMappedValue);
-                }
-                return childMappedData;
-            });
-            newElementData = {
-                ...newElementData,
-                [currentElement.id]: {
-                    ...elementDataObject,
-                    inputValue: mapped,
-                },
-            };
-        }
-    } else if (isAnyElementWithChildren(currentElement)) {
-        for (const child of currentElement.children || []) {
-            const childMappedData = mapElementData(child, newElementData, callback, [...parents, currentElement]);
-            newElementData = {
-                ...newElementData,
-                ...childMappedData,
-            };
-        }
-    }
-
-    return newElementData;
-}
-
-
-export function filterElementData(
-    currentElement: AnyElement,
-    currentElementData: ElementData,
-    callback: (elem: AnyElement, value: ElementDataObject | null | undefined, path: Array<AnyElement | number>) => boolean,
-    parents: Array<AnyElement | number> = [],
-): ElementData {
-    const elementDataObject: ElementDataObject = currentElementData[currentElement.id] ?? newElementDataObject(currentElement.type);
-
-    const filterResult = callback(currentElement, elementDataObject, parents);
-
-    let filteredElementData: ElementData = {};
-
-    if (filterResult) {
-        filteredElementData[currentElement.id] = elementDataObject;
-    }
-
-    if (isRootElement(currentElement)) {
-        if (currentElement.introductionStep != null) {
-            const res = filterElementData(
-                currentElement.introductionStep,
-                currentElementData,
-                callback,
-                [...parents, currentElement],
-            );
-            if (Object.keys(res).length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    ...res,
-                };
-            }
-        }
-
-        if (currentElement.summaryStep != null) {
-            const res = filterElementData(
-                currentElement.summaryStep,
-                currentElementData,
-                callback,
-                [...parents, currentElement],
-            );
-            if (Object.keys(res).length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    ...res,
-                };
-            }
-        }
-
-        if (currentElement.submitStep != null) {
-            const res = filterElementData(
-                currentElement.submitStep,
-                currentElementData,
-                callback,
-                [...parents, currentElement],
-            );
-            if (Object.keys(res).length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    ...res,
-                };
-            }
-        }
-    }
-
-    if (isReplicatingContainerLayout(currentElement)) {
-        const val = resolveValue(currentElement, currentElementData);
-
-        if (Array.isArray(val)) {
-            const mapped = val
-                .map((childData, index) => {
-                    const childMappedData: ElementData = {};
-                    for (const child of currentElement.children || []) {
-                        const childMappedValue = filterElementData(child, childData, callback, [...parents, currentElement, index]);
-                        Object.assign(childMappedData, childMappedValue);
-                    }
-                    return childMappedData;
+                    return Object.keys(filteredChildValue).length > 0 ? filteredChildValue : undefined;
                 })
-                .filter(child => Object.keys(child).length > 0);
+                .filter((childValues): childValues is AuthoredElementValues => childValues != null);
 
-            console.log('Mapped REPL', mapped);
-
-            if (mapped.length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    [currentElement.id]: {
-                        ...elementDataObject,
-                        inputValue: mapped,
-                    },
-                };
+            if (filteredChildValues.length > 0) {
+                filteredValues[currentElement.id] = filteredChildValues;
+            } else {
+                delete filteredValues[currentElement.id];
             }
         }
-    } else if (isAnyElementWithChildren(currentElement)) {
+
+        return filteredValues;
+    }
+
+    if (isAnyElementWithChildren(currentElement)) {
         for (const child of currentElement.children || []) {
-            const res = filterElementData(child, currentElementData, callback, [...parents, currentElement]);
-            if (Object.keys(res).length > 0) {
-                filteredElementData = {
-                    ...filteredElementData,
-                    ...res,
-                };
-            }
+            filteredValues = {
+                ...filteredValues,
+                ...filterAuthoredElementValues(child, currentElementValues, callback, [...parents, currentElement]),
+            };
         }
     }
 
-    return filteredElementData;
+    return filteredValues;
 }
 
-export function cleanElementData(rootElement: AnyElement, elementData: ElementData): ElementData {
-    const elementDataCopy = {
-        ...elementData,
+export function cleanAuthoredElementValues(rootElement: AnyElement, authoredElementValues: AuthoredElementValues): AuthoredElementValues {
+    const cleanedElementValues = {
+        ...authoredElementValues,
     };
 
-    for (const additionalKey of ADDITIONAL_MERGE_KEYS) {
-        elementDataCopy[additionalKey] = undefined;
+    delete cleanedElementValues[IdentityCustomerInputKey];
+
+    return mapAuthoredElementValues(rootElement, cleanedElementValues, (element, value) => {
+        if (element.type === ElementType.FileUpload) {
+            return undefined;
+        }
+
+        return value;
+    });
+}
+
+
+export function filterComputedElementStates(
+    currentElement: AnyElement,
+    currentElementValues: ComputedElementStates,
+    callback: (element: AnyElement, value: ComputedElementState | null | undefined, path: Array<AnyElement | number>) => boolean,
+    parents: Array<AnyElement | number> = [],
+): ComputedElementStates {
+    const currentElementState = currentElementValues[currentElement.id];
+    const shouldKeepCurrentValue = callback(currentElement, currentElementState, parents);
+
+    let filteredValues: ComputedElementStates = {};
+
+    if (shouldKeepCurrentValue && currentElementState !== undefined) {
+        filteredValues[currentElement.id] = currentElementState;
     }
 
-    return mapElementData(rootElement, elementDataCopy, (elem, value) => {
-        if (elem.type === ElementType.FileUpload) {
-            return undefined; // Remove FileUpload elements from the data
+    if (isReplicatingContainerLayout(currentElement)) {
+        const filteredSubStates = (currentElementState?.subStates ?? [])
+            .map((childValues, index) => {
+                let filteredChildValue: ComputedElementStates = {};
+
+                for (const child of currentElement.children || []) {
+                    filteredChildValue = {
+                        ...filteredChildValue,
+                        ...filterComputedElementStates(child, childValues, callback, [...parents, currentElement, index]),
+                    };
+                }
+
+                return Object.keys(filteredChildValue).length > 0 ? filteredChildValue : undefined;
+            })
+            .filter((childValues): childValues is AuthoredElementValues => childValues != null);
+
+        if (filteredSubStates.length > 0) {
+            filteredValues[currentElement.id] = {
+                ...currentElementState,
+                subStates: filteredSubStates
+            };
+        } else {
+            delete filteredValues[currentElement.id];
         }
 
-        if (value == null) {
-            return null;
+        return filteredValues;
+    }
+
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            filteredValues = {
+                ...filteredValues,
+                ...filterComputedElementStates(child, currentElementValues, callback, [...parents, currentElement]),
+            };
+        }
+    }
+
+    return filteredValues;
+}
+
+/**
+ * Traverses authored values and computed states in lock-step.
+ * <p>
+ * Replicating containers split authored values into row-local maps while their computed metadata is
+ * stored in `subStates`. Consumers that need to reason about the currently resolved runtime path of
+ * a concrete authored value therefore need both structures at the same time.
+ */
+function walkAuthoredElementValuesWithStates(
+    currentElement: AnyElement,
+    previousElementValues: AuthoredElementValues,
+    nextElementValues: AuthoredElementValues,
+    currentElementStates: ComputedElementStates,
+    callback: (
+        element: AnyElement,
+        previousValue: any | null | undefined,
+        nextValue: any | null | undefined,
+        state: ComputedElementState | null | undefined,
+        path: Array<AnyElement | number>,
+    ) => void,
+    parents: Array<AnyElement | number> = [],
+): void {
+    const currentElementState = currentElementStates[currentElement.id];
+    const previousValue = previousElementValues[currentElement.id];
+    const nextValue = nextElementValues[currentElement.id];
+
+    callback(currentElement, previousValue, nextValue, currentElementState, parents);
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        const previousRows = Array.isArray(previousValue) ? previousValue : [];
+        const nextRows = Array.isArray(nextValue) ? nextValue : [];
+        const childElementStates = Array.isArray(currentElementState?.subStates) ? currentElementState.subStates : [];
+        const rowCount = Math.max(previousRows.length, nextRows.length, childElementStates.length);
+
+        for (let index = 0; index < rowCount; index++) {
+            const previousRowValues = isAuthoredElementValues(previousRows[index]) ? previousRows[index] : {};
+            const nextRowValues = isAuthoredElementValues(nextRows[index]) ? nextRows[index] : {};
+            const rowStates = isElementStates(childElementStates[index]) ? childElementStates[index] : {};
+
+            for (const child of currentElement.children || []) {
+                walkAuthoredElementValuesWithStates(
+                    child,
+                    previousRowValues,
+                    nextRowValues,
+                    rowStates,
+                    callback,
+                    [...parents, currentElement, index],
+                );
+            }
         }
 
-        const up: ElementDataObject = {
-            ...value,
-            isVisible: true,
-            isDirty: false,
-            isPrefilled: false,
-            computedValue: null,
-            computedErrors: null,
-            computedOverride: null,
-        };
+        return;
+    }
 
-        return up;
-    });
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            walkAuthoredElementValuesWithStates(
+                child,
+                previousElementValues,
+                nextElementValues,
+                currentElementStates,
+                callback,
+                [...parents, currentElement],
+            );
+        }
+    }
+}
+
+/**
+ * Maps authored values while preserving access to the matching computed state.
+ * <p>
+ * Destination-path synchronization needs to rewrite the authored tree based on runtime metadata.
+ * Keeping the authored and computed traversals aligned in one helper prevents row-local updates in
+ * replicating containers from drifting away from the `subStates` that describe their resolved paths.
+ */
+function mapAuthoredElementValuesWithStates(
+    currentElement: AnyElement,
+    currentElementValues: AuthoredElementValues,
+    currentElementStates: ComputedElementStates,
+    callback: (
+        element: AnyElement,
+        value: any | null | undefined,
+        state: ComputedElementState | null | undefined,
+        path: Array<AnyElement | number>,
+    ) => any | undefined,
+    parents: Array<AnyElement | number> = [],
+): AuthoredElementValues {
+    const currentElementState = currentElementStates[currentElement.id];
+    const currentValue = currentElementValues[currentElement.id];
+    const mappedValue = callback(currentElement, currentValue, currentElementState, parents);
+
+    let mappedElementValues: AuthoredElementValues = {
+        ...currentElementValues,
+    };
+
+    if (mappedValue === undefined) {
+        delete mappedElementValues[currentElement.id];
+    } else {
+        mappedElementValues[currentElement.id] = mappedValue;
+    }
+
+    const nextCurrentValue = mappedValue === undefined ? currentValue : mappedValue;
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        if (Array.isArray(nextCurrentValue)) {
+            const childElementStates = Array.isArray(currentElementState?.subStates) ? currentElementState.subStates : [];
+            const mappedChildValues = nextCurrentValue.map((childValues, index) => {
+                if (!isAuthoredElementValues(childValues)) {
+                    return childValues;
+                }
+
+                let updatedChildValues = {
+                    ...childValues,
+                };
+                const rowStates = isElementStates(childElementStates[index]) ? childElementStates[index] : {};
+
+                for (const child of currentElement.children || []) {
+                    updatedChildValues = mapAuthoredElementValuesWithStates(
+                        child,
+                        updatedChildValues,
+                        rowStates,
+                        callback,
+                        [...parents, currentElement, index],
+                    );
+                }
+
+                return updatedChildValues;
+            });
+
+            mappedElementValues = {
+                ...mappedElementValues,
+                [currentElement.id]: mappedChildValues,
+            };
+        }
+
+        return mappedElementValues;
+    }
+
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children || []) {
+            mappedElementValues = mapAuthoredElementValuesWithStates(
+                child,
+                mappedElementValues,
+                currentElementStates,
+                callback,
+                [...parents, currentElement],
+            );
+        }
+    }
+
+    return mappedElementValues;
 }

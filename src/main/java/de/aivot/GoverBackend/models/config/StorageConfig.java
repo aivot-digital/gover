@@ -6,6 +6,10 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.Map;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Configuration
 @ConfigurationProperties(prefix = "storage")
 public class StorageConfig {

@@ -1,6 +1,7 @@
 export interface OptionListInputValue {
     label: string;
     value: string;
+    group?: string | null | undefined;
 }
 
 export interface OptionListInputProps {
@@ -15,6 +16,9 @@ export interface OptionListInputProps {
 
     labelLabel?: string;
     keyLabel?: string;
+    disableKeyField?: boolean;
+    groupLabel?: string;
+    showGroupField?: boolean;
 
     variant?: 'elevation' | 'outlined';
 }

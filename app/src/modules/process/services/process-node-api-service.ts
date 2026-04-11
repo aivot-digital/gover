@@ -1,14 +1,17 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
+import {type ProcessNodeExport} from '../entities/process-node-export';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {generateId} from '../../../utils/id-utils';
+import {ProcessNodeProblems} from '../entities/process-node-problems';
 
 interface ProcessDefinitionNodeFilter {
     id: number;
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     dataKey: string;
-    codeKey: string;
+    processNodeDefinitionKey: string;
+    processNodeDefinitionVersion: number;
 }
 
 export class ProcessNodeApiService extends BaseCrudApiService<
@@ -42,6 +45,7 @@ ProcessDefinitionNodeFilter
             description: null,
             dataKey: generateId(5),
             configuration: {},
+            savedWithErrors: false,
         };
     }
 
@@ -49,7 +53,30 @@ ProcessDefinitionNodeFilter
         return this.get(`${this.path}${id}/configuration/`);
     }
 
-    public getTesting(id: number): Promise<GroupLayout> {
-        return this.get(`${this.path}${id}/testing/`);
+    public async getTesting(id: number): Promise<GroupLayout | null> {
+        const res = await this.fetch('GET', `${this.path}${id}/testing/`);
+        const data = await res.text();
+
+        if (res.ok && data.length === 0) {
+            return null;
+        }
+
+        return JSON.parse(data) as GroupLayout;
+    }
+
+    public export(id: number): Promise<ProcessNodeExport> {
+        return this.get(`${this.path}${id}/export/`);
+    }
+
+    public import(processId: number, processVersion: number, nodeData: ProcessNodeExport): Promise<ProcessNodeEntity> {
+        return this.post(`/api/process-nodes/import/${processId}/${processVersion}/`, nodeData);
+    }
+
+    public async validate(id: number): Promise<ProcessNodeProblems | null> {
+        try {
+            return await this.get<ProcessNodeProblems>(`${this.path}${id}/problems/`);
+        } catch (err) {
+            return null;
+        }
     }
 }

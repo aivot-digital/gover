@@ -1,11 +1,13 @@
 package de.aivot.GoverBackend.dataObject.services;
 
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectItemRepository;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectSchemaRepository;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -200,13 +202,15 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     @Nonnull
     private Map<String, Object> deriveDataObjectItemData(@Nonnull DataObjectItemEntity entity,
                                                          @Nonnull DataObjectSchemaEntity schema) throws ResponseException {
-        var entityElementData = ElementData
-                .fromValueMap(schema.getSchema(), entity.getData());
+        var entityElementData = ObjectMapperFactory
+                .getInstance()
+                .convertValue(entity.getData(), AuthoredElementValues.class);
         var edo = new ElementDerivationOptions();
-        var edr = new ElementDerivationRequest()
-                .setElement(schema.getSchema())
-                .setElementData(entityElementData)
-                .setOptions(edo);
+        var edr = new ElementDerivationRequest(
+                schema.getSchema(),
+                entityElementData,
+                edo
+        );
         var dummyLogger = new ElementDerivationLogger();
         var derivedData = elementDerivationService.derive(edr, dummyLogger);
 
@@ -215,7 +219,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                     .badRequest(derivedData);
         }
 
-        return ElementData.toValueMap(schema.getSchema(), derivedData);
+        return entityElementData;
     }
 
     @Nonnull

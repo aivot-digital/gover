@@ -10,6 +10,10 @@ create table processes
     -- The ID of the owning department who can create, edit and delete this process definition
     department_id     int         not null,
 
+    -- The public key of this process.
+    -- Public access to this process is done via this key.
+    access_key        uuid        not null,
+
     -- The total count of versions for this process definition
     version_count     int         not null default 0,
     -- The currently drafted version number for this process definition
@@ -61,39 +65,43 @@ create table process_versions
 create table process_nodes
 (
     -- The ID of this particular node definition
-    id                              serial      not null,
+    id                              serial       not null,
 
     -- The composite foreign for the process definition version
-    process_id                      int         not null,
-    process_version                 int         not null,
+    process_id                      int          not null,
+    process_version                 int          not null,
 
     -- The name of this node
-    name                            varchar(96) null,
+    name                            varchar(96)  null,
     -- A short description of this node
-    description                     text        null,
+    description                     text         null,
 
     -- The key, the data of this node are stored in the process instance context
-    data_key                        varchar(32) not null,
+    data_key                        varchar(32)  not null,
 
     -- The key and version for the process node definition plugin component
-    process_node_definition_key     varchar(32) not null,
-    process_node_definition_version integer     not null,
+    process_node_definition_key     varchar(128) not null,
+    process_node_definition_version integer      not null,
 
     -- The configuration object for this node.
     -- All options are stored in here.
-    configuration                   jsonb       not null default '{}',
+    configuration                   jsonb        not null default '{}',
 
     -- The output mappings for this node.
-    output_mappings                 jsonb       not null default '{}',
+    output_mappings                 jsonb        not null default '{}',
 
-    -- The Timelimit in days for this node.
-    time_limit_days                 integer     null,
+    -- The timelimit in days for this node.
+    time_limit_days                 integer      null,
 
     -- The requirements for this node.
-    requirements                    text        null,
+    requirements                    text         null,
 
     -- Additional notes for this node.
-    notes                           text        null,
+    notes                           text         null,
+
+    -- Flag to determine if this node was saved with errors.
+    -- This is used to display a warning in the UI and to prevent publishing of process definitions with errors.
+    saved_with_errors               bool         not null default false,
 
     -- Define the primary key
     primary key (id),

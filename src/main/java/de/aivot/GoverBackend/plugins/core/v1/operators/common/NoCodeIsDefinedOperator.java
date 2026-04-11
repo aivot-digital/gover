@@ -1,12 +1,16 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
+
+import java.util.Collection;
+import java.util.Map;
 
 public class NoCodeIsDefinedOperator extends NoCodeOperator {
     @Override
@@ -69,7 +73,22 @@ public class NoCodeIsDefinedOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
-        return new NoCodeResult(args[0] != null);
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
+        if (args[0] == null) {
+            return new NoCodeResult(false);
+        }
+
+        return switch (args[0]) {
+            case String value -> new NoCodeResult(!value.isBlank());
+            case Collection<?> value -> new NoCodeResult(!value.isEmpty());
+            case Map<?, ?> value -> new NoCodeResult(!value.isEmpty());
+            default -> new NoCodeResult(true);
+        };
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ ist nicht leer";
     }
 }

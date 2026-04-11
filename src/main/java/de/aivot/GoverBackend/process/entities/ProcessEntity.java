@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "processes")
@@ -28,6 +29,10 @@ public class ProcessEntity {
     @Nonnull
     @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein.")
     private Integer departmentId;
+
+    @Nonnull
+    @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein.")
+    private UUID accessKey;
 
     @Nonnull
     @NotNull(message = "Die Versionsanzahl darf nicht null sein.")
@@ -58,6 +63,7 @@ public class ProcessEntity {
     public ProcessEntity(@Nonnull Integer id,
                          @Nonnull String internalTitle,
                          @Nonnull Integer departmentId,
+                         @Nonnull UUID accessKey,
                          @Nonnull Integer versionCount,
                          @Nullable Integer draftedVersion,
                          @Nullable Integer publishedVersion,
@@ -66,6 +72,7 @@ public class ProcessEntity {
         this.id = id;
         this.internalTitle = internalTitle;
         this.departmentId = departmentId;
+        this.accessKey = accessKey;
         this.versionCount = versionCount;
         this.draftedVersion = draftedVersion;
         this.publishedVersion = publishedVersion;
@@ -169,6 +176,16 @@ public class ProcessEntity {
 
     public ProcessEntity setUpdated(@Nonnull LocalDateTime updated) {
         this.updated = updated;
+        return this;
+    }
+
+    @Nonnull
+    public UUID getAccessKey() {
+        return accessKey;
+    }
+
+    public ProcessEntity setAccessKey(@Nonnull UUID accessKey) {
+        this.accessKey = accessKey;
         return this;
     }
 

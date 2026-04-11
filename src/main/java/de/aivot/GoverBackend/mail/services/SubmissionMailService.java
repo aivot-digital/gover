@@ -32,6 +32,10 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.*;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 public class SubmissionMailService {
     private final MailService mailService;

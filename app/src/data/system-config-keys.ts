@@ -18,7 +18,13 @@ export const SystemConfigKeys = {
     gover: {
         storeKey: 'GoverStoreKey',
     },
+    users: {
+        defaultSystemRole: 'users.default_system_role',
+    },
     storage: {
+        assets: {
+            default_storage_provider: 'storage.assets.default_storage_provider',
+        },
         attachments: {
             default_storage_provider: 'storage.attachments.default_storage_provider',
         },

@@ -1,5 +1,5 @@
 import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import {showDialog} from '../../slices/app-slice';
 import {validateEmail} from '../../utils/validate-email';
@@ -21,25 +21,13 @@ import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submis
 import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {createApiPath} from '../../utils/url-path-utils';
-import confetti from 'canvas-confetti';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
-
-const animationStartDelay = 200;
-const animationDuration = 2000;
-
-interface ConfettiAnimationSettings {
-    startVelocity: number;
-    particleCount: number;
-    angle: number;
-    spread: number;
-    origin: {
-        x: number;
-    };
-    colors: string[];
-    disableForReducedMotion: boolean;
-}
+import {ElementType} from '../../data/element-type/element-type';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {CanvasConfettiOverlay} from '../confetti/canvas-confetti-overlay';
 
 interface SubmittedProps {
     submission: SubmissionListResponseDTO;
@@ -67,115 +55,13 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 
 export function Submitted(props: SubmittedProps) {
     const api = useApi();
-    const submitStep = props.version.rootElement.submitStep;
+    const submitStep = props.version.rootElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
     const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
     const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const animationInstance = useRef<ReturnType<typeof confetti.create> | null>(null);
-    const intervalId = useRef<ReturnType<typeof setInterval> | null>(null);
-
-    useEffect(() => {
-        if (!shouldRenderConfetti || confettiDisabled) {
-            if (intervalId.current) {
-                clearInterval(intervalId.current);
-                intervalId.current = null;
-            }
-            animationInstance.current = null;
-            return;
-        }
-
-        if (canvasRef.current && !animationInstance.current) {
-            animationInstance.current = confetti.create(canvasRef.current, {
-                resize: true,
-                useWorker: true,
-            });
-        }
-    }, [shouldRenderConfetti, confettiDisabled]);
-
-    function getAnimationSettings(angle: number, originX: number): ConfettiAnimationSettings {
-        return {
-            startVelocity: 40,
-            spread: 80,
-            angle: 60,
-            particleCount: 20,
-            origin: {
-                x: 0,
-            },
-            colors: ['#fcaa67', '#b0413e'],
-            disableForReducedMotion: true,
-        };
-    }
-
-    const refAnimationInstance = useRef<null | ((settings: ConfettiAnimationSettings) => void)>(null);
-    const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const animationStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const animationStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const getInstance = useCallback((instance: any) => {
-        refAnimationInstance.current = instance;
-    }, []);
-
-    const nextTickAnimation = useCallback(() => {
-        if (refAnimationInstance.current) {
-            refAnimationInstance.current(getAnimationSettings(60, 0));
-            refAnimationInstance.current(getAnimationSettings(120, 1));
-        }
-    }, []);
-
-    const startAnimation = useCallback(() => {
-        if (animationIntervalRef.current == null) {
-            animationIntervalRef.current = setInterval(nextTickAnimation, 16);
-        }
-    }, [nextTickAnimation]);
-
-    const pauseAnimation = useCallback(() => {
-        if (animationIntervalRef.current != null) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-        }
-    }, []);
-
-    /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
-    const stopAnimation = useCallback(() => {
-        if (animationIntervalRef.current != null) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-        }
-        // @ts-ignore
-        refAnimationInstance.current && refAnimationInstance.current.reset();
-    }, []);
-     */
-
-    useEffect(() => {
-        if (confettiDisabled || !shouldRenderConfetti) {
-            pauseAnimation();
-            return;
-        }
-
-        const timeoutId = setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [confettiDisabled, shouldRenderConfetti, startAnimation, pauseAnimation]);
-
-    useEffect(() => {
-        if (confettiDisabled || !shouldRenderConfetti) {
-            return;
-        }
-
-        const timeoutId = setTimeout(() => {
-            pauseAnimation();
-        }, animationDuration);
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [confettiDisabled, shouldRenderConfetti, pauseAnimation]);
 
     useEffect(() => {
         if (confettiDisabled) {
@@ -195,9 +81,9 @@ export function Submitted(props: SubmittedProps) {
     }, [confettiDisabled]);
 
     useEffect(() => {
-        new SubmissionsApiService()
+        /*new SubmissionsApiService()
             .getStatus(props.submission.id)
-            .then(setStatus);
+            .then(setStatus);*/
     }, [api, props.submission]);
 
     useEffect(() => {
@@ -262,52 +148,6 @@ export function Submitted(props: SubmittedProps) {
             }
         }
     };
-
-    useEffect(() => {
-        if (confettiDisabled || !shouldRenderConfetti) {
-            pauseAnimation();
-            return;
-        }
-
-        animationStartTimeoutRef.current = setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-
-        animationStopTimeoutRef.current = setTimeout(() => {
-            pauseAnimation();
-        }, animationDuration);
-
-        return () => {
-            if (animationStartTimeoutRef.current != null) {
-                clearTimeout(animationStartTimeoutRef.current);
-                animationStartTimeoutRef.current = null;
-            }
-
-            if (animationStopTimeoutRef.current != null) {
-                clearTimeout(animationStopTimeoutRef.current);
-                animationStopTimeoutRef.current = null;
-            }
-
-            pauseAnimation();
-        };
-    }, [confettiDisabled, pauseAnimation, shouldRenderConfetti, startAnimation]);
-
-    useEffect(() => {
-        if (confettiDisabled) {
-            setShouldRenderConfetti(false);
-            return;
-        }
-
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
-        const handleChange = () => {
-            setShouldRenderConfetti(mediaQuery.matches);
-        };
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, [confettiDisabled]);
 
     return (
         <>
@@ -436,8 +276,8 @@ export function Submitted(props: SubmittedProps) {
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={props.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={props.version.rootElement.introductionStep?.initiativeName ?? undefined}
+                    logoLink={(props.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
+                    logoAlt={(props.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
             {
@@ -604,23 +444,10 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 />
             </Box>
-            {!confettiDisabled && shouldRenderConfetti && (
-                <canvas
-                    ref={canvasRef}
-                    style={{
-                        position: 'fixed',
-                        pointerEvents: 'none',
-                        width: '100%',
-                        height: '100%',
-                        top: 0,
-                        left: 0,
-                        zIndex: 9999,
-                        display: 'block',
-                        background: 'transparent',
-                    }}
-                    aria-hidden="true"
-                />
-            )}
+            <CanvasConfettiOverlay
+                playKey={!confettiDisabled && shouldRenderConfetti ? 1 : null}
+                colors={['#fcaa67', '#b0413e']}
+            />
 
             <InfoDialog
                 title="E-Mail versendet"

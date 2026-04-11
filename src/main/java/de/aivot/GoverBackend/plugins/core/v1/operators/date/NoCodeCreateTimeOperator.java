@@ -1,12 +1,13 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.date;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.time.ZonedDateTime;
 
@@ -56,7 +57,7 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.Date,
+                        NoCodeDataType.Time,
                         new NoCodeParameter(
                                 NoCodeDataType.Number,
                                 "Stunde",
@@ -71,15 +72,31 @@ public class NoCodeCreateTimeOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "erstelle eine Zeit mit Stunde „#0“ und Minute „#1“";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         int hour = castToNumber(args[0]).intValue();
         int minute = castToNumber(args[1]).intValue();
+
+        if (hour < 0 || hour > 23) {
+            throw new NoCodeException("Ungültige Stunde: " + hour + ". Erwartet 0-23.");
+        }
+
+        if (minute < 0 || minute > 59) {
+            throw new NoCodeException("Ungültige Minute: " + minute + ". Erwartet 0-59.");
+        }
 
         var time = ZonedDateTime
                 .now()
                 .withHour(hour)
-                .withMinute(minute);
+                .withMinute(minute)
+                .withSecond(0)
+                .withNano(0);
 
         return new NoCodeResult(time);
     }

@@ -19,4 +19,5 @@ export interface SelectFieldComponentProps {
     startIcon?: React.ReactNode;
     endAction?: EndAction | Array<EndAction>;
     muiPassTroughProps?: TextFieldProps;
+    size?: 'small' | 'medium';
 }

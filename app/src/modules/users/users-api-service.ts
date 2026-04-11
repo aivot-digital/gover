@@ -2,10 +2,29 @@ import {SystemUserRole, User} from './models/user';
 import {BaseCrudApiService} from '../../services/base-crud-api-service';
 
 export interface UserFilter {
-    fullName: string;
+    name: string;
     deletedInIdp: boolean;
     disabledInIdp: boolean;
     systemRoleId: number;
+}
+
+export interface UserInitialCredentials {
+    fullName: string;
+    email: string;
+    systemRoleName: string;
+    temporaryPassword: string;
+}
+
+export interface CreateUserRequestDTO {
+    user: User;
+    sendInitialCredentialsByEmail: boolean;
+}
+
+export interface CreateUserResponseDTO {
+    user: User;
+    initialCredentialsSentByEmail: boolean;
+    initialCredentialsDeliveryError?: string | null;
+    initialCredentials?: UserInitialCredentials | null;
 }
 
 export class UsersApiService extends BaseCrudApiService<User, User, User, User, string, UserFilter> {
@@ -48,7 +67,7 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
             firstName: '',
             lastName: '',
             fullName: '',
-            enabled: false,
+            enabled: true,
             verified: false,
             isSuperAdmin: false,
             isSystemAdmin: false,
@@ -56,6 +75,10 @@ export class UsersApiService extends BaseCrudApiService<User, User, User, User, 
             deletedInIdp: false,
             systemRoleId: null,
         };
+    }
+
+    public async provision(request: CreateUserRequestDTO): Promise<CreateUserResponseDTO> {
+        return await this.post<CreateUserRequestDTO, CreateUserResponseDTO>('/api/users/provision/', request);
     }
 
     public async resetPassword(id: string): Promise<void> {

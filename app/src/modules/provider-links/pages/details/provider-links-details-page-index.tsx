@@ -11,11 +11,11 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const ProviderLinkSchema = yup.object({
     text: yup.string()
@@ -221,7 +221,7 @@ export function ProviderLinksDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

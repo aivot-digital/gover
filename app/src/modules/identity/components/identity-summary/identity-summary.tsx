@@ -24,7 +24,7 @@ export function IdentitySummary(props: IdentitySummaryProps) {
     const [identityProvider, setIdentityProvider] = useState<IdentityProviderDetailsDTO>();
 
     const identityValue: IdentityData | undefined = useMemo(() => {
-        return submission.customerInput[IdentityCustomerInputKey]?.inputValue;
+        return submission.customerInput[IdentityCustomerInputKey];
     }, [submission]);
 
     useEffect(() => {

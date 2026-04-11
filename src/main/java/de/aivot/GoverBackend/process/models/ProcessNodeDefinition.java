@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.process.models;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -25,8 +26,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the type of the process node.
-     * This type specifies the behavior of the node in the process execution and if and how other nodes can be connected to it.
+     * Get the type of the process node. This type specifies the behavior of the node in the process execution and if and how other nodes can be connected to it.
      *
      * @return The type of the process node.
      */
@@ -34,8 +34,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     ProcessNodeType getType();
 
     /**
-     * Get the ports of the process node.
-     * The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
+     * Get the ports of the process node. The ports are outgoing connections that can be used to connect this node to other nodes in the process definition.
      *
      * @return The ports of the process node.
      */
@@ -43,8 +42,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     List<ProcessNodePort> getPorts();
 
     /**
-     * Get the outputs of the process node.
-     * The outputs are data produced by this node that can be mapped in the node configuration.
+     * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration.
      *
      * @return The outputs of the process node.
      */
@@ -68,8 +66,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the testing layout for nodes of this provider type.
-     * This layout is used to display the node during testing of process definitions.
+     * Get the testing layout for nodes of this provider type. This layout is used to display the node during testing of process definitions.
      *
      * @param context The testing context.
      * @return The testing layout, or null if not provided.
@@ -87,7 +84,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The cleaned configuration data.
      */
     @Nonnull
-    default ElementData cleanConfigurationForExport(@Nonnull ElementData configuration) {
+    default AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         return configuration;
     }
 
@@ -98,18 +95,23 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The prefilled configuration data.
      */
     @Nonnull
-    default ElementData prefillConfigurationOnImport(@Nonnull ElementData configuration) {
+    default AuthoredElementValues prefillConfigurationOnImport(@Nonnull AuthoredElementValues configuration) {
         return configuration;
     }
 
     /**
      * Validates the configuration of a process definition node entity.
      *
-     * @param processNodeEntity The process definition node entity to be validated.
+     * @param processNodeEntity         The process definition node entity to be validated.
+     * @param derivedRuntimeElementData Derived Runtime Element data.
+     * @return A map of configuration field keys to an error messages for that field. If the configuration is valid, null is returned.
      * @throws ResponseException If the configuration is invalid.
      */
-    default void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                       @Nonnull ElementData configuration) throws ResponseException {
+    @Nullable
+    default Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                      @Nonnull AuthoredElementValues configuration,
+                                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        return null;
     }
 
     /**
@@ -122,9 +124,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
     ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException;
 
     /**
-     * Get the task status layout for nodes of this provider type.
-     * This layout is used to display the status of the task in task lists and overviews.
-     * It is optional and can be null.
+     * Get the task status layout for nodes of this provider type. This layout is used to display the status of the task in task lists and overviews. It is optional and can be
+     * null.
      *
      * @param context The context to build the layout for.
      * @return The task status layout, or null if not provided.
@@ -150,8 +151,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the task view events for nodes of this provider type.
-     * These events can be used to trigger actions in the task view UI.
+     * Get the task view events for nodes of this provider type. These events can be used to trigger actions in the task view UI.
      *
      * @param context The context to build the events for.
      * @return The task view events.
@@ -169,13 +169,12 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
-    default ElementData getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return new ElementData();
+    default AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return new AuthoredElementValues();
     }
 
     /**
-     * Update an existing task by this node provider during process instance execution.
-     * If this returns an empty Optional, the task is considered not updated.
+     * Update an existing task by this node provider during process instance execution. If this returns an empty Optional, the task is considered not updated.
      *
      * @param context The context for the update.
      * @param update  The update data passed to this node.
@@ -185,7 +184,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                   @Nonnull Map<String, Object> update,
+                                                                   @Nonnull AuthoredElementValues update,
                                                                    @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
     }
@@ -224,13 +223,12 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
-    default ElementData getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
-        return new ElementData();
+    default AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        return new AuthoredElementValues();
     }
 
     /**
-     * Update an existing task by this node provider during process instance execution.
-     * If this returns an empty Optional, the task is considered not updated.
+     * Update an existing task by this node provider during process instance execution. If this returns an empty Optional, the task is considered not updated.
      *
      * @param context The context for the update.
      * @param update  The update data passed to this node.
@@ -240,7 +238,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromCustomer(@Nonnull ProcessNodeExecutionContextUICustomer context,
-                                                                      @Nonnull Map<String, Object> update,
+                                                                      @Nonnull AuthoredElementValues update,
+                                                                      @Nonnull DerivedRuntimeElementData derived,
                                                                       @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
     }

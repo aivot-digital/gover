@@ -1,8 +1,12 @@
 package de.aivot.GoverBackend.system.controllers;
 
-import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.repositories.FormRepository;
-import de.aivot.GoverBackend.submission.repositories.SubmissionRepository;
+import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
+import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
+import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import de.aivot.GoverBackend.system.dtos.DashboardStatsItemDTO;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,17 +20,23 @@ import java.util.List;
 @RequestMapping("/api/system/dashboard/")
 public class DashboardController {
 
-    private final SubmissionRepository submissionRepository;
     private final FormRepository formRepository;
     private final UserRepository userRepository;
+    private final ProcessVersionRepository processVersionRepository;
+    private final ProcessInstanceRepository processInstanceRepository;
+    private final ProcessInstanceTaskRepository processInstanceTaskRepository;
 
     @Autowired
-    public DashboardController(SubmissionRepository submissionRepository,
-                               FormRepository formRepository,
-                               UserRepository userRepository) {
-        this.submissionRepository = submissionRepository;
+    public DashboardController(FormRepository formRepository,
+                               UserRepository userRepository,
+                               ProcessVersionRepository processVersionRepository,
+                               ProcessInstanceRepository processInstanceRepository,
+                               ProcessInstanceTaskRepository processInstanceTaskRepository) {
         this.formRepository = formRepository;
         this.userRepository = userRepository;
+        this.processVersionRepository = processVersionRepository;
+        this.processInstanceRepository = processInstanceRepository;
+        this.processInstanceTaskRepository = processInstanceTaskRepository;
     }
 
     @GetMapping("stats/")
@@ -40,18 +50,18 @@ public class DashboardController {
     }
 
     private DashboardStatsItemDTO getActiveSubmissionsStat() {
-        var workingOnSubmissions = submissionRepository
-                .countAllByStatusIs(SubmissionStatus.ManualWorkingOn);
+        var workingOnSubmissions = processInstanceRepository
+                .countAllByStatusIs(ProcessInstanceStatus.Running);
 
-        var waitingSubmissions = submissionRepository
-                .countAllByStatusIs(SubmissionStatus.OpenForManualWork);
+        var waitingSubmissions = processInstanceTaskRepository
+                .countAllByStatusIs(ProcessTaskStatus.Running);
 
         return new DashboardStatsItemDTO(
-                "submissions",
+                "tasks",
                 "Vorgänge in Bearbeitung",
                 String.format("(%d warten auf Bearbeitung)", waitingSubmissions),
                 workingOnSubmissions,
-                "/submissions"
+                "/tasks"
         );
     }
 
@@ -82,12 +92,15 @@ public class DashboardController {
     }
 
     private DashboardStatsItemDTO getProcessesStat() {
+        var activeProcesses = processVersionRepository
+                .countAllByStatusIs(ProcessVersionStatus.Published);
+
         return new DashboardStatsItemDTO(
                 "processes",
                 "Modellierte Prozesse",
                 "werden von eingehenden Anträgen durchlaufen",
-                54,
-                "/processes"
+                activeProcesses,
+                "/processes?filter=published"
         );
     }
 }

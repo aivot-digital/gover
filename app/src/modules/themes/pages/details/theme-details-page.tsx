@@ -12,7 +12,7 @@ export function ThemeDetailsPage() {
 
     return (
         <PageWrapper
-            title="Farbschema bearbeiten"
+            title="Erscheinungsbild bearbeiten"
             fullWidth
             background
         >
@@ -20,18 +20,18 @@ export function ThemeDetailsPage() {
                 isEditable={() => userIsAdmin}
                 header={{
                     icon: <PaletteOutlinedIcon />,
-                    title: 'Farbschema bearbeiten',
+                    title: 'Erscheinungsbild bearbeiten',
                     helpDialog: {
-                        title: 'Hilfe zu Farbschemata',
+                        title: 'Hilfe zu Erscheinungsbildern',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
-                                    Ein Farbschema ist eine Sammlung von Farben, die in der Benutzeroberfläche von Gover verwendet werden. Farbschemata können global oder für einzelne Formulare genutzt werden.
-                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Farbschemata anlegen und nutzen.
+                                    Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Gover fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
+                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Ein Farbschema besteht aus einem Namen und einer Liste von Farben. Bei der Auswahl der Farben sollte die Barrierfreiheit berücksichtigt werden.
+                                    Ein Erscheinungsbild besteht aus einem Namen, Farben sowie optional einem Logo und Favicon. Bei der Auswahl der Farben sollte die Barrierefreiheit berücksichtigt werden.
                                 </Typography>
                             </>
                         ),
@@ -57,18 +57,18 @@ export function ThemeDetailsPage() {
                 fetchData={(api, id: number) => new ThemesApiService(api).retrieve(id)}
                 getTabTitle={(item: Theme) => {
                     if (item.id === 0) {
-                        return 'Neues Farbschema';
+                        return 'Neues Erscheinungsbild';
                     } else {
                         return item.name;
                     }
                 }}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound) return 'Farbschema nicht gefunden';
-                    if (isNewItem) return 'Neues Farbschema anlegen';
-                    return `Farbschema: ${item?.name ?? 'Unbenannt'}`;
+                    if (notFound) return 'Erscheinungsbild nicht gefunden';
+                    if (isNewItem) return 'Neues Erscheinungsbild anlegen';
+                    return `Erscheinungsbild: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: 'Liste der Farbschemata',
+                    label: 'Liste der Erscheinungsbilder',
                     to: '/themes',
                 }}
                 entityType={ServerEntityType.Themes}

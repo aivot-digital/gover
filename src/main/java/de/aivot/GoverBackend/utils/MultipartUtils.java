@@ -9,17 +9,10 @@ import java.nio.charset.StandardCharsets;
 
 public class MultipartUtils {
     public static class MultipartBodyPublisher {
-        private final MultiValueMap<String, Resource> parts = new LinkedMultiValueMap<>();
+        private final MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
 
         public MultipartBodyPublisher addPart(String name, String value) {
-            var bytes = value.getBytes(StandardCharsets.UTF_8);
-            var res = new ByteArrayResource(bytes) {
-                @Override
-                public String getFilename() {
-                    return "file";
-                }
-            };
-            parts.add(name, res);
+            parts.add(name, value);
             return this;
         }
 

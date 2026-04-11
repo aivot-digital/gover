@@ -47,6 +47,10 @@ public class NoCodeTestController {
             @RequestBody @Valid NoCodeTestRequestDTO requestDTO
     ) {
         return noCodeEvaluationService
-                .evaluate(requestDTO.expression(), requestDTO.elementData());
+                .evaluate(
+                        requestDTO.expression(),
+                        requestDTO.elementData(),
+                        requestDTO.processDataContext() == null ? java.util.Map.of() : requestDTO.processDataContext()
+                );
     }
 }

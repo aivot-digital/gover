@@ -1,26 +1,29 @@
 import {Box, Button, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useLocation, useNavigate} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import * as yup from 'yup';
 import {ObjectSchema} from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {DataObjectSchema, ID_GEN_CUSTOM, ID_GEN_SERIAL, ID_GEN_UUID} from '../../models/data-object-schema';
-import {ElementTreeTree} from '../../../../components/element-tree/element-tree-tree';
-import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {RadioFieldComponent} from '../../../../components/radio-field/radio-field-component';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import {MultiCheckboxComponent, MultiCheckboxOptions} from '../../../../components/multi-checkbox-field/multi-checkbox-component';
+import {
+    MultiCheckboxComponent,
+    MultiCheckboxOptions,
+} from '../../../../components/multi-checkbox-field/multi-checkbox-component';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
@@ -29,6 +32,12 @@ import {generateElementWithDefaultValues} from '../../../../utils/generate-eleme
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {ElementDisplayContext} from '../../../../data/element-type/element-child-options';
+import {
+    UiDefinitionInputFieldComponent,
+} from '../../../../components/ui-definition-input-field/ui-definition-input-field-component';
+import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 
 const ID_FIELD_ID = '$id';
 
@@ -146,7 +155,7 @@ export function DataObjectSchemaDetailsPageIndex() {
 
     if (currentDataObject == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -373,28 +382,19 @@ export function DataObjectSchemaDetailsPageIndex() {
             }
 
             <Box sx={{my: 3}}>
-                <ElementTreeTree<GroupLayout>
+                <UiDefinitionInputFieldComponent
                     label="Datenschema"
                     hint="Das Datenschema beschreibt die Struktur der Daten, die in den Datenobjekten gespeichert werden. Es definiert die Felder und deren Typen."
-                    entity={currentDataObject.schema as any}
                     value={currentDataObject.schema}
-                    onChange={handleInputChange('schema')}
-                    editable={true}
-                    scope="data_modelling"
-                    enabledIdentityProviderInfos={[]}
-                    limitElementTypes={[
-                        ElementType.GroupLayout,
-                        ElementType.ReplicatingContainer,
-                        ElementType.Text,
-                        ElementType.Number,
-                        ElementType.Checkbox,
-                        ElementType.Select,
-                        ElementType.Radio,
-                        ElementType.MultiCheckbox,
-                        ElementType.Table,
-                        ElementType.Date,
-                        ElementType.Time,
-                    ]}
+                    expectedRootType={ElementType.GroupLayout}
+                    onChange={(schema) => {
+                        if (schema == null) {
+                            handleInputChange('schema')(undefined);
+                        } else {
+                            handleInputChange('schema')(schema as GroupLayout);
+                        }
+                    }}
+                    displayContext={ElementDisplayContext.StaffFacing}
                 />
 
                 {
@@ -424,7 +424,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                     disabled={isBusy || hasNotChanged || !hasAccess}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
@@ -439,7 +439,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete/>}
                     >
                         Löschen
                     </Button>

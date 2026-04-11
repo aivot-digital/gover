@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.steps;
 
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
+import de.aivot.GoverBackend.elements.models.elements.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
@@ -11,7 +10,7 @@ import jakarta.annotation.Nullable;
 import java.util.Collection;
 import java.util.Objects;
 
-public class IntroductionStepElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
+public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean> {
     @Nullable
     private String initiativeName;
     @Nullable
@@ -43,8 +42,31 @@ public class IntroductionStepElement extends BaseInputElement<Boolean> implement
     }
 
     @Override
+    public Boolean getRequired() {
+        return true;
+    }
+
+    @Override
     public Boolean formatValue(Object value) {
         return CheckboxInputElement._formatValue(value);
+    }
+
+    @Nullable
+    @Override
+    public ElementValueFunctions getValue() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public ElementValidationFunctions getValidation() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Boolean getDisabled() {
+        return false;
     }
 
     @Nonnull

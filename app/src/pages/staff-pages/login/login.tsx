@@ -4,14 +4,17 @@ import {MetaElement} from '../../../components/meta-element/meta-element';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {AuthService} from '../../../services/auth-service';
 import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
+import {useLocation} from 'react-router-dom';
 
 export function Login() {
+    const location = useLocation();
     const [loginUrl, setLoginUrl] = useState<string>('');
+
     useEffect(() => {
         new AuthService()
             .getLoginUrl()
             .then(setLoginUrl);
-    }, []);
+    }, [location.pathname, location.search, location.hash]);
 
     return (
         <>
@@ -60,6 +63,7 @@ export function Login() {
                         }
                         sx={{ mt: 4 }}
                         href={loginUrl}
+                        disabled={loginUrl.length === 0}
                     >
                         Anmeldung via Identity Provider
                     </Button>

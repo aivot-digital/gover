@@ -7,21 +7,22 @@ import {renderIconButton} from '../text-field/text-field-component';
 export function SelectFieldComponent(props: SelectFieldComponentProps) {
     const {
         label,
-            autocomplete,
-            placeholder,
-            hint,
-            disabled,
-            readOnly,
-            required,
-            error,
-            value,
-            onChange,
-            options,
-            emptyStatePlaceholder,
-            startIcon,
-            endAction,
-            sx,
-            muiPassTroughProps,
+        autocomplete,
+        placeholder,
+        hint,
+        disabled,
+        readOnly,
+        required,
+        error,
+        value,
+        onChange,
+        options,
+        emptyStatePlaceholder,
+        startIcon,
+        endAction,
+        sx,
+        muiPassTroughProps,
+        size = 'medium',
     } = props;
 
     const val = value ?? '';
@@ -52,9 +53,9 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
         <TextField
             {...muiPassTroughProps}
             select
-            fullWidth
-            label={label + ((required ?? false) ? ' *' : '')}
+            label={label}
             autoComplete={autocomplete}
+            required={required}
             error={error != null}
             helperText={error != null ? error : hint}
             placeholder={placeholder}
@@ -95,6 +96,8 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                     return option?.label ?? '';
                 },
             }}
+            size={size}
+            fullWidth
         >
             {
                 !(required ?? false) &&

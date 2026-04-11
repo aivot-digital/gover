@@ -18,7 +18,13 @@ import {RootComponentFooter} from './root-component-footer';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
-import {nextStep, previousStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
+import {
+    nextStep,
+    previousStep,
+    selectCurrentStep,
+    selectUpcomingStepDirection,
+    setCurrentStep,
+} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar} from '../../slices/snackbar-slice';
 import {type FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
@@ -30,21 +36,25 @@ import {Api, useApi} from '../../hooks/use-api';
 import {useSearchParams} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
-import {SubmissionStatus} from '../../modules/submissions/enums/submission-status';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
-import {StepElement} from '../../models/elements/steps/step-element';
-import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
-import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
-import {ElementData, ElementDataObject, isElementData, newElementDataObject} from '../../models/element-data';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+    isDerivedRuntimeElementData,
+} from '../../models/element-data';
 import {generateElementWithDefaultValues} from '../../utils/generate-element-with-default-values';
 import {SubmittedStepElement} from '../../models/elements/steps/submitted-step-element';
 import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
 import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
-import {mapElementData, mergeDerivedElementDataWithLocal, walkElementData} from '../../utils/element-data-utils';
+import {
+    resolveVisibility,
+    synchronizeAuthoredElementValuesByDestinationPath,
+    walkAuthoredElementValues,
+} from '../../utils/element-data-utils';
 import {isElementChangedByTrigger} from '../../utils/element-reference-utils';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
 import {IdentityData} from '../../modules/identity/models/identity-data';
@@ -54,40 +64,64 @@ import {RootComponentHeader} from './root-component-header';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
-
-type AnyStepElement = StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
+import {extractVisibleFormSteps, type VisibleFormStepElement} from '../../utils/visible-form-steps';
 
 const SubmissionIdSearchParam = 'submissionId';
 
 const checkTimeoutMinMs = 1000;
 
-function extractVisibleSteps(children: StepElement[] | null | undefined, introductionStep: IntroductionStepElement | null | undefined, summaryStep: SummaryStepElement | null | undefined, submitStep: SubmitStepElement | null | undefined, elementData: ElementData): AnyStepElement[] {
-    if (children == null || introductionStep == null || summaryStep == null || submitStep == null) {
-        return [];
-    }
-
-    const visibleChildren = [];
-    for (const child of children) {
-        const childData = elementData[child.id];
-        console.log('CHILD STEP', child, childData);
-        if (childData?.isVisible ?? true) {
-            visibleChildren.push(child);
-        }
-    }
-
-    return [
-        introductionStep,
-        ...visibleChildren,
-        summaryStep,
-        submitStep,
-    ];
-}
-
-function extractCurrentStep(currentStep: number, allVisibleSteps: AnyStepElement[]) {
+function extractCurrentStep(currentStep: number, allVisibleSteps: VisibleFormStepElement[]) {
     if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
         return null;
     }
     return allVisibleSteps[currentStep];
+}
+
+function clearDerivedErrorsRecursively(derivedData: DerivedRuntimeElementData): DerivedRuntimeElementData {
+    return {
+        ...derivedData,
+        elementStates: Object.fromEntries(
+            Object.entries(derivedData.elementStates).map(([elementId, state]) => [
+                elementId,
+                {
+                    ...state,
+                    error: null,
+                    subStates: state?.subStates?.map((subState) => clearDerivedErrorsRecursively({
+                        effectiveValues: {},
+                        elementStates: subState ?? {},
+                    }).elementStates) ?? null,
+                },
+            ]),
+        ),
+    };
+}
+
+function withDerivedDataOverride(
+    derivedData: DerivedRuntimeElementData,
+    elementId: string,
+    options: {
+        error?: string | null;
+        value?: any;
+        valueSource?: 'Authored' | 'Derived';
+    },
+): DerivedRuntimeElementData {
+    return {
+        ...derivedData,
+        effectiveValues: options.value === undefined ? derivedData.effectiveValues : {
+            ...derivedData.effectiveValues,
+            [elementId]: options.value,
+        },
+        elementStates: {
+            ...derivedData.elementStates,
+            [elementId]: {
+                visible: derivedData.elementStates[elementId]?.visible ?? true,
+                override: derivedData.elementStates[elementId]?.override ?? null,
+                subStates: derivedData.elementStates[elementId]?.subStates ?? null,
+                valueSource: options.valueSource ?? derivedData.elementStates[elementId]?.valueSource ?? 'Derived',
+                error: options.error ?? null,
+            },
+        },
+    };
 }
 
 
@@ -98,9 +132,11 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         element,
         scrollContainerRef,
         mode,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        onAuthoredElementValuesChange,
         onElementBlur,
+        onDerivedDataChange,
         disableVisibility,
     } = props;
 
@@ -117,7 +153,6 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     const upcomingStepDirection = useAppSelector(selectUpcomingStepDirection);
 
     const [derivationTriggerIdQueue, setDerivationTriggerIdQueue] = useState<string[]>([]);
-    const elementDataBufferRef = useRef<ElementData | undefined>(undefined);
 
     const [isBusy, setIsBusy] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -134,13 +169,10 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     // Deconstruct the element to get the steps.
     const {
         children,
-        introductionStep,
-        summaryStep,
-        submitStep,
     } = element;
 
     // Collecting all steps including the fixed steps
-    const allVisibleSteps = useMemo(() => extractVisibleSteps(children, introductionStep, summaryStep, submitStep, elementData), [children, introductionStep, summaryStep, submitStep, elementData]);
+    const allVisibleSteps = useMemo(() => extractVisibleFormSteps(children, derivedData), [children, derivedData]);
 
     // Extract the current step based on the current step index and all visible steps
     const currentStepElement = useMemo(() => extractCurrentStep(currentStep, allVisibleSteps), [currentStep, allVisibleSteps]);
@@ -181,15 +213,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         }
 
         setSubmission({
-            id: submissionId,
-            assigneeId: '',
-            destinationId: 0,
-            destinationSuccess: false,
-            fileNumber: '',
-            formId: 0,
-            isTestSubmission: false,
-            status: SubmissionStatus.OpenForManualWork,
-            created: new Date().toISOString(),
+            startedProcessAccessKeys: [submissionId],
         });
 
         dispatch(setCurrentStep(totalStepCount));
@@ -235,7 +259,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             return;
         }
 
-        // Check if introduction step
+        // Advance from the current non-final step to the next section
         if (currentStep === 0) {
             dispatch(nextStep());
         }
@@ -261,29 +285,19 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
             setIsSubmitting(true);
 
-            const identityId = (elementData[IdentityCustomerInputKey]?.inputValue as IdentityData | undefined | null)?.identityId;
+            const identityId = (authoredElementValues[IdentityCustomerInputKey] as IdentityData | undefined | null)?.identityId;
 
             let submitResponse: SubmissionListResponseDTO | null = null;
             try {
-                const submitElementData: ElementData = mapElementData(rootElement, elementData, (_, data) => {
-                    if (data != null) {
-                        const updated: ElementDataObject = {
-                            ...data,
-                            previousInputValue: null,
-                        };
-                        return updated;
-                    }
-                    return null;
-                });
                 submitResponse = await formsApiService
                     .submit({
                         formId: form.form.id,
                         version: form.version.version,
-                    }, submitElementData, identityId);
+                    }, element, authoredElementValues, identityId);
             } catch (error: ApiError | any) {
                 if (isApiError(error) || 'status' in error) {
-                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && isElementData(error.details)) {
-                        onElementDataChange(error.details as ElementData, []);
+                    if (isApiError(error) && error.details != null && typeof error.details === 'object' && isDerivedRuntimeElementData(error.details)) {
+                        onDerivedDataChange?.(error.details as DerivedRuntimeElementData);
                     } else {
                         switch (error.status) {
                             case 406:
@@ -302,17 +316,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             }
 
             if (submitResponse != null) {
-                setSubmission({
-                    id: submitResponse.id,
-                    assigneeId: '',
-                    created: '',
-                    destinationId: 0,
-                    destinationSuccess: false,
-                    fileNumber: '',
-                    formId: form.form.id,
-                    isTestSubmission: false,
-                    status: SubmissionStatus.Pending,
-                });
+                setSubmission(submitResponse);
                 dispatch(nextStep());
                 // Clear possible identity data from search params
                 setSearchParams({}, {
@@ -329,18 +333,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     };
 
     const handlePreviousStep = () => {
-        const clearedErrors = mapElementData(element, elementData, (el, data) => {
-            if (data != null) {
-                return {
-                    ...data,
-                    computedErrors: null,
-                };
-            } else {
-                return newElementDataObject(el.type);
-            }
-        });
         dispatch(previousStep());
-        onElementDataChange(clearedErrors, []);
+        onDerivedDataChange?.(clearDerivedErrorsRecursively(derivedData));
     };
 
     const determineFormState = async (options: {
@@ -366,20 +360,14 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         // Get the list of all steps, which are relevant for the derivation.
         // This includes the introduction step, all children that do not have derivable aspects, the summary step and the submit step.
         const allStepsWithoutDerivableAspects = [
-            element.introductionStep?.id ?? '',
             ...children
                 .filter(step => !hasDerivableAspects(step, true))
                 .map(step => step.id),
-            element.summaryStep?.id ?? '',
-            element.submitStep?.id ?? '',
         ];
 
         const allSteps = [
-            element.introductionStep?.id ?? '',
             ...children
                 .map(step => step.id),
-            element.summaryStep?.id ?? '',
-            element.submitStep?.id ?? '',
         ];
 
         console.log('Found steps without derivable aspects:', allStepsWithoutDerivableAspects);
@@ -429,7 +417,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 main: () => new FormApiService().deriveForm(
                     form.form.slug,
                     form.version.version,
-                    elementData,
+                    authoredElementValues,
                     {
                         skipErrorsFor: options.forceAll ? [] : (doNotPerformErrorDerivation ? ['ALL'] : skipErrorsForStepIds),
                         skipVisibilitiesFor: options.forceAll ? [] : (doNotPerformVisibilityDerivation ? ['ALL'] : skipVisibilitiesForStepIds),
@@ -445,31 +433,12 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 }
             });
 
-            if (elementDataBufferRef.current != null) {
-                console.log('Merging derived element data with local element data buffer');
-                console.log('Derivation result:', derivationResult);
-                console.log('Element data buffer:', elementDataBufferRef.current);
-
-                dispatch(addDerivationLogItems(derivationResult.logItems));
-
-                const mergedElementData = mergeDerivedElementDataWithLocal(
-                    derivationResult.elementData,
-                    elementDataBufferRef.current,
-                    element,
-                    {
-                        dontOverwriteErrors: options.performValidation ? false : true,
-                    },
-                );
-                elementDataBufferRef.current = undefined;
-                onElementDataChange(mergedElementData, []);
-            } else {
-                console.log('Setting derived element data directly');
-                onElementDataChange(derivationResult.elementData, []);
-            }
+            dispatch(addDerivationLogItems(derivationResult.logItems));
+            onDerivedDataChange?.(derivationResult.elementData);
 
             console.groupEnd();
 
-            return collectErrors(currentStepElement, derivationResult.elementData).length === 0 || adminSettings.disableValidation;
+            return collectErrors(currentStepElement, authoredElementValues, derivationResult.elementData).length === 0 || adminSettings.disableValidation;
         } catch (err) {
             console.error(err);
             dispatch(showErrorSnackbar('Dynamische Funktionen konnten nicht ausgewertet werden.'));
@@ -486,7 +455,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             runtimeCallback: setIsLoading,
             main: () => determineUploadSizeError(
                 element,
-                elementData,
+                authoredElementValues,
                 form!.form,
                 form!.version,
                 api,
@@ -494,22 +463,22 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         })
             .then((errorMessage) => {
                 if (errorMessage != null) {
-                    onElementDataChange({
-                        ...elementData,
-                        [SummaryAttachmentsTooLargeKey]: {
-                            $type: ElementType.FileUpload,
-                            inputValue: [],
-                            previousInputValue: null,
-                            isVisible: true,
-                            isPrefilled: false,
-                            isDirty: true,
-                            computedErrors: [errorMessage],
-                            computedOverride: undefined,
-                            computedValue: undefined,
+                    onDerivedDataChange?.(withDerivedDataOverride(
+                        derivedData,
+                        SummaryAttachmentsTooLargeKey,
+                        {
+                            error: errorMessage,
                         },
-                    }, []);
+                    ));
                     return false;
                 } else {
+                    onDerivedDataChange?.(withDerivedDataOverride(
+                        derivedData,
+                        SummaryAttachmentsTooLargeKey,
+                        {
+                            error: null,
+                        },
+                    ));
                     return true;
                 }
             })
@@ -533,21 +502,16 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             main: async () => {
                 try {
                     const calculatedCosts = await new FormApiService()
-                        .calculateCosts(form.form.slug, form.version.version, elementData);
-                    onElementDataChange({
-                        ...elementData,
-                        [SubmitPaymentDataKey]: {
-                            $type: ElementType.Number,
-                            inputValue: calculatedCosts,
-                            previousInputValue: null,
-                            isVisible: true,
-                            isPrefilled: false,
-                            isDirty: true,
-                            computedErrors: undefined,
-                            computedOverride: undefined,
-                            computedValue: calculatedCosts,
+                        .calculateCosts(form.form.slug, form.version.version, authoredElementValues);
+                    onDerivedDataChange?.(withDerivedDataOverride(
+                        derivedData,
+                        SubmitPaymentDataKey,
+                        {
+                            value: calculatedCosts,
+                            error: null,
+                            valueSource: 'Derived',
                         },
-                    }, []);
+                    ));
                 } catch (error: any) {
                     console.error(error);
                     dispatch(showErrorSnackbar('Die Kosten konnten nicht korrekt berechnet werden. Bitte probieren Sie es zu einem späteren Zeitpunkt erneut.'));
@@ -559,14 +523,26 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         });
     };
 
-    const handleElementDataChange = (elementData: ElementData, triggeringElementIds: string[]): void => {
+    const handleElementDataChange = (nextAuthoredElementValues: AuthoredElementValues, triggeringElementIds: string[]): void => {
         if (currentStepElement == null || children == null) {
             return;
         }
 
-        console.group('Start element data change', elementData, triggeringElementIds);
+        console.group('Start element data change', nextAuthoredElementValues, triggeringElementIds);
 
-        onElementDataChange(elementData, []);
+        // `RootComponentView` is the derivation owner for full form renders, so destination-path
+        // synchronization must happen here as well as in `ElementDerivationContext`.
+        const synchronizedUpdate = synchronizeAuthoredElementValuesByDestinationPath(
+            element,
+            authoredElementValues,
+            nextAuthoredElementValues,
+            derivedData,
+            triggeringElementIds,
+        );
+        const effectiveAuthoredElementValues = synchronizedUpdate.authoredElementValues;
+        const effectiveTriggeringElementIds = synchronizedUpdate.triggeringElementIds;
+
+        onAuthoredElementValuesChange(effectiveAuthoredElementValues, []);
 
         const flatCurrentElements = flattenElementsWithParents(currentStepElement, [], false);
         const flatChildren = children.map((e, i) => ({
@@ -584,19 +560,19 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 (isAnyInputElement(e.element) && e.element.value != null);
         });
 
-        const relevantTriggeringElementIds = triggeringElementIds
+        const relevantTriggeringElementIds = effectiveTriggeringElementIds
             .filter((id) => allElementsToConsider.some((element) => isElementChangedByTrigger(element, id)));
 
         if (relevantTriggeringElementIds.length > 0) {
             console.log('Found relevant triggering element ids:', relevantTriggeringElementIds);
 
-            elementDataBufferRef.current = elementData;
             setDerivationTriggerIdQueue((prev) => [
                 ...prev,
                 ...relevantTriggeringElementIds,
             ]);
         } else {
-            console.log('No relevant triggering element ids found');
+            // TODO: @Mo please check if logic is still relevant and migrate to new data structure if that's the case
+            /*console.log('No relevant triggering element ids found');
 
             if (derivationTriggerIdQueue.length > 0) {
                 console.log('Setting element data buffer to current element data as no relevant triggering element ids were found, but derivation queue is not empty');
@@ -604,7 +580,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
             } else {
                 console.log('Setting element data buffer to undefined as no relevant triggering element ids were found and derivation queue is empty');
                 elementDataBufferRef.current = undefined;
-            }
+            }*/
         }
 
         console.groupEnd();
@@ -618,7 +594,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     form={form.form}
                     version={form.version}
                     onDeleteFormData={() => {
-                        onElementDataChange({}, []);
+                        onAuthoredElementValuesChange({}, []);
+                        onDerivedDataChange?.(createDerivedRuntimeElementData());
                         dispatch(setCurrentStep(0));
                     }}
                 />
@@ -626,10 +603,14 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
             {
                 form != null &&
+                mode === 'viewer' &&
                 <CustomerInputLoader
                     form={form.form}
                     version={form.version}
-                    onElementDataLoad={data => onElementDataChange(data, [])}
+                    onElementDataLoad={(data) => {
+                        onAuthoredElementValuesChange(data, []);
+                        onDerivedDataChange?.(createDerivedRuntimeElementData());
+                    }}
                     isBusy={isBusy || isDeriving}
                 />
             }
@@ -689,6 +670,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                             stepIndex={index}
                                             isFirstStep={index === 0}
                                             isLastStep={index === allVisibleSteps.length - 1}
+                                            isSubmitStep={step.type === ElementType.SubmitStep}
                                             onNext={handleNextStep}
                                             onPrevious={handlePreviousStep}
                                             active={currentStep === index}
@@ -705,9 +687,11 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                                 isBusy={isBusy}
                                                 isDeriving={isDeriving ?? false}
                                                 mode={mode}
-                                                elementData={elementData}
-                                                onElementDataChange={handleElementDataChange}
+                                                authoredElementValues={authoredElementValues}
+                                                derivedData={derivedData}
+                                                onAuthoredElementValuesChange={handleElementDataChange}
                                                 onElementBlur={onElementBlur}
+                                                onDerivedDataChange={onDerivedDataChange}
                                                 scrollContainerRef={scrollContainerRef}
                                                 disableVisibility={disableVisibility}
                                                 derivationTriggerIdQueue={derivationTriggerIdQueue}
@@ -715,7 +699,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
                                             <ErrorAlert
                                                 element={step}
-                                                elementData={elementData}
+                                                authoredElementValues={authoredElementValues}
+                                                derivedData={derivedData}
                                             />
                                         </CustomStep>
                                     ))
@@ -742,6 +727,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                 stepIndex={-1}
                                 isFirstStep={false}
                                 isLastStep={false}
+                                isSubmitStep={false}
                                 step={generateElementWithDefaultValues(ElementType.SubmittedStep) as SubmittedStepElement}
                                 title="Ihr Antrag wurde erfolgreich eingereicht"
                                 active
@@ -794,7 +780,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                                         color: (theme) => theme.palette.primary.main,
                                         transform: 'translateY(2px)',
                                     }}
-                                ><GppGoodOutlinedIcon fontSize="small" /></Box>}
+                                ><GppGoodOutlinedIcon fontSize="small"/></Box>}
                                 label="Lokal auf Ihrem Gerät zwischengespeichert"
                                 variant="outlined"
                             />
@@ -839,10 +825,10 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 /**
  * Returns null if the file sizes are within the limits, returns an error message if the total file size exceeds the maximum allowed size.
  */
-async function determineUploadSizeError(element: RootElement, elementData: ElementData, form: FormEntity, version: FormVersionEntity, api: Api): Promise<string | null> {
+async function determineUploadSizeError(element: RootElement, elementData: AuthoredElementValues, form: FormEntity, version: FormVersionEntity, api: Api): Promise<string | null> {
     let totalFileSize = 0;
 
-    walkElementData(
+    walkAuthoredElementValues(
         element,
         elementData,
         (element, value) => {

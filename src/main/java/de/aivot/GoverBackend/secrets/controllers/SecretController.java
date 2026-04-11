@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.secrets.filters.SecretFilter;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -50,7 +51,7 @@ public class SecretController {
     @Autowired
     public SecretController(AuditService auditService,
                             SecretService secretService, UserService userService) {
-        this.auditService = auditService.createScopedAuditService(SecretController.class);
+        this.auditService = auditService.createScopedAuditService(SecretController.class, "Geheimnisse");
         this.secretService = secretService;
         this.userService = userService;
     }
@@ -106,7 +107,12 @@ public class SecretController {
         }
 
         // Log the action of creating a secret
-        auditService.logAction(user, AuditAction.Create, SecretEntity.class, Map.of("key", result.getKey()));
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, SecretEntity.class, result.getKey(), "key", Map.of("key", result.getKey())).withMessage(
+                "Das Geheimnis %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         // Construct and return the response
         return SecretEntityResponseDTO.fromEntity(result);
@@ -175,7 +181,12 @@ public class SecretController {
                 .update(key, secretDTO.toEntity());
 
         // Log the action of updating a secret
-        auditService.logAction(user, AuditAction.Update, SecretEntity.class, Map.of("key", result.getKey()));
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, SecretEntity.class, result.getKey(), "key", Map.of("key", result.getKey())).withMessage(
+                "Das Geheimnis %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return SecretEntityResponseDTO
                 .fromEntity(result);
@@ -201,10 +212,14 @@ public class SecretController {
                 .delete(key);
 
         // Log the action of deleting a secret
-        auditService.logAction(user, AuditAction.Delete, SecretEntity.class, Map.of(
-                "key", key,
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, SecretEntity.class, key, "key", Map.of("key", key,
                 "name", entity.getName(),
                 "description", entity.getDescription()
-        ));
+        )).withMessage(
+                "Das Geheimnis %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(entity.getName()),
+                StringUtils.quote(String.valueOf(key)),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }

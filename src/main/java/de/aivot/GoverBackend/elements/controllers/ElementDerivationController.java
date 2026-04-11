@@ -1,11 +1,12 @@
 package de.aivot.GoverBackend.elements.controllers;
 
-import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,16 +20,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/elements/")
 @Tag(
-        name = "Elements",
-        description = "Elements are building blocks for creating complex interfaces in the application. " +
-                      "They can represent various UI components, data structures, or functional units that can be combined to form complete views or functionalities."
+        name = OpenApiConstants.Tags.ElementsName,
+        description = OpenApiConstants.Tags.ElementsDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ElementDerivationController {
-    private final ElementDerivationService elementDerivationService;
+    private final ElementDerivationService elementDerivationServiceV2;
 
-    public ElementDerivationController(ElementDerivationService elementDerivationService) {
-        this.elementDerivationService = elementDerivationService;
+    public ElementDerivationController(ElementDerivationService elementDerivationServiceV2) {
+        this.elementDerivationServiceV2 = elementDerivationServiceV2;
     }
 
     @PostMapping("derive/")
@@ -36,15 +36,12 @@ public class ElementDerivationController {
             summary = "Derive Element",
             description = "Derives an element based on the provided data in the request."
     )
-    public ElementDerivationResponse derive(
+    public DerivedRuntimeElementData derive(
             @Nonnull @RequestBody @Valid ElementDerivationRequest request
     ) throws ResponseException {
         var derivationLogger = new ElementDerivationLogger();
 
-        var derivedElementData = elementDerivationService
+        return elementDerivationServiceV2
                 .derive(request, derivationLogger);
-
-        return ElementDerivationResponse
-                .from(derivedElementData, derivationLogger, true);
     }
 }

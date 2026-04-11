@@ -1,10 +1,13 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.date;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
+
+import java.util.Locale;
 
 public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
     @Override
@@ -81,17 +84,23 @@ public class NoCodeSubtractFromDateOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "subtrahiere „#1“ „#2“ von „#0“";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (args.length != 3) {
             throw new NoCodeWrongArgumentCountException(3, args.length);
         }
 
         var date = castToDateTime(args[0]);
         var amount = castToNumber(args[1]).intValue();
-        var unit = castToString(args[2]);
+        var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 
-        date = switch (unit.toLowerCase()) {
+        date = switch (unit) {
             case NoCodeAddToDateOperator.DAYS_UNIT -> date.minusDays(amount);
             case NoCodeAddToDateOperator.WEEKS_UNIT -> date.minusWeeks(amount);
             case NoCodeAddToDateOperator.MONTHS_UNIT -> date.minusMonths(amount);

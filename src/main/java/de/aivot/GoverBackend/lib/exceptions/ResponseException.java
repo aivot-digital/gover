@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.lib.exceptions;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import org.springframework.http.HttpStatus;
 
 import jakarta.annotation.Nonnull;
@@ -49,7 +49,7 @@ public class ResponseException extends Exception {
     public ResponseException(
             @Nonnull HttpStatus status,
             @Nonnull String title,
-            @Nonnull ElementData elementData
+            @Nonnull DerivedRuntimeElementData elementData
     ) {
         super(title);
         this.status = status;
@@ -86,7 +86,7 @@ public class ResponseException extends Exception {
         return ResponseException.badRequest("Die Anfrage ist fehlerhaft.");
     }
 
-    public static ResponseException badRequest(ElementData elementData) {
+    public static ResponseException badRequest(DerivedRuntimeElementData elementData) {
         return new ResponseException(
                 HttpStatus.BAD_REQUEST,
                 "Bei der Auswertung der Eingabedaten wurden Fehler gefunden.",
@@ -204,6 +204,10 @@ public class ResponseException extends Exception {
         return ResponseException.conflict("Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
     }
 
+    public static ResponseException notAcceptable(String format, Object... args) {
+        return ResponseException.notAcceptable(String.format(format, args));
+    }
+
     public static ResponseException notAcceptable(String message) {
         return new ResponseException(HttpStatus.NOT_ACCEPTABLE, "Die angeforderte Ressource ist nicht in dem gewünschten Format verfügbar.");
     }
@@ -214,6 +218,14 @@ public class ResponseException extends Exception {
 
     public static ResponseException methodNotAllowed(String format, Object... args) {
         return new ResponseException(HttpStatus.METHOD_NOT_ALLOWED, String.format(format, args));
+    }
+
+    public static ResponseException unsupportedMediaType(String message) {
+        return new ResponseException(HttpStatus.UNSUPPORTED_MEDIA_TYPE, message);
+    }
+
+    public static ResponseException unsupportedMediaType(String format, Object... args) {
+        return ResponseException.unsupportedMediaType(String.format(format, args));
     }
 
     // endregion

@@ -7,9 +7,17 @@ import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {SystemRolesApiService} from "../../services/system-roles-api-service";
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
+import {
+    DefaultUserSystemRoleBadge,
+    isDefaultUserSystemRole,
+} from '../../components/default-user-system-role-badge';
 
 export function SystemRolesDetailsPage() {
     const userIsAdmin = useUserIsAdmin();
+    const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
 
     return (
         <PageWrapper
@@ -19,11 +27,14 @@ export function SystemRolesDetailsPage() {
         >
             <GenericDetailsPage<SystemRoleEntity, number, void>
                 isEditable={() => userIsAdmin}
-                header={{
+                header={(item, isNewItem, notFound) => ({
                     icon: ModuleIcons.roles,
                     title: 'Systemrolle bearbeiten',
+                    badge: !isNewItem && !notFound && isDefaultUserSystemRole(item?.id, defaultSystemRoleId)
+                        ? <DefaultUserSystemRoleBadge showHintIcon />
+                        : undefined,
                     helpDialog: {
-                        title: 'Hilfe zu Systemrolle',
+                        title: 'Hilfe zu Systemrollen',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
@@ -31,22 +42,25 @@ export function SystemRolesDetailsPage() {
                                     variant="body1"
                                     component="p"
                                 >
-                                    Domänenrollen definieren Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung.
+                                    Konfigurieren Sie hier eine Systemrolle, die Berechtigungen auf
+                                    Systemebene und damit für die gesamte Gover-Anwendung festlegt.
                                 </Typography>
                                 <Typography
                                     variant="body1"
                                     component="p"
                                 >
-                                    Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
+                                    Weisen Sie Systemrollen mit Bedacht zu. Mitarbeitende mit dieser Rolle
+                                    erhalten die hinterlegten globalen Berechtigungen unabhängig von ihrer
+                                    Zugehörigkeit zu Teams oder Organisationseinheiten.
                                 </Typography>
                             </>
                         ),
                     },
-                }}
+                })}
                 tabs={[
                     {
                         path: '/system-roles/:id',
-                        label: 'Allgemeine Informationen',
+                        label: 'Konfiguration',
                     },
                     {
                         path: '/system-roles/:id/members',
@@ -69,7 +83,7 @@ export function SystemRolesDetailsPage() {
                     return `Systemrolle: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: 'Liste der Systemrolle',
+                    label: 'Liste der Systemrollen',
                     to: '/system-roles',
                 }}
                 entityType={ServerEntityType.SystemRoles}

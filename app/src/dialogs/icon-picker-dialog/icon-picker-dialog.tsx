@@ -1,9 +1,9 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Grid, TextField, Tooltip, Typography} from '@mui/material';
+import {Alert, Box, Button, Dialog, DialogActions, DialogContent, Grid, Tooltip, Typography} from '@mui/material';
 import {StepIcons} from '../../data/step-icons';
 import Fuse from 'fuse.js';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
+import {SearchInput} from '../../components/search-input/search-input';
 
 interface IconPickerDialogProps {
     open: boolean;
@@ -70,18 +70,15 @@ export function IconPickerDialog({
                 {title ?? 'Icon auswählen'}
             </DialogTitleWithClose>
             <DialogContent sx={{maxHeight: '70vh', overflow: 'hidden', display: 'flex', flexDirection: 'column'}}>
-                <TextField
-                    fullWidth
-                    variant="outlined"
-                    placeholder="Symbol suchen..."
+                <SearchInput
                     value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    sx={{mt: 0, mb: 2}}
-                    size={'small'}
-                    InputProps={{
-                        startAdornment: (
-                            <SearchOutlinedIcon sx={{mr: 1}} />
-                        ),
+                    onChange={setSearch}
+                    label="Symbol suchen"
+                    placeholder="Name des Symbols eingeben"
+                    size="small"
+                    sx={{
+                        mt: 1,
+                        mb: 2,
                     }}
                 />
                 <Box sx={{overflowY: 'auto', height: '70vh', p: 1}}>

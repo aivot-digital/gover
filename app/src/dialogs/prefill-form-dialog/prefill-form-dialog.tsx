@@ -29,7 +29,8 @@ import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import {ElementData} from '../../models/element-data';
+import {AuthoredElementValues, createDerivedRuntimeElementData, DerivedRuntimeElementData} from '../../models/element-data';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 interface PrefillFormDialogProps {
     open: boolean;
@@ -45,6 +46,18 @@ const relevantElementTypes = [
     ElementType.Radio,
     ElementType.Checkbox,
     ElementType.MultiCheckbox,
+    ElementType.ChipInput,
+    ElementType.DateTime,
+    ElementType.DateRange,
+    ElementType.TimeRange,
+    ElementType.DateTimeRange,
+    ElementType.MapPoint,
+    ElementType.DomainAndUserSelect,
+    ElementType.AssignmentContext,
+    ElementType.DataModelSelect,
+    ElementType.DataObjectSelect,
+    ElementType.NoCodeInput,
+    ElementType.RichTextInput,
 ];
 
 const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but some browsers may have lower limits, so playing safe here.
@@ -60,7 +73,8 @@ export function canPrefillElement(e: AnyElement): boolean {
 
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
-    const [elementData, setElementData] = useState<ElementData>({});
+    const [elementData, setElementData] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
     const [hasPrefillableElements, setHasPrefillableElements] = useState<Boolean>(false);
     const form = useAppSelector(selectLoadedForm);
 
@@ -75,7 +89,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         for (const key of Object.keys(elementData)) {
             const dataObject = elementData[key];
             if (dataObject != null) {
-                inputs[key] = dataObject.inputValue;
+                inputs[key] = dataObject;
             }
         }
 
@@ -107,7 +121,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                 const stepElements = flattenElements(s, true)
                     .filter(canPrefillElement);
                 return {
-                    step: s,
+                    step: s as StepElement,
                     elements: stepElements,
                 };
             })
@@ -123,7 +137,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         }
 
         try {
-            await navigator.clipboard.writeText(link);
+            const success = await copyToClipboardText(link);
+            if (!success) {
+                throw new Error('copy failed');
+            }
             dispatch(showSuccessSnackbar('Link wurde in die Zwischenablage kopiert!'));
         } catch {
             dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
@@ -322,8 +339,10 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                             isBusy={false}
                                                             isDeriving={false}
                                                             mode="viewer"
-                                                            elementData={elementData}
-                                                            onElementDataChange={setElementData}
+                                                            authoredElementValues={elementData}
+                                                            derivedData={derivedData}
+                                                            onAuthoredElementValuesChange={setElementData}
+                                                            onDerivedDataChange={setDerivedData}
                                                             onElementBlur={undefined}
                                                             disableVisibility={true}
                                                             scrollContainerRef={undefined}

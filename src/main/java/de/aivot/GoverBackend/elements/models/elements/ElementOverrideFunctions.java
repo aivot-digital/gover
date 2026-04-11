@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
@@ -23,7 +24,12 @@ public class ElementOverrideFunctions implements Serializable {
     @Nullable
     private Collection<String> referencedIds;
 
-    public void recalculateReferencedIds() {
+    public ElementOverrideFunctions withReferenceIds(String ...referenceIds) {
+        this.referencedIds = Arrays.asList(referenceIds);
+        return this;
+    }
+
+    public ElementOverrideFunctions recalculateReferencedIds() {
         referencedIds = ElementReferenceUtils
                 .getReferencedIds(
                         javascriptCode,
@@ -44,6 +50,8 @@ public class ElementOverrideFunctions implements Serializable {
                         ));
             }
         }
+
+        return this;
     }
 
     // region Hash & Equals
@@ -99,6 +107,9 @@ public class ElementOverrideFunctions implements Serializable {
 
     public ElementOverrideFunctions setFieldNoCodeMap(@Nullable Map<String, NoCodeOperand> fieldNoCodeMap) {
         this.fieldNoCodeMap = fieldNoCodeMap;
+        if (this.type == null && fieldNoCodeMap != null) {
+            this.type = OverrideFunctionType.NoCode;
+        }
         return this;
     }
 
@@ -109,6 +120,9 @@ public class ElementOverrideFunctions implements Serializable {
 
     public ElementOverrideFunctions setJavascriptCode(@Nullable JavascriptCode javascriptCode) {
         this.javascriptCode = javascriptCode;
+        if (this.type == null && javascriptCode != null) {
+            this.type = OverrideFunctionType.Javascript;
+        }
         return this;
     }
 

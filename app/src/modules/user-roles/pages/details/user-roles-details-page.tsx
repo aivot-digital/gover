@@ -1,5 +1,4 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import React from 'react';
@@ -32,13 +31,16 @@ export function UserRolesDetailsPage() {
                                     variant="body1"
                                     component="p"
                                 >
-                                    Domänenrollen definieren Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung.
+                                    Konfigurieren Sie hier eine Domänenrolle, die Berechtigungen innerhalb
+                                    fachlicher Domänen wie Organisationseinheiten oder Teams festlegt.
                                 </Typography>
                                 <Typography
                                     variant="body1"
                                     component="p"
                                 >
-                                    Alle Geheimnisse sind verschlüsselt und nur für autorisierte Nutzer:innen oder Dienste mit entsprechender Berechtigung zugänglich.
+                                    Domänenrollen ergänzen Systemrollen um kontextbezogene Rechte. Sie
+                                    wirken nur dort, wo Mitarbeiter:innen über eine
+                                    Mitgliedschaft tatsächlich zugewiesen ist.
                                 </Typography>
                             </>
                         ),
@@ -47,16 +49,16 @@ export function UserRolesDetailsPage() {
                 tabs={[
                     {
                         path: '/user-roles/:id',
-                        label: 'Allgemeine Informationen',
+                        label: 'Konfiguration',
                     },
                     {
                         path: '/user-roles/:id/department-memberships',
-                        label: 'Fachbereichszuordnungen',
+                        label: 'Zuordnungen in Organisationseinheiten',
                         isDisabled: (item) => !item?.id,
                     },
                     {
                         path: '/user-roles/:id/team-memberships',
-                        label: 'Teamzuordnungen',
+                        label: 'Zuordnungen in Teams',
                         isDisabled: (item) => !item?.id,
                     },
                 ]}

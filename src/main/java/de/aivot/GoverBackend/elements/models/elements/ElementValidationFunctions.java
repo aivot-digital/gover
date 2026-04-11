@@ -102,6 +102,9 @@ public class ElementValidationFunctions implements Serializable {
 
     public ElementValidationFunctions setConditionSet(@Nullable ConditionSet conditionSet) {
         this.conditionSet = conditionSet;
+        if (this.type == null && conditionSet != null) {
+            this.type = ValidationFunctionType.ConditionSet;
+        }
         return this;
     }
 
@@ -112,6 +115,9 @@ public class ElementValidationFunctions implements Serializable {
 
     public ElementValidationFunctions setNoCodeList(@Nullable List<ValidationNoCodeWrapper> noCodeList) {
         this.noCodeList = noCodeList;
+        if (this.type == null && noCodeList != null) {
+            this.type = ValidationFunctionType.NoCode;
+        }
         return this;
     }
 
@@ -122,6 +128,9 @@ public class ElementValidationFunctions implements Serializable {
 
     public ElementValidationFunctions setJavascriptCode(@Nullable JavascriptCode javascriptCode) {
         this.javascriptCode = javascriptCode;
+        if (this.type == null && javascriptCode != null) {
+            this.type = ValidationFunctionType.Javascript;
+        }
         return this;
     }
 

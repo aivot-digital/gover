@@ -84,6 +84,9 @@ public class ElementValueFunctions implements Serializable {
 
     public ElementValueFunctions setNoCode(@Nullable NoCodeOperand noCode) {
         this.noCode = noCode;
+        if (this.type == null && noCode != null) {
+            this.type = ValueFunctionType.NoCode;
+        }
         return this;
     }
 
@@ -94,6 +97,9 @@ public class ElementValueFunctions implements Serializable {
 
     public ElementValueFunctions setJavascriptCode(@Nullable JavascriptCode javascriptCode) {
         this.javascriptCode = javascriptCode;
+        if (this.type == null && javascriptCode != null) {
+            this.type = ValueFunctionType.Javascript;
+        }
         return this;
     }
 

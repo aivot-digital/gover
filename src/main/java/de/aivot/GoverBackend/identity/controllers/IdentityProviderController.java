@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.identity.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.form.enums.FormStatus;
 import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.repositories.FormVersionRepository;
@@ -18,6 +19,7 @@ import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -64,7 +66,7 @@ public class IdentityProviderController {
                                       FormVersionRepository formVersionRepository,
                                       UserService userService) {
         this.auditService = auditService
-                .createScopedAuditService(IdentityProviderController.class);
+                .createScopedAuditService(IdentityProviderController.class, "Identitaetsanbieter");
 
         this.identityProviderService = identityProviderService;
         this.formRevisionService = formRevisionService;
@@ -128,16 +130,15 @@ public class IdentityProviderController {
         var created = identityProviderService
                 .create(requestDTO.toEntity());
 
-        auditService
-                .logAction(
-                        user,
-                        AuditAction.Create,
-                        IdentityProviderEntity.class,
-                        Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, IdentityProviderEntity.class, created.getKey(), "key", Map.of(
                                 "key", created.getKey(),
                                 "name", created.getName()
-                        )
-                );
+                        )).withMessage(
+                "Der Identitätsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(created.getName()),
+                StringUtils.quote(String.valueOf(created.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return IdentityProviderDetailsDTO
                 .from(created);
@@ -211,14 +212,19 @@ public class IdentityProviderController {
                 formVersionRepository.save(form.toFormVersionEntity());
 
                 formRevisionService
-                        .create(user, form, formClone);
+                        .create(user, ObjectMapperFactory.Utils.convertToMap(form), ObjectMapperFactory.Utils.convertToMap(formClone));
             }
         }
 
-        auditService.logAction(user, AuditAction.Update, IdentityProviderEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, IdentityProviderEntity.class, updatedEntity.getKey(), "key", Map.of(
                 "key", updatedEntity.getKey(),
                 "name", updatedEntity.getName()
-        ));
+        )).withMessage(
+                "Der Identitätsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(updatedEntity.getName()),
+                StringUtils.quote(String.valueOf(updatedEntity.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return IdentityProviderDetailsDTO
                 .from(updatedEntity);
@@ -281,16 +287,21 @@ public class IdentityProviderController {
             formVersionRepository.save(form.toFormVersionEntity());
 
             formRevisionService
-                    .create(user, form, formClone);
+                    .create(user, ObjectMapperFactory.Utils.convertToMap(form), ObjectMapperFactory.Utils.convertToMap(formClone));
         }
 
 
         var deletedEntity = identityProviderService
                 .delete(key);
 
-        auditService.logAction(user, AuditAction.Delete, IdentityProviderEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, IdentityProviderEntity.class, deletedEntity.getKey(), "key", Map.of(
                 "key", deletedEntity.getKey(),
                 "name", deletedEntity.getName()
-        ));
+        )).withMessage(
+                "Der Identitätsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deletedEntity.getName()),
+                StringUtils.quote(String.valueOf(deletedEntity.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }

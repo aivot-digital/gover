@@ -1,12 +1,13 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.Objects;
 
@@ -78,7 +79,7 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var arg0 = args[0];
         var arg1 = args[1];
 
@@ -92,5 +93,11 @@ public class NoCodeEqualsOperator extends NoCodeOperator {
 
         var castedArg1 = castToTypeOfReference(arg0, arg1);
         return new NoCodeResult(Objects.equals(arg0, castedArg1));
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ ist gleich „#1“";
     }
 }

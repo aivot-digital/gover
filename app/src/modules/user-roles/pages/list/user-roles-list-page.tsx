@@ -1,12 +1,10 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
 import React from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
@@ -47,7 +45,16 @@ export function UserRolesListPage() {
                                     variant="body1"
                                     component="p"
                                 >
-                                    Verwalten Sie hier die Domänenrollen, die Berechtigungen und Zugriffsrechte für Benutzer:innen innerhalb der Anwendung definieren.
+                                    Domänenrollen definieren Berechtigungen innerhalb fachlicher Domänen,
+                                    zum Beispiel in Organisationseinheiten oder Teams.
+                                </Typography>
+                                <Typography
+                                    variant="body1"
+                                    component="p"
+                                >
+                                    Sie ergänzen die globalen Systemrollen um kontextbezogene Rechte und
+                                    werden Mitgliedschaften von Mitarbeiter:innen in Teams und
+                                    Organisationseinheiten zugewiesen.
                                 </Typography>
                             </>
                         ),

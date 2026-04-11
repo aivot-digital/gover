@@ -49,6 +49,10 @@ import java.security.cert.X509Certificate;
 import java.time.LocalDateTime;
 import java.util.*;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 public class DestinationSubmitService {
     private final SubmissionMailService mailService;

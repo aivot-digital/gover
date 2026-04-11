@@ -13,7 +13,6 @@ import {isAdmin} from '../../../../utils/is-admin';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
@@ -30,6 +29,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {OzgCloudInfo} from '../../components/ozg-cloud-info';
 import {CodeEditor} from '../../../../components/code-editor/code-editor';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export const DestinationSchema = yup.object({
     name: yup.string()
@@ -569,50 +569,6 @@ export function DestinationDetailsPageIndex() {
                 </>
             }
 
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                    mb: 1,
-                }}
-            >
-                Einstellungen für Anlagen
-            </Typography>
-
-            <Typography sx={{mb: 2}}>
-                Konfigurieren Sie die maximale Größe der Anlagen, die an die Schnittstelle übermittelt werden können.
-            </Typography>
-
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <NumberFieldComponent
-                        label="Maximale Gesamtgröße der Anlagen (MB)"
-                        placeholder="20"
-                        hint="Sollten die Anlagen einer antragstellenden Person diese überschreiten, kann ein Antrag für diese Schnittstelle nicht abgesendet werden."
-                        value={destination?.maxAttachmentMegaBytes}
-                        onChange={handleInputChange('maxAttachmentMegaBytes')}
-                        decimalPlaces={2}
-                        minValue={1}
-                        maxValue={100}
-                        error={errors.maxAttachmentMegaBytes}
-                    />
-                </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                />
-            </Grid>
-
             {
                 userIsAdmin &&
                 <Box
@@ -655,7 +611,7 @@ export function DestinationDetailsPageIndex() {
                             sx={{
                                 marginLeft: 'auto',
                             }}
-                            startIcon={<DeleteOutlinedIcon/>}
+                            startIcon={<Delete/>}
                         >
                             Löschen
                         </Button>

@@ -1,6 +1,6 @@
-import {Api} from '../../hooks/use-api';
-import {ElementData, ElementDerivationResponse} from '../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
+import {BaseApiService} from '../../services/base-api-service';
 
 interface ElementDerivationOptions {
     skipErrorsForElementIds: string[];
@@ -11,18 +11,12 @@ interface ElementDerivationOptions {
 
 interface ElementDerivationRequest {
     element: AnyElement;
-    elementData: ElementData;
-    options: ElementDerivationOptions;
+    authoredElementValues: AuthoredElementValues;
+    derivationOptions: ElementDerivationOptions;
 }
 
-export class ElementsApiService {
-    private readonly api: Api;
-
-    public constructor(api: Api) {
-        this.api = api;
-    }
-
-    public async derive(request: ElementDerivationRequest): Promise<ElementDerivationResponse> {
-        return await this.api.post<ElementDerivationResponse>('elements/derive/', request);
+export class ElementsApiService extends BaseApiService {
+    public async derive(request: ElementDerivationRequest): Promise<DerivedRuntimeElementData> {
+        return await this.post<ElementDerivationRequest, DerivedRuntimeElementData>('/api/elements/derive/', request);
     }
 }

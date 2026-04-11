@@ -11,7 +11,7 @@ import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {useApi} from '../../hooks/use-api';
 import {Link} from 'react-router-dom';
 import {Hint} from '../hint/hint';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
@@ -23,6 +23,11 @@ import {createCustomerPath} from '../../utils/url-path-utils';
 import {withDelay} from '../../utils/with-delay';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {LoadedForm} from '../../slices/app-slice';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../data/system-config-keys';
+import {AssetSelector} from '../../modules/assets/components/asset-selector';
 
 export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedForm>) {
     const dispatch = useAppDispatch();
@@ -30,7 +35,6 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
 
     const [departments, setDepartments] = useState<SelectFieldComponentOption[] | null>(null);
     const [themes, setThemes] = useState<SelectFieldComponentOption[] | null>(null);
-    const [templateOptions, setTemplateOptions] = useState<SelectFieldComponentOption[] | null>(null);
 
     const handleDownloadQrCode = async (link: string, filename: string) => {
         try {
@@ -65,21 +69,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
             .then(setThemes)
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Farbschemata!'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Erscheinungsbilder!'));
             });
-
-        withDelay(new AssetsApiService(api)
-            .listAll({contentType: 'text/html'}), 600)
-            .then((assets) => assets.content.map((asset) => ({
-                value: asset.key,
-                label: asset.filename,
-            })))
-            .then(setTemplateOptions)
-            .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der PDF-Vorlagen!'));
-            });
-    }, []);
+    }, [api, dispatch]);
 
     const generalLink = createCustomerPath(`${props.entity?.form.slug ?? ''}`);
     const versionedLink = createCustomerPath(`${props.entity?.form.slug ?? ''}/${props.entity?.version ?? ''}`);
@@ -186,23 +178,19 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         endAction={
                             [
                                 {
-                                    icon: <ContentPasteOutlinedIcon />,
+                                    icon: <ContentPasteOutlinedIcon/>,
                                     tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: () => {
-                                        navigator
-                                            .clipboard
-                                            .writeText(generalLink)
-                                            .then(() => {
-                                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                            });
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(generalLink);
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 },
                                 {
-                                    icon: <QrCode2OutlinedIcon />,
+                                    icon: <QrCode2OutlinedIcon/>,
                                     tooltip: 'QR-Code herunterladen',
                                     onClick: async () => {
                                         await handleDownloadQrCode(generalLink, `qr-code-${props.entity?.form.slug ?? ''}.png`);
@@ -229,23 +217,19 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         endAction={
                             [
                                 {
-                                    icon: <ContentPasteOutlinedIcon />,
+                                    icon: <ContentPasteOutlinedIcon/>,
                                     tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: () => {
-                                        navigator
-                                            .clipboard
-                                            .writeText(versionedLink)
-                                            .then(() => {
-                                                dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                            })
-                                            .catch((err) => {
-                                                console.error(err);
-                                                dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                            });
+                                    onClick: async () => {
+                                        const success = await copyToClipboardText(versionedLink);
+                                        if (success) {
+                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                        } else {
+                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                        }
                                     },
                                 },
                                 {
-                                    icon: <QrCode2OutlinedIcon />,
+                                    icon: <QrCode2OutlinedIcon/>,
                                     tooltip: 'QR-Code herunterladen',
                                     onClick: async () => {
                                         await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.form.slug ?? ''}-${(props.entity?.version.version ?? '')}.png`);
@@ -287,7 +271,9 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 title="Für dieses Formular zuständige Fachbereiche"
                 variant="h5"
             >
-                Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge bearbeitet (falls
+                Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die
+                inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge
+                bearbeitet (falls
                 abweichend).
             </ElementEditorSectionHeader>
             <Grid
@@ -389,7 +375,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 title="Erscheinungsbild"
                 variant="h5"
             >
-                Hinterlegen Sie bei Bedarf ein abweichendes Farbschema und wählen Sie ggf. eine PDF-Vorlage, welche zur Generierung des Formulars zur Offline-Einreichung verwendet wird.
+                Hinterlegen Sie bei Bedarf ein abweichendes Erscheinungsbild und wählen Sie ggf. eine PDF-Vorlage, welche zur Generierung des Formulars zur Offline-Einreichung verwendet wird.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -415,7 +401,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         {
                             themes != null &&
                             <SelectFieldComponent
-                                label="Farbschema (Visuelles Erscheinungsbild)"
+                                label="Erscheinungsbild"
                                 value={props.entity?.version.themeId?.toString() ?? undefined}
                                 onChange={(val) => {
                                     props.onPatchEntity({
@@ -430,27 +416,27 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                             />
                         }
                         <Hint
-                            summary="Sie können ein abweichendes Farbschema für dieses Formular auswählen."
-                            detailsTitle="Farbschema"
+                            summary="Sie können ein abweichendes Erscheinungsbild für dieses Formular auswählen."
+                            detailsTitle="Erscheinungsbild"
                             details={
                                 <>
                                     <p>
-                                        Sie können hier ein abweichendes Farbschema für dieses Formular auswählen.
+                                        Sie können hier ein abweichendes Erscheinungsbild für dieses Formular auswählen.
                                     </p>
                                     <p>
-                                        Farbschemata werden immer nach absteigendem Prioritätsprinzip angewendet.
-                                        Das bedeutet, dass das Farbschema mit der niedrigsten Nummer in der folgenden Liste angewendet wird:
+                                        Erscheinungsbilder werden nach folgendem Prioritätsprinzip angewendet.
+                                        Der erste passende Eintrag in der folgenden Liste wird verwendet:
 
                                         <ol>
-                                            <li>Das Farbschema des Formulars</li>
-                                            <li>Das Farbschema des zuständigen Fachbereichs</li>
-                                            <li>Das Farbschema des bewirtschaftenden Fachbereichs</li>
-                                            <li>Das Farbschema des entwickelnden Fachbereichs</li>
-                                            <li>Das globale Farbschema der Gover-Instanz</li>
+                                            <li>Das Erscheinungsbild des Formulars</li>
+                                            <li>Das Erscheinungsbild des zuständigen Fachbereichs</li>
+                                            <li>Das Erscheinungsbild des bewirtschaftenden Fachbereichs</li>
+                                            <li>Das Erscheinungsbild des entwickelnden Fachbereichs</li>
+                                            <li>Das globale Erscheinungsbild der Gover-Instanz</li>
                                         </ol>
                                     </p>
                                     <p>
-                                        Das Farbschema setzt die Farben sowie die Logos des Formulars.
+                                        Das Erscheinungsbild legt Farben, Logo und Favicon des Formulars fest.
                                     </p>
                                 </>
                             }
@@ -468,30 +454,21 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         display="flex"
                         alignItems="center"
                     >
-                        {
-                            templateOptions == null &&
-                            <Skeleton
-                                width="100%"
-                                height={80}
-                            />
-                        }
-                        {
-                            templateOptions != null &&
-                            <SelectFieldComponent
-                                label="PDF-Vorlage"
-                                value={props.entity?.version.pdfTemplateKey ?? undefined}
-                                onChange={(val) => {
-                                    props.onPatchEntity({
-                                        version: {
-                                            ...props.entity!.version,
-                                            pdfTemplateKey: val ?? null,
-                                        },
-                                    });
-                                }}
-                                options={templateOptions}
-                                disabled={!props.editable}
-                            />
-                        }
+                        <AssetSelector
+                            label="PDF-Vorlage"
+                            selectLabel="PDF-Vorlage auswählen"
+                            value={props.entity?.version.pdfTemplateKey ?? null}
+                            onChange={(val) => {
+                                props.onPatchEntity({
+                                    version: {
+                                        ...props.entity!.version,
+                                        pdfTemplateKey: val ?? null,
+                                    },
+                                });
+                            }}
+                            mimetype="text/html"
+
+                        />
 
                         <Hint
                             summary="Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten auswählen."
@@ -499,16 +476,19 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                             details={
                                 <>
                                     <p>
-                                        Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten auswählen.
+                                        Sie können eine individuelle Vorlage für die Generierung von PDF-Dokumenten
+                                        auswählen.
                                     </p>
                                     <p>
-                                        Die Vorlage wird für das PDF des eingereichten Antrags (welches antragstellende Personen und
+                                        Die Vorlage wird für das PDF des eingereichten Antrags (welches antragstellende
+                                        Personen und
                                         Mitarbeiter:innen der Verwaltung erhalten) verwendet.
                                         Auch der Vordruck des Formulars verwendet die ausgewählte Vorlage.
                                     </p>
                                     <p>
                                         Vorlagen können im Bereich <Link to="/assets">Dokumente &
-                                        Medieninhalte</Link> hochgeladen werden.
+                                                                                      Medieninhalte</Link> hochgeladen
+                                        werden.
                                     </p>
                                 </>
                             }
@@ -521,7 +501,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 title="Fristen"
                 variant="h5"
             >
-                Geben Sie die für diesen Antrag gültigen Fristen ein, welche den Antragstellenden im Formular angezeigt werden.
+                Geben Sie die für diesen Antrag gültigen Fristen ein, welche den Antragstellenden im Formular angezeigt
+                werden.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -550,7 +531,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 title="Kontakte"
                 variant="h5"
             >
-                Kontaktinformationen werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen möchten.
+                Kontaktinformationen werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die
+                Fachbereiche auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen möchten.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -622,7 +604,8 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                 title="Hinweise zur Offline-Einreichung"
                 variant="h5"
             >
-                Diese Angaben werden für den PDF-Vordruck des Formulars genutzt. Sie sind nicht relevant, wenn ausschließlich eine Online-Einreichung zugelassen wird.
+                Diese Angaben werden für den PDF-Vordruck des Formulars genutzt. Sie sind nicht relevant, wenn
+                ausschließlich eine Online-Einreichung zugelassen wird.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -634,12 +617,12 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
                         lg: 6,
                     }}
                 >
-                    <RichTextEditorComponentView
+                    <RichTextInputComponent
                         hint="Wenn Sie dieses Formular als Vordruck z.B. zum Ausfüllen auf Papier, bereitstellen möchten, sollten Sie hier die Adresse und/oder E-Mail etc. nennen, an welche das Formular einzureichen ist."
                         value={props.element.offlineSubmissionText ?? ''}
                         onChange={val => {
                             props.onPatch({
-                                offlineSubmissionText: val,
+                                offlineSubmissionText: val ?? undefined,
                             });
                         }}
                         disabled={!props.editable}

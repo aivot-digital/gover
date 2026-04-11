@@ -2,8 +2,12 @@ package de.aivot.GoverBackend.ozgCloud.services;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudControlData;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudPayload;
 import jakarta.annotation.Nonnull;
@@ -26,25 +30,35 @@ public class OZGCloudDestinationService {
     private static final String FORM_FIELD_ATTACHMENT = "attachment";
 
     private final RestClient httpClient;
+    private final ElementDerivationService elementDerivationService;
 
-    public OZGCloudDestinationService() {
+    public OZGCloudDestinationService(ElementDerivationService elementDerivationService) {
         this.httpClient = RestClient
                 .builder()
                 .build();
+        this.elementDerivationService = elementDerivationService;
     }
 
     public void send(
             @Nonnull String destinationUrl,
             @Nonnull OZGCloudControlData controlData,
             @Nonnull BaseElement rootElement,
-            @Nonnull ElementData elementData,
+            @Nonnull AuthoredElementValues elementData,
             @Nonnull Resource representation,
             @Nonnull List<Resource> attachments
     ) {
         var destinationUri = URI.create(destinationUrl);
+        var runtimeData = elementDerivationService.derive(
+                new ElementDerivationRequest(
+                        rootElement,
+                        elementData,
+                        new ElementDerivationOptions()
+                ),
+                new ElementDerivationLogger()
+        );
 
         var formData = new OZGCloudDataFormatService()
-                .buildFormData(rootElement, elementData);
+                .buildFormData(rootElement, elementData, runtimeData);
 
         var payload = new OZGCloudPayload(
                 controlData,

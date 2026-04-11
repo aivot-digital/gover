@@ -14,6 +14,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
     }
 
     const defaultElementDescriptor = getElementNameForType(component.type);
+    const mapPointPreviewSuffix = ' (Technische Preview)';
 
     switch (component.type) {
         case ElementType.FormLayout:
@@ -34,6 +35,10 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
             const height = component.height;
             return height != null && isStringNotNullOrEmpty(height) ? `${defaultElementDescriptor} (${height}px)` : defaultElementDescriptor;
         case ElementType.Date:
+        case ElementType.DateTime:
+        case ElementType.DateRange:
+        case ElementType.TimeRange:
+        case ElementType.DateTimeRange:
         case ElementType.Table:
         case ElementType.Radio:
         case ElementType.MultiCheckbox:
@@ -43,8 +48,20 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.Number:
         case ElementType.Text:
         case ElementType.FileUpload:
+        case ElementType.ChipInput:
+        case ElementType.DomainAndUserSelect:
+        case ElementType.AssignmentContext:
+        case ElementType.DataModelSelect:
+        case ElementType.DataObjectSelect:
+        case ElementType.NoCodeInput:
+        case ElementType.UiDefinitionInput:
+        case ElementType.RichTextInput:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);
+        case ElementType.MapPoint: {
+            const title = stringOrDefault(component.label, defaultElementDescriptor);
+            return title.toLowerCase().includes('technische preview') ? title : `${title}${mapPointPreviewSuffix}`;
+        }
         default:
             return stringOrDefault(defaultElementDescriptor, 'Unbekanntes Element');
     }

@@ -115,8 +115,26 @@
         margin-bottom: 0.5rem;
     }
 
+    /* Print links stay visually identifiable, even though the PDF keeps them clickable. */
     a {
         color: inherit;
+        text-decoration: underline;
+        text-decoration-thickness: 0.06em;
+        text-underline-offset: 0.15em;
+        overflow-wrap: anywhere;
+    }
+
+    /* Printed PDFs should expose the target URL inline behind the link text. */
+    a::after {
+        content: " (" attr(href) ")";
+        color: #4b5563;
+        font-size: 0.9em;
+        text-decoration: none;
+        overflow-wrap: anywhere;
+    }
+
+    a.do-not-print-link::after {
+        content: none;
     }
 
     #briefkopf {
@@ -146,6 +164,202 @@
     .richtext {
         margin-top: 0.5rem;
         margin-bottom: 0.5rem;
+    }
+
+    /* Shared markdown spacing for teaser texts, rich text inputs and alert content. */
+    .content-without-margin-on-childs p,
+    .input-element .content p,
+    .richtext p,
+    .alert-title p {
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .content-without-margin-on-childs ul,
+    .content-without-margin-on-childs ol,
+    .input-element .content ul,
+    .input-element .content ol,
+    .richtext ul,
+    .richtext ol,
+    .alert-title ul,
+    .alert-title ol {
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+        padding-left: 1.5rem;
+    }
+
+    .content-without-margin-on-childs li + li,
+    .input-element .content li + li,
+    .richtext li + li,
+    .alert-title li + li {
+        margin-top: 0.25rem;
+    }
+
+    /* GFM strikethrough support. */
+    del {
+        text-decoration: line-through;
+    }
+
+    /* Inline code and fenced code blocks should read like code in the PDF, too. */
+    .content-without-margin-on-childs code,
+    .input-element .content code,
+    .richtext code,
+    .alert-title code {
+        font-family: Monaco, monospace;
+        font-size: 0.95em;
+        background-color: #f3f4f6;
+        border-radius: 2px;
+        padding: 0.1em 0.3em;
+        overflow-wrap: anywhere;
+    }
+
+    .content-without-margin-on-childs pre,
+    .input-element .content pre,
+    .richtext pre,
+    .alert-title pre {
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+        padding: 0.75rem;
+        background-color: #f3f4f6;
+        border: 1px solid #d0d7de;
+        border-radius: 4px;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+    }
+
+    .content-without-margin-on-childs pre code,
+    .input-element .content pre code,
+    .richtext pre code,
+    .alert-title pre code {
+        background-color: transparent;
+        padding: 0;
+        border-radius: 0;
+    }
+
+    /* Rich markdown blocks beyond plain paragraphs/lists. */
+    .content-without-margin-on-childs blockquote,
+    .input-element .content blockquote,
+    .richtext blockquote,
+    .alert-title blockquote {
+        margin: 0.75rem 0;
+        padding-left: 0.75rem;
+        border-left: 3px solid #d0d7de;
+        color: #4b5563;
+    }
+
+    .content-without-margin-on-childs img,
+    .input-element .content img,
+    .richtext img,
+    .alert-title img {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* GFM tables and footnotes need explicit print styling to stay readable. */
+    .content-without-margin-on-childs table,
+    .input-element .content table,
+    .richtext table,
+    .alert-title table {
+        width: 100%;
+        border-collapse: collapse;
+        table-layout: fixed;
+        margin-top: 0.75rem;
+        margin-bottom: 0.75rem;
+    }
+
+    .content-without-margin-on-childs th,
+    .content-without-margin-on-childs td,
+    .input-element .content th,
+    .input-element .content td,
+    .richtext th,
+    .richtext td,
+    .alert-title th,
+    .alert-title td {
+        border: 1px solid #949494;
+        padding: 0.35rem 0.5rem;
+        text-align: left;
+        vertical-align: top;
+        overflow-wrap: anywhere;
+    }
+
+    .content-without-margin-on-childs th,
+    .input-element .content th,
+    .richtext th,
+    .alert-title th {
+        background-color: #f3f4f6;
+        font-weight: 700;
+    }
+
+    .content-without-margin-on-childs sup,
+    .input-element .content sup,
+    .richtext sup,
+    .alert-title sup {
+        font-size: 0.75em;
+        line-height: 1;
+        vertical-align: super;
+    }
+
+    .content-without-margin-on-childs .footnotes,
+    .input-element .content .footnotes,
+    .richtext .footnotes,
+    .alert-title .footnotes {
+        margin-top: 1rem;
+        font-size: 0.9em;
+        color: #4b5563;
+    }
+
+    .content-without-margin-on-childs .footnotes ol,
+    .input-element .content .footnotes ol,
+    .richtext .footnotes ol,
+    .alert-title .footnotes ol {
+        margin-bottom: 0;
+    }
+
+    /* Task lists render as disabled HTML checkboxes and need custom list styling. */
+    .content-without-margin-on-childs ul:has(> li > input[type="checkbox"]),
+    .input-element .content ul:has(> li > input[type="checkbox"]),
+    .richtext ul:has(> li > input[type="checkbox"]),
+    .alert-title ul:has(> li > input[type="checkbox"]) {
+        list-style: none;
+        margin-left: 0;
+        padding-left: 0;
+    }
+
+    .content-without-margin-on-childs li:has(> input[type="checkbox"]),
+    .input-element .content li:has(> input[type="checkbox"]),
+    .richtext li:has(> input[type="checkbox"]),
+    .alert-title li:has(> input[type="checkbox"]) {
+        display: flex;
+        align-items: flex-start;
+        gap: 0.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .content-without-margin-on-childs li > input[type="checkbox"],
+    .input-element .content li > input[type="checkbox"],
+    .richtext li > input[type="checkbox"],
+    .alert-title li > input[type="checkbox"] {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 0.95rem;
+        height: 0.95rem;
+        margin: 0.2rem 0 0;
+        flex-shrink: 0;
+        border: 1px solid #5f6b7a;
+        border-radius: 2px;
+        background-color: #ffffff;
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: 0.7rem 0.7rem;
+    }
+
+    .content-without-margin-on-childs li > input[type="checkbox"][checked],
+    .input-element .content li > input[type="checkbox"][checked],
+    .richtext li > input[type="checkbox"][checked],
+    .alert-title li > input[type="checkbox"][checked] {
+        border-color: #16191f;
+        background-color: #16191f;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M3.5 8.5 6.5 11.5 12.5 4.5' fill='none' stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='2'/%3E%3C/svg%3E");
     }
 
     .input-element {
@@ -222,7 +436,11 @@
 
     .input-element.number-element .input .content .suffix,
     .input-element.date-element .input .content .suffix,
-    .input-element.time-element .input .content .suffix {
+    .input-element.date-time-element .input .content .suffix,
+    .input-element.time-element .input .content .suffix,
+    .input-element.date-range-element .input .content .suffix,
+    .input-element.time-range-element .input .content .suffix,
+    .input-element.date-time-range-element .input .content .suffix {
         margin-left: auto;
         font-size: 0.85rem;
     }
@@ -359,14 +577,6 @@
 
     .avoid-break-inside {
         break-inside: avoid;
-    }
-
-    a::after {
-        content: " (" attr(href) ") ";
-    }
-
-    a.do-not-print-link::after {
-        content: none;
     }
 
     .signature-container {

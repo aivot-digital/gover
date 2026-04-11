@@ -12,6 +12,7 @@
 <!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
 <!--/*@thymesVar id="#numberformat" type="de.aivot.GoverBackend.services.pdf.NumberFormatDialect"*/-->
+<!--/*@thymesVar id="#markdown" type="de.aivot.GoverBackend.services.pdf.MarkdownDialect"*/-->
 
 <!DOCTYPE html>
 <html
@@ -81,8 +82,11 @@
         Bereich für Elemente des Formulars.
         *********************************************************************** */-->
         <!--/* Iteriere über jeden Abschnitt des Formulars, dass gerendert werden soll */-->
-        <th:block th:each="step : ${ elements }">
-            <section th:class="'step ' + ${ base.isBlankPrint ? 'page-break-before' : '' }">
+        <th:block
+                th:each="step, stepStat : ${ elements }"
+                th:if="${ step.element.type.name == 'Step' }"
+        >
+            <section th:class="'step ' + ${ base.isBlankPrint && (form.rootElement?.introductionStep != null || !stepStat.first) ? 'page-break-before' : '' }">
                 <!--/* Überschriften von Abschnitten haben immer die größe H2 */-->
                 <h2
                         th:if="${ #strings.isEmpty(step.element.title) }"
@@ -187,12 +191,12 @@
                                 RichText
                                 *********************************************************************** */-->
                                 <th:block
-                                        th:case="Richtext"
+                                        th:case="RichText"
                                         th:if="${ base.isNotStaffPrint }"
                                 >
                                     <div
-                                            class="richtext"
-                                            th:utext="${ child.element.content }"
+                                            class="richtext content-without-margin-on-childs"
+                                            th:utext="${ #markdown.render(child.element.content) }"
                                     >
                                     </div>
                                 </th:block>
@@ -230,7 +234,7 @@
                                         <strong th:text="${ child.element.title }"></strong>
                                         <div
                                                 class="alert-title"
-                                                th:utext="${ child.element.text }"
+                                                th:utext="${ #markdown.render(child.element.text) }"
                                         ></div>
                                     </div>
                                 </th:block>
@@ -251,6 +255,26 @@
                                 <th:block th:case="Text">
                                     <div
                                             th:insert="./form-parts/elements/text-field.html"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                ChipInput
+                                *********************************************************************** */-->
+                                <th:block th:case="ChipInput">
+                                    <div
+                                            th:insert="~{./form-parts/elements/chip-input-field.html}"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                RichTextInput
+                                *********************************************************************** */-->
+                                <th:block th:case="RichTextInput">
+                                    <div
+                                            th:insert="./form-parts/elements/rich-text-field.html"
                                             th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
                                     ></div>
                                 </th:block>
@@ -277,11 +301,61 @@
                                 </th:block>
 
                                 <!--/* ***********************************************************************
+                                DateTimeInput
+                                *********************************************************************** */-->
+                                <th:block th:case="DateTime">
+                                    <div
+                                            th:insert="~{./form-parts/elements/date-time-field.html}"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                DateRangeInput
+                                *********************************************************************** */-->
+                                <th:block th:case="DateRange">
+                                    <div
+                                            th:insert="~{./form-parts/elements/date-range-field.html}"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
                                 TimeInput
                                 *********************************************************************** */-->
                                 <th:block th:case="Time">
                                     <div
                                             th:insert="./form-parts/elements/time-field.html"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                TimeRangeInput
+                                *********************************************************************** */-->
+                                <th:block th:case="TimeRange">
+                                    <div
+                                            th:insert="~{./form-parts/elements/time-range-field.html}"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                DateTimeRangeInput
+                                *********************************************************************** */-->
+                                <th:block th:case="DateTimeRange">
+                                    <div
+                                            th:insert="~{./form-parts/elements/date-time-range-field.html}"
+                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
+                                    ></div>
+                                </th:block>
+
+                                <!--/* ***********************************************************************
+                                MapPointInput
+                                *********************************************************************** */-->
+                                <th:block th:case="MapPoint">
+                                    <div
+                                            th:insert="~{./form-parts/elements/map-point-field.html}"
                                             th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
                                     ></div>
                                 </th:block>

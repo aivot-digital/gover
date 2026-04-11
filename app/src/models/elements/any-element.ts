@@ -23,8 +23,21 @@ import {GroupLayout} from './form/layout/group-layout';
 import {CheckboxFieldElement} from './form/input/checkbox-field-element';
 import {DateFieldElement} from './form/input/date-field-element';
 import {NumberFieldElement} from './form/input/number-field-element';
-import {CodeInputElement} from "./form/input/code-input-element";
-import {RichTextInputElement} from "./form/input/rich-text-input-element";
+import {CodeInputElement} from './form/input/code-input-element';
+import {RichTextInputElement} from './form/input/rich-text-input-element';
+import {ChipInputFieldElement} from './form/input/chip-input-field-element';
+import {DateTimeFieldElement} from './form/input/date-time-field-element';
+import {DateRangeFieldElement} from './form/input/date-range-field-element';
+import {TimeRangeFieldElement} from './form/input/time-range-field-element';
+import {DateTimeRangeFieldElement} from './form/input/date-time-range-field-element';
+import {MapPointFieldElement} from './form/input/map-point-field-element';
+import {DomainUserSelectFieldElement} from './form/input/domain-user-select-field-element';
+import {AssignmentContextFieldElement} from './form/input/assignment-context-field-element';
+import {DataModelSelectFieldElement} from './form/input/data-model-select-field-element';
+import {DataObjectSelectFieldElement} from './form/input/data-object-select-field-element';
+import {NoCodeInputFieldElement} from './form/input/no-code-input-field-element';
+import {UiDefinitionInputFieldElement} from './form/input/ui-definition-input-field-element';
+import {SummaryLayoutElement} from './form/layout/summary-layout-element';
 
 export type AnyElement =
     RootElement |
@@ -61,10 +74,17 @@ export type AnyElementType<T extends ElementType> =
                                                                                     T extends ElementType.SubmittedStep ? SubmittedStepElement :
                                                                                         T extends ElementType.FileUpload ? FileUploadElement :
                                                                                             T extends ElementType.CodeInput ? CodeInputElement :
-                                                                                                T extends ElementType.RichTextInput ? RichTextInputElement : never;
-
-
-
-
-
-
+                                                                                                T extends ElementType.RichTextInput ? RichTextInputElement :
+                                                                                                    T extends ElementType.ChipInput ? ChipInputFieldElement :
+                                                                                                        T extends ElementType.DateTime ? DateTimeFieldElement :
+                                                                                                            T extends ElementType.DateRange ? DateRangeFieldElement :
+                                                                                                                T extends ElementType.TimeRange ? TimeRangeFieldElement :
+                                                                                                                    T extends ElementType.DateTimeRange ? DateTimeRangeFieldElement :
+                                                                                                                        T extends ElementType.MapPoint ? MapPointFieldElement :
+                                                                                                                            T extends ElementType.DomainAndUserSelect ? DomainUserSelectFieldElement :
+                                                                                                                                T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
+                                                                                                                                    T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
+                                                                                                                                        T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
+                                                                                                                                            T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
+                                                                                                                                                T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
+                                                                                                                                                    T extends ElementType.SummaryLayout ? SummaryLayoutElement : never;

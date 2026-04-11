@@ -2,12 +2,12 @@ package de.aivot.GoverBackend.plugins.core.v1.payment;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.nimbusds.common.contenttype.ContentType;
-import de.aivot.GoverBackend.asset.repositories.AssetRepository;
+import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -21,7 +21,7 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.secrets.services.SecretService;
-import de.aivot.GoverBackend.services.storages.AssetStorageService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -30,7 +30,6 @@ import org.springframework.stereotype.Component;
 
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -50,16 +49,19 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     private final static String CERTIFICATE_PASSWORD_FIELD = "certificatePassword";
     private final static String PAYMENT_TRANSACTION_URL_FIELD = "paymentTransactionUrl";
 
-    // TODO: Replace with special asset service when the service exists
-    private final AssetRepository assetRepository;
+    private static final String CERTIFICATE_MIME_TYPE = "application/x-pkcs12";
+
     private final SecretService secretService;
-    private final AssetStorageService assetStorageService;
+    private final StorageService assetStorageService;
+    private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
 
     @Autowired
-    public ePayBLPaymentProviderDefinitionV1(AssetRepository assetRepository, SecretService secretService, AssetStorageService assetStorageService) {
-        this.assetRepository = assetRepository;
+    public ePayBLPaymentProviderDefinitionV1(SecretService secretService,
+                                             StorageService assetStorageService,
+                                             VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository) {
         this.secretService = secretService;
         this.assetStorageService = assetStorageService;
+        this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
     }
 
     @Nonnull
@@ -136,12 +138,11 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         clientCertificateInput.setLabel("Zertifikat");
         clientCertificateInput.setPlaceholder("ePayBL Zertifikat");
         clientCertificateInput.setHint("Das .p12-Zertifikat wird vom Zahlungsdienstleister bereitgestellt. Es muss zuvor unter \"Dateien & Medien\" hochgeladen werden, um hier auswählbar zu sein.");
-        var clientCertificateInputOptions = assetRepository
-                .findAll()
+        var clientCertificateInputOptions = vStorageIndexItemWithAssetRepository
+                .findAllByMimeType(CERTIFICATE_MIME_TYPE)
                 .stream()
-                .filter(secret -> "application/x-pkcs12".equals(secret.getContentType()))
-                .map(secret -> new RadioInputElementOption()
-                        .setValue(secret.getKey().toString())
+                .map(secret -> new SelectInputElementOption()
+                        .setValue(secret.getAssetKey().toString())
                         .setLabel(secret.getFilename())
                 )
                 .toList();
@@ -158,7 +159,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioInputElementOption()
+                .map(secret -> new SelectInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
@@ -174,13 +175,13 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
         paymentTransactionUrlInput.setPlaceholder("https://epayment-stage.dataport.de/konnektor/epayment/");
         paymentTransactionUrlInput.setHint("Die Basis-URL des Zielsystems gemäß XBezahldienste-Standard. Diese wird vom Zahlungsdienstleister bereitgestellt.");
         TextInputElementPattern urlPattern = new TextInputElementPattern()
-                .setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$")
+                .setRegex(TextInputElementPattern.URL_REGEX)
                 .setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
         paymentTransactionUrlInput.setPattern(urlPattern);
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayoutElement();
-        group.setType(ElementType.Group);
+        group.setType(ElementType.GroupLayout);
         group.setId("ePayBLConfig");
         group.setChildren(list);
 
@@ -191,7 +192,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
@@ -269,7 +270,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction transaction
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
@@ -330,7 +331,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentRequest,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
@@ -340,9 +341,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getOriginatorID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
+        var originatorID = (String) config.getEffectiveValues().get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -352,9 +353,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getEndpointID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var endpointID = (String) config.get(ENDPOINT_ID_FIELD).getValue();
+        var endpointID = (String) config.getEffectiveValues().get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
             throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -362,8 +363,9 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     }
 
     @Nonnull
-    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity, @Nonnull ElementData config) throws PaymentException {
-        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
+    private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity,
+                                                             @Nonnull DerivedRuntimeElementData config) throws PaymentException {
+        var paymentTransactionUrl = (String) config.getEffectiveValues().get(PAYMENT_TRANSACTION_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
             throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -373,9 +375,11 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private SSLContext getSslContext(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var paymentProviderPasswordSecretKeyStr = (String) config.get(CERTIFICATE_PASSWORD_FIELD).getValue();
+        var effectiveValues = config.getEffectiveValues();
+
+        var paymentProviderPasswordSecretKeyStr = (String) effectiveValues.get(CERTIFICATE_PASSWORD_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderPasswordSecretKeyStr)) {
             throw new PaymentException("Certificate password field is missing for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -391,7 +395,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
                 .retrieve(paymentProviderPasswordSecretKey)
                 .orElseThrow(() -> new PaymentException("Certificate password secret for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
-        String paymentProviderClientCertPass = null;
+        String paymentProviderClientCertPass;
         try {
             paymentProviderClientCertPass = secretService
                     .decrypt(paymentProviderClientCertPassSecret);
@@ -403,41 +407,40 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
             throw new PaymentException("Certificate password for payment provider %s (%s) is empty", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
-        var paymentProviderClientCertificateAssetKey = (String) config.get(CERTIFICATE_FIELD).getValue();
+        var paymentProviderClientCertificateAssetKey = (String) effectiveValues.get(CERTIFICATE_FIELD);
         if (StringUtils.isNullOrEmpty(paymentProviderClientCertificateAssetKey)) {
             throw new PaymentException("Certificate asset key for payment provider %s (%s) is not specified", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
 
-        var key = UUID.fromString(paymentProviderClientCertificateAssetKey);
-        var paymentProviderClientCertAsset = assetRepository
-                .findById(key)
+        var key = UUID
+                .fromString(paymentProviderClientCertificateAssetKey);
+
+        var paymentProviderClientCertAsset = vStorageIndexItemWithAssetRepository
+                .findByAssetKey(key)
                 .orElseThrow(() -> new PaymentException("Certificate for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey()));
 
-        byte[] paymentProviderClientCertBytes;
         try {
-            paymentProviderClientCertBytes = assetStorageService
-                    .getAssetData(paymentProviderClientCertAsset);
+            InputStream paymentProviderClientCertStream = assetStorageService
+                    .getDocumentContent(paymentProviderClientCertAsset.getStorageProviderId(), paymentProviderClientCertAsset.getPathFromRoot());
+            try (paymentProviderClientCertStream) {
+                KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
+                clientKeyStore.load(paymentProviderClientCertStream, paymentProviderClientCertPass.toCharArray());
+
+                var keyManagerFactory = KeyManagerFactory
+                        .getInstance(KeyManagerFactory.getDefaultAlgorithm());
+                keyManagerFactory.init(clientKeyStore, paymentProviderClientCertPass.toCharArray());
+
+                var sslContext = SSLContext.getInstance("TLS");
+                sslContext.init(
+                        keyManagerFactory.getKeyManagers(),
+                        null,
+                        null
+                );
+
+                return sslContext;
+            }
         } catch (ResponseException e) {
             throw new PaymentException(e, "Failed to retrieve certificate for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
-        }
-
-        try {
-            KeyStore clientKeyStore = KeyStore.getInstance("PKCS12");
-            InputStream certStream = new ByteArrayInputStream(paymentProviderClientCertBytes);
-            clientKeyStore.load(certStream, paymentProviderClientCertPass.toCharArray());
-
-            var keyManagerFactory = KeyManagerFactory
-                    .getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            keyManagerFactory.init(clientKeyStore, paymentProviderClientCertPass.toCharArray());
-
-            var sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(
-                    keyManagerFactory.getKeyManagers(),
-                    null,
-                    null
-            );
-
-            return sslContext;
         } catch (Exception e) {
             throw new PaymentException(e, "Failed to create SSL context for payment provider %s (%s)", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }

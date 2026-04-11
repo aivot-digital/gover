@@ -6,10 +6,11 @@ import {type GroupLayout} from '../../models/elements/form/layout/group-layout';
 import {type ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {type EditorTab} from '../../editors';
 import {type ElementTreeScope} from '../element-tree/element-tree-scope';
+import {SummaryLayoutElement} from '../../models/elements/form/layout/summary-layout-element';
 
 
 export interface ElementEditorContentProps<T extends AnyElement, E extends ElementTreeEntity> {
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | SummaryLayoutElement>;
     element: T;
     entity: E;
     currentTab: string;

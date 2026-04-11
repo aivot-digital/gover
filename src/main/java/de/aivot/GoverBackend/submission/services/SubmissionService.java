@@ -20,6 +20,10 @@ import jakarta.annotation.Nullable;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Service
 public class SubmissionService implements EntityService<Submission, String> {
     private final SubmissionRepository repository;

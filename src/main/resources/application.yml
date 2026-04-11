@@ -70,8 +70,8 @@ spring:
   # Set the default upload size limits
   servlet:
     multipart:
-      max-file-size: "${GOVER_MAX_UPLOAD_FILE:10MB}"
-      max-request-size: "${GOVER_MAX_UPLOAD_TOTAL:100MB}"
+      max-file-size: "${GOVER_MAX_UPLOAD_FILE:100MB}"
+      max-request-size: "${GOVER_MAX_UPLOAD_TOTAL:500MB}"
 
   flyway:
     # Enable flyway for database migrations
@@ -198,10 +198,6 @@ gover:
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
 
-  security:
-    keystorePassword: "${GOVER_SECURITY_KEYSTORE_PASSWORD}"
-    keystorePath: "${GOVER_SECURITY_KEYSTORE_PATH:./keystore.pkcs12}"
-
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:
   oidc:
@@ -221,9 +217,15 @@ storage:
   remoteAccessKey: "${GOVER_STORAGE_REMOTE_ACCESS_KEY:}"
   remoteSecretKey: "${GOVER_STORAGE_REMOTE_SECRET_KEY:}"
 
+  local:
+    v1:
+      allowed-local-roots: "${GOVER_STORAGE_LOCAL_ALLOWED_ROOTS:./data}"
+
 springdoc:
   apiDocs:
-    path: "/api/public/docs/openapi.yml"
+    path: "/api/public/docs/openapi.json"
+    enabled: "${GOVER_ENABLE_API_DOCS:false}"
   swaggerUi:
     path: "/api/public/docs/swagger.html"
+    enabled: "${GOVER_ENABLE_API_UI:false}"
   showActuator: true

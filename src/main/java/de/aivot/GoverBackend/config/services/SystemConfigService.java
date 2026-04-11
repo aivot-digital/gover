@@ -18,6 +18,7 @@ import java.util.stream.Collectors;
 @Service
 public class SystemConfigService {
     private final SystemConfigRepository configRepository;
+    private final List<SystemConfigDefinition> systemConfigDefinitions;
     private final SortedMap<String, SystemConfigDefinition> configDefinitions;
 
     @Autowired
@@ -26,6 +27,9 @@ public class SystemConfigService {
             List<SystemConfigDefinition> configDefinitions
     ) {
         this.configRepository = configRepository;
+
+        // Maintain a list of all system config definitions to serve them to the client
+        this.systemConfigDefinitions = configDefinitions;
 
         // Collect all definitions into a map to make them easier to access later on
         this.configDefinitions = configDefinitions
@@ -165,5 +169,9 @@ public class SystemConfigService {
         }
 
         return result;
+    }
+
+    public List<SystemConfigDefinition> getSystemConfigDefinitions() {
+        return systemConfigDefinitions;
     }
 }

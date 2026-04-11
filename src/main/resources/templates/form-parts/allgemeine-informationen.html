@@ -1,6 +1,7 @@
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
 <!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
+<!--/*@thymesVar id="#markdown" type="de.aivot.GoverBackend.services.pdf.MarkdownDialect"*/-->
 
 <section
         id="general-information"
@@ -11,7 +12,7 @@
     <!--/* Hier wird der Teaser-Text angezeigt, welcher grob das Formular zusammenfasst. */-->
     <div
             th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.teaserText) }"
-            th:utext="${ form.rootElement?.introductionStep?.teaserText }"
+            th:utext="${ #markdown.render(form.rootElement?.introductionStep?.teaserText) }"
             class="content-without-margin-on-childs"
     >
         Allgemeine Informationen für antragstellende Personen
@@ -63,7 +64,7 @@
             th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.expectedCosts) }"
     >
         <h4>Gebühren dieses Antrages</h4>
-        <div th:utext="${ form.rootElement?.introductionStep?.expectedCosts }" class="content-without-margin-on-childs">
+        <div th:utext="${ #markdown.render(form.rootElement?.introductionStep?.expectedCosts) }" class="content-without-margin-on-childs">
             Gebühren
         </div>
     </div>
@@ -74,7 +75,7 @@
             Hinweise zum Datenschutz
         </h3>
 
-        <div th:utext="${ form.rootElement.cleanedPrivacyText }">
+        <div th:utext="${ #markdown.render(form.rootElement.cleanedPrivacyText) }" class="content-without-margin-on-childs">
             Datenschutzhinweise
         </div>
 

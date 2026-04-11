@@ -9,7 +9,7 @@ import Typography from '@mui/material/Typography';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
 import {ProcessTemplates} from '../data/templates';
 import {uploadObjectFile} from '../../../utils/download-utils';
-import {type ProcessExport, type ProcessExportData} from '../entities/process-export';
+import {type ProcessExport} from '../entities/process-export';
 import {
     VDepartmentMembershipWithDetailsService,
 } from '../../departments/services/v-department-membership-with-details-service';
@@ -78,7 +78,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     }, [user]);
 
     const [activeStep, setActiveStep] = useState(0);
-    const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExportData | null>(null);
+    const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(null);
 
     const handleClose = (): void => {
         onCancel();
@@ -95,7 +95,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 if (importedProcessExport == null) {
                     return;
                 }
-                setSelectedTemplateData(importedProcessExport.data);
+                setSelectedTemplateData(importedProcessExport);
                 setActiveStep(1);
             })
             .catch((err) => {
@@ -115,15 +115,12 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         setIsLoading(true);
 
         const data: ProcessExport = {
-            data: {
-                ...selectedTemplateData,
-                process: {
-                    ...selectedTemplateData.process,
-                    internalTitle: nameOverride,
-                    departmentId: departmentOverride,
-                },
+            ...selectedTemplateData,
+            process: {
+                ...selectedTemplateData.process,
+                internalTitle: nameOverride,
+                departmentId: departmentOverride,
             },
-            signature: null,
         };
 
         new ProcessDefinitionApiService()

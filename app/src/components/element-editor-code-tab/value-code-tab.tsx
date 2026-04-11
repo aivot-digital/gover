@@ -4,7 +4,7 @@ import {CodeEditor} from '../code-editor/code-editor';
 import {ValueCodeTabProps} from './value-code-tab-props';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../dialogs/select-element-dialog/select-element-dialog';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
 import {createLowCodeContextType} from '../../utils/create-low-code-context-type';
 import {ReferenceCheck} from './components/reference-check/reference-check';
@@ -12,6 +12,7 @@ import {editor} from 'monaco-editor';
 import {ElementValueFunction} from '../../models/elements/element-value-function';
 import {NoCodeDataTypeMap} from '../../modules/nocode/data/no-code-data-type-map';
 import {NoCodeEditorWrapper} from './components/no-code-editor-wrapper/no-code-editor-wrapper';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 
 const exampleValueCode = `(function(){
     // Diese Funktion wird aufgerufen, um einen Wert für das Element zu berechnen.
@@ -176,8 +177,13 @@ export function ValueCodeTab(props: ValueCodeTabProps) {
 
                         dispatch(showSuccessSnackbar('Element-ID eingefügt'));
                     } else {
-                        navigator.clipboard.writeText(element.id);
-                        dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                        copyToClipboardText(element.id).then((success) => {
+                            if (success) {
+                                dispatch(showSuccessSnackbar('Element-ID kopiert'));
+                            } else {
+                                dispatch(showErrorSnackbar('Element-ID konnte nicht kopiert werden'));
+                            }
+                        });
                     }
 
                     toggleShowElementSelectDialog();

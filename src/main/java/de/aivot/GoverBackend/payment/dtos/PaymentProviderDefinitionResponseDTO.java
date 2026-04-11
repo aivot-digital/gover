@@ -10,6 +10,8 @@ public record PaymentProviderDefinitionResponseDTO(
         @Nonnull
         String key,
         @Nonnull
+        Integer version,
+        @Nonnull
         String name,
         @Nonnull
         String description,
@@ -23,6 +25,7 @@ public record PaymentProviderDefinitionResponseDTO(
     ) throws ResponseException {
         return new PaymentProviderDefinitionResponseDTO(
                 definition.getKey(),
+                definition.getMajorVersion(),
                 definition.getProviderName(),
                 definition.getProviderDescription(),
                 definition.getPaymentConfigLayout()

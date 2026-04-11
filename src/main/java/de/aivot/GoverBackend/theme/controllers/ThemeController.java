@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.filters.ThemeFilter;
 import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,11 +27,12 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/themes/")
-@Tag(name = "Themes", description = "Manage themes")
+@Tag(name = "Themes", description = "Manage appearance settings")
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ThemeController {
     private final ScopedAuditService auditService;
@@ -40,7 +42,7 @@ public class ThemeController {
     @Autowired
     public ThemeController(AuditService auditService,
                            ThemeService service, UserService userService) {
-        this.auditService = auditService.createScopedAuditService(ThemeController.class);
+        this.auditService = auditService.createScopedAuditService(ThemeController.class, "Erscheinungsbilder");
         this.service = service;
         this.userService = userService;
     }
@@ -80,10 +82,25 @@ public class ThemeController {
         var createdTheme = service
                 .create(newTheme);
 
-        auditService.logAction(user, AuditAction.Create, ThemeEntity.class, Map.of(
-                "id", createdTheme.getId(),
-                "name", createdTheme.getName()
-        ));
+        auditService
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Create,
+                        ThemeEntity.class,
+                        createdTheme.getId(),
+                        "id",
+                        Map.of(
+                                "id", createdTheme.getId(),
+                                "name", createdTheme.getName()
+                        ))
+                .withMessage(
+                        "Das Erscheinungsbild %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(createdTheme.getName()),
+                        StringUtils.quote(String.valueOf(createdTheme.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return ThemeResponseDTO
                 .fromEntity(createdTheme);
@@ -126,10 +143,25 @@ public class ThemeController {
         var updatedTheme = service
                 .update(id, changedTheme);
 
-        auditService.logAction(user, AuditAction.Update, ThemeEntity.class, Map.of(
-                "id", updatedTheme.getId(),
-                "name", updatedTheme.getName()
-        ));
+        auditService
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Update,
+                        ThemeEntity.class,
+                        updatedTheme.getId(),
+                        "id",
+                        Map.of(
+                                "id", updatedTheme.getId(),
+                                "name", updatedTheme.getName()
+                        ))
+                .withMessage(
+                        "Das Erscheinungsbild %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updatedTheme.getName()),
+                        StringUtils.quote(String.valueOf(updatedTheme.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
 
         return ThemeResponseDTO
                 .fromEntity(updatedTheme);
@@ -153,9 +185,24 @@ public class ThemeController {
         var deletedTheme = service
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ThemeEntity.class, Map.of(
-                "id", deletedTheme.getId(),
-                "name", deletedTheme.getName()
-        ));
+        auditService
+                .create()
+                .withUser(user)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        ThemeEntity.class,
+                        deletedTheme.getId(),
+                        "id",
+                        Map.of(
+                                "id", deletedTheme.getId(),
+                                "name", deletedTheme.getName()
+                        ))
+                .withMessage(
+                        "Das Erscheinungsbild %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deletedTheme.getName()),
+                        StringUtils.quote(String.valueOf(deletedTheme.getId())),
+                        StringUtils.quote(user.getFullName())
+                )
+                .log();
     }
 }

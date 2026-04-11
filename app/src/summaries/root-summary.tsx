@@ -7,7 +7,8 @@ export function RootSummary(props: BaseSummaryProps<RootElement, void>) {
         model,
         showTechnical,
         allowStepNavigation,
-        elementData,
+        authoredElementValues,
+        derivedData,
     } = props;
 
     const {
@@ -24,7 +25,8 @@ export function RootSummary(props: BaseSummaryProps<RootElement, void>) {
                             element={model}
                             showTechnical={showTechnical}
                             allowStepNavigation={allowStepNavigation}
-                            elementData={elementData}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
                         />
                     ))
             }

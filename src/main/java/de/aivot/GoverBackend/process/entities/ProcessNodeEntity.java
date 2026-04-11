@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.process.entities;
 
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
+import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
 import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -11,6 +11,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Entity
 @Table(name = "process_nodes")
@@ -47,7 +48,7 @@ public class ProcessNodeEntity {
     @Nonnull
     @NotBlank(message = "Der Schlüssel der Prozessknoten-Definition darf nicht leer sein.")
     @NotNull(message = "Der Schlüssel der Prozessknoten-Definition darf nicht null sein.")
-    @Size(min = 1, max = 32, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 32 Zeichen lang sein.")
+    @Size(min = 1, max = 128, message = "Der Schlüssel der Prozessknoten-Definition muss zwischen 1 und 128 Zeichen lang sein.")
     private String processNodeDefinitionKey;
 
     @Nonnull
@@ -56,9 +57,9 @@ public class ProcessNodeEntity {
 
     @Nonnull
     @NotNull(message = "Die Konfiguration darf nicht null sein.")
-    @Convert(converter = ElementDataConverter.class)
+    @Convert(converter = AuthoredElementValuesConverter.class)
     @Column(columnDefinition = "jsonb")
-    private ElementData configuration;
+    private AuthoredElementValues configuration;
 
     @Nonnull
     @NotNull(message = "Die Input-Mappings dürfen nicht null sein.")
@@ -78,6 +79,25 @@ public class ProcessNodeEntity {
     @Nullable
     @Size(max = 2048, message = "Die Notizen dürfen maximal 2048 Zeichen lang sein.")
     private String notes;
+
+    @Nonnull
+    private Boolean savedWithErrors = false;
+
+    // region Hash & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcessNodeEntity that = (ProcessNodeEntity) o;
+        return Objects.equals(id, that.id) && Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(dataKey, that.dataKey) && Objects.equals(processNodeDefinitionKey, that.processNodeDefinitionKey) && Objects.equals(processNodeDefinitionVersion, that.processNodeDefinitionVersion) && Objects.equals(configuration, that.configuration) && Objects.equals(outputMappings, that.outputMappings) && Objects.equals(timeLimitDays, that.timeLimitDays) && Objects.equals(requirements, that.requirements) && Objects.equals(notes, that.notes) && Objects.equals(savedWithErrors, that.savedWithErrors);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, timeLimitDays, requirements, notes, savedWithErrors);
+    }
+
+    // endregion
 
     // region Utils
 
@@ -107,8 +127,8 @@ public class ProcessNodeEntity {
         return processId;
     }
 
-    public ProcessNodeEntity setProcessId(@Nonnull Integer processDefinitionId) {
-        this.processId = processDefinitionId;
+    public ProcessNodeEntity setProcessId(@Nonnull Integer processId) {
+        this.processId = processId;
         return this;
     }
 
@@ -117,8 +137,8 @@ public class ProcessNodeEntity {
         return processVersion;
     }
 
-    public ProcessNodeEntity setProcessVersion(@Nonnull Integer processDefinitionVersion) {
-        this.processVersion = processDefinitionVersion;
+    public ProcessNodeEntity setProcessVersion(@Nonnull Integer processVersion) {
+        this.processVersion = processVersion;
         return this;
     }
 
@@ -173,11 +193,11 @@ public class ProcessNodeEntity {
     }
 
     @Nonnull
-    public ElementData getConfiguration() {
+    public AuthoredElementValues getConfiguration() {
         return configuration;
     }
 
-    public ProcessNodeEntity setConfiguration(@Nonnull ElementData configuration) {
+    public ProcessNodeEntity setConfiguration(@Nonnull AuthoredElementValues configuration) {
         this.configuration = configuration;
         return this;
     }
@@ -219,6 +239,16 @@ public class ProcessNodeEntity {
 
     public ProcessNodeEntity setNotes(@Nullable String notes) {
         this.notes = notes;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getSavedWithErrors() {
+        return savedWithErrors;
+    }
+
+    public ProcessNodeEntity setSavedWithErrors(@Nonnull Boolean savedWithErrors) {
+        this.savedWithErrors = savedWithErrors;
         return this;
     }
 

@@ -30,6 +30,9 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
     private Integer minCharacters;
 
     @Nullable
+    private String prefix;
+
+    @Nullable
     private TextInputElementPattern pattern;
 
     @Nullable
@@ -248,5 +251,16 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         this.suggestions = suggestions;
         return this;
     }
+
+    @Nullable
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public TextInputElement setPrefix(@Nullable String prefix) {
+        this.prefix = prefix;
+        return this;
+    }
+
     // endregion
 }

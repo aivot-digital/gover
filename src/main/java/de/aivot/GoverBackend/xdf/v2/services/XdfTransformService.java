@@ -10,10 +10,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.*;
 import de.aivot.GoverBackend.enums.AlertType;
 import de.aivot.GoverBackend.enums.ConditionOperator;
 import de.aivot.GoverBackend.enums.ConditionSetOperator;
@@ -77,7 +74,7 @@ public class XdfTransformService {
 
         var teaserText = getTeaserText(stammdatenschema);
 
-        var steps = new LinkedList<StepElement>();
+        var steps = new LinkedList<BaseStepElement>();
         for (var stepStruktur : stammdatenschema.getStruktur()) {
             var fields = strukturToElements(idCounter, stepStruktur, 0);
 
@@ -100,7 +97,7 @@ public class XdfTransformService {
             var id = idCounter
                     .countId(originalId != null ? originalId : "schritt");
 
-            var step = new StepElement();
+            var step = new GenericStepElement();
 
             step.setId(id);
             step.setChildren(fields);
@@ -110,22 +107,46 @@ public class XdfTransformService {
         }
 
         var root = new FormLayoutElement()
-                .setIntroductionStep(new IntroductionStepElement().setTeaserText(teaserText))
-                .setChildren(steps)
-                .setSummaryStep(new SummaryStepElement())
-                .setSubmitStep(new SubmitStepElement());
+                .setChildren(steps);
         root.setId("root");
 
-        return new VFormVersionWithDetailsEntity()
-                .setSlug(slug)
-                .setInternalTitle(internalTitle)
-                .setPublicTitle(publicTitle)
-                .setVersion(1)
-                .setDraftedVersion(1)
-                .setVersionCount(1)
-                .setStatus(FormStatus.Drafted)
-                .setType(FormType.Public)
-                .setRootElement(root);
+        return new VFormVersionWithDetailsEntity(
+                null,
+                slug,
+                internalTitle,
+                null,
+                null,
+                1,
+                1,
+                null,
+                1,
+                FormStatus.Drafted,
+                FormType.Public,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                List.of(),
+                List.of(),
+                false,
+                4,
+                4,
+                root,
+                null,
+                null,
+                null,
+                null,
+                publicTitle,
+                null,
+                null
+        );
     }
 
     @Nonnull
@@ -444,7 +465,7 @@ public class XdfTransformService {
                 if (StringUtils.isNotNullOrEmpty(codeListUrn)) {
                     try {
                         var options = xRepositoryCodeListService
-                                .getRadioFieldOptionCodeList(codeListUrn);
+                                .getSelectFieldOptionCodeList(codeListUrn);
                         selectField.setOptions(options);
                     } catch (ResponseException e) {
                         fields.add(createErrorAlert(

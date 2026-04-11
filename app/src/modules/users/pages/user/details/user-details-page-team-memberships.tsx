@@ -1,6 +1,8 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@mui/icons-material/EditOutlined';
+import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';
@@ -33,6 +35,7 @@ import {
     VTeamMembershipWithDetailsApiService
 } from "../../../../teams/services/v-team-membership-with-details-api-service";
 import {VTeamMembershipWithDetailsEntity} from "../../../../teams/entities/v-team-membership-with-details-entity";
+import {useConfirm} from "../../../../../providers/confirm-provider";
 
 
 const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
@@ -43,7 +46,7 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
         renderCell: (params) => (
             <CellLink
                 to={`/teams/${params.row.teamId}`}
-                title="Fachbereich bearbeiten"
+                title="Team bearbeiten"
             >
                 {String(params.row.teamName)}
             </CellLink>
@@ -65,6 +68,7 @@ const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
 
 export function UserDetailsPageTeamMemberships() {
     const dispatch = useAppDispatch();
+    const confirm = useConfirm();
 
     const listControlRef = useRef<ListControlRef | null>(null);
 
@@ -100,12 +104,13 @@ export function UserDetailsPageTeamMemberships() {
             <Button
                 variant="contained"
                 startIcon={<Add/>}
+                disabled={user?.deletedInIdp === true}
                 onClick={() => setShowSelectNewTeamDialog(true)}
             >
                 Mitgliedschaft hinzufügen
             </Button>,
         ];
-    }, [hasAccess]);
+    }, [hasAccess, user?.deletedInIdp]);
 
     if (user == null) {
         return (
@@ -113,9 +118,16 @@ export function UserDetailsPageTeamMemberships() {
         );
     }
 
+    const canManageMemberships = !user.deletedInIdp;
+    const disabledMembershipsManagementTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+
     const handleAddMembership = (user: User, team: TeamEntity, roleIdsToAdd: number[]) => {
+        if (!canManageMemberships) {
+            return;
+        }
+
         dispatch(setLoadingMessage({
-            message: `Füge die Mitarbeiter:in zur Organisationseinheit ${team.name} hinzu`,
+            message: `Füge die Mitarbeiter:in zum Team ${team.name} hinzu`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -147,7 +159,7 @@ export function UserDetailsPageTeamMemberships() {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Fachbereich'));
+                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Team'));
                 }
             })
             .finally(() => {
@@ -156,6 +168,10 @@ export function UserDetailsPageTeamMemberships() {
     };
 
     const handleUpdateMembership = (membership: VTeamMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+        if (!canManageMemberships) {
+            return;
+        }
+
         dispatch(setLoadingMessage({
             message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
             blocking: true,
@@ -198,18 +214,69 @@ export function UserDetailsPageTeamMemberships() {
             });
     };
 
+    const handleDeleteMembership = (membership: VTeamMembershipWithDetailsEntity) => {
+        if (!hasAccess) {
+            return;
+        }
+
+        confirm({
+            title: 'Mitgliedschaft löschen',
+            children: (
+                <>
+                    <Typography>
+                        Durch das Entfernen der Mitarbeiter:in <strong>{membership.userFullName}</strong> aus dem Team
+                        <strong> {membership.teamName}</strong> verliert diese alle zugewiesenen Rollen und
+                        Berechtigungen in diesem Team.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Diese Aktion kann nicht rückgängig gemacht werden.
+                    </Typography>
+                </>
+            ),
+            confirmButtonText: 'Mitgliedschaft löschen',
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return;
+                }
+
+                dispatch(setLoadingMessage({
+                    message: `Lösche Mitgliedschaft von ${membership.userFullName}`,
+                    blocking: true,
+                    estimatedTime: 5000,
+                }));
+
+                new TeamMembershipsApiService()
+                    .destroy(membership.membershipId)
+                    .then(() => {
+                        listControlRef.current?.refresh();
+                    })
+                    .catch((error) => {
+                        if (isApiError(error) && error.displayableToUser) {
+                            dispatch(showErrorSnackbar(error.message));
+                        } else {
+                            console.error(error);
+                            dispatch(showErrorSnackbar('Fehler beim Löschen der Mitgliedschaft'));
+                        }
+                    })
+                    .finally(() => {
+                        dispatch(setLoadingMessage(undefined));
+                    });
+            });
+    };
+
     return (
         <>
-            <Box sx={{pt: 2}}>
+            <Box sx={{pt: 1.5}}>
                 <Typography
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Mitgliedschaften in Organisationseinheiten
+                    Mitgliedschaften in Teams
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
+                    Eine Übersicht der Teams, in denen diese Mitarbeiter:in Mitglied ist, und die
                     dazugehörigen
                     Rollen.
                 </Typography>
@@ -230,16 +297,18 @@ export function UserDetailsPageTeamMemberships() {
                             });
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}
-                    searchLabel="Organisationseinheit suchen"
-                    searchPlaceholder="Titel der Organisationseinheit eingeben…"
+                    searchLabel="Team suchen"
+                    searchPlaceholder="Name des Teams eingeben…"
                     defaultSortField="teamName"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Organisationseinheiten vorhanden"
-                    loadingPlaceholder="Lade Organisationseinheiten…"
-                    noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
+                    noDataPlaceholder="Keine Teams vorhanden"
+                    loadingPlaceholder="Lade Teams…"
+                    noSearchResultsPlaceholder="Keine Teams gefunden"
                     rowActions={(item) => [
                         {
-                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
+                            icon: hasAccess ? <ManageAccountsOutlined/> : <Visibility/>,
+                            disabled: !canManageMemberships,
+                            disabledTooltip: disabledMembershipsManagementTooltip,
                             onClick: () => {
                                 setShowSelectRolesDialogForMembership(item);
                             },
@@ -247,7 +316,14 @@ export function UserDetailsPageTeamMemberships() {
                         }, {
                             icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             to: `/teams/${item.teamId}`,
-                            tooltip: hasAccess ? 'Organisationseinheit bearbeiten' : 'Organisationseinheit anzeigen',
+                            tooltip: hasAccess ? 'Team bearbeiten' : 'Team anzeigen',
+                        }, {
+                            icon: <Delete/>,
+                            visible: hasAccess,
+                            tooltip: 'Mitgliedschaft löschen',
+                            onClick: () => {
+                                handleDeleteMembership(item);
+                            },
                         }
                     ]}
                     preSearchElements={preSearchElements}
@@ -259,7 +335,7 @@ export function UserDetailsPageTeamMemberships() {
                 onClose={() => {
                     setShowSelectNewTeamDialog(false);
                 }}
-                title="Organisationseinheit auswählen"
+                title="Team auswählen"
                 tabs={[{
                     title: 'Alle',
                     options: availableTeams ?? [],
@@ -267,7 +343,7 @@ export function UserDetailsPageTeamMemberships() {
                         setShowSelectRolesDialogForTeam(dep);
                         setShowSelectNewTeamDialog(false);
                     },
-                    searchPlaceholder: 'Organisationseinheit suchen',
+                    searchPlaceholder: 'Teams suchen',
                     searchKeys: ['name'],
                     primaryTextKey: 'name',
                     getId: o => String(o.id),

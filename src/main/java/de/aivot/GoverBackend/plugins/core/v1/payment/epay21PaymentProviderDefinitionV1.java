@@ -4,10 +4,10 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nimbusds.common.contenttype.ContentType;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -133,10 +133,10 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         passwordInput.setLabel("Passwort");
         passwordInput.setPlaceholder("Passwort");
         passwordInput.setHint("Das Passwort für die Authentifizierung am Zahlungsdienstleister.");
-        List<RadioInputElementOption> clientSecretInputOptions = secretService
+        List<SelectInputElementOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> RadioInputElementOption.of(
+                .map(secret -> SelectInputElementOption.of(
                         secret.getKey().toString(),
                         secret.getName()
                 ))
@@ -146,7 +146,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         list.add(passwordInput);
 
         TextInputElementPattern urlPattern = new TextInputElementPattern();
-        urlPattern.setRegex("^(https?:\\/\\/)?([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$");
+        urlPattern.setRegex(TextInputElementPattern.URL_REGEX);
         urlPattern.setMessage("Bitte geben Sie eine gültige URL ein (z. B. https://example.com).");
 
         var paymentTransactionUrlInput = new TextInputElement();
@@ -160,7 +160,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         list.add(paymentTransactionUrlInput);
 
         var group = new GroupLayoutElement();
-        group.setType(ElementType.Group);
+        group.setType(ElementType.GroupLayout);
         group.setId("epay21Config");
         group.setChildren(list);
 
@@ -171,15 +171,17 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
-        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
+        var effectiveValues = config.getEffectiveValues();
+
+        var originatorID = (String) effectiveValues.get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s is missing", getProviderName());
         }
 
-        var endpointID = (String) config.get(ENDPOINT_ID_FIELD).getValue();
+        var endpointID = (String) effectiveValues.get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
             throw new PaymentException("Endpoint ID for payment provider %s is missing", getProviderName());
         }
@@ -188,7 +190,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
         var password = getPasswordSecret(paymentProviderEntity, config);
         var auth = Base64.getEncoder().encodeToString((username + ":" + password).getBytes());
 
-        var paymentTransactionUrl = (String) config.get("paymentTransactionUrl").getValue();
+        var paymentTransactionUrl = (String) effectiveValues.get(PAYMENT_TRANSACTION_URL_FIELD);
         var normalizedPaymentTransactionUrl = StringUtils.normalizeUrl(paymentTransactionUrl);
 
         var objectMapper = new ObjectMapper()
@@ -253,7 +255,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction transaction
     ) throws PaymentException {
         var originatorID = getOriginatorID(paymentProviderEntity, config);
@@ -319,7 +321,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
@@ -329,9 +331,9 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getOriginatorID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var originatorID = (String) config.get(ORIGINATOR_ID_FIELD).getValue();
+        var originatorID = (String) config.getEffectiveValues().get(ORIGINATOR_ID_FIELD);
         if (StringUtils.isNullOrEmpty(originatorID)) {
             throw new PaymentException("Originator ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -341,9 +343,9 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getEndpointID(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var endpointID = (String) config.get(ENDPOINT_ID_FIELD).getValue();
+        var endpointID = (String) config.getEffectiveValues().get(ENDPOINT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(endpointID)) {
             throw new PaymentException("Endpoint ID for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -353,9 +355,9 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getUsername(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentException {
-        var username = (String) config.get(USERNAME_FIELD).getValue();
+        var username = (String) config.getEffectiveValues().get(USERNAME_FIELD);
         if (StringUtils.isNullOrEmpty(username)) {
             throw new PaymentException("Username for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -364,8 +366,8 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
 
     @Nonnull
     private static String getNormalizedPaymentTransactionUrl(@Nonnull PaymentProviderEntity paymentProviderEntity,
-                                                             @Nonnull ElementData config) throws PaymentException {
-        var paymentTransactionUrl = (String) config.get(PAYMENT_TRANSACTION_URL_FIELD).getValue();
+                                                             @Nonnull DerivedRuntimeElementData config) throws PaymentException {
+        var paymentTransactionUrl = (String) config.getEffectiveValues().get(PAYMENT_TRANSACTION_URL_FIELD);
         if (StringUtils.isNullOrEmpty(paymentTransactionUrl)) {
             throw new PaymentException("Payment transaction URL for payment provider %s (%s) is missing", paymentProviderEntity.getName(), paymentProviderEntity.getKey());
         }
@@ -375,9 +377,9 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     private String getPasswordSecret(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentMissingDataException {
-        var passwordSecretField = (String) config.get(PASSWORD_SECRET_KEY_FIELD).getValue();
+        var passwordSecretField = (String) config.getEffectiveValues().get(PASSWORD_SECRET_KEY_FIELD);
         if (StringUtils.isNullOrEmpty(passwordSecretField)) {
             throw new PaymentMissingDataException("Project password", paymentProviderEntity);
         }

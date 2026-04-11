@@ -74,10 +74,7 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
         }));
 
         new FormApiService()
-            .update(form.id, {
-                ...form,
-                developingDepartmentId: targetDepartmentId,
-            })
+            .move(form.id, targetDepartmentId)
             .then(() => {
                 dispatch(showSuccessSnackbar('Das Formular wurde erfolgreich übertragen.'));
                 onMoved();

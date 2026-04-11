@@ -7,10 +7,13 @@ import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
 
+import java.util.UUID;
+
 public class ProcessFilter implements Filter<ProcessEntity> {
     private String internalTitle;
     private Integer departmentId;
     private Integer departmentIdNot;
+    private UUID accessKey;
 
     public static ProcessFilter create() {
         return new ProcessFilter();
@@ -23,7 +26,8 @@ public class ProcessFilter implements Filter<ProcessEntity> {
                 .create(ProcessEntity.class)
                 .withContains("internalTitle", internalTitle)
                 .withEquals("departmentId", departmentId)
-                .withNotEquals("departmentId", departmentIdNot);
+                .withNotEquals("departmentId", departmentIdNot)
+                .withEquals("accessKey", accessKey);
 
         return builder.build();
     }
@@ -52,6 +56,11 @@ public class ProcessFilter implements Filter<ProcessEntity> {
 
     public ProcessFilter setDepartmentIdNot(Integer departmentIdNot) {
         this.departmentIdNot = departmentIdNot;
+        return this;
+    }
+
+    public ProcessFilter setAccessKey(UUID accessKey) {
+        this.accessKey = accessKey;
         return this;
     }
 }

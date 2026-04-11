@@ -46,6 +46,8 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     public String[] getMethodTypeDefinitions() {
         return new String[]{
                 "createDate(): Date;",
+                "today(): string;",
+                "now(): string;",
                 "createDate(date: Date | string | number): Date | null;",
                 "isSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "isBefore(dateA: Date | string | number, dateB: Date | string | number): boolean;",
@@ -60,6 +62,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
                 "subtractWeeks(date: Date | string | number, weeks: number): Date | null;",
                 "subtractMonths(date: Date | string | number, months: number): Date | null;",
                 "subtractYears(date: Date | string | number, years: number): Date | null;",
+                "formatDate(date: Date | string | number, format: string): string | null;",
                 "diff(start: Date | string | number, end: Date | string | number, unit: 'days' | 'weeks' | 'months' | 'years'): number | null;"
         };
     }
@@ -81,6 +84,18 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         return LocalDate
                 .now()
                 .atStartOfDay(ZoneId.systemDefault());
+    }
+
+    @HostAccess.Export
+    public String today() {
+        var date = createDate();
+        return formatDate(date, "dd.MM.yyyy");
+    }
+
+    @HostAccess.Export
+    public String now() {
+        var date = createDate();
+        return formatDate(date, "dd.MM.yyyy hh:mm") + " Uhr";
     }
 
     @Nullable
@@ -313,6 +328,25 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         }
 
         return date.minusYears(years);
+    }
+
+    @Nullable
+    @HostAccess.Export
+    public String formatDate(Object dateRaw, String format) {
+        var date = createDate(dateRaw);
+
+        if (date == null || format == null || format.isBlank()) {
+            return null;
+        }
+
+        try {
+            var formatter = DateTimeFormatter
+                    .ofPattern(format)
+                    .withZone(ZoneId.systemDefault());
+            return formatter.format(date);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @HostAccess.Export

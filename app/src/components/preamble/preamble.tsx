@@ -1,5 +1,7 @@
 import {Box, Grid, useTheme} from '@mui/material';
 import React from 'react';
+import {MarkdownContent} from '../markdown-content/markdown-content';
+import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 
 interface PreambleProps {
     text: string;
@@ -9,13 +11,12 @@ interface PreambleProps {
 
 export function Preamble(props: PreambleProps) {
     const theme = useTheme();
+    const showLogo = isStringNotNullOrEmpty(props.logoLink) && isStringNotNullOrEmpty(props.logoAlt);
+
     return (
         <>
             {
-                (
-                    props.logoLink != null &&
-                    props.logoAlt != null
-                ) ?
+                showLogo ?
                     <Grid
                         container
                         spacing={10}
@@ -30,8 +31,8 @@ export function Preamble(props: PreambleProps) {
                             <Box
                                 sx={{maxWidth: '660px'}}
                             >
-                                <div
-                                    dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                <MarkdownContent
+                                    markdown={props.text}
                                     className={"content-without-margin-on-childs"}
                                 />
                             </Box>
@@ -73,8 +74,8 @@ export function Preamble(props: PreambleProps) {
                                     maxWidth: '660px',
                                 }}
                             >
-                                <div
-                                    dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                <MarkdownContent
+                                    markdown={props.text}
                                     className={"content-without-margin-on-childs"}
                                 />
                             </Box>

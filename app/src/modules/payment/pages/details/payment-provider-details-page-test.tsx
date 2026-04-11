@@ -1,8 +1,7 @@
 import {Box, Button, Grid, Typography} from '@mui/material';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
-import {useContext, useMemo, useState} from 'react';
+import {useContext, useState} from 'react';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
-import {useApi} from '../../../../hooks/use-api';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {isStringNullOrEmpty} from '../../../../utils/string-utils';
@@ -13,10 +12,9 @@ import {PaymentProviderTestDataRequestDTO} from '../../dtos/payment-provider-tes
 import {useValidationErrors} from '../../../../hooks/use-validation-errors';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 
-export function PaymentProviderDetailsPageTest() {
-    const api = useApi();
-    const apiService = useMemo(() => new PaymentProvidersApiService(api), [api]);
+const apiService = new PaymentProvidersApiService();
 
+export function PaymentProviderDetailsPageTest() {
     const {
         item,
         isBusy,
@@ -27,14 +25,14 @@ export function PaymentProviderDetailsPageTest() {
         amount: 0,
         purpose: '',
         description: '',
-    }
+    };
 
     const [data, setData] = useState<PaymentProviderTestDataRequestDTO>(initialData);
     const changeBlocker = useChangeBlocker(
         initialData,
         data,
-        "Eingaben verwerfen?",
-        "Ihre eingegebenen Testdaten werden nicht gespeichert. Möchten Sie die Seite wirklich verlassen und die Eingaben verwerfen? Wenn Sie zurückkehren, müssen Sie die Testdaten erneut eingeben.",
+        'Eingaben verwerfen?',
+        'Ihre eingegebenen Testdaten werden nicht gespeichert. Möchten Sie die Seite wirklich verlassen und die Eingaben verwerfen? Wenn Sie zurückkehren, müssen Sie die Testdaten erneut eingeben.',
     );
 
     const {
@@ -143,10 +141,13 @@ export function PaymentProviderDetailsPageTest() {
                         result.request != null &&
                         <Typography sx={{mb: 1}}>
                             Request-ID: {result.request.requestId}
-                            <br />
+                            <br/>
                             {result.request.items?.map((item, index) => (
                                 <div key={index}>
-                                    Zahlungsposition: {item.quantity} x {item.description} (Einzelpreis (netto): {item.singleNetAmount} {result.request!.currency}) – Nettobetrag: {item.totalNetAmount} {result.request!.currency} – Steuerbetrag: {item.totalTaxAmount} {result.request!.currency} ({item.taxRate} %)
+                                    Zahlungsposition: {item.quantity} x {item.description} (Einzelpreis
+                                    (netto): {item.singleNetAmount} {result.request!.currency}) –
+                                    Nettobetrag: {item.totalNetAmount} {result.request!.currency} –
+                                    Steuerbetrag: {item.totalTaxAmount} {result.request!.currency} ({item.taxRate} %)
                                 </div>
                             ))}
                             Gesamtbetrag: {result.request.grosAmount} {result.request.currency}
@@ -157,7 +158,16 @@ export function PaymentProviderDetailsPageTest() {
                         result.errorMessage != null &&
                         <Typography sx={{mb: 1}}>
                             Fehlermeldung:<br/>
-                            <code style={{fontFamily: 'monospace', fontSize: '0.875rem', marginTop: '4px', padding: '0.5rem', backgroundColor: 'rgba(255, 255, 255, 0.6)', borderRadius: '4px', wordBreak: 'break-word', display: 'block'}}>
+                            <code style={{
+                                fontFamily: 'monospace',
+                                fontSize: '0.875rem',
+                                marginTop: '4px',
+                                padding: '0.5rem',
+                                backgroundColor: 'rgba(255, 255, 255, 0.6)',
+                                borderRadius: '4px',
+                                wordBreak: 'break-word',
+                                display: 'block',
+                            }}>
                                 {result.errorMessage}
                             </code>
                         </Typography>
@@ -168,9 +178,11 @@ export function PaymentProviderDetailsPageTest() {
                         result.transaction.paymentInformation != null &&
                         <Typography>
                             ID der Transaktion: {result.transaction.paymentInformation.transactionId}
-                            <br />
-                            Bezahl-URL: <a style={{color: "inherit"}} target="_blank" href={result.transaction.paymentInformation.transactionRedirectUrl}>{result.transaction.paymentInformation.transactionRedirectUrl}</a>
-                            <br />
+                            <br/>
+                            Bezahl-URL: <a style={{color: 'inherit'}}
+                                           target="_blank"
+                                           href={result.transaction.paymentInformation.transactionRedirectUrl}>{result.transaction.paymentInformation.transactionRedirectUrl}</a>
+                            <br/>
                         </Typography>
                     }
                 </AlertComponent>
@@ -186,7 +198,7 @@ export function PaymentProviderDetailsPageTest() {
                     onClick={handleTest}
                     disabled={isBusy}
                     variant="contained"
-                    startIcon={<ScienceOutlinedIcon />}
+                    startIcon={<ScienceOutlinedIcon/>}
                 >
                     Zahlung testen
                 </Button>

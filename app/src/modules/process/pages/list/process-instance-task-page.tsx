@@ -25,7 +25,7 @@ import {clearLoadingMessage, setLoadingMessage} from "../../../../slices/shell-s
 import TaskAlt from "@aivot/mui-material-symbols-400-outlined/dist/task-alt/TaskAlt";
 import DataObject from "@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject";
 import FactCheck from "@aivot/mui-material-symbols-400-outlined/dist/fact-check/FactCheck";
-import {ProcessInstanceHistoryEventDialog} from "../../dialogs/process-instance-history-event-dialog";
+import {ProcessInstanceEventDialog} from "../../dialogs/process-instance-event-dialog";
 import News from "@aivot/mui-material-symbols-400-outlined/dist/news/News";
 
 interface ProcessInstanceTaskEntityWithNodeAndProvider extends ProcessInstanceTaskEntity {
@@ -119,8 +119,8 @@ export function ProcessInstanceTaskListPage() {
 
                                 new ProcessNodeApiService()
                                     .listAll({
-                                        processDefinitionId: parseInt(params.processId!),
-                                        processDefinitionVersion: parseInt(params.processVersion!),
+                                        processId: parseInt(params.processId!),
+                                        processVersion: parseInt(params.processVersion!),
                                     }),
 
                                 new ProcessInstanceTaskApiService()
@@ -240,13 +240,20 @@ export function ProcessInstanceTaskListPage() {
                                     children: (
                                         <>
                                             <Typography variant="h6">
-                                                Die von dieser Aufgabe weitergegebene Vorgangsdatenebene
+                                                Vorgangsdaten der Aufgabe
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Die Vorgangsdaten, welche die Aufgabe weitergegeben hat.
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(item.processData, null, 2)}
                                             />
+
                                             <Typography variant="h6">
-                                                Die von dieser Aufgabe erzeugten Prozesselementdatenebene
+                                                Elementdaten der Aufgabe
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary">
+                                                Die Elementdaten, die diese Aufgabe erzeugt hat.
                                             </Typography>
                                             <ExpandableCodeBlock
                                                 value={JSON.stringify(item.nodeData, null, 2)}
@@ -260,6 +267,10 @@ export function ProcessInstanceTaskListPage() {
                         {
                             icon: <Replay/>,
                             onClick: () => {
+                                if (item.status !== ProcessTaskStatus.Failed) {
+                                    return;
+                                }
+
                                 confirm({
                                     title: 'Aufgabe neu starten',
                                     children: (
@@ -297,7 +308,7 @@ export function ProcessInstanceTaskListPage() {
                 />
             </PageWrapper>
 
-            <ProcessInstanceHistoryEventDialog
+            <ProcessInstanceEventDialog
                 open={showEvents}
                 onClose={() => setShowEvents(false)}
                 instanceId={params.instanceId ? parseInt(params.instanceId) : 0}

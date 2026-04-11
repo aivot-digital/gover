@@ -58,11 +58,11 @@ export function ThemeDetailsPageForms() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Formulare mit diesem Farbschema
+                Formulare mit diesem Erscheinungsbild
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Eine Liste aller Formulare, die dieses Farbschema für ihr optisches Erscheinungsbild verwenden.
+                Eine Liste aller Formulare, die dieses Erscheinungsbild verwenden.
             </Typography>
 
             <GenericList<VFormVersionWithDetailsEntity>

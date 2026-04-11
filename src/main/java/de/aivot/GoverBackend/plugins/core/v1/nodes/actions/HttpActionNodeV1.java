@@ -4,18 +4,24 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
+import de.aivot.GoverBackend.nocode.models.NoCodeReference;
+import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
-import de.aivot.GoverBackend.process.services.ProcessDataService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
@@ -30,6 +36,7 @@ import java.util.Map;
 public class HttpActionNodeV1 implements ProcessNodeDefinition {
     private static final String METHOD_FIELD_ID = "method";
     private static final String URL_FIELD_ID = "url";
+    private static final String PAYLOAD_FIELD_ID = "payload";
     private static final String IS_JSON_FIELD_ID = "isJson";
 
     private static final String PORT_NAME = "output";
@@ -39,11 +46,11 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_NAME_BODY = "body";
 
     private final HttpService httpService;
-    private final ProcessDataService processDataService;
+    private final TemplateRenderService templateRenderService;
 
-    public HttpActionNodeV1(HttpService httpService, ProcessDataService processDataService) {
+    public HttpActionNodeV1(HttpService httpService, TemplateRenderService templateRenderService) {
         this.httpService = httpService;
-        this.processDataService = processDataService;
+        this.templateRenderService = templateRenderService;
     }
 
     @Nonnull
@@ -95,10 +102,10 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
         method.setHint("Die HTTP-Methode, die für die Anfrage verwendet werden soll.");
         method.setRequired(true);
         method.setOptions(List.of(
-                new RadioInputElementOption()
+                new SelectInputElementOption()
                         .setLabel("GET")
                         .setValue("GET"),
-                new RadioInputElementOption()
+                new SelectInputElementOption()
                         .setLabel("POST")
                         .setValue("POST")
         ));
@@ -110,6 +117,22 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
         url.setHint("Die URL, von der die Daten geladen werden sollen.");
         url.setRequired(true);
         layout.addChild(url);
+
+        var payload = new CodeInputElement();
+        payload.setId(PAYLOAD_FIELD_ID);
+        payload.setLabel("JSON-Payload");
+        payload.setHint("Der JSON-Request-Body für POST-Anfragen. Sie können Platzhalter zur String-Interpolation verwenden.");
+        payload.setLanguage("json");
+        payload.setVisibility(
+                ElementVisibilityFunctions
+                        .of(NoCodeExpression.of(
+                                NoCodeEqualsOperator.OPERATOR_ID,
+                                new NoCodeReference(METHOD_FIELD_ID),
+                                new NoCodeStaticValue("POST")
+                        ))
+                        .recalculateReferencedIds()
+        );
+        layout.addChild(payload);
 
 
         var isJSON = new CheckboxInputElement();
@@ -157,30 +180,18 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context.getThisNode().getConfiguration();
+        var configuration = context.getConfiguration().getEffectiveValues();
 
-        var method = configuration
-                .get(METHOD_FIELD_ID)
-                .getOptionalValue()
-                .orElse("GET")
-                .toString();
+        var method = String.valueOf(configuration.getOrDefault(METHOD_FIELD_ID, "GET"));
 
-        var url = processDataService
+        var url = templateRenderService
                 .interpolate(
                         context.getProcessData(),
-                        configuration
-                                .get(URL_FIELD_ID)
-                                .getOptionalValue()
-                                .orElse("")
-                                .toString()
+                        String.valueOf(configuration.getOrDefault(URL_FIELD_ID, ""))
                 );
 
         var isJson = StringUtils.isNotNullOrEmpty(
-                configuration
-                        .get(IS_JSON_FIELD_ID)
-                        .getOptionalValue()
-                        .orElse("")
-                        .toString()
+                String.valueOf(configuration.getOrDefault(IS_JSON_FIELD_ID, ""))
         );
 
         var uri = URI.create(url);
@@ -197,8 +208,18 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
                 );
             }
         } else {
+            var payload = templateRenderService
+                    .interpolate(
+                            context.getProcessData(),
+                            String.valueOf(configuration.getOrDefault(PAYLOAD_FIELD_ID, "{}"))
+                    );
+
+            if (StringUtils.isNullOrEmpty(payload)) {
+                payload = "{}";
+            }
+
             try {
-                response = httpService.post(uri, "{}");
+                response = httpService.post(uri, payload);
             } catch (HttpConnectionException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
                         e,

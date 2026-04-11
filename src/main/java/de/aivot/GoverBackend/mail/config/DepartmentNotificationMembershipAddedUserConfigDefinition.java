@@ -36,19 +36,19 @@ public class DepartmentNotificationMembershipAddedUserConfigDefinition implement
     @Nullable
     @Override
     public String getSubCategory() {
-        return "Fachbereichs-Mitgliedschaften";
+        return "Mitgliedschaften in Organisationseinheiten";
     }
 
     @Nonnull
     @Override
     public String getLabel() {
-        return "Zu Fachbereich hinzugefügt";
+        return "Zu Organisationseinheit hinzugefügt";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erhalten Sie eine Benachrichtigung, wenn Sie einem neuen Fachbereich hinzugefügt werden.";
+        return "Erhalten Sie eine Benachrichtigung, wenn Sie einer neuen Organisationseinheit hinzugefügt werden.";
     }
 
     @Override

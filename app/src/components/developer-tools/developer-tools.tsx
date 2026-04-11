@@ -11,11 +11,12 @@ import {Action} from '../actions/actions-props';
 import CloseIcon from '@mui/icons-material/Close';
 import {LogLevel, selectLogLevel, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
-import {ElementData} from '../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDataDebugger} from './tabs/element-data-debugger';
 import {selectLoadedForm} from '../../slices/app-slice';
 import {LogView} from './tabs/log-view';
+import {DerivedDataDebugger} from './tabs/derived-data-debugger';
 
 interface TabContentProps {
     selectedTab: number;
@@ -51,8 +52,9 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
 interface DeveloperToolsProps {
     dataLabel: string;
     rootElement: AnyElement;
-    elementData: ElementData;
-    onElementDataChange: (data: ElementData) => void;
+    elementData: AuthoredElementValues;
+    onElementDataChange: (data: AuthoredElementValues) => void;
+    derivedData: DerivedRuntimeElementData;
 }
 
 export function DeveloperTools(props: DeveloperToolsProps) {
@@ -61,10 +63,10 @@ export function DeveloperTools(props: DeveloperToolsProps) {
         rootElement,
         elementData,
         onElementDataChange,
+        derivedData,
     } = props;
 
     const dispatch = useAppDispatch();
-    const form = useAppSelector(selectLoadedForm);
     const tab = useAppSelector(selectDevToolsTab);
 
     const currentLogLevel = useAppSelector(selectLogLevel);
@@ -102,8 +104,12 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                         value={0}
                     />
                     <Tab
-                        label="Log"
+                        label="Laufzeitdaten"
                         value={1}
+                    />
+                    <Tab
+                        label="Ausführungs-Log"
+                        value={2}
                     />
                 </Tabs>
 
@@ -145,9 +151,20 @@ export function DeveloperTools(props: DeveloperToolsProps) {
                     />
                 </TabContent>
 
+
                 <TabContent
                     selectedTab={tab}
                     index={1}
+                >
+                    <DerivedDataDebugger
+                        rootElement={rootElement}
+                        derivedData={derivedData}
+                    />
+                </TabContent>
+
+                <TabContent
+                    selectedTab={tab}
+                    index={2}
                     actions={[
                         {
                             tooltip: 'Debug',

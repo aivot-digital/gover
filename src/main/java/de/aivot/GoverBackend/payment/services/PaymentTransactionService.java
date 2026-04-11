@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.payment.services;
 
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.enums.XBezahldienstStatus;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
@@ -13,6 +14,7 @@ import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.filters.PaymentTransactionFilter;
 import de.aivot.GoverBackend.payment.models.PaymentItem;
+import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.PaymentTransactionChangeListener;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
@@ -44,6 +46,7 @@ public class PaymentTransactionService implements
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
     private final PaymentProviderRepository paymentProviderRepository;
+    private final PaymentProviderConfigurationService paymentProviderConfigurationService;
 
     @Autowired
     public PaymentTransactionService(
@@ -52,13 +55,15 @@ public class PaymentTransactionService implements
             PaymentTransactionRepository paymentTransactionRepository,
             AuditService auditService,
             PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-            PaymentProviderRepository paymentProviderRepository) {
-        this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class);
+            PaymentProviderRepository paymentProviderRepository,
+            PaymentProviderConfigurationService paymentProviderConfigurationService) {
+        this.auditService = auditService.createScopedAuditService(PaymentTransactionService.class, "Zahlungen");
         this.paymentTransactionChangeListeners = paymentTransactionChangeListeners;
         this.config = config;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
         this.paymentProviderRepository = paymentProviderRepository;
+        this.paymentProviderConfigurationService = paymentProviderConfigurationService;
     }
 
     /**
@@ -84,8 +89,15 @@ public class PaymentTransactionService implements
     ) throws PaymentException {
         // Fetch corresponding payment provider definition
         var paymentProviderDefinition = paymentProviderDefinitionsService
-                .getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
-                .orElseThrow(() -> new PaymentException("Für den Zahlungsdienstleister " + paymentProviderEntity.getPaymentProviderDefinitionKey() + " wurde keine Definition gefunden."));
+                .getProviderDefinition(
+                        paymentProviderEntity.getPaymentProviderDefinitionKey(),
+                        paymentProviderEntity.getPaymentProviderDefinitionVersion()
+                )
+                .orElseThrow(() -> new PaymentException(
+                        "Für den Zahlungsdienstleister %s in Version %d wurde keine Definition gefunden.",
+                        paymentProviderEntity.getPaymentProviderDefinitionKey(),
+                        paymentProviderEntity.getPaymentProviderDefinitionVersion()
+                ));
 
         // Prepare transaction entity
         var transactionEntity = new PaymentTransactionEntity();
@@ -98,12 +110,14 @@ public class PaymentTransactionService implements
         // Create initial redirect URL
         var initialRedirectUrl = config.createUrl("/api/public/payment-transaction-callback/", transactionEntity.getKey()) + "/redirect/";
 
+        var derivedConfiguration = derivePaymentProviderConfiguration(paymentProviderEntity, paymentProviderDefinition);
+
         // Create and set payment request
         XBezahldienstePaymentRequest paymentRequest;
         try {
             paymentRequest = paymentProviderDefinition.createPaymentRequest(
                     paymentProviderEntity,
-                    paymentProviderEntity.getConfig(),
+                    derivedConfiguration,
                     purpose,
                     description,
                     paymentItems,
@@ -111,12 +125,17 @@ public class PaymentTransactionService implements
             );
         } catch (PaymentException e) {
             // Log exception and rethrow
-            auditService.logException("Failed to create payment request", e, Map.of(
+            var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
                     "purpose", purpose,
                     "description", description,
                     "paymentItems", paymentItems
             ));
+            metadata.put("exceptionType", e.getClass().getName());
+            auditService.create()
+                    .setTriggerType("Exception")
+                    .setMessage("Die Zahlungsanfrage konnte für den Zahlungsdienstleister nicht erstellt werden.")
+                    .setMetadata(metadata).log();
             throw e;
         }
         transactionEntity.setPaymentRequest(paymentRequest);
@@ -126,17 +145,22 @@ public class PaymentTransactionService implements
         try {
             xBezahldienstePaymentTransaction = paymentProviderDefinition.initiatePayment(
                     paymentProviderEntity,
-                    paymentProviderEntity.getConfig(),
+                    derivedConfiguration,
                     transactionEntity.getPaymentRequest()
             );
         } catch (PaymentException e) {
             // Log exception and rethrow
-            auditService.logException("Failed to initiate payment", e, Map.of(
+            var metadata = new HashMap<String, Object>(Map.of(
                     "paymentProviderKey", paymentProviderEntity.getKey(),
                     "purpose", purpose,
                     "description", description,
                     "paymentItems", paymentItems
             ));
+            metadata.put("exceptionType", e.getClass().getName());
+            auditService.create()
+                    .setTriggerType("Exception")
+                    .setMessage("Die Zahlung konnte beim Zahlungsdienstleister nicht initialisiert werden.")
+                    .setMetadata(metadata).log();
             throw e;
         }
         transactionEntity.setPaymentInformation(xBezahldienstePaymentTransaction.getPaymentInformation());
@@ -209,10 +233,18 @@ public class PaymentTransactionService implements
 
         // Fetch corresponding payment provider definition. If not found, set error and throw exception
         var providerDefinition = paymentProviderDefinitionsService
-                .getProviderDefinition(provider.getPaymentProviderDefinitionKey())
+                .getProviderDefinition(
+                        provider.getPaymentProviderDefinitionKey(),
+                        provider.getPaymentProviderDefinitionVersion()
+                )
                 .orElse(null);
         if (providerDefinition == null) {
-            var error = new PaymentException("Die Definition \"%s\"des referenzierten Zahlungsdienstleisters \"%s\" konnte nicht gefunden werden.", provider.getPaymentProviderDefinitionKey(), provider.getKey());
+            var error = new PaymentException(
+                    "Die Definition \"%s\" in Version %d des referenzierten Zahlungsdienstleisters \"%s\" konnte nicht gefunden werden.",
+                    provider.getPaymentProviderDefinitionKey(),
+                    provider.getPaymentProviderDefinitionVersion(),
+                    provider.getKey()
+            );
             transaction.setPaymentError(error.getMessage());
             paymentTransactionRepository.save(transaction);
             throw error;
@@ -223,6 +255,8 @@ public class PaymentTransactionService implements
         xBezahldiensteTransaction.setPaymentRequest(transaction.getPaymentRequest());
         xBezahldiensteTransaction.setPaymentInformation(transaction.getPaymentInformation());
 
+        var derivedConfiguration = derivePaymentProviderConfiguration(provider, providerDefinition);
+
         // Try to check the payment status. If an error occurs, set the error message on the transaction and rethrow the exception
         XBezahldienstePaymentTransaction xBezahldiensteTransactionUpdated;
         try {
@@ -230,14 +264,14 @@ public class PaymentTransactionService implements
                     providerDefinition
                             .onPaymentResultPush(
                                     provider,
-                                    provider.getConfig(),
+                                    derivedConfiguration,
                                     xBezahldiensteTransaction,
                                     callbackData
                             ) :
                     providerDefinition
                             .onPaymentResultPull(
                                     provider,
-                                    provider.getConfig(),
+                                    derivedConfiguration,
                                     xBezahldiensteTransaction
                             );
         } catch (PaymentException e) {
@@ -281,14 +315,41 @@ public class PaymentTransactionService implements
                 .findAll(spec);
 
         for (var transactionEntity : pendingTransactions) {
-            auditService.debugMessage("Polling transaction " + transactionEntity.getKey(), Map.of("transactionKey", transactionEntity.getKey()));
+            auditService.create()
+                    .setTriggerType("Debug")
+                    .setMessage("Der Status der Zahlungstransaktion mit dem Schlüssel " + transactionEntity.getKey() + " wird abgefragt.")
+                    .setMetadata(Map.of("transactionKey", transactionEntity.getKey())).log();
 
             try {
                 processCallback(transactionEntity, null);
             } catch (PaymentException e) {
-                auditService.logException("Error polling transaction " + transactionEntity.getKey(), e);
+                auditService.create()
+                        .setTriggerType("Exception")
+                        .setMessage("Beim Abfragen der Zahlungstransaktion mit dem Schlüssel " + transactionEntity.getKey() + " ist ein Fehler aufgetreten.")
+                        .setMetadata(Map.of(
+                                "transactionKey", transactionEntity.getKey(),
+                                "exceptionType", e.getClass().getName()
+                        )).log();
                 // TODO: Set error flag on transaction
             }
+        }
+    }
+
+    @Nonnull
+    private DerivedRuntimeElementData derivePaymentProviderConfiguration(
+            @Nonnull PaymentProviderEntity paymentProviderEntity,
+            @Nonnull PaymentProviderDefinition paymentProviderDefinition
+    ) throws PaymentException {
+        try {
+            return paymentProviderConfigurationService
+                    .deriveConfiguration(paymentProviderEntity, paymentProviderDefinition);
+        } catch (ResponseException e) {
+            throw new PaymentException(
+                    e,
+                    "Die Konfiguration des Zahlungsanbieters %s (%s) konnte nicht abgeleitet werden.",
+                    paymentProviderEntity.getName(),
+                    paymentProviderEntity.getKey()
+            );
         }
     }
 }

@@ -10,8 +10,17 @@ import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {SystemRolesApiService} from "../../services/system-roles-api-service";
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {SystemConfigKeys} from '../../../../data/system-config-keys';
+import {
+    DefaultUserSystemRoleBadge,
+    isDefaultUserSystemRole,
+} from '../../components/default-user-system-role-badge';
 
 export function SystemRolesListPage() {
+    const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
+
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -29,7 +38,7 @@ export function SystemRolesListPage() {
                     title: 'Systemrollen',
                     actions: [
                         {
-                            label: 'Neue Systemrollen',
+                            label: 'Neue Systemrolle',
                             icon: <AddOutlinedIcon/>,
                             to: '/system-roles/new',
                             variant: 'contained',
@@ -37,7 +46,7 @@ export function SystemRolesListPage() {
                         },
                     ],
                     helpDialog: {
-                        title: 'Hilfe zu Domänenrollen',
+                        title: 'Hilfe zu Systemrollen',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
@@ -45,15 +54,24 @@ export function SystemRolesListPage() {
                                     variant="body1"
                                     component="p"
                                 >
-                                    Verwalten Sie hier die Domänenrollen, die Berechtigungen und Zugriffsrechte für
-                                    Benutzer:innen innerhalb der Anwendung definieren.
+                                    Systemrollen definieren Berechtigungen auf Systemebene und gelten
+                                    anwendungsweit in Gover.
+                                </Typography>
+                                <Typography
+                                    variant="body1"
+                                    component="p"
+                                >
+                                    Sie steuern damit grundlegende Zugriffe, etwa auf Administration,
+                                    Konfiguration und andere globale Funktionen. Im Unterschied zu
+                                    Domänenrollen sind Systemrollen nicht an einzelne Organisationseinheiten
+                                    oder Teams gebunden.
                                 </Typography>
                             </>
                         ),
                     },
                 }}
-                searchLabel="Domänenrolle suchen"
-                searchPlaceholder="Name der Domänenrolle eingeben…"
+                searchLabel="Systemrolle suchen"
+                searchPlaceholder="Name der Systemrolle eingeben…"
                 fetch={(options) => {
                     return new SystemRolesApiService()
                         .list(
@@ -75,9 +93,13 @@ export function SystemRolesListPage() {
                         renderCell: (params) => (
                             <CellLink
                                 to={`/system-roles/${params.id}`}
-                                title={hasAccess ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen'}
+                                title={hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
                             >
                                 {String(params.value)}
+                                {
+                                    isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
+                                    <DefaultUserSystemRoleBadge sx={{ml: 1}} />
+                                }
                             </CellLink>
                         ),
                     },
@@ -88,14 +110,14 @@ export function SystemRolesListPage() {
                     },
                 ]}
                 getRowIdentifier={row => row.id.toString()}
-                noDataPlaceholder="Keine Domänenrolle angelegt"
-                noSearchResultsPlaceholder="Keine Domänenrolle gefunden"
+                noDataPlaceholder="Keine Systemrolle angelegt"
+                noSearchResultsPlaceholder="Keine Systemrolle gefunden"
                 rowActionsCount={1}
                 rowActions={(item) => [
                     {
                         icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                         to: `/system-roles/${item.id}`,
-                        tooltip: hasAccess ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen',
+                        tooltip: hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen',
                     },
                 ]}
                 defaultSortField="name"

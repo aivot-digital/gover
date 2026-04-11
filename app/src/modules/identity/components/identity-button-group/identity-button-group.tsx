@@ -7,7 +7,7 @@ import {IdentityButton} from '../identity-button/identity-button';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {IdentityData} from '../../models/identity-data';
-import {ElementData} from '../../../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../../../../models/element-data';
 import {AnyElement} from '../../../../models/elements/any-element';
 import {Api, useApi} from '../../../../hooks/use-api';
 import {FormVersionEntity} from '../../../forms/entities/form-version-entity';
@@ -18,8 +18,9 @@ interface IdentityButtonGroupProps {
     rootElement: AnyElement;
     isBusy: boolean;
     isDeriving: boolean;
-    elementData: ElementData;
-    onElementDataChange: (elementData: ElementData) => void;
+    authoredElementValues: AuthoredElementValues;
+    derivedData: DerivedRuntimeElementData;
+    onAuthoredElementValuesChange: (elementData: AuthoredElementValues) => void;
     form: FormEntity;
     version: FormVersionEntity;
 }
@@ -32,7 +33,8 @@ export interface CombinedIdentityProviderLink {
 export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     const {
         isBusy,
-        elementData,
+        authoredElementValues,
+        derivedData,
         form,
         version,
     } = props;
@@ -40,8 +42,8 @@ export function IdentityButtonGroup(props: IdentityButtonGroupProps) {
     const dispatch = useAppDispatch();
     const api = useApi();
 
-    const value: IdentityData | undefined | null = elementData[IdentityCustomerInputKey]?.inputValue ?? undefined;
-    const error: string[] | null | undefined = elementData[IdentityCustomerInputKey]?.computedErrors ?? undefined;
+    const value: IdentityData | undefined | null = authoredElementValues[IdentityCustomerInputKey] ?? undefined;
+    const error: string | null | undefined = derivedData.elementStates[IdentityCustomerInputKey]?.error ?? undefined;
 
     const [identityLinks, setIdentityLinks] = useState<CombinedIdentityProviderLink[]>();
 

@@ -8,6 +8,7 @@ import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {getSelectedRowIds, hasSelectedGridRows} from './table-field-selection';
 
 // TODO: Unify with table-field-component.tsx
 export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, { [key: string]: string | number | null }[]>) {
@@ -60,7 +61,8 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
     const handleDelete = () => {
         if (element.id != null && selectionModel != null) {
-            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectionModel.ids.has(index));
+            const selectedIds = new Set(getSelectedRowIds(selectionModel, rows.map((row) => row._id)));
+            const updatedRows = (value ?? []).filter((_: any, index: number) => !selectedIds.has(index));
             setValue(updatedRows.length > 0 ? updatedRows : undefined);
             setSelectionModel({
                 type: 'include',
@@ -155,7 +157,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
             }));
     }, [value]);
 
-    const hasSelectedRows = useMemo(() => selectionModel != null && selectionModel.ids.size > 0, [selectionModel]);
+    const hasSelectedRows = useMemo(() => hasSelectedGridRows(selectionModel, rows.map((row) => row._id)), [rows, selectionModel]);
 
     return (
         <>
@@ -210,6 +212,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
 
                     // can stay active on isBusy because pointerEvents are blocked via CSS and to prevent layout shift
                     checkboxSelection={!element.disabled}
+                    disableRowSelectionExcludeModel
 
                     disableRowSelectionOnClick={true}
                     onRowSelectionModelChange={!isBusy ? setSelectionModel : undefined}

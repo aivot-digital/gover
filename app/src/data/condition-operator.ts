@@ -170,7 +170,12 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.Spacer]: null,
     [ElementType.Table]: null,
     [ElementType.Text]: null,
-    [ElementType.Time]: 'Bitte im Format HH:MM eingeben.',
+    [ElementType.Time]: 'Bitte im Format HH:MM oder HH:MM:SS eingeben.',
+    [ElementType.DateTime]: 'Bitte im Format TT.MM.JJJJ HH:MM oder TT.MM.JJJJ HH:MM:SS eingeben.',
+    [ElementType.DateRange]: 'Bitte im Format TT.MM.JJJJ eingeben.',
+    [ElementType.TimeRange]: 'Bitte im Format HH:MM oder HH:MM:SS eingeben.',
+    [ElementType.DateTimeRange]: 'Bitte im Format TT.MM.JJJJ HH:MM oder TT.MM.JJJJ HH:MM:SS eingeben.',
+    [ElementType.MapPoint]: null,
     [ElementType.IntroductionStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SummaryStep]: null,
@@ -186,6 +191,13 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: null,
+    [ElementType.DomainAndUserSelect]: null,
+    [ElementType.AssignmentContext]: null,
+    [ElementType.DataModelSelect]: null,
+    [ElementType.DataObjectSelect]: null,
+    [ElementType.NoCodeInput]: null,
+    [ElementType.SummaryLayout]: null,
 };
 
 export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {

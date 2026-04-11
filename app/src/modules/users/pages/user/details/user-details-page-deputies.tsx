@@ -1,4 +1,4 @@
-import React, {useContext, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {type GridColDef} from '@mui/x-data-grid';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import Box from '@mui/material/Box';
@@ -14,7 +14,7 @@ import {Button, Dialog, DialogActions, DialogContent} from "@mui/material";
 import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../../../../slices/snackbar-slice";
-import {ListControlRef} from "../../../../../components/generic-list/generic-list-props";
+import {GenericListPropsFetchOptions, ListControlRef} from "../../../../../components/generic-list/generic-list-props";
 import {setLoadingMessage} from "../../../../../slices/shell-slice";
 import {isApiError} from "../../../../../models/api-error";
 import {VUserDeputyWithDetailsEntity} from "../../../entities/v-user-deputy-with-details-entity";
@@ -22,7 +22,6 @@ import {VUserDeputyWithDetailsApiService} from "../../../services/v-user-deputy-
 import {parseISO} from "date-fns/parseISO";
 import Delete from "@aivot/mui-material-symbols-400-outlined/dist/delete/Delete";
 import {useConfirm} from "../../../../../providers/confirm-provider";
-import {isPast} from "date-fns/isPast";
 import {UserDeputyApiService} from "../../../services/user-deputy-api-service";
 import {SelectUserDialog} from "../../../dialogs/select-user-dialog";
 import {UserDeputyEntity} from "../../../entities/user-deputy-entity";
@@ -30,6 +29,7 @@ import {DialogTitleWithClose} from "../../../../../components/dialog-title-with-
 import {DateFieldComponent} from "../../../../../components/date-field/date-field-component";
 import {DateFieldComponentModelMode} from "../../../../../models/elements/form/input/date-field-element";
 import {formatISODate} from "../../../../../utils/date-utils";
+import {addDays} from "date-fns/addDays";
 
 const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
     {
@@ -61,11 +61,21 @@ const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
     },
     {
         field: 'active',
-        headerName: 'Aktuell Aktiv',
+        headerName: 'Derzeit aktiv',
         flex: 1,
         type: 'boolean',
     },
 ];
+
+function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
+    const fromLabel = formatISODate(item.fromTimestamp);
+
+    if (item.untilTimestamp == null) {
+        return `ab ${fromLabel}, unbegrenzt`;
+    }
+
+    return `${fromLabel} bis ${formatISODate(item.untilTimestamp)}`;
+}
 
 export function UserDetailsPageDeputies() {
     const dispatch = useAppDispatch();
@@ -86,6 +96,25 @@ export function UserDetailsPageDeputies() {
         messageType: 'snackbar',
     });
 
+    const deputyDateRangeError = useMemo(() => {
+        if (deputyToAdd?.untilTimestamp == null) {
+            return undefined;
+        }
+
+        const fromTimestamp = parseISO(deputyToAdd.fromTimestamp);
+        const untilTimestamp = parseISO(deputyToAdd.untilTimestamp);
+
+        if (Number.isNaN(fromTimestamp.getTime()) || Number.isNaN(untilTimestamp.getTime())) {
+            return undefined;
+        }
+
+        if (untilTimestamp.getTime() <= fromTimestamp.getTime()) {
+            return 'Das Ende der Vertretung muss nach dem Start der Vertretung liegen.';
+        }
+
+        return undefined;
+    }, [deputyToAdd?.fromTimestamp, deputyToAdd?.untilTimestamp]);
+
     const preSearchElements = useMemo(() => {
         if (!hasAccess) {
             return undefined;
@@ -95,6 +124,7 @@ export function UserDetailsPageDeputies() {
             <Button
                 variant="contained"
                 startIcon={<Add/>}
+                disabled={user?.deletedInIdp === true}
                 onClick={() => {
                     setShowSelectUserDialog(true);
                 }}
@@ -102,7 +132,7 @@ export function UserDetailsPageDeputies() {
                 Stellvertreter:in hinzufügen
             </Button>,
         ];
-    }, [hasAccess]);
+    }, [hasAccess, user?.deletedInIdp]);
 
     if (user == null) {
         return (
@@ -110,8 +140,23 @@ export function UserDetailsPageDeputies() {
         );
     }
 
+    const canManageDeputies = !user.deletedInIdp;
+
+    const fetchDeputies = useCallback((options: GenericListPropsFetchOptions<VUserDeputyWithDetailsEntity>) => {
+        return new VUserDeputyWithDetailsApiService()
+            .listAllOrdered(options.sort, options.order, {
+                originalUserId: user.id,
+                deputyUserFullName: options.search,
+            });
+    }, [user.id]);
+
     const handleAddDeputy = () => {
-        if (deputyToAdd == null) {
+        if (!canManageDeputies || deputyToAdd == null) {
+            return;
+        }
+
+        if (deputyDateRangeError != null) {
+            dispatch(showErrorSnackbar(deputyDateRangeError));
             return;
         }
 
@@ -142,14 +187,19 @@ export function UserDetailsPageDeputies() {
     };
 
     const handleDeleteDeputy = (item: VUserDeputyWithDetailsEntity) => {
+        if (!hasAccess) {
+            return;
+        }
+
         confirm({
             title: 'Stellvertreter:in löschen',
             children: (
                 <>
                     <Typography>
-                        Sind Sie sicher, dass Sie die Stellvertretung
-                        von <strong>{item.deputyUserFullName}</strong> löschen
-                        möchten?
+                        Sind Sie sicher, dass Sie die Stellvertretung von <strong>{item.originalUserFullName}</strong> durch <strong>{item.deputyUserFullName}</strong> löschen möchten?
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Zeitraum: <strong>{getDeputyPeriodLabel(item)}</strong>
                     </Typography>
                 </>
             ),
@@ -160,7 +210,7 @@ export function UserDetailsPageDeputies() {
                 }
 
                 dispatch(setLoadingMessage({
-                    message: `Lösche Stellvertretung von ${item.deputyUserFullName}`,
+                    message: `Lösche Stellvertretung von ${item.originalUserFullName} durch ${item.deputyUserFullName}`,
                     blocking: true,
                     estimatedTime: 3000,
                 }));
@@ -187,18 +237,16 @@ export function UserDetailsPageDeputies() {
 
     return (
         <>
-            <Box sx={{pt: 2}}>
+            <Box sx={{pt: 1.5}}>
                 <Typography
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Mitgliedschaften in Organisationseinheiten
+                    Stellvertreter:innen
                 </Typography>
 
                 <Typography sx={{mb: 3, maxWidth: 900}}>
-                    Eine Übersicht der Organisationseinheiten, in denen diese Mitarbeiter:in Mitglied ist, und die
-                    dazugehörigen
-                    Rollen.
+                    Eine Übersicht der Stellvertreter:innen, die für diese Nutzer:in eingerichtet sind.
                 </Typography>
 
                 <GenericList<VUserDeputyWithDetailsEntity>
@@ -209,22 +257,19 @@ export function UserDetailsPageDeputies() {
                     }}
                     columnDefinitions={columns}
                     controlRef={listControlRef}
-                    fetch={(options) => new VUserDeputyWithDetailsApiService()
-                        .listAllOrdered(options.sort, options.order, {
-                            originalUserId: user?.id,
-                            deputyUserFullName: options.search,
-                        })}
+                    fetch={fetchDeputies}
                     getRowIdentifier={(item) => item.id.toString()}
-                    searchLabel="Organisationseinheit suchen"
-                    searchPlaceholder="Titel der Organisationseinheit eingeben…"
+                    searchLabel="Stellvertreter:in suchen"
+                    searchPlaceholder="Name der Stellvertreter:in eingeben…"
                     defaultSortField="untilTimestamp"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Organisationseinheiten vorhanden"
-                    loadingPlaceholder="Lade Organisationseinheiten…"
-                    noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
+                    noDataPlaceholder="Keine Stellvertreter:innen vorhanden"
+                    loadingPlaceholder="Lade Stellvertreter:innen…"
+                    noSearchResultsPlaceholder="Keine Stellvertreter:innen gefunden"
                     rowActions={(item) => [
                         {
                             tooltip: 'Stellvertreter:in löschen',
+                            disabled: !hasAccess,
                             icon: <Delete/>,
                             onClick: () => {
                                 handleDeleteDeputy(item);
@@ -290,6 +335,8 @@ export function UserDetailsPageDeputies() {
                         label="Ende der Vertretung"
                         mode={DateFieldComponentModelMode.Day}
                         value={deputyToAdd?.untilTimestamp ?? undefined}
+                        minDate={deputyToAdd?.fromTimestamp != null ? addDays(parseISO(deputyToAdd.fromTimestamp), 1) : undefined}
+                        error={deputyDateRangeError}
                         onChange={(val) => {
                             if (deputyToAdd == null) {
                                 return;
@@ -304,20 +351,20 @@ export function UserDetailsPageDeputies() {
 
                 <DialogActions>
                     <Button
+                        variant="contained"
+                        onClick={() => {
+                            handleAddDeputy();
+                        }}
+                        disabled={deputyToAdd == null || deputyDateRangeError != null}
+                    >
+                        Hinzufügen
+                    </Button>
+                    <Button
                         onClick={() => {
                             setDeputyToAdd(null);
                         }}
                     >
                         Abbrechen
-                    </Button>
-                    <Button
-                        variant="contained"
-                        onClick={() => {
-                            handleAddDeputy();
-                        }}
-                        disabled={deputyToAdd == null}
-                    >
-                        Hinzufügen
                     </Button>
                 </DialogActions>
             </Dialog>

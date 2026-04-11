@@ -12,6 +12,10 @@ import org.springframework.stereotype.Component;
 import java.io.File;
 import java.io.IOException;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 public class SubmissionStorageService {
     private final LegacyStorageService storageService;

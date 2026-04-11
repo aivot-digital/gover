@@ -31,4 +31,15 @@ export class SystemRolesApiService extends BaseCrudApiService<
             created: '',
         };
     }
+
+    public async destroyWithMigration(
+        id: number,
+        replacementSystemRoleId: number | null,
+    ): Promise<void> {
+        await this.destroy(id, {
+            query: {
+                replacementSystemRoleId: replacementSystemRoleId ?? undefined,
+            },
+        });
+    }
 }

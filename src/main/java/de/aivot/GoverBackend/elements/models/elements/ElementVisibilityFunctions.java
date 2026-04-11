@@ -95,6 +95,9 @@ public class ElementVisibilityFunctions implements Serializable {
 
     public ElementVisibilityFunctions setConditionSet(@Nullable ConditionSet conditionSet) {
         this.conditionSet = conditionSet;
+        if (this.type == null && conditionSet != null) {
+            this.type = VisibilityFunctionType.ConditionSet;
+        }
         return this;
     }
 
@@ -105,6 +108,9 @@ public class ElementVisibilityFunctions implements Serializable {
 
     public ElementVisibilityFunctions setNoCode(@Nullable NoCodeOperand noCode) {
         this.noCode = noCode;
+        if (this.type == null && noCode != null) {
+            this.type = VisibilityFunctionType.NoCode;
+        }
         return this;
     }
 
@@ -115,6 +121,9 @@ public class ElementVisibilityFunctions implements Serializable {
 
     public ElementVisibilityFunctions setJavascriptCode(@Nullable JavascriptCode javascriptCode) {
         this.javascriptCode = javascriptCode;
+        if (this.type == null && javascriptCode != null) {
+            this.type = VisibilityFunctionType.Javascript;
+        }
         return this;
     }
 

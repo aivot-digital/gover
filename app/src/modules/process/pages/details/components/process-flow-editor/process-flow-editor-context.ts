@@ -4,15 +4,22 @@ import type {ProcessInstanceEntity} from '../../../../entities/process-instance-
 import type {ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import type {ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
 
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
+
 export interface ProcessFlowEditorContextType {
     editable: boolean;
     showTargetHandles: boolean;
 
     selectedNode: ProcessNodeEntity | null;
-    onSelectedNode: (node: ProcessNodeEntity | null) => void;
 
     onAddEdge: (fromNodeId: number, toNodeId: number, viaPortKey: string) => void;
     onDeleteEdge: (forEdgeId: number) => void;
+    onDeleteNode: (node: ProcessNodeEntity) => void | Promise<void>;
+    onConnectNodeToExisting: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
+    onStartReplaceNode: (node: ProcessNodeEntity) => void;
+    onStartCloneNode: (node: ProcessNodeEntity) => void;
+
+    onReloadRuntimeData: () => void;
 
     onAddFollowUpNode: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode: (forEdgeId: number) => void;

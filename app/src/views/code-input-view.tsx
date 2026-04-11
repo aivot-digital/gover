@@ -1,41 +1,50 @@
 import {BaseViewProps} from './base-view';
-import {Box, Typography} from '@mui/material';
-import {CodeInputElement} from '../models/elements/form/input/code-input-element';
-import {CodeEditor} from '../components/code-editor/code-editor';
+import {CodeInputElement, CodeInputFieldLanguage} from '../models/elements/form/input/code-input-element';
+import {useMemo} from 'react';
+import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {CodeInputFieldComponent} from '../components/code-input-field/code-input-field-component';
 
 export function CodeInputView(props: BaseViewProps<CodeInputElement, string>) {
     const {
+        element,
         value,
         setValue,
-        element,
+        onBlur,
+        errors,
+        isBusy: isGloballyDisabled,
+        isDeriving,
     } = props;
 
-    const {
-        label,
-        hint,
-        required,
-    } = element;
+    const isDisabled = useMemo(() => {
+        return element.disabled || isGloballyDisabled;
+    }, [element.disabled, isGloballyDisabled]);
+
+    const isBusy = useMemo(() => {
+        return isDeriving && hasDerivableAspects(element);
+    }, [isDeriving, element]);
+
+    const editorHeight = useMemo(() => {
+        if (element.editorHeight == null) {
+            return undefined;
+        }
+
+        return `${Math.min(1200, Math.max(200, Math.round(element.editorHeight)))}px`;
+    }, [element.editorHeight]);
 
     return (
-        <Box>
-            <Typography>
-                {label}{required ? ' *' : ''}
-            </Typography>
-
-            <CodeEditor
-                value={value ?? undefined}
-                onChange={(val) => {
-                    setValue(val ?? null);
-                }}
-                actions={[]}
-            />
-            {
-                hint != null &&
-                <Typography variant="caption"
-                            color="textSecondary">
-                    {hint}
-                </Typography>
-            }
-        </Box>
+        <CodeInputFieldComponent
+            label={element.label ?? ''}
+            hint={element.hint}
+            error={errors != null ? errors.join(' ') : undefined}
+            required={element.required}
+            disabled={isDisabled}
+            readOnly={isBusy}
+            value={value}
+            onChange={setValue}
+            onBlur={onBlur != null ? (nextValue) => onBlur(nextValue, [element.id]) : undefined}
+            language={element.language ?? CodeInputFieldLanguage.Javascript}
+            height={editorHeight}
+            wordWrap={element.wordWrap ?? false}
+        />
     );
 }

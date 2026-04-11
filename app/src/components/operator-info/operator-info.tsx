@@ -1,16 +1,17 @@
 import {OperatorInfoProps} from './operator-info-props';
 import ReactMarkdown from 'react-markdown';
 import {NoCodeDataTypeLabels} from '../../data/no-code-data-type';
-import React from 'react';
+import React, {Fragment} from 'react';
 import {Table, TableBody, TableCell, TableContainer, TableRow} from '@mui/material';
 import {Collapse} from '../collapse/collapse';
+import {MarkdownContent} from '../markdown-content/markdown-content';
 
 export function OperatorInfo(props: OperatorInfoProps) {
     return (
         <>
-            <ReactMarkdown>
-                {props.operator.description}
-            </ReactMarkdown>
+            <MarkdownContent
+                markdown={props.operator.description}
+            />
 
             <Collapse
                 label="Technische Informationen"
@@ -20,14 +21,17 @@ export function OperatorInfo(props: OperatorInfoProps) {
                 <TableContainer>
                     <Table>
                         <TableBody>
-                            <TableRow>
-                                <TableCell>
-                                    Paket
-                                </TableCell>
-                                <TableCell>
-                                    {props.operator.packageName}
-                                </TableCell>
-                            </TableRow>
+                            {
+                                props.operator.packageName.length > 0 &&
+                                <TableRow>
+                                    <TableCell>
+                                        Paket
+                                    </TableCell>
+                                    <TableCell>
+                                        {props.operator.packageName}
+                                    </TableCell>
+                                </TableRow>
+                            }
 
 
                             <TableRow>
@@ -41,25 +45,33 @@ export function OperatorInfo(props: OperatorInfoProps) {
 
                             <TableRow>
                                 <TableCell>
-                                    Parameter
+                                    Signaturen
                                 </TableCell>
                                 <TableCell>
                                     <ul>
-                                        {props.operator.signatures[0].parameters.map((parameter, i) => (
-                                            <li key={i}>
-                                                {parameter.label}: {NoCodeDataTypeLabels[parameter.type]}
+                                        {props.operator.signatures.map((signature, signatureIndex) => (
+                                            <li key={signatureIndex}>
+                                                {
+                                                    signature.parameters.length > 0 ? (
+                                                        <>
+                                                            {signature.parameters.map((parameter, parameterIndex) => (
+                                                                <Fragment key={parameterIndex}>
+                                                                    {parameterIndex > 0 && ', '}
+                                                                    {parameter.label}: {NoCodeDataTypeLabels[parameter.type]}
+                                                                </Fragment>
+                                                            ))}
+                                                            {' -> '}
+                                                            {NoCodeDataTypeLabels[signature.returnType]}
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            Keine Parameter {' -> '} {NoCodeDataTypeLabels[signature.returnType]}
+                                                        </>
+                                                    )
+                                                }
                                             </li>
                                         ))}
                                     </ul>
-                                </TableCell>
-                            </TableRow>
-
-                            <TableRow>
-                                <TableCell>
-                                    Rückgabewert
-                                </TableCell>
-                                <TableCell>
-                                    {NoCodeDataTypeLabels[props.operator.signatures[0].returnType]}
                                 </TableCell>
                             </TableRow>
                         </TableBody>

@@ -85,12 +85,16 @@ public class JavascriptCode implements Serializable {
         var expliciteReferencePattern = Pattern
                 .compile(">>>([a-zA-Z0-9_-]+)");
 
-        var implicitRegex = String.format(
-                "%s\\.([a-zA-Z0-9_-]+)",
-                JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+        var implicitReferencePatterns = Set.of(
+                Pattern.compile(String.format(
+                        "%s\\.effectiveValues\\.([a-zA-Z0-9_-]+)",
+                        JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+                )),
+                Pattern.compile(String.format(
+                        "%s\\.elementStates\\.([a-zA-Z0-9_-]+)",
+                        JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+                ))
         );
-        var implicitReferencePattern = Pattern
-                .compile(implicitRegex);
 
         var ids = new HashSet<String>();
 
@@ -99,9 +103,11 @@ public class JavascriptCode implements Serializable {
             ids.add(matcher.group(1));
         }
 
-        matcher = implicitReferencePattern.matcher(code);
-        while (matcher.find()) {
-            ids.add(matcher.group(1));
+        for (var implicitReferencePattern : implicitReferencePatterns) {
+            matcher = implicitReferencePattern.matcher(code);
+            while (matcher.find()) {
+                ids.add(matcher.group(1));
+            }
         }
 
         return ids;

@@ -11,13 +11,14 @@ import Typography from '@mui/material/Typography';
 import {stringOrDefault} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
-import {type ElementData} from '../../models/element-data';
+import {type AuthoredElementValues} from '../../models/element-data';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 
-export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ElementData[]>) {
+export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, AuthoredElementValues[]>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
 
     const {
@@ -29,9 +30,13 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         allElements,
         isDeriving,
         isBusy,
-        elementData,
-        onElementDataChange,
+        authoredElementValues,
+        derivedData,
+        rootAuthoredElementValues,
+        rootDerivedData,
+        onAuthoredElementValuesChange,
         onElementBlur,
+        onDerivedDataChange,
         disableVisibility,
         mode,
         errors,
@@ -63,13 +68,13 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
 
     useEffect(() => {
         if (minRequiredSets > 0 && (value == null || value.length < minRequiredSets)) {
-            const forcedChildren = Array.from({length: minRequiredSets}, () => ({} as ElementData));
+            const forcedChildren = Array.from({length: minRequiredSets}, () => ({} as AuthoredElementValues));
             setValue(forcedChildren);
         }
     }, [setValue, value, element]);
 
     const handleAdd = useCallback(() => {
-        const updatedValue: ElementData[] = [
+        const updatedValue: AuthoredElementValues[] = [
             ...(value ?? []),
             {},
         ];
@@ -77,9 +82,9 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         setValue(updatedValue, [`${element.id}.${updatedValue.length - 1}`]);
     }, [element, setValue, value]);
 
-    const handleDelete = useCallback((_: ElementData, index: number) => {
+    const handleDelete = useCallback((_: AuthoredElementValues, index: number) => {
         const newValue = (value ?? [])
-            .filter((_: ElementData, i: number) => i !== index);
+            .filter((_: AuthoredElementValues, i: number) => i !== index);
 
         const allChildIds = flattenElements(element, false)
             .map(child => child.id);
@@ -115,7 +120,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                 </FormHelperText>
             }
             {
-                value?.map((val: ElementData, valueIndex: number) => derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? ( /* TODO: Fix skeletons */
+                value?.map((val: AuthoredElementValues, valueIndex: number) => derivationTriggerIdQueue.includes(`${element.id}.${valueIndex}`) ? ( /* TODO: Fix skeletons */
                     // Skeleton
                     (<Box
                         key={valueIndex}
@@ -205,7 +210,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         color="error"
                                         size="small"
                                         endIcon={
-                                            <DeleteForeverOutlinedIcon
+                                            <Delete
                                                 sx={{
                                                     marginTop: '-4px',
                                                 }}
@@ -238,8 +243,11 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                         isBusy={isBusy}
                                         isDeriving={props.isDeriving}
                                         mode={props.mode}
-                                        elementData={val}
-                                        onElementDataChange={(data, triggeringElementIds) => {
+                                        authoredElementValues={val}
+                                        derivedData={resolveReplicatingContainerItemDerivedData(element, derivedData, valueIndex)}
+                                        rootAuthoredElementValues={rootAuthoredElementValues}
+                                        rootDerivedData={rootDerivedData}
+                                        onAuthoredElementValuesChange={(data, triggeringElementIds) => {
                                             const newValue = (value ?? [])
                                                 .map((v, i) => i === valueIndex ? data : v);
                                             setValue(newValue, triggeringElementIds);
@@ -249,6 +257,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                                 .map((v, i) => i === valueIndex ? data : v);
                                             onBlur(newValue, triggeringElementIds);
                                         }}
+                                        onDerivedDataChange={onDerivedDataChange}
                                         disableVisibility={disableVisibility}
                                         scrollContainerRef={scrollContainerRef}
                                         derivationTriggerIdQueue={derivationTriggerIdQueue}
@@ -289,4 +298,3 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         </Box>
     );
 }
-

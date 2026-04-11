@@ -15,7 +15,8 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
         isBusy,
         isDeriving,
         value,
-        elementData,
+        authoredElementValues,
+        derivedData,
         setValue,
         errors,
     } = props;
@@ -45,7 +46,8 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                 element={form.version.rootElement}
                 showTechnical={false}
                 allowStepNavigation={true}
-                elementData={elementData}
+                authoredElementValues={authoredElementValues}
+                derivedData={derivedData}
             />
 
             <Typography
@@ -83,4 +85,3 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
         </>
     );
 }
-

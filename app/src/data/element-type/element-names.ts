@@ -31,9 +31,21 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.FunctionInput]: 'Funktionseingabe',
     [ElementType.CodeInput]: 'Codeeingabe',
     [ElementType.RichTextInput]: 'Markdown-Eingabe',
-    [ElementType.UiDefinitionInput]: 'UI-Definition Eingabe',
+    [ElementType.UiDefinitionInput]: 'UI-Definition-Editor',
     [ElementType.IdentityInput]: 'Identitätseingabe',
     [ElementType.TabLayout]: 'Tabs',
+    [ElementType.ChipInput]: 'Tag-Liste (Schlagwörter)',
+    [ElementType.DateTime]: 'Datum und Uhrzeit',
+    [ElementType.DateRange]: 'Datumsspanne',
+    [ElementType.TimeRange]: 'Zeitspanne',
+    [ElementType.DateTimeRange]: 'Datum- und Zeitspanne',
+    [ElementType.MapPoint]: 'Kartenpunkt (Technische Preview)',
+    [ElementType.DomainAndUserSelect]: 'Domänen- und Mitarbeitendenauswahl',
+    [ElementType.AssignmentContext]: 'Verantwortlicher Personenkreis',
+    [ElementType.DataModelSelect]: 'Datenmodell-Auswahl',
+    [ElementType.DataObjectSelect]: 'Datenobjekt-Auswahl',
+    [ElementType.NoCodeInput]: 'No-Code-Eingabe',
+    [ElementType.SummaryLayout]: 'Zusammenfassung',
 };
 
 export function getElementName(element: AnyElement): string {

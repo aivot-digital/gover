@@ -1,11 +1,12 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.terminators;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
@@ -18,7 +19,9 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
@@ -90,7 +93,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
                 .setId(RETENTION_VALUE_FIELD_KEY);
         retentionInput
                 .setLabel("Aufbewahrungsfrist")
-                .setHint("Geben Sie die Aufbewahrungsfrist für die Prozessdaten nach Abschluss des Prozesses an (z.B. '30 Tage', '6 Monate', '1 Jahr').")
+                .setHint("Geben Sie die Aufbewahrungsfrist für die Vorgangsdaten nach Abschluss des Vorgangs an (z.B. '30 Tage', '6 Monate', '1 Jahr').")
                 .setRequired(true);
         layout.addChild(retentionInput);
 
@@ -103,10 +106,10 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
                 .setRequired(true);
         retentionUnitInput
                 .setOptions(List.of(
-                        RadioInputElementOption.of(RETENTION_UNIT_DAYS, "Tage"),
-                        RadioInputElementOption.of(RETENTION_UNIT_WEEKS, "Wochen"),
-                        RadioInputElementOption.of(RETENTION_UNIT_MONTHS, "Monate"),
-                        RadioInputElementOption.of(RETENTION_UNIT_YEARS, "Jahre")
+                        SelectInputElementOption.of(RETENTION_UNIT_DAYS, "Tage"),
+                        SelectInputElementOption.of(RETENTION_UNIT_WEEKS, "Wochen"),
+                        SelectInputElementOption.of(RETENTION_UNIT_MONTHS, "Monate"),
+                        SelectInputElementOption.of(RETENTION_UNIT_YEARS, "Jahre")
                 ));
         layout.addChild(retentionUnitInput);
 
@@ -114,32 +117,31 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public void validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull ElementData configuration) throws ResponseException {
-        configuration
-                .get(RETENTION_VALUE_FIELD_KEY)
-                .getOptionalValue(Number.class)
-                .orElseThrow(ResponseException::badRequest);
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AuthoredElementValues configuration,
+                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        var res = new HashMap<String, String>();
 
-        var retentionUnit = configuration
-                .get(RETENTION_UNIT_FIELD_KEY)
-                .getOptionalValue(String.class)
-                .orElseThrow(ResponseException::badRequest);
+        var effectiveValues = derivedRuntimeElementData.getEffectiveValues();
 
-        // Check if retention unit is valid
-        if (!retentionUnit.equals(RETENTION_UNIT_DAYS) &&
-                !retentionUnit.equals(RETENTION_UNIT_WEEKS) &&
-                !retentionUnit.equals(RETENTION_UNIT_MONTHS) &&
-                !retentionUnit.equals(RETENTION_UNIT_YEARS)) {
-
-            var retentionUnitField = configuration
-                    .get(RETENTION_UNIT_FIELD_KEY)
-                    .addComputedError("Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
-            configuration.put(RETENTION_UNIT_FIELD_KEY, retentionUnitField);
-
-            throw ResponseException
-                    .badRequest(configuration);
+        var retentionValue = effectiveValues.get(RETENTION_VALUE_FIELD_KEY);
+        if (!(retentionValue instanceof Number)) {
+            res.put(RETENTION_VALUE_FIELD_KEY, "Ungültiger Wert für die Aufbewahrungsfrist.");
         }
+
+        var retentionUnitObj = effectiveValues.get(RETENTION_UNIT_FIELD_KEY);
+        if (retentionUnitObj instanceof String retentionUnit) {
+            if (!retentionUnit.equals(RETENTION_UNIT_DAYS) &&
+                    !retentionUnit.equals(RETENTION_UNIT_WEEKS) &&
+                    !retentionUnit.equals(RETENTION_UNIT_MONTHS) &&
+                    !retentionUnit.equals(RETENTION_UNIT_YEARS)) {
+                res.put(RETENTION_UNIT_FIELD_KEY, "Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
+            }
+        } else {
+            res.put(RETENTION_UNIT_FIELD_KEY, "Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
+        }
+
+        return res.isEmpty() ? null : res;
     }
 
     @Nullable
@@ -150,20 +152,14 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var retentionTimeValue = context
-                .getThisNode()
-                .getConfiguration()
-                .get(RETENTION_VALUE_FIELD_KEY)
-                .getOptionalValue(Number.class)
-                .orElse(DEFAULT_RETENTION_VALUE)
+        var configuration = context.getConfiguration().getEffectiveValues();
+
+        var retentionTimeValue = ((Number) configuration
+                .getOrDefault(RETENTION_VALUE_FIELD_KEY, DEFAULT_RETENTION_VALUE))
                 .longValue();
 
-        var retentionTimeUnit = context
-                .getThisNode()
-                .getConfiguration()
-                .get(RETENTION_UNIT_FIELD_KEY)
-                .getOptionalValue(String.class)
-                .orElse(DEFAULT_RETENTION_UNIT);
+        var retentionTimeUnit = String.valueOf(configuration
+                .getOrDefault(RETENTION_UNIT_FIELD_KEY, DEFAULT_RETENTION_UNIT));
 
         var retentionTime = LocalDateTime.now();
         switch (retentionTimeUnit) {

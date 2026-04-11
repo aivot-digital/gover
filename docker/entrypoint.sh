@@ -3,6 +3,7 @@
 echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
 
 if [ "$1" = "serve" ]; then
+  echo "serve" > /app/runtime-mode
   echo "Waiting for IDP to be available at ${GOVER_HOSTNAME}/idp/realms/staff…"
 
   until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/idp/realms/staff/"; do
@@ -11,7 +12,10 @@ if [ "$1" = "serve" ]; then
 
   echo "IDP is available, starting api…"
 
-  java -jar /app/gover.jar
+  java \
+    -cp /app/gover.jar \
+    -Dloader.path=/app/plugins/ \
+    org.springframework.boot.loader.launch.PropertiesLauncher
 else
   cat > /app/app-config.js <<EOF
 window.AppConfig = {
@@ -30,6 +34,7 @@ window.AppConfig = {
 };
 EOF
 
+  echo "app" > /app/runtime-mode
   cp /app/app-config.js /app/www/app-config.js
   cp /app/app-config.js /app/www/staff/app-config.js
 

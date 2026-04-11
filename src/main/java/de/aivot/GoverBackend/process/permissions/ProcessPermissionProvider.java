@@ -20,7 +20,6 @@ public class ProcessPermissionProvider implements PermissionProvider {
     public static final String PROCESS_INSTANCE_UPDATE = "process_instance.update";
     public static final String PROCESS_INSTANCE_DELETE = "process_instance.delete";
     public static final String PROCESS_INSTANCE_PAUSE_RESUME = "process_instance.pause_resume";
-    public static final String PROCESS_INSTANCE_EDIT_DATA = "process_instance.edit_data";
     public static final String PROCESS_INSTANCE_REASSIGN = "process_instance.reassign";
     public static final String PROCESS_INSTANCE_COMMUNICATION_INTERNAL = "process_instance.communication.internal";
     public static final String PROCESS_INSTANCE_COMMUNICATION_EXTERNAL = "process_instance.communication.external";
@@ -35,25 +34,24 @@ public class ProcessPermissionProvider implements PermissionProvider {
     @Override
     public PermissionEntry[] getPermissions() {
         return new PermissionEntry[]{
-                PermissionEntry.of(PROCESS_DEFINITION_CREATE, "Prozessdefinition anlegen", "Erlaubt das Anlegen neuer Prozessdefinitionen."),
-                PermissionEntry.of(PROCESS_DEFINITION_READ, "Prozessdefinition anzeigen", "Erlaubt das Anzeigen von Prozessdefinitionen."),
-                PermissionEntry.of(PROCESS_DEFINITION_UPDATE, "Prozessdefinition bearbeiten", "Erlaubt das Bearbeiten bestehender Prozessdefinitionen."),
-                PermissionEntry.of(PROCESS_DEFINITION_DELETE, "Prozessdefinition löschen", "Erlaubt das Löschen von Prozessdefinitionen."),
-                PermissionEntry.of(PROCESS_DEFINITION_AUDIT, "Prozessdefinition Audit einsehen", "Erlaubt das Einsehen des Audit-Logs einer Prozessdefinition."),
-                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_TEST, "Prozessdefinition als Test veröffentlichen", "Erlaubt das Veröffentlichen einer Prozessdefinition als Testversion."),
-                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_LOCAL, "Prozessdefinition lokal veröffentlichen", "Erlaubt das Veröffentlichen einer Prozessdefinition im lokalen System."),
-                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_STORE, "Prozessdefinition im Store veröffentlichen", "Erlaubt das Veröffentlichen einer Prozessdefinition im zentralen Store."),
-                PermissionEntry.of(PROCESS_INSTANCE_TRIGGER, "Prozessinstanz starten", "Erlaubt das Starten neuer Prozessinstanzen."),
-                PermissionEntry.of(PROCESS_INSTANCE_READ, "Prozessinstanz anzeigen", "Erlaubt das Anzeigen von Prozessinstanzen."),
-                PermissionEntry.of(PROCESS_INSTANCE_UPDATE, "Prozessinstanz bearbeiten", "Erlaubt das Bearbeiten von Prozessinstanzen."),
-                PermissionEntry.of(PROCESS_INSTANCE_DELETE, "Prozessinstanz löschen", "Erlaubt das Löschen von Prozessinstanzen."),
-                PermissionEntry.of(PROCESS_INSTANCE_PAUSE_RESUME, "Prozessinstanz pausieren/fortsetzen", "Erlaubt das Pausieren und Fortsetzen von Prozessinstanzen."),
-                PermissionEntry.of(PROCESS_INSTANCE_EDIT_DATA, "Prozessdaten bearbeiten", "Erlaubt das Bearbeiten der Daten einer Prozessinstanz."),
-                PermissionEntry.of(PROCESS_INSTANCE_REASSIGN, "Prozessinstanz neu zuweisen", "Erlaubt das Zuweisen einer Prozessinstanz an andere Benutzer."),
-                PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_INTERNAL, "Interne Kommunikation", "Erlaubt die interne Kommunikation innerhalb einer Prozessinstanz."),
-                PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_EXTERNAL, "Externe Kommunikation", "Erlaubt die externe Kommunikation aus einer Prozessinstanz heraus."),
-                PermissionEntry.of(PROCESS_INSTANCE_EDIT_TASK, "Aufgaben bearbeiten", "Erlaubt das Bearbeiten von Aufgaben innerhalb einer Prozessinstanz."),
-                PermissionEntry.of(PROCESS_INSTANCE_MIGRATE, "Prozessinstanz migrieren", "Erlaubt die Migration von Prozessinstanzen auf eine neue Version."),
+                PermissionEntry.of(PROCESS_DEFINITION_CREATE, "Prozess anlegen", "Erlaubt das Anlegen neuer Prozesse."),
+                PermissionEntry.of(PROCESS_DEFINITION_READ, "Prozess anzeigen", "Erlaubt das Anzeigen von Prozessen."),
+                PermissionEntry.of(PROCESS_DEFINITION_UPDATE, "Prozess bearbeiten", "Erlaubt das Bearbeiten bestehender Prozesse."),
+                PermissionEntry.of(PROCESS_DEFINITION_DELETE, "Prozess löschen", "Erlaubt das Löschen von Prozessen."),
+                PermissionEntry.of(PROCESS_DEFINITION_AUDIT, "Prozess-Audit einsehen", "Erlaubt das Einsehen des Audit-Logs eines Prozesses."),
+                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_TEST, "Prozess als Test veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses als Testversion."),
+                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_LOCAL, "Prozess lokal veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses im lokalen System."),
+                PermissionEntry.of(PROCESS_DEFINITION_PUBLISH_STORE, "Prozess im Store veröffentlichen", "Erlaubt das Veröffentlichen eines Prozesses im zentralen Store."),
+                PermissionEntry.of(PROCESS_INSTANCE_TRIGGER, "Vorgang starten", "Erlaubt das Starten neuer Vorgänge."),
+                PermissionEntry.of(PROCESS_INSTANCE_READ, "Vorgang anzeigen", "Erlaubt das Anzeigen von Vorgängen."),
+                PermissionEntry.of(PROCESS_INSTANCE_UPDATE, "Vorgang bearbeiten", "Erlaubt das Bearbeiten von Vorgängen."),
+                PermissionEntry.of(PROCESS_INSTANCE_DELETE, "Vorgang löschen", "Erlaubt das Löschen von Vorgängen."),
+                PermissionEntry.of(PROCESS_INSTANCE_PAUSE_RESUME, "Vorgang pausieren/fortsetzen", "Erlaubt das Pausieren und Fortsetzen von Vorgängen."),
+                PermissionEntry.of(PROCESS_INSTANCE_REASSIGN, "Vorgang neu zuweisen", "Erlaubt das Zuweisen eines Vorgangs an andere Benutzer:innen."),
+                PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_INTERNAL, "Interne Kommunikation", "Erlaubt die interne Kommunikation innerhalb eines Vorgangs."),
+                PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_EXTERNAL, "Externe Kommunikation", "Erlaubt die externe Kommunikation aus einem Vorgang heraus."),
+                PermissionEntry.of(PROCESS_INSTANCE_EDIT_TASK, "Aufgaben bearbeiten", "Erlaubt das Bearbeiten von Aufgaben innerhalb eines Vorgangs."),
+                PermissionEntry.of(PROCESS_INSTANCE_MIGRATE, "Vorgang migrieren", "Erlaubt die Migration von Vorgängen auf eine neue Version."),
         };
     }
 

@@ -199,6 +199,7 @@ export function OperandEditor(props: OperandEditorProps) {
 
             <SelectElementDialog
                 allElements={allElements}
+                desiredType={parameter.type}
                 open={showElementSelectDialog}
                 onSelect={(element) => {
                     onChange({

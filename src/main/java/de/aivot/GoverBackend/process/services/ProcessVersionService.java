@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
+import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -14,16 +15,21 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Optional;
 
 @Service
 public class ProcessVersionService implements EntityService<ProcessVersionEntity, ProcessVersionEntityId> {
 
     private final ProcessVersionRepository processDefinitionVersionRepository;
+    private final ProcessNodeService processNodeService;
 
     @Autowired
-    public ProcessVersionService(ProcessVersionRepository processDefinitionVersionRepository) {
+    public ProcessVersionService(ProcessVersionRepository processDefinitionVersionRepository,
+                                 ProcessNodeService processNodeService) {
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
+        this.processNodeService = processNodeService;
     }
 
     @Nonnull
@@ -84,6 +90,21 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     @Override
     public void performDelete(@Nonnull ProcessVersionEntity entity) throws ResponseException {
         processDefinitionVersionRepository.delete(entity);
+    }
+
+    public List<ProcessNodeProblems> validate(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        var nodes = processNodeService
+                .findAllByProcessIdAndProcessVersion(entity.getProcessId(), entity.getProcessVersion());
+
+        var res = new LinkedList<ProcessNodeProblems>();
+
+        for (var node : nodes) {
+            processNodeService
+                    .validate(node, true)
+                    .ifPresent(res::add);
+        }
+
+        return res;
     }
 }
 

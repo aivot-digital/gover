@@ -19,12 +19,13 @@ import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
-import {ElementData} from '../../models/element-data';
+import {AuthoredElementValues, createDerivedRuntimeElementData, DerivedRuntimeElementData} from '../../models/element-data';
 import {CustomerInputService} from '../../services/customer-input-service';
 import {setErrorMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-citizen-details-response-dto';
+import {stringOrUndefined} from '../../utils/string-utils';
 
 export const DialogSearchParam = 'dialog';
 
@@ -47,12 +48,13 @@ export function CustomerFormPage() {
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const identityId = useAppSelector(selectIdentityId);
 
-    const [elementData, setElementData] = useState<ElementData>({});
+    const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
 
     const [theme, setTheme] = useState<Theme>();
 
-    const handleSetElementData = (data: ElementData, storeData: boolean = true) => {
-        setElementData(data);
+    const handleSetElementData = (data: AuthoredElementValues, storeData: boolean = true) => {
+        setAuthoredElementValues(data);
 
         if (storeData && form != null) {
             CustomerInputService
@@ -119,13 +121,17 @@ export function CustomerFormPage() {
         );
     } else {
         const allElements = flattenElements(form.version.rootElement);
+        const pageTitle = stringOrUndefined(form.version.rootElement.tabTitle) ??
+            stringOrUndefined(form.version.publicTitle) ??
+            stringOrUndefined(form.version.rootElement.headline) ??
+            '';
 
         return (
             <ThemeProvider theme={_theme}>
                 <SnackbarProvider>
                     <MetaElement
                         faviconUrl={new FormApiService().getFormFaviconLink(form.form.slug, form.version.version)}
-                        title={form.version.rootElement.tabTitle ?? form.version.rootElement.headline ?? ''}
+                        title={pageTitle}
                         titlePrefix={provider}
                     />
 
@@ -141,8 +147,10 @@ export function CustomerFormPage() {
                             isBusy={false}
                             isDeriving={false}
                             mode="viewer"
-                            elementData={elementData}
-                            onElementDataChange={(data) => handleSetElementData(data)}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
+                            onAuthoredElementValuesChange={(data) => handleSetElementData(data)}
+                            onDerivedDataChange={setDerivedData}
                             derivationTriggerIdQueue={[]}
                             disableVisibility={false}
                         />

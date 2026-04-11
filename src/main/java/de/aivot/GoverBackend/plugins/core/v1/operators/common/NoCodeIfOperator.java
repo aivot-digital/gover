@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
+import jakarta.annotation.Nullable;
 
 public class NoCodeIfOperator extends NoCodeOperator {
     @Override
@@ -80,11 +81,17 @@ public class NoCodeIfOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var arg0 = castToBoolean(args[0]);
         var arg1 = args[1];
         var arg2 = args[2];
 
         return new NoCodeResult(arg0 ? arg1 : arg2);
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "wenn „#0“ wahr ist, dann „#1“ andernfalls „#2“";
     }
 }

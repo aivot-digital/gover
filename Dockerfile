@@ -97,21 +97,28 @@ ENV BUILD_DATE=$BUILD_DATE
 # Prepare app working directoy
 WORKDIR /app
 
-# Copy entrypoint script
+# Copy entrypoint and healthcheck scripts
 COPY docker/entrypoint.sh /app/entrypoint.sh
+COPY docker/healthcheck.sh /app/healthcheck.sh
 
 # Install locale, nginx, configure nginx and entrypoint script
 RUN apk upgrade --no-cache && \
     apk add curl tzdata musl musl-utils musl-locales nginx && \
-    chmod +x /app/entrypoint.sh
+    chmod +x /app/entrypoint.sh /app/healthcheck.sh && \
+    mkdir -p /app/default-assets
 
 # Copy nginx configs
 COPY docker/nginx.conf /etc/nginx/http.d/default.conf
 
+# Copy default assets
+COPY default-assets /app/default-assets
+
 # Copy app files
-COPY --from=build_server /app/target/gover-backend-0.0.0.jar /app/gover.jar
+COPY --from=build_server /app/target/gover-0.0.0.jar /app/gover.jar
 COPY --from=build_app /app/build/customer /app/www
 COPY --from=build_app /app/build/staff /app/www/staff
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["/app/healthcheck.sh"]
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["app"]

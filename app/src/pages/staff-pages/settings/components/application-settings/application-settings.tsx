@@ -30,6 +30,8 @@ import {DepartmentApiService} from '../../../../../modules/departments/services/
 import {DepartmentEntity} from '../../../../../modules/departments/entities/department-entity';
 import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
+import {isStringNullOrEmpty} from '../../../../../utils/string-utils';
+import {SystemRolesApiService} from '../../../../../modules/system/services/system-roles-api-service';
 
 async function fetchSetup(): Promise<SystemSetupDTO> {
     return new SystemApiService()
@@ -66,10 +68,46 @@ export function ApplicationSettings() {
 
     const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
+    const [systemRoleOptions, setSystemRoleOptions] = useState<SelectFieldComponentOption[]>([]);
+    const [isLoadingSystemRoles, setIsLoadingSystemRoles] = useState(true);
+    const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
 
+    const [assetStorageProviders, setAssetStorageProviders] = useState<SelectFieldComponentOption[]>([]);
     const [attStorageProviders, setAttStorageProviders] = useState<SelectFieldComponentOption[]>([]);
+    const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
+    const [isLoadingAttStorageProviders, setIsLoadingAttStorageProviders] = useState(true);
 
     const hasNotChanged = Object.keys(editedConfig).length === 0;
+    const configuredDefaultSystemRole = config[SystemConfigKeys.users.defaultSystemRole];
+    const configuredAssetStorageProvider = config[SystemConfigKeys.storage.assets.default_storage_provider];
+    const configuredAttachmentStorageProvider = config[SystemConfigKeys.storage.attachments.default_storage_provider];
+    const defaultSystemRoleValue = editedConfig[SystemConfigKeys.users.defaultSystemRole] ?? configuredDefaultSystemRole;
+    const assetStorageProviderValue = editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? configuredAssetStorageProvider;
+    const attachmentStorageProviderValue = editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? configuredAttachmentStorageProvider;
+    const defaultSystemRoleError =
+        !isLoadingSystemRoles
+            ? systemRoleOptions.length === 0
+                ? 'Es ist keine Systemrolle vorhanden. Legen Sie zuerst eine Systemrolle an.'
+                : isStringNullOrEmpty(defaultSystemRoleValue)
+                    ? 'Bitte wählen Sie eine Standard-Systemrolle aus.'
+                    : undefined
+            : undefined;
+    const assetStorageProviderError =
+        !isLoadingAssetStorageProviders
+            ? assetStorageProviders.length === 0
+                ? 'Es ist kein Speicheranbieter für Assets vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
+                : isStringNullOrEmpty(assetStorageProviderValue)
+                    ? 'Bitte wählen Sie einen Speicheranbieter für Assets aus.'
+                    : undefined
+            : undefined;
+    const attachmentStorageProviderError =
+        !isLoadingAttStorageProviders
+            ? attStorageProviders.length === 0
+                ? 'Es ist kein Speicheranbieter für Vorgangsanlagen vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
+                : isStringNullOrEmpty(attachmentStorageProviderValue)
+                    ? 'Bitte wählen Sie einen Speicheranbieter für Vorgangsanlagen aus.'
+                    : undefined
+            : undefined;
 
     useEffect(() => {
         new ThemesApiService(api)
@@ -82,7 +120,44 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Farbschemata konnten nicht geladen werden'));
+                dispatch(showErrorSnackbar('Erscheinungsbilder konnten nicht geladen werden'));
+            });
+
+        new SystemRolesApiService()
+            .listAll()
+            .then((roles) => {
+                setSystemRoleOptions(roles.content
+                    .map((role) => ({
+                        value: role.id.toString(),
+                        label: role.name,
+                        subLabel: role.description ?? undefined,
+                    }))
+                    .sort((a, b) => a.label.localeCompare(b.label)));
+            })
+            .catch((err) => {
+                setHasSystemRolesLoadingError(true);
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Systemrollen konnte nicht geladen werden'));
+            })
+            .finally(() => {
+                setIsLoadingSystemRoles(false);
+            });
+
+        new StorageProvidersApiService()
+            .listAll({
+                type: StorageProviderType.Assets,
+            })
+            .then(({content: providers}) => {
+                setAssetStorageProviders(providers.map((prv) => ({
+                    value: prv.id.toString(),
+                    label: prv.name,
+                    subLabel: prv.description,
+                })));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Assets konnte nicht geladen werden'));
+            })
+            .finally(() => {
+                setIsLoadingAssetStorageProviders(false);
             });
 
         new StorageProvidersApiService()
@@ -98,19 +173,122 @@ export function ApplicationSettings() {
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden'));
+            })
+            .finally(() => {
+                setIsLoadingAttStorageProviders(false);
             });
     }, []);
+
+    useEffect(() => {
+        if (attStorageProviders.length === 0) {
+            return;
+        }
+
+        setEditedConfig((prev) => {
+            const currentValue =
+                prev[SystemConfigKeys.storage.attachments.default_storage_provider] ??
+                configuredAttachmentStorageProvider;
+
+            if (!isStringNullOrEmpty(currentValue)) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                [SystemConfigKeys.storage.attachments.default_storage_provider]: attStorageProviders[0].value,
+            };
+        });
+    }, [attStorageProviders, configuredAttachmentStorageProvider]);
+
+    useEffect(() => {
+        if (assetStorageProviders.length === 0) {
+            return;
+        }
+
+        setEditedConfig((prev) => {
+            const currentValue =
+                prev[SystemConfigKeys.storage.assets.default_storage_provider] ??
+                configuredAssetStorageProvider;
+
+            if (!isStringNullOrEmpty(currentValue)) {
+                return prev;
+            }
+
+            return {
+                ...prev,
+                [SystemConfigKeys.storage.assets.default_storage_provider]: assetStorageProviders[0].value,
+            };
+        });
+    }, [assetStorageProviders, configuredAssetStorageProvider]);
 
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
 
         if (editedConfig != null) {
+            const normalizedEditedConfig = {
+                ...editedConfig,
+            };
+
+            const appliedStorageProviderDefaults: SystemConfigMap = {};
+            const requiredStorageProviderConfigs = [
+                {
+                    key: SystemConfigKeys.storage.attachments.default_storage_provider,
+                    options: attStorageProviders,
+                    errorMessage: 'Für Vorgangsanlagen muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
+                },
+                {
+                    key: SystemConfigKeys.storage.assets.default_storage_provider,
+                    options: assetStorageProviders,
+                    errorMessage: 'Für Assets muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
+                },
+            ];
+
+            for (const requiredStorageProviderConfig of requiredStorageProviderConfigs) {
+                const currentValue =
+                    normalizedEditedConfig[requiredStorageProviderConfig.key] ??
+                    config[requiredStorageProviderConfig.key];
+
+                if (!isStringNullOrEmpty(currentValue)) {
+                    continue;
+                }
+
+                if (requiredStorageProviderConfig.options.length === 0) {
+                    dispatch(showErrorSnackbar(requiredStorageProviderConfig.errorMessage));
+                    return;
+                }
+
+                const fallbackProviderValue = requiredStorageProviderConfig.options[0].value;
+                normalizedEditedConfig[requiredStorageProviderConfig.key] = fallbackProviderValue;
+                appliedStorageProviderDefaults[requiredStorageProviderConfig.key] = fallbackProviderValue;
+            }
+
+            const currentDefaultSystemRole =
+                normalizedEditedConfig[SystemConfigKeys.users.defaultSystemRole] ??
+                config[SystemConfigKeys.users.defaultSystemRole];
+
+            if (isStringNullOrEmpty(currentDefaultSystemRole)) {
+                if (systemRoleOptions.length === 0) {
+                    dispatch(showErrorSnackbar('Für automatische Benutzerimporte muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
+                    return;
+                }
+
+                dispatch(showErrorSnackbar('Bitte wählen Sie eine Standard-Systemrolle für automatische Benutzerimporte aus.'));
+                return;
+            }
+
+            if (Object.keys(appliedStorageProviderDefaults).length > 0) {
+                setEditedConfig((prev) => ({
+                    ...prev,
+                    ...appliedStorageProviderDefaults,
+                }));
+            }
+
             const updatedConfigs = Object
-                .keys(editedConfig)
-                .filter((key) => editedConfig[key] !== config[key])
+                .keys(normalizedEditedConfig)
+                .filter((key) => normalizedEditedConfig[key] !== config[key])
                 .map((key) => ({
                     key,
-                    value: editedConfig[key],
+                    value: normalizedEditedConfig[key],
                 }));
 
             const updatePromises = updatedConfigs
@@ -185,7 +363,9 @@ export function ApplicationSettings() {
                     mb: 1.6,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems.
+                Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen Bereichen sichtbar.
             </Typography>
             <TextFieldComponent
                 label="Name des Betreibers"
@@ -209,7 +389,7 @@ export function ApplicationSettings() {
                             mt: 4,
                         }}
                     >
-                        Farbschema der Gover-Instanz
+                        Erscheinungsbild der Gover-Instanz
                     </Typography>
 
                     <Typography
@@ -218,12 +398,12 @@ export function ApplicationSettings() {
                             mb: 1.6,
                         }}
                     >
-                        Sie können ein eigenes Farbschema für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten
+                        Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten
                         Formulare).
                     </Typography>
 
                     <SelectFieldComponent
-                        label="Farbschema"
+                        label="Erscheinungsbild"
                         options={themes}
                         value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
                         onChange={(val) => {
@@ -273,6 +453,49 @@ export function ApplicationSettings() {
                     mt: 4,
                 }}
             >
+                Automatische Rollenzuweisung
+            </Typography>
+            <Typography
+                sx={{
+                    maxWidth: 900,
+                    mb: 1.6,
+                }}
+            >
+                Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu in Gover synchronisiert oder anderweitig importiert werden.
+            </Typography>
+            <SelectFieldComponent
+                label="Standard-Systemrolle für automatische Benutzerimporte"
+                hint={
+                    hasSystemRolesLoadingError
+                        ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
+                        : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
+                }
+                value={defaultSystemRoleValue}
+                onChange={(val) => {
+                    setEditedConfig({
+                        ...editedConfig,
+                        [SystemConfigKeys.users.defaultSystemRole]: val ?? '',
+                    });
+                }}
+                required
+                error={defaultSystemRoleError}
+                disabled={!hasAccess || isLoadingSystemRoles}
+                options={systemRoleOptions}
+                emptyStatePlaceholder={
+                    isLoadingSystemRoles
+                        ? 'Systemrollen werden geladen…'
+                        : hasSystemRolesLoadingError
+                            ? 'Systemrollen konnten nicht geladen werden'
+                            : 'Keine Systemrollen vorhanden'
+                }
+            />
+
+            <Typography
+                variant="subtitle1"
+                sx={{
+                    mt: 4,
+                }}
+            >
                 Zentraler Speicheranbieter für Vorgangsanlagen
             </Typography>
             <Typography
@@ -287,15 +510,52 @@ export function ApplicationSettings() {
             <SelectFieldComponent
                 label="Zentraler Speicheranbieter für Vorgangsanlagen"
                 hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
-                value={editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? config[SystemConfigKeys.storage.attachments.default_storage_provider]}
+                value={attachmentStorageProviderValue}
                 onChange={(val) => {
                     setEditedConfig({
                         ...editedConfig,
                         [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
                     });
                 }}
+                required
+                error={attachmentStorageProviderError}
                 disabled={!hasAccess}
                 options={attStorageProviders}
+                emptyStatePlaceholder="Keine Speicheranbieter für Vorgangsanlagen vorhanden"
+            />
+
+            <Typography
+                variant="subtitle1"
+                sx={{
+                    mt: 4,
+                }}
+            >
+                Zentraler Speicheranbieter für Assets
+            </Typography>
+            <Typography
+                sx={{
+                    maxWidth: 900,
+                    mb: 1.6,
+                }}
+            >
+                Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer Speicheranbieter für ein Asset konfiguriert ist.
+                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den zentralen Speicheranbieter verwenden.
+            </Typography>
+            <SelectFieldComponent
+                label="Zentraler Speicheranbieter für Assets"
+                hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
+                value={assetStorageProviderValue}
+                onChange={(val) => {
+                    setEditedConfig({
+                        ...editedConfig,
+                        [SystemConfigKeys.storage.assets.default_storage_provider]: val ?? '',
+                    });
+                }}
+                required
+                error={assetStorageProviderError}
+                disabled={!hasAccess}
+                options={assetStorageProviders}
+                emptyStatePlaceholder="Keine Speicheranbieter für Assets vorhanden"
             />
 
 
@@ -415,7 +675,7 @@ export function ApplicationSettings() {
                 Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
                 Diese Verlinkung dient der Barrierefreiheit (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
                 und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen Link ersetzen
-                (wenn Sie zum Beispiel alle Formulare auf Ihrer eigene Webseite auflisten).
+                (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
             </Typography>
             {
                 (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&

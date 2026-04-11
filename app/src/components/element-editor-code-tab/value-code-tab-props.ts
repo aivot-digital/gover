@@ -4,10 +4,11 @@ import type {GroupLayout} from '../../models/elements/form/layout/group-layout';
 import type {ReplicatingContainerLayout} from '../../models/elements/form/layout/replicating-container-layout';
 import {AnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {ElementWithParents} from '../../utils/flatten-elements';
+import {SummaryLayoutElement} from '../../models/elements/form/layout/summary-layout-element';
 
 export interface ValueCodeTabProps {
     allElements: ElementWithParents[];
-    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout>;
+    parents: Array<RootElement | StepElement | GroupLayout | ReplicatingContainerLayout | SummaryLayoutElement>;
     element: AnyInputElement;
     onChange: (element: Partial<AnyInputElement>) => void;
     editable: boolean;

@@ -17,6 +17,7 @@ import {generateElementWithDefaultValues} from '../../utils/generate-element-wit
 import {isLoadedForm, LoadedForm} from '../../slices/app-slice';
 import {AnyFormElement} from '../../models/elements/form/any-form-element';
 import {PresetVersion} from '../../models/entities/preset-version';
+import {ElementDisplayContext} from '../../data/element-type/element-child-options';
 
 export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps<T>) {
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -127,55 +128,6 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                     <DndProvider
                         backend={HTML5Backend}
                     >
-                        {
-                            isRootElement(root) &&
-                            <ElementTreeItem
-                                parents={[root]}
-                                entity={props.entity}
-                                element={root.introductionStep!}
-                                disableDrag={true}
-                                onPatch={(element, entity) => {
-                                    if (isLoadedForm(props.entity)) {
-                                        const updatedEntity = entity as Partial<LoadedForm>;
-
-                                        props.onPatch({
-                                            ...props.entity,
-                                            ...updatedEntity,
-
-                                            version: {
-                                                ...props.entity.version,
-                                                ...updatedEntity.version,
-
-
-                                                rootElement: {
-                                                    ...props.entity.version.rootElement,
-                                                    ...updatedEntity.version?.rootElement,
-
-                                                    introductionStep: {
-                                                        ...props.entity.version.rootElement.introductionStep,
-                                                        ...updatedEntity.version?.rootElement?.introductionStep,
-                                                        ...element,
-                                                    },
-                                                },
-                                            },
-                                        });
-                                    }
-                                }}
-                                onMove={() => {
-                                    // Ignore move
-                                }}
-                                onDelete={() => {
-                                    // Ignore delete
-                                }}
-                                onClone={() => {
-                                    // Ignore clone
-                                }}
-                                editable={props.editable}
-                                scope={props.scope}
-                                enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
-                            />
-                        }
-
                         <ElementTreeItemList
                             parents={[]}
                             entity={props.entity}
@@ -219,104 +171,6 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                             scope={props.scope}
                             enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
                         />
-
-                        {
-                            isRootElement(root) &&
-                            <ElementTreeItem
-                                parents={[root]}
-                                entity={props.entity}
-                                element={root.summaryStep!}
-                                disableDrag={true}
-                                onPatch={(element, entity) => {
-                                    if (isLoadedForm(props.entity)) {
-                                        const updatedEntity = entity as Partial<LoadedForm>;
-
-                                        props.onPatch({
-                                            ...props.entity,
-                                            ...updatedEntity,
-
-                                            version: {
-                                                ...props.entity.version,
-                                                ...updatedEntity.version,
-
-
-                                                rootElement: {
-                                                    ...props.entity.version.rootElement,
-                                                    ...updatedEntity.version?.rootElement,
-
-                                                    summaryStep: {
-                                                        ...props.entity.version.rootElement.summaryStep,
-                                                        ...updatedEntity.version?.rootElement?.summaryStep,
-                                                        ...element,
-                                                    },
-                                                },
-                                            },
-                                        });
-                                    }
-                                }}
-                                onMove={() => {
-                                    // Ignore move
-                                }}
-                                onDelete={() => {
-                                    // Ignore delete
-                                }}
-                                onClone={() => {
-                                    // Ignore clone
-                                }}
-                                editable={props.editable}
-                                scope={props.scope}
-                                enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
-                            />
-                        }
-
-                        {
-                            isRootElement(root) &&
-                            <ElementTreeItem
-                                parents={[root]}
-                                entity={props.entity}
-                                element={root.submitStep!}
-                                disableDrag={true}
-                                onPatch={(element, entity) => {
-                                    if (isLoadedForm(props.entity)) {
-                                        const updatedEntity = entity as Partial<LoadedForm>;
-
-                                        props.onPatch({
-                                            ...props.entity,
-                                            ...updatedEntity,
-
-                                            version: {
-                                                ...props.entity.version,
-                                                ...updatedEntity.version,
-
-
-                                                rootElement: {
-                                                    ...props.entity.version.rootElement,
-                                                    ...updatedEntity.version?.rootElement,
-
-                                                    submitStep: {
-                                                        ...props.entity.version.rootElement.submitStep,
-                                                        ...updatedEntity.version?.rootElement?.submitStep,
-                                                        ...element,
-                                                    },
-                                                },
-                                            },
-                                        });
-                                    }
-                                }}
-                                onMove={() => {
-                                    // Ignore move
-                                }}
-                                onDelete={() => {
-                                    // Ignore delete
-                                }}
-                                onClone={() => {
-                                    // Ignore clone
-                                }}
-                                editable={props.editable}
-                                scope={props.scope}
-                                enabledIdentityProviderInfos={props.enabledIdentityProviderInfos}
-                            />
-                        }
                     </DndProvider>
                 </Box>
 
@@ -347,6 +201,8 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
             <AddElementDialog
                 show={showAddDialog}
                 parentType={isLoadedForm(props.entity) ? props.entity.version.rootElement.type : props.entity.rootElement.type}
+                parentElement={root}
+                title={isLoadedForm(props.entity) ? 'Formularabschnitt hinzufügen' : undefined}
                 onAddElement={(element) => {
                     handleAddElement(element as AnyFormElement);
                     setShowAddDialog(false);
@@ -354,6 +210,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
                 onClose={() => {
                     setShowAddDialog(false);
                 }}
+                displayContext={ElementDisplayContext.CitizenFacing}
             />
         </>
     );

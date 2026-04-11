@@ -9,6 +9,7 @@ export interface CustomStepProps {
     stepIndex: number;
     isFirstStep: boolean;
     isLastStep: boolean;
+    isSubmitStep: boolean;
 
     step: StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement;
     children: React.ReactNode;

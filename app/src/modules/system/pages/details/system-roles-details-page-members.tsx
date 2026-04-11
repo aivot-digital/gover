@@ -54,7 +54,7 @@ export function SystemRolesDetailsPageMembers() {
                     mb: 3,
                     maxWidth: 900,
                 }}>
-                    Eine Übersicht der Mitarbeiter:innen, die dieser Rolle zugeordnet sind.
+                    Eine Übersicht der Mitarbeiter:innen, die dieser Systemrolle zugeordnet sind.
                 </Typography>
 
                 <GenericList<User>
@@ -67,7 +67,7 @@ export function SystemRolesDetailsPageMembers() {
                     fetch={(options) => {
                         return new UsersApiService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                fullName: options.search,
+                                name: options.search,
                                 systemRoleId: systemRole.id,
                             });
                     }}

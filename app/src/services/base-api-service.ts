@@ -63,6 +63,17 @@ export class BaseApiService {
         return await response.json() as R;
     }
 
+    public async putFormData<R>(path: string, formData: FormData, options?: RequestOptions): Promise<R> {
+        const response = await this.fetch('PUT', path, formData,  {
+            ...options,
+            headers: {
+                ...options?.headers,
+                'Content-Type': null, // Let the browser set the correct Content-Type with boundary
+            },
+        });
+        return await response.json() as R;
+    }
+
     public async postFormUrlEncoded<R>(path: string, formData: URLSearchParams, options?: RequestOptions): Promise<R> {
         const response = await this.fetch('POST', path, formData.toString(), {
             ...options,
@@ -80,11 +91,15 @@ export class BaseApiService {
         return await response.json() as R;
     }
 
+    public async putWithoutResponse<T>(path: string, body: T, options?: RequestOptions): Promise<void> {
+        await this.fetch('PUT', path, JSON.stringify(body), options);
+    }
+
     public async delete(path: string, options?: RequestOptions): Promise<void> {
         await this.fetch('DELETE', path, undefined, options);
     }
 
-    private async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
+    public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
         const accessToken = await this
             .auth
             .getAccessToken(options?.abort, options?.skipAuthCheck !== true);

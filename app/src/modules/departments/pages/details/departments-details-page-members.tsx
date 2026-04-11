@@ -5,7 +5,6 @@ import {
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Box, Button, Typography} from '@mui/material';
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -32,6 +31,7 @@ import {
 } from "../../services/v-department-user-role-assignment-with-details-service";
 import {resolveUserName} from "../../../users/utils/resolve-user-name";
 import {snakeToCamel} from "../../../../utils/camel-to-snake";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -49,8 +49,24 @@ export function DepartmentsDetailsPageMembers() {
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
 
     const fetchMembers = useCallback((options: GenericListPropsFetchOptions<VDepartmentMembershipWithDetailsEntity>) => {
-        const filters: Partial<ListDepartmentMembershipsWithRolesFilter> = {
-            departmentId: item!.id,
+        if (item == null) {
+            // GenericList always expects an async page result. While the department details are still loading,
+            // we return an already resolved promise with an empty page instead of hitting the API with no department id.
+            return Promise.resolve({
+                content: [],
+                empty: true,
+                first: true,
+                last: true,
+                number: 0,
+                numberOfElements: 0,
+                size: options.size,
+                totalElements: 0,
+                totalPages: 0,
+            });
+        }
+
+        const filters: ListDepartmentMembershipsWithRolesFilter = {
+            departmentId: item.id,
             userSearch: options.search,
         };
 
@@ -70,7 +86,7 @@ export function DepartmentsDetailsPageMembers() {
         }
 
         return new VDepartmentMembershipWithDetailsService()
-            .list(options.page, options.size, options.sort as any, options.order, filters);
+            .listDepartmentMembershipsWithRoles(options.page, options.size, options.sort as any, options.order, filters);
     }, [item]);
 
     const buildRowActions = useCallback((membershipItem: VDepartmentMembershipWithDetailsEntity) => {
@@ -84,7 +100,7 @@ export function DepartmentsDetailsPageMembers() {
                 disabled: membershipItem.userDeletedInIdp ?? undefined,
             },
             {
-                icon: <DeleteOutlineOutlinedIcon/>,
+                icon: <Delete/>,
                 onClick: () => {
                     showConfirm({
                         title: 'Mitarbeiter:in entfernen',
@@ -92,10 +108,9 @@ export function DepartmentsDetailsPageMembers() {
                             <>
                                 <Typography>
                                     Durch das Entfernen der
-                                    Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem
-                                    Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen
-                                    und Berechtigungen in diesem
-                                    Fachbereich.
+                                    Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus der
+                                    Organisationseinheit <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen
+                                    und Berechtigungen in dieser Organisationseinheit.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Diese Aktion kann nicht rückgängig gemacht werden. Stellen Sie sicher, dass Sie die
@@ -111,7 +126,7 @@ export function DepartmentsDetailsPageMembers() {
                             }
 
                             dispatch(setLoadingMessage({
-                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus dem Fachbereich`,
+                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus der Organisationseinheit`,
                                 blocking: true,
                                 estimatedTime: 5000,
                             }));
@@ -127,7 +142,7 @@ export function DepartmentsDetailsPageMembers() {
                                         dispatch(showErrorSnackbar(error.message));
                                     } else {
                                         console.error(error);
-                                        dispatch(showErrorSnackbar('Fehler beim Entfernen der Mitarbeiter:in aus dem Fachbereich'));
+                                        dispatch(showErrorSnackbar('Fehler beim Entfernen der Mitarbeiter:in aus der Organisationseinheit'));
                                     }
                                 })
                                 .finally(() => {
@@ -162,7 +177,7 @@ export function DepartmentsDetailsPageMembers() {
         }
 
         dispatch(setLoadingMessage({
-            message: `Füge Mitarbeiter:in ${user.fullName} zum Fachbereich hinzu`,
+            message: `Füge Mitarbeiter:in ${user.fullName} zur Organisationseinheit hinzu`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -194,7 +209,7 @@ export function DepartmentsDetailsPageMembers() {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Fachbereich'));
+                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zur Organisationseinheit'));
                 }
             })
             .finally(() => {
@@ -262,7 +277,7 @@ export function DepartmentsDetailsPageMembers() {
                     mb: 1,
                 }}
             >
-                Mitarbeiter:innen des Fachbereichs
+                Mitarbeiter:innen der Organisationseinheit
             </Typography>
 
             <Typography
@@ -271,8 +286,8 @@ export function DepartmentsDetailsPageMembers() {
                     maxWidth: 900,
                 }}
             >
-                Eine Liste der Mitarbeiter:innen, die diesem Fachbereich zugeordnet sind. Mitarbeiter:innen können
-                unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Fachbereichs definieren.
+                Eine Liste der Mitarbeiter:innen, die dieser Organisationseinheit zugeordnet sind. Mitarbeiter:innen können
+                unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb der Organisationseinheit definieren.
             </Typography>
 
             <GenericList<VDepartmentMembershipWithDetailsEntity>

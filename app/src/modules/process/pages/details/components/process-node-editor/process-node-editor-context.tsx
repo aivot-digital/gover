@@ -3,6 +3,7 @@ import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import {type ProcessNodeProvider} from '../../../../services/process-node-provider-api-service';
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {type ProcessTestClaimEntity} from '../../../../entities/process-test-claim-entity';
+import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 
 interface ProcessNodeEditorContextType {
     provider: ProcessNodeProvider;
@@ -10,9 +11,11 @@ interface ProcessNodeEditorContextType {
     testClaim: ProcessTestClaimEntity | null;
 
     node: ProcessNodeEntity;
-    setNode: (node: ProcessNodeEntity) => void;
+    setNode: (node: ProcessNodeEntity, updateOriginal: boolean) => void;
 
     isEditable: boolean;
+
+    problems: ProcessNodeProblems | null;
 }
 
 const ProcessNodeEditorContext = createContext<ProcessNodeEditorContextType | null>(null);

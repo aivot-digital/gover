@@ -1,7 +1,7 @@
 import {CrudApiService} from '../../services/crud-api-service';
 import {Api} from '../../hooks/use-api';
 import {Preset, PresetCreateReqeustDTO} from '../../models/entities/preset';
-import {ElementData, ElementDerivationResponse} from '../../models/element-data';
+import {AuthoredElementValues, ElementDerivationResponse} from '../../models/element-data';
 
 interface PresetFilter {
     title: string;
@@ -24,10 +24,10 @@ export class PresetsApiService extends CrudApiService<PresetCreateReqeustDTO, Pr
         };
     }
 
-    public async determinePresetState(presetKey: string, presetVersion: number, elementData: ElementData, args: {
+    public async determinePresetState(presetKey: string, presetVersion: number, authoredElementValues: AuthoredElementValues, args: {
         disableVisibilities: boolean,
         disableValidation: boolean,
     }): Promise<ElementDerivationResponse> {
-        return await this.api.post<ElementDerivationResponse>(`presets/${presetKey}/${presetVersion}/derive`, elementData, {queryParams: args});
+        return await this.api.post<ElementDerivationResponse>(`presets/${presetKey}/${presetVersion}/derive`, authoredElementValues, {queryParams: args});
     }
 }

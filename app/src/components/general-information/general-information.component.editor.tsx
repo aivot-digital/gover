@@ -6,7 +6,7 @@ import {StringListInput} from '../string-list-input/string-list-input';
 import {type CheckboxTreeOption} from '../checkbox-tree/checkbox-tree-option';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {RichTextEditorComponentView} from '../richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
@@ -95,13 +95,13 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                         xs: 12,
                         lg: 6
                     }}>
-                    <RichTextEditorComponentView
+                    <RichTextInputComponent
                         value={props.element.teaserText ?? ''}
                         label="Kurzbeschreibung"
                         hint="Schildern Sie kurz und präzise das Formular und dessen Zweck."
                         onChange={(val) => {
                             props.onPatch({
-                                teaserText: val,
+                                teaserText: val ?? undefined,
                             });
                         }}
                         disabled={!props.editable}
@@ -184,12 +184,12 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                         />
                     </FormGroup>
 
-                    <RichTextEditorComponentView
+                    <RichTextInputComponent
                         value={props.element.expectedCosts ?? ''}
                         label="Gebühren des Antrages"
                         onChange={(val) => {
                             props.onPatch({
-                                expectedCosts: val,
+                                expectedCosts: val ?? undefined,
                             });
                         }}
                         disabled={!props.editable}

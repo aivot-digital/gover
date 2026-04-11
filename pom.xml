@@ -11,9 +11,9 @@
     </parent>
 
     <groupId>de.aivot</groupId>
-    <artifactId>gover-backend</artifactId>
+    <artifactId>gover</artifactId>
     <version>0.0.0</version>
-    <name>gover-backend</name>
+    <name>gover</name>
     <description>The open source platform for fully digital, end-to-end application processes</description>
     <licenses>
         <license>
@@ -211,6 +211,31 @@
             <artifactId>commonmark</artifactId>
             <version>0.27.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-strikethrough</artifactId>
+            <version>0.27.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-autolink</artifactId>
+            <version>0.27.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-footnotes</artifactId>
+            <version>0.27.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-gfm-tables</artifactId>
+            <version>0.27.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.commonmark</groupId>
+            <artifactId>commonmark-ext-task-list-items</artifactId>
+            <version>0.27.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -218,6 +243,27 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.2.0</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <move file="${project.build.directory}/gover-0.0.0.jar.original"
+                                      tofile="${project.build.directory}/gover-0.0.0-lib.jar"
+                                      failonerror="false" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

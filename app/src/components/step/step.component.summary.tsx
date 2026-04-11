@@ -3,7 +3,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import Tooltip from '@mui/material/Tooltip';
-import React from 'react';
+import React, {useMemo} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {setCurrentStep} from '../../slices/stepper-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -12,13 +12,15 @@ import {getStepIcon} from '../../data/step-icons';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
+import {extractVisibleFormSteps} from '../../utils/visible-form-steps';
 
 export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) {
     const {
         model,
         showTechnical,
         allowStepNavigation,
-        elementData,
+        authoredElementValues,
+        derivedData,
     } = props;
 
     const {
@@ -28,12 +30,18 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
     const dispatch = useAppDispatch();
     const application = useAppSelector(selectLoadedForm);
 
-    // FIXME: This is no a good solution.
-    const index = application?.version.rootElement.children?.findIndex(step => step.id === model.id);
+    const stepIndex = useMemo(() => {
+        if (application == null) {
+            return -1;
+        }
+
+        const visibleSteps = extractVisibleFormSteps(application.version.rootElement.children, derivedData);
+        return visibleSteps.findIndex(step => step.id === model.id);
+    }, [application, derivedData, model.id]);
 
     const handleNavigateToStep = () => {
-        if (index != null) {
-            dispatch(setCurrentStep(index + 1)); // Add 1 to skip general information page
+        if (stepIndex !== -1) {
+            dispatch(setCurrentStep(stepIndex));
         }
     };
 
@@ -92,7 +100,8 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
                             element={model}
                             showTechnical={showTechnical}
                             allowStepNavigation={allowStepNavigation}
-                            elementData={elementData}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
                         />
                     ))
             }

@@ -1,4 +1,4 @@
-import {useState} from 'react';
+import {PropsWithChildren, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, TextField, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 
@@ -14,7 +14,7 @@ export interface PromptDialogProps {
     defaultValue?: string;
 }
 
-export function PromptDialog(props: PromptDialogProps) {
+export function PromptDialog(props: PropsWithChildren<PromptDialogProps>) {
     const [inputValue, setInputValue] = useState(props.defaultValue ?? "");
 
     return (
@@ -33,6 +33,8 @@ export function PromptDialog(props: PromptDialogProps) {
                         {props.message}
                     </Typography>
                 )}
+
+                {props.children}
 
                 <TextField
                     sx={{ mt: 2 }}
