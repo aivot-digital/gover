@@ -1,8 +1,7 @@
-import React, {ComponentType, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {ComponentType, useCallback, useEffect, useMemo, useState} from 'react';
 import Grid from '@mui/material/Grid';
 import {type AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
-import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
 import {views as Views} from '../views';
 import {type BaseViewProps} from '../views/base-view';
 import IconButton from '@mui/material/IconButton';
@@ -28,7 +27,7 @@ import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../mod
 import {useElementTreeInlineEditorContext} from './element-tree-2/components/element-tree-inline-editor-context';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
-import {deepEquals} from '../utils/equality-utils';
+import {useElementDerivationContext} from '../modules/elements/components/element-derivation-context';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -90,40 +89,6 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
     const resolvedErrors: string[] | undefined | null = useMemo(() => {
         return resolveErrors(element, derivedData);
     }, [element, derivedData]);
-    const [isErrorSuppressed, setIsErrorSuppressed] = useState<boolean>(false);
-    const errorSignature = useMemo(() => createErrorSignature(resolvedErrors), [resolvedErrors]);
-    const previousValueRef = useRef<any>(value);
-    const previousErrorSignatureRef = useRef<string | null>(errorSignature);
-
-    useEffect(() => {
-        previousValueRef.current = value;
-        previousErrorSignatureRef.current = errorSignature;
-        setIsErrorSuppressed(false);
-    }, [elementId]);
-
-    useEffect(() => {
-        if (shouldSuppressErrorAfterValueChange(element, previousValueRef.current, value)) {
-            setIsErrorSuppressed(true);
-        }
-
-        previousValueRef.current = value;
-    }, [element, value]);
-
-    useEffect(() => {
-        if (previousErrorSignatureRef.current !== errorSignature) {
-            setIsErrorSuppressed(false);
-        }
-
-        previousErrorSignatureRef.current = errorSignature;
-    }, [errorSignature]);
-
-    const displayedErrors = useMemo(() => {
-        if (!isAnyInputElement(element) || !isErrorSuppressed) {
-            return resolvedErrors;
-        }
-
-        return undefined;
-    }, [element, isErrorSuppressed, resolvedErrors]);
 
     const effectiveRootAuthoredElementValues = useMemo(() => {
         return rootAuthoredElementValues ?? authoredElementValues;
@@ -138,17 +103,13 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             return;
         }
 
-        if (shouldSuppressErrorAfterValueChange(element, value, updatedValue)) {
-            setIsErrorSuppressed(true);
-        }
-
         const newAuthoredElementValues = {
             ...authoredElementValues,
             [elementId]: updatedValue ?? null,
         };
 
         onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
-    }, [authoredValue, element, value, authoredElementValues, onAuthoredElementValuesChange, elementId]);
+    }, [authoredValue, authoredElementValues, onAuthoredElementValuesChange, elementId]);
 
     const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
         if (updatedValue == authoredValue || onElementBlur == null) {
@@ -187,7 +148,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         element: element,
         setValue: handleSetValue,
         onBlur: handleOnBlur,
-        errors: displayedErrors,
+        errors: resolvedErrors,
         value: value,
         scrollContainerRef: scrollContainerRef,
         isBusy: isBusy,
@@ -207,7 +168,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
         element,
         handleSetValue,
         handleOnBlur,
-        displayedErrors,
+        resolvedErrors,
         value,
         scrollContainerRef,
         isBusy,
@@ -266,36 +227,6 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: DispatcherC
             </ElementErrorBoundary>
         </Grid>
     );
-}
-
-function shouldSuppressErrorAfterValueChange(
-    element: AnyElement,
-    previousValue: any | null | undefined,
-    nextValue: any | null | undefined,
-): boolean {
-    if (!isAnyInputElement(element)) {
-        return false;
-    }
-
-    if (isReplicatingContainerLayout(element)) {
-        const previousLength = Array.isArray(previousValue) ? previousValue.length : 0;
-        const nextLength = Array.isArray(nextValue) ? nextValue.length : 0;
-        return previousLength !== nextLength;
-    }
-
-    if (previousValue == nextValue) {
-        return false;
-    }
-
-    return !deepEquals(previousValue, nextValue);
-}
-
-function createErrorSignature(errors: string[] | undefined | null): string | null {
-    if (errors == null || errors.length === 0) {
-        return null;
-    }
-
-    return errors.join('\n');
 }
 
 interface ContextMenuButtonProps {

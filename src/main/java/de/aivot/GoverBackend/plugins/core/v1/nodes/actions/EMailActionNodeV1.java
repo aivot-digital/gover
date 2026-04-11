@@ -568,20 +568,10 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private static List<String> parseAttachmentFileNames(String value) {
-        if (StringUtils.isNullOrEmpty(value)) {
-            return List.of();
-        }
-
-        var result = new ArrayList<String>();
-        for (var rawPart : value.split("[,\\n\\r]+")) {
-            var part = rawPart.trim();
-            if (part.isEmpty()) {
-                continue;
-            }
-            result.add(part);
-        }
-        return result;
+    @Override
+    public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(EMailActionNodeConfigManualContent.ASSIGNMENT_FIELD_ID);
+        return configuration;
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)

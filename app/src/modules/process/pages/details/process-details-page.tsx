@@ -77,6 +77,7 @@ import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {generateId} from '../../../../utils/id-utils';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
@@ -270,7 +271,6 @@ export function ProcessDetailsPage(): ReactNode {
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
-    const [nodeValidationResults, setNodeValidationResults] = useState<ProcessNodeProblems[]>([]);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -290,7 +290,7 @@ export function ProcessDetailsPage(): ReactNode {
 
     const [currentTestClaim, setCurrentTestClaim] = useState<{
         claim: ProcessTestClaimEntity;
-        user: User;
+        user: User | null;
     } | null>(null);
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
@@ -542,24 +542,37 @@ export function ProcessDetailsPage(): ReactNode {
 
                 if (content.length > 0) {
                     const claim = content[0];
+                    const claimOwnerUser = user?.id === claim.owningUserId ? user : null;
+
+                    setCurrentTestClaim({
+                        claim,
+                        user: claimOwnerUser,
+                    });
+
+                    if (claimOwnerUser != null) {
+                        return;
+                    }
+
                     new UsersApiService()
                         .retrieve(claim.owningUserId)
-                        .then((user) => {
+                        .then((claimOwnerUser) => {
                             if (cancelled) {
                                 return;
                             }
 
-                            setCurrentTestClaim({
-                                claim,
-                                user,
+                            setCurrentTestClaim((previousClaim) => {
+                                if (previousClaim?.claim.id !== claim.id) {
+                                    return previousClaim;
+                                }
+
+                                return {
+                                    claim,
+                                    user: claimOwnerUser,
+                                };
                             });
                         })
-                        .catch((err) => {
-                            if (cancelled) {
-                                return;
-                            }
-
-                            dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht geladen werden.'));
+                        .catch(() => {
+                            // Keep the claim visible even if the owning user cannot be resolved.
                         });
                 } else {
                     setCurrentTestClaim(null);
@@ -576,7 +589,7 @@ export function ProcessDetailsPage(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, processId, processVersion]);
+    }, [dispatch, processId, processVersion, user]);
 
     useEffect(() => {
         if (requiredFlowNodeProviders.length === 0) {
@@ -1119,12 +1132,14 @@ export function ProcessDetailsPage(): ReactNode {
             ],
         });
 
-        await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
+        if (selectedNode?.id === node.id) {
+            await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
+        }
     };
 
-    const handleSaveNode = async (node: ProcessNodeEntity): Promise<void> => {
+    const handleSaveNode = async (node: ProcessNodeEntity): Promise<ProcessNodeEntity> => {
         if (processFlow == null) {
-            return;
+            throw new Error('Process flow is not loaded');
         }
 
         const updated = await new ProcessNodeApiService().update(node.id, node);
@@ -1133,6 +1148,8 @@ export function ProcessDetailsPage(): ReactNode {
             ...processFlow,
             nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
         });
+
+        return updated;
     };
 
     const handleExport = (): void => {
@@ -1153,7 +1170,6 @@ export function ProcessDetailsPage(): ReactNode {
                     processDefinitionId: processId,
                     processDefinitionVersion: processVersion,
                 });
-            setNodeValidationResults(problems);
 
             const confirmed = await confirm({
                 title: 'Prozessmodellierung testen',
@@ -1329,6 +1345,34 @@ export function ProcessDetailsPage(): ReactNode {
         setReplaceNodeRequest({
             nodeId: node.id,
         });
+    }, []);
+    const handleCloneNode = useCallback((node: ProcessNodeEntity): void => {
+        dispatch(setLoadingMessage({
+            blocking: false,
+            message: 'Dupliziere Prozesselement',
+            estimatedTime: 1200,
+        }));
+
+        new ProcessNodeApiService()
+            .create({
+                ...node,
+                dataKey: generateId(5),
+            })
+            .then((createdNode) => {
+                setProcessFlow((flow) => flow != null ? ({
+                    ...flow,
+                    nodes: [
+                        ...flow.nodes,
+                        createdNode,
+                    ],
+                }) : null);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht dupliziert werden.'));
+            })
+            .finally(() => {
+                dispatch(clearLoadingMessage());
+            })
     }, []);
     const handleImportNode = useCallback(async (context: NodeImportContext): Promise<void> => {
         if (processFlow == null) {
@@ -1661,6 +1705,21 @@ export function ProcessDetailsPage(): ReactNode {
         notImplemented,
         handleDeleteProcess,
     ]);
+    const currentTestClaimOwnerName = useMemo(() => {
+        if (currentTestClaim == null) {
+            return '';
+        }
+
+        if (currentTestClaim.user != null) {
+            return resolveUserName(currentTestClaim.user);
+        }
+
+        if (currentTestClaim.claim.owningUserId === user?.id && user != null) {
+            return resolveUserName(user);
+        }
+
+        return 'Unbekannte Mitarbeiter:in';
+    }, [currentTestClaim, user]);
     const connectExistingNodeSource = useMemo(() => {
         if (processFlow == null || connectExistingNodeRequest == null) {
             return null;
@@ -1748,7 +1807,6 @@ export function ProcessDetailsPage(): ReactNode {
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
-                                                nodeValidationResults={nodeValidationResults}
                                                 topLeftPanel={
                                                     currentTestClaim == null ? undefined : (
                                                         <Box
@@ -1824,7 +1882,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                             />
                                                             <Typography
                                                                 variant="body2"
-                                                                title={resolveUserName(currentTestClaim.user)}
+                                                                title={currentTestClaimOwnerName}
                                                                 sx={{
                                                                     maxWidth: '100%',
                                                                     overflow: 'hidden',
@@ -1836,7 +1894,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                                     lineHeight: 1.3,
                                                                 }}
                                                             >
-                                                                Im Test durch {resolveUserName(currentTestClaim.user)}
+                                                                Im Test durch {currentTestClaimOwnerName}
                                                             </Typography>
                                                         </Box>
                                                     )
@@ -1903,6 +1961,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                     });
                                                 }}
                                                 onStartReplaceNode={handleOpenReplaceNodeDialog}
+                                                onStartCloneNode={handleCloneNode}
                                                 onDeleteEdge={(edgeId) => {
                                                     new ProcessDefinitionEdgeApiService()
                                                         .destroy(edgeId)
@@ -2011,7 +2070,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,
-                                    nodeValidationResults: nodeValidationResults,
+                                    testClaim: currentTestClaim?.claim ?? null,
                                 }}
                             >
                                 <Outlet/>

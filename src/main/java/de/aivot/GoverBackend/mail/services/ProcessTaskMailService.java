@@ -73,7 +73,7 @@ public class ProcessTaskMailService {
         mailData.put("assignmentIntro", isReassignment
                 ? "Ihnen wurde in Gover eine Aufgabe neu zugewiesen."
                 : "Ihnen wurde in Gover eine Aufgabe zur Bearbeitung zugewiesen.");
-        mailData.put("assignmentSource", triggeringUser != null ? triggeringUser.getFullName() : "Automatisch");
+        mailData.put("assignmentSource", triggeringUser != null ? triggeringUser.getFullName() : "System");
         mailData.put("process", process);
         mailData.put("processInstance", processInstance);
         mailData.put("processInstanceTask", processInstanceTask);

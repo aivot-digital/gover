@@ -35,8 +35,9 @@
                             <b th:text="${deadlineLabel + ' Uhr'}">02.04.2026 16:00 Uhr</b>
                             <br/>
                         </span>
+                        <br/>
                         Zugewiesen durch:
-                        <b th:text="${assignmentSource}">Automatisch</b>
+                        <b th:text="${assignmentSource}">System</b>
                     </p>
 
                     <p>

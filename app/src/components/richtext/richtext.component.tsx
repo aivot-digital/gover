@@ -17,7 +17,6 @@ export function RichtextComponent(props: RichtextComponentProps) {
             className={className}
             sx={[
                 {
-                    my: '1rem',
                     maxWidth: '660px',
                 },
                 ...(Array.isArray(sx) ? sx : [sx]),

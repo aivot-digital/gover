@@ -1,33 +1,29 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TableInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TableInputElementColumn;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.enums.TableColumnDataType;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.Core;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
@@ -87,36 +83,12 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
-
-        var table = new TableInputElement();
-        table.setId(MAPPINGS_FIELD_ID);
-        table.setLabel("Abbildungsregeln");
-        table.setHint("Definieren Sie pro Zeile einen Quellpfad, einen Zielpfad und optional eine Transformationsfunktion (Javascript), z.B. (wert) => 'Der Wer ist ' + wert");
-        table.setRequired(true);
-        table.setMinimumRequiredRows(1);
-        table.setFields(List.of(
-                new TableInputElementColumn()
-                        .setKey(FROM_FIELD_COLUMN_KEY)
-                        .setLabel("Quellpfad")
-                        .setDatatype(TableColumnDataType.String)
-                        .setOptional(false),
-                new TableInputElementColumn()
-                        .setKey(TO_FIELD_COLUMN_KEY)
-                        .setLabel("Zielpfad")
-                        .setDatatype(TableColumnDataType.String)
-                        .setOptional(false),
-                new TableInputElementColumn()
-                        .setKey(TRANSFORM_FUNCTION_COLUMN_KEY)
-                        .setLabel("Transformationsfunktion")
-                        .setDatatype(TableColumnDataType.String)
-                        .setOptional(true)
-        ));
-
-        layout.addChild(table);
-        return layout;
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+        try {
+            return ElementPOJOMapper.createFromPOJO(DataMappingActionNodeV1Config.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e);
+        }
     }
 
     @Nonnull
@@ -144,7 +116,18 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         var sourceRootMap = (Map<String, Object>) sourceRootMapRaw;
         var outputRoot = deepCopyMap(sourceRootMap);
 
-        var rules = parseRules(context);
+        DataMappingActionNodeV1Config config;
+        try {
+            config = ElementPOJOMapper.mapToPOJO(context.getConfiguration().getEffectiveValues(), DataMappingActionNodeV1Config.class);
+        } catch (ElementDataConversionException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Die Konfiguration des Datenabbildungsprozesses ist ungültig: %s",
+                    e.getMessage()
+            );
+        }
+
+        var rules = config.rules;
         var mappedValues = new ArrayList<Map<String, Object>>();
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
@@ -155,14 +138,14 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
                 var rule = rules.get(i);
                 var rowIndex = i + 1;
 
-                var sourcePath = parsePath(rule.fromField(), rowIndex, "From Field");
-                var targetPath = parsePath(rule.toField(), rowIndex, "To Field");
+                var sourcePath = parsePath(rule.source, rowIndex, "From Field");
+                var targetPath = parsePath(rule.target, rowIndex, "To Field");
 
                 var sourceValue = readPath(outputRoot, sourcePath);
                 var transformedValue = applyTransform(
                         engine,
                         rowIndex,
-                        rule.transformFunction(),
+                        null,
                         sourceValue,
                         sourceRootMap,
                         outputRoot
@@ -171,8 +154,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
                 writePath(outputRoot, targetPath, transformedValue, rowIndex);
 
                 var data = Map.of(
-                        "originalPath", rule.fromField(),
-                        "newPath", rule.toField(),
+                        "originalPath", rule.source,
+                        "newPath", rule.target,
                         "original", sourceValue != null ? sourceValue.toString() : "null",
                         "mapped", transformedValue
                 );
@@ -605,5 +588,39 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     }
 
     private record ArrayPathPart(int index) implements PathPart {
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    public static class DataMappingActionNodeV1Config {
+        private static final String RULES_FIELD_ID = "rules";
+        public List<DataMappingActionNodeV1Rule> rules;
+
+        @ReplicatingContainerLayoutElementElementPOJOBinding(id = RULES_FIELD_ID, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Abbildungsregeln"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie alle Abbildungsregeln, die auf die Daten angewendet werden sollen."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "#. Abbildungsregel"),
+                @ElementPOJOBindingProperty(key = "addLabel", strValue = "Neue Abbildungsregel"),
+                @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Abbildungsregel entfernen")
+        })
+        public static class DataMappingActionNodeV1Rule {
+            public static final String SOURCE_FIELD_ID = "source";
+            @InputElementPOJOBinding(id = SOURCE_FIELD_ID, type = ElementType.Text, properties = {
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangspfad"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden Wert. Wenn der Pfad nicht existiert, wird null abgebildet. Pfade können mit Punktnotation und Array-Indizes angegeben werden, z.B. $.person.name oder $.items.0.price."),
+                    @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                    @ElementPOJOBindingProperty(key = "prefix", strValue = "$.")
+            })
+            public String source;
+
+            public static final String TARGET_FIELD_ID = "target";
+            @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.Text, properties = {
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt."),
+                    @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                    @ElementPOJOBindingProperty(key = "prefix", strValue = "$.")
+            })
+            public String target;
+        }
     }
 }

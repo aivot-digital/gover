@@ -210,7 +210,6 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={setTaskInputData}
                                 computedErrors={derivedErrors?.elementStates}
-                                computedErrorsResetToken={derivedErrors?.elementStates}
                             />
                         </Box>
 

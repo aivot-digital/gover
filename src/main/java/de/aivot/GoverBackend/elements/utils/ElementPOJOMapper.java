@@ -120,7 +120,10 @@ public class ElementPOJOMapper {
         List<Object> results = new LinkedList<>();
         for (Object childElementDataObject : childElementData) {
             if (childElementDataObject instanceof Map<?, ?> cd) {
-                var converted = mapToPOJO((EffectiveElementValues) cd, itemClass);
+                var ef = ObjectMapperFactory
+                        .getInstance()
+                        .convertValue(cd, EffectiveElementValues.class);
+                var converted = mapToPOJO(ef, itemClass);
                 results.add(converted);
             } else {
                 throw new ElementDataConversionException(

@@ -25,6 +25,7 @@ import {
     type Translation
 } from "@mdxeditor/editor";
 import {isStringNullOrEmpty} from "../../utils/string-utils";
+import {placeholderPlugin} from "./rich-text-input-component-placeholder-plugin";
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -414,10 +415,13 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         onChange(val ?? null);
                     }}
                     plugins={[
+                        placeholderPlugin(),
                         headingsPlugin(),
                         quotePlugin(),
                         listsPlugin(),
-                        linkPlugin(),
+                        linkPlugin({
+                            disableAutoLink: true,
+                        }),
                         linkDialogPlugin(),
                         toolbarPlugin({
                             toolbarContents: () => (

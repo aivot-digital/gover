@@ -6,13 +6,17 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -148,6 +152,66 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
             throw new RuntimeException(e);
         }
 
+        // Configure the slug input
+        configLayout
+                .findChild(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, TextInputElement.class)
+                .ifPresent(field -> {
+                    var pattern = new TextInputElementPattern()
+                            .setRegex("^[a-zA-Z0-9-]+$")
+                            .setMessage("Der Webhook-Slug darf nur aus Buchstaben, Zahlen und Bindestrichen bestehen.");
+                    field.setPattern(pattern);
+                });
+
+        // Automatic Link Element
+        var linkPrefix = goverConfig.createUrlWithTrailingSlash("/api/public/webhooks/v1", context.processDefinition().getAccessKey().toString());
+
+        var linkOverride = new ElementOverrideFunctions()
+                .setJavascriptCode(JavascriptCode.of("""
+                        (() => {
+                            const slug = ctx.effectiveValues.%s || '{Webhook-URL}';
+                            const requestMethod = ctx.effectiveValues.%s;
+                            const requestBodyType = ctx.effectiveValues.%s;
+                            const authRequired = ctx.effectiveValues.%s === true;
+                            const authMethod = ctx.effectiveValues.%s;
+                            const authToken = ctx.effectiveValues.%s ?? '';
+                            const requestAllowsBody = requestMethod === '%s' || requestMethod === '%s' || requestMethod === '%s';
+                            const requestBodySuffix = requestAllowsBody
+                                ? requestBodyType === '%s'
+                                    ? 'json/'
+                                    : requestBodyType === '%s'
+                                        ? 'form-data/'
+                                        : 'xml/'
+                                : '';
+                            let link = '%s' + slug + '/' + requestBodySuffix;
+                            if (authRequired && authMethod === '%s') {
+                                link += '?%s=' + authToken;
+                            }
+                            return { ...element, content: `**Vollständige Webhook-URL:**\\n\\n${link}` };
+                        })();
+                        """,
+                        WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY,
+                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY,
+                        WebhookTriggerConfigV1.AUTH_REQUIRED_CONFIG_KEY,
+                        WebhookTriggerConfigV1.AUTH_METHOD_CONFIG_KEY,
+                        WebhookTriggerConfigV1.AUTH_TOKEN_CONFIG_KEY,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH,
+                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT,
+                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON,
+                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM,
+                        linkPrefix,
+                        WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM,
+                        WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM
+                ))
+                .recalculateReferencedIds();
+
+        var link = new RichTextContentElement();
+        link.setId("link");
+        link.setContent("**Vollständige Webhook-URL:**\n\n" + linkPrefix + "{Webhook-URL}/xml/");
+        link.setOverride(linkOverride);
+        configLayout.insertChildAfter(link, WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
+
         // Add request method select options
         configLayout
                 .findChild(WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY, SelectInputElement.class)
@@ -169,7 +233,8 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 .ifPresent(field -> {
                     var options = List.of(
                             SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC, "Basic Auth"),
-                            SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER, "Bearer Token"),
+                            // Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+                            // SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER, "Bearer Token"),
                             SelectInputElementOption.of(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM, "Query-Parameter")
                     );
 
@@ -280,6 +345,12 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                                 // Set visibility for token field (bearer or query param)
                                 var keyAuthVisibility = ElementVisibilityFunctions
                                         .of(NoCodeExpression.of(
+                                                NoCodeEqualsOperator.OPERATOR_ID,
+                                                new NoCodeReference(WebhookTriggerConfigV1.AUTH_METHOD_CONFIG_KEY),
+                                                new NoCodeStaticValue(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM)
+                                        ))
+                                        /* Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+                                        .of(NoCodeExpression.of(
                                                 NoCodeOrOperator.OPERATOR_ID,
                                                 NoCodeExpression.of(
                                                         NoCodeEqualsOperator.OPERATOR_ID,
@@ -292,6 +363,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                                                         new NoCodeStaticValue(WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM)
                                                 )
                                         ))
+                                         */
                                         .recalculateReferencedIds();
                                 token.setVisibility(keyAuthVisibility);
                             });
@@ -317,26 +389,28 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         layout.setId("layout");
         layout.setChildren(new LinkedList<>());
 
-        var triggerUrl = String.format(
-                "%s?%s=%s",
-                goverConfig.createUrlWithTrailingSlash("/api/public/webhooks/v1", config.slug),
+        var requestAllowsBody = requestMethodAllowsBody(config.requestMethod);
+
+        var triggerUrl = appendQueryParameter(
+                createWebhookUrl(
+                        context.processDefinition().getAccessKey().toString(),
+                        config.slug,
+                        config.requestMethod,
+                        config.requestBodyConfig != null ? config.requestBodyConfig.requestBodyType : null
+                ),
                 WebhookTriggerControllerV1.TEST_CLAIM_QUERY_PARAM,
                 context.testClaim().getAccessKey()
         );
 
-        if (config.authConfig != null && Boolean.TRUE.equals(config.authRequired) && WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM.equals(config.authConfig.authMethod)) {
-            triggerUrl += String.format("&%s=%s", WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM, config.authConfig.authToken);
+        if (usesQueryParamAuthentication(config.authRequired, config.authConfig)) {
+            triggerUrl = appendQueryParameter(triggerUrl, WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM, config.authConfig.authToken);
         }
 
-        var requestAllowsBody = WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST.equals(config.requestMethod) ||
-                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH.equals(config.requestMethod) ||
-                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT.equals(config.requestMethod);
-
         var requestContentType = requestAllowsBody ? (config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(config.requestBodyConfig.requestBodyType) ?
-                "application/json" :
-                config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType) ?
-                        "multipart/form-data" :
-                        "application/xml") : null;
+                                                      "application/json" :
+                                                      config.requestBodyConfig != null && WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(config.requestBodyConfig.requestBodyType) ?
+                                                      "multipart/form-data" :
+                                                      "application/xml") : null;
 
         var sb = new FormattedStringBuilder();
 
@@ -384,7 +458,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                         config.authConfig.authUsername,
                         config.authConfig.authPassword
                 );
-            } else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
+            }
+            /* Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+            else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
                 sb.appendLine("");
                 sb.appendLine(
                         "Da in der Knotenkonfiguration die Authentifizierung über eine Bearer Token aktiviert ist, " +
@@ -393,6 +469,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                         config.authConfig.authToken
                 );
             }
+            */
         }
 
         var curlLines = new LinkedList<String>();
@@ -415,9 +492,12 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         if (Boolean.TRUE.equals(config.authRequired) && config.authConfig != null) {
             if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BASIC.equals(config.authConfig.authMethod)) {
                 curlLines.add("--header 'Authorization: Basic " + StringUtils.encodeBase64String(config.authConfig.authUsername + ":" + config.authConfig.authPassword) + "'");
-            } else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
+            }
+            /* Bearer Token is removed because it clashes with the default spring boot jwt bearer token implementation
+            else if (WebhookTriggerConfigV1.AUTH_METHOD_OPTION_BEARER.equals(config.authConfig.authMethod)) {
                 curlLines.add("--header 'Authorization: Bearer " + config.authConfig.authToken + "'");
             }
+            */
         }
 
         sb.appendLine("");
@@ -438,9 +518,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public Map<String, String > validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                      @Nonnull AuthoredElementValues configuration,
-                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AuthoredElementValues configuration,
+                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
         var res = new HashMap<String, String>();
 
         var slug = StringUtils.toNullableTrimmedString(configuration.get(WebhookTriggerConfigV1.SLUG_CONFIG_KEY));
@@ -503,6 +583,61 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         }
 
         return result;
+    }
+
+    private boolean requestMethodAllowsBody(@Nullable String requestMethod) {
+        return WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST.equals(requestMethod) ||
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH.equals(requestMethod) ||
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT.equals(requestMethod);
+    }
+
+    @Nullable
+    private String resolveRequestBodyPathSegment(@Nullable String requestMethod,
+                                                 @Nullable String requestBodyType) {
+        if (!requestMethodAllowsBody(requestMethod)) {
+            return null;
+        }
+
+        if (WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON.equals(requestBodyType)) {
+            return "json";
+        }
+
+        if (WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM.equals(requestBodyType)) {
+            return "form-data";
+        }
+
+        return "xml";
+    }
+
+    @Nonnull
+    private String createWebhookUrl(@Nonnull String processAccessKey,
+                                    @Nullable String slug,
+                                    @Nullable String requestMethod,
+                                    @Nullable String requestBodyType) {
+        return goverConfig.createUrlWithTrailingSlash(
+                "/api/public/webhooks/v1",
+                processAccessKey,
+                slug,
+                resolveRequestBodyPathSegment(requestMethod, requestBodyType)
+        );
+    }
+
+    private boolean usesQueryParamAuthentication(@Nullable Boolean authRequired,
+                                                 @Nullable WebhookTriggerConfigV1.WebhookConfigAuth authConfig) {
+        return Boolean.TRUE.equals(authRequired) &&
+                authConfig != null &&
+                WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM.equals(authConfig.authMethod);
+    }
+
+    @Nonnull
+    private String appendQueryParameter(@Nonnull String url,
+                                        @Nonnull String parameterName,
+                                        @Nullable Object parameterValue) {
+        return url +
+                (url.contains("?") ? "&" : "?") +
+                parameterName +
+                "=" +
+                (parameterValue == null ? "" : parameterValue);
     }
 
     @Nonnull

@@ -26,11 +26,11 @@ import Link from '@mui/icons-material/Link';
 import SwapHoriz from '@mui/icons-material/SwapHoriz';
 import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
 import {ModuleIcons} from '../../../../../../shells/staff/data/module-icons';
-import {useNavigate} from 'react-router-dom';
 import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
 import {ProcessInstanceTaskApiService} from '../../../../services/process-instance-task-api-service';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
+import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -51,11 +51,11 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         onAddFollowUpNode,
         onConnectNodeToExisting,
         onStartReplaceNode,
+        onStartCloneNode,
         onDeleteEdge,
         onDeleteNode,
         showTargetHandles,
         runtimeData,
-        nodeValidationResults,
         onReloadRuntimeData,
     } = useProcessFlowEditorContext();
 
@@ -76,10 +76,6 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
         return getLatestTaskForNode(runtimeData.tasks, node.id);
     }, [node.id, runtimeData]);
-
-    const associatedValidationResult = useMemo(() => {
-        return nodeValidationResults.find((result) => result.node.id === node.id) || null;
-    }, [node.id, nodeValidationResults]);
 
     const performedPortKeys = useMemo(() => {
         if (runtimeData == null) {
@@ -220,6 +216,13 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 icon: <SwapHoriz/>,
                 onClick: () => {
                     onStartReplaceNode(node);
+                },
+            },
+            {
+                label: 'Duplizieren',
+                icon: <ContentCopy/>,
+                onClick: () => {
+                    onStartCloneNode(node);
                 },
             },
         ] : [];
@@ -413,24 +416,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             </Typography>
 
                             {
-                                associatedValidationResult != null &&
-                                <Tooltip title={
-                                    <>
-                                        {
-                                            associatedValidationResult.problems.map((problem, index) => (
-                                                <Typography
-                                                    key={problem + index.toString()}
-                                                    variant="body2"
-                                                    sx={{
-                                                        marginBottom: 1,
-                                                    }}
-                                                >
-                                                    {problem}
-                                                </Typography>
-                                            ))
-                                        }
-                                    </>
-                                }>
+                                node.savedWithErrors &&
+                                <Tooltip title="Das Prozesselment enthält Fehler. Bitte überprüfen Sie die Konfiguration.">
                                     <Box
                                         sx={{
                                             marginLeft: 1,

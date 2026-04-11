@@ -484,18 +484,11 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
                 .recalculateReferencedIds();
     }
 
-    private static void markInputsDisabled(@Nonnull BaseElement element) {
-        if (element instanceof BaseInputElement<?> inputElement) {
-            inputElement.setDisabled(true);
-        }
-
-        if (element instanceof LayoutElement<?> layoutElement && layoutElement.getChildren() != null) {
-            for (var child : layoutElement.getChildren()) {
-                if (child != null) {
-                    markInputsDisabled(child);
-                }
-            }
-        }
+    @Nonnull
+    @Override
+    public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(ASSIGNMENT_CONTEXT_FIELD_ID);
+        return configuration;
     }
 
     private record ApprovalConfiguration(

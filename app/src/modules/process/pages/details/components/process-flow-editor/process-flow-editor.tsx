@@ -96,6 +96,7 @@ interface ProcessFlowEditorProps {
     onDeleteNode?: (node: ProcessNodeEntity) => void | Promise<void>;
     onConnectNodeToExisting?: (node: ProcessNodeEntity, preferredPortKey?: string) => void;
     onStartReplaceNode?: (node: ProcessNodeEntity) => void;
+    onStartCloneNode?: (node: ProcessNodeEntity) => void;
 
     onAddFollowUpNode?: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode?: (forEdgeId: number) => void;
@@ -109,8 +110,6 @@ interface ProcessFlowEditorProps {
     onReloadRuntimeData: () => void;
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
-
-    nodeValidationResults: ProcessNodeProblems[];
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
@@ -342,6 +341,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteNode,
         onConnectNodeToExisting,
         onStartReplaceNode,
+        onStartCloneNode,
 
         onAddFollowUpNode,
         onAddInbetweenNode,
@@ -351,9 +351,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onReloadRuntimeData,
         topLeftPanel,
         topRightPanel,
-
-        nodeValidationResults,
     } = props;
+
     const theme = useTheme();
 
     const {
@@ -411,6 +410,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteNode: onDeleteNode ?? NOOP_DELETE_NODE,
         onConnectNodeToExisting: onConnectNodeToExisting ?? NOOP_CONNECT_NODE_TO_EXISTING,
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
+        onStartCloneNode: onStartCloneNode ?? NOOP_START_REPLACE_NODE,
 
         onReloadRuntimeData: onReloadRuntimeData,
 
@@ -418,8 +418,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
 
         runtimeData,
-
-        nodeValidationResults,
     }), [
         isEditable,
         onAddEdge,
@@ -433,7 +431,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onReloadRuntimeData,
         selectedNode,
         showTargetHandles,
-        nodeValidationResults,
     ]);
     const handleToggleViewportLock = useCallback(() => {
         setIsViewportLocked((current) => !current);

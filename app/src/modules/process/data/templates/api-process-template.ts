@@ -37,6 +37,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
         {
             'id': 85,
@@ -57,6 +58,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
         {
             'id': 80,
@@ -76,6 +78,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
         {
             'id': 84,
@@ -94,6 +97,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
         {
             'id': 83,
@@ -119,6 +123,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
         {
             'id': 82,
@@ -137,6 +142,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
         {
             'id': 78,
@@ -159,6 +165,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
         {
             'id': 79,
@@ -185,6 +192,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'timeLimitDays': null,
             'requirements': null,
             'notes': null,
+            'savedWithErrors': false,
         },
     ],
     'edges': [

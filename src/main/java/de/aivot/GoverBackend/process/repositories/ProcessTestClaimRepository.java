@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProcessTestClaimRepository extends JpaRepository<ProcessTestClaimEntity, Integer>, JpaSpecificationExecutor<ProcessTestClaimEntity> {
-    Optional<ProcessTestClaimEntity> findByAccessKey(@Nonnull String accessKey);
+    Optional<ProcessTestClaimEntity> findByProcessIdAndAccessKey(@Nonnull Integer processId, @Nonnull String accessKey);
 
     Optional<ProcessTestClaimEntity> findByProcessIdAndProcessVersion(Integer processId, Integer processVersion);
 

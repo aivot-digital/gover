@@ -90,7 +90,7 @@ create table process_nodes
     -- The output mappings for this node.
     output_mappings                 jsonb        not null default '{}',
 
-    -- The Timelimit in days for this node.
+    -- The timelimit in days for this node.
     time_limit_days                 integer      null,
 
     -- The requirements for this node.
@@ -98,6 +98,10 @@ create table process_nodes
 
     -- Additional notes for this node.
     notes                           text         null,
+
+    -- Flag to determine if this node was saved with errors.
+    -- This is used to display a warning in the UI and to prevent publishing of process definitions with errors.
+    saved_with_errors               bool         not null default false,
 
     -- Define the primary key
     primary key (id),

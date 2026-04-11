@@ -27,7 +27,7 @@ public class WebhookTriggerConfigV1 {
     public static final String AUTH_METHOD_CONFIG_KEY = "auth_method";
     // Options for authentication method
     public static final String AUTH_METHOD_OPTION_BASIC = "basic";
-    public static final String AUTH_METHOD_OPTION_BEARER = "bearer";
+    // public static final String AUTH_METHOD_OPTION_BEARER = "bearer"; // Bearer is removed because it clashes with the spring boot jwt bearer token handling.
     public static final String AUTH_METHOD_OPTION_QUERY_PARAM = "query_param";
     // Basic auth credentials
     public static final String AUTH_USERNAME_CONFIG_KEY = "auth_username";
@@ -60,6 +60,7 @@ public class WebhookTriggerConfigV1 {
             @ElementPOJOBindingProperty(key = "label", strValue = "Webhook-URL"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Die URL, über die der Webhook angesprochen werden kann."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
+            @ElementPOJOBindingProperty(key = "destinationKey", strValue = WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
     })
     public String slug = "";
 

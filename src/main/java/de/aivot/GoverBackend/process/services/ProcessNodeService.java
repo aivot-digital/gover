@@ -121,40 +121,32 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessNodeEntity entity,
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
-        var providerChanged =
-                !existingEntity.getProcessNodeDefinitionKey().equals(entity.getProcessNodeDefinitionKey()) ||
-                        existingEntity.getProcessNodeDefinitionVersion() != entity.getProcessNodeDefinitionVersion();
+        if (!existingEntity.getProcessNodeDefinitionKey().equals(entity.getProcessNodeDefinitionKey())) {
+            throw ResponseException.badRequest("Der Prozesselement-Funktionsanbieter eines Knoten kann nicht geändert werden.");
+        }
 
+        // Update fields
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setDataKey(entity.getDataKey());
-        existingEntity.setProcessNodeDefinitionKey(entity.getProcessNodeDefinitionKey());
         existingEntity.setProcessNodeDefinitionVersion(entity.getProcessNodeDefinitionVersion());
         existingEntity.setOutputMappings(entity.getOutputMappings());
         existingEntity.setTimeLimitDays(entity.getTimeLimitDays());
         existingEntity.setNotes(entity.getNotes());
         existingEntity.setRequirements(entity.getRequirements());
-
-        // A provider replacement intentionally starts from a fresh configuration. In that case we
-        // must derive the new provider defaults with skipped validation errors first, just like the
-        // create flow does, otherwise the update endpoint would reject the empty reset state before
-        // the user even has a chance to configure the new node.
-        // Do not throw any errors if the configuration has errors.
-        var derivedObjectItemData = deriveConfiguration(entity, providerChanged, null);
-
         existingEntity.setConfiguration(entity.getConfiguration());
 
-        if (providerChanged) {
-            return processDefinitionNodeRepository.save(existingEntity);
-        }
-
-        // Fetch the provider and validate configuration
-        var provider = processNodeProviderService
-                .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
-                .orElseThrow(ResponseException::badRequest);
-        provider.validateConfiguration(entity, entity.getConfiguration(), derivedObjectItemData);
+        // Validate the node configuration
+        validate(existingEntity, false).ifPresentOrElse(
+                (ignored) -> {
+                    existingEntity.setSavedWithErrors(true);
+                },
+                () -> {
+                    existingEntity.setSavedWithErrors(false);
+                }
+        );
 
         return processDefinitionNodeRepository.save(existingEntity);
     }
@@ -235,13 +227,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 .findAllByProcessIdAndProcessVersion(processId, processVersion);
     }
 
-    public Optional<ProcessNodeProblems> validate(Integer id) throws ResponseException {
+    @Nonnull
+    public Optional<ProcessNodeProblems> validate(@Nonnull Integer id, boolean checkPorts) throws ResponseException {
         var node = retrieve(id)
                 .orElseThrow(ResponseException::notFound);
-        return validate(node);
+        return validate(node, checkPorts);
     }
 
-    public Optional<ProcessNodeProblems> validate(ProcessNodeEntity node) throws ResponseException {
+    @Nonnull
+    public Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node, boolean checkPorts) throws ResponseException {
         var commonErrors = new HashMap<String, String>();
         var problems = new LinkedList<String>();
 
@@ -302,16 +296,18 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             }
         }
 
-        for (var ports : provider.getPorts()) {
-            var edgeExists = processEdgeRepository
-                    .existsByFromNodeIdAndViaPort(node.getId(), ports.key());
+        if (checkPorts) {
+            for (var ports : provider.getPorts()) {
+                var edgeExists = processEdgeRepository
+                        .existsByFromNodeIdAndViaPort(node.getId(), ports.key());
 
-            if (!edgeExists) {
-                problems.add(
-                        "Es existiert keine Verbindung von diesem Knoten über den Ausgang " +
-                                StringUtils.quote(ports.label()) +
-                                ". Alle Ausgänge müssen mit einer Verbindung zu einem anderen Knoten verbunden sein."
-                );
+                if (!edgeExists) {
+                    problems.add(
+                            "Es existiert keine Verbindung von diesem Knoten über den Ausgang " +
+                                    StringUtils.quote(ports.label()) +
+                                    ". Alle Ausgänge müssen mit einer Verbindung zu einem anderen Knoten verbunden sein."
+                    );
+                }
             }
         }
 
