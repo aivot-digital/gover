@@ -39,10 +39,6 @@ import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submissi
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {useSingleUpdateEffect} from '../../hooks/use-single-update-effect';
 import {ApiError, isApiError} from '../../models/api-error';
-import {StepElement} from '../../models/elements/steps/step-element';
-import {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
-import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import {
     AuthoredElementValues,
     createDerivedRuntimeElementData,
@@ -68,34 +64,13 @@ import {RootComponentHeader} from './root-component-header';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
-
-type AnyStepElement =
-    StepElement
-    | IntroductionStepElement
-    | SummaryStepElement
-    | SubmitStepElement
-    | SubmittedStepElement;
+import {extractVisibleFormSteps, type VisibleFormStepElement} from '../../utils/visible-form-steps';
 
 const SubmissionIdSearchParam = 'submissionId';
 
 const checkTimeoutMinMs = 1000;
 
-function extractVisibleSteps(children: StepElement[] | null | undefined, derivedData: DerivedRuntimeElementData): AnyStepElement[] {
-    if (children == null) {
-        return [];
-    }
-
-    const visibleChildren = [];
-    for (const child of children) {
-        if (resolveVisibility(child, derivedData)) {
-            visibleChildren.push(child);
-        }
-    }
-
-    return visibleChildren;
-}
-
-function extractCurrentStep(currentStep: number, allVisibleSteps: AnyStepElement[]) {
+function extractCurrentStep(currentStep: number, allVisibleSteps: VisibleFormStepElement[]) {
     if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
         return null;
     }
@@ -197,7 +172,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     } = element;
 
     // Collecting all steps including the fixed steps
-    const allVisibleSteps = useMemo(() => extractVisibleSteps(children as StepElement[], derivedData), [children, derivedData]);
+    const allVisibleSteps = useMemo(() => extractVisibleFormSteps(children, derivedData), [children, derivedData]);
 
     // Extract the current step based on the current step index and all visible steps
     const currentStepElement = useMemo(() => extractCurrentStep(currentStep, allVisibleSteps), [currentStep, allVisibleSteps]);
