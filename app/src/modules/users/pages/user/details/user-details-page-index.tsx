@@ -27,13 +27,19 @@ import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 import {useChangeBlocker} from '../../../../../hooks/use-change-blocker';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    removeSnackbarMessage,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../../../slices/shell-slice';
 import {createOidcPath} from '../../../../../utils/create-oidc-path';
 import {ProcessInstanceTaskApiService} from '../../../../process/services/process-instance-task-api-service';
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../../../process/enums/process-task-status';
 import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
 import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {downloadTextFile} from '../../../../../utils/download-utils';
+import {AlertComponent} from '../../../../../components/alert/alert-component';
 
 const KEYCLOAK_PERSON_NAME_MAX_CHARACTERS = 255;
 const KEYCLOAK_EMAIL_MAX_CHARACTERS = 255;
@@ -151,7 +157,7 @@ export function UserDetailsPageIndex() {
         return createOidcPath(`/admin/${AppConfig.oidc.realm}/console/#/realms/${AppConfig.oidc.realm}/users/${editedUser.id}`);
     }, [editedUser?.id]);
 
-    const canEditUser = isEditable && !user?.deletedInIdp;
+    const canEditUser = isEditable && !user?.deletedInIdp && !user?.artificialUser;
 
     useEffect(() => {
         setIsSystemRolesLoading(true);
@@ -198,7 +204,7 @@ export function UserDetailsPageIndex() {
 
     if (editedUser == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -452,6 +458,19 @@ export function UserDetailsPageIndex() {
                     {isNewUser ? 'Mitarbeiter:in anlegen' : 'Mitarbeiter:in verwalten'}
                 </Typography>
 
+                {
+                    editedUser.artificialUser &&
+                    <AlertComponent
+                        color="info"
+                        sx={{
+                            my: 2,
+                        }}
+                    >
+                        Bei dieser Mitarbeiter:in handelt es sich um einen Beispieldatensatz.
+                        Eine Änderung der Daten, sowie ein Löschen ist nicht möglich.
+                    </AlertComponent>
+                }
+
                 <Typography sx={{mb: 3, maxWidth: 900}}>
                     {
                         isNewUser
@@ -562,8 +581,10 @@ export function UserDetailsPageIndex() {
                                 color: 'warning.dark',
                             }}
                         >
-                            Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
-                            Der Datensatz bleibt in Gover erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
+                            Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und
+                            weitere Verwaltungsaktionen sind nicht mehr möglich.
+                            Der Datensatz bleibt in Gover erhalten, damit bestehende Zuordnungen und Historien
+                            nachvollziehbar bleiben.
                         </Typography>
                     ) : (
                         !isNewUser &&
@@ -582,7 +603,8 @@ export function UserDetailsPageIndex() {
                                 color="text.secondary"
                                 sx={{maxWidth: 900}}
                             >
-                                Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in Keycloak. Benutzer-ID:{' '}
+                                Weitergehende konto- oder sicherheitsbezogene Änderungen erfolgen direkt in Keycloak.
+                                Benutzer-ID:{' '}
                                 <Box
                                     component="span"
                                     sx={{
@@ -592,7 +614,8 @@ export function UserDetailsPageIndex() {
                                 >
                                     {editedUser.id}
                                 </Box>
-                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IDP löschen.
+                                . Wenn die Mitarbeiter:in keinen Zugriff mehr benötigt, können Sie das Konto im IDP
+                                löschen.
                             </Typography>
 
                             {
@@ -604,7 +627,7 @@ export function UserDetailsPageIndex() {
                                     rel="noopener noreferrer"
                                     variant="text"
                                     size="small"
-                                    startIcon={<OpenInNewIcon />}
+                                    startIcon={<OpenInNewIcon/>}
                                     sx={{whiteSpace: 'nowrap'}}
                                 >
                                     In Keycloak öffnen
@@ -626,7 +649,7 @@ export function UserDetailsPageIndex() {
                         <Button
                             variant="contained"
                             color="primary"
-                            startIcon={<SaveOutlinedIcon />}
+                            startIcon={<SaveOutlinedIcon/>}
                             disabled={isBusy || hasNotChanged || isSystemRolesLoading || systemRoleOptions.length === 0}
                             onClick={handleSave}
                         >
@@ -652,7 +675,7 @@ export function UserDetailsPageIndex() {
                                 <Button
                                     variant="outlined"
                                     color="primary"
-                                    startIcon={<LockResetOutlinedIcon />}
+                                    startIcon={<LockResetOutlinedIcon/>}
                                     disabled={isBusy}
                                     onClick={handlePasswordReset}
                                     sx={{
@@ -665,7 +688,7 @@ export function UserDetailsPageIndex() {
                                     onClick={checkAndHandleDelete}
                                     variant="outlined"
                                     color="error"
-                                    startIcon={<Delete />}
+                                    startIcon={<Delete/>}
 
                                     disabled={isBusy}
                                 >
@@ -688,7 +711,8 @@ export function UserDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diese Mitarbeiter:in wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diese Mitarbeiter:in wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
+                    werden.
                 </Typography>
 
                 <Typography
@@ -719,7 +743,7 @@ export function UserDetailsPageIndex() {
                     severity={hasInitialCredentialsDeliveryError ? 'warning' : 'info'}
                     actions={
                         <Button
-                            startIcon={<FileDownloadOutlinedIcon />}
+                            startIcon={<FileDownloadOutlinedIcon/>}
                             onClick={handleDownloadInitialCredentials}
                         >
                             Als Textdatei herunterladen
@@ -758,7 +782,11 @@ export function UserDetailsPageIndex() {
                         color="text.secondary"
                         sx={{mt: 2}}
                     >
-                        Das temporäre Passwort wird an dieser Stelle einmalig angezeigt. Name, E-Mail-Adresse und Systemrolle können später weiterhin im Profil eingesehen und geändert werden. Die Mitarbeiter:in muss beim ersten Login ein neues Passwort vergeben, die E-Mail-Adresse bestätigen und gegebenenfalls eine Zwei-Faktor-Authentifizierung einrichten, sofern dies in der System-Konfiguration vorgesehen ist.
+                        Das temporäre Passwort wird an dieser Stelle einmalig angezeigt. Name, E-Mail-Adresse und
+                        Systemrolle können später weiterhin im Profil eingesehen und geändert werden. Die Mitarbeiter:in
+                        muss beim ersten Login ein neues Passwort vergeben, die E-Mail-Adresse bestätigen und
+                        gegebenenfalls eine Zwei-Faktor-Authentifizierung einrichten, sofern dies in der
+                        System-Konfiguration vorgesehen ist.
                     </Typography>
                 </InfoDialog>
             }

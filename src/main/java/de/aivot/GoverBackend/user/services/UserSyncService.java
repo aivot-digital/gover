@@ -146,8 +146,7 @@ public class UserSyncService {
                     continue;
                 }
 
-                // Check if the user ID is a placeholder ID (e.g., "0000-000-0000", "0000-000-0001", etc.)
-                if (localUser.getId().matches("^[0-]+[0-9]{3}$")) {
+                if (localUser.isArtificialUser()) {
                     continue;
                 }
 

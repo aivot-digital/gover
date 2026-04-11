@@ -17,4 +17,5 @@ export interface User {
     isSystemAdmin: boolean;
     deletedInIdp: boolean;
     systemRoleId: number | null;
+    artificialUser?: boolean | null;
 }

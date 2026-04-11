@@ -84,6 +84,11 @@ public class UserEntity {
         return true;
     }
 
+    public boolean isArtificialUser() {
+        // Check if the user ID is a placeholder ID (e.g., "0000-000-0000", "0000-000-0001", etc.)
+        return id != null && id.matches("^[0-]+[0-9]{3}$");
+    }
+
     // endregion
 
     // region Transformers
