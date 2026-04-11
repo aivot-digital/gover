@@ -350,7 +350,7 @@ public class ProcessNodeExecutionResultHandler {
                 ProcessNodeExecutionLogLevel.Info,
                 true,
                 true,
-                "Das Prozesselement '%s' wurde abgeschlossen. Naechstes Prozesselement: %d.",
+                "Das Prozesselement '%s' wurde abgeschlossen. Nächstes Prozesselement: %d.",
                 currentNode.resolveName(provider),
                 outEdge.get().getToNodeId()
         );
