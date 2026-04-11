@@ -14,12 +14,6 @@ import {UserRoleResponseDTO} from "../../dtos/user-role-response-dto";
 import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
 import {GenericList} from "../../../../components/generic-list/generic-list";
 import {
-    VDepartmentUserRoleAssignmentWithDetailsService
-} from "../../../departments/services/v-department-user-role-assignment-with-details-service";
-import {
-    VDepartmentUserRoleAssignmentWithDetailsEntity
-} from "../../../departments/entities/v-department-user-role-assignment-with-details-entity";
-import {
     VDepartmentMembershipWithDetailsService
 } from "../../../departments/services/v-department-membership-with-details-service";
 
@@ -39,12 +33,12 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     },
     {
         field: 'departmentName',
-        headerName: 'Fachbereich',
+        headerName: 'Organisationseinheit',
         flex: 1,
         renderCell: (params) => (
             <CellLink
                 to={`/departments/${params.row.departmentId}`}
-                title="Fachbereich bearbeiten"
+                title="Organisationseinheit anzeigen"
             >
                 {String(params.row.departmentName)}
             </CellLink>
@@ -77,7 +71,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     mb: 3,
                     maxWidth: 900,
                 }}>
-                    Eine Übersicht der Mitarbeiter:innen, die dieser Rolle in verschiedenen
+                    Eine Übersicht der Mitarbeiter:innen, denen diese Domänenrolle in verschiedenen
                     Organisationseinheiten zugewiesen sind.
                 </Typography>
 

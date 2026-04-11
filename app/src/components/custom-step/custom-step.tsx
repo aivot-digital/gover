@@ -11,6 +11,7 @@ import {
 } from '@mui/material';
 import React, {useEffect, useRef} from 'react';
 import {getStepIcon} from '../../data/step-icons';
+import {ElementType} from '../../data/element-type/element-type';
 import {isStepElement} from '../../models/elements/steps/step-element';
 import {getElementNameForType} from '../../data/element-type/element-names';
 import CheckCircleTwoToneIcon from '@mui/icons-material/CheckCircleTwoTone';
@@ -42,6 +43,7 @@ export function CustomStep(props: CustomStepProps & StepProps) {
 
     const theme = useTheme();
     const disableAutoScroll = useAppSelector(selectDisableAutoScrollForSteps);
+    const isIntroductionStep = step.type === ElementType.IntroductionStep;
 
     const ref = useRef<HTMLDivElement>(null);
     const headingRef = useRef<HTMLDivElement>(null);
@@ -196,13 +198,10 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                                 isDeriving && 'Berechne…'
                             }
                             {
-                                isFirstStep && !isDeriving && 'Antrag beginnen'
+                                isIntroductionStep && !isDeriving && 'Starten'
                             }
                             {
-                                isLastStep && !isDeriving && 'Antrag verbindlich einreichen'
-                            }
-                            {
-                                !isFirstStep && !isLastStep && !isDeriving && 'Weiter'
+                                !isIntroductionStep && !isDeriving && 'Weiter'
                             }
                         </Button>
                     }

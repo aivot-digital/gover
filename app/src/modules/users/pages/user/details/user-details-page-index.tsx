@@ -154,7 +154,10 @@ export function UserDetailsPageIndex() {
             return undefined;
         }
 
-        return createOidcPath(`/admin/${AppConfig.oidc.realm}/console/#/realms/${AppConfig.oidc.realm}/users/${editedUser.id}`);
+        const realm = encodeURIComponent(AppConfig.oidc.realm);
+        const userId = encodeURIComponent(editedUser.id);
+
+        return createOidcPath(`/admin/${realm}/console/#/${realm}/users/${userId}/settings`);
     }, [editedUser?.id]);
 
     const canEditUser = isEditable && !user?.deletedInIdp && !user?.artificialUser;
@@ -572,20 +575,15 @@ export function UserDetailsPageIndex() {
 
                 {
                     editedUser.deletedInIdp ? (
-                        <Typography
-                            variant="body2"
+                        <AlertComponent
+                            color="warning"
                             sx={{
-                                mt: 2,
-                                mb: 3,
-                                maxWidth: 900,
-                                color: 'warning.dark',
+                                my: 3,
                             }}
                         >
-                            Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und
-                            weitere Verwaltungsaktionen sind nicht mehr möglich.
-                            Der Datensatz bleibt in Gover erhalten, damit bestehende Zuordnungen und Historien
-                            nachvollziehbar bleiben.
-                        </Typography>
+                            Dieses Konto wurde im Identity Provider bereits gelöscht. Änderungen, Passwort-Resets und weitere Verwaltungsaktionen sind nicht mehr möglich.
+                            Der Datensatz bleibt in Gover erhalten, damit bestehende Zuordnungen und Historien nachvollziehbar bleiben.
+                        </AlertComponent>
                     ) : (
                         !isNewUser &&
                         <Box

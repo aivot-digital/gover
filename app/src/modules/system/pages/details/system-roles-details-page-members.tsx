@@ -54,7 +54,7 @@ export function SystemRolesDetailsPageMembers() {
                     mb: 3,
                     maxWidth: 900,
                 }}>
-                    Eine Übersicht der Mitarbeiter:innen, die dieser Rolle zugeordnet sind.
+                    Eine Übersicht der Mitarbeiter:innen, die dieser Systemrolle zugeordnet sind.
                 </Typography>
 
                 <GenericList<User>

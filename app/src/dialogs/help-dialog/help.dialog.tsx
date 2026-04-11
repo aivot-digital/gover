@@ -54,10 +54,10 @@ export function HelpDialog(props: HelpDialogProps) {
                         <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, zum Navigieren durch die Schritte und um Ihre Eingaben zu prüfen.</li>
                         <li>Klicken Sie abschließend auf <b>„Antrag verbindlich einreichen“</b>.</li>
                         <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen Sie erneut, das Formular abzusenden.</li>
-                        <li>Nach erfolgreicher Übermittlung wird Ihr Antrag direkt an die zuständige Behörde weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte durch, indem Sie den im Antrag angezeigten
+                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die zuständige Behörde weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte durch, indem Sie den im Formular angezeigten
                             Anweisungen folgen.
                         </li>
-                        <li>Laden Sie den Antrag als PDF herunter oder lassen Sie ihn sich per E-Mail zusenden.</li>
+                        <li>Auf der Bestätigungsseite erhalten Sie ggf. weitere Hinweise zum weiteren Ablauf.</li>
                     </ul>
                 </>
             ),

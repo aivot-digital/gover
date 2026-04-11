@@ -64,8 +64,11 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     const {
         root,
         editable,
+        scrollToElement,
         expandCommand,
         activeSearchResultPath,
+        highlightedElementId,
+        highlightedElementSignal,
         allElements,
     } = useElementTreeContext();
 
@@ -169,6 +172,20 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             setIsCollapsed(false);
         }
     }, [currentEditedElementId]);
+
+    useEffect(() => {
+        if (highlightedElementId !== valueId || highlightedElementSignal == null) {
+            return;
+        }
+
+        const frameId = window.requestAnimationFrame(() => {
+            scrollToElement(path);
+        });
+
+        return () => {
+            window.cancelAnimationFrame(frameId);
+        };
+    }, [highlightedElementId, highlightedElementSignal, path, scrollToElement, valueId]);
 
     const icons: Action[] = useMemo(() => {
         const leadingIcons: Action[] = getIcons(root, value, allElements);

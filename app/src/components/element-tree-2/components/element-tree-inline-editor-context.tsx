@@ -3,6 +3,7 @@ import {AnyElement} from '../../../models/elements/any-element';
 
 export interface ElementTreeInlineEditorContextType {
     navigateToElementEditor: (element: AnyElement, tab?: string | null) => void;
+    highlightElementInTree: (element: AnyElement) => void;
     cloneElement: (element: AnyElement) => void;
     deleteElement: (element: AnyElement) => void;
     editable: boolean;

@@ -65,11 +65,12 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
     content: (
         <>
             <Typography>
-                Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
-                B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
+                Teams bündeln Mitarbeiter:innen für gemeinsame Aufgaben und Zuständigkeiten innerhalb
+                von Gover.
             </Typography>
             <Typography sx={{mt: 2}}>
-                Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb des Fachbereichs definiert.
+                Über Teammitgliedschaften und zugewiesene Domänenrollen steuern Sie, welche
+                Mitarbeiter:innen innerhalb dieses Teams welche Berechtigungen erhalten.
             </Typography>
         </>
     ),

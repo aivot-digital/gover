@@ -95,7 +95,7 @@ export function ImportFormDialog(props: ImportFormDialogProps) {
             <DialogContent tabIndex={0}>
 
                 <DialogContentText>
-                    Importieren Sie ein Formular im GOV-Format (*.gov) oder ein XDatenfeld-Schema (*.xml).
+                    Importieren Sie ein Formular im JSON-Format (*.json) oder ein XDatenfeld-Schema (*.xml).
                 </DialogContentText>
                 <Box
                     sx={{
@@ -105,7 +105,7 @@ export function ImportFormDialog(props: ImportFormDialogProps) {
                     <FileUpload
                         onChange={onFileSelect}
                         value={[]}
-                        extensions={['gov', 'xml']}
+                        extensions={['json', 'xml']}
                     />
                 </Box>
 

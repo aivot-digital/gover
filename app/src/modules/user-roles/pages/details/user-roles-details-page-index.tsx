@@ -52,7 +52,7 @@ export function UserRolesDetailsPageIndex() {
 
         dispatch(addSnackbarMessage({
             key: 'access-denied-user-roles-details',
-            message: 'Diese Domänenrolle kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff',
+            message: 'Diese Domänenrolle kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
             severity: SnackbarSeverity.Warning,
             type: SnackbarType.Dismissable,
         }));
@@ -169,7 +169,8 @@ export function UserRolesDetailsPageIndex() {
                 Domänenrolle konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Domänenrollen definieren Berechtigungen für Benutzer:innen auf Ebene einer Domäne (z. B. einer Organisationseinheit oder eines Teams).
+                Domänenrollen definieren Berechtigungen für Mitarbeiter:innen innerhalb fachlicher Domänen,
+                zum Beispiel in Organisationseinheiten oder Teams.
                 Seien Sie vorsichtig bei der Vergabe von Berechtigungen, insbesondere bei solchen, die Zugriff auf sensible Daten oder kritische Funktionen ermöglichen.
             </Typography>
 
@@ -291,8 +292,9 @@ export function UserRolesDetailsPageIndex() {
                 </Typography>
                 <AlertComponent color={'warning'}>
                     Wenn diese Domänenrolle noch Mitgliedschaften in Organisationseinheiten oder Teams zugewiesen ist,
-                    werden diese Zuweisungen ebenfalls entfernt. Das kann dazu führen, dass Nutzer:innen danach in
-                    ihren Domänen gegebenenfalls keine Berechtigungen mehr haben.
+                    werden diese Zuweisungen ebenfalls entfernt. Das kann dazu führen, dass betroffene
+                    Mitarbeiter:innen in den zugehörigen Organisationseinheiten oder Teams keine
+                    Berechtigungen mehr haben.
                 </AlertComponent>
             </ConfirmDialog>
         </Box>

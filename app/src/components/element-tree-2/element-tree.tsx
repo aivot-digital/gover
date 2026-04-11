@@ -28,6 +28,8 @@ export interface ElementTreeProps<T extends AnyElement> {
     parentModalZIndex?: number;
     displayContext: ElementDisplayContext;
     allowElementIdEditing: boolean;
+    highlightElementId?: string | null;
+    highlightElementSignal?: number;
 }
 
 interface ElementTreeSearchResult {
@@ -44,6 +46,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         parentModalZIndex,
         displayContext,
         allowElementIdEditing,
+        highlightElementId,
+        highlightElementSignal,
     } = props;
 
     const {
@@ -71,8 +75,9 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
     }, [value]);
 
     const scrollContainerRef = useRef<HTMLDivElement>(undefined);
+    const lastHandledHighlightSignalRef = useRef<number | undefined>(undefined);
 
-    const handleScrollToElement = (elementPath: string) => {
+    const handleScrollToElement = useCallback((elementPath: string) => {
         if (scrollContainerRef.current == null) {
             return;
         }
@@ -91,7 +96,25 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
             top: scrollContainer.scrollTop + centerOffset,
             behavior: 'smooth',
         });
-    };
+    }, []);
+
+    const handleExpandAndScrollToPath = useCallback((targetPath: string[]) => {
+        setExpandCommand((prev) => ({
+            type: 'expand-to-path',
+            version: prev.version + 1,
+            targetPath: targetPath,
+        }));
+
+        const outerFrameId = window.requestAnimationFrame(() => {
+            window.requestAnimationFrame(() => {
+                handleScrollToElement(targetPath.join('.'));
+            });
+        });
+
+        return () => {
+            window.cancelAnimationFrame(outerFrameId);
+        };
+    }, [handleScrollToElement]);
 
     const canDropElement = useCallback((dragItem: ElementTreeDragItem, targetParentPath: string[], targetIndex: number) => {
         return canDropElementInTree(value, dragItem, targetParentPath, targetIndex, displayContext);
@@ -204,22 +227,32 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
             return;
         }
 
-        setExpandCommand((prev) => ({
-            type: 'expand-to-path',
-            version: prev.version + 1,
-            targetPath: activeSearchResult.path,
-        }));
+        return handleExpandAndScrollToPath(activeSearchResult.path);
+    }, [activeSearchResult, handleExpandAndScrollToPath]);
 
-        const outerFrameId = window.requestAnimationFrame(() => {
-            window.requestAnimationFrame(() => {
-                handleScrollToElement(activeSearchResult.path.join('.'));
-            });
-        });
+    // Highlight requests may target the same element repeatedly, so we use a
+    // dedicated signal instead of relying on ID/hash changes alone.
+    useEffect(() => {
+        if (highlightElementId == null || highlightElementSignal == null) {
+            return;
+        }
 
-        return () => {
-            window.cancelAnimationFrame(outerFrameId);
-        };
-    }, [activeSearchResult]);
+        if (lastHandledHighlightSignalRef.current === highlightElementSignal) {
+            return;
+        }
+
+        const highlightTarget = allElements.find(({element}) => element.id === highlightElementId);
+        if (highlightTarget == null) {
+            return;
+        }
+
+        lastHandledHighlightSignalRef.current = highlightElementSignal;
+
+        return handleExpandAndScrollToPath([
+            ...highlightTarget.parents.map((parent) => parent.id),
+            highlightTarget.element.id,
+        ]);
+    }, [allElements, handleExpandAndScrollToPath, highlightElementId, highlightElementSignal]);
 
     return (
         <Box
@@ -420,6 +453,8 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 moveElement: moveElement,
                                 expandCommand: expandCommand,
                                 activeSearchResultPath: activeSearchResult?.path,
+                                highlightedElementId: highlightElementId,
+                                highlightedElementSignal: highlightElementSignal,
                                 allElements: allElements,
                                 displayContext: displayContext,
                                 allowElementIdEditing: allowElementIdEditing,

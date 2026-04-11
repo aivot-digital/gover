@@ -83,10 +83,10 @@
         *********************************************************************** */-->
         <!--/* Iteriere über jeden Abschnitt des Formulars, dass gerendert werden soll */-->
         <th:block
-                th:each="step : ${ elements }"
+                th:each="step, stepStat : ${ elements }"
                 th:if="${ step.element.type.name == 'Step' }"
         >
-            <section th:class="'step ' + ${ base.isBlankPrint ? 'page-break-before' : '' }">
+            <section th:class="'step ' + ${ base.isBlankPrint && (form.rootElement?.introductionStep != null || !stepStat.first) ? 'page-break-before' : '' }">
                 <!--/* Überschriften von Abschnitten haben immer die größe H2 */-->
                 <h2
                         th:if="${ #strings.isEmpty(step.element.title) }"

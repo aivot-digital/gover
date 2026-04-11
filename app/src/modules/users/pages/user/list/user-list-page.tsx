@@ -98,7 +98,17 @@ export function UserListPage() {
             field: 'email',
             headerName: 'E-Mail-Adresse',
             flex: 1,
-            renderCell: (params) => (
+            renderCell: (params) => params.row.deletedInIdp ? (
+                <Typography
+                    component="span"
+                    variant="body2"
+                    color="text.disabled"
+                    title="Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden."
+                    sx={{whiteSpace: 'nowrap'}}
+                >
+                    {String(params.value)}
+                </Typography>
+            ) : (
                 <Link
                     href={`mailto:${params.value}`}
                     title="E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)"
@@ -241,6 +251,8 @@ export function UserListPage() {
                         icon: <MailOutlined/>,
                         href: `mailto:${item.email}`,
                         tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
+                        disabled: item.deletedInIdp,
+                        disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
                     },
                 ]}
                 defaultSortField="lastName"

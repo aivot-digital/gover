@@ -258,13 +258,13 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     } else if (requiresReplacementSystemRole && hasSystemRolesLoadingError) {
         deleteTooltip = 'Die verfügbaren Ersatz-Systemrollen konnten nicht geladen werden.';
     } else if (requiresReplacementSystemRole && systemRoleOptions.length === 0) {
-        deleteTooltip = 'Es ist keine andere Systemrolle verfügbar, auf die Nutzer:innen oder Systemeinstellungen migriert werden können.';
+        deleteTooltip = 'Es ist keine andere Systemrolle verfügbar, auf die Mitarbeiter:innen oder Systemeinstellungen migriert werden können.';
     }
 
     const deleteImpactTexts: string[] = [];
     if (hasAssignedUsers && assignedUsersCount != null) {
         deleteImpactTexts.push(
-            `${formatAssignedUsersAreMessage(assignedUsersCount)} Beim Löschen werden diese Nutzer:innen auf die ausgewählte Ersatz-Systemrolle umgestellt.`,
+            `${formatAssignedUsersAreMessage(assignedUsersCount)} Beim Löschen werden diese Mitarbeiter:innen auf die ausgewählte Ersatz-Systemrolle umgestellt.`,
         );
     }
     if (isDefaultSystemRole) {
@@ -545,7 +545,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                             options={systemRoleOptions}
                             required
                             disabled={isBusy || isSystemRolesLoading}
-                            hint="Alle betroffenen Nutzer:innen und gegebenenfalls die Systemeinstellung für automatische Benutzerimporte werden auf diese Rolle umgestellt."
+                            hint="Alle betroffenen Mitarbeiter:innen und gegebenenfalls die Systemeinstellung für automatische Benutzerimporte werden auf diese Rolle umgestellt."
                             emptyStatePlaceholder="Keine Ersatz-Systemrolle verfügbar"
                         />
                     </>
