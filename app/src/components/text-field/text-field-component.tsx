@@ -227,7 +227,17 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             InputProps={{
                 ...(props.muiPassTroughProps?.InputProps),
                 startAdornment: props.startIcon && (
-                    <InputAdornment position="start">{props.startIcon}</InputAdornment>
+                    <InputAdornment
+                        position="start"
+                        sx={{
+                            whiteSpace: 'nowrap',
+                            '> p' : {
+                                whiteSpace: 'nowrap',
+                            },
+                        }}
+                    >
+                        {props.startIcon}
+                    </InputAdornment>
                 ),
                 endAdornment: props.endAction && (
                     <InputAdornment position="end">
