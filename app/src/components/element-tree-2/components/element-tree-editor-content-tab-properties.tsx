@@ -337,7 +337,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             } as T);
                         }}
                         startIcon="$."
-                        hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Formulardatensatz unter diesem Schlüssel gespeichert."
+                        hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
                         disabled={!editable}
                     />
 
