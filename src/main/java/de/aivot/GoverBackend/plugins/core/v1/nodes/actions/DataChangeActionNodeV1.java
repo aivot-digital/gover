@@ -66,6 +66,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     private static final String TASK_VIEW_ROOT_ID = "data-change-task-view";
     private static final String TASK_VIEW_DESCRIPTION_HEADLINE_ID = "data-change-task-view-description-headline";
     private static final String TASK_VIEW_DESCRIPTION_CONTENT_ID = "data-change-task-view-description-content";
+    private static final String TASK_VIEW_UI_HEADLINE_ID = "data-change-task-view-ui-headline";
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
@@ -338,24 +339,28 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     private static GroupLayoutElement buildStaffTaskView(@Nonnull ResolvedConfiguration config) {
-        if (config.taskDescription() == null || config.taskDescription().isBlank()) {
-            return cloneDataDefinition(config.dataDefinition());
-        }
-
         var layout = new GroupLayoutElement();
         layout.setId(TASK_VIEW_ROOT_ID);
 
-        var descriptionHeadline = new HeadlineContentElement();
-        descriptionHeadline.setId(TASK_VIEW_DESCRIPTION_HEADLINE_ID);
-        descriptionHeadline.setContent("Aufgabenbeschreibung");
-
-        var descriptionContent = new RichTextContentElement();
-        descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
-        descriptionContent.setContent(config.taskDescription());
-
         var children = new java.util.ArrayList<BaseFormElement>();
-        children.add(descriptionHeadline);
-        children.add(descriptionContent);
+
+        if (config.taskDescription() != null && !config.taskDescription().isBlank()) {
+            var descriptionHeadline = new HeadlineContentElement();
+            descriptionHeadline.setId(TASK_VIEW_DESCRIPTION_HEADLINE_ID);
+            descriptionHeadline.setContent("Aufgabenbeschreibung");
+
+            var descriptionContent = new RichTextContentElement();
+            descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
+            descriptionContent.setContent(config.taskDescription());
+
+            children.add(descriptionHeadline);
+            children.add(descriptionContent);
+        }
+
+        var uiHeadline = new HeadlineContentElement();
+        uiHeadline.setId(TASK_VIEW_UI_HEADLINE_ID);
+        uiHeadline.setContent("Daten zu dieser Aufgabe");
+        children.add(uiHeadline);
         children.add(cloneDataDefinition(config.dataDefinition()));
         layout.setChildren(children);
         return layout;

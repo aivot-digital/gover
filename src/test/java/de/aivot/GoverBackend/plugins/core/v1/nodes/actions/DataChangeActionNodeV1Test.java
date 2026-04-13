@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
@@ -145,8 +146,10 @@ class DataChangeActionNodeV1Test {
 
         var layout = node.getStaffTaskView(context);
         var description = layout.findChild("data-change-task-view-description-content", RichTextContentElement.class).orElseThrow();
+        var uiHeadline = layout.findChild("data-change-task-view-ui-headline", HeadlineContentElement.class).orElseThrow();
 
         assertEquals("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>", description.getContent());
+        assertEquals("Daten zu dieser Aufgabe", uiHeadline.getContent());
     }
 
     @Test
