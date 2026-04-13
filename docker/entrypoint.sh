@@ -28,6 +28,9 @@ window.AppConfig = {
     api: {
         hostname: '$GOVER_HOSTNAME',
     },
+    registry: {
+        url: '$GOVER_TEMPLATE_REGISTRY_URL',
+    },
     sentry: {
         dsn: '$GOVER_SENTRY_WEB_APP',
     },

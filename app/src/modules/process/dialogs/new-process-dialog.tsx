@@ -17,7 +17,7 @@ import {
     type SelectFieldComponentOption,
 } from '../../../components/select-field-2/select-field-component';
 import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../departments/utils/department-utils';
-import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -27,6 +27,10 @@ import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-fo
 import {isStringNotNullOrEmpty, quoteString} from '../../../utils/string-utils';
 import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import {ProcessDefinitionApiService} from '../services/process-definition-api-service';
+import AddBox from '@aivot/mui-material-symbols-400-outlined/dist/add-box/AddBox';
+import {ProcessStatus} from '../enums/process-status';
+import {ProcessTemplatesService, TemplateRegistryProcessItem} from '../services/process-templates-service';
+import GridGuides from '@aivot/mui-material-symbols-400-outlined/dist/grid-guides/GridGuides';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -53,6 +57,8 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
     const [isLoading, setIsLoading] = useState(false);
 
+    const [templates, setTemplates] = useState<TemplateRegistryProcessItem[] | null>(null);
+
     useEffect(() => {
         if (user == null) {
             setAvailableDepartments([]);
@@ -77,6 +83,16 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheiten konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
             });
     }, [user]);
+
+    useEffect(() => {
+        new ProcessTemplatesService()
+            .getProcessTemplates()
+            .then(setTemplates)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Die Vorlagen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.'));
+            });
+    }, []);
 
     const [activeStep, setActiveStep] = useState(0);
     const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(null);
@@ -247,21 +263,15 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     marginTop: 2,
                                 }}
                             >
-                                {
-                                    ([] as any[])
-                                        .map((preset, index) => (
-                                            <ProcessTemplateCard
-                                                key={index}
-                                                Icon={preset.Icon}
-                                                title={preset.name}
-                                                description={preset.description}
-                                                onClick={() => {
-                                                    setSelectedTemplateData(preset.data);
-                                                    setActiveStep(1);
-                                                }}
-                                            />
-                                        ))
-                                }
+                                <ProcessTemplateCard
+                                    Icon={AddBox}
+                                    title="Leeres Verfahren"
+                                    description="Ein leeres Verfahren ohne vordefinierte Schritte oder Logik."
+                                    onClick={() => {
+                                        setSelectedTemplateData(EmptyProcess);
+                                        setActiveStep(1);
+                                    }}
+                                />
 
                                 <ProcessTemplateCard
                                     Icon={UploadFile}
@@ -272,6 +282,26 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                         borderStyle: 'dashed',
                                     }}
                                 />
+
+                                {
+                                    templates != null &&
+                                    templates.map((preset) => (
+                                        <ProcessTemplateCard
+                                            key={preset.path}
+                                            Icon={GridGuides}
+                                            title={preset.name}
+                                            description={`Ein vordefiniertes Verfahren von ${preset.vendor}.`}
+                                            onClick={() => {
+                                                new ProcessTemplatesService()
+                                                    .loadTemplate(preset)
+                                                    .then((templateData) => {
+                                                        setSelectedTemplateData(templateData);
+                                                        setActiveStep(1);
+                                                    });
+                                            }}
+                                        />
+                                    ))
+                                }
                             </Grid>
                         </>
                     }
@@ -473,3 +503,33 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
         </Grid>
     );
 }
+
+const EmptyProcess: ProcessExport = {
+    appBuildNumber: '',
+    appVersion: '',
+    createdByVendor: '',
+    edges: [],
+    exportTimestamp: '',
+    nodes: [],
+    process: {
+        id: 0,
+        internalTitle: 'Neues Verfahren',
+        departmentId: 0,
+        accessKey: '',
+        versionCount: 0,
+        draftedVersion: null,
+        publishedVersion: null,
+        created: '',
+        updated: '',
+    },
+    version: {
+        processId: 0,
+        processVersion: 0,
+        status: ProcessStatus.Drafted,
+        publicTitle: 'Neues Verfahren',
+        crated: '',
+        updated: '',
+        published: null,
+        revoked: null,
+    },
+};
