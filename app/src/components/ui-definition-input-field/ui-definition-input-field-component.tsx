@@ -42,7 +42,7 @@ function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string 
     }
 
     const elementCount = flattenElements(value).length - 1; // Subtract 1 to compensate for the root element of the structure.
-    const countLabel = `${humanizeNumberCapitalized(elementCount)} Element${elementCount === 1 ? '' : 'e'} enthalten`;
+    const countLabel = `${humanizeNumberCapitalized(elementCount, {1: 'Ein'})} Element${elementCount === 1 ? '' : 'e'} enthalten`;
 
     return `${countLabel}`;
 }
