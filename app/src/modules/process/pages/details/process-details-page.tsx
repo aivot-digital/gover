@@ -1153,9 +1153,45 @@ export function ProcessDetailsPage(): ReactNode {
     };
 
     const handleExport = (): void => {
-        new ProcessDefinitionApiService()
-            .export(processId, processVersion)
+        confirm({
+            title: 'Prozess exportieren',
+            children: (
+                <>
+                    <Typography>
+                        Sie können den gesamten Prozess als Datei exportieren um diesen beispielsweise mit anderen Organisationen zu teilen.
+                    </Typography>
+
+                    <AlertComponent
+                        color="info"
+                        title="Informationen zur Datenbereinigung des Exports"
+                        sx={{
+                            mt: 2,
+                        }}
+                    >
+                        Für den Export werden Informationen, welche sich auf Mitarbeiter:innen beziehen oder systemspezifisch sind, automatisiert bereinigt.
+                        Dazu gehören unter Anderem, aber nicht ausschließlich:
+                        <ul>
+                            <li>Personenkreise-Definitionen für Aufgaben,</li>
+                            <li>Referenzen auf lokale Dateien und Medien</li>
+                            <li>und Referenzen auf auslösende Formulare</li>
+                        </ul>
+                        Nach dem Import müssen diese Konfigurationen erneut gesetzt werden.
+                    </AlertComponent>
+                </>
+            ),
+            confirmButtonText: 'Exportieren'
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return null;
+                }
+                return new ProcessDefinitionApiService()
+                    .export(processId, processVersion)
+            })
             .then((exp) => {
+                if (exp == null) {
+                    return null;
+                }
                 downloadObjectFile(`${exp.process.internalTitle} - ${exp.version.processVersion}.json`, exp);
             })
             .catch((error) => {
