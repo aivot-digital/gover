@@ -81,30 +81,21 @@ public class ProcessNodeExportService {
         }
 
         return new ProcessNodeExport(
-                new ProcessNodeExportData(
-                        buildProperties.getBuildVersion(),
-                        LocalDateTime.now(),
-                        vendorName,
-                        process,
-                        processVersion,
-                        cleanedNode
-                ),
-                "TODO"
+                buildProperties.getBuildVersion(),
+                buildProperties.getBuildNumber(),
+                LocalDateTime.now(),
+                vendorName,
+                process,
+                processVersion,
+                cleanedNode
         );
     }
 
     public record ProcessNodeExport(
             @Nonnull
-            @NotNull
-            ProcessNodeExportData data,
-            @Nullable
-            String signature
-    ) {
-    }
-
-    public record ProcessNodeExportData(
-            @Nonnull
             String appVersion,
+            @Nonnull
+            String appBuildNumber,
             @Nonnull
             LocalDateTime exportTimestamp,
             @Nonnull
