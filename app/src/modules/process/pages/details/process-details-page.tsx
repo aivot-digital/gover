@@ -1967,7 +1967,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                                 }}
                                                             >
                                                                 Der Vorgang wartet auf den Start der automatischen
-                                                                abwicklung.
+                                                                Abwicklung.
                                                             </Typography>
                                                         </Box>
                                                     ) : undefined
