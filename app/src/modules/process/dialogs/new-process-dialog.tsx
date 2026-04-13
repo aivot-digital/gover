@@ -7,7 +7,6 @@ import {Box, Button, Grid, Step, StepLabel, type SvgIconProps, type SxProps} fro
 import React, {type FC, type ReactNode, useEffect, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
-import {ProcessTemplates} from '../data/templates';
 import {uploadObjectFile} from '../../../utils/download-utils';
 import {type ProcessExport} from '../entities/process-export';
 import {
@@ -249,7 +248,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                 }}
                             >
                                 {
-                                    ProcessTemplates
+                                    ([] as any[])
                                         .map((preset, index) => (
                                             <ProcessTemplateCard
                                                 key={index}

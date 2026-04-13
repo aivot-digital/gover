@@ -14,6 +14,8 @@ export interface ProcessDetailsPageContextType {
         version: number;
     };
     testClaim: ProcessTestClaimEntity | null;
+    nodeProblems: ProcessNodeProblems[];
+    showNodeProblemsForNodes: Record<number, boolean>;
 }
 
 export const ProcessDetailsPageContext = createContext<ProcessDetailsPageContextType | null>(null);

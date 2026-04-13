@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
@@ -183,6 +184,7 @@ public class ProcessController {
                 );
 
         var createdNodesIds = new LinkedList<Integer>();
+        var createdNodes = new LinkedList<ProcessNodeEntity>();
 
         var savedNodeIdMap = new HashMap<Integer, Integer>();
         for (var node : exportData.nodes()) {
@@ -208,6 +210,7 @@ public class ProcessController {
                     .put(originalId, addedNode.getId());
 
             createdNodesIds.add(addedNode.getId());
+            createdNodes.add(addedNode);
         }
 
         var createdEdgesIds = new LinkedList<Integer>();
@@ -224,6 +227,19 @@ public class ProcessController {
                     );
 
             createdEdgesIds.add(createdEdge.getId());
+        }
+
+        for (var node : createdNodes) {
+            processDefinitionNodeService
+                    .validate(node, true)
+                    .ifPresent((ignored) -> {
+                        node.setSavedWithErrors(true);
+                        try {
+                            processDefinitionNodeService.update(node.getId(), node);
+                        } catch (ResponseException e) {
+                            throw new RuntimeException(e);
+                        }
+                    });
         }
 
         auditService.create()

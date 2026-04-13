@@ -271,6 +271,8 @@ export function ProcessDetailsPage(): ReactNode {
     const [hasFlowNodeProviderLoadError, setHasFlowNodeProviderLoadError] = useState(false);
     const [readyFlowEditorKey, setReadyFlowEditorKey] = useState<string | null>(null);
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
+    const [processNodeProblems, setProcessNodeProblems] = useState<ProcessNodeProblems[]>([]);
+    const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useState<Record<number, boolean>>({});
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -399,6 +401,19 @@ export function ProcessDetailsPage(): ReactNode {
             processVersion: parseInt(processVersion ?? '0'),
         };
     }, [params]);
+
+    useEffect(() => {
+        if (processFlow == null || processVersion == null) {
+            setProcessNodeProblems([]);
+            return;
+        }
+        new ProcessDefinitionVersionApiService()
+            .validate({
+                processDefinitionId: processId,
+                processDefinitionVersion: processVersion,
+            })
+            .then(setProcessNodeProblems);
+    }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
 
     const instanceId = useMemo(() => {
         const instanceIdParam = searchParams.get('instanceId');
@@ -1149,6 +1164,11 @@ export function ProcessDetailsPage(): ReactNode {
             nodes: processFlow.nodes.map((n) => n.id === updated.id ? updated : n),
         });
 
+        setShowProcessNodeProblemsForNodes((prev) => ({
+            ...prev,
+            [updated.id]: true,
+        }));
+
         return updated;
     };
 
@@ -1221,6 +1241,11 @@ export function ProcessDetailsPage(): ReactNode {
                     processDefinitionId: processId,
                     processDefinitionVersion: processVersion,
                 });
+            setProcessNodeProblems(problems);
+            setShowProcessNodeProblemsForNodes(problems.reduce((acc, prob) => ({
+                ...acc,
+                [prob.node.id]: true,
+            }), {}));
 
             const confirmed = await confirm({
                 title: 'Prozessmodellierung testen',
@@ -1242,6 +1267,28 @@ export function ProcessDetailsPage(): ReactNode {
                             >
                                 Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
                                 Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der ungültigen Konfiguration kommen.
+
+                                <ul>
+                                    {
+                                        problems.map((problem) => {
+                                            const provider = availableNodeProviders
+                                                .find((p) => p.key === problem.node.processNodeDefinitionKey && p.majorVersion === problem.node.processNodeDefinitionVersion)!;
+
+                                            return (
+                                                <li key={problem.node.id}>
+                                                    {getNodeName(problem.node, provider)}:
+                                                    <ul>
+                                                        {
+                                                            problem.problems.map((problem, index) => (
+                                                                <li key={index}>{problem}</li>
+                                                            ))
+                                                        }
+                                                    </ul>
+                                                </li>
+                                            )
+                                        })
+                                    }
+                                </ul>
                             </AlertComponent>
                         }
                     </>
@@ -1438,8 +1485,8 @@ export function ProcessDetailsPage(): ReactNode {
 
             const importedProvider = getNodeProviderFromList(
                 availableNodeProviders,
-                importedNodeExport.data.node.processNodeDefinitionKey,
-                importedNodeExport.data.node.processNodeDefinitionVersion,
+                importedNodeExport.node.processNodeDefinitionKey,
+                importedNodeExport.node.processNodeDefinitionVersion,
             );
             if (importedProvider == null) {
                 dispatch(showErrorSnackbar('Die Knotendefinition aus dem Import ist in dieser Instanz nicht verfügbar.'));
@@ -2032,6 +2079,8 @@ export function ProcessDetailsPage(): ReactNode {
                                                 onDeleteNode={handleDeleteNode}
                                                 runtimeData={runtimeData}
                                                 onReloadRuntimeData={loadRuntimeData}
+                                                nodeProblems={processNodeProblems}
+                                                showNodeProblemsForNodes={showProcessNodeProblemsForNodes}
                                             />
                                         </ReactFlowProvider> :
                                         <Paper
@@ -2122,6 +2171,8 @@ export function ProcessDetailsPage(): ReactNode {
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
                                     nodeRefreshSignal: nodeRefreshSignal,
                                     testClaim: currentTestClaim?.claim ?? null,
+                                    nodeProblems: processNodeProblems,
+                                    showNodeProblemsForNodes: showProcessNodeProblemsForNodes,
                                 }}
                             >
                                 <Outlet/>
