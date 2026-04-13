@@ -7,6 +7,9 @@ interface ProcessDefinitionFilter {
     name: string;
     departmentId: number;
     departmentIdNot: number;
+    isPublished: boolean;
+    isDrafted: boolean;
+    isRevoked: boolean;
 }
 
 export class ProcessDefinitionApiService extends BaseCrudApiService<
