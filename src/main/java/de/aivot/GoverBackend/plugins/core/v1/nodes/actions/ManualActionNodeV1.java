@@ -616,7 +616,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
         public String taskDescription;
 
         @InputElementPOJOBinding(id = UI_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Gover-UI"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Daten zu dieser Aufgabe"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine Gover-UI, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
