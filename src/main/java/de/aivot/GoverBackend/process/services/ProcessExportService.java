@@ -88,6 +88,7 @@ public class ProcessExportService {
 
         return new ProcessExport(
                 buildProperties.getBuildVersion(),
+                buildProperties.getBuildNumber(),
                 LocalDateTime.now(),
                 vendorName,
                 processDefinition,
@@ -100,6 +101,8 @@ public class ProcessExportService {
     public record ProcessExport(
             @Nonnull
             String appVersion,
+            @Nonnull
+            String appBuildNumber,
             @Nonnull
             LocalDateTime exportTimestamp,
             @Nonnull

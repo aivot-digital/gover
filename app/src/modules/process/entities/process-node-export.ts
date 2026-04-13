@@ -9,6 +9,7 @@ export interface ProcessNodeExport {
 
 export interface ProcessNodeExportData {
     appVersion: string;
+    appBuildNumber: string;
     exportTimestamp: string;
     createdByVendor: string;
     process: ProcessEntity;
