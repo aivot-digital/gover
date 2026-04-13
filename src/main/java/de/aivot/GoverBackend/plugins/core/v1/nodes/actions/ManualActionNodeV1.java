@@ -337,7 +337,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
         var descriptionHeadline = new HeadlineContentElement();
         descriptionHeadline.setId(TASK_VIEW_DESCRIPTION_HEADLINE_ID);
-        descriptionHeadline.setContent("Beschreibung der Aufgabe");
+        descriptionHeadline.setContent("Aufgabenbeschreibung");
 
         var descriptionContent = new RichTextContentElement();
         descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
@@ -609,7 +609,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
         public static final String ASSIGNMENT_CONTEXT_FIELD_ID = "assignment_context";
 
         @InputElementPOJOBinding(id = TASK_DESCRIPTION_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Beschreibung der Aufgabe"),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die manuelle Handlung, die außerhalb des Systems ausgeführt und bestätigt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
