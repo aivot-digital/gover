@@ -463,7 +463,7 @@ export function AssetDetailsPage() {
                     <Typography sx={{mb: 2, maxWidth: 900}}>
                         {storageProvider?.readOnlyStorage
                             ? 'Der Speicheranbieter ist schreibgeschützt. Sie können den Dateiinhalt nicht ersetzen, aber den öffentlichen Zugriff (Privatsphäre) weiterhin anpassen.'
-                            : 'Ersetzen Sie optional die Datei und bearbeiten Sie Datenschutzangaben. Metadaten können nur zusammen mit einem Datei-Upload geändert werden.'}
+                            : 'Sie können die Datei mit einem neuen Inhalt ersetzen. Stellen Sie sicher, dass die neue Datei den gleichen Dateityp wie die bestehende hat.'}
                     </Typography>
 
                     <FileUploadComponent
