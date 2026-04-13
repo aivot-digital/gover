@@ -1178,28 +1178,28 @@ export function ProcessDetailsPage(): ReactNode {
             children: (
                 <>
                     <Typography>
-                        Sie können den gesamten Prozess als Datei exportieren um diesen beispielsweise mit anderen Organisationen zu teilen.
+                        Sie können den Prozess exportieren, um ihn z. B. in einem anderen System weiterzuverwenden oder zu archivieren.
+                        Der Export erfolgt im offenen .json-Format.
                     </Typography>
 
                     <AlertComponent
                         color="info"
-                        title="Informationen zur Datenbereinigung des Exports"
+                        title="Wichtig"
                         sx={{
                             mt: 2,
                         }}
                     >
-                        Für den Export werden Informationen, welche sich auf Mitarbeiter:innen beziehen oder systemspezifisch sind, automatisiert bereinigt.
-                        Dazu gehören unter Anderem, aber nicht ausschließlich:
-                        <ul>
-                            <li>Personenkreise-Definitionen für Aufgaben,</li>
-                            <li>Referenzen auf lokale Dateien und Medien</li>
-                            <li>und Referenzen auf auslösende Formulare</li>
-                        </ul>
-                        Nach dem Import müssen diese Konfigurationen erneut gesetzt werden.
+                        <p>
+                            Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind für die importierende Person nicht sichtbar.
+                            Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und Referenzen auf auslösende Formulare.
+                        </p>
+                        <p>
+                            Bei Bedarf müssen Sie diese Informationen nach einem Import im Zielsystem neu konfigurieren.
+                        </p>
                     </AlertComponent>
                 </>
             ),
-            confirmButtonText: 'Exportieren'
+            confirmButtonText: 'Prozess als .json-Datei herunterladen'
         })
             .then((confirmed) => {
                 if (!confirmed) {
