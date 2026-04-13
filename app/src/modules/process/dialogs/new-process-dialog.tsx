@@ -49,6 +49,8 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const [availableDepartments, setAvailableDepartments] = useState<Array<SelectFieldComponentOption<number>>>([]);
     const [nameOverride, setNameOverride] = useState<string | null>(null);
     const [departmentOverride, setDepartmentOverride] = useState<number | null>(null);
+    const [nameError, setNameError] = useState<string | undefined>();
+    const [departmentError, setDepartmentError] = useState<string | undefined>();
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -80,12 +82,50 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const [activeStep, setActiveStep] = useState(0);
     const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(null);
 
+    const validateName = (value: string | null): string | undefined => {
+        const trimmedValue = value?.trim() ?? '';
+
+        if (!isStringNotNullOrEmpty(trimmedValue)) {
+            return 'Bitte geben Sie einen Namen für das Verfahren an.';
+        }
+
+        if (trimmedValue.length < 3) {
+            return 'Der Name des Verfahrens muss mindestens 3 Zeichen lang sein.';
+        }
+
+        if (trimmedValue.length > 96) {
+            return 'Der Name des Verfahrens darf maximal 96 Zeichen lang sein.';
+        }
+
+        return undefined;
+    };
+
+    const validateDepartment = (value: number | null): string | undefined => {
+        if (value == null) {
+            return 'Bitte wählen Sie eine Organisationseinheit aus.';
+        }
+
+        return undefined;
+    };
+
+    const validateProcessConfiguration = (): boolean => {
+        const nextNameError = validateName(nameOverride);
+        const nextDepartmentError = validateDepartment(departmentOverride);
+
+        setNameError(nextNameError);
+        setDepartmentError(nextDepartmentError);
+
+        return nextNameError == null && nextDepartmentError == null;
+    };
+
     const handleClose = (): void => {
         onCancel();
         setTimeout(() => {
             setActiveStep(0);
             setNameOverride(null);
             setDepartmentOverride(null);
+            setNameError(undefined);
+            setDepartmentError(undefined);
         }, 300);
     };
 
@@ -105,6 +145,11 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
     const handleSave = (): void => {
         if (selectedTemplateData == null) {
+            return;
+        }
+
+        if (!validateProcessConfiguration()) {
+            setActiveStep(1);
             return;
         }
 
@@ -169,7 +214,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                             Vorlage
                         </StepLabel>
                     </Step>
-                    <Step completed={isStringNotNullOrEmpty(nameOverride) && departmentOverride != null}>
+                    <Step completed={validateName(nameOverride) == null && validateDepartment(departmentOverride) == null}>
                         <StepLabel>
                             Anpassung
                         </StepLabel>
@@ -244,19 +289,40 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                 label="Name des Verfahrens"
                                 value={nameOverride}
                                 onChange={(val) => {
-                                    setNameOverride(val ?? null);
+                                    const nextValue = val ?? null;
+                                    setNameOverride(nextValue);
+
+                                    if (nameError != null) {
+                                        setNameError(validateName(nextValue));
+                                    }
+                                }}
+                                onBlur={(val) => {
+                                    const nextValue = val ?? null;
+                                    setNameOverride(nextValue);
+                                    setNameError(validateName(nextValue));
                                 }}
                                 required={true}
+                                disabled={isLoading}
+                                error={nameError}
+                                minCharacters={3}
+                                maxCharacters={96}
                             />
 
                             <SelectFieldComponent
                                 label="Organisationseinheit"
                                 value={departmentOverride}
                                 onChange={(newValue) => {
-                                    setDepartmentOverride(newValue ?? null);
+                                    const nextValue = newValue ?? null;
+                                    setDepartmentOverride(nextValue);
+
+                                    if (departmentError != null || nextValue == null) {
+                                        setDepartmentError(validateDepartment(nextValue));
+                                    }
                                 }}
                                 options={availableDepartments}
                                 required={true}
+                                disabled={isLoading}
+                                error={departmentError}
                             />
 
                             <Box
@@ -278,6 +344,10 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
                                 <Button
                                     onClick={() => {
+                                        if (!validateProcessConfiguration()) {
+                                            return;
+                                        }
+
                                         setActiveStep(2);
                                     }}
                                     endIcon={<ArrowForward/>}
