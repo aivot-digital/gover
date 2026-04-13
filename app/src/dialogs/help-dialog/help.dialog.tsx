@@ -52,7 +52,7 @@ export function HelpDialog(props: HelpDialogProps) {
                     <ul>
                         <li>Füllen Sie alle mit Stern (*) gekennzeichneten Pflichtfelder aus.</li>
                         <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, zum Navigieren durch die Schritte und um Ihre Eingaben zu prüfen.</li>
-                        <li>Klicken Sie abschließend auf <b>„Antrag verbindlich einreichen“</b>.</li>
+                        <li>Klicken Sie abschließend auf <b>„Verbindlich einreichen“</b>.</li>
                         <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen Sie erneut, das Formular abzusenden.</li>
                         <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die zuständige Behörde weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte durch, indem Sie den im Formular angezeigten
                             Anweisungen folgen.

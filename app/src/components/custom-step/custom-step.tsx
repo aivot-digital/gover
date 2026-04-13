@@ -224,7 +224,7 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                                 isDeriving && 'Berechne…'
                             }
                             {
-                                isLastStep && !isDeriving && 'Antrag verbindlich einreichen'
+                                isLastStep && !isDeriving && 'Verbindlich einreichen'
                             }
                         </Button>
                     }
