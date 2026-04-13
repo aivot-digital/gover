@@ -119,9 +119,9 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
             );
 
             var derivedRuntimeData = new DerivedRuntimeElementData();
-            derivedRuntimeData.getElementStates().put("endpoint", new ComputedElementState().setError(err));
-            derivedRuntimeData.getElementStates().put("bucket", new ComputedElementState().setError(err));
-            throw ResponseException.badRequest("Ein anderer Speicheranbieter mit diesem Endpoint und Bucket existiert bereits.", derivedRuntimeData);
+            derivedRuntimeData.putError("endpoint", err);
+            derivedRuntimeData.putError("bucket", err);
+            throw ResponseException.badRequest(err, derivedRuntimeData);
         }
     }
 

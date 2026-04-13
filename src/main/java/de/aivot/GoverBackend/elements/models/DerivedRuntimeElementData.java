@@ -25,6 +25,40 @@ public class DerivedRuntimeElementData implements Serializable {
 
     // endregion
 
+    // region Utilities
+
+    /**
+     * Put an error by its field.
+     *
+     * @param field  The field to set the error for.
+     * @param format The error message template to set.
+     * @param args   The arguments to format the error message template with.
+     * @return The current derived runtime element data instance.
+     */
+    public DerivedRuntimeElementData putError(@Nonnull String field, @Nonnull String format, @Nonnull Object... args) {
+        var message = String.format(format, args);
+        return putError(field, message);
+    }
+
+    /**
+     * Put an error by its field.
+     *
+     * @param field The field to set the error for.
+     * @param error The error message to set.
+     * @return The current derived runtime element data instance.
+     */
+    public DerivedRuntimeElementData putError(@Nonnull String field, @Nonnull String error) {
+        var s = this
+                .elementStates
+                .computeIfAbsent(field, k -> new ComputedElementState());
+
+        s.setError(error);
+
+        return this;
+    }
+
+    // endregion
+
     // region Hash & Equals
 
     @Override
