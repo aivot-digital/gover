@@ -240,13 +240,10 @@ export function AssetDetailsPage() {
             return;
         }
 
-        const snackbarKey = 'replace_asset';
-
-        dispatch(addSnackbarMessage({
-            key: snackbarKey,
-            type: SnackbarType.Loading,
-            severity: SnackbarSeverity.Info,
+        dispatch(setLoadingMessage({
+            blocking: false,
             message: 'Datei wird ersetzt',
+            estimatedTime: 1500,
         }));
 
         new AssetsApiService()
@@ -263,7 +260,7 @@ export function AssetDetailsPage() {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Ersetzen der Datei.'));
             })
             .finally(() => {
-                dispatch(removeSnackbarMessage(snackbarKey));
+                dispatch(clearLoadingMessage());
             });
     };
 
