@@ -3,6 +3,7 @@ import React, {useEffect, useState} from 'react';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {AuthService} from '../../../services/auth-service';
 import {Link, useLocation} from 'react-router-dom';
+import {createStaffPath} from '../../../utils/url-path-utils';
 
 export function ShellSessionExpiredDialog() {
     const authService = new AuthService();
@@ -57,8 +58,8 @@ export function ShellSessionExpiredDialog() {
                     sx={{
                         ml: 'auto !important',
                     }}
-                    component={Link}
-                    to="/"
+                    component="a"
+                    href={createStaffPath('/')}
                 >
                     Zur Startseite
                 </Button>
