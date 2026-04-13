@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -30,6 +31,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition, PluginComponent
     private static final String PORT_NAME = "input";
 
     public static final String DATA_KEY_PAYLOAD = "payload";
+    public static final String DATA_KEY_UNMAPPED = "unmapped";
     public static final String DATA_KEY_FORM_ID = "formId";
     public static final String DATA_KEY_FORM_VERSION = "formVersion";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
@@ -141,6 +143,14 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition, PluginComponent
                 });
 
         return config;
+    }
+
+    @Nonnull
+    @Override
+    public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove("formId");
+        configuration.remove("formVersion");
+        return configuration;
     }
 
     @LayoutElementPOJOBinding(id = FormTriggerNodeV1.NODE_KEY, type = ElementType.ConfigLayout)

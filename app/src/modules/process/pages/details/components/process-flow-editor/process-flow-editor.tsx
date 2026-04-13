@@ -110,6 +110,9 @@ interface ProcessFlowEditorProps {
     onReloadRuntimeData: () => void;
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
+
+    nodeProblems: ProcessNodeProblems[];
+    showNodeProblemsForNodes: Record<number, boolean>;
 }
 
 type ProcessFlowEditorRuntimeData = ProcessFlowEditorProps['runtimeData'];
@@ -351,6 +354,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onReloadRuntimeData,
         topLeftPanel,
         topRightPanel,
+
+        nodeProblems,
+        showNodeProblemsForNodes,
     } = props;
 
     const theme = useTheme();
@@ -418,6 +424,9 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
 
         runtimeData,
+
+        nodeProblems: nodeProblems,
+        showNodeProblemsForNodes: showNodeProblemsForNodes,
     }), [
         isEditable,
         onAddEdge,
@@ -431,6 +440,8 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onReloadRuntimeData,
         selectedNode,
         showTargetHandles,
+        nodeProblems,
+        showNodeProblemsForNodes,
     ]);
     const handleToggleViewportLock = useCallback(() => {
         setIsViewportLocked((current) => !current);

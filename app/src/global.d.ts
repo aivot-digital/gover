@@ -8,6 +8,9 @@ declare var AppConfig: {
     api: {
         hostname: string;
     };
+    registry: {
+        url: string;
+    },
     sentry: {
         dsn: string;
     };

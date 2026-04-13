@@ -4,7 +4,7 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box} from '@mui/material';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import React, {useRef, useState} from 'react';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
@@ -43,6 +43,7 @@ import {FormVersionApiService} from '../../services/form-version-api-service';
 import {ExportFormDialog} from '../../dialogs/export-form-dialog';
 import {ImportFormDialog} from '../../dialogs/import-form-dialog';
 import {DeleteFormDialog} from '../../dialogs/delete-form-dialog';
+import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 
 const availableFilter = [
     {
@@ -309,6 +310,137 @@ export function FormsListPage() {
         });
     };
 
+    const header: GenericPageHeaderProps = useMemo(() => ({
+        icon: <DescriptionOutlinedIcon/>,
+        title: 'Formulare',
+        actions: [
+            {
+                icon: <CloudUploadOutlinedIcon/>,
+                onClick: () => {
+                    setShowImportFormDialog(true);
+                },
+                variant: 'text',
+                label: 'Importieren',
+            },
+            {
+                label: 'Neues Formular',
+                icon: <AddOutlinedIcon/>,
+                onClick: () => {
+                    setNewForm({
+                        form: FormApiService.initialize(),
+                        version: FormVersionApiService.initialize(),
+                    });
+                },
+                variant: 'contained',
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Formularen',
+            tooltip: 'Hilfe anzeigen',
+            content: <FormsListPageHelp/>,
+        },
+    }), []);
+
+    const fetch = useCallback(async (options: any) => {
+        const deps = (await new DepartmentApiService().listAll()).content;
+
+        const formsPage = await new FormApiService()
+            .list(options.page, options.size, options.sort as any, options.order, {
+                internalTitle: options.search,
+                isPublished: options.filter === 'published',
+                isDrafted: options.filter === 'drafted',
+                isRevoked: options.filter === 'revoked',
+            });
+
+        const formIds = formsPage.content.map(form => form.id);
+
+        const editorsList = await new FormApiService()
+            .listEditorsForForms(formIds);
+
+        const extendedFormsPage: Page<FormListEntry> = {
+            ...formsPage,
+            content: formsPage.content.map(form => ({
+                ...form,
+                developingDepartmentName: deps.find(dep => dep.id === form.developingDepartmentId)?.name,
+                lastEditorName: editorsList.find(editor => editor.formId === form.id)?.fullName,
+            })),
+        };
+
+        return extendedFormsPage;
+    }, []);
+
+    const noDataPlaceholder = useMemo(() => (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                p: 4,
+            }}
+        >
+            {
+                (memberships == null || memberships.length === 0) &&
+                <>
+                    <Typography
+                        variant="h5"
+                        component="h2"
+                    >
+                        Noch keiner Organisationseinheit zugeordnet
+                    </Typography>
+                    <Typography>
+                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen
+                        eine Domänenrolle zuweisen.
+                        Erst dann können Sie mit der Entwicklung von Formularen beginnen. Nach der
+                        Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
+                    </Typography>
+                </>
+            }
+            {
+                memberships != null &&
+                memberships.length > 0 &&
+                <Typography>
+                    Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!
+                </Typography>
+            }
+        </Box>
+    ), [memberships]);
+
+    const rowActions = useCallback((item: FormListEntry) => [
+        {
+            icon: <Edit/>,
+            to: `/forms/${item.id}/${item.draftedVersion}`,
+            tooltip: 'Formular bearbeiten',
+            visible: item.draftedVersion != null,
+        },
+        {
+            icon: <Visibility/>,
+            to: `/forms/${item.id}`,
+            tooltip: 'Formular ansehen',
+            visible: item.draftedVersion === null,
+        },
+        {
+            icon: <NewWindow/>,
+            onClick: () => handleNewDraft(item),
+            tooltip: 'Neuen Entwurf anlegen',
+            visible: item.draftedVersion == null,
+            disabled: item.publishedVersion == null && item.draftedVersion != null,
+        },
+        {
+            icon: <HomeStorage/>,
+            onClick: () => setShowFormVersionsDialogFor(item),
+            tooltip: 'Versionen anzeigen',
+        },
+        {
+            icon: <MoreVertOutlinedIcon/>,
+            onClick: (event: any) => setRowMenu({
+                target: event.currentTarget as HTMLElement,
+                form: item,
+            }),
+            tooltip: 'Optionen',
+        },
+    ], []);
+
     return (
         <>
             <PageWrapper
@@ -321,140 +453,16 @@ export function FormsListPage() {
                     dynamicRowHeight={true}
                     filters={availableFilter}
                     defaultFilter="all"
-                    header={{
-                        icon: <DescriptionOutlinedIcon/>,
-                        title: 'Formulare',
-                        actions: [
-                            {
-                                icon: <CloudUploadOutlinedIcon/>,
-                                onClick: () => {
-                                    setShowImportFormDialog(true);
-                                },
-                                variant: 'text',
-                                label: 'Importieren',
-                            },
-                            {
-                                label: 'Neues Formular',
-                                icon: <AddOutlinedIcon/>,
-                                onClick: () => {
-                                    setNewForm({
-                                        form: FormApiService.initialize(),
-                                        version: FormVersionApiService.initialize(),
-                                    });
-                                },
-                                variant: 'contained',
-                            },
-                        ],
-                        helpDialog: {
-                            title: 'Hilfe zu Formularen',
-                            tooltip: 'Hilfe anzeigen',
-                            content: <FormsListPageHelp/>,
-                        },
-                    }}
+                    header={header}
                     searchLabel="Formular suchen"
                     searchPlaceholder="Titel des Formulars eingeben…"
-                    fetch={async (options) => {
-                        const deps = (await new DepartmentApiService().listAll()).content;
-
-                        const formsPage = await new FormApiService()
-                            .list(options.page, options.size, options.sort as any, options.order, {
-                                internalTitle: options.search,
-                                isPublished: options.filter === 'published',
-                                isDrafted: options.filter === 'drafted',
-                                isRevoked: options.filter === 'revoked',
-                            });
-
-                        const formIds = formsPage.content.map(form => form.id);
-
-                        const editorsList = await new FormApiService()
-                            .listEditorsForForms(formIds);
-
-                        const extendedFormsPage: Page<FormListEntry> = {
-                            ...formsPage,
-                            content: formsPage.content.map(form => ({
-                                ...form,
-                                developingDepartmentName: deps.find(dep => dep.id === form.developingDepartmentId)?.name,
-                                lastEditorName: editorsList.find(editor => editor.formId === form.id)?.fullName,
-                            })),
-                        };
-
-                        return extendedFormsPage;
-                    }}
+                    fetch={fetch}
                     columnDefinitions={columns}
-                    getRowIdentifier={row => row.id.toString()}
-                    noDataPlaceholder={
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center',
-                                p: 4,
-                            }}
-                        >
-                            {
-                                (memberships == null ||
-                                    memberships.length === 0) &&
-                                <>
-                                    <Typography
-                                        variant="h5"
-                                        component="h2"
-                                    >
-                                        Noch keiner Organisationseinheit zugeordnet
-                                    </Typography>
-                                    <Typography>
-                                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen
-                                        eine Domänenrolle zuweisen.
-                                        Erst dann können Sie mit der Entwicklung von Formularen beginnen. Nach der
-                                        Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
-                                    </Typography>
-                                </>
-                            }
-                            {
-                                memberships != null &&
-                                memberships.length > 0 &&
-                                <Typography>
-                                    Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!
-                                </Typography>
-                            }
-                        </Box>
-                    }
+                    getRowIdentifier={getRowIdentifier}
+                    noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Formulare gefunden"
                     rowActionsCount={4}
-                    rowActions={(item: FormListEntry) => [
-                        {
-                            icon: <Edit/>,
-                            to: `/forms/${item.id}/${item.draftedVersion}`,
-                            tooltip: 'Formular bearbeiten',
-                            visible: item.draftedVersion != null,
-                        },
-                        {
-                            icon: <Visibility/>,
-                            to: `/forms/${item.id}`,
-                            tooltip: 'Formular ansehen',
-                            visible: item.draftedVersion === null,
-                        },
-                        {
-                            icon: <NewWindow/>,
-                            onClick: () => handleNewDraft(item),
-                            tooltip: 'Neuen Entwurf anlegen',
-                            visible: item.draftedVersion == null,
-                            disabled: item.publishedVersion == null && item.draftedVersion != null,
-                        },
-                        {
-                            icon: <HomeStorage/>,
-                            onClick: () => setShowFormVersionsDialogFor(item),
-                            tooltip: 'Versionen anzeigen',
-                        },
-                        {
-                            icon: <MoreVertOutlinedIcon/>,
-                            onClick: (event) => setRowMenu({
-                                target: event.currentTarget as HTMLElement,
-                                form: item,
-                            }),
-                            tooltip: 'Optionen',
-                        },
-                    ]}
+                    rowActions={rowActions}
                     defaultSortField="internalTitle"
                     disableFullWidthToggle={true}
                 />
@@ -585,4 +593,8 @@ export function FormsListPage() {
             />
         </>
     );
+}
+
+function getRowIdentifier(row: FormListEntry): string {
+    return row.id.toString()
 }

@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElement;
@@ -180,6 +181,13 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                 });
 
         return layout;
+    }
+
+    @Nonnull
+    @Override
+    public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(PdfActionNodeConfig.CONTENT_HTML_ASSET_KEY_FIELD_ID);
+        return configuration;
     }
 
     @Nonnull

@@ -86,6 +86,14 @@ public class ResponseException extends Exception {
         return ResponseException.badRequest("Die Anfrage ist fehlerhaft.");
     }
 
+    public static ResponseException badRequest(String message, DerivedRuntimeElementData elementData) {
+        return new ResponseException(
+                HttpStatus.BAD_REQUEST,
+                message,
+                elementData
+        );
+    }
+
     public static ResponseException badRequest(DerivedRuntimeElementData elementData) {
         return new ResponseException(
                 HttpStatus.BAD_REQUEST,

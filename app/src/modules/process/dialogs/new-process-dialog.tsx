@@ -7,7 +7,6 @@ import {Box, Button, Grid, Step, StepLabel, type SvgIconProps, type SxProps} fro
 import React, {type FC, type ReactNode, useEffect, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
-import {ProcessTemplates} from '../data/templates';
 import {uploadObjectFile} from '../../../utils/download-utils';
 import {type ProcessExport} from '../entities/process-export';
 import {
@@ -18,7 +17,7 @@ import {
     type SelectFieldComponentOption,
 } from '../../../components/select-field-2/select-field-component';
 import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../departments/utils/department-utils';
-import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -28,6 +27,10 @@ import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-fo
 import {isStringNotNullOrEmpty, quoteString} from '../../../utils/string-utils';
 import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import {ProcessDefinitionApiService} from '../services/process-definition-api-service';
+import AddBox from '@aivot/mui-material-symbols-400-outlined/dist/add-box/AddBox';
+import {ProcessStatus} from '../enums/process-status';
+import {ProcessTemplatesService, TemplateRegistryProcessItem} from '../services/process-templates-service';
+import GridGuides from '@aivot/mui-material-symbols-400-outlined/dist/grid-guides/GridGuides';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -49,8 +52,12 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const [availableDepartments, setAvailableDepartments] = useState<Array<SelectFieldComponentOption<number>>>([]);
     const [nameOverride, setNameOverride] = useState<string | null>(null);
     const [departmentOverride, setDepartmentOverride] = useState<number | null>(null);
+    const [nameError, setNameError] = useState<string | undefined>();
+    const [departmentError, setDepartmentError] = useState<string | undefined>();
 
     const [isLoading, setIsLoading] = useState(false);
+
+    const [templates, setTemplates] = useState<TemplateRegistryProcessItem[] | null>(null);
 
     useEffect(() => {
         if (user == null) {
@@ -77,8 +84,54 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             });
     }, [user]);
 
+    useEffect(() => {
+        new ProcessTemplatesService()
+            .getProcessTemplates()
+            .then(setTemplates)
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Die Vorlagen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.'));
+            });
+    }, []);
+
     const [activeStep, setActiveStep] = useState(0);
     const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(null);
+
+    const validateName = (value: string | null): string | undefined => {
+        const trimmedValue = value?.trim() ?? '';
+
+        if (!isStringNotNullOrEmpty(trimmedValue)) {
+            return 'Bitte geben Sie einen Namen für das Verfahren an.';
+        }
+
+        if (trimmedValue.length < 3) {
+            return 'Der Name des Verfahrens muss mindestens 3 Zeichen lang sein.';
+        }
+
+        if (trimmedValue.length > 96) {
+            return 'Der Name des Verfahrens darf maximal 96 Zeichen lang sein.';
+        }
+
+        return undefined;
+    };
+
+    const validateDepartment = (value: number | null): string | undefined => {
+        if (value == null) {
+            return 'Bitte wählen Sie eine Organisationseinheit aus.';
+        }
+
+        return undefined;
+    };
+
+    const validateProcessConfiguration = (): boolean => {
+        const nextNameError = validateName(nameOverride);
+        const nextDepartmentError = validateDepartment(departmentOverride);
+
+        setNameError(nextNameError);
+        setDepartmentError(nextDepartmentError);
+
+        return nextNameError == null && nextDepartmentError == null;
+    };
 
     const handleClose = (): void => {
         onCancel();
@@ -86,6 +139,8 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             setActiveStep(0);
             setNameOverride(null);
             setDepartmentOverride(null);
+            setNameError(undefined);
+            setDepartmentError(undefined);
         }, 300);
     };
 
@@ -105,6 +160,11 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
     const handleSave = (): void => {
         if (selectedTemplateData == null) {
+            return;
+        }
+
+        if (!validateProcessConfiguration()) {
+            setActiveStep(1);
             return;
         }
 
@@ -169,7 +229,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                             Vorlage
                         </StepLabel>
                     </Step>
-                    <Step completed={isStringNotNullOrEmpty(nameOverride) && departmentOverride != null}>
+                    <Step completed={validateName(nameOverride) == null && validateDepartment(departmentOverride) == null}>
                         <StepLabel>
                             Anpassung
                         </StepLabel>
@@ -203,21 +263,15 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     marginTop: 2,
                                 }}
                             >
-                                {
-                                    ProcessTemplates
-                                        .map((preset, index) => (
-                                            <ProcessTemplateCard
-                                                key={index}
-                                                Icon={preset.Icon}
-                                                title={preset.name}
-                                                description={preset.description}
-                                                onClick={() => {
-                                                    setSelectedTemplateData(preset.data);
-                                                    setActiveStep(1);
-                                                }}
-                                            />
-                                        ))
-                                }
+                                <ProcessTemplateCard
+                                    Icon={AddBox}
+                                    title="Leeres Verfahren"
+                                    description="Ein leeres Verfahren ohne vordefinierte Schritte oder Logik."
+                                    onClick={() => {
+                                        setSelectedTemplateData(EmptyProcess);
+                                        setActiveStep(1);
+                                    }}
+                                />
 
                                 <ProcessTemplateCard
                                     Icon={UploadFile}
@@ -228,6 +282,26 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                         borderStyle: 'dashed',
                                     }}
                                 />
+
+                                {
+                                    templates != null &&
+                                    templates.map((preset) => (
+                                        <ProcessTemplateCard
+                                            key={preset.path}
+                                            Icon={GridGuides}
+                                            title={preset.name}
+                                            description={`Ein vordefiniertes Verfahren von ${preset.vendor}.`}
+                                            onClick={() => {
+                                                new ProcessTemplatesService()
+                                                    .loadTemplate(preset)
+                                                    .then((templateData) => {
+                                                        setSelectedTemplateData(templateData);
+                                                        setActiveStep(1);
+                                                    });
+                                            }}
+                                        />
+                                    ))
+                                }
                             </Grid>
                         </>
                     }
@@ -244,19 +318,40 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                 label="Name des Verfahrens"
                                 value={nameOverride}
                                 onChange={(val) => {
-                                    setNameOverride(val ?? null);
+                                    const nextValue = val ?? null;
+                                    setNameOverride(nextValue);
+
+                                    if (nameError != null) {
+                                        setNameError(validateName(nextValue));
+                                    }
+                                }}
+                                onBlur={(val) => {
+                                    const nextValue = val ?? null;
+                                    setNameOverride(nextValue);
+                                    setNameError(validateName(nextValue));
                                 }}
                                 required={true}
+                                disabled={isLoading}
+                                error={nameError}
+                                minCharacters={3}
+                                maxCharacters={96}
                             />
 
                             <SelectFieldComponent
                                 label="Organisationseinheit"
                                 value={departmentOverride}
                                 onChange={(newValue) => {
-                                    setDepartmentOverride(newValue ?? null);
+                                    const nextValue = newValue ?? null;
+                                    setDepartmentOverride(nextValue);
+
+                                    if (departmentError != null || nextValue == null) {
+                                        setDepartmentError(validateDepartment(nextValue));
+                                    }
                                 }}
                                 options={availableDepartments}
                                 required={true}
+                                disabled={isLoading}
+                                error={departmentError}
                             />
 
                             <Box
@@ -278,6 +373,10 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
                                 <Button
                                     onClick={() => {
+                                        if (!validateProcessConfiguration()) {
+                                            return;
+                                        }
+
                                         setActiveStep(2);
                                     }}
                                     endIcon={<ArrowForward/>}
@@ -404,3 +503,33 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
         </Grid>
     );
 }
+
+const EmptyProcess: ProcessExport = {
+    appBuildNumber: '',
+    appVersion: '',
+    createdByVendor: '',
+    edges: [],
+    exportTimestamp: '',
+    nodes: [],
+    process: {
+        id: 0,
+        internalTitle: 'Neues Verfahren',
+        departmentId: 0,
+        accessKey: '',
+        versionCount: 0,
+        draftedVersion: null,
+        publishedVersion: null,
+        created: '',
+        updated: '',
+    },
+    version: {
+        processId: 0,
+        processVersion: 0,
+        status: ProcessStatus.Drafted,
+        publicTitle: 'Neues Verfahren',
+        crated: '',
+        updated: '',
+        published: null,
+        revoked: null,
+    },
+};

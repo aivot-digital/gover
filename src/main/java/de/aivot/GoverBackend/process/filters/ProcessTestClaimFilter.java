@@ -6,10 +6,13 @@ import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public class ProcessTestClaimFilter implements Filter<ProcessTestClaimEntity> {
     private Integer processId;
     private Integer processVersion;
     private String owningUserId;
+    private List<Integer> processIds;
 
     public static ProcessTestClaimFilter create() {
         return new ProcessTestClaimFilter();
@@ -21,6 +24,7 @@ public class ProcessTestClaimFilter implements Filter<ProcessTestClaimEntity> {
         var builder = SpecificationBuilder
                 .create(ProcessTestClaimEntity.class)
                 .withEquals("processId", processId)
+                .withInList("processId", processIds)
                 .withEquals("processVersion", processVersion)
                 .withEquals("owningUserId", owningUserId);
 
@@ -51,6 +55,11 @@ public class ProcessTestClaimFilter implements Filter<ProcessTestClaimEntity> {
 
     public ProcessTestClaimFilter setOwningUserId(String owningUserId) {
         this.owningUserId = owningUserId;
+        return this;
+    }
+
+    public ProcessTestClaimFilter setProcessIds(List<Integer> processIds) {
+        this.processIds = processIds;
         return this;
     }
 }

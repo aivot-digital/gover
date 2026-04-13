@@ -31,6 +31,7 @@ import {ProcessInstanceTaskApiService} from '../../../../services/process-instan
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import Error from '@aivot/mui-material-symbols-400-outlined/dist/error/Error';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -57,6 +58,8 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         showTargetHandles,
         runtimeData,
         onReloadRuntimeData,
+        nodeProblems,
+        showNodeProblemsForNodes,
     } = useProcessFlowEditorContext();
 
     const {
@@ -76,6 +79,10 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
         return getLatestTaskForNode(runtimeData.tasks, node.id);
     }, [node.id, runtimeData]);
+
+    const associatedProblem = useMemo(() => {
+        return nodeProblems.find((problem) => problem.node.id === node.id) || null;
+    }, [node.id, nodeProblems]);
 
     const performedPortKeys = useMemo(() => {
         if (runtimeData == null) {
@@ -416,15 +423,28 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             </Typography>
 
                             {
-                                node.savedWithErrors &&
-                                <Tooltip title="Das Prozesselment enthält Fehler. Bitte überprüfen Sie die Konfiguration.">
-                                    <Box
+                                (showNodeProblemsForNodes[node.id] || node.savedWithErrors) &&
+                                <Tooltip
+                                    title={
+                                        associatedProblem == null
+                                            ? "Das Prozesselement enthält Fehler. Bitte überprüfen Sie die Konfiguration."
+                                            : (
+                                                <ul>
+                                                    {
+                                                        associatedProblem.problems.map((problem, index) => (
+                                                            <li key={index}>
+                                                                {problem}
+                                                            </li>
+                                                        ))
+                                                    }
+                                                </ul>
+                                            )
+                                    }
+                                >
+                                    <Error
                                         sx={{
-                                            marginLeft: 1,
-                                            width: '0.5rem',
-                                            height: '0.5rem',
-                                            borderRadius: '50%',
-                                            bgcolor: 'error.main',
+                                            marginLeft: 'auto',
+                                            color: 'error.main',
                                         }}
                                     />
                                 </Tooltip>

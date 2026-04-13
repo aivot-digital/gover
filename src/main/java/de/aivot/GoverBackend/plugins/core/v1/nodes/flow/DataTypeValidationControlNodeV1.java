@@ -195,7 +195,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
         groupLayout.setId("layout");
 
         var contentBuilder = new StringBuilder();
-        contentBuilder.append("<p>Beispiel-Payload für die konfigurierten Validierungsregeln:</p>\n");
+        contentBuilder.append("Beispiel-Payload für die konfigurierten Validierungsregeln:\n\n");
 
         try {
             var rules = parseRules(context.configuration().getEffectiveValues());
@@ -206,15 +206,15 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
                     .writeValueAsString(examplePayload);
 
             contentBuilder
-                    .append("<pre class=\"code-block\">")
-                    .append(escapeHtml(exampleJson))
-                    .append("</pre>\n");
+                    .append("```json\n")
+                    .append(exampleJson)
+                    .append("\n```\n");
         } catch (Exception e) {
             contentBuilder
-                    .append("<p>Die Beispiel-JSON konnte nicht aus der aktuellen Konfiguration erzeugt werden.</p>\n")
-                    .append("<pre class=\"code-block\">")
-                    .append(escapeHtml(e.getMessage() != null ? e.getMessage() : "Unbekannter Fehler"))
-                    .append("</pre>\n");
+                    .append("Die Beispiel-JSON konnte nicht aus der aktuellen Konfiguration erzeugt werden.\n\n")
+                    .append("```text\n")
+                    .append(e.getMessage() != null ? e.getMessage() : "Unbekannter Fehler")
+                    .append("\n```\n");
         }
 
         var contentRtx = new RichTextContentElement();
@@ -407,14 +407,6 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
             case TYPE_ANY -> "any-value";
             default -> "value";
         };
-    }
-
-    @Nonnull
-    private static String escapeHtml(@Nonnull String text) {
-        return text
-                .replace("&", "&amp;")
-                .replace("<", "&lt;")
-                .replace(">", "&gt;");
     }
 
     @Nonnull

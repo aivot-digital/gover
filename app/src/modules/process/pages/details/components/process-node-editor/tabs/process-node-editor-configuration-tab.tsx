@@ -4,6 +4,7 @@ import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
 import Typography from '@mui/material/Typography';
 import {useRef} from 'react';
+import {useProcessDetailsPageContext} from '../../../process-details-page-context';
 
 export function ProcessNodeEditorConfigurationTab() {
     const {
@@ -12,6 +13,10 @@ export function ProcessNodeEditorConfigurationTab() {
         setNode: setLocalNode,
         problems,
     } = useProcessNodeEditorContext();
+
+    const {
+        showNodeProblemsForNodes,
+    } = useProcessDetailsPageContext();
 
     const initialDerivationNodeIdRef = useRef<number | null>(null);
 
@@ -90,7 +95,7 @@ export function ProcessNodeEditorConfigurationTab() {
                     }
                 }}
                 computedErrors={problems?.derivedRuntimeElementData.elementStates}
-                suppressErrors={!localNode.savedWithErrors}
+                suppressErrors={!localNode.savedWithErrors && !showNodeProblemsForNodes[localNode.id]}
             />
         </Box>
     );

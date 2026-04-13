@@ -37,10 +37,15 @@ import {CheckboxFieldComponent} from '../../../../components/checkbox-field/chec
 import {format} from 'date-fns';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
-import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
+import {
+    ComputedElementErrors,
+    DerivedRuntimeElementData,
+    isDerivedRuntimeElementData,
+} from '../../../../models/element-data';
 import {useStorageProviderDetailsPageSyncContext} from './storage-provider-details-page';
 import {Hint} from '../../../../components/hint/hint';
 import {StorageProviderStatus} from '../../enums/storage-provider-status';
+import {isApiError} from '../../../../models/api-error';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -281,7 +286,11 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
             return true;
         } catch (err) {
-            dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+            if (isApiError(err) && isDerivedRuntimeElementData(err.details)) {
+                setClientSideValidationErrors(err.details.elementStates);
+            } else {
+                dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
+            }
             return false;
         } finally {
             setIsBusy(false);

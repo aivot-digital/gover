@@ -3,28 +3,29 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box} from '@mui/material';
 import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import React, {useEffect, useRef, useState} from 'react';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectMemberships} from '../../../../slices/user-slice';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
 import {format} from 'date-fns/format';
 import {GridColDef} from '@mui/x-data-grid';
-import {Link, useNavigate} from 'react-router-dom';
+import {Link} from 'react-router-dom';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
-import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {GenericListPropsFetchOptions, ListControlRef} from '../../../../components/generic-list/generic-list-props';
 import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {DepartmentApiService} from '../../../departments/services/department-api-service';
-import {ProcessEntity} from "../../entities/process-entity";
-import {ProcessDefinitionApiService} from "../../services/process-definition-api-service";
-import {NewProcessDialog} from "../../dialogs/new-process-dialog";
-import {ProcessDefinitionVersionApiService} from "../../services/process-definition-version-api-service";
+import {ProcessEntity} from '../../entities/process-entity';
+import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
+import {NewProcessDialog} from '../../dialogs/new-process-dialog';
+import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
+import {FormStatusChip} from '../../../forms/components/form-status-chip';
+import {FormStatus} from '../../../forms/enums/form-status';
+import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 
 const availableFilter = [
     {
@@ -168,8 +169,21 @@ const columns: GridColDef<ProcessListEntry>[] = [
         flex: 0.75,
         sortable: false,
         renderCell: (params) => (
-            <Box>
-                {params.row.publishedVersion}
+            <Box
+                sx={{
+                    py: 2,
+                }}
+            >
+                {params.row.publishedVersion != null && <FormStatusChip
+                    status={FormStatus.Published}
+                    size="small"
+                    variant="soft"
+                />}
+                {params.row.draftedVersion != null && <FormStatusChip
+                    status={FormStatus.Drafted}
+                    size="small"
+                    variant="soft"
+                />}
             </Box>
         ),
     },
@@ -190,6 +204,147 @@ export function ProcessListPage() {
             .then(console.log);
     }, []);
 
+    const header: GenericPageHeaderProps = useMemo(() => ({
+        icon: <Route/>,
+        title: 'Prozesse',
+        actions: [
+            {
+                label: 'Neuer Prozess',
+                icon: <AddOutlinedIcon/>,
+                onClick: () => {
+                    setShowAddDialog(true);
+                },
+                variant: 'contained',
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Prozessen',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography mb={2}>
+                        Prozesse sind digitale Abläufe, die verschiedene Aufgaben und Genehmigungsschritte innerhalb
+                        Ihrer Organisation abbilden.
+                        In dieser Übersicht sehen Sie alle Prozesse, an deren Entwicklung Sie beteiligt sind oder die
+                        Ihrer Organisationseinheit zugeordnet wurden.
+                    </Typography>
+                    <Typography mb={2}>
+                        Sie können neue Prozesse anlegen, bestehende Prozesse bearbeiten oder veröffentlichte Versionen
+                        einsehen.
+                        Der Status eines Prozesses zeigt an, ob er sich noch im Entwurf befindet, bereits veröffentlicht
+                        oder zurückgezogen wurde.
+                    </Typography>
+                    <Typography>
+                        Um einen neuen Prozess zu starten, klicken Sie auf „Neuer Prozess“. Weitere Optionen finden Sie
+                        in den Aktionen neben jedem Prozess.
+                        Sollten Sie keiner Organisationseinheit zugeordnet sein, wenden Sie sich bitte an eine
+                        Administrator:in.
+                    </Typography>
+                </>
+            ),
+        },
+    }), []);
+
+    const fetch = useCallback(async (options: GenericListPropsFetchOptions<ProcessListEntry>) => {
+        const deps = (await new DepartmentApiService().listAll()).content;
+
+        const formsPage = await new ProcessDefinitionApiService()
+            .list(options.page, options.size, options.sort as any, options.order, {
+                name: options.search,
+                isPublished: options.filter === 'published',
+                isDrafted: options.filter === 'drafted',
+                isRevoked: options.filter === 'revoked',
+            });
+
+        const extendedFormsPage: Page<ProcessListEntry> = {
+            ...formsPage,
+            content: formsPage.content.map(form => ({
+                ...form,
+                developingDepartmentName: deps.find(dep => dep.id === form.departmentId)?.name,
+                lastEditorName: '',
+            })),
+        };
+
+        return extendedFormsPage;
+    }, []);
+
+    const noDataPlaceholder = useMemo(() => (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                p: 4,
+            }}
+        >
+            {
+                (memberships == null ||
+                    memberships.length === 0) &&
+                <>
+                    <Typography
+                        variant="h5"
+                        component="h2"
+                    >
+                        Noch keiner Organisationseinheit zugeordnet
+                    </Typography>
+                    <Typography>
+                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen
+                        eine
+                        Domänenrolle zuweisen.
+                        Erst dann können Sie mit der Entwicklung von Prozessen beginnen. Nach der
+                        Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
+                    </Typography>
+                </>
+            }
+            {
+                memberships != null &&
+                memberships.length > 0 &&
+                <Typography>
+                    Sie haben aktuell keine Prozesse. Starten Sie jetzt mit Ihrem ersten Prozess!
+                </Typography>
+            }
+        </Box>
+    ), [memberships]);
+
+    const rowActions = useCallback((item: ProcessListEntry) => [
+        {
+            icon: <Edit/>,
+            to: `/processes/${item.id}/versions/${item.draftedVersion}`,
+            tooltip: 'Prozess bearbeiten',
+            visible: item.draftedVersion != null,
+        },
+        {
+            icon: <Visibility/>,
+            to: `/processes/${item.id}`,
+            tooltip: 'Prozess ansehen',
+            visible: item.draftedVersion === null,
+        },
+        {
+            icon: <NewWindow/>,
+            onClick: () => {
+                // TODO
+            },
+            tooltip: 'Neuen Entwurf anlegen',
+            visible: item.draftedVersion == null,
+            disabled: item.publishedVersion == null && item.draftedVersion != null,
+        },
+        {
+            icon: <HomeStorage/>,
+            onClick: () => {
+                // TODO
+            },
+            tooltip: 'Versionen anzeigen',
+        },
+        {
+            icon: <MoreVertOutlinedIcon/>,
+            onClick: () => {
+                // TODO
+            },
+            tooltip: 'Optionen',
+        },
+    ], []);
+
     return (
         <>
             <PageWrapper
@@ -202,131 +357,16 @@ export function ProcessListPage() {
                     dynamicRowHeight={true}
                     filters={availableFilter}
                     defaultFilter="all"
-                    header={{
-                        icon: <Route/>,
-                        title: 'Prozesse',
-                        actions: [
-                            {
-                                label: 'Neuer Prozess',
-                                icon: <AddOutlinedIcon/>,
-                                onClick: () => {
-                                    setShowAddDialog(true);
-                                },
-                                variant: 'contained',
-                            },
-                        ],
-                        helpDialog: {
-                            title: 'Hilfe zu Prozessen',
-                            tooltip: 'Hilfe anzeigen',
-                            content: <Box> TODO </Box>,
-                        },
-                    }}
+                    header={header}
                     searchLabel="Prozess suchen"
                     searchPlaceholder="Titel des Prozesses eingeben…"
-                    fetch={async (options) => {
-                        const deps = (await new DepartmentApiService().listAll()).content;
-
-                        const formsPage = await new ProcessDefinitionApiService()
-                            .list(options.page, options.size, options.sort as any, options.order, {
-                                name: options.search,
-                                //isPublished: options.filter === 'published',
-                                //isDrafted: options.filter === 'drafted',
-                                //isRevoked: options.filter === 'revoked',
-                            });
-
-                        const formIds = formsPage.content.map(form => form.id);
-
-                        //const editorsList = await new FormApiService()
-                        //    .listEditorsForForms(formIds);
-
-                        const extendedFormsPage: Page<ProcessListEntry> = {
-                            ...formsPage,
-                            content: formsPage.content.map(form => ({
-                                ...form,
-                                developingDepartmentName: deps.find(dep => dep.id === form.departmentId)?.name,
-                                lastEditorName: '',
-                            })),
-                        };
-
-                        return extendedFormsPage;
-                    }}
+                    fetch={fetch}
                     columnDefinitions={columns}
-                    getRowIdentifier={row => row.id.toString()}
-                    noDataPlaceholder={
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center',
-                                p: 4,
-                            }}
-                        >
-                            {
-                                (memberships == null ||
-                                    memberships.length === 0) &&
-                                <>
-                                    <Typography
-                                        variant="h5"
-                                        component="h2"
-                                    >
-                                        Noch keiner Organisationseinheit zugeordnet
-                                    </Typography>
-                                    <Typography>
-                                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen eine
-                                        Domänenrolle zuweisen.
-                                        Erst dann können Sie mit der Entwicklung von Prozessen beginnen. Nach der Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
-                                    </Typography>
-                                </>
-                            }
-                            {
-                                memberships != null &&
-                                memberships.length > 0 &&
-                                <Typography>
-                                    Sie haben aktuell keine Prozesse. Starten Sie jetzt mit Ihrem ersten Prozess!
-                                </Typography>
-                            }
-                        </Box>
-                    }
+                    getRowIdentifier={getRowId}
+                    noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Prozesse gefunden"
                     rowActionsCount={4}
-                    rowActions={(item) => [
-                        {
-                            icon: <Edit/>,
-                            to: `/processes/${item.id}/versions/${item.draftedVersion}`,
-                            tooltip: 'Prozess bearbeiten',
-                            visible: item.draftedVersion != null,
-                        },
-                        {
-                            icon: <Visibility/>,
-                            to: `/processes/${item.id}`,
-                            tooltip: 'Prozess ansehen',
-                            visible: item.draftedVersion === null,
-                        },
-                        {
-                            icon: <NewWindow/>,
-                            onClick: () => {
-                                // TODO
-                            },
-                            tooltip: 'Neuen Entwurf anlegen',
-                            visible: item.draftedVersion == null,
-                            disabled: item.publishedVersion == null && item.draftedVersion != null,
-                        },
-                        {
-                            icon: <HomeStorage/>,
-                            onClick: () => {
-                                // TODO
-                            },
-                            tooltip: 'Versionen anzeigen',
-                        },
-                        {
-                            icon: <MoreVertOutlinedIcon/>,
-                            onClick: () => {
-                                // TODO
-                            },
-                            tooltip: 'Optionen',
-                        },
-                    ]}
+                    rowActions={rowActions}
                     defaultSortField="internalTitle"
                     disableFullWidthToggle={true}
                 />
@@ -346,3 +386,6 @@ export function ProcessListPage() {
     );
 }
 
+function getRowId(row: ProcessListEntry) {
+    return row.id.toString();
+}

@@ -5,6 +5,7 @@ import {ProcessDefinitionEdgeEntity} from "./process-definition-edge-entity";
 
 export interface ProcessExport {
     appVersion: string;
+    appBuildNumber: string;
     exportTimestamp: string; // ISO date string
     createdByVendor: string;
     process: ProcessEntity;

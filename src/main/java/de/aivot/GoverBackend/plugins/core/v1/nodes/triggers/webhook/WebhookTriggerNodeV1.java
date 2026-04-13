@@ -6,7 +6,6 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
-import de.aivot.GoverBackend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
@@ -16,7 +15,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElemen
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
-import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
@@ -160,57 +158,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                             .setRegex("^[a-zA-Z0-9-]+$")
                             .setMessage("Der Webhook-Slug darf nur aus Buchstaben, Zahlen und Bindestrichen bestehen.");
                     field.setPattern(pattern);
+
+                    field.setPrefix(goverConfig.createUrlWithTrailingSlash(".../webhooks/..."));
                 });
-
-        // Automatic Link Element
-        var linkPrefix = goverConfig.createUrlWithTrailingSlash("/api/public/webhooks/v1", context.processDefinition().getAccessKey().toString());
-
-        var linkOverride = new ElementOverrideFunctions()
-                .setJavascriptCode(JavascriptCode.of("""
-                        (() => {
-                            const slug = ctx.effectiveValues.%s || '{Webhook-URL}';
-                            const requestMethod = ctx.effectiveValues.%s;
-                            const requestBodyType = ctx.effectiveValues.%s;
-                            const authRequired = ctx.effectiveValues.%s === true;
-                            const authMethod = ctx.effectiveValues.%s;
-                            const authToken = ctx.effectiveValues.%s ?? '';
-                            const requestAllowsBody = requestMethod === '%s' || requestMethod === '%s' || requestMethod === '%s';
-                            const requestBodySuffix = requestAllowsBody
-                                ? requestBodyType === '%s'
-                                    ? 'json/'
-                                    : requestBodyType === '%s'
-                                        ? 'form-data/'
-                                        : 'xml/'
-                                : '';
-                            let link = '%s' + slug + '/' + requestBodySuffix;
-                            if (authRequired && authMethod === '%s') {
-                                link += '?%s=' + authToken;
-                            }
-                            return { ...element, content: `**Vollständige Webhook-URL:**\\n\\n${link}` };
-                        })();
-                        """,
-                        WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
-                        WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY,
-                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY,
-                        WebhookTriggerConfigV1.AUTH_REQUIRED_CONFIG_KEY,
-                        WebhookTriggerConfigV1.AUTH_METHOD_CONFIG_KEY,
-                        WebhookTriggerConfigV1.AUTH_TOKEN_CONFIG_KEY,
-                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
-                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH,
-                        WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT,
-                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON,
-                        WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM,
-                        linkPrefix,
-                        WebhookTriggerConfigV1.AUTH_METHOD_OPTION_QUERY_PARAM,
-                        WebhookTriggerControllerV1.AUTH_TOKEN_QUERY_PARAM
-                ))
-                .recalculateReferencedIds();
-
-        var link = new RichTextContentElement();
-        link.setId("link");
-        link.setContent("**Vollständige Webhook-URL:**\n\n" + linkPrefix + "{Webhook-URL}/xml/");
-        link.setOverride(linkOverride);
-        configLayout.insertChildAfter(link, WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
 
         // Add request method select options
         configLayout
