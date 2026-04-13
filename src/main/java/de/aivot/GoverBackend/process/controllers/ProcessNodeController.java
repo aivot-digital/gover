@@ -313,7 +313,7 @@ public class ProcessNodeController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer processId,
             @Nonnull @PathVariable Integer processVersion,
-            @Nonnull @RequestBody @Valid ProcessNodeExportService.ProcessNodeExport processNodeExport
+            @Nonnull @RequestBody @Valid ProcessNodeExportService.ProcessNodeExport exportData
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -333,7 +333,6 @@ public class ProcessNodeController {
                 .retrieve(ProcessVersionEntityId.of(processId, processVersion))
                 .orElseThrow(ResponseException::badRequest);
 
-        var exportData = processNodeExport.data();
         var sourceNode = exportData.node();
         var occupiedDataKeys = processDefinitionNodeService
                 .getAllUsedDataKeys(processId, processVersion);
