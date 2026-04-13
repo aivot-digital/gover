@@ -1200,6 +1200,21 @@ export function ProcessDetailsPage(): ReactNode {
     };
 
     const handleTest = async (): Promise<void> => {
+        if (currentTestClaim != null) {
+            confirm({
+                title: 'Testmodus bereits aktive',
+                children: (
+                        <Typography>
+                            Der Prozess befindet sich bereits im Testmodus.
+                            Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen Starten können.
+                        </Typography>
+                ),
+                confirmButtonText: 'Ok',
+                hideCancelButton: true,
+            })
+            return;
+        }
+
         try {
             const problems = await new ProcessDefinitionVersionApiService()
                 .validate({
