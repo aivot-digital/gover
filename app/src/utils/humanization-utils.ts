@@ -17,7 +17,11 @@ export function humanizeFileSize(sizeInBytes: number): string {
     return `${sizeInGB.toFixed(2)} GB`;
 }
 
-export function humanizeNumber(num: number): string {
+export function humanizeNumber(num: number, overrides?: Record<number, string>): string {
+    if (overrides && overrides[num]) {
+        return overrides[num];
+    }
+
     switch (num) {
         case 1:
             return 'eine';
@@ -47,8 +51,8 @@ export function humanizeNumber(num: number): string {
     return num.toFixed(0);
 }
 
-export function humanizeNumberCapitalized(num: number): string {
-    const humanized = humanizeNumber(num);
+export function humanizeNumberCapitalized(num: number, overrides?: Record<number, string>): string {
+    const humanized = humanizeNumber(num, overrides);
     return humanized.charAt(0).toUpperCase() + humanized.slice(1);
 }
 
