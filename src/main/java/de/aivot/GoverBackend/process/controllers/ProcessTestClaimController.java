@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
 import de.aivot.GoverBackend.process.filters.ProcessTestClaimFilter;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
+import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessTestClaimService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -51,79 +52,33 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
         this.processTestClaimRepository = processTestClaimRepository;
     }
 
-    @Override
-    protected void checkListPermissions(@Nonnull UserEntity user) throws ResponseException {
-        // List permissions are checked in performList to support scoped domain filtering.
-    }
-
-    @Override
-    protected Page<ProcessTestClaimEntity> performList(@Nonnull UserEntity user,
-                                                       @Nonnull Pageable pageable,
-                                                       @Nonnull ProcessTestClaimFilter filter) throws ResponseException {
-        if (hasGlobalReadPermission(user.getId())) {
-            return super.performList(user, pageable, filter);
-        }
-
-        var accessibleProcessIds = processTestClaimRepository.getProcessIdsWithPermission(
-                user.getId(),
-                ProcessPermissionProvider.PROCESS_DEFINITION_READ
-        );
-        if (accessibleProcessIds.isEmpty()) {
-            return Page.empty(pageable);
-        }
-
-        Specification<ProcessTestClaimEntity> specification = filter.build();
-        Specification<ProcessTestClaimEntity> processScopeSpecification = (root, query, criteriaBuilder) ->
-                root.get("processId").in(accessibleProcessIds);
-
-        if (specification == null) {
-            specification = processScopeSpecification;
-        } else {
-            specification = specification.and(processScopeSpecification);
-        }
-
-        return processTestClaimService.performList(pageable, specification, filter);
-    }
-
-    @Override
-    protected void checkRetrievePermissions(@Nonnull UserEntity execUser,
-                                            @Nonnull Integer itemid) throws ResponseException {
-        var entity = processTestClaimService
-                .retrieve(itemid)
-                .orElseThrow(ResponseException::notFound);
-        if (!canReadProcess(execUser.getId(), entity.getProcessId())) {
-            throw ResponseException.forbidden();
-        }
-    }
+    // region Create
 
     @Override
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull ProcessTestClaimEntity newItem) throws ResponseException {
-        if (!canManageProcess(execUser.getId(), newItem.getProcessId())) {
-            throw ResponseException.forbidden();
-        }
-    }
+        var canPublishTestSystemwide = permissionService
+                .hasSystemPermission(
+                        execUser,
+                        ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
+                );
 
-    @Override
-    protected void checkUpdatePermission(@Nonnull UserEntity execUser,
-                                         @Nonnull Integer itemid) throws ResponseException {
-        var entity = processTestClaimService
-                .retrieve(itemid)
-                .orElseThrow(ResponseException::notFound);
-        if (!canManageProcess(execUser.getId(), entity.getProcessId())) {
-            throw ResponseException.forbidden();
+        if (canPublishTestSystemwide) {
+            return;
         }
-    }
 
-    @Override
-    protected void checkDeletePermission(@Nonnull UserEntity execUser,
-                                         @Nonnull Integer itemid) throws ResponseException {
-        var entity = processTestClaimService
-                .retrieve(itemid)
-                .orElseThrow(ResponseException::notFound);
-        if (!canManageProcess(execUser.getId(), entity.getProcessId())) {
-            throw ResponseException.forbidden();
+        var canPublishTestAsDomainMember = processTestClaimRepository
+                .hasProcessPermission(
+                        execUser.getId(),
+                        newItem.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
+                );
+
+        if (canPublishTestAsDomainMember) {
+            return;
         }
+
+        throw ResponseException.forbidden();
     }
 
     @Override
@@ -131,11 +86,6 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
                                                    @Nonnull ProcessTestClaimEntity newItem) throws ResponseException {
         newItem.setOwningUserId(execUser.getId());
         return super.performCreate(execUser, newItem);
-    }
-
-    @Override
-    protected Integer getIdForEntity(ProcessTestClaimEntity entity) {
-        return entity.getId();
     }
 
     @Override
@@ -151,18 +101,118 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
         );
     }
 
+    // endregion
+
+    // region List
+
     @Override
-    @Nonnull
-    protected String buildUpdateAuditMessage(@Nonnull UserEntity execUser,
-                                             @Nonnull Integer id,
-                                             @Nonnull ProcessTestClaimEntity updatedItem) {
-        return String.format(
-                "Der Test-Claim mit der ID %s für den Prozess %s (Version %s) wurde von der Mitarbeiter:in %s aktualisiert.",
-                StringUtils.quote(String.valueOf(id)),
-                StringUtils.quote(String.valueOf(updatedItem.getProcessId())),
-                StringUtils.quote(String.valueOf(updatedItem.getProcessVersion())),
-                StringUtils.quote(execUser.getFullName())
+    protected Page<ProcessTestClaimEntity> performList(@Nonnull UserEntity user,
+                                                       @Nonnull Pageable pageable,
+                                                       @Nonnull ProcessTestClaimFilter filter) throws ResponseException {
+        var canReadProcessSystemwide = permissionService
+                .hasSystemPermission(
+                        user,
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+
+        if (canReadProcessSystemwide) {
+            return super.performList(user, pageable, filter);
+        }
+
+        var accessibleProcessIds = processTestClaimRepository
+                .getProcessIdsWithPermission(
+                        user.getId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+        if (accessibleProcessIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        filter.setProcessIds(accessibleProcessIds);
+
+        return processTestClaimService
+                .list(pageable, filter);
+    }
+
+    // endregion
+
+    // region retrieve
+
+    @Override
+    protected void checkRetrievePermissions(@Nonnull UserEntity execUser,
+                                            @Nonnull Integer itemid) throws ResponseException {
+        var canReadProcessSystemwide = permissionService
+                .hasSystemPermission(
+                        execUser,
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+
+        if (canReadProcessSystemwide) {
+            return;
+        }
+
+        var entity = processTestClaimService
+                .retrieve(itemid)
+                .orElseThrow(ResponseException::notFound);
+
+        var canReadProcessAsDomainMember = processTestClaimRepository
+                .hasProcessPermission(
+                        execUser.getId(),
+                        entity.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+
+        if (canReadProcessAsDomainMember) {
+            return;
+        }
+
+        throw ResponseException.forbidden();
+    }
+
+    // endregion
+
+    // region update
+
+    @Override
+    protected ProcessTestClaimEntity performUpdate(@Nonnull UserEntity execUser,
+                                                   @Nonnull Integer itemId,
+                                                   @Nonnull ProcessTestClaimEntity patchItem) throws ResponseException {
+        // Do nothing to update
+        return patchItem;
+    }
+
+    // endregion
+
+    // region delete
+
+    @Override
+    protected void checkDeletePermission(@Nonnull UserEntity execUser,
+                                         @Nonnull Integer itemid) throws ResponseException {
+        var canPublishTestAsSystemAdmin = permissionService
+                .hasSystemPermission(
+                        execUser,
+                        ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
+                );
+
+        if (canPublishTestAsSystemAdmin) {
+            return;
+        }
+
+        var entity = processTestClaimService
+                .retrieve(itemid)
+                .orElseThrow(ResponseException::notFound);
+
+        var canPublishTestAsDomainMember = processTestClaimRepository.hasProcessPermission(
+                execUser.getId(),
+                entity.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
         );
+
+        if (canPublishTestAsDomainMember) {
+            return;
+        }
+
+        throw ResponseException.forbidden();
     }
 
     @Override
@@ -179,37 +229,10 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
         );
     }
 
-    private boolean hasGlobalReadPermission(@Nonnull String userId) {
-        return permissionService.hasSystemPermission(
-                userId,
-                ProcessPermissionProvider.PROCESS_DEFINITION_READ
-        );
-    }
+    // endregion
 
-    private boolean hasGlobalManagePermission(@Nonnull String userId) {
-        return permissionService.hasSystemPermission(
-                userId,
-                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
-        );
-    }
-
-    private boolean canReadProcess(@Nonnull String userId,
-                                   @Nonnull Integer processId) {
-        return hasGlobalReadPermission(userId)
-                || processTestClaimRepository.hasProcessPermission(
-                userId,
-                processId,
-                ProcessPermissionProvider.PROCESS_DEFINITION_READ
-        );
-    }
-
-    private boolean canManageProcess(@Nonnull String userId,
-                                     @Nonnull Integer processId) {
-        return hasGlobalManagePermission(userId)
-                || processTestClaimRepository.hasProcessPermission(
-                userId,
-                processId,
-                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
-        );
+    @Override
+    protected Integer getIdForEntity(ProcessTestClaimEntity entity) {
+        return entity.getId();
     }
 }
