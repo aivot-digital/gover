@@ -348,7 +348,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
                     .interpolate(context.getProcessData(), configuration.contentHtmlAssetKey);
             if (StringUtils.isNullOrEmpty(assetKeyStr)) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
-                        "Der Asset-Schluessel für die PDF-Vorlage wurde nicht angegeben."
+                        "Der Asset-Schlüssel für die PDF-Vorlage wurde nicht angegeben."
                 );
             }
 
@@ -358,7 +358,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             } catch (IllegalArgumentException e) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                         e,
-                        "Der Asset-Schluessel für die PDF-Vorlage ist ungueltig: %s",
+                        "Der Asset-Schlüssel für die PDF-Vorlage ist ungültig: %s",
                         assetKeyStr
                 );
             }
@@ -457,7 +457,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             return assetService
                     .retrieve(assetKey)
                     .orElseThrow(() -> new ProcessNodeExecutionExceptionMissingValue(
-                            "Die PDF-Vorlage mit dem Schluessel %s wurde nicht gefunden.",
+                            "Die PDF-Vorlage mit dem Schlüssel %s wurde nicht gefunden.",
                             assetKey.toString()
                     ));
         } catch (ResponseException e) {

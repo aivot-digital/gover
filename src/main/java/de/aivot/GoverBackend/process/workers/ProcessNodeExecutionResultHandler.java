@@ -66,7 +66,7 @@ public class ProcessNodeExecutionResultHandler {
                     ProcessNodeExecutionLogLevel.Error,
                     true,
                     true,
-                    "Die Verarbeitung des Prozesselements '%s' liefert kein Ausfuehrungsergebnis.",
+                    "Die Verarbeitung des Prozesselements '%s' liefert kein Ausführungsergebnis.",
                     currentNode.resolveName(provider)
             );
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
@@ -246,7 +246,7 @@ public class ProcessNodeExecutionResultHandler {
         } catch (Exception e) {
             logger.logException(new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Die E-Mail-Benachrichtigung fuer die zugewiesene Aufgabe an '%s' konnte nicht versendet werden.",
+                    "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an '%s' konnte nicht versendet werden.",
                     assignedUser.getFullName()
             ));
         }
@@ -350,7 +350,7 @@ public class ProcessNodeExecutionResultHandler {
                 ProcessNodeExecutionLogLevel.Info,
                 true,
                 true,
-                "Das Prozesselement '%s' wurde abgeschlossen. Naechstes Prozesselement: %d.",
+                "Das Prozesselement '%s' wurde abgeschlossen. Nächstes Prozesselement: %d.",
                 currentNode.resolveName(provider),
                 outEdge.get().getToNodeId()
         );

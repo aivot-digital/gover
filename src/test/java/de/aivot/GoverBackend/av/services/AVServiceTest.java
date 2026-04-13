@@ -53,7 +53,7 @@ class AVServiceTest {
         var service = new AVService(goverConfig, new ClamConfig()) {
             @Override
             public void testFile(MultipartFile file) {
-                throw new AssertionError("Virenscan darf bei ungueltigem Dateityp nicht starten.");
+                throw new AssertionError("Virenscan darf bei ungültigem Dateityp nicht starten.");
             }
         };
 

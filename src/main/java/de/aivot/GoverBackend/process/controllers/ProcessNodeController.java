@@ -84,7 +84,7 @@ public class ProcessNodeController {
             }
         }
 
-        throw new IllegalStateException("Kein freier Datenschluessel verfuegbar.");
+        throw new IllegalStateException("Kein freier Datenschlüssel verfügbar.");
     }
 
     @Autowired

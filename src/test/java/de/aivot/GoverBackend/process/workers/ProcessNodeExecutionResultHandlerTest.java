@@ -51,7 +51,7 @@ class ProcessNodeExecutionResultHandlerTest {
         var logger = new RecordingProcessNodeExecutionLogger();
         var processInstance = processInstance();
         var processInstanceTask = processInstanceTask(null);
-        var currentNode = processNode("Pruefung");
+        var currentNode = processNode("Prüfung");
         var provider = new TestProcessNodeDefinition("Fallback task");
 
         handler.handleResult(
@@ -83,7 +83,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
-                processNode("Pruefung"),
+                processNode("Prüfung"),
                 processInstance(),
                 processInstanceTask(null),
                 null,
@@ -107,7 +107,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 new RecordingProcessNodeExecutionLogger(),
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
-                processNode("Pruefung"),
+                processNode("Prüfung"),
                 processInstance(),
                 processInstanceTask(assignedUser.getId()),
                 null,
@@ -136,7 +136,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 logger,
                 triggeringUser,
                 new TestProcessNodeDefinition("Fallback task"),
-                processNode("Pruefung"),
+                processNode("Prüfung"),
                 processInstance(),
                 task,
                 null,
