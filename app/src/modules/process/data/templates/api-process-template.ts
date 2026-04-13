@@ -29,7 +29,7 @@ export const ApiProcessTemplate: ProcessExport = {
             'configuration': {
                 'automatic_content': 'Sehr geehrte(r) **{{ $.Person.Vorname }} {{ $.Person.Nachname }}**,\n\n\n\nim Anhang zu dieser E-Mail erhalten Sie Ihren offiziellen **Erfolgsbescheid** des Amts Bad Musterstadt im PDF-Format.\n\n**Kurzinfo zum Vorgang:**\n\n* **Status:** Erfolgreich abgeschlossen\n* **Empfänger:** {{ $.Person.Vorname }} {{ $.Person.Nachname }}\n* **Kontakt für Rückfragen:** [mail@aivot.de](mailto:mail@aivot.de)\n\nWir freuen uns, Ihnen mitteilen zu können, dass Ihr Anliegen positiv beschieden wurde. Bitte bewahren Sie das angehängte Dokument für Ihre Unterlagen auf.\n\n\n\nBei weiteren Fragen stehen wir Ihnen gerne zur Verfügung.\n\n\n\nMit freundlichen Grüßen\n\n**Ihr Team vom Amt Bad Musterstadt**',
                 'automatic_subject': 'Ihr Bescheid vom Amt Bad Musterstadt – Referenz: {{ $.Person.Nachname }}',
-                'attachment_file_names': 'Erfolgsbescheid.pdf',
+                'attachment_file_names': ['Erfolgsbescheid.pdf'],
                 'execution_type': 'automatic',
                 'to': '{{ $.Kontakt.EMailAdresse }}',
             },
