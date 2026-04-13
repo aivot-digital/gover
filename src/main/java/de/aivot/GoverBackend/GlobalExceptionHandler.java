@@ -88,7 +88,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, "bad request", errors, false);
+        final String message;
+        if (errors.isEmpty()) {
+            message = "Die Anfrage enthält ungültige Daten.";
+        } else {
+            message = errors.getFirst();
+        }
+
+        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, message, errors, true);
 
         return handleExceptionInternal(ex, apiError, headers, apiError.getHttpStatus(), request);
     }
