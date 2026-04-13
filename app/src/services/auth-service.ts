@@ -7,7 +7,7 @@ const TOKEN_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/pro
 const AUTH_URL = `${AppConfig.oidc.hostname}/realms/${AppConfig.oidc.realm}/protocol/openid-connect/auth`;
 const STORAGE_KEY_JWT = 'api-jwt';
 const STORAGE_KEY_POST_LOGIN_REDIRECT = 'oidc-post-login-redirect';
-const EXPIRATION_PADDING_SECONDS = 30; // 30 seconds
+const EXPIRATION_PADDING_SECONDS = 1; // 1 second
 
 interface JWT_TOKEN {
     token: string;
