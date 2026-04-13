@@ -31,6 +31,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition, PluginComponent
     private static final String PORT_NAME = "input";
 
     public static final String DATA_KEY_PAYLOAD = "payload";
+    public static final String DATA_KEY_UNMAPPED = "unmapped";
     public static final String DATA_KEY_FORM_ID = "formId";
     public static final String DATA_KEY_FORM_VERSION = "formVersion";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
