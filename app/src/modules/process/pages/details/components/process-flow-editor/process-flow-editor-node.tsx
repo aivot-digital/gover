@@ -261,7 +261,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onStartReplaceNode]);
 
     const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
-        const items: ProcessActionMenuItem[] = []
+        const items: ProcessActionMenuItem[] = [];
 
         if (associatedTask != null) {
             if (associatedTask.status == ProcessTaskStatus.Running) {
@@ -285,7 +285,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             blocking: true,
                             message: 'Starte Aufgabe neu',
                             estimatedTime: 500,
-                        }))
+                        }));
                         new ProcessInstanceTaskApiService()
                             .rerunFailedTask(associatedTask.id)
                             .then(() => {
@@ -423,22 +423,19 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             </Typography>
 
                             {
-                                (showNodeProblemsForNodes[node.id] || node.savedWithErrors) &&
+                                showNodeProblemsForNodes[node.id] &&
+                                associatedProblem != null &&
                                 <Tooltip
                                     title={
-                                        associatedProblem == null
-                                            ? "Das Prozesselement enthält Fehler. Bitte überprüfen Sie die Konfiguration."
-                                            : (
-                                                <ul>
-                                                    {
-                                                        associatedProblem.problems.map((problem, index) => (
-                                                            <li key={index}>
-                                                                {problem}
-                                                            </li>
-                                                        ))
-                                                    }
-                                                </ul>
-                                            )
+                                        <ul>
+                                            {
+                                                associatedProblem.problems.map((problem, index) => (
+                                                    <li key={index}>
+                                                        {problem}
+                                                    </li>
+                                                ))
+                                            }
+                                        </ul>
                                     }
                                 >
                                     <Error
