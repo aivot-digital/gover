@@ -101,6 +101,10 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.RichTextInput]: 'Erfasst formatierte Texte in Markdown.',
     [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',
     [ElementType.SummaryLayout]: 'Fasst mehrere Elemente zu einer Übersicht zusammen.',
+    [ElementType.SummaryStep]: 'Ein Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
+    [ElementType.IntroductionStep]: 'Ein Abschnitt, der am Anfang eines mehrstufigen Formulars steht und zur Einführung in den Prozess oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',
+    [ElementType.SubmitStep]: 'Ein Abschnitt, der am Ende eines mehrstufigen Formulars steht und die Möglichkeit bietet, das Formular abzusenden. Nutzer:innen müssen hier ein Captcha bestätigen um automatisierten Missbrauch zu verhindern.',
+    [ElementType.Step]: 'Ein generischer Abschnitt für mehrstufige Formulare, der flexibel mit verschiedenen Elementen befüllt werden kann.',
 };
 
 export function getElementGroupForType(type: ElementType): ElementTypeGroups | null {

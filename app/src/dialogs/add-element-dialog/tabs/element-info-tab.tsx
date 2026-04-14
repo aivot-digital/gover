@@ -24,10 +24,18 @@ import {MapPointFieldComponent} from '../../../components/map-point-field/map-po
 import {RichTextInputComponent} from '../../../components/rich-text-input-component/rich-text-input-component';
 import {RichtextComponent} from '../../../components/richtext/richtext.component';
 import {CodeInputFieldComponent} from '../../../components/code-input-field/code-input-field-component';
-import {DomainUserSelectFieldComponent} from '../../../components/domain-user-select-field/domain-user-select-field-component';
-import {AssignmentContextFieldComponent} from '../../../components/assignment-context-field/assignment-context-field-component';
-import {DataModelSelectFieldComponent} from '../../../components/data-model-select-field/data-model-select-field-component';
-import {DataObjectSelectFieldComponent} from '../../../components/data-object-select-field/data-object-select-field-component';
+import {
+    DomainUserSelectFieldComponent,
+} from '../../../components/domain-user-select-field/domain-user-select-field-component';
+import {
+    AssignmentContextFieldComponent,
+} from '../../../components/assignment-context-field/assignment-context-field-component';
+import {
+    DataModelSelectFieldComponent,
+} from '../../../components/data-model-select-field/data-model-select-field-component';
+import {
+    DataObjectSelectFieldComponent,
+} from '../../../components/data-object-select-field/data-object-select-field-component';
 import {
     createDomainAndUserSelectValueKey,
     createOrgUnitOptionValue,
@@ -44,6 +52,8 @@ import {type ReactNode} from 'react';
 import {AppInfo} from '../../../app-info';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
+import {TextFieldSummary} from '../../../summaries/text-field-summary';
+import {NumberSummary} from '../../../summaries/number-summary';
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -120,7 +130,10 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                         borderColor: 'divider',
                     }}
                 />
-                <Typography component="figcaption" variant="caption" color="text.secondary" sx={{mt: 0.75, display: 'block'}}>
+                <Typography component="figcaption"
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{mt: 0.75, display: 'block'}}>
                     Beispielgrafik mit optionaler Bildunterschrift
                 </Typography>
             </Box>
@@ -478,7 +491,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     value={'Option 2'}
                     options={[{label: 'Option 1', value: 'option_1'}, {
                         label: 'Option 2',
-                        value: 'option_2'
+                        value: 'option_2',
                     }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
@@ -492,7 +505,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     value={'Option 3'}
                     options={[{label: 'Option 1', value: 'option_1'}, {
                         label: 'Option 2',
-                        value: 'option_2'
+                        value: 'option_2',
                     }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
@@ -506,7 +519,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                     value={undefined}
                     options={[{label: 'Option 1', value: 'option_1'}, {
                         label: 'Option 2',
-                        value: 'option_2'
+                        value: 'option_2',
                     }, {label: 'Option 3', value: 'option_3'}]}
                     onChange={() => {
                     }}
@@ -661,14 +674,26 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 }}
             >
                 <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', bgcolor: 'grey.100'}}>
-                    <Typography sx={{px: 1.5, py: 1}} fontWeight={700}>Bezeichnung</Typography>
-                    <Typography sx={{px: 1.5, py: 1}} fontWeight={700}>Menge</Typography>
+                    <Typography sx={{px: 1.5, py: 1}}
+                                fontWeight={700}>Bezeichnung</Typography>
+                    <Typography sx={{px: 1.5, py: 1}}
+                                fontWeight={700}>Menge</Typography>
                 </Box>
-                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderTop: '1px solid', borderColor: 'divider'}}>
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.4fr 1fr',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                }}>
                     <Typography sx={{px: 1.5, py: 1}}>Unterlage A</Typography>
                     <Typography sx={{px: 1.5, py: 1}}>2</Typography>
                 </Box>
-                <Box sx={{display: 'grid', gridTemplateColumns: '1.4fr 1fr', borderTop: '1px solid', borderColor: 'divider'}}>
+                <Box sx={{
+                    display: 'grid',
+                    gridTemplateColumns: '1.4fr 1fr',
+                    borderTop: '1px solid',
+                    borderColor: 'divider',
+                }}>
                     <Typography sx={{px: 1.5, py: 1}}>Unterlage B</Typography>
                     <Typography sx={{px: 1.5, py: 1}}>1</Typography>
                 </Box>
@@ -732,7 +757,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ChipInput]: (
         <Box>
             <Typography>
-                Das Tag-Liste (Schlagwörter)-Element dient zur Erfassung mehrerer kurzer Freitext-Einträge, z. B. Schlagwörter
+                Das Tag-Liste (Schlagwörter)-Element dient zur Erfassung mehrerer kurzer Freitext-Einträge, z. B.
+                Schlagwörter
                 oder Stichpunkte.
             </Typography>
 
@@ -938,7 +964,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                             label: 'Wagner, Marie-Therese',
                             subLabel: 'm.wagner@example.org',
                             group: 'Mitarbeitende',
-                            icon: <PersonOutlineOutlinedIcon />,
+                            icon: <PersonOutlineOutlinedIcon/>,
                         },
                     ]}
                     hint="Optionen werden im Formular asynchron geladen und nach Kategorien gruppiert."
@@ -999,7 +1025,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                             label: 'Wagner, Marie-Therese',
                             subLabel: 'Mitarbeiter:in',
                             group: 'Mitarbeitende',
-                            icon: <PersonOutlineOutlinedIcon />,
+                            icon: <PersonOutlineOutlinedIcon/>,
                         },
                     ]}
                     domainAndUserSelectionHint="Die Zuweisung erfolgt auf Basis der Auslastung betroffener Personen."
@@ -1240,7 +1266,58 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     ),
     [ElementType.IdentityInput]: null,
     [ElementType.TabLayout]: null,
-    [ElementType.SummaryLayout]: null, // TODO: Create Information about this component
+    [ElementType.SummaryLayout]: (
+        <Box>
+            <Typography>
+                Das Element „Zusammenfassung“ erlaubt die Anzeige von beliebigen Elementen als reduzierte Darstellung.
+                Kind-Elemente dieses Elementes sind <em>ausschließlich</em> zur Anzeige von Daten gedacht und können keine Nutzereingaben entgegennehmen.
+                Die anzuzeigenden Werte müssen über die Verwendung von Datenschlüsseln oder Funktionen des Typs „Dynamischer Wert“ gesetzt werden.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiel
+            </Divider>
+
+            <TextFieldSummary
+                model={{
+                    ...generateElementWithDefaultValues(ElementType.Text),
+                    label: 'Vorname'
+                }}
+                value="Max"
+                authoredElementValues={{}}
+                derivedData={{
+                    elementStates: {},
+                    effectiveValues: {},
+                }}
+            />
+
+            <TextFieldSummary
+                model={{
+                    ...generateElementWithDefaultValues(ElementType.Text),
+                    label: 'Nachname'
+                }}
+                value="Mustermann"
+                authoredElementValues={{}}
+                derivedData={{
+                    elementStates: {},
+                    effectiveValues: {},
+                }}
+            />
+
+            <NumberSummary
+                model={{
+                    ...generateElementWithDefaultValues(ElementType.Number),
+                    label: 'Alter'
+                }}
+                value={42}
+                authoredElementValues={{}}
+                derivedData={{
+                    elementStates: {},
+                    effectiveValues: {},
+                }}
+            />
+        </Box>
+    ),
 };
 
 export function ElementInfoTab({
