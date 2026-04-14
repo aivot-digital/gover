@@ -195,7 +195,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-xml</artifactId>
-            <version>2.19.1</version> <!-- The same version as the one in spring boot -->
+            <version>2.21.2</version> <!-- The same version as the one in spring boot -->
         </dependency>
         <dependency>
             <groupId>org.springdoc</groupId>
