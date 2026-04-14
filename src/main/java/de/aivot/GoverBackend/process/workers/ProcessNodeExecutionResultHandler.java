@@ -89,6 +89,16 @@ public class ProcessNodeExecutionResultHandler {
         );
 
         switch (executionResult) {
+            case ProcessNodeExecutionResultTaskUpdated taskUpdated -> handleTaskUpdated(
+                    logger,
+                    triggeringUser,
+                    provider,
+                    currentNode,
+                    processInstance,
+                    processInstanceTask,
+                    previousTask,
+                    taskUpdated
+            );
             case ProcessNodeExecutionResultTaskCompleted taskCompleted -> handleTaskComplete(
                     logger,
                     triggeringUser,
@@ -249,6 +259,57 @@ public class ProcessNodeExecutionResultHandler {
                     "Die E-Mail-Benachrichtigung für die zugewiesene Aufgabe an '%s' konnte nicht versendet werden.",
                     assignedUser.getFullName()
             ));
+        }
+    }
+
+    private void handleTaskUpdated(@Nonnull ProcessNodeExecutionLogger logger,
+                                    @Nullable UserEntity triggeringUser,
+                                    @Nonnull ProcessNodeDefinition provider,
+                                    @Nonnull ProcessNodeEntity currentNode,
+                                    @Nonnull ProcessInstanceEntity processInstance,
+                                    @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+                                    @Nullable ProcessInstanceTaskEntity previousTask,
+                                    @Nonnull ProcessNodeExecutionResultTaskUpdated updatedTask) throws ProcessNodeExecutionException {
+
+        var newRuntimeData = updatedTask.getRuntimeData();
+        if (newRuntimeData == null) {
+            newRuntimeData = new HashMap<>();
+        }
+        processInstanceTask.setRuntimeData(newRuntimeData);
+
+        var newNodeData = updatedTask.getNodeData();
+        if (newNodeData == null) {
+            newNodeData = new HashMap<>();
+        }
+        processInstanceTask.setNodeData(newNodeData);
+
+        var newProcessData = updatedTask.getProcessData();
+        if (newProcessData == null) {
+            newProcessData = previousTask != null ?
+                    previousTask.getProcessData() :
+                    processInstance.getInitialPayload();
+        }
+        processInstanceTask.setProcessData(applyOutputMappings(
+                provider,
+                currentNode.getOutputMappings(),
+                newNodeData,
+                newProcessData
+        ));
+
+        processInstanceTask.setStatus(ProcessTaskStatus.Running);
+
+        if (updatedTask.getTaskStatusOverride() != null) {
+            processInstanceTask.setStatusOverride(updatedTask.getTaskStatusOverride());
+        }
+        if (Boolean.TRUE.equals(updatedTask.getClearTaskStatusOverride())) {
+            processInstanceTask.setStatusOverride(null);
+        }
+
+        processInstanceTaskRepository.save(processInstanceTask);
+
+        if (processInstance.getStatus() != ProcessInstanceStatus.Running) {
+            processInstance.setStatus(ProcessInstanceStatus.Running);
+            processInstanceRepository.save(processInstance);
         }
     }
 

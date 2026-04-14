@@ -185,10 +185,9 @@ public interface ProcessNodeDefinition extends PluginComponent {
      */
     default Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                    @Nonnull AuthoredElementValues update,
-                                                                   @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
+                                                                   @Nullable String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
     }
-
 
     /**
      * Get the customer task view layout for nodes of this provider type.
@@ -240,7 +239,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     default Optional<ProcessNodeExecutionResult> onUpdateFromCustomer(@Nonnull ProcessNodeExecutionContextUICustomer context,
                                                                       @Nonnull AuthoredElementValues update,
                                                                       @Nonnull DerivedRuntimeElementData derived,
-                                                                      @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
+                                                                      @Nullable String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
     }
 }

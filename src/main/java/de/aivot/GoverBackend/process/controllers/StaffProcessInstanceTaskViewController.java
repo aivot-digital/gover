@@ -153,7 +153,7 @@ public class StaffProcessInstanceTaskViewController {
             @RequestParam(value = "inputs", required = true) String rawInputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
-            @Nullable @RequestParam(value = "event", required = true) String event,
+            @Nullable @RequestParam(value = "rawEvent", required = false) String rawEvent,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         var user = userService
@@ -203,11 +203,12 @@ public class StaffProcessInstanceTaskViewController {
                 .getStaffTaskViewEvents(context);
 
         // Test if the event is valid
-        events
+        var cleanEvent = events
                 .stream()
-                .filter(e -> e.event().equals(event))
+                .filter(e -> e.event().equals(rawEvent))
                 .findFirst()
-                .orElseThrow(() -> ResponseException.badRequest("Invalid event: " + event));
+                .map(TaskViewEvent::event)
+                .orElse(null);
 
         AuthoredElementValues inputs;
         try {
@@ -230,7 +231,7 @@ public class StaffProcessInstanceTaskViewController {
         try {
             res = taskViewData
                     .provider
-                    .onUpdateFromStaff(context, inputs, event);
+                    .onUpdateFromStaff(context, inputs, cleanEvent);
         } catch (ResponseException e) {
             throw e;
         } catch (Exception e) {

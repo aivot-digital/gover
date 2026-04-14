@@ -1,5 +1,5 @@
-import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Skeleton, Stack, Typography} from '@mui/material';
+import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
+import {Box, Button, CircularProgress, Skeleton, Stack, Typography} from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
@@ -32,6 +32,10 @@ import {
 import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 import {isApiError} from '../../../../models/api-error';
+import {Chip} from '../../../../components/chip/chip';
+import Done from '@aivot/mui-material-symbols-400-outlined/dist/done/Done';
+import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 
 export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
@@ -41,9 +45,28 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         item,
     } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
+    const pushUpdateTimeoutRef = useRef<number | null>(null);
+
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
+    const [taskInputDataSaveState, setTaskInputDataSaveState] = useState<'saved' | 'waiting' | 'saving'>('saved');
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
+
+    const {
+        dialog,
+    } = useChangeBlocker({
+        original: 'saved',
+        edited: taskInputDataSaveState,
+    });
+
+    // Clear
+    useEffect(() => {
+        return () => {
+            if (pushUpdateTimeoutRef.current != null) {
+                clearTimeout(pushUpdateTimeoutRef.current);
+            }
+        };
+    }, []);
 
     useEffect(() => {
         let cancelled = false;
@@ -102,7 +125,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             },
             {
                 label: 'Kurzbeschreibung',
-                icon: <Task />,
+                icon: <Task/>,
                 alignTop: true,
                 children: getProcessTaskDescription(item),
             },
@@ -120,6 +143,11 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const handleEventClick = (evt: TaskViewEvent) => {
         if (item == null || taskView == null) {
             return;
+        }
+
+        if (pushUpdateTimeoutRef.current != null) {
+            window.clearTimeout(pushUpdateTimeoutRef.current);
+            pushUpdateTimeoutRef.current = null;
         }
 
         dispatch(setLoadingMessage({
@@ -157,6 +185,35 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             .finally(() => {
                 dispatch(clearLoadingMessage());
             });
+    };
+
+    const handleAuthoredValuesChange = (authoredValues: AuthoredElementValues) => {
+        if (item == null) {
+            return;
+        }
+
+        setTaskInputData(authoredValues);
+
+        if (pushUpdateTimeoutRef.current != null) {
+            window.clearTimeout(pushUpdateTimeoutRef.current);
+        }
+
+        pushUpdateTimeoutRef.current = window.setTimeout(() => {
+            pushUpdateTimeoutRef.current = null;
+
+            setTaskInputDataSaveState('saving');
+
+            new ProcessInstanceTaskApiService()
+                .putStaffTaskView(item.task.processInstanceId, item.task.id, authoredValues)
+                .catch((err) => {
+                    dispatch(showApiErrorSnackbar(err, 'Die Eingaben konnten nicht gespeichert werden.'));
+                })
+                .finally(() => {
+                    setTaskInputDataSaveState('saved');
+                });
+        }, 2000);
+
+        setTaskInputDataSaveState('waiting');
     };
 
     if (item == null) {
@@ -208,110 +265,146 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                             <ElementDerivationContext
                                 element={taskView.layout}
                                 authoredElementValues={taskInputData}
-                                onAuthoredElementValuesChange={setTaskInputData}
+                                onAuthoredElementValuesChange={handleAuthoredValuesChange}
                                 computedErrors={derivedErrors?.elementStates}
                             />
                         </Box>
 
-                        {
-                            taskView.events.length > 0 &&
-                            <Box
-                                sx={{
-                                    mt: 4,
-                                    display: 'flex',
-                                    flexDirection: {
-                                        xs: 'column',
-                                        sm: 'row',
-                                    },
-                                    gap: 2,
-                                    justifyContent: 'space-between',
-                                    alignItems: {
-                                        sm: 'center',
-                                    },
-                                }}
-                            >
-                                {
-                                    leftAlignedTaskViewEvents.length > 0 &&
-                                    <Stack
-                                        direction={{
+                        <Stack
+                            direction="row"
+                            alignItems="flex-end"
+                        >
+                            {
+                                taskView.events.length > 0 &&
+                                <Box
+                                    sx={{
+                                        mt: 4,
+                                        display: 'flex',
+                                        flexDirection: {
                                             xs: 'column',
                                             sm: 'row',
-                                        }}
-                                        spacing={2}
-                                        sx={{
-                                            width: {
-                                                xs: '100%',
-                                                sm: 'auto',
-                                            },
-                                        }}
-                                    >
-                                        {
-                                            leftAlignedTaskViewEvents.map((evt) => (
-                                                <Button
-                                                    key={evt.event}
-                                                    variant={getTaskViewEventVariant(evt)}
-                                                    color={getTaskViewEventColor(evt)}
-                                                    onClick={() => {
-                                                        handleEventClick(evt);
-                                                    }}
-                                                    sx={{
-                                                        width: {
-                                                            xs: '100%',
-                                                            sm: 'auto',
-                                                        },
-                                                    }}
-                                                >
-                                                    {evt.label}
-                                                </Button>
-                                            ))
-                                        }
-                                    </Stack>
-                                }
+                                        },
+                                        gap: 2,
+                                        justifyContent: 'space-between',
+                                        alignItems: {
+                                            sm: 'center',
+                                        },
+                                    }}
+                                >
+                                    {
+                                        leftAlignedTaskViewEvents.length > 0 &&
+                                        <Stack
+                                            direction={{
+                                                xs: 'column',
+                                                sm: 'row',
+                                            }}
+                                            spacing={2}
+                                            sx={{
+                                                width: {
+                                                    xs: '100%',
+                                                    sm: 'auto',
+                                                },
+                                            }}
+                                        >
+                                            {
+                                                leftAlignedTaskViewEvents.map((evt) => (
+                                                    <Button
+                                                        key={evt.event}
+                                                        variant={getTaskViewEventVariant(evt)}
+                                                        color={getTaskViewEventColor(evt)}
+                                                        onClick={() => {
+                                                            handleEventClick(evt);
+                                                        }}
+                                                        sx={{
+                                                            width: {
+                                                                xs: '100%',
+                                                                sm: 'auto',
+                                                            },
+                                                        }}
+                                                    >
+                                                        {evt.label}
+                                                    </Button>
+                                                ))
+                                            }
+                                        </Stack>
+                                    }
 
-                                {
-                                    rightAlignedTaskViewEvents.length > 0 &&
-                                    <Stack
-                                        direction={{
-                                            xs: 'column',
-                                            sm: 'row',
-                                        }}
-                                        spacing={2}
-                                        sx={{
-                                            width: {
-                                                xs: '100%',
-                                                sm: 'auto',
-                                            },
-                                            marginLeft: {
-                                                sm: 'auto',
-                                            },
-                                        }}
+                                    {
+                                        rightAlignedTaskViewEvents.length > 0 &&
+                                        <Stack
+                                            direction={{
+                                                xs: 'column',
+                                                sm: 'row',
+                                            }}
+                                            spacing={2}
+                                            sx={{
+                                                width: {
+                                                    xs: '100%',
+                                                    sm: 'auto',
+                                                },
+                                                marginLeft: {
+                                                    sm: 'auto',
+                                                },
+                                            }}
+                                        >
+                                            {
+                                                rightAlignedTaskViewEvents.map((evt) => (
+                                                    <Button
+                                                        key={evt.event}
+                                                        variant={getTaskViewEventVariant(evt)}
+                                                        color={getTaskViewEventColor(evt)}
+                                                        onClick={() => {
+                                                            handleEventClick(evt);
+                                                        }}
+                                                        sx={{
+                                                            width: {
+                                                                xs: '100%',
+                                                                sm: 'auto',
+                                                            },
+                                                        }}
+                                                    >
+                                                        {evt.label}
+                                                    </Button>
+                                                ))
+                                            }
+                                        </Stack>
+                                    }
+                                </Box>
+                            }
+
+                            <Chip
+                                sx={{
+                                    ml: 'auto',
+                                    width: '16rem',
+                                }}
+                                avatar={
+                                    taskInputDataSaveState === 'saved'
+                                        ? <Done/>
+                                        : taskInputDataSaveState === 'waiting'
+                                            ? <Edit/>
+                                            : <CircularProgress size={24}/>
+                                }
+                                label={
+                                    <Box
+                                        component="span"
                                     >
                                         {
-                                            rightAlignedTaskViewEvents.map((evt) => (
-                                                <Button
-                                                    key={evt.event}
-                                                    variant={getTaskViewEventVariant(evt)}
-                                                    color={getTaskViewEventColor(evt)}
-                                                    onClick={() => {
-                                                        handleEventClick(evt);
-                                                    }}
-                                                    sx={{
-                                                        width: {
-                                                            xs: '100%',
-                                                            sm: 'auto',
-                                                        },
-                                                    }}
-                                                >
-                                                    {evt.label}
-                                                </Button>
-                                            ))
+                                            taskInputDataSaveState === 'saved'
+                                                ? 'Alle Änderungen gespeichert'
+                                                : taskInputDataSaveState === 'waiting'
+                                                    ? 'Änderungen wurden erkannt'
+                                                    : 'Änderungen werden gespeichert'
                                         }
-                                    </Stack>
+                                    </Box>
                                 }
-                            </Box>
-                        }
+                                mode="soft"
+                            />
+
+                        </Stack>
                     </>
             }
+
+            {dialog}
         </Box>
     );
 }

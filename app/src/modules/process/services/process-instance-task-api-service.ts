@@ -111,7 +111,7 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
         return this.get(`/api/public/processes/${instanceAccessKey}/tasks/${taskAccessKey}/`);
     }
 
-    public async putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event: string): Promise<TaskView> {
+    public async putStaffTaskView(instanceId: number, taskId: number, payload: AuthoredElementValues, event?: string): Promise<TaskView> {
         const formData = new FormData();
         formData.set('inputs', JSON.stringify(payload));
         await appendTaskViewFiles(formData, payload);
