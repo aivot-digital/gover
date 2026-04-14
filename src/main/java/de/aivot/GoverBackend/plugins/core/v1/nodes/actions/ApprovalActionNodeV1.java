@@ -309,10 +309,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        Map<String, Object> data = new HashMap<>();
+
         // Load runtime data if some exist
-        Map<String, Object> data = context
+        data.putAll(context
                 .getThisTask()
-                .getRuntimeData();
+                .getRuntimeData());
 
         // Merge the runtime data with all process data
         data.putAll(context
