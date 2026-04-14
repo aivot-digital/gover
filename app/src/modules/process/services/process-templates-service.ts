@@ -9,6 +9,7 @@ export interface TemplateRegistryIndex {
 
 export interface TemplateRegistryProcessItem {
     name: string;
+    description: string;
     vendor: string;
     path: string;
     appVersion: string;
@@ -17,6 +18,7 @@ export interface TemplateRegistryProcessItem {
 
 export interface TemplateRegistryNodeItem {
     name: string;
+    description: string;
     vendor: string;
     path: string;
     appVersion: string;

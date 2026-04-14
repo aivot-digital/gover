@@ -290,7 +290,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                             key={preset.path}
                                             Icon={GridGuides}
                                             title={preset.name}
-                                            description={`Ein vordefiniertes Verfahren von ${preset.vendor}.`}
+                                            description={preset.description}
                                             onClick={() => {
                                                 new ProcessTemplatesService()
                                                     .loadTemplate(preset)
