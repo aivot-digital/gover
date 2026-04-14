@@ -15,6 +15,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElemen
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
@@ -366,6 +367,56 @@ class ElementDerivationServiceTest {
         );
 
         assertNull(skippedResult.getElementStates().get("child").getError());
+    }
+
+    @Test
+    void shouldSkipErrorsForChildrenInsideSummaryLayout() {
+        var summaryChild = new TextInputElement();
+        summaryChild.setId("summaryChild");
+        summaryChild.setRequired(true);
+
+        var summary = new SummaryLayoutElement();
+        summary.setId("summary");
+        summary.setChildren(List.of(summaryChild));
+
+        var regularChild = new TextInputElement();
+        regularChild.setId("regularChild");
+        regularChild.setRequired(true);
+
+        var result = derive(
+                createRoot(List.of(summary, regularChild)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertNull(result.getElementStates().get("summaryChild").getError());
+        assertEquals(
+                "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.",
+                result.getElementStates().get("regularChild").getError()
+        );
+    }
+
+    @Test
+    void shouldSkipErrorsForNestedSummaryLayoutDescendants() {
+        var nestedChild = new TextInputElement();
+        nestedChild.setId("nestedChild");
+        nestedChild.setRequired(true);
+
+        var group = new GroupLayoutElement();
+        group.setId("group");
+        group.setChildren(new LinkedList<>(List.of(nestedChild)));
+
+        var summary = new SummaryLayoutElement();
+        summary.setId("summary");
+        summary.setChildren(List.of(group));
+
+        var result = derive(
+                createRoot(List.of(summary)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertNull(result.getElementStates().get("nestedChild").getError());
     }
 
     @Test

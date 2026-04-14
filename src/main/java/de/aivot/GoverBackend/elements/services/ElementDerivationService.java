@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
@@ -180,6 +181,10 @@ public class ElementDerivationService {
                     ? overrideElement
                     : currentElement;
             var childOptions = options.copyForUseInChild(currentElement.getId());
+            // Check if it's a SummaryLayout and prevent the error derivation for all children because they cannot be changed by the user and potential errors cannot be fixed.
+            if (actualElement instanceof SummaryLayoutElement) {
+                childOptions.getSkipErrorsForElementIds().add(ElementDerivationOptions.ALL_ELEMENTS);
+            }
             // The payload location is structural metadata, so it should reflect override decisions
             // but remain available even when later visibility or validation logic short-circuits.
             elementState.setDestinationPath(resolveDestinationPath(
