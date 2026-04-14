@@ -19,7 +19,9 @@ public class GoverConfig {
     private String sentryServer;
     private String sentryWebApp;
     private String environment;
+    @Deprecated
     private List<String> fileExtensions;
+    @Deprecated
     private List<String> contentTypes;
     private String goverHostname;
     private Integer maxSubmissionCopyRetryCount;
