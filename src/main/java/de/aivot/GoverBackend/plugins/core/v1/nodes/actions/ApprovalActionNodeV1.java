@@ -12,13 +12,7 @@ import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContentElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
-import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectProcessAccessConstraint;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -32,16 +26,7 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskAssigned;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
-import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
@@ -51,11 +36,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Component
 public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
@@ -299,6 +280,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
         var remarkField = new RichTextInputElement();
         remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
+        remarkField.setDestinationKey(TASK_VIEW_REMARK_FIELD_ID);
         remarkField.setLabel("Vermerk");
         remarkField.setHint("Optionaler Vermerk zur Freigabeentscheidung.");
         remarkField.setRequired(false);
@@ -327,21 +309,42 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        // Load runtime data if some exist
+        Map<String, Object> data = context
+                .getThisTask()
+                .getRuntimeData();
+
+        // Merge the runtime data with all process data
+        data.putAll(context
+                .getThisTask()
+                .getProcessData());
+
+        // Create the list of effective values based on the combined data
         return elementDataTransformService
                 .buildEffectiveValues(
                         getStaffTaskView(context),
-                        context.getThisTask().getProcessData()
+                        data
                 )
                 .toAuthoredElementValues();
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(
-            @Nonnull ProcessNodeExecutionContextUIStaff context,
-            @Nonnull AuthoredElementValues update,
-            @Nonnull String event
-    ) throws ResponseException {
+    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                  @Nonnull AuthoredElementValues update,
+                                                                  @Nullable String event) throws ResponseException {
+        // If no event was given, update the runtime data.
+        if (event == null) {
+            var mixedData = new HashMap<String, Object>();
+            mixedData.putAll(update);
+            mixedData.putAll(context.getThisTask().getProcessData());
+
+            var result = new ProcessNodeExecutionResultTaskUpdated()
+                    .setRuntimeData(mixedData);
+
+            return Optional.of(result);
+        }
+
         var remark = update.get(TASK_VIEW_REMARK_FIELD_ID);
         var remarkText = remark != null ? remark.toString() : null;
 
@@ -363,10 +366,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, IsoTimestampUtils.nowUtc());
 
-        var result = new ProcessNodeExecutionResultTaskCompleted();
-        result.setViaPort(port);
-        result.setNodeData(nodeData);
-        result.setProcessData(context.getThisTask().getProcessData());
+        var result = new ProcessNodeExecutionResultTaskCompleted()
+                .setViaPort(port) // Set the desired output port
+                .setNodeData(nodeData) // Set the generated node data
+                .setRuntimeData(Map.of()) // Reset runtime data to empty map
+                .setProcessData(context.getThisTask().getProcessData()); // Copy the process data for the next step
+
         return Optional.of(result);
     }
 
@@ -425,8 +430,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         }
 
         if (assignmentContext == null ||
-            assignmentContext.getDomainAndUserSelection() == null ||
-            assignmentContext.getDomainAndUserSelection().isEmpty()) {
+                assignmentContext.getDomainAndUserSelection() == null ||
+                assignmentContext.getDomainAndUserSelection().isEmpty()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Für das Freigabe-Element muss ein Personenkreis definiert sein."
             );
