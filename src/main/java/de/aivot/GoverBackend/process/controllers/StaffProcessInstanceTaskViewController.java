@@ -153,7 +153,7 @@ public class StaffProcessInstanceTaskViewController {
             @RequestParam(value = "inputs", required = true) String rawInputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
-            @Nullable @RequestParam(value = "rawEvent", required = false) String rawEvent,
+            @Nullable @RequestParam(value = "event", required = false) String rawEvent,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         var user = userService
