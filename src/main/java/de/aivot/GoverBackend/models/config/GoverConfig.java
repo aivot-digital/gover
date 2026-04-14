@@ -24,6 +24,7 @@ public class GoverConfig {
     private String goverHostname;
     private Integer maxSubmissionCopyRetryCount;
     private List<String> bootstrapAdminMail;
+    private String registryHostname;
 
     public String getDefaultLogoUrl() {
         return createUrl("/assets/default-logo.png");
@@ -143,6 +144,15 @@ public class GoverConfig {
 
     public void setBootstrapAdminMail(List<String> bootstrapAdminMail) {
         this.bootstrapAdminMail = bootstrapAdminMail;
+    }
+
+    public String getRegistryHostname() {
+        return registryHostname;
+    }
+
+    public GoverConfig setRegistryHostname(String registryHostname) {
+        this.registryHostname = registryHostname;
+        return this;
     }
 
     // endregion
