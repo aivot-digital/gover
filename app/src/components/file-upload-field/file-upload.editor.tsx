@@ -10,6 +10,10 @@ import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {SystemApiService} from '../../modules/system/system-api-service';
 
 export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, ElementTreeEntity>) {
+    const {
+        hasSummaryLayoutParent,
+    } = props;
+
     const dispatch = useAppDispatch();
     const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
 
@@ -27,6 +31,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
         props.element.minFiles != null && props.element.minFiles > 0 &&
         props.element.maxFiles != null && props.element.maxFiles > 0 &&
         props.element.minFiles > props.element.maxFiles;
+
+    if (hasSummaryLayoutParent) {
+        return null;
+    }
 
     return (
         <Grid

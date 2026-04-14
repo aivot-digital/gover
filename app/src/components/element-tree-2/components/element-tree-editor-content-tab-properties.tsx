@@ -2,7 +2,6 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeEditorContext} from './element-tree-editor-context';
 import React, {ReactNode, useMemo} from 'react';
-import {getElementNameForType} from '../../../data/element-type/element-names';
 import {ElementEditorSectionHeader} from '../../element-editor-section-header/element-editor-section-header';
 import {Grid, Typography} from '@mui/material';
 import {TextFieldComponent} from '../../text-field/text-field-component';
@@ -186,18 +185,21 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 lg: 6,
                             }}
                         >
-                            <TextFieldComponent
-                                value={currentElement.hint}
-                                label="Hinweis"
-                                onChange={(val) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        hint: val,
-                                    });
-                                }}
-                                hint="Geben Sie hier zusätzliche Hinweise zur Eingabe für Antragstellende an (optional, wird unter dem Eingabefeld angezeigt)."
-                                disabled={!editable}
-                            />
+                            {
+                                !hasSummaryLayoutParent &&
+                                <TextFieldComponent
+                                    value={currentElement.hint}
+                                    label="Hinweis"
+                                    onChange={(val) => {
+                                        onChangeCurrentElement({
+                                            ...currentElement,
+                                            hint: val,
+                                        });
+                                    }}
+                                    hint="Geben Sie hier zusätzliche Hinweise zur Eingabe für Antragstellende an (optional, wird unter dem Eingabefeld angezeigt)."
+                                    disabled={!editable}
+                                />
+                            }
                         </Grid>
                     </>
                 }
@@ -207,6 +209,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 tabDescription.isElement &&
                 // elements without additional properties – should be replaced with a more generic check if element contains additional properties
                 editors[type] != null &&
+                !(hasSummaryLayoutParent && (
+                    type == ElementType.FileUpload ||
+                    type == ElementType.Text
+                )) &&
                 <ElementEditorSectionHeader
                     title="Elementspezifische Eigenschaften"
                     variant="h5"

@@ -8,6 +8,10 @@ import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {generateId} from '../../utils/id-utils';
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement, ElementTreeEntity>) {
+    const {
+        hasSummaryLayoutParent,
+    } = props;
+
     const columnLabelErrors = makeColumnLabelErrors(props.element.fields);
     const columnKeyErrors = makeColumnKeyErrors(props.element.fields);
     const minRequiredError = (
@@ -28,7 +32,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 6
+                            lg: 6,
                         }}>
                         <NumberFieldComponent
                             value={props.element.minimumRequiredRows ?? undefined}
@@ -48,20 +52,23 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
+                        lg: 6,
                     }}>
-                    <NumberFieldComponent
-                        value={props.element.maximumRows ?? undefined}
-                        label="Maximalanzahl der hinzuzufügenden Zeilen"
-                        hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
-                        error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
-                        onChange={(val) => {
-                            props.onPatch({
-                                maximumRows: val,
-                            });
-                        }}
-                        disabled={!props.editable}
-                    />
+                    {
+                        !hasSummaryLayoutParent &&
+                        <NumberFieldComponent
+                            value={props.element.maximumRows ?? undefined}
+                            label="Maximalanzahl der hinzuzufügenden Zeilen"
+                            hint="Geben Sie 0 ein, um keine Maximalanzahl zu fordern."
+                            error={minRequiredError ? 'Sie fordern mehr Zeilen als Sie maximal zulassen.' : undefined}
+                            onChange={(val) => {
+                                props.onPatch({
+                                    maximumRows: val,
+                                });
+                            }}
+                            disabled={!props.editable}
+                        />
+                    }
                 </Grid>
             </Grid>
             <Typography
@@ -134,7 +141,7 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         onBlur={() => onChange({
                                             placeholder: (column.placeholder ?? '').trim(),
                                         })}
-                                        helperText={"Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse."}
+                                        helperText={'Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse.'}
                                         disabled={!props.editable}
                                     />
                                 </Grid>
@@ -184,18 +191,22 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         }
                                         label="Zahl-Angabe"
                                     />
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={column.optional ?? false}
-                                                onChange={event => onChange({
-                                                    optional: event.target.checked,
-                                                })}
-                                                disabled={!props.editable}
-                                            />
-                                        }
-                                        label="Optionale Angabe"
-                                    />
+
+                                    {
+                                        !hasSummaryLayoutParent &&
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={column.optional ?? false}
+                                                    onChange={event => onChange({
+                                                        optional: event.target.checked,
+                                                    })}
+                                                    disabled={!props.editable}
+                                                />
+                                            }
+                                            label="Optionale Angabe"
+                                        />
+                                    }
 
                                     <FormControlLabel
                                         control={

@@ -28,6 +28,7 @@ export function DateFieldEditor(props: BaseEditorProps<DateFieldElement, Element
         onPatch,
         editable,
         scope,
+        hasSummaryLayoutParent,
     } = props;
 
     return (
@@ -63,6 +64,7 @@ export function DateFieldEditor(props: BaseEditorProps<DateFieldElement, Element
                 >
                     {
                         scope !== 'data_modelling' &&
+                        !hasSummaryLayoutParent &&
                         <AutocompleteSelect
                             type={element.type}
                             value={element.autocomplete}

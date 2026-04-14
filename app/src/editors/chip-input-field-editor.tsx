@@ -12,6 +12,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
         element,
         editable,
         onPatch,
+        hasSummaryLayoutParent,
     } = props;
     const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
 
@@ -38,64 +39,73 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
             columnSpacing={4}
             rowSpacing={2}
         >
-            <Grid
-                size={{
-                    xs: 12,
-                    lg: 6,
-                }}
-            >
-                <TextFieldComponent
-                    label="Platzhalter"
-                    value={element.placeholder}
-                    onChange={(value) => {
-                        onPatch({
-                            placeholder: value,
-                        });
+            {
+                !hasSummaryLayoutParent &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
                     }}
-                    hint="Ein Platzhalter zeigt beispielhaft, wie Chips eingegeben werden können."
-                    disabled={!editable}
-                />
-            </Grid>
+                >
+                    <TextFieldComponent
+                        label="Platzhalter"
+                        value={element.placeholder}
+                        onChange={(value) => {
+                            onPatch({
+                                placeholder: value,
+                            });
+                        }}
+                        hint="Ein Platzhalter zeigt beispielhaft, wie Chips eingegeben werden können."
+                        disabled={!editable}
+                    />
+                </Grid>
+            }
 
-            <Grid
-                size={{
-                    xs: 12,
-                    lg: 3,
-                }}
-            >
-                <NumberFieldComponent
-                    label="Minimale Anzahl"
-                    value={element.minItems ?? undefined}
-                    onChange={(value) => {
-                        onPatch({
-                            minItems: value,
-                        });
+            {
+                !hasSummaryLayoutParent &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 3,
                     }}
-                    hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
-                    error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
-                    disabled={!editable}
-                />
-            </Grid>
+                >
+                    <NumberFieldComponent
+                        label="Minimale Anzahl"
+                        value={element.minItems ?? undefined}
+                        onChange={(value) => {
+                            onPatch({
+                                minItems: value,
+                            });
+                        }}
+                        hint="Geben Sie 0 oder nichts ein, um keine Mindestanzahl zu fordern."
+                        error={minItemsError ? 'Die Mindestanzahl darf nicht größer als die Maximalanzahl sein.' : undefined}
+                        disabled={!editable}
+                    />
+                </Grid>
+            }
 
-            <Grid
-                size={{
-                    xs: 12,
-                    lg: 3,
-                }}
-            >
-                <NumberFieldComponent
-                    label="Maximale Anzahl"
-                    value={element.maxItems ?? undefined}
-                    onChange={(value) => {
-                        onPatch({
-                            maxItems: value,
-                        });
+            {
+                !hasSummaryLayoutParent &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 3,
                     }}
-                    hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
-                    error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
-                    disabled={!editable}
-                />
-            </Grid>
+                >
+                    <NumberFieldComponent
+                        label="Maximale Anzahl"
+                        value={element.maxItems ?? undefined}
+                        onChange={(value) => {
+                            onPatch({
+                                maxItems: value,
+                            });
+                        }}
+                        hint="Geben Sie 0 oder nichts ein, um keine Maximalanzahl zu fordern."
+                        error={maxItemsError ? 'Die Maximalanzahl darf nicht kleiner als die Mindestanzahl sein.' : undefined}
+                        disabled={!editable}
+                    />
+                </Grid>
+            }
 
             <Grid
                 size={{

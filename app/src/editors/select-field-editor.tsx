@@ -20,6 +20,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
         editable,
         onPatch,
         scope,
+        hasSummaryLayoutParent,
     } = props;
 
     const {
@@ -111,6 +112,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
 
             {
                 scope !== 'data_modelling' &&
+                !hasSummaryLayoutParent &&
                 <Grid
                     size={{
                         xs: 12,

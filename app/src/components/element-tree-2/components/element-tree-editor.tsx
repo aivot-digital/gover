@@ -17,6 +17,7 @@ import {ElementTreeEditorContentDispatcher} from './element-tree-editor-content-
 import {Actions} from '../../actions/actions';
 import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import {ElementType} from '../../../data/element-type/element-type';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -55,6 +56,10 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     const [updatedElement, setUpdatedElement] = useState<T>();
     const [isBusy, setIsBusy] = useState<boolean>(false);
+
+    const hasSummaryAsParent = useMemo(() => {
+        return parents.some(p => p.type === ElementType.SummaryLayout);
+    }, [parents]);
 
     // Reset the updated states when opening the editor
     useEffect(() => {
@@ -256,6 +261,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
                         {
                             ElementIsInput[value.type] &&
+                            !hasSummaryAsParent &&
                             <Tab
                                 label="Validierung"
                                 value={DefaultTabs.validation}
