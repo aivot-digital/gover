@@ -8,6 +8,9 @@ window.AppConfig = {
     api: {
         hostname: '/',
     },
+    registry: {
+        url: '',
+    },
     sentry: {
         dsn: '',
     },
