@@ -37,7 +37,7 @@ interface NoCodeEditorWrapperProps {
     contextType?: NoCodeOperandEditorContextType;
 }
 
-const new_editor = localStorage.getItem('new_editor') != null;
+const old_editor = localStorage.getItem('old_editor') != null;
 
 export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
     const {
@@ -50,7 +50,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         desiredReturnType,
         contextType = 'FORM',
     } = props;
-    const useNewEditor = new_editor || contextType === 'PROCESS';
+    const useNewEditor = !old_editor || contextType === 'PROCESS';
 
     const api = useApi();
     const dispatch = useAppDispatch();

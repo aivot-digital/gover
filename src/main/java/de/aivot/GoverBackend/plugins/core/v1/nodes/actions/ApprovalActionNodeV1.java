@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
@@ -165,6 +166,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         dataContentField.setRequired(true);
         dataContentField.setElementType(ElementType.SummaryLayout);
         dataContentField.setVisibility(buildModeVisibility(MODE_DATA));
+        dataContentField.setDisplayContext(ElementDisplayContext.StaffFacing);
         layout.addChild(dataContentField);
 
         var customContentField = new RichTextInputElement();

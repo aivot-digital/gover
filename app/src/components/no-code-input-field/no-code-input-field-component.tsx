@@ -1,17 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {
-    Box,
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    Typography,
-} from '@mui/material';
+import {Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {NoCodeEditorWrapper} from '../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
-import {
-    NoCodeInputFieldElementItem
-} from '../../models/elements/form/input/no-code-input-field-element';
+import {NoCodeInputFieldElementItem} from '../../models/elements/form/input/no-code-input-field-element';
 import {NoCodeDataType} from '../../data/no-code-data-type';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementType} from '../../data/element-type/element-type';
@@ -56,10 +46,10 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         onChange,
     } = props;
 
-    const isProcessConfigRoot = (rootElement as { type: ElementType }).type === ElementType.ConfigLayout;
-    const contextType: NoCodeOperandEditorContextType = isProcessConfigRoot
-        ? 'PROCESS'
-        : 'FORM';
+    const isFormLayout = (rootElement as { type: ElementType }).type === ElementType.FormLayout;
+    const contextType: NoCodeOperandEditorContextType = isFormLayout
+        ? 'FORM'
+        : 'PROCESS';
     const displayLabel = `${label}${required ? ' *' : ''}`;
 
     const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -68,7 +58,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
     const [isLoadingOperators, setIsLoadingOperators] = useState(false);
 
     useEffect(() => {
-        if (!isProcessConfigRoot) {
+        if (!isFormLayout) {
             return;
         }
 
@@ -82,7 +72,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
             .finally(() => {
                 setIsLoadingOperators(false);
             });
-    }, [api, dispatch, isProcessConfigRoot]);
+    }, [api, dispatch, isFormLayout]);
 
     const allElements = useMemo(() => {
         return flattenElementsWithParents(rootElement, [], true)
@@ -105,7 +95,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
     return (
         <>
             {
-                isProcessConfigRoot ? (
+                isFormLayout ? (
                     <>
                         <Box
                             sx={{
@@ -122,7 +112,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                             <Button
                                 variant="outlined"
                                 size="small"
-                                startIcon={<Edit />}
+                                startIcon={<Edit/>}
                                 sx={{ml: 'auto'}}
                                 disabled={disabled}
                                 onClick={() => {
@@ -150,7 +140,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                             {
                                 isLoadingOperators &&
                                 value?.noCode != null &&
-                                <CircularProgress size={14} />
+                                <CircularProgress size={14}/>
                             }
 
                             <Typography
@@ -194,7 +184,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                             </DialogTitleWithClose>
 
                             <DialogContent>
-                                <Box  sx={{pt: 2, pb: 3}}>
+                                <Box sx={{pt: 2, pb: 3}}>
                                     <NoCodeEditorWrapper
                                         parents={[rootElement]}
                                         noCode={draftNoCode}
