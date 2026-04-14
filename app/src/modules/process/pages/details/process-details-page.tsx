@@ -78,6 +78,7 @@ import {ProcessNodeProblems} from '../../entities/process-node-problems';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {generateId} from '../../../../utils/id-utils';
+import {PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY} from './components/process-node-editor/process-node-editor-change-blocker';
 
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
@@ -1148,7 +1149,14 @@ export function ProcessDetailsPage(): ReactNode {
         });
 
         if (selectedNode?.id === node.id) {
-            await navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`);
+            await navigate(
+                `/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}`,
+                {
+                    state: {
+                        [PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY]: true,
+                    },
+                },
+            );
         }
     };
 

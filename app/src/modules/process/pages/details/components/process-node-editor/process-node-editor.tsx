@@ -34,6 +34,7 @@ import {downloadObjectFile} from '../../../../../../utils/download-utils';
 import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
+import {shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -93,6 +94,7 @@ export function ProcessNodeEditor(): ReactNode {
     } = useChangeBlocker({
         original: originalNode,
         edited: editedNode,
+        shouldAllowNavigation: ({nextLocation}) => shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
     });
 
     useEffect(() => {

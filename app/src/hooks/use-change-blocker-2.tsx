@@ -10,6 +10,18 @@ interface ChangeBlockerProps<T> {
     customMessage?: string;
     useDeepEquals?: boolean;
     isActive?: boolean;
+    shouldAllowNavigation?: (navigation: {
+        currentLocation: {
+            pathname: string;
+            search: string;
+            state: unknown;
+        };
+        nextLocation: {
+            pathname: string;
+            search: string;
+            state: unknown;
+        };
+    }) => boolean;
 }
 
 const DEFAULT_TITLE = 'Ungespeicherte Änderungen';
@@ -23,6 +35,7 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         customMessage = DEFAULT_MESSAGE,
         useDeepEquals = true,
         isActive = true,
+        shouldAllowNavigation,
     } = props;
 
     const hasChanged = useMemo(() => {
@@ -42,6 +55,10 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
     const [showDialog, setShowDialog] = useState(false);
 
     const blocker = useBlocker(({currentLocation, nextLocation}) => {
+        if (shouldAllowNavigation?.({currentLocation, nextLocation}) === true) {
+            return false;
+        }
+
         // Check if only the hash is changing
         if (currentLocation.pathname === nextLocation.pathname &&
             currentLocation.search === nextLocation.search) {
