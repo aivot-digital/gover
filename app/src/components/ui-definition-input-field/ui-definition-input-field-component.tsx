@@ -150,21 +150,21 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     const clone = cloneElement(element);
 
                     const updatedChildren = [
-                        ...currentElement.children
+                        ...currentElement.children,
                     ];
                     updatedChildren.splice(clonedChildIndex, 0, clone);
                     dispatch(showSuccessSnackbar(`${generateComponentTitle(element)} wurde erfolgreich dupliziert.`));
                     return {
                         ...currentElement,
                         children: updatedChildren,
-                    }
+                    };
                 } else {
                     return {
                         ...currentElement,
                         children: currentElement
                             .children
                             .map(child => cloneElementRecursive(child)),
-                    }
+                    };
                 }
             } else {
                 return currentElement;
@@ -252,22 +252,12 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         summary={`Modellieren Sie eine UI-Struktur mit einem Element vom Typ ${expectedRootTypeLabel} als Basis.`}
                         detailsTitle="UI-Definition"
                         details={
-                            <>
-                                <Typography>
-                                    Diese UI-Definition bildet ein Layout-Element vom
-                                    Typ <strong>{expectedRootTypeLabel}</strong> ab.
-                                    Über den Editor können Sie die Struktur der UI-Definition anpassen, um die
-                                    gewünschte Benutzeroberfläche zu erstellen.
-                                </Typography>
-                                <Typography
-                                    mt={1}
-                                >
-                                    Als Basis beziehungsweise Wurzel wird ein Element vom
-                                    Typ <strong>{expectedRootTypeLabel}</strong> verwendet.
-                                    Sie können beliebig viele weitere Elemente als Kind-Elemente der Basis hinzufügen,
-                                    um die UI-Definition zu erweitern.
-                                </Typography>
-                            </>
+                            <Typography>
+                                Diese UI-Definition bildet ein Layout-Element vom
+                                Typ <strong>{expectedRootTypeLabel}</strong> ab.
+                                Über den Editor können Sie die Struktur der UI-Definition anpassen, um die
+                                gewünschte Benutzeroberfläche zu erstellen.
+                            </Typography>
                         }
                     />
                 }
@@ -338,7 +328,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                             cloneElement: handleCloneElement,
                                             navigateToElementEditor: handleNavigateToElementEditor,
                                             highlightElementInTree: handleHighlightElementInTree,
-                                            editable: !(disabled ?? false)
+                                            editable: !(disabled ?? false),
                                         }}
                                     >
                                         <ElementDerivationContext
