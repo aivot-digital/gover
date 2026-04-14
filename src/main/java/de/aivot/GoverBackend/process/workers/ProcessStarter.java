@@ -2,11 +2,13 @@ package de.aivot.GoverBackend.process.workers;
 
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
-import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.EnableScheduling;
@@ -16,6 +18,8 @@ import org.springframework.stereotype.Service;
 @Service
 @EnableScheduling
 public class ProcessStarter {
+    private final Logger logger = LoggerFactory.getLogger(ProcessStarter.class);
+
     private final ProcessInstanceRepository processInstanceRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ProcessRepository processDefinitionRepository;
@@ -38,8 +42,10 @@ public class ProcessStarter {
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
-    @Scheduled(fixedRate = 1000 * 10) // every 10 seconds
+    @Scheduled(fixedRate = 1000 * 5) // every 5 seconds
     public void startProcesses() {
+        logger.info("Suche nach neuen Prozessen zum Starten...");
+
         var allUnstartedProcesses = processInstanceRepository
                 .findAllByStatus(ProcessInstanceStatus.Created);
 
