@@ -172,7 +172,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     return;
                 }
 
-                navigate('/tasks');
+                setTaskInputDataSaveState('saved');
+                setTimeout(() => {
+                    navigate('/tasks');
+                }, 1);
             })
             .catch((err) => {
                 if (isApiError(err) && isDerivedRuntimeElementData(err.details)) {
