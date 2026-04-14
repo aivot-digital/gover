@@ -21,6 +21,7 @@ import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
@@ -191,18 +192,20 @@ class ProcessWorkerTest {
             return "Test node";
         }
 
+        @Nonnull
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
         }
 
+        @Nonnull
         @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
         }
 
         @Override
-        public ProcessNodeExecutionResult init(ProcessNodeExecutionContextInit context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
             throw new RuntimeException("init failure");
         }
     }

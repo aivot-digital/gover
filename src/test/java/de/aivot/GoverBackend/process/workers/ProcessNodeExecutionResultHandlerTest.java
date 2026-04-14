@@ -22,6 +22,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
@@ -378,18 +379,20 @@ class ProcessNodeExecutionResultHandlerTest {
             return "Test provider";
         }
 
+        @Nonnull
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
         }
 
+        @Nonnull
         @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
         }
 
         @Override
-        public ProcessNodeExecutionResult init(ProcessNodeExecutionContextInit context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
             throw new UnsupportedOperationException("Not used in this test");
         }
     }

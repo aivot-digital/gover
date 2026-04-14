@@ -29,6 +29,7 @@ import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.process.services.TaskViewMultipartInputService;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
@@ -309,35 +310,39 @@ class CitizenProcessInstanceTaskViewControllerTest {
             return "Customer task test provider";
         }
 
+        @Nonnull
         @Override
         public ProcessNodeType getType() {
             return ProcessNodeType.Action;
         }
 
+        @Nonnull
         @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
         }
 
         @Override
-        public ProcessNodeExecutionResult init(ProcessNodeExecutionContextInit context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
             throw new UnsupportedOperationException("Not used in this test");
         }
 
+        @Nonnull
         @Override
-        public GroupLayoutElement getCustomerTaskView(ProcessNodeExecutionContextUICustomer context) {
+        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) {
             var layout = new GroupLayoutElement();
             layout.setId("customer-root");
             return layout;
         }
 
+        @Nonnull
         @Override
-        public List<TaskViewEvent> getCustomerTaskViewEvents(ProcessNodeExecutionContextUICustomer context) {
+        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer context) {
             return List.of(new TaskViewEvent("Submit", "submit"));
         }
 
         @Override
-        public AuthoredElementValues getCustomerTaskViewData(ProcessNodeExecutionContextUICustomer context) {
+        public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
             var persistedData = new AuthoredElementValues();
             persistedData.put("field", "persisted");
             return persistedData;
