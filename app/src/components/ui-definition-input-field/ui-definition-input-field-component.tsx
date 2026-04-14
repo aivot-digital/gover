@@ -264,8 +264,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 >
                                     Als Basis beziehungsweise Wurzel wird ein Element vom
                                     Typ <strong>{expectedRootTypeLabel}</strong> verwendet.
-                                    Sie können beliebig viele weitere Elemente als Kind-Elemente der Basis hinzufüge um
-                                    die UI-Definition zu erweitern.
+                                    Sie können beliebig viele weitere Elemente als Kind-Elemente der Basis hinzufügen,
+                                    um die UI-Definition zu erweitern.
                                 </Typography>
                             </>
                         }
