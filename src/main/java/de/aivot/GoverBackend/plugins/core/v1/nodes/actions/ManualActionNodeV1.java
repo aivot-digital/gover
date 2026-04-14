@@ -308,7 +308,12 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                   @Nonnull AuthoredElementValues update,
-                                                                  @Nonnull String event) throws ResponseException {
+                                                                  @Nullable String event) throws ResponseException {
+        // TODO: Save to runtime data
+        if (event == null) {
+            return Optional.empty();
+        }
+
         if (!EVENT_CONFIRM.equals(event)) {
             throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         }

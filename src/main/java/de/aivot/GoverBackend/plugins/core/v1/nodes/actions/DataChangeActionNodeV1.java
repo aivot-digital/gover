@@ -292,7 +292,12 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                   @Nonnull AuthoredElementValues update,
-                                                                  @Nonnull String event) throws ResponseException {
+                                                                  @Nullable String event) throws ResponseException {
+        if (event == null) {
+            // TODO: Save to runtime data
+            return Optional.empty();
+        }
+
         var config = loadConfigurationForUi(context);
 
         return switch (event) {
