@@ -2,6 +2,9 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {AppInfo} from '../../../app-info';
 import {ProcessExport} from '../entities/process-export';
 
+const DEV = import.meta.env.DEV;
+const REG = AppConfigV2.registryHostname;
+
 export interface TemplateRegistryIndex {
     processes: TemplateRegistryProcessItem[];
     nodes: TemplateRegistryNodeItem[];
@@ -25,25 +28,27 @@ export interface TemplateRegistryNodeItem {
     appBuildNumber: string;
 }
 
-function getRegistryURL(path: string): string {
-    if (isStringNullOrEmpty(AppConfig.registry.url)) {
-        return '';
+function getRegistryURL(path: string): string | null {
+    if (isStringNullOrEmpty(REG)) {
+        return null;
     }
 
-    if (AppConfig.registry.url.endsWith('/')) {
-        return AppConfig.registry.url + path;
+    if (REG.endsWith('/')) {
+        return REG + path;
     }
 
-    return AppConfig.registry.url + '/' + path;
+    return REG + '/' + path;
 }
 
 export class ProcessTemplatesService  {
     public async getProcessTemplates(): Promise<TemplateRegistryProcessItem[]> {
-        if (isStringNullOrEmpty(AppConfig.registry.url)) {
+        const url = getRegistryURL('index.json');
+
+        if (url == null) {
             return [];
         }
 
-        const res = await fetch(getRegistryURL('index.json'), {
+        const res = await fetch(url, {
             method: 'GET',
         });
 
@@ -51,15 +56,17 @@ export class ProcessTemplatesService  {
 
         return registryIndex
             .processes
-            .filter(p => p.appVersion === AppInfo.version);
+            .filter(p => DEV || p.appVersion === AppInfo.version);
     }
 
-    public async loadTemplate(template: TemplateRegistryProcessItem): Promise<ProcessExport> {
-        if (isStringNullOrEmpty(AppConfig.registry.url)) {
-            throw new Error('Registry URL is not configured');
+    public async loadTemplate(template: TemplateRegistryProcessItem): Promise<ProcessExport | null> {
+        const url = getRegistryURL(template.path);
+
+        if (url == null) {
+            return Promise.resolve(null);
         }
 
-        const res = await fetch(getRegistryURL(template.path), {
+        const res = await fetch(url, {
             method: 'GET',
         });
 

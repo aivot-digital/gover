@@ -3,7 +3,7 @@ import DialogContent from '@mui/material/DialogContent';
 import {type ProcessEntity} from '../entities/process-entity';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import Stepper from '@mui/material/Stepper';
-import {Box, Button, Grid, Step, StepLabel, type SvgIconProps, type SxProps} from '@mui/material';
+import {Box, Button, Grid, Step, StepLabel, type SvgIconProps, type SxProps, Tooltip} from '@mui/material';
 import React, {type FC, type ReactNode, useEffect, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
@@ -295,6 +295,9 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                                 new ProcessTemplatesService()
                                                     .loadTemplate(preset)
                                                     .then((templateData) => {
+                                                        if (templateData == null) {
+                                                            return;
+                                                        }
                                                         setSelectedTemplateData(templateData);
                                                         setActiveStep(1);
                                                     });
@@ -490,15 +493,22 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
                     {title}
                 </Typography>
 
-                <Typography
-                    variant="body2"
-                    color="textSecondary"
-                    sx={{
-                        mb: 'auto',
-                    }}
-                >
-                    {description}
-                </Typography>
+                <Tooltip title={description}>
+                    <Typography
+                        variant="body2"
+                        color="textSecondary"
+                        sx={{
+                            mb: 'auto',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            display: '-webkit-box',
+                            WebkitLineClamp: '2',
+                            WebkitBoxOrient: 'vertical',
+                        }}
+                    >
+                        {description}
+                    </Typography>
+                </Tooltip>
             </Button>
         </Grid>
     );

@@ -197,6 +197,7 @@ gover:
   contentTypes: "${GOVER_CONTENT_TYPES}"
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
+  registryHostname: "${GOVER_TEMPLATE_REGISTRY_URL:}"
 
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:

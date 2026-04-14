@@ -16,6 +16,8 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,7 +47,7 @@ public class SystemController {
         this.knownExtensionsService = knownExtensionsService;
     }
 
-    private static final String KNOWN_EXTENSIONS_CONFIG_KEY = "knownExtensions";
+    private static final String KNOWN_EXTENSIONS_CONFIG_KEY = "knownFileExtensions";
     private static final String PROVIDER_NAME_CONFIG_KEY = "providerName";
     private static final String SYSTEM_THEME_CONFIG_KEY = "systemTheme";
     private static final String PUBLIC_SYSTEM_CONFIGS_CONFIG_KEY = "systemConfigs";
@@ -56,7 +58,7 @@ public class SystemController {
     private static final String SENTRY_DSN = "sentryDsn";
 
     @GetMapping("app-config.js")
-    public String getAppConfigJs() throws ResponseException {
+    public ResponseEntity<String> getAppConfigJs() throws ResponseException {
         var appConfig = new HashMap<String, Object>();
 
         var systemTheme = getSystemTheme();
@@ -95,7 +97,14 @@ public class SystemController {
             throw ResponseException.internalServerError(e);
         }
 
-        return "window.AppConfig = " + configJson + ";";
+        var content = "window.AppConfigV2 = " + configJson + ";";
+
+        // Do not declare `produces` on this handler. The global MVC configuration defaults
+        // request negotiation to JSON, which would otherwise make this JS endpoint unroutable.
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.parseMediaType("text/javascript"))
+                .body(content);
     }
 
     @Deprecated
