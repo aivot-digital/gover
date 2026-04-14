@@ -52,15 +52,13 @@ export function ElementEditorMetadataTab<T extends AnyElement, E extends Element
                     if (linkedIdentityProvidersKeys.length === 0) {
                         return new Promise<Page<IdentityProviderListDTO>>(resolve => {
                             resolve({
-                                empty: true,
-                                first: true,
-                                last: true,
-                                number: 0,
-                                numberOfElements: 0,
-                                size: 0,
-                                totalElements: 0,
-                                totalPages: 0,
                                 content: [],
+                                page: {
+                                    number: 0,
+                                    size: 0,
+                                    totalElements: 0,
+                                    totalPages: 0,
+                                },
                             });
                         });
                     }

@@ -69,11 +69,11 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     // Establish the row count as a ref to avoid the data grid from resetting to page 0 if the total number of items is temporarily undefined
     const rowCountBuffer = useRef<number>(0);
     const rowCount = useMemo(() => {
-        if (items?.totalElements != null) {
-            rowCountBuffer.current = items.totalElements;
+        if (items?.page.totalElements != null) {
+            rowCountBuffer.current = items.page.totalElements;
         }
         return rowCountBuffer.current;
-    }, [items?.totalElements]);
+    }, [items?.page.totalElements]);
 
     // Ref to the current abort controller to cancel ongoing fetch requests when a new one is started
     const abortControllerRef = useRef<AbortController | null>(null);

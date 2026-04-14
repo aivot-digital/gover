@@ -3,6 +3,7 @@ import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-dat
 import {BaseApiService} from '../../services/base-api-service';
 import {DataObjectSchema} from '../../modules/data-objects/models/data-object-schema';
 import {Page} from '../../models/dtos/page';
+import {listAllPages} from '../../utils/page-utils';
 
 export interface DataModelSelectOption {
     key: string;
@@ -77,24 +78,4 @@ export async function loadDataModelSelectOptions(forceReload: boolean = false): 
 
     cachedOptionsPromise = promise;
     return promise;
-}
-
-async function listAllPages<T>(
-    fetchPage: (page: number) => Promise<{
-        content: T[];
-        last: boolean;
-    }>,
-): Promise<T[]> {
-    const items: T[] = [];
-    let currentPage = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-        const response = await fetchPage(currentPage);
-        items.push(...response.content);
-        hasMore = !response.last;
-        currentPage += 1;
-    }
-
-    return items;
 }

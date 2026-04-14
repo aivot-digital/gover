@@ -26,6 +26,7 @@ import {FormStatus} from '../enums/form-status';
 import {ElementType} from '../../../data/element-type/element-type';
 import {FormApiService} from '../services/form-api-service';
 import {FormVersionEntity, isFormVersionEntity} from '../entities/form-version-entity';
+import {isNotLastPage} from '../../../utils/page-utils';
 
 
 export interface FormRevisionsDialogProps {
@@ -56,7 +57,7 @@ async function fetchRevisions(form: LoadedForm, lastPage: Page<Revision> | undef
     }, {
         queryParams: {
             limit: 10,
-            page: lastPage == null ? 0 : (lastPage.number + 1),
+            page: lastPage == null ? 0 : (lastPage.page.number + 1),
         },
     });
 
@@ -358,7 +359,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
                                         }
 
                                         {
-                                            (currentRevisionsPage?.last !== true ||
+                                            (currentRevisionsPage != null && isNotLastPage(currentRevisionsPage) ||
                                                 index < revisions.length - 1) &&
                                             (form?.version.status === FormStatus.Drafted) &&
                                             <Box
@@ -387,7 +388,7 @@ export function FormRevisionsDialog(props: FormRevisionsDialogProps) {
 
                     {
                         currentRevisionsPage != null &&
-                        currentRevisionsPage.last === false &&
+                        isNotLastPage(currentRevisionsPage) &&
                         isLoadingRevisions === false &&
                         <Button
                             variant="contained"

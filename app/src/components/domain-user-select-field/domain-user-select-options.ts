@@ -11,6 +11,8 @@ import {
     DomainAndUserSelectItemType,
 } from '../../models/elements/form/input/domain-user-select-field-element';
 import {ProcessInstanceAccessControlApiService} from '../../modules/process/services/process-instance-access-control-api-service';
+import {Page} from '../../models/dtos/page';
+import {listAllPages} from '../../utils/page-utils';
 
 export type DomainAndUserSelectOptionGroup = 'Organisationseinheiten' | 'Teams' | 'Mitarbeitende' | 'Ausgewählt';
 
@@ -324,24 +326,4 @@ async function loadAllDomainAndUserSelectOptions(forceReload: boolean = false): 
 
     cachedOptionsPromise = promise;
     return promise;
-}
-
-async function listAllPages<T>(
-    fetchPage: (page: number) => Promise<{
-        content: T[];
-        last: boolean;
-    }>,
-): Promise<T[]> {
-    const items: T[] = [];
-    let currentPage = 0;
-    let hasMore = true;
-
-    while (hasMore) {
-        const response = await fetchPage(currentPage);
-        items.push(...response.content);
-        hasMore = !response.last;
-        currentPage += 1;
-    }
-
-    return items;
 }

@@ -3,6 +3,7 @@ import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-objec
 import {BaseApiService} from '../../services/base-api-service';
 import {DataObjectItem} from '../../modules/data-objects/models/data-object-item';
 import {Page} from '../../models/dtos/page';
+import {listAllPages} from '../../utils/page-utils';
 
 export interface DataObjectSelectOption {
     key: string;
@@ -147,22 +148,4 @@ async function loadDataObjectItems(
     return promise;
 }
 
-async function listAllPages<T>(
-    fetchPage: (page: number) => Promise<{
-        content: T[];
-        last: boolean;
-    }>,
-): Promise<T[]> {
-    const items: T[] = [];
-    let currentPage = 0;
-    let hasMore = true;
 
-    while (hasMore) {
-        const response = await fetchPage(currentPage);
-        items.push(...response.content);
-        hasMore = !response.last;
-        currentPage += 1;
-    }
-
-    return items;
-}

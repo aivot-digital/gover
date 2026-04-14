@@ -54,14 +54,12 @@ export function DepartmentsDetailsPageMembers() {
             // we return an already resolved promise with an empty page instead of hitting the API with no department id.
             return Promise.resolve({
                 content: [],
-                empty: true,
-                first: true,
-                last: true,
-                number: 0,
-                numberOfElements: 0,
-                size: options.size,
-                totalElements: 0,
-                totalPages: 0,
+                page: {
+                    number: 0,
+                    size: options.size,
+                    totalElements: 0,
+                    totalPages: 0,
+                },
             });
         }
 

@@ -51,14 +51,12 @@ export function TeamsDetailsPageMembers() {
         if (item == null) {
             const p: Page<VTeamMembershipWithDetailsEntity> = {
                 content: [],
-                empty: false,
-                first: false,
-                last: false,
-                number: 0,
-                numberOfElements: 0,
-                size: 0,
-                totalElements: 0,
-                totalPages: 0
+                page: {
+                    number: 0,
+                    totalPages: 0,
+                    size: 0,
+                    totalElements: 0,
+                },
             };
             return Promise.resolve(p);
         }

@@ -562,7 +562,7 @@ export function RootComponentEditorTabPayment(props: BaseEditorProps<RootElement
         return EditorSkeleton;
     }
 
-    if (availablePaymentProviders.size === 0) {
+    if (availablePaymentProviders.page.size === 0) {
         return (
             <>
                 <ElementEditorSectionHeader

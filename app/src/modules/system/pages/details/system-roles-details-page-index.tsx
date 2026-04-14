@@ -141,7 +141,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     return;
                 }
 
-                setAssignedUsersCount(page.totalElements);
+                setAssignedUsersCount(page.page.totalElements);
             })
             .catch((err) => {
                 if (isCancelled) {

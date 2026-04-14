@@ -189,14 +189,12 @@ export function AssetListPage() {
                     if (parsedStorageProviderId == null) {
                         return Promise.resolve({
                             content: [] as VStorageIndexItemWithAssetEntity[],
-                            last: true,
-                            totalElements: 0,
-                            totalPages: 0,
-                            size: options.size,
-                            number: options.page,
-                            first: true,
-                            numberOfElements: 0,
-                            empty: true,
+                            page: {
+                                size: options.size,
+                                number: options.page,
+                                totalElements: 0,
+                                totalPages: 0,
+                            },
                         });
                     }
 
@@ -224,14 +222,12 @@ export function AssetListPage() {
 
                             return {
                                 content: pageItems,
-                                last: end >= totalElements,
-                                totalElements: totalElements,
-                                totalPages: totalPages,
-                                size: options.size,
-                                number: options.page,
-                                first: options.page === 0,
-                                numberOfElements: pageItems.length,
-                                empty: pageItems.length === 0,
+                                page: {
+                                    size: options.size,
+                                    number: options.page,
+                                    totalElements: totalElements,
+                                    totalPages: totalPages,
+                                },
                             };
                         });
                 }}
