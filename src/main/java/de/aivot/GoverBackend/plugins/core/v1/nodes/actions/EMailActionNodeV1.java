@@ -33,6 +33,7 @@ import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
 import org.commonmark.node.Node;
 import org.commonmark.parser.Parser;
@@ -356,6 +357,10 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        var savedData = context
+                .getThisTask()
+                .getRuntimeData();
+
         EMailActionNodeConfig config;
         try {
             config = ElementPOJOMapper
@@ -369,18 +374,24 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
 
         var authoredValues = new AuthoredElementValues();
 
-        var subject = templateRenderService
-                .interpolate(
-                        context.getProcessData(),
-                        config.manualContent.subject
-                );
+        var subject = savedData.get(STAFF_TASK_SUBJECT_FIELD_ID);
+        if (subject == null) {
+            subject = templateRenderService
+                    .interpolate(
+                            context.getProcessData(),
+                            config.manualContent.subject
+                    );
+        }
         authoredValues.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
 
-        var content = templateRenderService
-                .interpolate(
-                        context.getProcessData(),
-                        config.manualContent.content
-                );
+        var content = savedData.get(STAFF_TASK_CONTENT_FIELD_ID);
+        if (content == null) {
+            content = templateRenderService
+                    .interpolate(
+                            context.getProcessData(),
+                            config.manualContent.content
+                    );
+        }
         authoredValues.put(STAFF_TASK_CONTENT_FIELD_ID, content);
 
         return authoredValues;
@@ -402,7 +413,13 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                   @Nonnull AuthoredElementValues update,
-                                                                  @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
+                                                                  @Nullable String event) throws ResponseException, ProcessNodeExecutionException {
+        if (event == null) {
+            var result = new ProcessNodeExecutionResultTaskUpdated()
+                    .setRuntimeData(update);
+            return Optional.of(result);
+        }
+
         if (!event.equals(STAFF_TASK_SEND_EVENT)) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
