@@ -468,32 +468,6 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AuthoredElementValues configuration,
-                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
-        var res = new HashMap<String, String>();
-
-        var slug = StringUtils.toNullableTrimmedString(configuration.get(WebhookTriggerConfigV1.SLUG_CONFIG_KEY));
-        var slugState = derivedRuntimeElementData.getElementStates().get(WebhookTriggerConfigV1.SLUG_CONFIG_KEY);
-
-        var spec = SpecificationBuilder
-                .create(ProcessNodeEntity.class)
-                .withNotEquals("processId", processNodeEntity.getProcessId())
-                .withJsonEquals("configuration", List.of(WebhookTriggerConfigV1.SLUG_CONFIG_KEY), slug)
-                .build();
-        var otherExists = processDefinitionNodeRepository
-                .exists(spec);
-
-        if (otherExists) {
-            var errorMessage = String.format("Der Webhook-Slug %s wird bereits von einem anderen Webhook verwendet. Bitte wählen Sie einen eindeutigen Slug.", slug);
-            slugState.setError(errorMessage);
-            res.put(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, errorMessage);
-        }
-
-        return res.isEmpty() ? null : res;
-    }
-
-    @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var config = getWebhookTriggerConfig(context.getConfiguration().getEffectiveValues());
 
