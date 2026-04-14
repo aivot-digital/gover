@@ -20,7 +20,6 @@ import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -112,7 +111,7 @@ public class ProviderLinkController {
         return providerLinkService
                 .retrieve(id)
                 .map(ProviderLinkResponseDTO::fromEntity)
-                .orElseThrow(ResourceNotFoundException::new);
+                .orElseThrow(ResponseException::notFound);
     }
 
     @PutMapping("{id}/")
