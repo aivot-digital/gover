@@ -397,12 +397,6 @@ export function AssetDetailsPageIndex() {
                         Dateiinformationen
                     </Typography>
 
-                    <Typography sx={{mb: 2, maxWidth: 900}}>
-                        {isStorageReadOnly
-                            ? 'Der Speicheranbieter ist schreibgeschützt. Sie können den Dateiinhalt nicht ersetzen, aber den öffentlichen Zugriff (Privatsphäre) weiterhin anpassen.'
-                            : 'Ersetzen Sie optional die Datei, bearbeiten Sie Datenschutzangaben und aktualisieren Sie Metadaten unabhängig vom Dateiinhalt.'}
-                    </Typography>
-
                     <StatusTable
                         sx={{
                             mt: 3,

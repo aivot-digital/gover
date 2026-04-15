@@ -283,6 +283,10 @@ export function AssetDetailsPage() {
             icon: <SwapHoriz/>,
             tooltip: 'Datei ersetzen',
             onClick: () => setIsReplaceDialogOpen(true),
+            disabled: !canRenameAsset,
+            disabledTooltip: storageProviderReadOnly
+                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht ersetzt werden.'
+                : 'Die Datei muss zuerst gespeichert werden, bevor sie ersetzt werden kann.',
         },
         'separator',
         {
