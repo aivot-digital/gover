@@ -223,6 +223,7 @@ public class ElementDerivationService {
                         elementState,
                         logger
                 );
+                effectiveValue = inputElement.formatValue(effectiveValue);
                 effectiveElementValues.put(currentElement.getId(), effectiveValue);
 
                 var err = deriveError(
