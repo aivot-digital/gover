@@ -1,13 +1,16 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.models.lib.DiffItem;
+import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -19,6 +22,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
@@ -30,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,7 +61,11 @@ class DataChangeActionNodeV1Test {
     @BeforeEach
     void setUp() {
         assigneeResolverService = new TestAssignmentContextAssigneeResolverService();
-        node = new DataChangeActionNodeV1(assigneeResolverService, new ElementDataTransformService());
+        node = new DataChangeActionNodeV1(
+                assigneeResolverService,
+                new ElementDataTransformService(),
+                derivationService()
+        );
     }
 
     @Test
@@ -115,10 +123,7 @@ class DataChangeActionNodeV1Test {
 
         assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
         assertEquals(
-                List.of(
-                        new TaskViewEvent("Speichern", "save"),
-                        new TaskViewEvent("Speichern und abschließen", "complete", "outlined", null, "right")
-                ),
+                List.of(new TaskViewEvent("Aufgabe abschließen", "complete")),
                 node.getStaffTaskViewEvents(context)
         );
 
@@ -182,6 +187,40 @@ class DataChangeActionNodeV1Test {
         assertEquals(Map.of("existing", "node-data"), assigned.getNodeData());
 
         var draftData = assigned.getRuntimeData().get("draftData");
+        assertNotNull(draftData);
+        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
+    }
+
+    @Test
+    void onUpdateFromStaff_WithoutEventPersistsDraftInRuntimeData() throws Exception {
+        var result = node.onUpdateFromStaff(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration()),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of("keep", "value"),
+                                Map.of("existing", "node-data"),
+                                Map.of("applicant", Map.of("name", "Ada"))
+                        ),
+                        null,
+                        user("staff-1"),
+                        runtime(configuration()),
+                        null
+                ),
+                authored("applicantName", "Grace"),
+                null
+        );
+
+        assertTrue(result.isPresent());
+
+        var updated = assertInstanceOf(ProcessNodeExecutionResultTaskUpdated.class, result.get());
+        assertEquals("value", updated.getRuntimeData().get("keep"));
+        assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
+        assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
+
+        var draftData = updated.getRuntimeData().get("draftData");
         assertNotNull(draftData);
         assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
     }
@@ -269,6 +308,14 @@ class DataChangeActionNodeV1Test {
                 .setPreferProcessInstanceAssignee(false);
     }
 
+    private static ElementDerivationService derivationService() {
+        return new ElementDerivationService(
+                new JavascriptEngineFactoryService(List.of()),
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService()
+        );
+    }
+
     private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {
         return new ProcessNodeEntity()
                 .setId(NODE_ID)
@@ -283,7 +330,7 @@ class DataChangeActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -306,7 +353,7 @@ class DataChangeActionNodeV1Test {
             Map<String, Object> nodeData,
             Map<String, Object> processData
     ) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)

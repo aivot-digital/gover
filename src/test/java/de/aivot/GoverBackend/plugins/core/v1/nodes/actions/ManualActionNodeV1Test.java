@@ -1,13 +1,16 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.models.lib.DiffItem;
+import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -19,6 +22,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
@@ -30,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -57,7 +61,11 @@ class ManualActionNodeV1Test {
     @BeforeEach
     void setUp() {
         assigneeResolverService = new TestAssignmentContextAssigneeResolverService();
-        node = new ManualActionNodeV1(assigneeResolverService, new ElementDataTransformService());
+        node = new ManualActionNodeV1(
+                assigneeResolverService,
+                new ElementDataTransformService(),
+                derivationService()
+        );
     }
 
     @Test
@@ -100,6 +108,51 @@ class ManualActionNodeV1Test {
     }
 
     @Test
+    void getStaffTaskViewData_LoadsSavedDraftFromRuntimeData() throws Exception {
+        var context = new ProcessNodeExecutionContextUIStaff(
+                logger(),
+                processNode(configuration()),
+                processInstance("process-owner"),
+                task(
+                        77,
+                        Map.of(
+                                "draftData",
+                                authored(
+                                        "applicantName", "Grace",
+                                        "manualActionRemark", "<p>Entwurf gespeichert.</p>"
+                                )
+                        ),
+                        Map.of(),
+                        Map.of("applicant", Map.of("name", "Ada"))
+                ),
+                null,
+                user("staff-1"),
+                runtime(configuration()),
+                null
+        );
+
+        var layout = node.getStaffTaskView(context);
+        var description = layout.findChild("manual-action-description-content", RichTextContentElement.class).orElseThrow();
+        var dataField = layout.findChild("applicantName", TextInputElement.class).orElseThrow();
+        var remarkField = layout.findChild("manualActionRemark", RichTextInputElement.class).orElseThrow();
+
+        assertEquals("<p>Bitte führen Sie die Prüfung vor Ort durch.</p>", description.getContent());
+        assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
+        assertTrue(layout.findChild("manual-action-remark-spacer").isPresent());
+        assertTrue(Boolean.TRUE.equals(remarkField.getReducedMode()));
+        assertEquals(6.0, remarkField.getWeight());
+        assertTrue(layout.findChild("manual-action-actions-spacer").isPresent());
+        assertEquals(
+                List.of(new TaskViewEvent("Aufgabe abschließen", "complete")),
+                node.getStaffTaskViewEvents(context)
+        );
+
+        var data = node.getStaffTaskViewData(context);
+        assertEquals("Grace", data.get("applicantName"));
+        assertEquals("<p>Entwurf gespeichert.</p>", data.get("manualActionRemark"));
+    }
+
+    @Test
     void getStaffTaskView_RendersConfiguredDescriptionAndUi() throws Exception {
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger(),
@@ -128,17 +181,10 @@ class ManualActionNodeV1Test {
         assertTrue(Boolean.TRUE.equals(remarkField.getReducedMode()));
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("manual-action-actions-spacer").isPresent());
-        assertEquals(
-                List.of(new TaskViewEvent("Aufgabe bestätigen", "confirm")),
-                node.getStaffTaskViewEvents(context)
-        );
-
-        var data = node.getStaffTaskViewData(context);
-        assertEquals("Ada", data.get("applicantName"));
     }
 
     @Test
-    void onUpdateFromStaff_ConfirmMergesProcessDataAndStoresRemarkAndDiff() throws Exception {
+    void onUpdateFromStaff_SaveKeepsTaskRunningAndPersistsDraft() throws Exception {
         var result = node.onUpdateFromStaff(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
@@ -147,6 +193,88 @@ class ManualActionNodeV1Test {
                         task(
                                 77,
                                 Map.of(),
+                                Map.of("existing", "node-data"),
+                                Map.of("applicant", Map.of("name", "Ada"))
+                        ),
+                        null,
+                        user("staff-1"),
+                        runtime(configuration()),
+                        null
+                ),
+                authored(
+                        "applicantName", "Grace",
+                        "manualActionRemark", "<p>Entwurf gespeichert.</p>"
+                ),
+                "save"
+        );
+
+        assertTrue(result.isPresent());
+
+        var assigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result.get());
+        assertEquals("staff-1", assigned.getAssignedUserId());
+        assertEquals(Map.of("applicant", Map.of("name", "Ada")), assigned.getProcessData());
+        assertEquals(Map.of("existing", "node-data"), assigned.getNodeData());
+
+        var draftData = assigned.getRuntimeData().get("draftData");
+        assertNotNull(draftData);
+        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
+        assertEquals("<p>Entwurf gespeichert.</p>", ((Map<?, ?>) draftData).get("manualActionRemark"));
+    }
+
+    @Test
+    void onUpdateFromStaff_WithoutEventPersistsDraftInRuntimeData() throws Exception {
+        var result = node.onUpdateFromStaff(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration()),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of("keep", "value"),
+                                Map.of("existing", "node-data"),
+                                Map.of("applicant", Map.of("name", "Ada"))
+                        ),
+                        null,
+                        user("staff-1"),
+                        runtime(configuration()),
+                        null
+                ),
+                authored(
+                        "applicantName", "Grace",
+                        "manualActionRemark", "<p>Entwurf gespeichert.</p>"
+                ),
+                null
+        );
+
+        assertTrue(result.isPresent());
+
+        var updated = assertInstanceOf(ProcessNodeExecutionResultTaskUpdated.class, result.get());
+        assertEquals("value", updated.getRuntimeData().get("keep"));
+        assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
+        assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
+
+        var draftData = updated.getRuntimeData().get("draftData");
+        assertNotNull(draftData);
+        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
+        assertEquals("<p>Entwurf gespeichert.</p>", ((Map<?, ?>) draftData).get("manualActionRemark"));
+    }
+
+    @Test
+    void onUpdateFromStaff_CompleteMergesProcessDataAndStoresRemarkAndDiff() throws Exception {
+        var result = node.onUpdateFromStaff(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration()),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(
+                                        "draftData",
+                                        authored(
+                                                "applicantName", "Draft",
+                                                "manualActionRemark", "<p>Vorab erfasst.</p>"
+                                        )
+                                ),
                                 Map.of(),
                                 Map.of(
                                         "applicant", Map.of("name", "Ada", "age", 33),
@@ -162,7 +290,7 @@ class ManualActionNodeV1Test {
                         "applicantName", "Grace",
                         "manualActionRemark", "<p>Vor Ort durchgeführt.</p>"
                 ),
-                "confirm"
+                "complete"
         );
 
         assertTrue(result.isPresent());
@@ -211,7 +339,7 @@ class ManualActionNodeV1Test {
                         null
                 ),
                 authored("manualActionRemark", "<p>Telefonisch bestätigt.</p>"),
-                "confirm"
+                "complete"
         );
 
         assertTrue(result.isPresent());
@@ -255,6 +383,14 @@ class ManualActionNodeV1Test {
                 .setPreferProcessInstanceAssignee(false);
     }
 
+    private static ElementDerivationService derivationService() {
+        return new ElementDerivationService(
+                new JavascriptEngineFactoryService(List.of()),
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService()
+        );
+    }
+
     private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {
         return new ProcessNodeEntity()
                 .setId(NODE_ID)
@@ -269,7 +405,7 @@ class ManualActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -292,7 +428,7 @@ class ManualActionNodeV1Test {
             Map<String, Object> nodeData,
             Map<String, Object> processData
     ) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)

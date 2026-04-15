@@ -7,10 +7,7 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.ComputedElementState;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
@@ -20,6 +17,8 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentConte
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -70,11 +69,13 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
+    private final ElementDerivationService elementDerivationService;
 
     public DataChangeActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
-                                  ElementDataTransformService elementDataTransformService) {
+                                  ElementDataTransformService elementDataTransformService, ElementDerivationService elementDerivationService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @Nonnull
@@ -254,16 +255,20 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) {
         return List.of(
+                // new TaskViewEvent(
+                //         "Speichern",
+                //         EVENT_SAVE
+                // ),
+                // new TaskViewEvent(
+                //         "Speichern und abschließen",
+                //         EVENT_COMPLETE,
+                //         "outlined",
+                //         null,
+                //         "right"
+                // ),
                 new TaskViewEvent(
-                        "Speichern",
-                        EVENT_SAVE
-                ),
-                new TaskViewEvent(
-                        "Speichern und abschließen",
-                        EVENT_COMPLETE,
-                        "outlined",
-                        null,
-                        "right"
+                        "Aufgabe abschließen",
+                        EVENT_COMPLETE
                 )
         );
     }
@@ -294,15 +299,23 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                                                                   @Nonnull AuthoredElementValues update,
                                                                   @Nullable String event) throws ResponseException {
         if (event == null) {
-            // TODO: Save to runtime data
-            return Optional.empty();
+            return Optional.of(updateRuntimeData(context, update));
         }
 
         var config = loadConfigurationForUi(context);
 
+        var derivationRequest = new ElementDerivationRequest(
+                config.dataDefinition,
+                update,
+                new ElementDerivationOptions()
+        );
+        var derivationLogger = new ElementDerivationLogger();
+        var derivedRuntimeData = elementDerivationService
+                .derive(derivationRequest, derivationLogger);
+
         return switch (event) {
             case EVENT_SAVE -> Optional.of(saveDraft(context, update));
-            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, update));
+            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues()));
             default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         };
     }
@@ -321,11 +334,24 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
+    private ProcessNodeExecutionResultTaskUpdated updateRuntimeData(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                    @Nonnull AuthoredElementValues update) {
+        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
+        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
+
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        result.setRuntimeData(runtimeData);
+        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
+        result.setProcessData(context.getThisTask().getProcessData());
+        return result;
+    }
+
+    @Nonnull
     private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                  @Nonnull ResolvedConfiguration config,
-                                                                 @Nonnull AuthoredElementValues update) {
-        var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
+                                                                 @Nonnull EffectiveElementValues update) {
         var payloadUpdate = elementDataTransformService.buildPayload(config.dataDefinition(), update);
+        var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
         var updatedProcessData = mergeProcessData(originalProcessData, payloadUpdate);
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
 
@@ -369,36 +395,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         children.add(cloneDataDefinition(config.dataDefinition()));
         layout.setChildren(children);
         return layout;
-    }
-
-    @Nonnull
-    private static List<DiffItem> createProcessDataDiff(@Nonnull Map<String, Object> originalProcessData,
-                                                        @Nonnull Map<String, Object> updatedProcessData) {
-        var originalForDiff = Map.<String, Object>of(
-                "id", DIFF_ROOT_ID,
-                DIFF_WRAPPER_KEY, originalProcessData
-        );
-        var updatedForDiff = Map.<String, Object>of(
-                "id", DIFF_ROOT_ID,
-                DIFF_WRAPPER_KEY, updatedProcessData
-        );
-
-        return DiffService
-                .createDiff(new JSONObject(originalForDiff), new JSONObject(updatedForDiff))
-                .stream()
-                .filter(diffItem -> !"/id".equals(diffItem.field()))
-                .map(diffItem -> {
-                    if (diffItem.field().startsWith("/" + DIFF_WRAPPER_KEY)) {
-                        return new DiffItem(
-                                diffItem.field().substring(DIFF_WRAPPER_KEY.length() + 1),
-                                diffItem.oldValue(),
-                                diffItem.newValue()
-                        );
-                    }
-
-                    return diffItem;
-                })
-                .toList();
     }
 
     @Nonnull
@@ -571,6 +567,36 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                 target.put(key, patchValue);
             }
         }
+    }
+
+    @Nonnull
+    private static List<DiffItem> createProcessDataDiff(@Nonnull Map<String, Object> originalProcessData,
+                                                        @Nonnull Map<String, Object> updatedProcessData) {
+        var originalForDiff = Map.<String, Object>of(
+                "id", DIFF_ROOT_ID,
+                DIFF_WRAPPER_KEY, originalProcessData
+        );
+        var updatedForDiff = Map.<String, Object>of(
+                "id", DIFF_ROOT_ID,
+                DIFF_WRAPPER_KEY, updatedProcessData
+        );
+
+        return DiffService
+                .createDiff(new JSONObject(originalForDiff), new JSONObject(updatedForDiff))
+                .stream()
+                .filter(diffItem -> !"/id".equals(diffItem.field()))
+                .map(diffItem -> {
+                    if (diffItem.field().startsWith("/" + DIFF_WRAPPER_KEY)) {
+                        return new DiffItem(
+                                diffItem.field().substring(DIFF_WRAPPER_KEY.length() + 1),
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    return diffItem;
+                })
+                .toList();
     }
 
     @Nonnull

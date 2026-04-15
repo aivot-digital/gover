@@ -10,6 +10,8 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ComputedElementState;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
@@ -23,6 +25,8 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputEl
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -40,6 +44,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
@@ -63,8 +68,10 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "manual_action";
 
     private static final String PORT_OUTPUT = "output";
-    private static final String EVENT_CONFIRM = "confirm";
+    private static final String EVENT_SAVE = "save";
+    private static final String EVENT_COMPLETE = "complete";
 
+    private static final String RUNTIME_DATA_DRAFT_KEY = "draftData";
     private static final String DIFF_ROOT_ID = "__manual_action_root__";
     private static final String DIFF_WRAPPER_KEY = "data";
 
@@ -84,11 +91,14 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
+    private final ElementDerivationService elementDerivationService;
 
     public ManualActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
-                              ElementDataTransformService elementDataTransformService) {
+                              ElementDataTransformService elementDataTransformService,
+                              ElementDerivationService elementDerivationService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @Nonnull
@@ -287,7 +297,21 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) {
         return List.of(
-                new TaskViewEvent("Aufgabe bestätigen", EVENT_CONFIRM)
+                // new TaskViewEvent(
+                //         "Speichern",
+                //         EVENT_SAVE
+                // ),
+                // new TaskViewEvent(
+                //         "Speichern und abschließen",
+                //         EVENT_COMPLETE,
+                //         "outlined",
+                //         null,
+                //         "right"
+                // ),
+                new TaskViewEvent(
+                        "Aufgabe abschließen",
+                        EVENT_COMPLETE
+                )
         );
     }
 
@@ -295,13 +319,21 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
         var config = loadConfigurationForUi(context);
-        if (config.uiDefinition() == null) {
-            return new AuthoredElementValues();
+        var initialData = config.uiDefinition() != null
+                ? elementDataTransformService
+                .buildEffectiveValues(config.uiDefinition(), context.getThisTask().getProcessData())
+                .toAuthoredElementValues()
+                : new AuthoredElementValues();
+
+        var draftData = readDraftData(context.getThisTask().getRuntimeData());
+        if (draftData == null || draftData.isEmpty()) {
+            return initialData;
         }
 
-        return elementDataTransformService
-                .buildEffectiveValues(config.uiDefinition(), context.getThisTask().getProcessData())
-                .toAuthoredElementValues();
+        var mergedData = new AuthoredElementValues();
+        mergedData.putAll(initialData);
+        mergedData.putAll(draftData);
+        return mergedData;
     }
 
     @Nonnull
@@ -309,37 +341,18 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                   @Nonnull AuthoredElementValues update,
                                                                   @Nullable String event) throws ResponseException {
-        // TODO: Save to runtime data
         if (event == null) {
-            return Optional.empty();
-        }
-
-        if (!EVENT_CONFIRM.equals(event)) {
-            throw ResponseException.badRequest("Unbekannte Aktion: " + event);
+            return Optional.of(updateRuntimeData(context, update));
         }
 
         var config = loadConfigurationForUi(context);
+        var effectiveUiUpdate = deriveEffectiveUiUpdate(config, update);
 
-        var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
-        var payloadUpdate = config.uiDefinition() != null
-                ? elementDataTransformService.buildPayload(config.uiDefinition(), update)
-                : Map.<String, Object>of();
-        var updatedProcessData = mergeProcessData(originalProcessData, payloadUpdate);
-        var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
-        var remark = normalizeRemark(update.get(TASK_VIEW_REMARK_FIELD_ID));
-
-        var nodeData = new LinkedHashMap<String, Object>();
-        nodeData.put(OUTPUT_DATA, payloadUpdate);
-        nodeData.put(OUTPUT_DIFF, diff);
-        nodeData.put(OUTPUT_REMARK, remark);
-        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
-        nodeData.put(OUTPUT_PROCESSED_AT, LocalDateTime.now().toString());
-
-        var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
-        result.setProcessData(updatedProcessData);
-        result.setNodeData(nodeData);
-        result.setRuntimeData(Map.of());
-        return Optional.of(result);
+        return switch (event) {
+            case EVENT_SAVE -> Optional.of(saveDraft(context, update));
+            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, effectiveUiUpdate, update));
+            default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
+        };
     }
 
     @Nonnull
@@ -388,6 +401,19 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
         layout.setChildren(children);
         return layout;
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResultTaskUpdated updateRuntimeData(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                    @Nonnull AuthoredElementValues update) {
+        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
+        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
+
+        var result = new ProcessNodeExecutionResultTaskUpdated();
+        result.setRuntimeData(runtimeData);
+        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
+        result.setProcessData(context.getThisTask().getProcessData());
+        return result;
     }
 
     @Nonnull
@@ -496,6 +522,89 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
         }
 
         return copiedElement;
+    }
+
+    @Nonnull
+    private EffectiveElementValues deriveEffectiveUiUpdate(@Nonnull ResolvedConfiguration config,
+                                                           @Nonnull AuthoredElementValues update) {
+        if (config.uiDefinition() == null) {
+            return new EffectiveElementValues();
+        }
+
+        var derivationRequest = new ElementDerivationRequest(
+                config.uiDefinition(),
+                update,
+                new ElementDerivationOptions()
+        );
+        var derivationLogger = new ElementDerivationLogger();
+        return elementDerivationService
+                .derive(derivationRequest, derivationLogger)
+                .getEffectiveValues();
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResultTaskAssigned saveDraft(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                             @Nonnull AuthoredElementValues update) {
+        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
+        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
+
+        var result = ProcessNodeExecutionResultTaskAssigned.of(resolveAssignedUserId(context));
+        result.setRuntimeData(runtimeData);
+        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
+        result.setProcessData(context.getThisTask().getProcessData());
+        return result;
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                 @Nonnull ResolvedConfiguration config,
+                                                                 @Nonnull EffectiveElementValues effectiveUiUpdate,
+                                                                 @Nonnull AuthoredElementValues update) {
+        var payloadUpdate = config.uiDefinition() != null
+                ? elementDataTransformService.buildPayload(config.uiDefinition(), effectiveUiUpdate)
+                : Map.<String, Object>of();
+        var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
+        var updatedProcessData = mergeProcessData(originalProcessData, payloadUpdate);
+        var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
+        var remark = normalizeRemark(update.get(TASK_VIEW_REMARK_FIELD_ID));
+
+        var nodeData = new LinkedHashMap<String, Object>();
+        nodeData.put(OUTPUT_DATA, payloadUpdate);
+        nodeData.put(OUTPUT_DIFF, diff);
+        nodeData.put(OUTPUT_REMARK, remark);
+        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
+        nodeData.put(OUTPUT_PROCESSED_AT, LocalDateTime.now().toString());
+
+        var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
+        result.setProcessData(updatedProcessData);
+        result.setNodeData(nodeData);
+        result.setRuntimeData(Map.of());
+        return result;
+    }
+
+    @Nullable
+    private static AuthoredElementValues readDraftData(@Nonnull Map<String, Object> runtimeData) {
+        var rawDraftData = runtimeData.get(RUNTIME_DATA_DRAFT_KEY);
+        if (rawDraftData == null) {
+            return null;
+        }
+
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(rawDraftData, AuthoredElementValues.class);
+    }
+
+    @Nonnull
+    private static AuthoredElementValues copyAuthoredElementValues(@Nonnull AuthoredElementValues source) {
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(source, AuthoredElementValues.class);
+    }
+
+    @Nonnull
+    private static String resolveAssignedUserId(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+        var assignedUserId = context.getThisTask().getAssignedUserId();
+        return assignedUserId != null ? assignedUserId : context.getUser().getId();
     }
 
     @Nullable
