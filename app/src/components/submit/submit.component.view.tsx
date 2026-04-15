@@ -329,7 +329,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
 
                     {
                         errors != null &&
-                        <Box sx={{mt: 2}}>
+                        <Box sx={{mt: 1}}>
                             <FormHelperText error={true}>
                                 {errors.join(' ')}
                             </FormHelperText>
