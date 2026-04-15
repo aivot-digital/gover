@@ -1230,7 +1230,7 @@ export function ProcessDetailsPage(): ReactNode {
     const handleTest = async (): Promise<void> => {
         if (currentTestClaim != null) {
             confirm({
-                title: 'Testmodus bereits aktive',
+                title: 'Testmodus bereits aktiv',
                 children: (
                         <Typography>
                             Der Prozess befindet sich bereits im Testmodus.
