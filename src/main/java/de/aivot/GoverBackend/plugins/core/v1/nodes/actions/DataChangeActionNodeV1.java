@@ -153,6 +153,13 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
+    public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        configuration.remove(DataChangeActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID);
+        return configuration;
+    }
+
+    @Nonnull
+    @Override
     public List<ProcessNodePort> getPorts() {
         return List.of(
                 new ProcessNodePort(
