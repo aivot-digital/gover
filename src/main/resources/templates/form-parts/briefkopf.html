@@ -15,9 +15,9 @@
             <span th:text="${ department.name }">Name des zuständigen Fachbereichs</span>
             <br />
 
-            <!-- Der Adresse des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet.
-            Über das #strings.replace Util werden alle Zeilenumbrüche mit dem HTML-Tag <br /> ersetzt -->
-            <span th:utext="${ #strings.replace(department.address, '\n', '&lt;br /&gt;') }">Adresse des Fachbereichs</span>
+            <!-- Die Adresse des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet.
+            Über white-space: pre-line werden vorhandene Zeilenumbrüche direkt als Umbrüche dargestellt -->
+            <span th:text="${ department.address }" style="white-space: pre-line;">Adresse des Fachbereichs</span>
         </p>
     </div>
 
