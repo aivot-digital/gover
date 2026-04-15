@@ -3,10 +3,10 @@ import {ProcessEntity} from "../entities/process-entity";
 import {ProcessExport} from "../entities/process-export";
 
 interface ProcessDefinitionFilter {
-    id: number;
-    name: string;
+    internalTitle: string;
     departmentId: number;
     departmentIdNot: number;
+    accessKey: string;
     isPublished: boolean;
     isDrafted: boolean;
     isRevoked: boolean;
