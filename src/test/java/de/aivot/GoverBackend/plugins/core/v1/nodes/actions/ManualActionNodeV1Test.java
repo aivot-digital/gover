@@ -34,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -405,7 +405,7 @@ class ManualActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {
-        var now = Instant.now();
+        var now = LocalDateTime.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -428,7 +428,7 @@ class ManualActionNodeV1Test {
             Map<String, Object> nodeData,
             Map<String, Object> processData
     ) {
-        var now = Instant.now();
+        var now = LocalDateTime.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
