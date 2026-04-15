@@ -239,21 +239,23 @@ public class StaffProcessInstanceTaskViewController {
             throw ResponseException.internalServerError(e);
         }
 
-        try {
-            processNodeExecutionResultHandler
-                    .handleResult(
-                            logger,
-                            user,
-                            taskViewData.provider,
-                            taskViewData.node,
-                            taskViewData.instance,
-                            taskViewData.task,
-                            previousTask,
-                            res.get()
-                    );
-        } catch (ProcessNodeExecutionException e) {
-            logger.logException(e);
-            throw ResponseException.internalServerError(e);
+        if(res.isPresent()) {
+            try {
+                processNodeExecutionResultHandler
+                        .handleResult(
+                                logger,
+                                user,
+                                taskViewData.provider,
+                                taskViewData.node,
+                                taskViewData.instance,
+                                taskViewData.task,
+                                previousTask,
+                                res.get()
+                        );
+            } catch (ProcessNodeExecutionException e) {
+                logger.logException(e);
+                throw ResponseException.internalServerError(e);
+            }
         }
 
         var updatedLayout = taskViewData
