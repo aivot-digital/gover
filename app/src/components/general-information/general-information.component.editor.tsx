@@ -125,7 +125,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                                 initiativeLogoLink: val,
                             });
                         }}
-                        hint="Link (URL) zu einer Grafik-Datei mit transparentem oder weißem Hintergrund. Dieses Logo wird nur angezeigt, wenn Sie auch eine Kurzbeschreibung angegeben haben."
+                        hint="Link (URL) zu einer Grafik-Datei mit transparentem oder weißem Hintergrund. Dieses Logo wird nur angezeigt, wenn Sie auch eine Kurzbeschreibung und einen Alternativtext angegeben haben."
                         disabled={!props.editable}
                     />
                 </Grid>
@@ -143,7 +143,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                             });
                         }}
                         hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
-                        error={isStringNullOrEmpty(props.element.initiativeName) && isStringNotNullOrEmpty(props.element.initiativeLogoLink) ? 'Im Sinne der Barrierefreiheit sollten Sie immer einen Alternativtext für das Bild angeben.' : undefined}
+                        error={isStringNullOrEmpty(props.element.initiativeName) && isStringNotNullOrEmpty(props.element.initiativeLogoLink) ? 'Im Sinne der Barrierefreiheit müssen Sie immer einen Alternativtext für das Logo angeben.' : undefined}
                         disabled={!props.editable}
                     />
                 </Grid>
