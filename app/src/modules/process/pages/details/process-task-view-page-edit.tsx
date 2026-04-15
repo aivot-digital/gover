@@ -1,5 +1,5 @@
 import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react';
-import {Box, Button, CircularProgress, Skeleton, Stack, Typography} from '@mui/material';
+import {Box, Button, Chip as MuiChip, CircularProgress, Skeleton, Stack, Tooltip, Typography} from '@mui/material';
 import {useNavigate} from 'react-router-dom';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
@@ -29,13 +29,15 @@ import {
     getProcessTaskNodeIcon,
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
+import CloudAlert from '@aivot/mui-material-symbols-400-outlined/dist/cloud-alert/CloudAlert';
 import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
+import CloudDone from '@aivot/mui-material-symbols-400-outlined/dist/cloud-done/CloudDone';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 import {isApiError} from '../../../../models/api-error';
-import {Chip} from '../../../../components/chip/chip';
-import Done from '@aivot/mui-material-symbols-400-outlined/dist/done/Done';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
+
+const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
+const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
 
 export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
@@ -46,6 +48,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     } = useGenericDetailsPageContext<ProcessTaskDetailsPageItem, undefined>();
 
     const pushUpdateTimeoutRef = useRef<number | null>(null);
+    const saveCycleRef = useRef(0);
 
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
@@ -81,6 +84,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         setTaskView(undefined);
         setTaskInputData({});
+        saveCycleRef.current = 0;
 
         new ProcessInstanceTaskApiService()
             .getStaffTaskView(item.task.processInstanceId, item.task.id)
@@ -140,6 +144,70 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         return (taskView?.events ?? []).filter((evt) => getTaskViewEventAlignment(evt) === 'right');
     }, [taskView?.events]);
 
+    const saveStateChip = useMemo(() => {
+        const iconSlotSx = {
+            display: 'inline-flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            width: 20,
+            minWidth: 20,
+            height: 20,
+            lineHeight: 0,
+        } as const;
+
+        if (taskInputDataSaveState === 'saved') {
+            return {
+                label: 'Eingaben wurden zwischengespeichert',
+                tooltip: 'Ihre Eingaben wurden im Vorgang zwischengespeichert.',
+                icon: (
+                    <Box
+                        component="span"
+                        sx={{
+                            ...iconSlotSx,
+                            color: (theme) => theme.palette.primary.main,
+                        }}
+                    >
+                        <CloudDone fontSize="small"/>
+                    </Box>
+                ),
+            };
+        }
+
+        if (taskInputDataSaveState === 'waiting') {
+            return {
+                label: 'Ungespeicherte Eingaben vorhanden',
+                tooltip: 'Es liegen ungespeicherte Eingaben vor, die automatisch gespeichert werden.',
+                icon: (
+                    <Box
+                        component="span"
+                        sx={{
+                            ...iconSlotSx,
+                            color: (theme) => theme.palette.warning.main,
+                        }}
+                    >
+                        <CloudAlert fontSize="small"/>
+                    </Box>
+                ),
+            };
+        }
+
+        return {
+            label: 'Eingaben werden zwischengespeichert',
+            tooltip: 'Ihre Eingaben werden gerade zwischengespeichert.',
+            icon: (
+                <Box
+                    component="span"
+                    sx={iconSlotSx}
+                >
+                    <CircularProgress
+                        size={16}
+                        thickness={5}
+                    />
+                </Box>
+            ),
+        };
+    }, [taskInputDataSaveState]);
+
     const handleEventClick = (evt: TaskViewEvent) => {
         if (item == null || taskView == null) {
             return;
@@ -196,6 +264,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         }
 
         setTaskInputData(authoredValues);
+        const currentSaveCycle = ++saveCycleRef.current;
 
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
@@ -206,15 +275,22 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
             setTaskInputDataSaveState('saving');
 
-            new ProcessInstanceTaskApiService()
-                .putStaffTaskView(item.task.processInstanceId, item.task.id, authoredValues)
+            withDelay(
+                new ProcessInstanceTaskApiService()
+                    .putStaffTaskView(item.task.processInstanceId, item.task.id, authoredValues),
+                TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
+            )
                 .catch((err) => {
                     dispatch(showApiErrorSnackbar(err, 'Die Eingaben konnten nicht gespeichert werden.'));
                 })
                 .finally(() => {
+                    if (saveCycleRef.current !== currentSaveCycle) {
+                        return;
+                    }
+
                     setTaskInputDataSaveState('saved');
                 });
-        }, 2000);
+        }, TASK_INPUT_DATA_PUSH_DELAY_MS);
 
         setTaskInputDataSaveState('waiting');
     };
@@ -375,33 +451,55 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 </Box>
                             }
 
-                            <Chip
-                                sx={{
-                                    ml: 'auto',
-                                    width: '16rem',
-                                }}
-                                avatar={
-                                    taskInputDataSaveState === 'saved'
-                                        ? <Done/>
-                                        : taskInputDataSaveState === 'waiting'
-                                            ? <Edit/>
-                                            : <CircularProgress size={24}/>
-                                }
-                                label={
-                                    <Box
-                                        component="span"
-                                    >
-                                        {
-                                            taskInputDataSaveState === 'saved'
-                                                ? 'Alle Änderungen gespeichert'
-                                                : taskInputDataSaveState === 'waiting'
-                                                    ? 'Änderungen wurden erkannt'
-                                                    : 'Änderungen werden gespeichert'
-                                        }
-                                    </Box>
-                                }
-                                mode="soft"
-                            />
+                            <Tooltip
+                                title={saveStateChip.tooltip}
+                                arrow
+                            >
+                                <MuiChip
+                                    sx={{
+                                        ml: 'auto',
+                                        width: {
+                                            xs: '100%',
+                                            sm: '18.5rem',
+                                        },
+                                        maxWidth: '100%',
+                                        alignItems: 'center',
+                                        justifyContent: 'flex-start',
+                                        '& .MuiChip-label': {
+                                            display: 'block',
+                                            width: '100%',
+                                            px: 1.5,
+                                            py: 0.5,
+                                        },
+                                    }}
+                                    label={
+                                        <Box
+                                            component="span"
+                                            sx={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                gap: 1,
+                                                width: '100%',
+                                                minHeight: 28,
+                                            }}
+                                        >
+                                            {saveStateChip.icon}
+                                            <Box
+                                                component="span"
+                                                sx={{
+                                                    display: 'block',
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {saveStateChip.label}
+                                            </Box>
+                                        </Box>
+                                    }
+                                    variant="outlined"
+                                />
+                            </Tooltip>
 
                         </Stack>
                     </>
