@@ -1,4 +1,4 @@
-import {Avatar, Box, Breadcrumbs, Container, Paper, Skeleton, Typography, useTheme} from '@mui/material';
+import {Avatar, Box, Breadcrumbs, Button, Container, Paper, Skeleton, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
@@ -20,6 +20,7 @@ import GroupOutlined from '@mui/icons-material/GroupOutlined';
 import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {EmptyStateSection} from '../../../../components/empty-state-section/empty-state-section';
 
 interface SearchableDepartment {
     id: number;
@@ -269,19 +270,31 @@ export function DepartmentsListPage(): React.ReactElement {
                         pb: 3.5,
                     }}
                 >
-                    <SearchInput
-                        value={search}
-                        onChange={setSearch}
-                        label="Organisationseinheiten durchsuchen"
-                        placeholder="Name, Adresse oder Typ suchen…"
-                        size="small"
-                        debounce={200}
-                        sx={{mb: 2}}
-                    />
+                    {
+                        (rootOrgs == null || rootOrgs.length > 0) &&
+                        <SearchInput
+                            value={search}
+                            onChange={setSearch}
+                            label="Organisationseinheiten durchsuchen"
+                            placeholder="Name, Adresse oder Typ suchen…"
+                            size="small"
+                            debounce={200}
+                            sx={{mb: 2}}
+                        />
+                    }
 
                     {
                         rootOrgs == null ?
                             <DepartmentTreeLoadingSkeleton /> :
+                            loadError ?
+                                <AlertComponent
+                                    color="error"
+                                    sx={{my: 1}}
+                                >
+                                    Die Organisationseinheiten konnten nicht geladen werden.
+                                </AlertComponent> :
+                                rootOrgs.length === 0 ?
+                                    <DepartmentsListEmptyState hasAccess={hasAccess} /> :
                             cleanedSearch.length > 0 ?
                                 <Box
                                     sx={{
@@ -319,6 +332,9 @@ export function DepartmentsListPage(): React.ReactElement {
                                 </Box>
                     }
                     {
+                        !loadError &&
+                        rootOrgs != null &&
+                        rootOrgs.length > 0 &&
                         cleanedSearch.length > 0 &&
                         searchResults.length === 0 &&
                         <AlertComponent
@@ -328,20 +344,15 @@ export function DepartmentsListPage(): React.ReactElement {
                             Keine Organisationseinheiten für den Suchbegriff gefunden.
                         </AlertComponent>
                     }
-                    {
-                        loadError &&
-                        <Typography
-                            color="error"
-                            sx={{py: 1}}
-                        >
-                            Die Organisationseinheiten konnten nicht geladen werden.
-                        </Typography>
-                    }
                 </Paper>
 
             </Container>
         </PageWrapper>
     );
+}
+
+interface DepartmentsListEmptyStateProps {
+    hasAccess: boolean;
 }
 
 interface DepartmentTreeItemProps {
@@ -356,6 +367,37 @@ interface DepartmentSearchResultItemProps {
 
 interface DepartmentTreeSkeletonItemProps {
     node: DepartmentTreeSkeletonNode;
+}
+
+function DepartmentsListEmptyState(props: DepartmentsListEmptyStateProps): React.ReactElement {
+    const {
+        hasAccess,
+    } = props;
+
+    return (
+        <EmptyStateSection
+            title="Noch keine Organisationseinheiten angelegt"
+            description={(
+                <>
+                    Organisationseinheiten bilden die fachliche Struktur in Gover ab.
+                    Legen Sie zuerst Ihre oberste Organisationseinheit an, um Hierarchien und Zugehörigkeiten zentral zu verwalten.
+                </>
+            )}
+            actions={
+                hasAccess ? (
+                    <Button
+                        component={Link}
+                        to="/departments/new"
+                        variant="contained"
+                        size="small"
+                        startIcon={<Add />}
+                    >
+                        Erste Organisation anlegen
+                    </Button>
+                ) : undefined
+            }
+        />
+    );
 }
 
 function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): React.ReactElement {
