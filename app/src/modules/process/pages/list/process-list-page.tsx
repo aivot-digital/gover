@@ -250,7 +250,7 @@ export function ProcessListPage() {
 
         const formsPage = await new ProcessDefinitionApiService()
             .list(options.page, options.size, options.sort as any, options.order, {
-                name: options.search,
+                internalTitle: options.search,
                 isPublished: options.filter === 'published',
                 isDrafted: options.filter === 'drafted',
                 isRevoked: options.filter === 'revoked',
