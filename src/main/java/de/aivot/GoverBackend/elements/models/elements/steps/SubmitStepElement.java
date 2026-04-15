@@ -40,6 +40,12 @@ public class SubmitStepElement extends BaseStepElement implements InputElement<M
     }
 
     @Override
+    public void validate(@Nullable Object rawValue) throws ValidationException {
+        var val = formatValue(rawValue);
+        performValidation(val);
+    }
+
+    @Override
     public void performValidation(Map<String, Object> value) throws ValidationException {
         if (value == null || value.isEmpty()) {
             throw new ValidationException(this, "Bitte bestätigen Sie, dass Sie ein Mensch sind.");

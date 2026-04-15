@@ -124,6 +124,9 @@ export function ErrorAlert(props: ErrorAlertProps) {
         <AlertComponent
             title="Dieser Abschnitt enthält fehlerhafte oder fehlende Angaben"
             color="error"
+            sx={{
+                mt: 4
+            }}
         >
             <Typography>
                 Bitte korrigieren Sie Ihre Angaben und fahren Sie fort, damit diese erneut überprüft werden.
