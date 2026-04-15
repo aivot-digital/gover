@@ -1,6 +1,6 @@
 import {InputAdornment, TextField} from '@mui/material';
 import {ChangeEvent, useMemo, useRef, useState} from 'react';
-import {formatNumToGermanNum} from '../../utils/format-german-numbers';
+import {formatNumStringToGermanNum, formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {type NumberFieldComponentProps} from './number-field-component-props';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
@@ -56,7 +56,11 @@ export function NumberFieldComponent({
     // The german string representation of the original value.
     const formattedOriginalValue = useMemo(() => {
         if (value != null) {
-            return formatNumToGermanNum(value, decimalPlaces);
+            if(typeof value as unknown === 'string'){
+                return formatNumStringToGermanNum(value, decimalPlaces);
+            } else {
+                return formatNumToGermanNum(value, decimalPlaces);
+            }
         }
         return '';
     }, [value, decimalPlaces]);
