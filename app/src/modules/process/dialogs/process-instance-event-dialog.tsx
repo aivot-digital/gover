@@ -92,12 +92,22 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
                 label: 'Ende',
                 children: format(new Date(eventsData.instance.finished), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
             });
+        } else {
+            info.push({
+                label: 'Ende',
+                children: '-',
+            });
         }
 
         if (eventsData.instance.runtime != null) {
             info.push({
                 label: 'Laufzeit',
                 children: humanizeISO8601Duration(eventsData.instance.runtime),
+            });
+        } else {
+            info.push({
+                label: 'Laufzeit',
+                children: '-'
             });
         }
 
@@ -121,12 +131,22 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
                 label: 'Ende',
                 children: format(new Date(eventsData.task.finished), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
             });
+        } else {
+            info.push({
+                label: 'Ende',
+                children: '-'
+            });
         }
 
         if (eventsData.task.runtime != null) {
             info.push({
                 label: 'Laufzeit',
                 children: humanizeISO8601Duration(eventsData.task.runtime),
+            });
+        } else {
+            info.push({
+                label: 'Laufzeit',
+                children: '-'
             });
         }
 

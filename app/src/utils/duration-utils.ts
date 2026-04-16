@@ -113,5 +113,5 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb[sb.length - 1] = ' und ' + sb[sb.length - 1];
     }
 
-    return sb.length > 0 ? sb.join(' ') : '0 Sekunden';
+    return sb.length > 0 ? sb.join(' ') : '< 1 Sekunde';
 }
