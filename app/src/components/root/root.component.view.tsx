@@ -65,6 +65,7 @@ import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {extractVisibleFormSteps, type VisibleFormStepElement} from '../../utils/visible-form-steps';
+import {Stack, Typography} from '@mui/material';
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -636,6 +637,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     sx={{
                         mt: 5,
                         mb: 5,
+                        minHeight: '66vh',
                         /* Remove spacing for richtext components that are immediately preceded by a headline component */
                         '& .MuiGrid-item:has(.headline-component-content) + .MuiGrid-item.MuiGrid-grid-md-12:has(.richtext-component-content)': {
                             paddingTop: 0,
@@ -645,7 +647,34 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                         },
                     }}
                 >
+
                     {
+                        totalStepCount === 0 &&
+                        <Stack
+                            justifyContent="center"
+                            sx={{
+                                height: '40vh',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                        >
+                            <Typography
+                                textAlign="center"
+                                variant="body1"
+                                component="p"
+                                sx={{
+                                    maxWidth: '480px',
+                                }}
+                            >
+                                Dieses Formular enthält noch keine Abschnitte.
+                                Fügen Sie über die Elementstruktur auf der rechten Seite einen neuen Abschnitt hinzu,
+                                um mit der Bearbeitung des Formulars zu beginnen.
+                            </Typography>
+                        </Stack>
+                    }
+
+                    {
+                        totalStepCount > 0 &&
                         currentStep < totalStepCount &&
                         <Stepper
                             sx={{
@@ -709,6 +738,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     }
 
                     {
+                        totalStepCount > 0 &&
                         currentStep === totalStepCount &&
                         <Stepper
                             sx={{
@@ -752,6 +782,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 </Container>
 
                 {
+                    totalStepCount > 0 &&
                     currentStep < totalStepCount &&
                     <Container
                         sx={{
