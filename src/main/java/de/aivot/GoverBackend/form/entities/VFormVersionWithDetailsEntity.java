@@ -196,10 +196,10 @@ public class VFormVersionWithDetailsEntity implements Cloneable {
 
     public VFormVersionWithDetailsEntity clone() {
         try {
-            return ((VFormVersionWithDetailsEntity) super.clone())
-                    .setId(0)
-                    .setFormId(0)
-                    .setVersion(0);
+            return ((VFormVersionWithDetailsEntity) super.clone());
+                    //.setId(0)
+                    //.setFormId(0)
+                    //.setVersion(0);
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Failed to clone VFormVersionWithDetailsEntity", e);
         }
