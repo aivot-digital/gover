@@ -12,6 +12,7 @@ import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new
 import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/approval-delegation/ApprovalDelegation';
 import {FormEntity} from '../entities/form-entity';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
+import {useNotImplemented} from '../../../hooks/use-not-implemented';
 
 interface FormsListRowMenuProps {
     anchorEl: HTMLElement | null;
@@ -33,6 +34,8 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
         onMoveFormToDepartment,
         onDeleteForm,
     } = props;
+
+    const notImplemented = useNotImplemented();
 
     const dispatch = useAppDispatch();
 
@@ -133,8 +136,9 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
 
             <MenuItem
                 onClick={() => {
-                    onManageAccess(form);
-                    onClose();
+                    notImplemented()
+                    //onManageAccess(form);
+                    //onClose();
                 }}
             >
                 <ListItemIcon>
