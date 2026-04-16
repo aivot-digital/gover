@@ -2,7 +2,7 @@ import {AnyElement} from '../../../models/elements/any-element';
 import {Box, Paper, Typography} from '@mui/material';
 import {ElementTreeItem} from './element-tree-item';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
-import {useMemo, useState} from 'react';
+import {useEffect, useMemo, useRef, useState} from 'react';
 import {useDragLayer, useDrop} from 'react-dnd';
 import {ELEMENT_TREE_DND_ITEM_TYPE, ElementTreeDragItem, useElementTreeContext} from '../element-tree-context';
 import {AddElementDialog} from '../../../dialogs/add-element-dialog/add-element-dialog';
@@ -19,6 +19,7 @@ interface ElementTreeChildListProps<T extends AnyElement> {
     onChange: (value: T[]) => void;
     addNewElementLabel?: string;
     addElementDialogTitle?: string;
+    openAddElementSignal?: number;
 }
 
 interface ElementTreeDropSlotProps {
@@ -78,6 +79,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
         onChange,
         addNewElementLabel = 'Neues Element hinzufügen',
         addElementDialogTitle,
+        openAddElementSignal,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -107,6 +109,20 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
     const horizontalExtensionWidth = ELEMENT_TREE_LAYOUT.childrenIndentPx - ELEMENT_TREE_LAYOUT.iconCenterXPx - ELEMENT_TREE_LAYOUT.elbowSizePx + 3;
 
     const [showAddElementDialog, setShowAddElementDialog] = useState(false);
+    const lastHandledOpenAddElementSignalRef = useRef<number | undefined>(openAddElementSignal);
+
+    useEffect(() => {
+        if (!editable || openAddElementSignal == null) {
+            return;
+        }
+
+        if (lastHandledOpenAddElementSignalRef.current === openAddElementSignal) {
+            return;
+        }
+
+        lastHandledOpenAddElementSignalRef.current = openAddElementSignal;
+        setShowAddElementDialog(true);
+    }, [editable, openAddElementSignal]);
 
     const entries = value.map((element, index) => ({
         key: element.id,

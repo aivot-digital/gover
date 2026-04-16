@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {Box, Button} from '@mui/material';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
@@ -23,6 +23,7 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
     const [showAddDialog, setShowAddDialog] = useState(false);
 
     const scrollContainerRef = useRef<HTMLDivElement>(undefined);
+    const lastHandledOpenRootAddElementSignalRef = useRef<number | undefined>(props.openRootAddElementSignal);
 
     const handleAddElement = (element: StepElement | AnyFormElement): void => {
         if (isLoadedForm(props.entity)) {
@@ -65,6 +66,19 @@ export function ElementTree<T extends ElementTreeEntity>(props: ElementTreeProps
             setShowAddDialog(true);
         }
     };
+
+    useEffect(() => {
+        if (!props.editable || props.openRootAddElementSignal == null) {
+            return;
+        }
+
+        if (lastHandledOpenRootAddElementSignalRef.current === props.openRootAddElementSignal) {
+            return;
+        }
+
+        lastHandledOpenRootAddElementSignalRef.current = props.openRootAddElementSignal;
+        handleAdd();
+    }, [handleAdd, props.editable, props.openRootAddElementSignal]);
 
     const handleRootPatch = (updatedElement: Partial<T extends LoadedForm ? RootElement : GroupLayout>, updatedEntity: Partial<T>): void => {
         if (isLoadedForm(props.entity)) {

@@ -30,6 +30,7 @@ export interface ElementTreeProps<T extends AnyElement> {
     allowElementIdEditing: boolean;
     highlightElementId?: string | null;
     highlightElementSignal?: number;
+    openRootAddElementSignal?: number;
 }
 
 interface ElementTreeSearchResult {
@@ -48,6 +49,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         allowElementIdEditing,
         highlightElementId,
         highlightElementSignal,
+        openRootAddElementSignal,
     } = props;
 
     const {
@@ -471,6 +473,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 }}
                                 addNewElementLabel={isRootElement(value) ? 'Neuen Abschnitt hinzufügen' : undefined}
                                 addElementDialogTitle={isRootElement(value) ? 'Formularabschnitt hinzufügen' : undefined}
+                                openAddElementSignal={openRootAddElementSignal}
                             />
                         </ElementTreeContextProvider>
                     </DndProvider>

@@ -8,4 +8,5 @@ export interface ElementTreeProps<T extends ElementTreeEntity> {
     editable: boolean;
     scope: ElementTreeScope;
     enabledIdentityProviderInfos: IdentityProviderInfo[];
+    openRootAddElementSignal?: number;
 }

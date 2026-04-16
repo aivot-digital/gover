@@ -23,6 +23,9 @@ import {useConfirm} from '../../providers/confirm-provider';
 import {cloneElement} from '../../utils/clone-element';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {ElementChildOptions} from '../../data/element-type/element-child-options';
+import {isRootElement} from '../../models/elements/root-element';
+import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -70,6 +73,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [inputData, setInputData] = useState<AuthoredElementValues>({});
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
+    const [openRootAddElementSignal, setOpenRootAddElementSignal] = useState(0);
 
     const {
         navigateToElementEditor,
@@ -90,6 +94,30 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const defaultValue = useMemo(() => {
         return generateElementWithDefaultValues(expectedRootType ?? ElementType.GroupLayout) as UiDefinitionInputFieldElementItem;
     }, [expectedRootType]);
+    const effectiveValue = draftValue ?? value ?? defaultValue;
+    const allowedRootChildTypes = useMemo(() => {
+        return ElementChildOptions[displayContext][effectiveValue.type] ?? [];
+    }, [displayContext, effectiveValue.type]);
+
+    const canAddAtRoot = useMemo(() => {
+        return (
+            !disabled &&
+            isAnyElementWithChildren(effectiveValue) &&
+            allowedRootChildTypes.length > 0
+        );
+    }, [allowedRootChildTypes.length, disabled, effectiveValue]);
+
+    const emptyStateTarget = useMemo(() => {
+        if (
+            !isAnyElementWithChildren(effectiveValue) ||
+            (effectiveValue.children?.length ?? 0) > 0 ||
+            allowedRootChildTypes.length === 0
+        ) {
+            return null;
+        }
+
+        return isRootElement(effectiveValue) ? 'section' : 'element';
+    }, [allowedRootChildTypes.length, effectiveValue]);
 
     const handleClose = () => {
         setShowDraftDialog(false);
@@ -331,11 +359,21 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                             editable: !(disabled ?? false),
                                         }}
                                     >
-                                        <ElementDerivationContext
-                                            element={draftValue ?? value ?? defaultValue}
-                                            authoredElementValues={inputData}
-                                            onAuthoredElementValuesChange={setInputData}
-                                        />
+                                        {
+                                            emptyStateTarget != null ?
+                                                <UiDefinitionEmptyState
+                                                    target={emptyStateTarget}
+                                                    onAdd={() => {
+                                                        setOpenRootAddElementSignal((prev) => prev + 1);
+                                                    }}
+                                                    disabled={!canAddAtRoot}
+                                                /> :
+                                                <ElementDerivationContext
+                                                    element={effectiveValue}
+                                                    authoredElementValues={inputData}
+                                                    onAuthoredElementValuesChange={setInputData}
+                                                />
+                                        }
                                     </ElementTreeInlineEditorContextProvider>
                                 </Box>
                             </Allotment.Pane>
@@ -344,7 +382,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 preferredSize={480}
                             >
                                 <ElementTree
-                                    value={draftValue ?? value ?? defaultValue}
+                                    value={effectiveValue}
                                     onChange={setDraftValue}
                                     editable={!disabled}
                                     // The tree editor drawer needs to know the surrounding dialog layer.
@@ -353,6 +391,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     allowElementIdEditing={false}
                                     highlightElementId={highlightElementId}
                                     highlightElementSignal={highlightElementSignal}
+                                    openRootAddElementSignal={openRootAddElementSignal}
                                 />
                             </Allotment.Pane>
                         </Allotment>

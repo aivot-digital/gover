@@ -126,6 +126,7 @@ import {generateComponentTitle} from '../../../../utils/generate-component-title
 import {isAnyElementWithChildren} from '../../../../models/elements/any-element-with-children';
 import {cloneElement} from '../../../../utils/clone-element';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
+import {RootStructureActionsContextProvider} from '../../../../components/root/root-structure-actions-context';
 
 export const DialogSearchParam = 'dialog';
 
@@ -189,6 +190,7 @@ export function FormDetailsPage() {
     const showDeveloperTools = useAppSelector(selectDevToolsTab);
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
+    const [openAddSectionSignal, setOpenAddSectionSignal] = useState(0);
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
@@ -571,6 +573,13 @@ export function FormDetailsPage() {
             loadedForm.permissions.formPermissionEdit
         );
     }, [user, lockState, loadedForm]);
+
+    const rootStructureActions = useMemo(() => ({
+        canAddAtRoot: isEditable && !hideComponentTree,
+        openAddAtRootDialog: () => {
+            setOpenAddSectionSignal((prev) => prev + 1);
+        },
+    }), [hideComponentTree, isEditable]);
 
     const canViewHistory = useMemo(() => {
         if (loadedForm == null) {
@@ -1026,133 +1035,138 @@ export function FormDetailsPage() {
                     }}
                 >
                     <Allotment vertical>
-                        <Allotment>
-                            <Allotment.Pane minSize={732}>
-                                {/* Working Area */}
-                                <Box
-                                    sx={{
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        height: '100%',
-                                        px: 2,
-                                        pt: 2,
-                                        overflow: 'hidden',
-                                    }}
-                                >
-                                    <GenericPageHeader
-                                        title={'Formular: ' + loadedForm.form.internalTitle}
-                                        badge={{
-                                            color: 'default',
-                                            label: `Version ${loadedForm.version.version}`,
-                                        }}
-                                        icon={ModuleIcons.forms}
-                                        actions={headerActions}
-                                    />
-
-                                    <Paper
+                        <RootStructureActionsContextProvider
+                            value={rootStructureActions}
+                        >
+                            <Allotment>
+                                <Allotment.Pane minSize={732}>
+                                    {/* Working Area */}
+                                    <Box
                                         sx={{
-                                            overflowY: 'auto',
-                                            flex: 1,
-                                            mt: 2,
-                                            minHeight: 0,
-                                            borderTopLeftRadius: 10,
-                                            borderTopRightRadius: 10,
-                                            borderBottomLeftRadius: 0,
-                                            borderBottomRightRadius: 0,
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            height: '100%',
+                                            px: 2,
+                                            pt: 2,
+                                            overflow: 'hidden',
                                         }}
-                                        ref={scrollContainerRef}
                                     >
-                                        <ThemeProvider theme={_theme}>
-                                            <ElementTreeInlineEditorContextProvider
-                                                value={{
-                                                    cloneElement: handleCloneElement,
-                                                    deleteElement: handleDeleteElement,
-                                                    navigateToElementEditor: handleOpenElement,
-                                                    highlightElementInTree: handleHighlightElementInTree,
-                                                    editable: isEditable,
-                                                }}
-                                            >
-                                                <ViewDispatcherComponent
-                                                    rootElement={loadedForm.version.rootElement}
-                                                    allElements={allElements}
-                                                    element={loadedForm.version.rootElement}
-                                                    scrollContainerRef={scrollContainerRef}
-                                                    isBusy={false}
-                                                    isDeriving={false}
-                                                    mode="editor"
-                                                    authoredElementValues={authoredElementValues}
-                                                    derivedData={derivedData}
-                                                    onAuthoredElementValuesChange={setAuthoredElementValues}
-                                                    onDerivedDataChange={setDerivedData}
-                                                    onElementBlur={undefined}
-                                                    derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
-                                                    disableVisibility={disableVisibility}
-                                                />
-                                            </ElementTreeInlineEditorContextProvider>
+                                        <GenericPageHeader
+                                            title={'Formular: ' + loadedForm.form.internalTitle}
+                                            badge={{
+                                                color: 'default',
+                                                label: `Version ${loadedForm.version.version}`,
+                                            }}
+                                            icon={ModuleIcons.forms}
+                                            actions={headerActions}
+                                        />
 
-                                            <HelpDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === HelpDialogId}
-                                            />
-
-                                            <PrivacyDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === PrivacyDialogId}
-                                            />
-
-                                            <ImprintDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === ImprintDialogId}
-                                            />
-
-                                            <AccessibilityDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === AccessibilityDialogId}
-                                            />
-                                        </ThemeProvider>
-                                    </Paper>
-                                </Box>
-                            </Allotment.Pane>
-                            {/* Element Tree */}
-                            {
-                                !hideComponentTree &&
-                                (
-                                    <Allotment.Pane
-                                        minSize={480}
-                                        preferredSize={480}
-                                    >
                                         <Paper
                                             sx={{
-                                                boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                                borderLeft: '1px solid #E0E7E0',
-                                                borderRadius: 0,
-                                                position: 'relative',
-                                                height: '100%',
-                                                overflow: 'hidden',
+                                                overflowY: 'auto',
+                                                flex: 1,
+                                                mt: 2,
+                                                minHeight: 0,
+                                                borderTopLeftRadius: 10,
+                                                borderTopRightRadius: 10,
+                                                borderBottomLeftRadius: 0,
+                                                borderBottomRightRadius: 0,
                                             }}
+                                            ref={scrollContainerRef}
                                         >
-                                            <ElementTree
-                                                value={loadedForm.version.rootElement}
-                                                onChange={(changed) => {
-                                                    handlePatch({
-                                                        ...loadedForm,
-                                                        version: {
-                                                            ...loadedForm.version,
-                                                            rootElement: changed as RootElement,
-                                                        },
-                                                    });
-                                                }}
-                                                editable={isEditable}
-                                                displayContext={ElementDisplayContext.CitizenFacing}
-                                                allowElementIdEditing={false}
-                                                highlightElementId={highlightElementId}
-                                                highlightElementSignal={highlightElementSignal}
-                                            />
-                                        </Paper>
-                                    </Allotment.Pane>
-                                )}
+                                            <ThemeProvider theme={_theme}>
+                                                <ElementTreeInlineEditorContextProvider
+                                                    value={{
+                                                        cloneElement: handleCloneElement,
+                                                        deleteElement: handleDeleteElement,
+                                                        navigateToElementEditor: handleOpenElement,
+                                                        highlightElementInTree: handleHighlightElementInTree,
+                                                        editable: isEditable,
+                                                    }}
+                                                >
+                                                    <ViewDispatcherComponent
+                                                        rootElement={loadedForm.version.rootElement}
+                                                        allElements={allElements}
+                                                        element={loadedForm.version.rootElement}
+                                                        scrollContainerRef={scrollContainerRef}
+                                                        isBusy={false}
+                                                        isDeriving={false}
+                                                        mode="editor"
+                                                        authoredElementValues={authoredElementValues}
+                                                        derivedData={derivedData}
+                                                        onAuthoredElementValuesChange={setAuthoredElementValues}
+                                                        onDerivedDataChange={setDerivedData}
+                                                        onElementBlur={undefined}
+                                                        derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                                        disableVisibility={disableVisibility}
+                                                    />
+                                                </ElementTreeInlineEditorContextProvider>
 
-                        </Allotment>
+                                                <HelpDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === HelpDialogId}
+                                                />
+
+                                                <PrivacyDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === PrivacyDialogId}
+                                                />
+
+                                                <ImprintDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === ImprintDialogId}
+                                                />
+
+                                                <AccessibilityDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === AccessibilityDialogId}
+                                                />
+                                            </ThemeProvider>
+                                        </Paper>
+                                    </Box>
+                                </Allotment.Pane>
+                                {/* Element Tree */}
+                                {
+                                    !hideComponentTree &&
+                                    (
+                                        <Allotment.Pane
+                                            minSize={480}
+                                            preferredSize={480}
+                                        >
+                                            <Paper
+                                                sx={{
+                                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                                    borderLeft: '1px solid #E0E7E0',
+                                                    borderRadius: 0,
+                                                    position: 'relative',
+                                                    height: '100%',
+                                                    overflow: 'hidden',
+                                                }}
+                                            >
+                                                <ElementTree
+                                                    value={loadedForm.version.rootElement}
+                                                    onChange={(changed) => {
+                                                        handlePatch({
+                                                            ...loadedForm,
+                                                            version: {
+                                                                ...loadedForm.version,
+                                                                rootElement: changed as RootElement,
+                                                            },
+                                                        });
+                                                    }}
+                                                    editable={isEditable}
+                                                    displayContext={ElementDisplayContext.CitizenFacing}
+                                                    allowElementIdEditing={false}
+                                                    highlightElementId={highlightElementId}
+                                                    highlightElementSignal={highlightElementSignal}
+                                                    openRootAddElementSignal={openAddSectionSignal}
+                                                />
+                                            </Paper>
+                                        </Allotment.Pane>
+                                    )}
+
+                            </Allotment>
+                        </RootStructureActionsContextProvider>
 
                         {showDeveloperTools !== undefined && (
                             <Allotment.Pane

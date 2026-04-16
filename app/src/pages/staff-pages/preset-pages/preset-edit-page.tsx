@@ -47,6 +47,7 @@ import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {collectErrors} from '../../../components/error-alert/error-alert';
+import {RootStructureActionsContextProvider} from '../../../components/root/root-structure-actions-context';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -95,6 +96,13 @@ export function PresetEditPage() {
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const [openAddSectionSignal, setOpenAddSectionSignal] = useState(0);
+    const rootStructureActions = useMemo(() => ({
+        canAddAtRoot: presetVersion?.status === FormStatus.Drafted,
+        openAddAtRootDialog: () => {
+            setOpenAddSectionSignal((prev) => prev + 1);
+        },
+    }), [presetVersion?.status]);
 
     const [toolbarHeight, setToolbarHeight] = useState<number>(0);
     const updateToolbarHeight = (height: number) => {
@@ -424,115 +432,120 @@ export function PresetEditPage() {
                 }}
             >
                 <Allotment vertical>
-                    <Allotment>
-                        <Allotment.Pane minSize={732}>
-                            {/* Working Area */}
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    height: '100%',
-                                    px: 2,
-                                    pt: 2,
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <GenericPageHeader
-                                    title={`Vorlage: ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
-                                    badge={{
-                                        color: 'default',
-                                        label: `Version ${presetVersion.version}`,
-                                    }}
-                                    icon={ModuleIcons.presets}
-                                    actions={[
-                                        {
-                                            icon: <NewWindow />,
-                                            tooltip: 'Neuen Entwurf anlegen',
-                                            onClick: handleAddNewVersion,
-                                        },
-                                        {
-                                            icon: <HomeStorage />,
-                                            tooltip: 'Versionen anzeigen',
-                                            onClick: () => {
-                                                setShowPresetVersions(true);
-                                            },
-                                        },
-                                        {
-                                            icon: <DoneAllOutlinedIcon />,
-                                            tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
-                                            onClick: handleValidate,
-                                            disabled: isBusy,
-                                        },
-                                        {
-                                            icon: <Delete color={'error'} />,
-                                            tooltip: 'Version der Vorlage löschen',
-                                            onClick: () => {
-                                                setConfirmDelete(() => handleDelete);
-                                            },
-                                            visible: presetVersion.status != FormStatus.Published,
-                                        },
-                                    ]}
-                                />
-
-                                <Paper
+                    <RootStructureActionsContextProvider
+                        value={rootStructureActions}
+                    >
+                        <Allotment>
+                            <Allotment.Pane minSize={732}>
+                                {/* Working Area */}
+                                <Box
                                     sx={{
-                                        overflowY: 'auto',
-                                        flex: 1,
-                                        mt: 2,
-                                        p: 4,
-                                        minHeight: 0,
-                                        borderTopLeftRadius: 10,
-                                        borderTopRightRadius: 10,
-                                        borderBottomLeftRadius: 0,
-                                        borderBottomRightRadius: 0,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        height: '100%',
+                                        px: 2,
+                                        pt: 2,
+                                        overflow: 'hidden',
                                     }}
                                 >
-                                    <ViewDispatcherComponent
-                                        rootElement={presetVersion.rootElement}
-                                        allElements={allElements}
-                                        element={presetVersion.rootElement}
-                                        scrollContainerRef={scrollContainerRef}
-                                        isBusy={false}
-                                        isDeriving={false}
-                                        mode="editor"
-                                        authoredElementValues={authoredElementValues}
-                                        derivedData={derivedData}
-                                        onAuthoredElementValuesChange={handleValueChange}
-                                        onDerivedDataChange={setDerivedData}
-                                        onElementBlur={undefined}
-                                        derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
-                                        disableVisibility={false}
+                                    <GenericPageHeader
+                                        title={`Vorlage: ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+                                        badge={{
+                                            color: 'default',
+                                            label: `Version ${presetVersion.version}`,
+                                        }}
+                                        icon={ModuleIcons.presets}
+                                        actions={[
+                                            {
+                                                icon: <NewWindow />,
+                                                tooltip: 'Neuen Entwurf anlegen',
+                                                onClick: handleAddNewVersion,
+                                            },
+                                            {
+                                                icon: <HomeStorage />,
+                                                tooltip: 'Versionen anzeigen',
+                                                onClick: () => {
+                                                    setShowPresetVersions(true);
+                                                },
+                                            },
+                                            {
+                                                icon: <DoneAllOutlinedIcon />,
+                                                tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
+                                                onClick: handleValidate,
+                                                disabled: isBusy,
+                                            },
+                                            {
+                                                icon: <Delete color={'error'} />,
+                                                tooltip: 'Version der Vorlage löschen',
+                                                onClick: () => {
+                                                    setConfirmDelete(() => handleDelete);
+                                                },
+                                                visible: presetVersion.status != FormStatus.Published,
+                                            },
+                                        ]}
+                                    />
+
+                                    <Paper
+                                        sx={{
+                                            overflowY: 'auto',
+                                            flex: 1,
+                                            mt: 2,
+                                            p: 4,
+                                            minHeight: 0,
+                                            borderTopLeftRadius: 10,
+                                            borderTopRightRadius: 10,
+                                            borderBottomLeftRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                        }}
+                                    >
+                                        <ViewDispatcherComponent
+                                            rootElement={presetVersion.rootElement}
+                                            allElements={allElements}
+                                            element={presetVersion.rootElement}
+                                            scrollContainerRef={scrollContainerRef}
+                                            isBusy={false}
+                                            isDeriving={false}
+                                            mode="editor"
+                                            authoredElementValues={authoredElementValues}
+                                            derivedData={derivedData}
+                                            onAuthoredElementValuesChange={handleValueChange}
+                                            onDerivedDataChange={setDerivedData}
+                                            onElementBlur={undefined}
+                                            derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                            disableVisibility={false}
+                                        />
+                                    </Paper>
+                                </Box>
+                            </Allotment.Pane>
+
+                            <Allotment.Pane
+                                minSize={480}
+                                preferredSize={480}
+                            >
+                                {/* Element Tree */}
+                                <Paper
+                                    sx={{
+                                        px: 2,
+                                        boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                        borderLeft: '1px solid #E0E7E0',
+                                        borderRadius: 0,
+                                        position: 'relative',
+                                        height: '100%',
+                                        overflow: 'hidden',
+                                    }}
+                                >
+                                    <ElementTree
+                                        entity={presetVersion}
+                                        onPatch={handlePatch}
+                                        editable={presetVersion.status == FormStatus.Drafted}
+                                        scope="preset"
+                                        enabledIdentityProviderInfos={identityProviders}
+                                        openRootAddElementSignal={openAddSectionSignal}
                                     />
                                 </Paper>
-                            </Box>
-                        </Allotment.Pane>
-
-                        <Allotment.Pane
-                            minSize={480}
-                            preferredSize={480}
-                        >
-                            {/* Element Tree */}
-                            <Paper
-                                sx={{
-                                    px: 2,
-                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                    borderLeft: '1px solid #E0E7E0',
-                                    borderRadius: 0,
-                                    position: 'relative',
-                                    height: '100%',
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <ElementTree
-                                    entity={presetVersion}
-                                    onPatch={handlePatch}
-                                    editable={presetVersion.status == FormStatus.Drafted}
-                                    scope="preset"
-                                    enabledIdentityProviderInfos={identityProviders}
-                                />
-                            </Paper>
-                        </Allotment.Pane>
-                    </Allotment>
+                            </Allotment.Pane>
+                        </Allotment>
+                    </RootStructureActionsContextProvider>
                 </Allotment>
             </Box>
 

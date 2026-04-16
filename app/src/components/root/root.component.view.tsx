@@ -65,6 +65,8 @@ import {FormVersionEntity} from '../../modules/forms/entities/form-version-entit
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {extractVisibleFormSteps, type VisibleFormStepElement} from '../../utils/visible-form-steps';
 import {Stack, Typography} from '@mui/material';
+import {useRootStructureActionsContext} from './root-structure-actions-context';
+import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 
 const SubmissionIdSearchParam = 'submissionId';
 
@@ -145,6 +147,7 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
     const [searchParams, setSearchParams] = useSearchParams();
 
     const dispatch = useAppDispatch();
+    const rootStructureActions = useRootStructureActionsContext();
 
     // TODO: internalize these information
     const form = useAppSelector(selectLoadedForm);
@@ -649,27 +652,35 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
 
                     {
                         totalStepCount === 0 &&
-                        <Stack
-                            justifyContent="center"
-                            sx={{
-                                height: '40vh',
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                            }}
-                        >
-                            <Typography
-                                textAlign="center"
-                                variant="body1"
-                                component="p"
-                                sx={{
-                                    maxWidth: '480px',
-                                }}
-                            >
-                                Dieses Formular enthält noch keine Abschnitte.
-                                Fügen Sie über die Elementstruktur auf der rechten Seite einen neuen Abschnitt hinzu,
-                                um mit der Bearbeitung des Formulars zu beginnen.
-                            </Typography>
-                        </Stack>
+                        (
+                            mode === 'editor' ?
+                                <UiDefinitionEmptyState
+                                    target="section"
+                                    onAdd={() => {
+                                        rootStructureActions?.openAddAtRootDialog();
+                                    }}
+                                    disabled={!(rootStructureActions?.canAddAtRoot ?? false)}
+                                /> :
+                                <Stack
+                                    justifyContent="center"
+                                    sx={{
+                                        height: '40vh',
+                                        justifyContent: 'center',
+                                        alignItems: 'center',
+                                    }}
+                                >
+                                    <Typography
+                                        textAlign="center"
+                                        variant="body1"
+                                        component="p"
+                                        sx={{
+                                            maxWidth: '480px',
+                                        }}
+                                    >
+                                        Dieses Formular enthält derzeit keine Abschnitte oder Elemente.
+                                    </Typography>
+                                </Stack>
+                        )
                     }
 
                     {
