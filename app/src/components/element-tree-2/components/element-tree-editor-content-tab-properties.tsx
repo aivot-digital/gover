@@ -210,7 +210,9 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 // elements without additional properties – should be replaced with a more generic check if element contains additional properties
                 editors[type] != null &&
                 !(hasSummaryLayoutParent && (
+                    type == ElementType.ChipInput ||
                     type == ElementType.FileUpload ||
+                    type == ElementType.MapPoint ||
                     type == ElementType.Text
                 )) &&
                 <ElementEditorSectionHeader

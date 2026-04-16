@@ -10,7 +10,13 @@ export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement,
         element,
         onPatch,
         editable,
+        scope,
+        hasSummaryLayoutParent
     } = props;
+
+    if (hasSummaryLayoutParent) {
+        return null;
+    }
 
     return (
         <Grid

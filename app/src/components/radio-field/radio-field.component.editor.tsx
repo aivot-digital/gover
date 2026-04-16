@@ -24,17 +24,20 @@ export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldEleme
                 variant="outlined"
             />
 
-            <CheckboxFieldComponent
-                label="Optionen nebeneinander anzeigen"
-                value={props.element.displayInline ?? false}
-                onChange={(checked) => {
-                    props.onPatch({
-                        displayInline: checked,
-                    });
-                }}
-                disabled={!props.editable}
-                hint="Zeigt die Optionen nebeneinander anstatt untereinander an. Dies kann Platz sparen und die Übersichtlichkeit verbessern."
-            />
+            {
+                !props.hasSummaryLayoutParent &&
+                <CheckboxFieldComponent
+                    label="Optionen nebeneinander anzeigen"
+                    value={props.element.displayInline ?? false}
+                    onChange={(checked) => {
+                        props.onPatch({
+                            displayInline: checked,
+                        });
+                    }}
+                    disabled={!props.editable}
+                    hint="Zeigt die Optionen nebeneinander anstatt untereinander an. Dies kann Platz sparen und die Übersichtlichkeit verbessern."
+                />
+            }
 
         </>
     );

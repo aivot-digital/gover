@@ -16,7 +16,7 @@ export function SelectFieldSummary(props: BaseSummaryProps<SelectFieldElement, s
         }
     });
     const theme = useTheme();
-    const value: string | null = props.value != null ? options.find((option) => option.value === props.value)?.label ?? null : null;
+    const value: string | null = props.value != null ? options.find((option) => option.value === props.value)?.label ?? props.value : null;
 
     return (
         <Grid
