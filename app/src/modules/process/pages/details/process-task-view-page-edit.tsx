@@ -507,6 +507,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                             py: 0.5,
                                         },
                                     }}
+                                    color={taskInputDataSaveState === TaskInputSaveState.Failed ? 'error' : undefined}
                                     label={
                                         <Box
                                             component="span"
