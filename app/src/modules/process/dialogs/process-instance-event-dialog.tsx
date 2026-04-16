@@ -2,41 +2,45 @@ import {
     Box,
     Collapse,
     Dialog,
-    DialogContent, IconButton,
+    DialogContent, Grid, IconButton,
     Skeleton,
     Table,
     TableBody,
     TableCell,
     TableContainer,
     TableHead,
-    TableRow
-} from "@mui/material";
-import {FC, useEffect, useMemo, useState} from "react";
-import {SvgIconProps} from "@mui/material";
-import {ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from "../entities/process-instance-event-entity";
-import {ProcessInstanceEventApiService} from "../services/process-instance-event-api-service";
-import {ProcessInstanceApiService} from "../services/process-instance-api-service";
-import {ProcessNodeEntity} from "../entities/process-node-entity";
-import {ProcessNodeProvider, ProcessNodeProviderApiService} from "../services/process-node-provider-api-service";
-import {ProcessNodeApiService} from "../services/process-node-api-service";
-import {ProcessInstanceTaskApiService} from "../services/process-instance-task-api-service";
-import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
-import {getNodeName} from "../pages/details/components/process-flow-editor/utils/node-utils";
-import {UsersApiService} from "../../users/users-api-service";
-import {User} from "../../users/models/user";
-import {resolveUserName} from "../../users/utils/resolve-user-name";
-import {format} from "date-fns/format";
-import Typography from "@mui/material/Typography";
-import AccountBox from "@aivot/mui-material-symbols-400-outlined/dist/account-box/AccountBox";
-import Memory from "@aivot/mui-material-symbols-400-outlined/dist/memory/Memory";
-import Info from "@aivot/mui-material-symbols-400-outlined/dist/info/Info";
-import Warning from "@aivot/mui-material-symbols-400-outlined/dist/warning/Warning";
-import EmergencyHome from "@aivot/mui-material-symbols-400-outlined/dist/emergency-home/EmergencyHome";
-import BugReport from "@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport";
-import {DialogTitleWithClose} from "../../../components/dialog-title-with-close/dialog-title-with-close";
-import {withDelay} from "../../../utils/with-delay";
-import {ExpandableCodeBlock} from "../../../components/expandable-code-block/expandable-code-block";
-import ChevronLeft from "@aivot/mui-material-symbols-400-outlined/dist/chevron-left/ChevronLeft";
+    TableRow,
+} from '@mui/material';
+import {FC, useEffect, useMemo, useState} from 'react';
+import {SvgIconProps} from '@mui/material';
+import {ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
+import {ProcessInstanceEventApiService} from '../services/process-instance-event-api-service';
+import {ProcessInstanceApiService} from '../services/process-instance-api-service';
+import {ProcessNodeEntity} from '../entities/process-node-entity';
+import {ProcessNodeProvider, ProcessNodeProviderApiService} from '../services/process-node-provider-api-service';
+import {ProcessNodeApiService} from '../services/process-node-api-service';
+import {ProcessInstanceTaskApiService} from '../services/process-instance-task-api-service';
+import {ProcessInstanceTaskEntity} from '../entities/process-instance-task-entity';
+import {getNodeName} from '../pages/details/components/process-flow-editor/utils/node-utils';
+import {UsersApiService} from '../../users/users-api-service';
+import {User} from '../../users/models/user';
+import {resolveUserName} from '../../users/utils/resolve-user-name';
+import {format} from 'date-fns/format';
+import Typography from '@mui/material/Typography';
+import AccountBox from '@aivot/mui-material-symbols-400-outlined/dist/account-box/AccountBox';
+import Memory from '@aivot/mui-material-symbols-400-outlined/dist/memory/Memory';
+import Info from '@aivot/mui-material-symbols-400-outlined/dist/info/Info';
+import Warning from '@aivot/mui-material-symbols-400-outlined/dist/warning/Warning';
+import EmergencyHome from '@aivot/mui-material-symbols-400-outlined/dist/emergency-home/EmergencyHome';
+import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {withDelay} from '../../../utils/with-delay';
+import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
+import ChevronLeft from '@aivot/mui-material-symbols-400-outlined/dist/chevron-left/ChevronLeft';
+import {ProcessInstanceEntity} from '../entities/process-instance-entity';
+import {StatusTable} from '../../../components/status-table/status-table';
+import {StatusTablePropsItem} from '../../../components/status-table/status-table-props';
+import {humanizeISO8601Duration} from '../../../utils/duration-utils';
 
 interface ProcessInstanceEventDialogProps {
     open: boolean;
@@ -53,23 +57,81 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
         taskId,
     } = props;
 
-    const [items, setItems] = useState<Item[] | null>(null);
+    const [eventsData, setEventsData] = useState<EventsData | null>(null);
 
     useEffect(() => {
         if (!open) {
             return;
         }
 
-        withDelay(getItems(instanceId, taskId), 600)
-            .then(setItems);
+        withDelay(getEventData(instanceId, taskId), 600)
+            .then(setEventsData);
     }, [open, instanceId, taskId]);
 
     const handleClose = () => {
         onClose();
         setTimeout(() => {
-            setItems(null);
+            setEventsData(null);
         }, 300);
     };
+
+    const instanceRuntimeInformation: StatusTablePropsItem[] = useMemo(() => {
+        if (eventsData == null) {
+            return [];
+        }
+
+        const info: StatusTablePropsItem[] = [
+            {
+                label: 'Start',
+                children: format(new Date(eventsData.instance.started), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+            },
+        ];
+
+        if (eventsData.instance.finished != null) {
+            info.push({
+                label: 'Ende',
+                children: format(new Date(eventsData.instance.finished), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+            });
+        }
+
+        if (eventsData.instance.runtime != null) {
+            info.push({
+                label: 'Laufzeit',
+                children: humanizeISO8601Duration(eventsData.instance.runtime),
+            });
+        }
+
+        return info;
+    }, [eventsData]);
+
+    const taskRuntimeInformation: StatusTablePropsItem[] = useMemo(() => {
+        if (eventsData == null || eventsData.task == null) {
+            return [];
+        }
+
+        const info: StatusTablePropsItem[] = [
+            {
+                label: 'Start',
+                children: format(new Date(eventsData.task.started), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+            },
+        ];
+
+        if (eventsData.task.finished != null) {
+            info.push({
+                label: 'Ende',
+                children: format(new Date(eventsData.task.finished), 'dd.MM.yyyy HH:mm:ss') + ' Uhr',
+            });
+        }
+
+        if (eventsData.task.runtime != null) {
+            info.push({
+                label: 'Laufzeit',
+                children: humanizeISO8601Duration(eventsData.task.runtime),
+            });
+        }
+
+        return info;
+    }, [eventsData]);
 
     return (
         <Dialog
@@ -87,6 +149,81 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
             </DialogTitleWithClose>
 
             <DialogContent>
+                <Grid
+                    container
+                    spacing={2}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            md: 6,
+                        }}
+                    >
+                        <Typography
+                            variant="h6"
+                        >
+                            Laufzeitinformation des Vorgangs
+                        </Typography>
+
+                        {
+                            instanceRuntimeInformation.length === 0 &&
+                            <Skeleton height={32}/>
+                        }
+
+                        {
+                            instanceRuntimeInformation.length > 0 &&
+                            <StatusTable
+                                cardVariant="outlined"
+                                dense={true}
+                                sx={{
+                                    mt: 1,
+                                }}
+                                items={instanceRuntimeInformation}
+                            />
+                        }
+                    </Grid>
+
+                    {
+                        taskId != null &&
+                        <Grid
+                            size={{
+                                xs: 12,
+                                md: 6,
+                            }}
+                        >
+                            <Typography
+                                variant="h6"
+                            >
+                                Laufzeitinformation der Aufgabe
+                            </Typography>
+
+                            {
+                                taskRuntimeInformation.length === 0 &&
+                                <Skeleton height={32}/>
+                            }
+
+                            {
+                                taskRuntimeInformation.length > 0 &&
+                                <StatusTable
+                                    cardVariant="outlined"
+                                    dense={true}
+                                    sx={{
+                                        mt: 1,
+                                    }}
+                                    items={taskRuntimeInformation}
+                                />
+                            }
+                        </Grid>
+                    }
+                </Grid>
+            </DialogContent>
+
+            <DialogContent
+                sx={{
+                    px: 0,
+                    pb: 1,
+                }}
+            >
                 <TableContainer
                     sx={{
                         maxHeight: '720px',
@@ -119,16 +256,16 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
                         </TableHead>
                         <TableBody>
                             {
-                                items != null &&
-                                items.length > 0 &&
-                                items.map((event) => (
+                                eventsData != null &&
+                                eventsData.items.length > 0 &&
+                                eventsData.items.map((event) => (
                                     <EventTableRow event={event}
                                                    key={event.id}/>
                                 ))
                             }
                             {
-                                items != null &&
-                                items.length === 0 &&
+                                eventsData != null &&
+                                eventsData.items.length === 0 &&
                                 <TableRow>
                                     <TableCell
                                         colSpan={6}
@@ -142,7 +279,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
                                 </TableRow>
                             }
                             {
-                                items == null &&
+                                eventsData == null &&
                                 <TableRow>
                                     {
                                         new Array(6)
@@ -175,10 +312,10 @@ interface Item extends ProcessInstanceEventEntity {
 }
 
 const ProcessNodeExecutionLogLevelLabels: Record<ProcessNodeExecutionLogLevel, string> = {
-    [ProcessNodeExecutionLogLevel.Debug]: "Debug",
-    [ProcessNodeExecutionLogLevel.Info]: "Info",
-    [ProcessNodeExecutionLogLevel.Warn]: "Warnung",
-    [ProcessNodeExecutionLogLevel.Error]: "Fehler",
+    [ProcessNodeExecutionLogLevel.Debug]: 'Debug',
+    [ProcessNodeExecutionLogLevel.Info]: 'Info',
+    [ProcessNodeExecutionLogLevel.Warn]: 'Warnung',
+    [ProcessNodeExecutionLogLevel.Error]: 'Fehler',
 };
 
 const ProcessNodeExecutionLogLevelIcons: Record<ProcessNodeExecutionLogLevel, FC<SvgIconProps>> = {
@@ -188,7 +325,13 @@ const ProcessNodeExecutionLogLevelIcons: Record<ProcessNodeExecutionLogLevel, FC
     [ProcessNodeExecutionLogLevel.Error]: EmergencyHome,
 };
 
-async function getItems(instanceId: number, taskId: number | null): Promise<Item[]> {
+interface EventsData {
+    instance: ProcessInstanceEntity;
+    task: ProcessInstanceTaskEntity | null;
+    items: Item[];
+}
+
+async function getEventData(instanceId: number, taskId: number | null): Promise<EventsData> {
     const processInstance = await new ProcessInstanceApiService()
         .retrieve(instanceId);
 
@@ -214,42 +357,46 @@ async function getItems(instanceId: number, taskId: number | null): Promise<Item
     const users = await new UsersApiService()
         .listAll();
 
-    return events.content.map((event) => {
-        const isTechnical = event.isTechnical ?? event.technical ?? false;
-        const isAudit = event.isAudit ?? event.audit ?? false;
+    return {
+        instance: processInstance,
+        task: taskId != null ? (processTasks.content.find(t => t.id === taskId) || null) : null,
+        items: events.content.map((event) => {
+            const isTechnical = event.isTechnical ?? event.technical ?? false;
+            const isAudit = event.isAudit ?? event.audit ?? false;
 
-        let task: ProcessInstanceTaskEntity | null = null;
-        if (event.processInstanceTaskId != null) {
-            task = processTasks.content.find((t) => t.id === event.processInstanceTaskId)!;
-        }
+            let task: ProcessInstanceTaskEntity | null = null;
+            if (event.processInstanceTaskId != null) {
+                task = processTasks.content.find((t) => t.id === event.processInstanceTaskId)!;
+            }
 
-        let node: ProcessNodeEntity | null = null;
-        if (task != null) {
-            node = processDefinitionNodes.content.find((n) => n.id === task!.processNodeId)!;
-        }
+            let node: ProcessNodeEntity | null = null;
+            if (task != null) {
+                node = processDefinitionNodes.content.find((n) => n.id === task!.processNodeId)!;
+            }
 
-        let provider: ProcessNodeProvider | null = null;
-        if (node != null) {
-            provider = providers.find((p) => p.key === node!.processNodeDefinitionKey)!;
-        }
+            let provider: ProcessNodeProvider | null = null;
+            if (node != null) {
+                provider = providers.find((p) => p.key === node!.processNodeDefinitionKey)!;
+            }
 
-        let user: User | null = null;
-        if (event.triggeringUserId != null) {
-            user = users.content.find((u) => u.id === event.triggeringUserId)!;
-        }
+            let user: User | null = null;
+            if (event.triggeringUserId != null) {
+                user = users.content.find((u) => u.id === event.triggeringUserId)!;
+            }
 
-        const item: Item = {
-            ...event,
-            isTechnical,
-            isAudit,
-            scope: node != null && provider != null ? getNodeName(node, provider) : null,
-            trigger: user != null ? resolveUserName(user) : null,
-            startedAt: new Date(task != null ? task.started : processInstance.started),
-            endedAt: task != null && task.finished != null ? new Date(task.finished) : (processInstance.finished != null ? new Date(processInstance.finished) : null),
-        };
+            const item: Item = {
+                ...event,
+                isTechnical,
+                isAudit,
+                scope: node != null && provider != null ? getNodeName(node, provider) : null,
+                trigger: user != null ? resolveUserName(user) : null,
+                startedAt: new Date(task != null ? task.started : processInstance.started),
+                endedAt: task != null && task.finished != null ? new Date(task.finished) : (processInstance.finished != null ? new Date(processInstance.finished) : null),
+            };
 
-        return item;
-    });
+            return item;
+        }),
+    };
 }
 
 function EventTableRow(props: { event: Item }) {
@@ -438,13 +585,12 @@ function EventTableRow(props: { event: Item }) {
                                     Level: {ProcessNodeExecutionLogLevelLabels[event.level]}
                                 </Typography>
                                 <Typography>
-                                    Technisch: {event.isTechnical ? "Ja" : "Nein"}
+                                    Technisch: {event.isTechnical ? 'Ja' : 'Nein'}
                                 </Typography>
                                 <Typography>
-                                    Audit-relevant: {event.isAudit ? "Ja" : "Nein"}
+                                    Audit-relevant: {event.isAudit ? 'Ja' : 'Nein'}
                                 </Typography>
                             </Box>
-
                             {
                                 event.endedAt != null &&
                                 <Box
@@ -459,13 +605,7 @@ function EventTableRow(props: { event: Item }) {
                                     </Typography>
 
                                     <Typography>
-                                        Gestartet: {format(event.startedAt, 'dd.MM.yyyy HH:mm:ss')}
-                                    </Typography>
-                                    <Typography>
-                                        Beendet: {format(event.endedAt, 'dd.MM.yyyy HH:mm:ss')}
-                                    </Typography>
-                                    <Typography>
-                                        Dauer: {`${((event.endedAt.getTime() - event.startedAt.getTime()) / 1000).toFixed(2)} Sekunden`}
+                                        Zeitstempel: {format(new Date(event.timestamp), 'dd.MM.yyyy HH:mm:ss')} Uhr
                                     </Typography>
                                 </Box>
                             }

@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
+import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -86,9 +87,10 @@ public class ProcessStarter {
                         ProcessNodeExecutionLogLevel.Info,
                         true,
                         true,
-                        "Vorgang für Prozess '%s' gestartet. Erstes Prozesselement: '%s'.",
-                        process.getInternalTitle(),
-                        initialNode.resolveName(provider)
+                        "Neuer Vorgang " + StringUtils.quote(process.getInternalTitle()) + " gestartet",
+                        "Ein neuer Vorgang für den Prozess %s wurde gestartet. Die erste Aufgabe wird für das Prozesselement %s gestartet.",
+                        StringUtils.quote(process.getInternalTitle()),
+                        StringUtils.quote(initialNode.resolveName(provider))
                 );
             } catch (Exception e) {
                 logger.logException(e);

@@ -19,6 +19,7 @@ import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.amqp.core.Queue;
@@ -171,10 +172,11 @@ public class ProcessWorker {
                 .withTaskId(taskEntity.getId());
 
         logger.logf(
-                ProcessNodeExecutionLogLevel.Debug,
+                ProcessNodeExecutionLogLevel.Info,
                 true,
                 false,
-                "Aufgabe für das Prozesselement „%s“ (ID: %d) wurde gestartet.",
+                "Aufgabe " + StringUtils.quote(currentNode.resolveName(currentNodeProvider)) + " gestartet",
+                "Die Aufgabe für das Prozesselement „%s“ (ID: %d) wurde gestartet. Die Aufgabe wird nun vom System verarbeitet und gegebenenfalls an eine Mitarbeiter:in zugewiesen.",
                 currentNode.resolveName(currentNodeProvider),
                 currentNode.getId()
         );
