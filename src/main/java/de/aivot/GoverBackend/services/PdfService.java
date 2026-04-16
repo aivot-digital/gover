@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
+import de.aivot.GoverBackend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -57,7 +58,6 @@ public class PdfService {
 
     private final GotenbergConfig gotenbergConfig;
     private final SystemConfigService systemConfigService;
-    private final DepartmentRepository departmentRepository;
     private final AssetRepository assetRepository;
     private final GoverConfig goverConfig;
     private final PaymentTransactionRepository paymentTransactionRepository;
@@ -67,11 +67,12 @@ public class PdfService {
     private final FormVersionService formVersionService;
     private final HttpService httpService;
     private final ElementDerivationService elementDerivationService;
+    private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
                       SystemConfigService systemConfigService,
-                      DepartmentRepository departmentRepository,
+                      VDepartmentShadowedRepository vDepartmentShadowedRepository,
                       AssetRepository assetRepository,
                       GoverConfig goverConfig,
                       PaymentTransactionRepository paymentTransactionRepository,
@@ -83,7 +84,6 @@ public class PdfService {
                       ElementDerivationService elementDerivationService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
-        this.departmentRepository = departmentRepository;
         this.assetRepository = assetRepository;
         this.goverConfig = goverConfig;
         this.paymentTransactionRepository = paymentTransactionRepository;
@@ -93,6 +93,7 @@ public class PdfService {
         this.formVersionService = formVersionService;
         this.httpService = httpService;
         this.elementDerivationService = elementDerivationService;
+        this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
     }
 
     public void testGotenbergConnection() throws IOException {
@@ -202,7 +203,7 @@ public class PdfService {
 
         dto.put("base", createBaseContext(formTheme, scope));
         dto.put("department",
-                departmentRepository
+                vDepartmentShadowedRepository
                         .findById(form.getRelevantDepartmentId())
                         .orElseThrow(() -> new RuntimeException("Department not found"))
         );
