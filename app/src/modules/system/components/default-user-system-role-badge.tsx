@@ -29,11 +29,11 @@ export function DefaultUserSystemRoleBadge(props: DefaultUserSystemRoleBadgeProp
                     gap: 0.5,
                 }}
             >
-                Standard-Systemrolle
+                Standardrolle
                 <HelpOutlineIcon sx={{fontSize: 16}} />
             </Box>
         )
-        : 'Standard-Systemrolle';
+        : 'Standardrolle';
 
     return (
         <HintTooltip

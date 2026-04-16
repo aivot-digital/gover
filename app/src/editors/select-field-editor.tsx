@@ -57,33 +57,36 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, Ele
             }));
     }, [element.id, allElements]);
 
-    const hasDependency = element.dependsOnSelectFieldId != null;
+    const hasDependency = !hasSummaryLayoutParent && element.dependsOnSelectFieldId != null;
 
     return (
         <Grid
             container
             columnSpacing={4}
         >
-            <Grid
-                size={{
-                    xs: 12,
-                    lg: 6,
-                }}
-            >
-                <SelectFieldComponent
-                    label="Abhängiges Auswahlfeld (optional)"
-                    hint="Wählen Sie ein vorheriges Auswahlfeld aus, wenn diese Auswahl von dessen Wert abhängen soll. Dann können die Optionen über Gruppenwerte gezielt zugeordnet werden."
-                    value={element.dependsOnSelectFieldId ?? undefined}
-                    onChange={(dependsOnSelectFieldId) => {
-                        onPatch({
-                            dependsOnSelectFieldId,
-                        });
+            {
+                !hasSummaryLayoutParent &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
                     }}
-                    options={dependencyOptions}
-                    disabled={!editable}
-                    emptyStatePlaceholder="Keine vorherigen Auswahlfelder verfügbar"
-                />
-            </Grid>
+                >
+                    <SelectFieldComponent
+                        label="Abhängiges Auswahlfeld (optional)"
+                        hint="Wählen Sie ein vorheriges Auswahlfeld aus, wenn diese Auswahl von dessen Wert abhängen soll. Dann können die Optionen über Gruppenwerte gezielt zugeordnet werden."
+                        value={element.dependsOnSelectFieldId ?? undefined}
+                        onChange={(dependsOnSelectFieldId) => {
+                            onPatch({
+                                dependsOnSelectFieldId,
+                            });
+                        }}
+                        options={dependencyOptions}
+                        disabled={!editable}
+                        emptyStatePlaceholder="Keine vorherigen Auswahlfelder verfügbar"
+                    />
+                </Grid>
+            }
             <Grid
                 size={{
                     xs: 12,

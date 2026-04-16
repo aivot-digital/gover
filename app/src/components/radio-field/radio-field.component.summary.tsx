@@ -15,7 +15,7 @@ export function RadioFieldComponentSummary(props: BaseSummaryProps<RadioFieldEle
             return option;
         }
     });
-    const value: string | null = props.value != null ? options.find((option) => option.value === props.value)?.label ?? null : null;
+    const value: string | null = props.value != null ? options.find((option) => option.value === props.value)?.label ?? props.value : null;
     const theme = useTheme();
 
     return (

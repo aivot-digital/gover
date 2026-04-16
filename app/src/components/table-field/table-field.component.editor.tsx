@@ -131,19 +131,22 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                     />
                                 </Grid>
                                 <Grid size={3}>
-                                    <TextField
-                                        label="Platzhalter"
-                                        margin="normal"
-                                        value={column.placeholder ?? ''}
-                                        onChange={event => onChange({
-                                            placeholder: event.target.value,
-                                        })}
-                                        onBlur={() => onChange({
-                                            placeholder: (column.placeholder ?? '').trim(),
-                                        })}
-                                        helperText={'Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse.'}
-                                        disabled={!props.editable}
-                                    />
+                                    {
+                                        !hasSummaryLayoutParent &&
+                                        <TextField
+                                            label="Platzhalter"
+                                            margin="normal"
+                                            value={column.placeholder ?? ''}
+                                            onChange={event => onChange({
+                                                placeholder: event.target.value,
+                                            })}
+                                            onBlur={() => onChange({
+                                                placeholder: (column.placeholder ?? '').trim(),
+                                            })}
+                                            helperText={'Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse.'}
+                                            disabled={!props.editable}
+                                        />
+                                    }
                                 </Grid>
                                 {
                                     column.datatype === 'number' &&
@@ -208,18 +211,21 @@ export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldEleme
                                         />
                                     }
 
-                                    <FormControlLabel
-                                        control={
-                                            <Checkbox
-                                                checked={column.disabled ?? false}
-                                                onChange={event => onChange({
-                                                    disabled: event.target.checked,
-                                                })}
-                                                disabled={!props.editable}
-                                            />
-                                        }
-                                        label="Eingabe deaktiviert"
-                                    />
+                                    {
+                                        !hasSummaryLayoutParent &&
+                                        <FormControlLabel
+                                            control={
+                                                <Checkbox
+                                                    checked={column.disabled ?? false}
+                                                    onChange={event => onChange({
+                                                        disabled: event.target.checked,
+                                                    })}
+                                                    disabled={!props.editable}
+                                                />
+                                            }
+                                            label="Eingabe deaktiviert"
+                                        />
+                                    }
                                 </Box>
                                 <Button
                                     color="error"
