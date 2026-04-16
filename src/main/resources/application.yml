@@ -32,8 +32,8 @@ spring:
       # Prevent hibernate from modifying the database schema
       # This is handled by Flyway instead
       ddl-auto: validate
-    # Do not bind the entities to the persistence context when they are loaded, this allows to avoid issues with detached entities and lazy loading
-    open-in-view: false
+    # Close the hibernate session at the end of a transaction to prevent lazy loading issues
+    open-in-view: true
     # Debug SQL
     # showSql: true
     # Pretty print SQL
