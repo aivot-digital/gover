@@ -1,4 +1,4 @@
-import React, {ComponentType, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {ComponentType, useCallback, useMemo, useState} from 'react';
 import Grid from '@mui/material/Grid';
 import {type AnyElement} from '../models/elements/any-element';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
@@ -27,7 +27,6 @@ import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../mod
 import {useElementTreeInlineEditorContext} from './element-tree-2/components/element-tree-inline-editor-context';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
-import {useElementDerivationContext} from '../modules/elements/components/element-derivation-context';
 
 interface DispatcherComponentProps<T extends AnyElement> {
     rootElement: AnyElement;
@@ -45,7 +44,7 @@ interface DispatcherComponentProps<T extends AnyElement> {
     rootDerivedData?: DerivedRuntimeElementData;
     onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
     onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
-    onDerivedDataChange?: (data: DerivedRuntimeElementData) => void;
+    onDerivedDataChange?: (data: DerivedRuntimeElementData | ((prev: DerivedRuntimeElementData) => DerivedRuntimeElementData)) => void;
 
     disableVisibility?: boolean;
     derivationTriggerIdQueue: string[];

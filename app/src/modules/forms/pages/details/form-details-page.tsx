@@ -780,21 +780,21 @@ export function FormDetailsPage() {
                         const clone = cloneElement(element);
 
                         const updatedChildren = [
-                            ...currentElement.children
+                            ...currentElement.children,
                         ];
                         updatedChildren.splice(clonedChildIndex, 0, clone);
                         dispatch(showSuccessSnackbar(`${generateComponentTitle(element)} wurde erfolgreich dupliziert.`));
                         return {
                             ...currentElement,
                             children: updatedChildren,
-                        }
+                        };
                     } else {
                         return {
                             ...currentElement,
                             children: currentElement
                                 .children
                                 .map(child => cloneElementRecursive(child)),
-                        }
+                        };
                     }
                 } else {
                     return currentElement;

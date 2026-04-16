@@ -51,7 +51,6 @@ import {collectErrors, ErrorAlert} from '../error-alert/error-alert';
 import {ElementWithParents, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {
-    resolveVisibility,
     synchronizeAuthoredElementValuesByDestinationPath,
     walkAuthoredElementValues,
 } from '../../utils/element-data-utils';
@@ -464,8 +463,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
         })
             .then((errorMessage) => {
                 if (errorMessage != null) {
-                    onDerivedDataChange?.(withDerivedDataOverride(
-                        derivedData,
+                    onDerivedDataChange?.((prev) => withDerivedDataOverride(
+                        prev,
                         SummaryAttachmentsTooLargeKey,
                         {
                             error: errorMessage,
@@ -473,8 +472,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                     ));
                     return false;
                 } else {
-                    onDerivedDataChange?.(withDerivedDataOverride(
-                        derivedData,
+                    onDerivedDataChange?.((prev) => withDerivedDataOverride(
+                        prev,
                         SummaryAttachmentsTooLargeKey,
                         {
                             error: null,
@@ -504,8 +503,8 @@ export function RootComponentView(props: BaseViewProps<RootElement, void>) {
                 try {
                     const calculatedCosts = await new FormApiService()
                         .calculateCosts(form.form.slug, form.version.version, authoredElementValues);
-                    onDerivedDataChange?.(withDerivedDataOverride(
-                        derivedData,
+                    onDerivedDataChange?.((prev) => withDerivedDataOverride(
+                        prev,
                         SubmitPaymentDataKey,
                         {
                             value: calculatedCosts,

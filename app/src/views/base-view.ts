@@ -20,7 +20,7 @@ export interface BaseViewProps<M extends AnyElement, V> {
     rootDerivedData: DerivedRuntimeElementData;
     onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
     onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
-    onDerivedDataChange?: (data: DerivedRuntimeElementData) => void;
+    onDerivedDataChange?: (data: DerivedRuntimeElementData | ((prev: DerivedRuntimeElementData) => DerivedRuntimeElementData)) => void;
     disableVisibility?: boolean;
     derivationTriggerIdQueue: string[];
 }
