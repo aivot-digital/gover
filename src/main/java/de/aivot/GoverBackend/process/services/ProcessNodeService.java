@@ -121,16 +121,13 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public ProcessNodeEntity performUpdate(@Nonnull Integer id,
                                            @Nonnull ProcessNodeEntity entity,
                                            @Nonnull ProcessNodeEntity existingEntity) throws ResponseException {
-        if (!existingEntity.getProcessNodeDefinitionKey().equals(entity.getProcessNodeDefinitionKey())) {
-            throw ResponseException.badRequest("Der Prozesselement-Funktionsanbieter eines Knoten kann nicht geändert werden.");
-        }
-
         // Update fields
         existingEntity.setProcessId(entity.getProcessId());
         existingEntity.setProcessVersion(entity.getProcessVersion());
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
         existingEntity.setDataKey(entity.getDataKey());
+        existingEntity.setProcessNodeDefinitionKey(entity.getProcessNodeDefinitionKey());
         existingEntity.setProcessNodeDefinitionVersion(entity.getProcessNodeDefinitionVersion());
         existingEntity.setOutputMappings(entity.getOutputMappings());
         existingEntity.setTimeLimitDays(entity.getTimeLimitDays());
