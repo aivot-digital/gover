@@ -79,6 +79,9 @@ const mdxEditorGermanTranslation: Translation = (key, defaultValue, interpolatio
     return template.replace(/\{\{\s*([^{}\s]+)\s*}}/g, (_, token: string) => String(interpolations?.[token] ?? ''));
 };
 
+const TEXT_FIELD_READ_ONLY_BG = '#F8F8F8';
+const TEXT_FIELD_DISABLED_TEXT_COLOR = 'rgba(0, 0, 0, 0.66)';
+
 export interface RichTextInputComponentProps {
     label?: string | null | undefined;
     hint?: string | null | undefined;
@@ -116,9 +119,19 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const outlinedBorderColor = theme.palette.mode === 'light'
         ? 'rgba(0, 0, 0, 0.23)'
         : 'rgba(255, 255, 255, 0.23)';
+    // Match the visual surface used by TextFieldComponent while the field is read-only.
     const baseBg = isReadOnly
-        ? theme.palette.action.disabledBackground
+        ? TEXT_FIELD_READ_ONLY_BG
         : theme.palette.background.paper;
+    const editorContentColor = isReadOnly
+        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        : theme.palette.text.primary;
+    const editorSecondaryContentColor = isReadOnly
+        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        : theme.palette.text.secondary;
+    const editorLinkColor = isReadOnly
+        ? TEXT_FIELD_DISABLED_TEXT_COLOR
+        : theme.palette.primary.main;
     const toolbarBg = isReadOnly
         ? theme.palette.action.hover
         : alpha(theme.palette.text.primary, 0.035);
@@ -145,12 +158,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
 
     return (
         <Box
-            sx={[
-                {
-                    opacity: disabled ? 0.65 : 1,
-                },
-                ...sxArray,
-            ]}
+            sx={sxArray}
         >
             {
                 label != null &&
@@ -173,14 +181,14 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     borderColor: error != null ? 'error.main' : outlinedBorderColor,
                     borderRadius: 1,
                     backgroundColor: baseBg,
-                    transition: theme.transitions.create(['border-color', 'box-shadow'], {
+                    transition: theme.transitions.create(['background-color', 'border-color', 'box-shadow'], {
                         duration: theme.transitions.duration.shorter,
                     }),
                     '&:focus-within': {
                         borderColor: focusColor,
                         boxShadow: `0 0 0 1px ${focusColor}`,
                     },
-                    '& .gover-mdx-editor': {
+                    '& .gover-mdx-editor.mdxeditor': {
                         '--font-body': theme.typography.fontFamily,
                         '--basePageBg': baseBg,
                         '--baseBase': baseBg,
@@ -207,19 +215,36 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         '--accentText': theme.palette.primary.main,
                         '--accentTextContrast': theme.palette.primary.contrastText,
                         fontFamily: 'inherit',
+                        backgroundColor: baseBg,
+                        borderRadius: 'inherit',
+                        overflow: 'hidden',
+                        transition: theme.transitions.create('background-color', {
+                            duration: theme.transitions.duration.shorter,
+                        }),
+                    },
+                    '& .gover-mdx-editor .mdxeditor-root-contenteditable': {
+                        backgroundColor: baseBg,
+                        transition: theme.transitions.create('background-color', {
+                            duration: theme.transitions.duration.shorter,
+                        }),
                     },
                     '& .gover-mdx-editor [class*="_toolbarRoot_"]': {
                         position: 'sticky',
                         top: 0,
                         zIndex: 2,
+                        boxSizing: 'border-box',
                         borderBottom: '1px solid',
                         borderColor: error != null ? alpha(theme.palette.error.main, 0.3) : 'divider',
                         borderRadius: '4px 4px 0 0',
                         backgroundColor: baseBg,
                         paddingInline: 1,
                         paddingBlock: 0.75,
-                        minHeight: 46,
+                        minHeight: 47,
+                        height: 47,
                         gap: 0.5,
+                        transition: theme.transitions.create('background-color', {
+                            duration: theme.transitions.duration.shorter,
+                        }),
                     },
                     '& .mdxeditor-popup-container.gover-mdx-editor': {
                         zIndex: `${theme.zIndex.modal + 1} !important`,
@@ -336,14 +361,21 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                         borderColor: 'primary.main',
                         boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"]': {
+                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"])': {
                         minHeight: editorMinHeight,
                         maxHeight: editorMaxHeight,
                         overflowY: 'auto',
                         padding: theme.spacing(1.5, 2),
                         fontSize: theme.typography.body1.fontSize,
                         lineHeight: 1.6,
-                        color: 'text.primary',
+                        color: editorContentColor,
+                        backgroundColor: 'transparent',
+                        position: 'relative',
+                        zIndex: 1,
+                        caretColor: editorContentColor,
+                        transition: theme.transitions.create(['background-color', 'color'], {
+                            duration: theme.transitions.duration.shorter,
+                        }),
                     },
                     '& .gover-mdx-editor .mdxeditor-diff-source-wrapper': {
                         minHeight: 0,
@@ -356,6 +388,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     '& .gover-mdx-editor .cm-sourceView .cm-editor': {
                         maxHeight: editorMaxHeight,
                         overflow: 'hidden',
+                        color: editorContentColor,
                     },
                     '& .gover-mdx-editor .cm-sourceView .cm-scroller': {
                         minHeight: editorMinHeight,
@@ -365,27 +398,39 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                     },
                     '& .gover-mdx-editor [class*="_placeholder_"]': {
                         color: 'text.disabled',
+                        padding: theme.spacing(1.5, 2),
+                        fontSize: theme.typography.body1.fontSize,
+                        lineHeight: 1.6,
+                        minHeight: 0,
+                        maxHeight: 'none',
+                        overflow: 'hidden',
+                        zIndex: 0,
+                        transition: theme.transitions.create('color', {
+                            duration: theme.transitions.duration.shorter,
+                        }),
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"] p:first-of-type': {
+                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) p:first-of-type': {
                         marginTop: 0,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"] p:last-of-type': {
+                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) p:last-of-type': {
                         marginBottom: 0,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"] blockquote': {
+                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) blockquote': {
                         borderLeft: `3px solid ${theme.palette.divider}`,
                         paddingLeft: theme.spacing(1.5),
                         marginLeft: 0,
-                        color: theme.palette.text.secondary,
+                        color: editorSecondaryContentColor,
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"] code': {
+                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) code': {
                         backgroundColor: alpha(theme.palette.text.primary, 0.08),
                         borderRadius: 1,
                         padding: theme.spacing(0.1, 0.5),
                     },
-                    '& .gover-mdx-editor [class*="_contentEditable_"] a': {
-                        color: 'primary.main',
-                        textDecorationColor: alpha(theme.palette.primary.main, 0.35),
+                    '& .gover-mdx-editor [class*="_contentEditable_"]:not([class*="_placeholder_"]) a': {
+                        color: editorLinkColor,
+                        textDecorationColor: isReadOnly
+                            ? alpha('#000000', 0.2)
+                            : alpha(theme.palette.primary.main, 0.35),
                     },
                     ...(disabled
                         ? {
