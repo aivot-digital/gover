@@ -85,7 +85,7 @@ export function _collectErrors(
 
                     const childDerivedData = resolveReplicatingContainerItemDerivedData(element, derivedData, index);
                     for (const child of element.children) {
-                        const childErrors = collectErrors(child, currentChildElementValues as AuthoredElementValues, childDerivedData);
+                        const childErrors = _collectErrors(child, currentChildElementValues as AuthoredElementValues, childDerivedData);
                         if (childErrors.length > 0) {
                             col.push(...childErrors);
                         }
@@ -94,7 +94,7 @@ export function _collectErrors(
             }
         } else if (isAnyElementWithChildren(element)) {
             for (const child of element.children) {
-                const childErrors = collectErrors(child, authoredElementValues, derivedData);
+                const childErrors = _collectErrors(child, authoredElementValues, derivedData);
                 if (childErrors.length > 0) {
                     col.push(...childErrors);
                 }
@@ -139,11 +139,11 @@ export function ErrorAlert(props: ErrorAlertProps) {
             >
                 {
                     errors
-                        .map(({id, label, error}) => {
+                        .map(({id, label, error}, index) => {
                             const isLinked = !noLinkKeys.includes(id);
 
                             return (
-                                <li key={id}>
+                                <li key={id + label + index}>
                                     {
                                         isLinked ? (
                                             <Link
