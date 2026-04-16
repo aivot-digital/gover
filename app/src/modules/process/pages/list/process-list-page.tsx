@@ -26,6 +26,7 @@ import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 import {FormStatusChip} from '../../../forms/components/form-status-chip';
 import {FormStatus} from '../../../forms/enums/form-status';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
+import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 
 const availableFilter = [
     {
@@ -195,8 +196,7 @@ export function ProcessListPage() {
     const listControlRef = useRef<ListControlRef>(null);
 
     const [showAddDialog, setShowAddDialog] = useState(false);
-
-    console.log('Looping Check List Page');
+    const notImplemented = useNotImplemented();
 
     useEffect(() => {
         new ProcessDefinitionVersionApiService()
@@ -323,7 +323,7 @@ export function ProcessListPage() {
         {
             icon: <NewWindow/>,
             onClick: () => {
-                // TODO
+                notImplemented();
             },
             tooltip: 'Neuen Entwurf anlegen',
             visible: item.draftedVersion == null,
@@ -332,14 +332,14 @@ export function ProcessListPage() {
         {
             icon: <HomeStorage/>,
             onClick: () => {
-                // TODO
+                notImplemented();
             },
             tooltip: 'Versionen anzeigen',
         },
         {
             icon: <MoreVertOutlinedIcon/>,
             onClick: () => {
-                // TODO
+                notImplemented();
             },
             tooltip: 'Optionen',
         },
@@ -374,10 +374,6 @@ export function ProcessListPage() {
 
             <NewProcessDialog
                 open={showAddDialog}
-                onNew={(process) => {
-                    setShowAddDialog(false);
-                    listControlRef.current?.refresh();
-                }}
                 onCancel={() => {
                     setShowAddDialog(false);
                 }}

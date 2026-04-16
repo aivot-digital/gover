@@ -39,6 +39,13 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
 
+enum TaskInputSaveState {
+    Saved,
+    Waiting,
+    Saving,
+    Failed,
+}
+
 export function ProcessTaskViewPageEdit(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -52,13 +59,13 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
-    const [taskInputDataSaveState, setTaskInputDataSaveState] = useState<'saved' | 'waiting' | 'saving'>('saved');
+    const [taskInputDataSaveState, setTaskInputDataSaveState] = useState<TaskInputSaveState>(TaskInputSaveState.Saved);
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
 
     const {
         dialog,
     } = useChangeBlocker({
-        original: 'saved',
+        original: TaskInputSaveState.Saved,
         edited: taskInputDataSaveState,
     });
 
@@ -155,7 +162,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             lineHeight: 0,
         } as const;
 
-        if (taskInputDataSaveState === 'saved') {
+        if (taskInputDataSaveState === TaskInputSaveState.Saved) {
             return {
                 label: 'Eingaben wurden zwischengespeichert',
                 tooltip: 'Ihre Eingaben wurden im Vorgang zwischengespeichert.',
@@ -173,7 +180,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             };
         }
 
-        if (taskInputDataSaveState === 'waiting') {
+        if (taskInputDataSaveState === TaskInputSaveState.Waiting) {
             return {
                 label: 'Ungespeicherte Eingaben vorhanden',
                 tooltip: 'Es liegen ungespeicherte Eingaben vor, die automatisch gespeichert werden.',
@@ -186,6 +193,27 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         }}
                     >
                         <CloudAlert fontSize="small"/>
+                    </Box>
+                ),
+            };
+        }
+
+        if (taskInputDataSaveState === TaskInputSaveState.Failed) {
+            return {
+                label: 'Speichern fehlgeschlagen',
+                tooltip: 'Ihre Eingaben konnten nicht automatisch gespeichert werden.',
+                icon: (
+                    <Box
+                        component="span"
+                        sx={{
+                            ...iconSlotSx,
+                            color: (theme) => theme.palette.warning.main,
+                        }}
+                    >
+                        <CloudAlert
+                            fontSize="small"
+                            color="error"
+                        />
                     </Box>
                 ),
             };
@@ -240,7 +268,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                     return;
                 }
 
-                setTaskInputDataSaveState('saved');
+                setTaskInputDataSaveState(TaskInputSaveState.Saved);
                 setTimeout(() => {
                     navigate('/tasks');
                 }, 1);
@@ -266,6 +294,11 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         setTaskInputData(authoredValues);
         const currentSaveCycle = ++saveCycleRef.current;
 
+        // Do not save the first
+        if (currentSaveCycle <= 1) {
+            return;
+        }
+
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
         }
@@ -273,26 +306,28 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         pushUpdateTimeoutRef.current = window.setTimeout(() => {
             pushUpdateTimeoutRef.current = null;
 
-            setTaskInputDataSaveState('saving');
+            setTaskInputDataSaveState(TaskInputSaveState.Saving);
 
             withDelay(
                 new ProcessInstanceTaskApiService()
                     .putStaffTaskView(item.task.processInstanceId, item.task.id, authoredValues),
                 TASK_INPUT_DATA_MIN_SAVE_DURATION_MS,
             )
+                .then(() => {
+                    setTaskInputDataSaveState(TaskInputSaveState.Saved);
+                })
                 .catch((err) => {
                     dispatch(showApiErrorSnackbar(err, 'Die Eingaben konnten nicht gespeichert werden.'));
+                    setTaskInputDataSaveState(TaskInputSaveState.Failed);
                 })
                 .finally(() => {
                     if (saveCycleRef.current !== currentSaveCycle) {
                         return;
                     }
-
-                    setTaskInputDataSaveState('saved');
                 });
         }, TASK_INPUT_DATA_PUSH_DELAY_MS);
 
-        setTaskInputDataSaveState('waiting');
+        setTaskInputDataSaveState(TaskInputSaveState.Waiting);
     };
 
     if (item == null) {
@@ -472,6 +507,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                             py: 0.5,
                                         },
                                     }}
+                                    color={taskInputDataSaveState === TaskInputSaveState.Failed ? 'error' : undefined}
                                     label={
                                         <Box
                                             component="span"

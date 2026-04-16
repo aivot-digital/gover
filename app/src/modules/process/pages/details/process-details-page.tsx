@@ -80,6 +80,8 @@ import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type
 import {generateId} from '../../../../utils/id-utils';
 import {PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY} from './components/process-node-editor/process-node-editor-change-blocker';
 
+export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
+
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
 const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
@@ -252,6 +254,7 @@ function getNodeProviderFromList(
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
+    const {state} = useLocation();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const confirm = useConfirm();
@@ -734,6 +737,25 @@ export function ProcessDetailsPage(): ReactNode {
     useEffect(() => {
         void loadRuntimeData();
     }, [loadRuntimeData]);
+
+    useEffect(() => {
+        if (Object.keys(showProcessNodeProblemsForNodes).length > 0) {
+            return;
+        }
+
+        if (state !== SHOW_ERRORS_ROUTER_STATE) {
+            return;
+        }
+
+        if (processFlow == null) {
+            return;
+        }
+
+        setShowProcessNodeProblemsForNodes(processFlow.nodes.reduce((acc, n) => ({
+            ...acc,
+            [n.id]: true,
+        }), {}));
+    }, [state, processFlow?.nodes]);
 
     const handleAddFlowTrigger = (nodeProvider: ProcessNodeProvider): void => {
         if (processFlow == null) {

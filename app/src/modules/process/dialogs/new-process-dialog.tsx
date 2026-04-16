@@ -31,19 +31,20 @@ import AddBox from '@aivot/mui-material-symbols-400-outlined/dist/add-box/AddBox
 import {ProcessStatus} from '../enums/process-status';
 import {ProcessTemplatesService, TemplateRegistryProcessItem} from '../services/process-templates-service';
 import GridGuides from '@aivot/mui-material-symbols-400-outlined/dist/grid-guides/GridGuides';
+import {useNavigate} from 'react-router-dom';
+import {SHOW_ERRORS_ROUTER_STATE} from '../pages/details/process-details-page';
 
 interface NewProcessDialogProps {
     open: boolean;
-    onNew: (process: ProcessEntity) => void;
     onCancel: () => void;
 }
 
 export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const dispatch = useAppDispatch();
+    const navigate = useNavigate();
 
     const {
         open,
-        onNew,
         onCancel,
     } = props;
 
@@ -186,11 +187,17 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         new ProcessDefinitionApiService()
             .import(data)
             .then((createdProcess) => {
-                onNew(createdProcess);
+                setIsLoading(false);
                 handleClose();
+
+                setTimeout(() => {
+                    navigate(`/processes/${createdProcess.id}/versions/1/`, {
+                        state: SHOW_ERRORS_ROUTER_STATE,
+                    });
+                }, 1);
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Das Verfahren konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
+                dispatch(showApiErrorSnackbar(err, 'Das Verfahren konnte nicht erstellt werden, da der Datensatz fehlerhaft ist. Bitte probieren Sie eine andere Datei.'));
             })
             .finally(() => {
                 setIsLoading(false);
@@ -202,7 +209,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             open={open}
             onClose={handleClose}
             fullWidth
-            maxWidth="lg"
+            maxWidth="md"
         >
             <DialogTitleWithClose onClose={handleClose}>
                 Neues Verfahren erstellen
@@ -220,6 +227,15 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                     activeStep={activeStep}
                     sx={{
                         justifyContent: 'space-between',
+                        '& .MuiStepLabel-label' : {
+                            marginTop: 0,
+                            marginLeft: 0,
+                        },
+                        '& .MuiStepConnector-root': {
+                            display: 'block',
+                            marginLeft: '0.5rem',
+                            marginRight: '0.5rem',
+                        },
                     }}
                 >
                     <Step
@@ -383,6 +399,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                         setActiveStep(2);
                                     }}
                                     endIcon={<ArrowForward/>}
+                                    variant="contained"
                                 >
                                     Weiter
                                 </Button>
@@ -399,7 +416,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                             }}
                         >
                             <Typography>
-                                Klicken Sie auf {quoteString('Erstellen')}, um das neue Verfahren anzulegen.
+                                Klicken Sie auf {quoteString('Anlegen und Bearbeiten')}, um das neue Verfahren anzulegen.
                             </Typography>
 
                             <Box
@@ -424,8 +441,9 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     }}
                                     endIcon={<Save/>}
                                     disabled={isLoading}
+                                    variant="contained"
                                 >
-                                    Erstellen
+                                    Anlegen und Bearbeiten
                                 </Button>
                             </Box>
                         </Box>
@@ -457,9 +475,8 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
         <Grid
             size={{
                 xs: 12,
-                sm: 6,
-                md: 4,
-                lg: 3,
+                md: 6,
+                lg: 4,
             }}
         >
             <Button

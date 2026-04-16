@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
+import de.aivot.GoverBackend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.identity.repositories.IdentityProviderRepository;
@@ -33,7 +34,7 @@ class PdfServiceTest {
         pdfService = new PdfService(
                 mock(GotenbergConfig.class),
                 mock(SystemConfigService.class),
-                mock(DepartmentRepository.class),
+                mock(VDepartmentShadowedRepository.class),
                 mock(AssetRepository.class),
                 goverConfig,
                 mock(PaymentTransactionRepository.class),

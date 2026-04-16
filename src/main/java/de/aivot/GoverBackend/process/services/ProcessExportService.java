@@ -56,16 +56,35 @@ public class ProcessExportService {
                                 .setProcessVersion(version)
                 )
                 .stream()
-                .peek((node) -> {
+                .map((node) -> {
                     var nodeProvider = processNodeProviderService
                             .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                             .orElseThrow(() -> new RuntimeException("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ konnte nicht gefunden werden."
                                     .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
 
-                    var cleanedNodeData = nodeProvider
-                            .cleanConfigurationForExport(node.getConfiguration());
+                    var clonedConfiguration = node
+                            .getConfiguration()
+                            .clone();
 
-                    node.setConfiguration(cleanedNodeData);
+                    var cleanedConfiguration = nodeProvider
+                            .cleanConfigurationForExport(clonedConfiguration);
+
+                    return new ProcessNodeEntity(
+                            node.getId(), // id,
+                            node.getProcessId(), // processId
+                            node.getProcessVersion(), // processVersion
+                            node.getName(), // name
+                            node.getDescription(), // description
+                            node.getDataKey(), // dataKey
+                            node.getProcessNodeDefinitionKey(), // processNodeDefinitionKey
+                            node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
+                            cleanedConfiguration, // configuration
+                            node.getOutputMappings(), // outputMappings
+                            node.getTimeLimitDays(), // timeLimitDays
+                            node.getRequirements(), // requirements
+                            node.getNotes(), // notes
+                            false // savedWithErrors
+                    );
                 })
                 .toList();
 

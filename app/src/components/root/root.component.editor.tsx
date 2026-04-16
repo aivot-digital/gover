@@ -74,7 +74,7 @@ export function RootComponentEditor(props: BaseEditorProps<RootElement, LoadedFo
     }, [api, dispatch]);
 
     const generalLink = createCustomerPath(`${props.entity?.form.slug ?? ''}`);
-    const versionedLink = createCustomerPath(`${props.entity?.form.slug ?? ''}/${props.entity?.version ?? ''}`);
+    const versionedLink = createCustomerPath(`${props.entity?.form.slug ?? ''}/${props.entity?.version.version ?? ''}`);
 
     return (
         <>

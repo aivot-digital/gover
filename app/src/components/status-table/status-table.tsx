@@ -51,6 +51,7 @@ export function StatusTable(props: StatusTableProps) {
                         sx={{
                             tableLayout: 'fixed',
                         }}
+                        size={props.dense ? 'small' : 'medium'}
                     >
                         <TableBody>
                             {

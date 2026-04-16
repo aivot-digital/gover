@@ -253,6 +253,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         public void logf(de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel level,
                          Boolean isTechnical,
                          Boolean isAuditable,
+                         String title,
                          String format,
                          Object... args) {
         }
@@ -268,7 +269,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
     private static final class FailingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
         private FailingProcessNodeExecutionResultHandler() {
-            super(null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, null);
         }
 
         @Override

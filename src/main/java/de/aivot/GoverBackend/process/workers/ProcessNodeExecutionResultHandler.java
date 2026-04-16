@@ -16,8 +16,11 @@ import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
+import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
@@ -37,6 +40,8 @@ public class ProcessNodeExecutionResultHandler {
     private final ProcessEdgeRepository processDefinitionEdgeRepository;
     private final UserService userService;
     private final ProcessTaskMailService processTaskMailService;
+    private final ProcessNodeRepository processNodeRepository;
+    private final ProcessNodeDefinitionService processNodeDefinitionService;
 
     @Autowired
     public ProcessNodeExecutionResultHandler(RabbitTemplate rabbitTemplate,
@@ -44,13 +49,17 @@ public class ProcessNodeExecutionResultHandler {
                                              ProcessInstanceTaskRepository processInstanceTaskRepository,
                                              ProcessEdgeRepository processDefinitionEdgeRepository,
                                              UserService userService,
-                                             ProcessTaskMailService processTaskMailService) {
+                                             ProcessTaskMailService processTaskMailService,
+                                             ProcessNodeRepository processNodeRepository,
+                                             ProcessNodeDefinitionService processNodeDefinitionService) {
         this.rabbitTemplate = rabbitTemplate;
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionEdgeRepository = processDefinitionEdgeRepository;
         this.userService = userService;
         this.processTaskMailService = processTaskMailService;
+        this.processNodeRepository = processNodeRepository;
+        this.processNodeDefinitionService = processNodeDefinitionService;
     }
 
     public void handleResult(@Nonnull ProcessNodeExecutionLogger logger,
@@ -62,31 +71,25 @@ public class ProcessNodeExecutionResultHandler {
                              @Nullable ProcessInstanceTaskEntity previousTask,
                              @Nullable ProcessNodeExecutionResult executionResult) throws ProcessNodeExecutionException {
         if (executionResult == null) {
+            var err = String.format(
+                    """
+                            Der Prozesselement-Funktionsanbieter %s des Prozesselementes %s hat ein leeres Ergebnis zurückgegeben.
+                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
+                            """,
+                    StringUtils.quote(provider.getName()),
+                    StringUtils.quote(currentNode.resolveName(provider))
+            );
             logger.logf(
                     ProcessNodeExecutionLogLevel.Error,
                     true,
                     true,
-                    "Die Verarbeitung des Prozesselements '%s' liefert kein Ausführungsergebnis.",
-                    currentNode.resolveName(provider)
+                    "Leeres Ergebnis",
+                    err,
+                    StringUtils.quote(currentNode.resolveName(provider))
             );
-            throw new ProcessNodeExecutionExceptionBrokenImplementation(
-                    """
-                            Der Prozesselement-Funktionsanbieter „%s“ des Prozesselementes „%s“ hat ein null-Ergebnis zurückgegeben.
-                            Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters!
-                            """,
-                    provider.getName(),
-                    currentNode.resolveName(provider)
-            );
+            throw new ProcessNodeExecutionExceptionBrokenImplementation(err)
+                    .setAlreadyLogged(true);
         }
-
-        logger.logf(
-                ProcessNodeExecutionLogLevel.Debug,
-                true,
-                false,
-                "Ergebnis '%s' für Prozesselement '%s' wird verarbeitet.",
-                executionResult.getClass().getSimpleName(),
-                currentNode.resolveName(provider)
-        );
 
         switch (executionResult) {
             case ProcessNodeExecutionResultTaskUpdated taskUpdated -> handleTaskUpdated(
@@ -216,17 +219,19 @@ public class ProcessNodeExecutionResultHandler {
                     ProcessNodeExecutionLogLevel.Info,
                     false,
                     true,
-                    "Die Aufgabe wurde durch '%s' der Mitarbeiter:in '%s' zugewiesen.",
-                    triggeringUser.getFullName(),
-                    assignedUser.getFullName()
+                    "Aufgabe neu zugewiesen",
+                    "Die Aufgabe wurde durch %s der Mitarbeiter:in %s zugewiesen.",
+                    StringUtils.quote(triggeringUser.getFullName()),
+                    StringUtils.quote(assignedUser.getFullName())
             );
         } else {
             logger.logf(
                     ProcessNodeExecutionLogLevel.Info,
                     true,
                     true,
-                    "Die Aufgabe wurde automatisch der Mitarbeiter:in '%s' zugewiesen.",
-                    assignedUser.getFullName()
+                    "Aufgabe " + StringUtils.quote(currentNode.resolveName(provider)) + " automatisch zugewiesen",
+                    "Die Aufgabe wurde automatisch der Mitarbeiter:in %s zugewiesen.",
+                    StringUtils.quote(assignedUser.getFullName())
             );
         }
 
@@ -263,14 +268,13 @@ public class ProcessNodeExecutionResultHandler {
     }
 
     private void handleTaskUpdated(@Nonnull ProcessNodeExecutionLogger logger,
-                                    @Nullable UserEntity triggeringUser,
-                                    @Nonnull ProcessNodeDefinition provider,
-                                    @Nonnull ProcessNodeEntity currentNode,
-                                    @Nonnull ProcessInstanceEntity processInstance,
-                                    @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                                    @Nullable ProcessInstanceTaskEntity previousTask,
-                                    @Nonnull ProcessNodeExecutionResultTaskUpdated updatedTask) throws ProcessNodeExecutionException {
-
+                                   @Nullable UserEntity triggeringUser,
+                                   @Nonnull ProcessNodeDefinition provider,
+                                   @Nonnull ProcessNodeEntity currentNode,
+                                   @Nonnull ProcessInstanceEntity processInstance,
+                                   @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+                                   @Nullable ProcessInstanceTaskEntity previousTask,
+                                   @Nonnull ProcessNodeExecutionResultTaskUpdated updatedTask) throws ProcessNodeExecutionException {
         var newRuntimeData = updatedTask.getRuntimeData();
         if (newRuntimeData == null) {
             newRuntimeData = new HashMap<>();
@@ -311,6 +315,27 @@ public class ProcessNodeExecutionResultHandler {
             processInstance.setStatus(ProcessInstanceStatus.Running);
             processInstanceRepository.save(processInstance);
         }
+
+        if (triggeringUser != null) {
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Debug,
+                    true,
+                    false,
+                    "Eingaben für " + StringUtils.quote(currentNode.resolveName(provider)) + " gespeichert",
+                    "Für die Aufgabe %s wurden durch die Mitarbeiter:in %s Eingaben abgespeichert.",
+                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(triggeringUser.getFullName())
+            );
+        } else {
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Debug,
+                    true,
+                    false,
+                    "Eingaben für " + StringUtils.quote(currentNode.resolveName(provider)) + " gespeichert",
+                    "Für die Aufgabe %s wurden durch die zugewiesen Mitarbeiter:in Eingaben abgespeichert.",
+                    StringUtils.quote(currentNode.resolveName(provider))
+            );
+        }
     }
 
     private void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,
@@ -330,12 +355,12 @@ public class ProcessNodeExecutionResultHandler {
         if (port.isEmpty()) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
-                            Für das Prozesselement „%s“ wird durch den Prozesselement-Funktionsanbieter „%s“ kein ausgehender Port mit dem Schlüssel „%s“ bereitgestellt.
+                            Für das Prozesselement %s wird durch den Prozesselement-Funktionsanbieter %s kein ausgehender Port mit dem Schlüssel %s bereitgestellt.
                             Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
                             """,
-                    currentNode.resolveName(provider),
-                    provider.getName(),
-                    taskCompleted.getViaPort()
+                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(provider.getName()),
+                    StringUtils.quote(taskCompleted.getViaPort())
             );
         }
 
@@ -348,12 +373,12 @@ public class ProcessNodeExecutionResultHandler {
         if (outEdge.isEmpty()) {
             throw new ProcessNodeExecutionExceptionBrokenImplementation(
                     """
-                            Für das Prozesselement „%s“ wurde kein ausgehender Pfad für den Port „%s“ definiert.
+                            Für das Prozesselement %s wurde kein ausgehender Pfad für den Port %s definiert.
                             Der Vorgang kann nicht fortgeführt werden. Bitte überprüfen Sie die Implementierung des Prozesselement-Funktionsanbieters.
                             Bitte prüfen Sie den Aufbau Ihres Prozessmodells.
                             """,
-                    currentNode.resolveName(provider),
-                    port.get().label()
+                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(port.get().label())
             );
         }
 
@@ -407,14 +432,46 @@ public class ProcessNodeExecutionResultHandler {
                 outEdge.get().getToNodeId()
         );
 
-        logger.logf(
-                ProcessNodeExecutionLogLevel.Info,
-                true,
-                true,
-                "Das Prozesselement '%s' wurde abgeschlossen. Nächstes Prozesselement: %d.",
-                currentNode.resolveName(provider),
-                outEdge.get().getToNodeId()
-        );
+        var nextNode = processNodeRepository
+                .findById(outEdge.get().getToNodeId())
+                .map(node -> processNodeDefinitionService
+                        .getProcessNodeDefinition(node)
+                        .map(node::resolveName)
+                        .orElse("UNKNOWN"))
+                .orElse("UNKNOWN");
+
+        if (triggeringUser != null) {
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe " + StringUtils.quote(currentNode.resolveName(provider)) + " abgeschlossen",
+                    """
+                            Die Aufgabe für das Prozesselement %s wurde durch die Mitarbeiter:in %s abgeschlossen.
+                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Das nächste Prozesselement ist %s.
+                            """,
+                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(triggeringUser.getFullName()),
+                    StringUtils.quote(port.get().label()),
+                    StringUtils.quote(nextNode)
+            );
+        } else {
+            logger.logf(
+                    ProcessNodeExecutionLogLevel.Info,
+                    true,
+                    true,
+                    "Aufgabe " + StringUtils.quote(currentNode.resolveName(provider)) + " abgeschlossen",
+                    """
+                            Die Aufgabe für das Prozesselement %s wurde abgeschlossen.
+                            Als ausgehende Verbindung wird der Ausgang %s verwendet.
+                            Das nächste Prozesselement ist %s.
+                            """,
+                    StringUtils.quote(currentNode.resolveName(provider)),
+                    StringUtils.quote(port.get().label()),
+                    StringUtils.quote(nextNode)
+            );
+        }
 
         rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, nextPayload);
     }
@@ -471,11 +528,15 @@ public class ProcessNodeExecutionResultHandler {
         processInstance.setKeepUntil(instanceCompleted.getRetentionDate());
         processInstanceRepository.save(processInstance);
 
+
+
         logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
                 true,
                 true,
-                "Der Vorgang wurde abgeschlossen."
+                "Vorgang abgeschlossen",
+                "Der Vorgang wurde erfolgreich abgeschlossen. Das abschließende Prozesselement war %s",
+                StringUtils.quote(currentNode.resolveName(provider))
         );
     }
 

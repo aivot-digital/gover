@@ -6,7 +6,11 @@ import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
+import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
@@ -16,17 +20,31 @@ import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class HttpService {
+    private static final long CONNECTION_TIMEOUT_SECONDS = 2;
+    private static final long READ_TIMEOUT_SECONDS = 30;
+
     private final RestClient httpClient;
 
     public HttpService() {
         this.httpClient = RestClient
                 .builder()
+                .requestFactory(clientHttpRequestFactory())
                 .build();
+    }
+
+    private ClientHttpRequestFactory clientHttpRequestFactory() {
+        ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings
+                .defaults()
+                .withConnectTimeout(Duration.ofSeconds(CONNECTION_TIMEOUT_SECONDS))
+                .withReadTimeout(Duration.ofSeconds(READ_TIMEOUT_SECONDS));
+
+        return ClientHttpRequestFactoryBuilder.detect().build(settings);
     }
 
     // region HTTP-Get

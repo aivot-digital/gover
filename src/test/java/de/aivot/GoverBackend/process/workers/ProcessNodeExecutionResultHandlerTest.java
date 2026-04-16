@@ -159,7 +159,9 @@ class ProcessNodeExecutionResultHandlerTest {
                 createTaskRepository(savedTasks),
                 proxy(ProcessEdgeRepository.class),
                 new TestUserService(users),
-                mailService
+                mailService,
+                null,
+                null
         );
     }
 
@@ -332,6 +334,7 @@ class ProcessNodeExecutionResultHandlerTest {
         public void logf(ProcessNodeExecutionLogLevel level,
                          Boolean isTechnical,
                          Boolean isAuditable,
+                         String title,
                          String format,
                          Object... args) {
         }

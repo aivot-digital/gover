@@ -3,13 +3,9 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
-import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
-import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 
@@ -17,21 +13,16 @@ import java.time.LocalDateTime;
 
 @Service
 public class ProcessNodeExportService {
-    private final ProcessService processService;
-    private final ProcessVersionService processVersionService;
     private final ProcessNodeService processNodeService;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final BuildProperties buildProperties;
     private final SystemConfigService systemConfigService;
 
     public ProcessNodeExportService(ProcessService processService,
-                                    ProcessVersionService processVersionService,
                                     ProcessNodeService processNodeService,
                                     ProcessNodeDefinitionService processNodeDefinitionService,
                                     BuildProperties buildProperties,
                                     SystemConfigService systemConfigService) {
-        this.processService = processService;
-        this.processVersionService = processVersionService;
         this.processNodeService = processNodeService;
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.buildProperties = buildProperties;
@@ -43,14 +34,6 @@ public class ProcessNodeExportService {
                 .retrieve(nodeId)
                 .orElseThrow(ResponseException::notFound);
 
-        var process = processService
-                .retrieve(node.getProcessId())
-                .orElseThrow(ResponseException::notFound);
-
-        var processVersion = processVersionService
-                .retrieve(ProcessVersionEntityId.of(process.getId(), node.getProcessVersion()))
-                .orElseThrow(ResponseException::notFound);
-
         var provider = processNodeDefinitionService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(() -> ResponseException.badRequest(
@@ -58,20 +41,28 @@ public class ProcessNodeExportService {
                                 .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 ));
 
-        var cleanedNode = new ProcessNodeEntity()
-                .setId(node.getId())
-                .setProcessId(node.getProcessId())
-                .setProcessVersion(node.getProcessVersion())
-                .setName(node.getName())
-                .setDescription(node.getDescription())
-                .setDataKey(node.getDataKey())
-                .setProcessNodeDefinitionKey(node.getProcessNodeDefinitionKey())
-                .setProcessNodeDefinitionVersion(node.getProcessNodeDefinitionVersion())
-                .setConfiguration(provider.cleanConfigurationForExport(node.getConfiguration()))
-                .setOutputMappings(node.getOutputMappings())
-                .setTimeLimitDays(node.getTimeLimitDays())
-                .setRequirements(node.getRequirements())
-                .setNotes(node.getNotes());
+        var clonedConfiguration = node
+                .getConfiguration()
+                .clone();
+        var cleanedConfiguration = provider
+                .cleanConfigurationForExport(clonedConfiguration);
+
+        var cleanedNode = new ProcessNodeEntity(
+                null, // id,
+                null, // processId
+                null, // processVersion
+                node.getName(), // name
+                node.getDescription(), // description
+                node.getDataKey(), // dataKey
+                node.getProcessNodeDefinitionKey(), // processNodeDefinitionKey
+                node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
+                cleanedConfiguration, // configuration
+                node.getOutputMappings(), // outputMappings
+                node.getTimeLimitDays(), // timeLimitDays
+                node.getRequirements(), // requirements
+                node.getNotes(), // notes
+                false // savedWithErrors
+        );
 
         var vendorName = systemConfigService
                 .retrieve(ProviderNameSystemConfigDefinition.KEY)
@@ -85,8 +76,6 @@ public class ProcessNodeExportService {
                 buildProperties.getBuildNumber(),
                 LocalDateTime.now(),
                 vendorName,
-                process,
-                processVersion,
                 cleanedNode
         );
     }
@@ -100,12 +89,6 @@ public class ProcessNodeExportService {
             LocalDateTime exportTimestamp,
             @Nonnull
             String createdByVendor,
-            @Nonnull
-            @NotNull
-            ProcessEntity process,
-            @Nonnull
-            @NotNull
-            ProcessVersionEntity version,
             @Nonnull
             @NotNull
             ProcessNodeEntity node

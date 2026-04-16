@@ -53,6 +53,7 @@ public class ProcessNodeExecutionLogger {
     public void logf(@Nonnull ProcessNodeExecutionLogLevel level,
                      @Nonnull Boolean isTechnical,
                      @Nonnull Boolean isAuditable,
+                     @Nonnull String title,
                      @Nonnull String format,
                      @Nullable Object... args) {
         String message = String.format(format, args);
@@ -60,7 +61,7 @@ public class ProcessNodeExecutionLogger {
         if (identityId != null) {
             details.put("identityId", identityId);
         }
-        saveEvent(level, isTechnical, isAuditable, level.name(), message, details);
+        saveEvent(level, isTechnical, isAuditable, title, message, details);
     }
 
     public void logException(ProcessNodeExecutionException exception) {
