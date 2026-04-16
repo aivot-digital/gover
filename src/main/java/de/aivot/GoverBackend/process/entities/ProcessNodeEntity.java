@@ -83,6 +83,43 @@ public class ProcessNodeEntity {
     @Nonnull
     private Boolean savedWithErrors = false;
 
+    // region Constructors
+
+    public ProcessNodeEntity() {
+    }
+
+    public ProcessNodeEntity(@Nonnull Integer id,
+                             @Nonnull Integer processId,
+                             @Nonnull Integer processVersion,
+                             @Nullable String name,
+                             @Nullable String description,
+                             @Nonnull String dataKey,
+                             @Nonnull String processNodeDefinitionKey,
+                             @Nonnull Integer processNodeDefinitionVersion,
+                             @Nonnull AuthoredElementValues configuration,
+                             @Nonnull Map<String, String> outputMappings,
+                             @Nullable Integer timeLimitDays,
+                             @Nullable String requirements,
+                             @Nullable String notes,
+                             @Nonnull Boolean savedWithErrors) {
+        this.id = id;
+        this.processId = processId;
+        this.processVersion = processVersion;
+        this.name = name;
+        this.description = description;
+        this.dataKey = dataKey;
+        this.processNodeDefinitionKey = processNodeDefinitionKey;
+        this.processNodeDefinitionVersion = processNodeDefinitionVersion;
+        this.configuration = configuration;
+        this.outputMappings = outputMappings;
+        this.timeLimitDays = timeLimitDays;
+        this.requirements = requirements;
+        this.notes = notes;
+        this.savedWithErrors = savedWithErrors;
+    }
+
+    // endregion
+
     // region Hash & Equals
 
     @Override

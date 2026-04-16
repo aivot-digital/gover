@@ -41,20 +41,28 @@ public class ProcessNodeExportService {
                                 .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 ));
 
-        var cleanedNode = new ProcessNodeEntity()
-                .setId(node.getId())
-                .setProcessId(node.getProcessId())
-                .setProcessVersion(node.getProcessVersion())
-                .setName(node.getName())
-                .setDescription(node.getDescription())
-                .setDataKey(node.getDataKey())
-                .setProcessNodeDefinitionKey(node.getProcessNodeDefinitionKey())
-                .setProcessNodeDefinitionVersion(node.getProcessNodeDefinitionVersion())
-                .setConfiguration(provider.cleanConfigurationForExport(node.getConfiguration()))
-                .setOutputMappings(node.getOutputMappings())
-                .setTimeLimitDays(node.getTimeLimitDays())
-                .setRequirements(node.getRequirements())
-                .setNotes(node.getNotes());
+        var clonedConfiguration = node
+                .getConfiguration()
+                .clone();
+        var cleanedConfiguration = provider
+                .cleanConfigurationForExport(clonedConfiguration);
+
+        var cleanedNode = new ProcessNodeEntity(
+                null, // id,
+                null, // processId
+                null, // processVersion
+                node.getName(), // name
+                node.getDescription(), // description
+                node.getDataKey(), // dataKey
+                node.getProcessNodeDefinitionKey(), // processNodeDefinitionKey
+                node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
+                cleanedConfiguration, // configuration
+                node.getOutputMappings(), // outputMappings
+                node.getTimeLimitDays(), // timeLimitDays
+                node.getRequirements(), // requirements
+                node.getNotes(), // notes
+                false // savedWithErrors
+        );
 
         var vendorName = systemConfigService
                 .retrieve(ProviderNameSystemConfigDefinition.KEY)

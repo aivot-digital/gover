@@ -369,10 +369,7 @@ public class ProcessNodeController {
                         importedNode.getId(),
                         "id",
                         Map.of(
-                                "imported", true,
-                                "sourceProcessId", exportData.process().getId(),
-                                "sourceProcessVersion", exportData.version().getProcessVersion(),
-                                "sourceNodeId", sourceNode.getId()
+                                "imported", true
                         )
                 )
                 .withMessage(
