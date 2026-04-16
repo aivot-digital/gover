@@ -196,8 +196,6 @@ export function ProcessListPage() {
 
     const [showAddDialog, setShowAddDialog] = useState(false);
 
-    console.log('Looping Check List Page');
-
     useEffect(() => {
         new ProcessDefinitionVersionApiService()
             .listAll()
@@ -374,10 +372,6 @@ export function ProcessListPage() {
 
             <NewProcessDialog
                 open={showAddDialog}
-                onNew={(process) => {
-                    setShowAddDialog(false);
-                    listControlRef.current?.refresh();
-                }}
                 onCancel={() => {
                     setShowAddDialog(false);
                 }}
