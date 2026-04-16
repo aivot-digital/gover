@@ -55,6 +55,7 @@ public class SubmitController {
     private final ProcessTestClaimService processTestClaimService;
     private final ElementDataTransformService elementDataTransformService;
     private final RedisCaptchaReplayGuard captchaReplayGuard;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
 
     @Autowired
     public SubmitController(AVService avService,
@@ -66,7 +67,7 @@ public class SubmitController {
                             ProcessVersionService processVersionService,
                             ProcessTestClaimService processTestClaimService,
                             ElementDataTransformService elementDataTransformService,
-                            RedisCaptchaReplayGuard captchaReplayGuard) {
+                            RedisCaptchaReplayGuard captchaReplayGuard, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.avService = avService;
         this.elementDerivationService = elementDerivationService;
         this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
@@ -77,6 +78,7 @@ public class SubmitController {
         this.processTestClaimService = processTestClaimService;
         this.elementDataTransformService = elementDataTransformService;
         this.captchaReplayGuard = captchaReplayGuard;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
     @PostMapping("/api/public/submit/{formId}/{formVersion}/")
@@ -290,16 +292,20 @@ public class SubmitController {
             createdInstance
                     .setInitialPayload(initialPayload)
                     .setStatus(ProcessInstanceStatus.Created);
-
-            processInstanceService.update(createdInstance.getId(), createdInstance);
         } catch (Exception e) {
-            // TODO: Log the exception
             createdInstance.setStatus(ProcessInstanceStatus.Failed);
-            processInstanceService.update(createdInstance.getId(), createdInstance);
-            throw e;
+
+            var logger = processNodeExecutionLoggerFactory
+                    .create(
+                            createdInstance.getId(),
+                            null,
+                            null,
+                            null
+                    );
+            logger.logException(e);
         }
 
-        return instance;
+        return processInstanceService.update(createdInstance.getId(), createdInstance);
     }
 
     private record ProcessStartCandidate(
