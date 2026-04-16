@@ -75,7 +75,8 @@ class SubmitControllerTest {
                 processVersionService,
                 processTestClaimService,
                 elementDataTransformService,
-                captchaReplayGuard
+                captchaReplayGuard,
+                null
         );
     }
 
