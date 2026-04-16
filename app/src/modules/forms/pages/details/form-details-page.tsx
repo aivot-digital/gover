@@ -348,7 +348,7 @@ export function FormDetailsPage() {
                     loadedForm.version.version,
                     authoredElementValues,
                     {
-                        skipErrorsFor: [],
+                        skipErrorsFor: ['ALL'],
                         skipVisibilitiesFor: disableVisibility ? ['ALL'] : [],
                         skipValuesFor: [],
                         skipOverridesFor: [],
