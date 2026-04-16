@@ -190,7 +190,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 handleClose();
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Das Verfahren konnte nicht erstellt werden. Bitte versuchen Sie es erneut.'));
+                dispatch(showApiErrorSnackbar(err, 'Das Verfahren konnte nicht erstellt werden, da der Datensatz fehlerhaft ist. Bitte probieren Sie eine andere Datei.'));
             })
             .finally(() => {
                 setIsLoading(false);
