@@ -106,7 +106,7 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
             fixedElement = {
                 ...fixedElement,
                 value: {
-                    ...fixedElement.visibility,
+                    ...fixedElement.value,
                     noCode: fixNoCodeOperandReferences(fixedElement.value.noCode, idMap),
                 },
             };
