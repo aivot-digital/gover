@@ -43,7 +43,7 @@ export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 8
+                            lg: 6
                         }}>
                         <RichTextInputComponent
                             value={props.requirements ?? ''}

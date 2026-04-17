@@ -129,7 +129,6 @@ class ApprovalActionNodeV1Test {
         var dataSummary = layout.findChild("approval-data-root", SummaryLayoutElement.class).orElseThrow();
         var remarkField = layout.findChild("approvalRemark", RichTextInputElement.class).orElseThrow();
         assertTrue(dataSummary.findChild("approvalValue", TextInputElement.class).isPresent());
-        assertTrue(Boolean.TRUE.equals(remarkField.getReducedMode()));
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("approval-actions-spacer").isPresent());
 

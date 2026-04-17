@@ -139,7 +139,6 @@ class ManualActionNodeV1Test {
         assertEquals("<p>Bitte führen Sie die Prüfung vor Ort durch.</p>", description.getContent());
         assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
         assertTrue(layout.findChild("manual-action-remark-spacer").isPresent());
-        assertTrue(Boolean.TRUE.equals(remarkField.getReducedMode()));
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("manual-action-actions-spacer").isPresent());
         assertEquals(
@@ -178,7 +177,6 @@ class ManualActionNodeV1Test {
         assertEquals("<p>Bitte führen Sie die Prüfung vor Ort durch.</p>", description.getContent());
         assertFalse(Boolean.TRUE.equals(dataField.getDisabled()));
         assertTrue(layout.findChild("manual-action-remark-spacer").isPresent());
-        assertTrue(Boolean.TRUE.equals(remarkField.getReducedMode()));
         assertEquals(6.0, remarkField.getWeight());
         assertTrue(layout.findChild("manual-action-actions-spacer").isPresent());
     }

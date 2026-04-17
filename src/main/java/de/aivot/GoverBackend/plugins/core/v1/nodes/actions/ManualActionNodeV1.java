@@ -390,7 +390,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
         remarkField.setLabel("Vermerk");
         remarkField.setHint("Optionaler interner Vermerk zur durchgeführten manuellen Aktion.");
         remarkField.setRequired(false);
-        remarkField.setReducedMode(true);
         remarkField.setWeight(6.0);
         children.add(remarkField);
 

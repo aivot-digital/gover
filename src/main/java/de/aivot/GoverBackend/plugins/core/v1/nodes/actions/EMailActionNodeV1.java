@@ -652,7 +652,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorlage Nachrichtentext"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "reducedMode", boolValue = true)
         })
         public String content;
 
@@ -683,7 +682,6 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Nachrichtentext"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den Inhalt der E-Mail ein."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "reducedMode", boolValue = true)
         })
         public String content;
     }

@@ -155,7 +155,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         customContentField.setLabel("Zu prüfende Inhalte");
         customContentField.setHint("Beschreiben Sie die zu prüfenden Inhalte frei, z. B. wenn diese in einem Drittsystem geprüft werden.");
         customContentField.setRequired(true);
-        customContentField.setReducedMode(false);
         customContentField.setVisibility(buildModeVisibility(MODE_CUSTOM_CONTENT));
         layout.addChild(customContentField);
 
@@ -284,7 +283,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         remarkField.setLabel("Vermerk");
         remarkField.setHint("Optionaler Vermerk zur Freigabeentscheidung.");
         remarkField.setRequired(false);
-        remarkField.setReducedMode(true);
         remarkField.setWeight(6.0);
         children.add(remarkField);
 
