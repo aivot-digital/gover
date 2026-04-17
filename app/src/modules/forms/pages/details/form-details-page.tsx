@@ -3,6 +3,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
     clearLoadedForm,
     LoadedForm,
+    replaceLoadedForm,
     redoLoadedForm,
     selectFutureLoadedForm,
     selectLoadedForm,
@@ -703,15 +704,17 @@ export function FormDetailsPage() {
                 ...loadedForm.version,
                 ...patchedLoadedForm.version,
             };
-            dispatch(updateLoadedForm({
+            const optimisticLoadedForm: LoadedForm = {
                 ...loadedForm,
                 form: formToUpdate,
                 version: versionToUpdate,
-            }));
+            };
+            dispatch(updateLoadedForm(optimisticLoadedForm));
 
             const originalLoadedForm: LoadedForm = {
                 ...loadedForm,
             };
+            let savedLoadedForm = optimisticLoadedForm;
 
             dispatch(setLoadingMessage({
                 message: 'Speichere',
@@ -721,13 +724,20 @@ export function FormDetailsPage() {
 
 
             try {
-                await withDelay(Promise.all([
+                const [updatedForm, updatedVersion] = await withDelay(Promise.all([
                     formService.update(loadedForm.form.id, formToUpdate),
                     versionService.update({
                         formId: loadedForm.form.id,
                         version: loadedForm.version.version,
                     }, versionToUpdate),
                 ]), 600);
+
+                savedLoadedForm = {
+                    ...optimisticLoadedForm,
+                    form: updatedForm,
+                    version: updatedVersion,
+                };
+                dispatch(replaceLoadedForm(savedLoadedForm));
             } catch (err: any) {
                 if (err.status === 403) {
                     dispatch(showErrorSnackbar('Sie verfügen nicht über die notwendigen Rechte zum Bearbeiten.'));
@@ -737,13 +747,15 @@ export function FormDetailsPage() {
                 } else {
                     dispatch(showApiErrorSnackbar(err, 'Das Formular konnte nicht gespeichert werden.'));
                 }
-                dispatch(updateLoadedForm(originalLoadedForm));
+                dispatch(replaceLoadedForm(originalLoadedForm));
+                dispatch(clearLoadingMessage());
+                return;
             }
 
             const newState = await formService
                 .deriveForm(
-                    loadedForm.form.slug,
-                    loadedForm.version.version,
+                    savedLoadedForm.form.slug,
+                    savedLoadedForm.version.version,
                     authoredElementValues,
                     {
                         skipErrorsFor: ['ALL'],
