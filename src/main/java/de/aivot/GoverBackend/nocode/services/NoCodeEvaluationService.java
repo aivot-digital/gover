@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -78,14 +79,14 @@ public class NoCodeEvaluationService {
      */
     @Nonnull
     public NoCodeResult evaluate(@Nullable NoCodeOperand operand, @Nonnull DerivedRuntimeElementData elementData) {
-        return evaluate(operand, elementData, Map.of());
+        return evaluate(operand, elementData, new ProcessExecutionData());
     }
 
     @Nonnull
     public NoCodeResult evaluate(
             @Nullable NoCodeOperand operand,
             @Nonnull DerivedRuntimeElementData elementData,
-            @Nonnull Map<String, Object> processDataContext
+            @Nonnull ProcessExecutionData processDataContext
     ) {
         if (operand == null) {
             return new NoCodeResult(null);
@@ -109,13 +110,13 @@ public class NoCodeEvaluationService {
 
             // Process data references resolve based on the injected process context map
             case NoCodeProcessDataReference processDataReference -> {
-                var sourceData = processDataContext.get("$");
+                var sourceData = processDataContext.get(ProcessExecutionData.PROCESS_DATA_KEY);
                 var value = resolvePath(sourceData, processDataReference.getPath());
                 yield new NoCodeResult(value);
             }
 
             case NoCodeInstanceDataReference instanceDataReference -> {
-                var sourceData = processDataContext.get("$$");
+                var sourceData = processDataContext.get(ProcessExecutionData.PROCESS_METADATA_KEY);
                 var value = resolvePath(sourceData, instanceDataReference.getPath());
                 yield new NoCodeResult(value);
             }
@@ -138,7 +139,7 @@ public class NoCodeEvaluationService {
     private NoCodeResult evaluateNoCodeExpression(
             @Nonnull NoCodeExpression expression,
             @Nonnull DerivedRuntimeElementData elementData,
-            @Nonnull Map<String, Object> processDataContext
+            @Nonnull ProcessExecutionData processDataContext
     ) {
         var operands = expression.getOperands();
         if (operands == null) {
@@ -166,9 +167,9 @@ public class NoCodeEvaluationService {
     @Nullable
     private Object resolveNodeData(
             @Nonnull NoCodeNodeDataReference nodeDataReference,
-            @Nonnull Map<String, Object> processDataContext
+            @Nonnull ProcessExecutionData processDataContext
     ) {
-        var allNodeData = processDataContext.get("_");
+        var allNodeData = processDataContext.get(ProcessExecutionData.NODE_RESULTS_KEY);
         if (!(allNodeData instanceof Map<?, ?> allNodeDataMap)) {
             return null;
         }

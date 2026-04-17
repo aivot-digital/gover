@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
@@ -224,14 +225,14 @@ class NoCodeEvaluationServiceHardeningTest {
     @Test
     void shouldResolveProcessDataReferencesFromContext() {
         var service = new NoCodeEvaluationService(List.of());
-        var context = Map.<String, Object>of(
+        var context = ProcessExecutionData.of(Map.<String, Object>of(
                 "$", Map.of("applicant", Map.of("name", "Ada")),
                 "$$", Map.of("instanceId", "i-1"),
                 "_", Map.of(
                         "nodeA", Map.of("score", 7),
                         "nodeB", List.of("x", "y")
                 )
-        );
+        ));
 
         var processResult = service.evaluate(
                 new NoCodeProcessDataReference()
