@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.javascript.services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
@@ -19,12 +19,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * Class for executing javascript code.
- * This class should be used, when executing javascript code in the backend.
- * See {@link JavascriptFunctionProvider} for more information.
- * Use the method {@link #registerGlobalObject} to add objects to the javascript context.
- * The objects will be available in the javascript context under the given object name.
- * Use the method {@link #evaluateCode} to evaluate javascript code.
+ * Class for executing javascript code. This class should be used, when executing javascript code in the backend. See {@link JavascriptFunctionProvider} for more information. Use
+ * the method {@link #registerGlobalObject} to add objects to the javascript context. The objects will be available in the javascript context under the given object name. Use the
+ * method {@link #evaluateCode} to evaluate javascript code.
  */
 public class JavascriptEngine implements AutoCloseable {
     public static final String JS_CONTEXT_OBJECT_NAME = "ctx";
@@ -119,10 +116,18 @@ public class JavascriptEngine implements AutoCloseable {
         return registerGlobalObject(JS_ELEMENT_OBJECT_NAME, element);
     }
 
+    public JavascriptEngine registerProcessExecutionData(ProcessExecutionData processExecutionData) {
+        for (var key : ProcessExecutionData.PROCESS_EXEC_DATA_KEYS) {
+            if (processExecutionData.containsKey(key)) {
+                this.registerGlobalObject(key, processExecutionData.get(key));
+            }
+        }
+        return this;
+    }
+
     /**
-     * Adds a global object to the javascript context by inserting the given object under the given object name.
-     * E.g. if the name is "test" and the object has the key "key", the value of the key "key" in the object will be available as test.key.
-     * The given object is recursively converted to a proxy object.
+     * Adds a global object to the javascript context by inserting the given object under the given object name. E.g. if the name is "test" and the object has the key "key", the
+     * value of the key "key" in the object will be available as test.key. The given object is recursively converted to a proxy object.
      *
      * @param objectName the name of the object in the javascript context.
      * @param object     the object to add to the javascript context.
