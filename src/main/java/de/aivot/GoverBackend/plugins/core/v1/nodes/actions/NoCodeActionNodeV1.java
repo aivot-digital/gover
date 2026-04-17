@@ -210,7 +210,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
             var rowIndex = i + 1;
 
             var targetPath = parsePath(definition.name(), rowIndex, "Variablenname");
-            var processDataContext = new HashMap<>(context.getProcessData());
+            var processDataContext = new ProcessExecutionData();
+            processDataContext.putAll(context.getProcessData());
             processDataContext.put("$", outputRoot);
 
             final Object evaluatedValue;
