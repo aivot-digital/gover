@@ -388,13 +388,14 @@ export function DataObjectSchemaDetailsPageIndex() {
                     value={currentDataObject.schema}
                     expectedRootType={ElementType.GroupLayout}
                     onChange={(schema) => {
+                        console.log('Schema geändert:', schema);
                         if (schema == null) {
                             handleInputChange('schema')(undefined);
                         } else {
                             handleInputChange('schema')(schema as GroupLayout);
                         }
                     }}
-                    displayContext={ElementDisplayContext.StaffFacing}
+                    displayContext={ElementDisplayContext.DataObjectSchema}
                 />
 
                 {

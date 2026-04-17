@@ -3,6 +3,7 @@ import {ElementType} from './element-type';
 export enum ElementDisplayContext {
     CitizenFacing = 'CitizenFacing',
     StaffFacing = 'StaffFacing',
+    DataObjectSchema = 'DataObjectSchema',
 }
 
 const CitizenFacingBaseElements: ElementType[] = [
@@ -128,6 +129,12 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
         [ElementType.SummaryLayout]: CitizenFacingSummaryChildElements,
     },
     [ElementDisplayContext.StaffFacing]: {
+        [ElementType.GroupLayout]: StaffFacingBaseElements,
+        [ElementType.Step]: StaffFacingBaseElements,
+        [ElementType.ReplicatingContainer]: StaffFacingBaseElements,
+        [ElementType.SummaryLayout]: StaffFacingSummaryChildElements,
+    },
+    [ElementDisplayContext.DataObjectSchema]: {
         [ElementType.GroupLayout]: StaffFacingBaseElements,
         [ElementType.Step]: StaffFacingBaseElements,
         [ElementType.ReplicatingContainer]: StaffFacingBaseElements,
