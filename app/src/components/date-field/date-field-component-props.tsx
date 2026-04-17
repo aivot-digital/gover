@@ -9,6 +9,7 @@ export interface DateFieldComponentProps {
     error?: string;
     autocomplete?: string;
     hint?: string;
+    hideHelperText?: boolean;
     required?: boolean;
     disabled?: boolean;
     busy?: boolean;

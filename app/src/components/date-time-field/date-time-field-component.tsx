@@ -2,7 +2,7 @@ import {LocalizationProvider, DateTimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import {de} from 'date-fns/locale/de';
 import type {Locale} from 'date-fns';
-import {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
 
 const deLocale = de as unknown as Locale;
@@ -13,6 +13,7 @@ interface DateTimeFieldComponentProps {
     onChange: (value: string | undefined) => void;
     onBlur?: (value: string | undefined) => void;
     hint?: string;
+    hideHelperText?: boolean;
     required?: boolean;
     disabled?: boolean;
     busy?: boolean;
@@ -27,8 +28,11 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
     const mode = props.mode ?? TimeFieldComponentModelMode.Minute;
     const dateValue = props.value ? new Date(props.value) : null;
     const [localValue, setLocalValue] = useState<Date | null>(dateValue);
-    const [lastInputWasTyping, setLastInputWasTyping] = useState(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // MUI fires picker changes for both popover selection and direct field edits.
+    // We track keyboard-driven edits separately so clearing the text field also
+    // propagates `undefined` to the parent instead of only mutating local picker state.
+    const lastInputWasTypingRef = useRef(false);
     const lastPickerValueRef = useRef<Date | null>(dateValue);
 
     useEffect(() => {
@@ -37,9 +41,17 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
         lastPickerValueRef.current = parsed;
     }, [props.value]);
 
+    useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const helperText = useMemo(() => {
-        return props.error != null ? props.error : props.hint;
-    }, [props.error, props.hint]);
+        return props.hideHelperText ? undefined : props.error != null ? props.error : props.hint;
+    }, [props.error, props.hideHelperText, props.hint]);
 
     const triggerChange = (date: Date | null) => {
         if (date === null) {
@@ -59,7 +71,9 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
         setLocalValue(newDate);
         lastPickerValueRef.current = newDate;
 
-        if (!lastInputWasTyping) {
+        // Popover interactions are committed on close. Text input changes must be
+        // forwarded immediately (or via blur/debounce) so manual clearing is persisted.
+        if (!lastInputWasTypingRef.current) {
             return;
         }
 
@@ -80,7 +94,7 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
     };
 
     const handleClose = () => {
-        if (lastInputWasTyping) {
+        if (lastInputWasTypingRef.current) {
             return;
         }
 
@@ -93,12 +107,22 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
     };
 
     const handleOpen = () => {
-        setLastInputWasTyping(false);
+        lastInputWasTypingRef.current = false;
     };
 
     const handleBlur = () => {
-        if (lastInputWasTyping && props.bufferInputUntilBlur) {
+        if (lastInputWasTypingRef.current && props.bufferInputUntilBlur) {
             triggerChange(localValue);
+        }
+    };
+
+    const handleInputChange = () => {
+        lastInputWasTypingRef.current = true;
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') {
+            lastInputWasTypingRef.current = true;
         }
     };
 
@@ -127,7 +151,9 @@ export function DateTimeFieldComponent(props: DateTimeFieldComponentProps) {
                             title: props.label,
                         },
                         placeholder: props.placeholder,
-                        onInput: () => setLastInputWasTyping(true),
+                        onInput: handleInputChange,
+                        onKeyDown: handleKeyDown,
+                        onPaste: handleInputChange,
                         onBlur: handleBlur,
                     },
                     actionBar: {

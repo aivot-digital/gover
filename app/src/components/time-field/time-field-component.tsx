@@ -1,7 +1,7 @@
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
 import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
 import {de} from 'date-fns/locale/de';
-import {useEffect, useRef, useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {SxProps, Theme} from '@mui/material';
 import type {Locale} from 'date-fns';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
@@ -15,6 +15,7 @@ interface TimeFieldComponentProps {
     onBlur?: (val: string | undefined) => void;
     autocomplete?: string;
     hint?: string;
+    hideHelperText?: boolean;
     required?: boolean;
     disabled?: boolean;
     busy?: boolean;
@@ -29,8 +30,11 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
     const mode = props.mode ?? TimeFieldComponentModelMode.Minute;
     const dateValue = props.value ? new Date(props.value) : null;
     const [localValue, setLocalValue] = useState<Date | null>(dateValue);
-    const [lastInputWasTyping, setLastInputWasTyping] = useState(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // MUI fires picker changes for both popover selection and direct field edits.
+    // We track keyboard-driven edits separately so clearing the text field also
+    // propagates `undefined` to the parent instead of only mutating local picker state.
+    const lastInputWasTypingRef = useRef(false);
     const lastPickerValueRef = useRef<Date | null>(dateValue);
 
     useEffect(() => {
@@ -38,6 +42,14 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         setLocalValue(parsed);
         lastPickerValueRef.current = parsed;
     }, [props.value]);
+
+    useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
 
     const triggerChange = (date: Date | null) => {
         if (date === null) {
@@ -57,7 +69,9 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         setLocalValue(newDate);
         lastPickerValueRef.current = newDate;
 
-        if (!lastInputWasTyping) return;
+        // Popover interactions are committed on close. Text input changes must be
+        // forwarded immediately (or via blur/debounce) so manual clearing is persisted.
+        if (!lastInputWasTypingRef.current) return;
 
         if (props.bufferInputUntilBlur) return;
 
@@ -78,7 +92,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
     };
 
     const handleClose = () => {
-        if (lastInputWasTyping) return;
+        if (lastInputWasTypingRef.current) return;
 
         const currentIso = props.value ?? null;
         const pickedIso = lastPickerValueRef.current?.toISOString() ?? null;
@@ -89,12 +103,22 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
     };
 
     const handleOpen = () => {
-        setLastInputWasTyping(false);
+        lastInputWasTypingRef.current = false;
     };
 
     const handleBlur = () => {
-        if (lastInputWasTyping && props.bufferInputUntilBlur) {
+        if (lastInputWasTypingRef.current && props.bufferInputUntilBlur) {
             triggerChange(localValue);
+        }
+    };
+
+    const handleInputChange = () => {
+        lastInputWasTypingRef.current = true;
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') {
+            lastInputWasTypingRef.current = true;
         }
     };
 
@@ -118,12 +142,14 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                     textField: {
                         variant: 'outlined',
                         error: props.error != null,
-                        helperText: props.error != null ? props.error : props.hint,
+                        helperText: props.hideHelperText ? undefined : props.error != null ? props.error : props.hint,
                         InputLabelProps: {
                             title: props.label,
                         },
                         autoComplete: props.autocomplete,
-                        onInput: () => setLastInputWasTyping(true),
+                        onInput: handleInputChange,
+                        onKeyDown: handleKeyDown,
+                        onPaste: handleInputChange,
                         onBlur: handleBlur,
                     },
                     actionBar: {
