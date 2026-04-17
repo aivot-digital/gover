@@ -129,8 +129,8 @@ public class JavascriptEngine implements AutoCloseable {
      * @return this service instance.
      */
     public JavascriptEngine registerGlobalObject(String objectName, Object object) {
-        var map = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
+        var map = ObjectMapperFactory
+                .getInstance()
                 .convertValue(object, new TypeReference<Map<String, Object>>() {
                 });
 
