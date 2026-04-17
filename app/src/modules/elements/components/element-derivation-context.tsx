@@ -27,6 +27,7 @@ interface ElementDerivationContextProps {
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
+    doDerive?: (aev: AuthoredElementValues) => Promise<DerivedRuntimeElementData>;
 }
 
 export enum ElementDerivationContextRenderMode {
@@ -89,6 +90,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
+        doDerive,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -215,7 +217,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                 onDerivationStarted(authoredElementValues);
             }
 
-            const derivedRuntimeElementData = await new ElementsApiService()
+            const derivedRuntimeElementData = await (doDerive != null ? doDerive(authoredElementValues) : new ElementsApiService()
                 .derive({
                     element: element,
                     authoredElementValues: authoredElementValues,
@@ -225,7 +227,12 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                         skipOverridesForElementIds: [],
                         skipValuesForElementIds: [],
                     },
-                });
+                    processExecutionData: {
+                        $: {},
+                        $$: {},
+                        _: {},
+                    },
+                }));
 
             setInternalDerivedData(derivedRuntimeElementData);
             onDerivedDataChange?.(derivedRuntimeElementData);
