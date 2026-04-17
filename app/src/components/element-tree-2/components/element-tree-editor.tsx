@@ -18,6 +18,7 @@ import {Actions} from '../../actions/actions';
 import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import {ElementType} from '../../../data/element-type/element-type';
+import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -42,6 +43,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         root,
         editable,
         parentModalZIndex,
+        displayContext,
     } = useElementTreeContext();
 
     const {
@@ -253,6 +255,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         {
                             // The root of an element tree cannot have visibility.
                             !isRoot &&
+                            displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Tab
                                 label="Sichtbarkeit"
                                 value={DefaultTabs.visibility}
@@ -262,6 +265,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         {
                             ElementIsInput[value.type] &&
                             !hasSummaryAsParent &&
+                            displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Tab
                                 label="Validierung"
                                 value={DefaultTabs.validation}
@@ -270,6 +274,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
                         {
                             ElementIsInput[value.type] &&
+                            displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Tab
                                 label="Dynamischer Wert"
                                 value={DefaultTabs.value}
@@ -278,21 +283,25 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
                         {
                             // The root of an element tree cannot have visibility.
+                            displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Tab
                                 label="Dynamische Struktur"
                                 value={DefaultTabs.patch}
                             />
                         }
 
-                        <Box
-                            sx={{
-                                height: 24,
-                                alignSelf: 'center',
-                                borderLeft: '1px solid',
-                                borderColor: 'divider',
-                                mx: 1,
-                            }}
-                        />
+                        {
+                            displayContext != ElementDisplayContext.DataObjectSchema &&
+                            <Box
+                                sx={{
+                                    height: 24,
+                                    alignSelf: 'center',
+                                    borderLeft: '1px solid',
+                                    borderColor: 'divider',
+                                    mx: 1,
+                                }}
+                            />
+                        }
 
                         <Tab
                             label="Elementstruktur"

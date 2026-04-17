@@ -192,7 +192,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
                 setTimeout(() => {
                     navigate(`/processes/${createdProcess.id}/versions/1/`, {
-                        state: SHOW_ERRORS_ROUTER_STATE,
+                        state: data.nodes.length > 0 ? SHOW_ERRORS_ROUTER_STATE : undefined,
                     });
                 }, 1);
             })

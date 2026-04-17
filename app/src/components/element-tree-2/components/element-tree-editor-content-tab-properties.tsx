@@ -24,6 +24,7 @@ import {DefaultTabs} from '../../element-editor/default-tabs';
 import {createElementEditorNavigationLink} from '../../../hooks/use-element-editor-navigation';
 import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
 import {normalizeElementWeight} from '../../../utils/element-widths';
+import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 
 export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const dispatch = useAppDispatch();
@@ -32,6 +33,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         editable,
         allElements,
         allowElementIdEditing,
+        displayContext,
     } = useElementTreeContext();
 
     const {
@@ -324,6 +326,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
 
             {
                 isAnyInputElement(currentElement) &&
+                displayContext != ElementDisplayContext.DataObjectSchema &&
                 <>
                     <ElementEditorSectionHeader
                         title="Datenzuordnung"
@@ -400,7 +403,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 id: id ?? '',
                             });
                         }}
-                        disabled={!allowElementIdEditing}
+                        disabled={!allowElementIdEditing && displayContext != ElementDisplayContext.DataObjectSchema}
                         endAction={{
                             icon: <ContentPasteIcon/>,
                             onClick: async () => {

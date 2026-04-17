@@ -394,7 +394,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                             handleInputChange('schema')(schema as GroupLayout);
                         }
                     }}
-                    displayContext={ElementDisplayContext.StaffFacing}
+                    displayContext={ElementDisplayContext.DataObjectSchema}
                 />
 
                 {

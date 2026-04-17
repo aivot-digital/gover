@@ -63,6 +63,12 @@ const appSlice = createSlice({
             state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.version.rootElement, [], false);
         },
 
+        replaceLoadedForm: (state, action: PayloadAction<LoadedForm>) => {
+            state.loadedForm = action.payload;
+            state.allElements = flattenElements(state.loadedForm.version.rootElement);
+            state.allElementsWithParents = flattenElementsWithParents(state.loadedForm.version.rootElement, [], false);
+        },
+
         undoLoadedForm: (state, _: PayloadAction<void>) => {
             if (state.pastLoadedForm.length > 0 && state.loadedForm != null) {
                 state.futureLoadedForm.push(state.loadedForm);
@@ -105,6 +111,7 @@ const appSlice = createSlice({
 export const {
     clearLoadedForm,
     updateLoadedForm,
+    replaceLoadedForm,
     undoLoadedForm,
     redoLoadedForm,
     clearLoadedFormHistory,
