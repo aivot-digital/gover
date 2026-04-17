@@ -45,9 +45,7 @@ const columns: GridColDef<FormEntity>[] = [
         headerName: 'Status',
         flex: 1,
         renderCell: (params) => (
-            <FormStatusChipGroup
-                form={params.row}
-            />
+            <FormStatusChipGroup form={params.row}/>
         ),
     },
 ];

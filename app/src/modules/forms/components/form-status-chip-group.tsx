@@ -40,7 +40,6 @@ export function FormStatusChipGroup(props: FormStatusChipGroupProps) {
                 flexDirection: 'column',
                 justifyContent: 'center',
                 gap: 1,
-                py: 2,
             }}
         >
             {

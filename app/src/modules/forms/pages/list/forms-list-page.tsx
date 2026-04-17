@@ -182,7 +182,9 @@ const columns: GridColDef<FormListEntry>[] = [
         flex: 0.75,
         sortable: false,
         renderCell: (params) => (
-            <FormStatusChipGroup form={params.row}/>
+            <Box sx={{py: 2}}>
+                <FormStatusChipGroup form={params.row}/>
+            </Box>
         ),
     },
 ];
