@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.elements.enums.OverrideFunctionType;
 import de.aivot.GoverBackend.elements.utils.ElementReferenceUtils;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
@@ -30,11 +31,16 @@ public class ElementOverrideFunctions implements Serializable {
     }
 
     public ElementOverrideFunctions recalculateReferencedIds() {
+        return recalculateReferencedIds(Map.of());
+    }
+
+    public ElementOverrideFunctions recalculateReferencedIds(@Nonnull Map<String, ? extends Collection<String>> destinationKeyIndex) {
         referencedIds = ElementReferenceUtils
                 .getReferencedIds(
                         javascriptCode,
                         null,
-                        null // No ConditionSet for overrides
+                        null, // No ConditionSet for overrides
+                        destinationKeyIndex
                 );
 
         if (fieldNoCodeMap != null) {
@@ -46,7 +52,8 @@ public class ElementOverrideFunctions implements Serializable {
                         .getReferencedIds(
                                 null,
                                 expression,
-                                null
+                                null,
+                                destinationKeyIndex
                         ));
             }
         }

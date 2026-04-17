@@ -10,6 +10,8 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementReferenceUtils;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -125,6 +127,17 @@ public class StaffProcessInstanceTaskViewController {
         var layout = taskViewData
                 .provider
                 .getStaffTaskView(context);
+
+        if (layout instanceof BaseElement rootElement) {
+            var destinationKeyIndex = ElementReferenceUtils
+                    .buildDestinationKeyIndex(rootElement);
+
+            ElementStreamUtils
+                    .applyAction(
+                            rootElement,
+                            element -> element.recalculateReferencedIds(destinationKeyIndex)
+                    );
+        }
 
         var events = taskViewData
                 .provider

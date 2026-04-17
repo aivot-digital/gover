@@ -113,6 +113,31 @@ public class JavascriptCode implements Serializable {
         return ids;
     }
 
+    /**
+     * Get all process data paths that are referenced through the process data root object.
+     *
+     * @return a set of all referenced process data paths
+     */
+    @Nonnull
+    @JsonIgnore
+    public Set<String> getReferencedProcessDataPaths() {
+        if (code == null || StringUtils.isNullOrEmpty(code)) {
+            return new HashSet<>();
+        }
+
+        var processDataReferencePattern = Pattern
+                .compile("(?<![$\\w])\\$((?:\\.[a-zA-Z_$][a-zA-Z0-9_$]*)+)");
+
+        var paths = new HashSet<String>();
+
+        var matcher = processDataReferencePattern.matcher(code);
+        while (matcher.find()) {
+            paths.add(matcher.group(1).substring(1));
+        }
+
+        return paths;
+    }
+
     // endregion
 
     // region Equals & HashCode

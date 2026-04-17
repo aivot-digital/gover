@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.utils.ElementReferenceUtils;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.form.cache.entities.FormLockCacheEntity;
 import de.aivot.GoverBackend.form.entities.*;
@@ -280,8 +280,13 @@ public class FormVersionController {
                         .setUserId(user.getId()));
 
         // Recalculate referenced IDs for all elements in the form
+        var destinationKeyIndex = ElementReferenceUtils
+                .buildDestinationKeyIndex(patchedFormVersion.getRootElement());
         ElementStreamUtils
-                .applyAction(patchedFormVersion.getRootElement(), BaseElement::recalculateReferencedIds);
+                .applyAction(
+                        patchedFormVersion.getRootElement(),
+                        element -> element.recalculateReferencedIds(destinationKeyIndex)
+                );
 
         // Update the form version
         var updatedFormVersion = formVersionService

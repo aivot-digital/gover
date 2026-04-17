@@ -9,6 +9,7 @@ import jakarta.annotation.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 
 public abstract class BaseInputElement<T> extends BaseFormElement implements InputElement<T> {
@@ -73,12 +74,17 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
 
     @Override
     public void recalculateReferencedIds() {
-        super.recalculateReferencedIds();
+        recalculateReferencedIds(Map.of());
+    }
+
+    @Override
+    public void recalculateReferencedIds(@Nonnull Map<String, ? extends Collection<String>> destinationKeyIndex) {
+        super.recalculateReferencedIds(destinationKeyIndex);
         if (value != null) {
-            value.recalculateReferencedIds();
+            value.recalculateReferencedIds(destinationKeyIndex);
         }
         if (validation != null) {
-            validation.recalculateReferencedIds();
+            validation.recalculateReferencedIds(destinationKeyIndex);
         }
     }
 

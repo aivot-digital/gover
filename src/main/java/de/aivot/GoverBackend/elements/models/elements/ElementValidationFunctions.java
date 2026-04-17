@@ -4,11 +4,13 @@ import de.aivot.GoverBackend.elements.enums.ValidationFunctionType;
 import de.aivot.GoverBackend.elements.utils.ElementReferenceUtils;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ElementValidationFunctions implements Serializable {
@@ -26,11 +28,16 @@ public class ElementValidationFunctions implements Serializable {
     private Collection<String> referencedIds;
 
     public void recalculateReferencedIds() {
+        recalculateReferencedIds(Map.of());
+    }
+
+    public void recalculateReferencedIds(@Nonnull Map<String, ? extends Collection<String>> destinationKeyIndex) {
         referencedIds = ElementReferenceUtils
                 .getReferencedIds(
                         javascriptCode,
                         null,
-                        conditionSet
+                        conditionSet,
+                        destinationKeyIndex
                 );
 
         if (noCodeList != null) {
@@ -43,7 +50,8 @@ public class ElementValidationFunctions implements Serializable {
                         .getReferencedIds(
                                 null,
                                 validationExpression.getNoCode(),
-                                null
+                                null,
+                                destinationKeyIndex
                         ));
             }
         }

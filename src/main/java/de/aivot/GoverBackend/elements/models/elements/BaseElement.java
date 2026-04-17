@@ -19,6 +19,8 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
+import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -99,12 +101,16 @@ public abstract class BaseElement implements Serializable {
     }
 
     public void recalculateReferencedIds() {
+        recalculateReferencedIds(Map.of());
+    }
+
+    public void recalculateReferencedIds(@Nonnull Map<String, ? extends Collection<String>> destinationKeyIndex) {
         if (visibility != null) {
-            visibility.recalculateReferencedIds();
+            visibility.recalculateReferencedIds(destinationKeyIndex);
         }
 
         if (override != null) {
-            override.recalculateReferencedIds();
+            override.recalculateReferencedIds(destinationKeyIndex);
         }
     }
 
