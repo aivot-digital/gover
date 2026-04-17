@@ -203,12 +203,12 @@ values ('leistungserbringer',
          {
            "bezeichner": "Küche",
            "stockwerk": "EG",
-           "flaeche_qm": "28"
+           "flaeche_qm": 28
          },
          {
            "bezeichner": "Gemeinschaftsraum",
            "stockwerk": "1. OG",
-           "flaeche_qm": "13"
+           "flaeche_qm": 13
          }
        ]
      }'),
@@ -225,12 +225,12 @@ values ('leistungserbringer',
             {
               "bezeichner": "Werkraum",
               "stockwerk": "EG",
-              "flaeche_qm": "59"
+              "flaeche_qm": 59
             },
             {
               "bezeichner": "Waschküche",
               "stockwerk": "EG",
-              "flaeche_qm": "9"
+              "flaeche_qm": 9
             }
           ]
         }')
