@@ -32,6 +32,9 @@ export function ShellSessionExpiredDialog() {
         <Dialog
             open={!isAuthenticated}
             maxWidth="xs"
+            sx={{
+                zIndex: (theme) => Math.max(theme.zIndex.tooltip + 2, 10001),
+            }}
         >
             <DialogTitle>
                 Sitzung abgelaufen
