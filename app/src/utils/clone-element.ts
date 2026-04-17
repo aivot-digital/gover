@@ -94,7 +94,10 @@ function fixNoCodeReferences<T extends AnyElement>(element: T, idMap: IdMap): T 
                         noCodeList: fixedElement
                             .validation
                             .noCodeList
-                            .map(i => i.noCode != null ? fixNoCodeOperandReferences(i.noCode, idMap) : null),
+                            .map(i => ({
+                                ...i,
+                                noCode: i.noCode != null ? fixNoCodeOperandReferences(i.noCode, idMap) : null
+                            })),
                     },
                 };
             }
