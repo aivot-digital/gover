@@ -17,6 +17,7 @@ import {downloadTextFile} from '../../../../../utils/download-utils';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === 'object';
@@ -173,6 +174,8 @@ export function SystemInformation(): React.ReactElement {
         },
     ];
 
+    const notImplemented = useNotImplemented();
+
     return (
         <>
             <StatusTable
@@ -286,7 +289,8 @@ export function SystemInformation(): React.ReactElement {
                     sx={{mt: 2.5}}
                     startIcon={<FileDownloadOutlinedIcon />}
                     onClick={() => {
-                        void new SystemApiService()
+                        notImplemented();
+                        /*void new SystemApiService()
                             .getHttpExchanges()
                             .then((exchanges) => {
                                 const lines: string[] = ['uri,method,timestamp,status,timing'];
@@ -298,7 +302,7 @@ export function SystemInformation(): React.ReactElement {
                             })
                             .catch((err) => {
                                 console.error(err);
-                            });
+                            });*/
                     }}
                 >
                     HTTP-Austausch herunterladen (CSV)
