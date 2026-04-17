@@ -69,14 +69,19 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Aut
         } else {
             var minSets = Boolean.TRUE.equals(getRequired()) ? (minimumRequiredSets != null ? minimumRequiredSets : 1) : 0;
             if (value.size() < minSets) {
-                throw new ValidationException(this, "Nicht genug Datensätze.");
+                throw new ValidationException(this, "Es " + pluralize(minSets, "muss", "müssen") + " mindestens " + minSets + " " + pluralize(minSets, "Datensatz", "Datensätze") + " hinzugefügt werden.");
             }
 
             var hasMaximum = maximumSets != null && maximumSets > 0;
             if (hasMaximum && value.size() > maximumSets) {
-                throw new ValidationException(this, "Zu viele Datensätze.");
+                throw new ValidationException(this, "Es " + pluralize(maximumSets, "darf", "dürfen") + " maximal " + maximumSets + " " + pluralize(maximumSets, "Datensatz", "Datensätze") + " hinzugefügt werden.");
             }
         }
+    }
+
+    @Nonnull
+    private String pluralize(int count, @Nonnull String singular, @Nonnull String plural) {
+        return count == 1 ? singular : plural;
     }
 
     @Nonnull

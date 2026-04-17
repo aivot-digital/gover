@@ -8,6 +8,7 @@ import FormLabel from '@mui/material/FormLabel';
 import Grid from '@mui/material/Grid';
 import Skeleton from '@mui/material/Skeleton';
 import Typography from '@mui/material/Typography';
+import {alpha} from '@mui/material/styles';
 import {stringOrDefault} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
@@ -65,13 +66,9 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
     }, [element, isBusy, isDeriving]);
 
     const minRequiredSets = element.required === true ? (element.minimumRequiredSets ?? 1) : 0;
-
-    useEffect(() => {
-        if (minRequiredSets > 0 && (value == null || value.length < minRequiredSets)) {
-            const forcedChildren = Array.from({length: minRequiredSets}, () => ({} as AuthoredElementValues));
-            setValue(forcedChildren);
-        }
-    }, [setValue, value, element]);
+    const hasEntries = (value?.length ?? 0) > 0;
+    const isAddDisabled = isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets);
+    const shouldShowEmptyState = !hasEntries;
 
     const handleAdd = useCallback(() => {
         const updatedValue: AuthoredElementValues[] = [
@@ -130,6 +127,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             pt: 2.4,
                             pb: 3.4,
                             border: '1px solid #D4D4D4',
+                            borderRadius: 2,
                         }}
                     >
                         <Box
@@ -178,6 +176,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                             px: 3,
                             py: 2.4,
                             border: '1px solid #D4D4D4',
+                            borderRadius: 1,
                         }}
                     >
                         <Box
@@ -268,8 +267,38 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     </Box>
                 ))
             }
+            {
+                shouldShowEmptyState &&
+                <Box
+                    sx={(theme) => ({
+                        my: 2,
+                        px: 3,
+                        py: 2.4,
+                        borderRadius: 1,
+                        border: '1px dashed',
+                        borderColor: errors != null && errors.length > 0
+                            ? alpha(theme.palette.error.main, 0.35)
+                            : alpha(theme.palette.text.primary, 0.18),
+                        textAlign: 'left',
+                    })}
+                >
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                    >
+                        Keine Datensätze vorhanden.{" "}
+                        {
+                            minRequiredSets > 0 &&
+                                <>
+                                    Mindestens {minRequiredSets} {minRequiredSets === 1 ? 'Datensatz ist' : 'Datensätze sind'} erforderlich.
+                                </>
+                        }
+                    </Typography>
+
+                </Box>
+            }
             <Box
-                sx={{cursor: (isDisabled || isBusy) ? 'not-allowed' : undefined,}}
+                sx={{cursor: isAddDisabled ? 'not-allowed' : undefined}}
             >
                 <Button
                     startIcon={<AddCircleOutlineOutlinedIcon
@@ -281,7 +310,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                     }}
                     onClick={handleAdd}
                     variant={'outlined'}
-                    disabled={isDisabled || (element.maximumSets != null && element.maximumSets > 0 && (value ?? []).length >= element.maximumSets)}
+                    disabled={isAddDisabled}
                 >
                     {
                         stringOrDefault(element.addLabel, 'Datensatz hinzufügen')
