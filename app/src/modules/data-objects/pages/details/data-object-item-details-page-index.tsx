@@ -12,7 +12,7 @@ import {useApi} from '../../../../hooks/use-api';
 import {useNavigate, useParams} from 'react-router-dom';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
-import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
+import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
@@ -97,8 +97,11 @@ export function DataObjectItemDetailsPageIndex() {
         reset,
     } = useFormManager<DataObjectItem>(originalDataObjectItem, yupSchema as any, true);
 
-    const changeBlocker =
-        useChangeBlocker(originalDataObjectItem, currentDataObjectItem, undefined, undefined, true);
+    const changeBlocker = useChangeBlocker({
+        original: originalDataObjectItem,
+        edited: currentDataObjectItem,
+        useDeepEquals: true,
+    });
 
     const {
         confirmOptions: confirmDeleteOptions,
@@ -313,15 +316,7 @@ export function DataObjectItemDetailsPageIndex() {
                 authoredElementValues={currentDataObjectItem.data}
                 derivedData={derivedData}
                 onAuthoredElementValuesChange={(changedElementData) => {
-                    if (Object.keys(currentDataObjectItem.data).length === 0) {
-                        setItem({
-                            ...currentDataObjectItem,
-                            data: changedElementData,
-                        });
-                        reset();
-                    } else {
-                        handleInputChange('data')(changedElementData);
-                    }
+                    handleInputChange('data')(changedElementData);
                 }}
                 onDerivedDataChange={setDerivedData}
                 disabled={!hasAccess}
