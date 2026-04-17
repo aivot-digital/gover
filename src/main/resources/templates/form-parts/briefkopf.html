@@ -24,9 +24,9 @@
     <div id="logo">
         <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->
         <img
-                th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName)}"
+                th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName) }"
                 th:alt="${ 'Logo ' + base.providerName }"
-                style="height: 100px; width: auto;"
+                style="height: 100px; width: auto; object-fit: contain;"
         />
     </div>
 </header>
