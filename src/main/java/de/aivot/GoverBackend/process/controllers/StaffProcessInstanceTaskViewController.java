@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
@@ -275,6 +276,58 @@ public class StaffProcessInstanceTaskViewController {
                 updatedElementData,
                 updatedEvents
         );
+    }
+
+    @PostMapping("derive/")
+    @Operation(
+            summary = "Retrieve Process Instance Task View Layout",
+            description = "Retrieves the view layout for a specific task within a process instance. " +
+                    "The layout defines how the task is presented to the user, including form fields and structure."
+    )
+    public DerivedRuntimeElementData derive(
+            @Nonnull @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Long procId,
+            @Nonnull @PathVariable Long taskId,
+            @Nonnull @RequestBody AuthoredElementValues authoredElementValues
+    ) throws ResponseException {
+        var taskViewData = fetchTaskViewData(
+                jwt,
+                procId,
+                taskId
+        );
+
+        var logger = processNodeExecutionLoggerFactory
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), taskViewData.user.getId(), null);
+
+        var incomingProcessExecutionData = processDataService
+                .foldProcessInstanceData(
+                        taskViewData.instance(),
+                        taskViewData.task().getPreviousProcessNodeId()
+                );
+
+        var context = new ProcessNodeExecutionContextUIStaff(
+                logger,
+                taskViewData.node(),
+                taskViewData.instance(),
+                taskViewData.task(),
+                null,
+                taskViewData.user,
+                taskViewData.derivedRuntimeElementData(),
+                incomingProcessExecutionData
+        );
+
+        var staffTaskView = taskViewData
+                .provider
+                .getStaffTaskView(context);
+
+        var elementDerivationRequest = new ElementDerivationRequest(
+                (BaseElement) staffTaskView,
+                authoredElementValues,
+                incomingProcessExecutionData
+        );
+
+        return elementDerivationService
+                .derive(elementDerivationRequest);
     }
 
     private TaskViewData fetchTaskViewData(
