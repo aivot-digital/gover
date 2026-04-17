@@ -52,14 +52,17 @@ export function ShellSessionEndWarnPopup() {
 
     return (
         <Paper
+            elevation={6}
             sx={{
                 position: 'fixed',
                 bottom: '1rem',
                 right: '1rem',
+                zIndex: (theme) => Math.max(theme.zIndex.tooltip + 1, 10000),
                 paddingX: 2,
                 paddingY: 1,
                 display: 'flex',
                 alignItems: 'center',
+                boxShadow: (theme) => theme.shadows[6],
             }}
         >
             <Typography
