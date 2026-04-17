@@ -8,9 +8,9 @@ import {ElementDerivationContext} from '../../../elements/components/element-der
 import {
     ProcessInstanceTaskApiService,
     type TaskView,
+    type TaskViewEvent,
     type TaskViewEventAlignment,
     type TaskViewEventColor,
-    type TaskViewEvent,
     type TaskViewEventVariant,
 } from '../../services/process-instance-task-api-service';
 import {
@@ -300,6 +300,17 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
                                 computedErrors={derivedErrors?.elementStates}
+                                doDerive={(aev) => {
+                                    if (item == null || item.instance == null || item.task == null) {
+                                        return Promise.resolve({
+                                            effectiveValues: {},
+                                            elementStates: {},
+                                        });
+                                    }
+
+                                    return new ProcessInstanceTaskApiService()
+                                        .deriveStaffTaskView(item.instance.id, item.task.id, aev);
+                                }}
                             />
                         </Box>
 
