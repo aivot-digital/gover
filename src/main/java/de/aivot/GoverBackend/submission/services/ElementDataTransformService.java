@@ -10,12 +10,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Builds the outbound destination payload from authored element values and the element tree.
@@ -61,7 +56,26 @@ public class ElementDataTransformService {
     @Nonnull
     public Map<String, Object> buildPayload(@Nullable BaseElement rootElement,
                                             @Nonnull Map<String, Object> effectiveValues) {
-        var payload = new LinkedHashMap<String, Object>();
+        return buildPayload(rootElement, effectiveValues, new HashMap<>());
+    }
+
+    /**
+     * Creates a payload map for the given form tree.
+     * <p>
+     * The returned map is suitable for downstream submission targets that address data by
+     * destination keys rather than internal element ids.
+     *
+     * @param rootElement the root of the form tree that defines which values should be exported
+     *                    and where they should be written
+     * @param effectiveValues the resolved element values keyed by element id
+     * @param existingPayload an existing payload to patch the built payload onto
+     * @return a newly built payload containing only data referenced by destination keys
+     */
+    @Nonnull
+    public Map<String, Object> buildPayload(@Nullable BaseElement rootElement,
+                                            @Nonnull Map<String, Object> effectiveValues,
+                                            @Nonnull Map<String, Object> existingPayload) {
+        var payload = new LinkedHashMap<>(existingPayload);
         mergeDestinationKeyPayload(rootElement, effectiveValues, payload, List.of());
         return payload;
     }
