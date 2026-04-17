@@ -2,7 +2,7 @@ import {BaseCrudApiService} from "../../../services/base-crud-api-service";
 import {ProcessInstanceTaskEntity} from "../entities/process-instance-task-entity";
 import {ProcessTaskStatus} from "../enums/process-task-status";
 import {GroupLayout} from "../../../models/elements/form/layout/group-layout";
-import {AuthoredElementValues, isAuthoredElementValues} from '../../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData, isAuthoredElementValues} from '../../../models/element-data';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 
 interface ProcessInstanceTaskFilter {
@@ -105,6 +105,10 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
 
     public getStaffTaskView(instanceId: number, taskId: number): Promise<TaskView> {
         return this.get(`/api/processes/${instanceId}/tasks/${taskId}/`);
+    }
+
+    public deriveStaffTaskView(instanceId: number, taskId: number, aev: AuthoredElementValues): Promise<DerivedRuntimeElementData> {
+        return this.post(`/api/processes/${instanceId}/tasks/${taskId}/derive/`, aev);
     }
 
     public getCustomerTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<TaskView> {
