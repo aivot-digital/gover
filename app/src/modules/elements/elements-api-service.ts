@@ -9,10 +9,17 @@ interface ElementDerivationOptions {
     skipValuesForElementIds: string[];
 }
 
-interface ElementDerivationRequest {
+export interface ProcessExecutionData {
+    $: Record<string, any>;
+    $$: Record<string, any>;
+    _: Record<string, any>;
+}
+
+export interface ElementDerivationRequest {
     element: AnyElement;
     authoredElementValues: AuthoredElementValues;
     derivationOptions: ElementDerivationOptions;
+    processExecutionData: ProcessExecutionData;
 }
 
 export class ElementsApiService extends BaseApiService {
