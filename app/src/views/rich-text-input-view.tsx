@@ -36,7 +36,7 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
             required={element.required}
             disabled={isDisabled}
             readOnly={isBusy}
-            reducedMode={isProcessConfigRoot || Boolean(element.reducedMode)}
+            reducedMode={isProcessConfigRoot ? true : element.reducedMode}
             value={value}
             onChange={setValue}
         />

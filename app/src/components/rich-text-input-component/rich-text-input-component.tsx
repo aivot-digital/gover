@@ -81,6 +81,7 @@ const mdxEditorGermanTranslation: Translation = (key, defaultValue, interpolatio
 
 const TEXT_FIELD_READ_ONLY_BG = '#F8F8F8';
 const TEXT_FIELD_DISABLED_TEXT_COLOR = 'rgba(0, 0, 0, 0.66)';
+const AUTO_REDUCED_MODE_MAX_WIDTH = 630;
 
 export interface RichTextInputComponentProps {
     label?: string | null | undefined;
@@ -98,6 +99,7 @@ export interface RichTextInputComponentProps {
 export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const theme = useTheme();
     const [overlayContainer, setOverlayContainer] = useState<HTMLElement | null>(null);
+    const [isAutoReducedMode, setIsAutoReducedMode] = useState(false);
     const editorRef = useRef<MDXEditorMethods | null>(null);
     const {
         label,
@@ -112,8 +114,13 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
         sx,
     } = props;
 
+    const updateAutoReducedMode = useCallback((width: number) => {
+        const nextIsAutoReducedMode = width < AUTO_REDUCED_MODE_MAX_WIDTH;
+        setIsAutoReducedMode((prev) => prev === nextIsAutoReducedMode ? prev : nextIsAutoReducedMode);
+    }, []);
+
     const isReadOnly = Boolean(disabled) || Boolean(readOnly);
-    const isReducedMode = Boolean(reducedMode);
+    const isReducedMode = reducedMode === true || isAutoReducedMode;
     const sxArray = Array.isArray(sx) ? sx : [sx];
     const focusColor = error != null ? theme.palette.error.main : theme.palette.primary.main;
     const outlinedBorderColor = theme.palette.mode === 'light'
@@ -142,7 +149,10 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
     const editorMaxHeight = '50vh';
     const handleOverlayContainerRef = useCallback((node: HTMLDivElement | null) => {
         setOverlayContainer(node);
-    }, []);
+        if (node != null) {
+            updateAutoReducedMode(node.getBoundingClientRect().width);
+        }
+    }, [updateAutoReducedMode]);
     const normalizedValue = value ?? '';
 
     useEffect(() => {
@@ -155,6 +165,22 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
             editor.setMarkdown(normalizedValue);
         }
     }, [normalizedValue]);
+
+    useEffect(() => {
+        if (overlayContainer == null || typeof ResizeObserver === 'undefined') {
+            return;
+        }
+
+        const observer = new ResizeObserver((entries) => {
+            const width = entries[0]?.contentRect.width ?? overlayContainer.getBoundingClientRect().width;
+            updateAutoReducedMode(width);
+        });
+
+        observer.observe(overlayContainer);
+        return () => {
+            observer.disconnect();
+        };
+    }, [overlayContainer, updateAutoReducedMode]);
 
     return (
         <Box

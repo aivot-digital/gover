@@ -19,7 +19,7 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
         >
             <Grid size={{xs: 12}}>
                 <CheckboxFieldComponent
-                    label="Reduzierter Modus"
+                    label="Reduzierte Toolbar erzwingen"
                     value={element.reducedMode ?? false}
                     onChange={(checked) => {
                         onPatch({
@@ -28,7 +28,7 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
                     }}
                     variant="switch"
                     disabled={!editable}
-                    hint="Zeigt eine reduzierte Toolbar ohne Separatoren, Durchstreichen, Hervorheben und Inline-Code."
+                    hint="Erzwingt eine reduzierte Toolbar. Wenn deaktiviert, schaltet der Editor bei Breiten unter 630px automatisch um."
                 />
                 {
                     !editable &&
