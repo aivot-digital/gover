@@ -21,7 +21,13 @@
 * **System:** Add new prototype for processes.
 * **System:** Improve plugin system for better extensibility and maintainability.
 
-## [4.6.0](https://github.com/aivot-digital/gover/compare/v4.5.4...v4.6.0) (TBD)
+## [4.6.1](https://github.com/aivot-digital/gover/compare/v4.6.0...v4.6.1) (2026-04-14)
+
+### Bug Fixes
+* **App:** Fix an issue in the PDF template when a payment provider returns an empty payment method.
+
+
+## [4.6.0](https://github.com/aivot-digital/gover/compare/v4.5.4...v4.6.0) (2026-03-17)
 
 ### Bug Fixes
 * **App:** Fix issue with restricted url patterns for destinations.
