@@ -66,7 +66,7 @@ services:
 
 
   keycloak:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.3.0
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.7.0
     restart: always
     depends_on:
       - keycloak_database
@@ -145,7 +145,7 @@ services:
 
 
   gover:
-    image: ghcr.io/aivot-digital/gover:4.6.0
+    image: ghcr.io/aivot-digital/gover:4.6.1
     depends_on:
       - gover_database
       - clamav
@@ -218,7 +218,7 @@ services:
 
 
   gover_staff_app:
-    image: ghcr.io/aivot-digital/gover:4.6.0
+    image: ghcr.io/aivot-digital/gover:4.6.1
     restart: always
     command: staff
     environment:
@@ -233,7 +233,7 @@ services:
 
 
   gover_customer_app:
-    image: ghcr.io/aivot-digital/gover:4.6.0
+    image: ghcr.io/aivot-digital/gover:4.6.1
     restart: always
     command: customer
     environment:
