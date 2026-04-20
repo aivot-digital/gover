@@ -103,8 +103,9 @@ spring:
         registration:
           keycloak:
             client-id: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
+            client-secret: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_SECRET:}"
             authorization-grant-type: authorization_code
-            scope: profile,email,roles,groups
+            scope: profile,email
         provider:
           keycloak:
             issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
