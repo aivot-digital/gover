@@ -52,4 +52,6 @@ public class SummaryStepElement extends BaseStepElement implements InputElement<
     public String toDisplayValue(@Nullable Boolean value) {
         return value == null || !value ? "Nicht bestätigt" : "Bestätigt";
     }
+
+
 }

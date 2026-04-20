@@ -9,6 +9,8 @@ import de.aivot.GoverBackend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.Objects;
+
 public class CheckboxInputElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
     /**
      * Variant of the checkbox. Options are:
@@ -19,6 +21,19 @@ public class CheckboxInputElement extends BaseInputElement<Boolean> implements P
 
     public CheckboxInputElement() {
         super(ElementType.Checkbox);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        CheckboxInputElement that = (CheckboxInputElement) o;
+        return Objects.equals(variant, that.variant);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), variant);
     }
 
     @Nullable

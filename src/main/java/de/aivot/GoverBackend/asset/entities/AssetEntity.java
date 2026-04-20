@@ -9,6 +9,7 @@ import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -35,6 +36,23 @@ public class AssetEntity {
     @Nonnull
     @NotNull(message = "Der Pfad des Speicherindex-Items darf nicht null sein.")
     private String storagePathFromRoot;
+
+    // region HashCode & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        AssetEntity that = (AssetEntity) o;
+        return Objects.equals(key, that.key) && Objects.equals(uploaderId, that.uploaderId) && Objects.equals(isPrivate, that.isPrivate) &&
+                Objects.equals(storageProviderId, that.storageProviderId) && Objects.equals(storagePathFromRoot, that.storagePathFromRoot);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(key, uploaderId, isPrivate, storageProviderId, storagePathFromRoot);
+    }
+
+    // endregion
 
 
     // region Getters & Setters
