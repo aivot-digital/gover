@@ -13,14 +13,12 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.net.URI;
 import java.net.http.HttpResponse;
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -31,7 +29,6 @@ public class AuthController {
     private static final String TOKEN_PATH = "/protocol/openid-connect/token";
 
     private static final String APP_URI_QUERY_PARAM = "app_uri";
-    private static final String APP_ACCESS_EXPIRES_IN_PARAM = "access_expires_in";
 
     private static final String OIDC_CLIENT_ID_PARAM_KEY = "client_id";
     private static final String OIDC_CLIENT_SECRET_PARAM_KEY = "client_secret";
@@ -107,7 +104,7 @@ public class AuthController {
             summary = "Login",
             description = "Redirects the user to the authentication provider login page or directly to the specified redirect URL if already authenticated."
     )
-    public void refresh(
+    public AuthStatusResponse refresh(
             @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response,
             @Nonnull @CookieValue(value = REFRESH_COOKIE_NAME) String refreshToken
@@ -125,7 +122,7 @@ public class AuthController {
         response
                 .addCookie(getAccessCookie(tokenResponse));
 
-        response.setStatus(HttpStatus.OK.value());
+        return AuthStatusResponse.of(tokenResponse);
     }
 
 
@@ -166,7 +163,6 @@ public class AuthController {
 
         var appRedirectLocation = UriComponentsBuilder
                 .fromUriString(appUri)
-                .queryParam(APP_ACCESS_EXPIRES_IN_PARAM, tokenResponse.expires_in)
                 .toUriString();
 
         response.sendRedirect(appRedirectLocation);
@@ -233,6 +229,20 @@ public class AuthController {
             @Nonnull
             Integer refresh_expires_in
     ) {
+    }
 
+    private record AuthStatusResponse(
+            @Nonnull
+            Instant accessExpires,
+            @Nonnull
+            Instant refreshExpires
+    ) {
+        public static AuthStatusResponse of(TokenResponse tokenResponse) {
+            var now = Instant.now();
+            return new AuthStatusResponse(
+                    now.plusSeconds(tokenResponse.expires_in),
+                    now.plusSeconds(tokenResponse.refresh_expires_in)
+            );
+        }
     }
 }
