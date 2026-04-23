@@ -74,7 +74,7 @@ export function StaffShell(): ReactNode {
         fetchSetup()
             .then((setup) => {
                 dispatch(setSetup(setup));
-                dispatch(setSystemConfigsFromMap(setup.publicConfigs));
+                dispatch(setSystemConfigsFromMap(AppConfigV2.systemConfigs));
             })
             .catch((err) => {
                 if (isApiError(err) && err.status >= 500) {
@@ -95,7 +95,7 @@ export function StaffShell(): ReactNode {
 
         const search = new URLSearchParams(window.location.search);
         if (isStringNotNullOrEmpty(search.get('logout'))) {
-            new AuthService().logout();
+            AuthService.logout();
 
             dispatch(setUser(undefined));
             dispatch(setMemberships([]));
@@ -105,13 +105,13 @@ export function StaffShell(): ReactNode {
             return;
         }
 
-        authenticateWithOidcCode(search)
+        authenticateWithOidcCode()
             .then((res) => {
                 if (res != null) {
                     dispatch(setUser(res.user));
                     dispatch(setMemberships(res.memberships));
                     dispatch(setPermissions(res.permissionSet));
-                    dispatch(setSystemConfigs(res.configs));
+                    dispatch(setSystemConfigsFromMap(res.configs));
                     dispatch(setStatus(ShellStatus.Ready));
                 } else {
                     dispatch(setStatus(ShellStatus.Login));
@@ -221,31 +221,13 @@ async function fetchSetup(): Promise<SystemSetupDTO> {
         .fetchSetup();
 }
 
-async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<{
+async function authenticateWithOidcCode(): Promise<{
     user: User;
     memberships: VDepartmentMembershipWithDetailsEntity[];
-    configs: SystemConfigResponseDto[];
+    configs: Record<string, any>;
     permissionSet: PermissionSet;
 } | undefined> {
-    const authService = new AuthService();
-    const apiService = new BaseApiService();
-
-    if (!authService.isAuthenticated()) {
-        const iss = searchParams.get('iss');
-        const code = searchParams.get('code');
-
-        if (iss == null || code == null) {
-            return undefined;
-        }
-
-        await authService
-            .authenticate(code);
-
-        // After the fixed OIDC callback path, restore the exact tab-local route that initiated login.
-        const postLoginRedirect = authService.consumePostLoginRedirect();
-        const fallbackRedirect = `${window.location.pathname}${window.location.hash}`;
-        window.location.replace(postLoginRedirect ?? fallbackRedirect);
-    }
+    await AuthService.refresh()
 
     const user = await new UsersApiService()
         .retrieveSelf();
@@ -259,14 +241,7 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
     const permissionSet = await new PermissionApiService()
         .getPermissionSetForUser(user.id);
 
-    const configsPage = await apiService
-        .get<Page<SystemConfigResponseDto>>('/api/system-configs/', {
-            query: {
-                size: 1000, // fetch all configs
-            }
-        });
-
-    const configs = configsPage.content;
+    const configs = AppConfigV2.systemConfigs;
 
     return {
         user,

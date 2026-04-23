@@ -17,7 +17,7 @@ const DEFAULT_TIMEOUT = 1000 * 60; // 1 Minute
 export const API_EVENT_UNREACHABLE = 'api-event-unreachble';
 
 export class BaseApiService {
-    private readonly auth = new AuthService();
+    private readonly auth = AuthService;
 
     public async get<T>(path: string, options?: RequestOptions): Promise<T> {
         const response = await this.fetch('GET', path, undefined, options);
@@ -100,15 +100,15 @@ export class BaseApiService {
     }
 
     public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
-        const accessToken = await this
-            .auth
-            .getAccessToken(options?.abort, options?.skipAuthCheck !== true);
+        if (!this.auth.isAccessTokenValid()) {
+            await this.auth.refresh();
+        }
 
         let response: Response;
         try {
             response = await fetch(this.combineUrl(path, options), {
                 method: method,
-                headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                headers: this.combineHeaders(this.createDefaultHeaders(), options),
                 signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
                 body: body,
             });
@@ -182,17 +182,11 @@ export class BaseApiService {
         return headers;
     }
 
-    protected createDefaultHeaders(accessToken: string | undefined | null): Record<string, string> {
-        const headers: Record<string, string> = {
+    protected createDefaultHeaders(): Record<string, string> {
+        return {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         };
-
-        if (accessToken != null) {
-            headers['Authorization'] = `Bearer ${accessToken}`;
-        }
-
-        return headers;
     }
 }
 

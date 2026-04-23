@@ -53,6 +53,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/actuator/health").permitAll()
                                 .requestMatchers("/api/auth/login").permitAll()
                                 .requestMatchers("/api/auth/refresh").permitAll()
+                                .requestMatchers("/api/auth/logout").permitAll()
                                 .requestMatchers("/api/auth/oidc-callback").permitAll()
                                 .anyRequest().authenticated()
                 )

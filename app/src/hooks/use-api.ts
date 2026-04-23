@@ -68,7 +68,7 @@ export function useApi(): Api {
 }
 
 function baseApiServiceAsApi(): Api {
-    const auth = new AuthService();
+    const auth = AuthService;
     const api = new BaseApiService();
 
     return {

@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -19,6 +20,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.io.IOException;
 import java.net.http.HttpResponse;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -27,6 +29,7 @@ import java.util.Map;
 public class AuthController {
     private static final String AUTH_PATH = "/protocol/openid-connect/auth";
     private static final String TOKEN_PATH = "/protocol/openid-connect/token";
+    private static final String LOGOUT_PATH = "/protocol/openid-connect/logout";
 
     private static final String APP_URI_QUERY_PARAM = "app_uri";
 
@@ -49,6 +52,8 @@ public class AuthController {
 
     public static final String ACCESS_COOKIE_NAME = "access";
     public static final String REFRESH_COOKIE_NAME = "refresh";
+    private static final String ACCESS_COOKIE_PATH = "/api/";
+    private static final String REFRESH_COOKIE_PATH = "/api/auth/";
 
     @Value("${gover.goverHostname}")
     private String hostname;
@@ -168,6 +173,27 @@ public class AuthController {
         response.sendRedirect(appRedirectLocation);
     }
 
+    @GetMapping("logout")
+    @Operation(
+            summary = "Logout",
+            description = "Terminates the authentication provider session and clears local authentication cookies."
+    )
+    public void logout(
+            @Nonnull HttpServletResponse response,
+            @Nullable @CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken
+    ) throws ResponseException {
+        try {
+            if (StringUtils.isNotNullOrEmpty(refreshToken)) {
+                performOidcLogout(refreshToken);
+            }
+        } finally {
+            response.addCookie(getExpiredAccessCookie());
+            response.addCookie(getExpiredRefreshCookie(REFRESH_COOKIE_PATH));
+        }
+
+        response.setStatus(HttpServletResponse.SC_NO_CONTENT);
+    }
+
     @Nonnull
     private TokenResponse getTokenResponse(@Nonnull Map<String, String> payload) throws ResponseException {
         var tokenUri = UriComponentsBuilder
@@ -185,7 +211,7 @@ public class AuthController {
         }
 
         if (res.statusCode() != 200) {
-            throw ResponseException.internalServerError("Failed to exchange authorization code for access token");
+            throw ResponseException.internalServerError("Failed to exchange authorization code for access token. status code: " + res.statusCode());
         }
 
         TokenResponse tokenResponse;
@@ -199,12 +225,40 @@ public class AuthController {
         return tokenResponse;
     }
 
+    private void performOidcLogout(@Nonnull String refreshToken) throws ResponseException {
+        var logoutUri = UriComponentsBuilder
+                .fromUriString(oidcIssuerURI)
+                .path(LOGOUT_PATH)
+                .build()
+                .toUri();
+
+        var payload = new HashMap<String, String>();
+        payload.put(OIDC_CLIENT_ID_PARAM_KEY, oidcClientId);
+        payload.put(OIDC_REFRESH_TOKEN_PARAM_KEY, refreshToken);
+
+        if (StringUtils.isNotNullOrEmpty(oidcClientSecret)) {
+            payload.put(OIDC_CLIENT_SECRET_PARAM_KEY, oidcClientSecret);
+        }
+
+        HttpResponse<String> res;
+        try {
+            res = httpService
+                    .postFormUrlEncoded(logoutUri, payload);
+        } catch (HttpConnectionException e) {
+            throw ResponseException.internalServerError(e, "Failed to perform OIDC logout: " + e.getMessage());
+        }
+
+        if (res.statusCode() >= 400) {
+            throw ResponseException.internalServerError("Failed to perform OIDC logout");
+        }
+    }
+
     @Nonnull
     private static Cookie getAccessCookie(TokenResponse tokenResponse) {
         var accessCookie = new Cookie(ACCESS_COOKIE_NAME, tokenResponse.access_token);
         accessCookie.setSecure(true);
         accessCookie.setHttpOnly(true);
-        accessCookie.setPath("/api/");
+        accessCookie.setPath(ACCESS_COOKIE_PATH);
         accessCookie.setMaxAge(tokenResponse.expires_in);
         return accessCookie;
     }
@@ -214,12 +268,32 @@ public class AuthController {
         var refreshCookie = new Cookie(REFRESH_COOKIE_NAME, tokenResponse.refresh_token);
         refreshCookie.setSecure(true);
         refreshCookie.setHttpOnly(true);
-        refreshCookie.setPath("/api/auth/refresh");
+        refreshCookie.setPath(REFRESH_COOKIE_PATH);
         refreshCookie.setMaxAge(tokenResponse.refresh_expires_in);
         return refreshCookie;
     }
 
-    private record TokenResponse(
+    @Nonnull
+    private static Cookie getExpiredAccessCookie() {
+        return getExpiredCookie(ACCESS_COOKIE_NAME, ACCESS_COOKIE_PATH);
+    }
+
+    @Nonnull
+    private static Cookie getExpiredRefreshCookie(@Nonnull String path) {
+        return getExpiredCookie(REFRESH_COOKIE_NAME, path);
+    }
+
+    @Nonnull
+    private static Cookie getExpiredCookie(@Nonnull String name, @Nonnull String path) {
+        var cookie = new Cookie(name, "");
+        cookie.setSecure(true);
+        cookie.setHttpOnly(true);
+        cookie.setPath(path);
+        cookie.setMaxAge(0);
+        return cookie;
+    }
+
+    public record TokenResponse(
             @Nonnull
             String access_token,
             @Nonnull
@@ -231,7 +305,7 @@ public class AuthController {
     ) {
     }
 
-    private record AuthStatusResponse(
+    public record AuthStatusResponse(
             @Nonnull
             Long accessExpires,
             @Nonnull
