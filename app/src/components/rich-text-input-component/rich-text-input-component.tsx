@@ -1,7 +1,7 @@
-import Typography from "@mui/material/Typography";
-import {Box, SxProps} from "@mui/material";
-import {alpha, useTheme} from "@mui/material/styles";
-import {useCallback, useEffect, useRef, useState} from "react";
+import Typography from '@mui/material/Typography';
+import {Box, SxProps} from '@mui/material';
+import {alpha, useTheme} from '@mui/material/styles';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {
     BlockTypeSelect,
     BoldItalicUnderlineToggles,
@@ -14,18 +14,17 @@ import {
     linkPlugin,
     listsPlugin,
     ListsToggle,
-    markdownShortcutPlugin,
     MDXEditor,
+    type MDXEditorMethods,
     quotePlugin,
     Separator,
     StrikeThroughSupSubToggles,
     toolbarPlugin,
+    type Translation,
     UndoRedo,
-    type MDXEditorMethods,
-    type Translation
-} from "@mdxeditor/editor";
-import {isStringNullOrEmpty} from "../../utils/string-utils";
-import {placeholderPlugin} from "./rich-text-input-component-placeholder-plugin";
+} from '@mdxeditor/editor';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {placeholderPlugin} from './rich-text-input-component-placeholder-plugin';
 import '@mdxeditor/editor/style.css';
 
 const MDX_EDITOR_DE_TRANSLATIONS: Record<string, string> = {
@@ -521,13 +520,12 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                             </>
                                     }
                                 </DiffSourceToggleWrapper>
-                            )
+                            ),
                         }),
                         diffSourcePlugin({
                             viewMode: 'rich-text',
                             readOnlyDiff: isReadOnly,
                         }),
-                        markdownShortcutPlugin(),
                     ]}
                 />
             </Box>
