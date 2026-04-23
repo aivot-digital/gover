@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.dataformat.xml.JacksonXmlModule;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.dataformat.xml.deser.FromXmlParser;
@@ -89,6 +90,8 @@ public class ServerConfiguration implements WebMvcConfigurer {
 
         XmlMapper mapper = new XmlMapper(module);
         mapper.configure(FromXmlParser.Feature.EMPTY_ELEMENT_AS_NULL, true);
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
         return mapper;
     }
 }
