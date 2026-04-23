@@ -542,7 +542,7 @@ public class AssetController {
     public ResponseEntity<InputStreamResource> downloadFileContent(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer storageProviderId,
-            @RequestParam(defaultValue = "true") boolean download,
+            @RequestParam(defaultValue = "false") boolean download,
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         permissionService
