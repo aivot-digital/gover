@@ -10,15 +10,13 @@ import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
-import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.net.URI;
+import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.util.Map;
@@ -38,13 +36,16 @@ public class HttpService {
                 .build();
     }
 
-    private ClientHttpRequestFactory clientHttpRequestFactory() {
+    static ClientHttpRequestFactory clientHttpRequestFactory() {
         ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings
                 .defaults()
                 .withConnectTimeout(Duration.ofSeconds(CONNECTION_TIMEOUT_SECONDS))
                 .withReadTimeout(Duration.ofSeconds(READ_TIMEOUT_SECONDS));
 
-        return ClientHttpRequestFactoryBuilder.detect().build(settings);
+        return ClientHttpRequestFactoryBuilder
+                .jdk()
+                .withHttpClientCustomizer(builder -> builder.version(HttpClient.Version.HTTP_1_1))
+                .build(settings);
     }
 
     // region HTTP-Get
