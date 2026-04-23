@@ -233,15 +233,15 @@ public class AuthController {
 
     private record AuthStatusResponse(
             @Nonnull
-            Instant accessExpires,
+            Long accessExpires,
             @Nonnull
-            Instant refreshExpires
+            Long refreshExpires
     ) {
         public static AuthStatusResponse of(TokenResponse tokenResponse) {
             var now = Instant.now();
             return new AuthStatusResponse(
-                    now.plusSeconds(tokenResponse.expires_in),
-                    now.plusSeconds(tokenResponse.refresh_expires_in)
+                    now.plusSeconds(tokenResponse.expires_in).toEpochMilli(),
+                    now.plusSeconds(tokenResponse.refresh_expires_in).toEpochMilli()
             );
         }
     }
