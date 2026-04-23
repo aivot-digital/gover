@@ -30,6 +30,12 @@ public class ProcessExecutionData extends HashMap<String, Object> {
             NODE_RESULTS_KEY
     };
 
+    public ProcessExecutionData() {
+        put(PROCESS_DATA_KEY, new HashMap<String, Object>());
+        put(PROCESS_METADATA_KEY, new HashMap<String, Object>());
+        put(NODE_RESULTS_KEY, new HashMap<String, Object>());
+    }
+
     public static ProcessExecutionData of(Map<String, Object> data) {
         ProcessExecutionData executionData = new ProcessExecutionData();
         executionData.putAll(data);
