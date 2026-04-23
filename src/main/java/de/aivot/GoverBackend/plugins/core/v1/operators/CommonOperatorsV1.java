@@ -15,7 +15,12 @@ import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeConcatOperator
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexExtractOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeSplitOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserEmailOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserFullNameOperator;
+import de.aivot.GoverBackend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -23,6 +28,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
+    private final UserRepository userRepository;
+
+    public CommonOperatorsV1(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
     public @Nonnull String getComponentKey() {
         return "common";
@@ -109,6 +120,10 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeRegexExtractOperator(),
                 new NoCodeRegexMatchOperator(),
                 new NoCodeSplitOperator(),
+
+                // User
+                new NoCodeUserEmailOperator(userRepository),
+                new NoCodeUserFullNameOperator(userRepository),
         };
     }
 }
