@@ -6,6 +6,7 @@ import org.springframework.context.annotation.Configuration;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -27,6 +28,7 @@ public class GoverConfig {
     private Integer maxSubmissionCopyRetryCount;
     private List<String> bootstrapAdminMail;
     private String registryHostname;
+    private String timezone;
 
     public String getDefaultLogoUrl() {
         return createUrl("/assets/default-logo.png");
@@ -155,6 +157,18 @@ public class GoverConfig {
     public GoverConfig setRegistryHostname(String registryHostname) {
         this.registryHostname = registryHostname;
         return this;
+    }
+
+    public String getTimezone() {
+        return timezone;
+    }
+
+    public void setTimezone(String timezone) {
+        this.timezone = timezone;
+    }
+
+    public ZoneId getZoneId() {
+        return ZoneId.of(timezone);
     }
 
     // endregion

@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -59,8 +59,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 List.of(),
                 Map.of(),
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                Instant.now(),
+                Instant.now(),
                 null,
                 null,
                 Map.of(),
@@ -81,8 +81,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 ProcessTaskStatus.Running,
                 null,
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                Instant.now(),
+                Instant.now(),
                 null,
                 null,
                 Map.of(),

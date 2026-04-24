@@ -85,7 +85,6 @@ LABEL org.opencontainers.image.title="Gover Backend"
 LABEL org.opencontainers.image.description="Gover is an efficient low-code e-government platform for creating and managing user-centric online forms."
 
 # Set locale env config
-ENV TZ="Europe/Berlin"
 ENV LANG=de_DE.UTF-8
 ENV LANGUAGE=de_DE:de
 ENV LC_ALL=de_DE.UTF-8

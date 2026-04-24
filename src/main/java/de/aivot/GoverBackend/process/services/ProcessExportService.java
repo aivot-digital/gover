@@ -11,7 +11,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -108,7 +108,7 @@ public class ProcessExportService {
         return new ProcessExport(
                 buildProperties.getBuildVersion(),
                 buildProperties.getBuildNumber(),
-                LocalDateTime.now(),
+                Instant.now(),
                 vendorName,
                 processDefinition,
                 processVersion,
@@ -123,7 +123,7 @@ public class ProcessExportService {
             @Nonnull
             String appBuildNumber,
             @Nonnull
-            LocalDateTime exportTimestamp,
+            Instant exportTimestamp,
             @Nonnull
             String createdByVendor,
             @NotNull

@@ -64,7 +64,7 @@ public class DateTimeRangeInputElement extends BaseInputElement<RangeInputElemen
 
         var formatter = DateTimeFormatter
                 .ofPattern(mode == TimeType.Second ? "dd.MM.yyyy HH:mm:ss" : "dd.MM.yyyy HH:mm")
-                .withZone(DateInputElement.zoneId);
+                .withZone(DateInputElement.getZoneId());
 
         var start = value.getStart() == null ? "Keine Angabe" : value.getStart().format(formatter) + " Uhr";
         var end = value.getEnd() == null ? "Keine Angabe" : value.getEnd().format(formatter) + " Uhr";

@@ -19,6 +19,7 @@ import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -29,7 +30,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -137,8 +139,10 @@ public class ProcessWorker {
                 ));
 
         var deadline = currentNode.getTimeLimitDays() != null ?
-                LocalDateTime.now().plusDays(currentNode.getTimeLimitDays()) :
+                // Preserve the local same-wall-clock-time behavior when task deadlines cross DST changes.
+                ZonedDateTime.now(ApplicationTimeZone.getZoneId()).plusDays(currentNode.getTimeLimitDays()).toInstant() :
                 null;
+        var startedAt = Instant.now();
 
         var taskEntity = processInstanceTaskRepository.save(
                 new ProcessInstanceTaskEntity(
@@ -153,8 +157,8 @@ public class ProcessWorker {
                         previousNodePortKey,
                         ProcessTaskStatus.Running,
                         null,
-                        LocalDateTime.now(),
-                        LocalDateTime.now(),
+                        startedAt,
+                        startedAt,
                         null,
                         null,
                         new HashMap<>(),
@@ -217,13 +221,13 @@ public class ProcessWorker {
                     .init(context);
         } catch (ProcessNodeExecutionException e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
-            taskEntity.setFinished(LocalDateTime.now());
+            taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
             logger.logException(e);
             throw e;
         } catch (Exception e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
-            taskEntity.setFinished(LocalDateTime.now());
+            taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
             var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
@@ -237,7 +241,7 @@ public class ProcessWorker {
 
         if (initResult == null) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
-            taskEntity.setFinished(LocalDateTime.now());
+            taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
             var ex = new ProcessNodeExecutionExceptionUnknown(
                     "Der Prozessknoten-Funktionsanbieter „%s“ für das Prozesselement „%s“ lieferte kein Ergebnis zurück.",
@@ -278,7 +282,7 @@ public class ProcessWorker {
                     );
         } catch (Exception e) {
             taskEntity.setStatus(ProcessTaskStatus.Failed);
-            taskEntity.setFinished(LocalDateTime.now());
+            taskEntity.setFinished(Instant.now());
             processInstanceTaskRepository.save(taskEntity);
             logger.logException(e);
             throw e;

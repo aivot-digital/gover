@@ -186,6 +186,7 @@ services:
       GOVER_ENVIRONMENT: "{{ SENTRY_ENVIRONMENT }}" # Setzen Sie die Umgebung für Sentry. Diese wird verwendet, um Fehlermeldungen in Sentry zu gruppieren. Passen Sie diese Umgebung unbedingt an. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
 
       GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
+      GOVER_TIMEZONE: "{{ GOVER_TIMEZONE }}" # Optional: Steuert die fachliche Zeitzone der App. Wenn die Zeile entfernt wird, verwendet Gover Europe/Berlin.
       GOVER_SECRETS_KEY: "{{ GOVER_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.
       GOVER_CAPTCHA_KEY: "{{ GOVER_CAPTCHA_KEY }}" # Setzen Sie den geheimen Schlüssel zur Erzeugung und Verifizierung von Captcha-Challenges. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein (z. B. 32‑Byte‑Hex).
 

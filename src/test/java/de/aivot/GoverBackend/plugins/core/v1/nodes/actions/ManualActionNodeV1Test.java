@@ -4,6 +4,8 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
+import de.aivot.GoverBackend.elements.models.elements.form.input.DateInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.DateTimeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
@@ -34,7 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -319,6 +321,48 @@ class ManualActionNodeV1Test {
     }
 
     @Test
+    void onUpdateFromStaff_CompleteDoesNotCreateSpuriousDiffForEquivalentTemporalValues() throws Exception {
+        var result = node.onUpdateFromStaff(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configurationWithTemporalFields()),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                Map.of(
+                                        "date", "2026-05-09T00:00:00+02:00",
+                                        "datetime", "2021-02-07T12:15:00+01:00"
+                                )
+                        ),
+                        null,
+                        user("staff-1"),
+                        runtime(configurationWithTemporalFields()),
+                        null
+                ),
+                authored(
+                        "dateField", "2026-05-08T22:00:00.000Z",
+                        "dateTimeField", "2021-02-07T11:15:00.000Z"
+                ),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+
+        @SuppressWarnings("unchecked")
+        var changedData = (Map<String, Object>) completed.getNodeData().get("data");
+        assertEquals("2026-05-09T00:00:00+02:00", changedData.get("date"));
+        assertEquals("2021-02-07T12:15:00+01:00", changedData.get("datetime"));
+
+        @SuppressWarnings("unchecked")
+        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
+        assertEquals(List.of(), diff);
+    }
+
+    @Test
     void onUpdateFromStaff_WithoutUiDefinitionCompletesWithoutDataChanges() throws Exception {
         var result = node.onUpdateFromStaff(
                 new ProcessNodeExecutionContextUIStaff(
@@ -366,6 +410,29 @@ class ManualActionNodeV1Test {
         );
     }
 
+    private static AuthoredElementValues configurationWithTemporalFields() {
+        var contentRoot = new GroupLayoutElement();
+        contentRoot.setId("manual-action-root");
+
+        var dateField = new DateInputElement();
+        dateField.setId("dateField");
+        dateField.setLabel("Datum");
+        dateField.setDestinationKey("date");
+
+        var dateTimeField = new DateTimeInputElement();
+        dateTimeField.setId("dateTimeField");
+        dateTimeField.setLabel("Datum und Uhrzeit");
+        dateTimeField.setDestinationKey("datetime");
+
+        contentRoot.setChildren(List.of(dateField, dateTimeField));
+
+        return authored(
+                "task_description", "<p>Bitte prüfen Sie die Zeitwerte.</p>",
+                "ui_definition", contentRoot,
+                "assignment_context", assignmentContext()
+        );
+    }
+
     private static AuthoredElementValues configurationWithoutUi() {
         return authored(
                 "task_description", "<p>Bitte holen Sie die telefonische Bestätigung ein.</p>",
@@ -403,7 +470,7 @@ class ManualActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -426,7 +493,7 @@ class ManualActionNodeV1Test {
             Map<String, Object> nodeData,
             Map<String, Object> processData
     ) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)

@@ -1,22 +1,21 @@
 package de.aivot.GoverBackend.identity.utils;
 
 import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.TimeZone;
 
 /**
  * Make sure to keep this in sync with the frontend counterpart at app/src/modules/identity/utils/system-identity-provider-format-values.ts
  */
 public class SystemIdentityProviderFormatter {
-    private static final ZoneId germanZoneId = ZoneId.of("Europe/Berlin");
-    private static final ZoneId utcZoneId = ZoneId.of("UTC");
+    private static final TimeZone UTC_TIME_ZONE = TimeZone.getTimeZone("UTC");
 
     public static String formatForSystemIdentityProvider(
             @Nonnull String metadataIdentifier,
@@ -52,18 +51,7 @@ public class SystemIdentityProviderFormatter {
     ) {
         switch (keyInData) {
             case "date_of_birth":
-                var format = new SimpleDateFormat("yyyy-MM-dd");
-                try {
-                    var date = format
-                            .parse(value);
-                    var zonedDateTime = ZonedDateTime
-                            .ofInstant(date.toInstant(), germanZoneId);
-                    return zonedDateTime
-                            .withZoneSameInstant(utcZoneId)
-                            .format(DateTimeFormatter.ISO_DATE_TIME);
-                } catch (ParseException e) {
-                    return null;
-                }
+                return formatDateOfBirth(value, "yyyy-MM-dd");
             default:
                 return value;
         }
@@ -75,18 +63,7 @@ public class SystemIdentityProviderFormatter {
     ) {
         switch (keyInData) {
             case "date_of_birth":
-                var format = new SimpleDateFormat("yyyy-MM-dd");
-                try {
-                    var date = format
-                            .parse(value);
-                    var zonedDateTime = ZonedDateTime
-                            .ofInstant(date.toInstant(), germanZoneId);
-                    return zonedDateTime
-                            .withZoneSameInstant(utcZoneId)
-                            .format(DateTimeFormatter.ISO_DATE_TIME);
-                } catch (ParseException e) {
-                    return null;
-                }
+                return formatDateOfBirth(value, "yyyy-MM-dd");
             default:
                 return value;
         }
@@ -98,18 +75,7 @@ public class SystemIdentityProviderFormatter {
     ) {
         switch (keyInData) {
             case "date_of_birth":
-                var format = new SimpleDateFormat("dd.MM.yyyy");
-                try {
-                    var date = format
-                            .parse(value);
-                    var zonedDateTime = ZonedDateTime
-                            .ofInstant(date.toInstant(), germanZoneId);
-                    return zonedDateTime
-                            .withZoneSameInstant(utcZoneId)
-                            .format(DateTimeFormatter.ISO_DATE_TIME);
-                } catch (ParseException e) {
-                    return null;
-                }
+                return formatDateOfBirth(value, "dd.MM.yyyy");
             default:
                 return value;
         }
@@ -121,20 +87,29 @@ public class SystemIdentityProviderFormatter {
     ) {
         switch (keyInData) {
             case "date_of_birth":
-                var format = new SimpleDateFormat("yyyy-MM-dd");
-                try {
-                    var date = format
-                            .parse(value);
-                    var zonedDateTime = ZonedDateTime
-                            .ofInstant(date.toInstant(), germanZoneId);
-                    return zonedDateTime
-                            .withZoneSameInstant(utcZoneId)
-                            .format(DateTimeFormatter.ISO_DATE_TIME);
-                } catch (ParseException e) {
-                    return null;
-                }
+                return formatDateOfBirth(value, "yyyy-MM-dd");
             default:
                 return value;
+        }
+    }
+
+    @Nullable
+    private static String formatDateOfBirth(@Nonnull String value, @Nonnull String pattern) {
+        var format = new SimpleDateFormat(pattern);
+        format.setTimeZone(TimeZone.getTimeZone(ApplicationTimeZone.getZoneId()));
+
+        try {
+            var date = format.parse(value);
+            if (date == null) {
+                return null;
+            }
+
+            return ZonedDateTime
+                    .ofInstant(date.toInstant(), ApplicationTimeZone.getZoneId())
+                    .withZoneSameInstant(UTC_TIME_ZONE.toZoneId())
+                    .format(DateTimeFormatter.ISO_DATE_TIME);
+        } catch (ParseException e) {
+            return null;
         }
     }
 }

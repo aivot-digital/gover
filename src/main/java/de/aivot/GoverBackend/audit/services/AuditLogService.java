@@ -19,7 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +42,7 @@ public class AuditLogService implements CreateEntityService<AuditLogEntity>, Lis
     @Nonnull
     @Override
     public AuditLogEntity create(@Nonnull AuditLogEntity entity) throws ResponseException {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         entity.setId(null);
 

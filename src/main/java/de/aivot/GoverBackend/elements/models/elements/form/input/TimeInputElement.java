@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.enums.TimeType;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -17,7 +18,10 @@ import java.util.Objects;
 import java.util.regex.Pattern;
 
 public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
-    private final static ZoneId zoneId = ZoneId.of("Europe/Paris");
+    // Keep the standalone time element aligned with the rest of the office-time UI handling.
+    private static ZoneId zoneId() {
+        return DateInputElement.getZoneId();
+    }
     @Nullable
     private TimeType mode;
 
@@ -27,6 +31,18 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
 
     @Override
     public ZonedDateTime formatValue(Object value) {
+        if (value instanceof String sValue) {
+            var dateTimeValue = DateInputElement._formatValue(sValue);
+            if (dateTimeValue != null) {
+                return dateTimeValue;
+            }
+
+            var timeValue = parseLocalTime(sValue);
+            if (timeValue != null) {
+                return ZonedDateTime.of(LocalDate.now(zoneId()), timeValue, zoneId());
+            }
+        }
+
         return DateInputElement._formatValue(value);
     }
 
@@ -44,7 +60,7 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
         return value == null ? "Keine Angabe" : value
                                                         .format(DateTimeFormatter
                                                                 .ofPattern(TimeType.Second == mode ? "HH:mm:ss" : "HH:mm")
-                                                                .withZone(zoneId)) + " Uhr";
+                                                                .withZone(zoneId())) + " Uhr";
     }
 
     @Nonnull
@@ -63,16 +79,7 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
             return true;
         }
 
-        ZonedDateTime dValA;
-        switch (referencedValue) {
-            case ZonedDateTime zValue -> dValA = zValue;
-            case LocalDateTime lValue -> dValA = lValue.atZone(zoneId);
-            case LocalDate ldValue -> dValA = ZonedDateTime.of(ldValue, LocalTime.now(), zoneId);
-            case LocalTime lValue -> dValA = ZonedDateTime.of(LocalDate.now(), lValue, zoneId);
-            case Instant iValue -> dValA = iValue.atZone(zoneId);
-            case String sValue -> dValA = formatValue(sValue);
-            default -> dValA = null;
-        }
+        ZonedDateTime dValA = formatValue(referencedValue);
 
         if (dValA == null) {
             return false;
@@ -81,7 +88,7 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
         String sValA = dValA.format(
                 DateTimeFormatter
                         .ofPattern(TimeType.Second == mode ? "HH:mm:ss" : "HH:mm")
-                        .withZone(zoneId)
+                        .withZone(zoneId())
         );
 
         if (!(comparedValue instanceof String)) {
@@ -140,7 +147,7 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
         } else {
             ZonedDateTime d = parseIsoDate(value);
             if (d != null) {
-                return d.withZoneSameInstant(zoneId).getHour();
+                return d.withZoneSameInstant(zoneId()).getHour();
             }
             return null;
         }
@@ -153,7 +160,7 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
         } else {
             ZonedDateTime d = parseIsoDate(value);
             if (d != null) {
-                return d.withZoneSameInstant(zoneId).getMinute();
+                return d.withZoneSameInstant(zoneId()).getMinute();
             }
             return null;
         }
@@ -171,7 +178,7 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
 
         ZonedDateTime d = parseIsoDate(value);
         if (d != null) {
-            return d.withZoneSameInstant(zoneId).getSecond();
+            return d.withZoneSameInstant(zoneId()).getSecond();
         }
         return null;
     }
@@ -182,8 +189,26 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
         }
 
         try {
-            return ZonedDateTime.parse(value, DateTimeFormatter.ISO_DATE_TIME);
+            return IsoTimestampUtils.parseIsoTimestamp(value, zoneId()).atZone(zoneId());
         } catch (DateTimeParseException ex) {
+            return null;
+        }
+    }
+
+    @Nullable
+    private LocalTime parseLocalTime(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+
+        try {
+            return LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm:ss"));
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            return LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm"));
+        } catch (DateTimeParseException ignored) {
             return null;
         }
     }

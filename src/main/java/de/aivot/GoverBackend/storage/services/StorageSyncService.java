@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -93,7 +93,7 @@ public class StorageSyncService {
             storageProvider
                     .setStatus(StorageProviderStatus.Synced)
                     .setStatusMessage(null)
-                    .setLastSync(LocalDateTime.now());
+                    .setLastSync(Instant.now());
         } catch (Exception e) {
             logger
                     .atError()
@@ -159,8 +159,8 @@ public class StorageSyncService {
                                 StorageService.FOLDER_MIME_TYPE,
                                 false,
                                 StorageItemMetadata.empty(), // Only store metadata for documents, not for folders for now
-                                LocalDateTime.now(),
-                                LocalDateTime.now()
+                                Instant.now(),
+                                Instant.now()
                         );
                     }
 
@@ -201,8 +201,8 @@ public class StorageSyncService {
                                     mimeType,
                                     false,
                                     filteredDocumentMetadata,
-                                    LocalDateTime.now(),
-                                    LocalDateTime.now()
+                                    Instant.now(),
+                                    Instant.now()
                             );
                             storageIndexItemRepository.save(docItem);
                         } else if (hasDocumentIndexItemChanged(docItem, storageProvider, document, mimeType, filteredDocumentMetadata)) {
@@ -214,7 +214,7 @@ public class StorageSyncService {
                                     .setSizeInBytes(document.getSizeInBytes())
                                     .setMissing(false)
                                     .setMetadata(filteredDocumentMetadata)
-                                    .setUpdated(LocalDateTime.now());
+                                    .setUpdated(Instant.now());
 
                             storageIndexItemRepository.save(docItem);
                         }
@@ -242,7 +242,7 @@ public class StorageSyncService {
 
                 storageIndexItemRepository.save(item
                         .setMissing(true)
-                        .setUpdated(LocalDateTime.now()));
+                        .setUpdated(Instant.now()));
 
                 removeAssetEntityForMissingDocument(storageProvider, item);
             }

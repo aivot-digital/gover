@@ -22,11 +22,11 @@ CREATE TABLE preset_versions
     version VARCHAR(11) NOT NULL DEFAULT '1.0.0',
     root    jsonb       NOT NULL DEFAULT '{}',
 
-    published_at timestamp NULL,
-    published_store_at timestamp NULL,
+    published_at timestamptz NULL,
+    published_store_at timestamptz NULL,
 
-    created TIMESTAMP   NOT NULL,
-    updated TIMESTAMP   NOT NULL,
+    created timestamptz NOT NULL,
+    updated timestamptz NOT NULL,
 
     PRIMARY KEY (preset, version)
 );

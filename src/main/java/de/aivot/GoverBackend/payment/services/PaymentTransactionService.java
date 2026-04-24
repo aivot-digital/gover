@@ -30,7 +30,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 @Service
@@ -104,8 +104,8 @@ public class PaymentTransactionService implements
         transactionEntity.setKey(UUID.randomUUID().toString());
         transactionEntity.setPaymentProviderKey(paymentProviderEntity.getKey());
         transactionEntity.setRedirectUrl(finalRedirectUrl);
-        transactionEntity.setCreated(LocalDateTime.now());
-        transactionEntity.setUpdated(LocalDateTime.now());
+        transactionEntity.setCreated(Instant.now());
+        transactionEntity.setUpdated(Instant.now());
 
         // Create initial redirect URL
         var initialRedirectUrl = config.createUrl("/api/public/payment-transaction-callback/", transactionEntity.getKey()) + "/redirect/";
@@ -303,7 +303,7 @@ public class PaymentTransactionService implements
         }
     }
 
-    @Scheduled(cron = "* 0/15 * * * *", zone = "Europe/Paris")
+    @Scheduled(cron = "* 0/15 * * * *", zone = "${gover.timezone}")
     public void poll() {
         var spec = PaymentTransactionFilter
                 .create()

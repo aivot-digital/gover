@@ -10,6 +10,7 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.mail.MessagingException;
@@ -63,9 +64,9 @@ public class ProcessTaskMailService {
                 .filter(value -> value != null && !value.isBlank())
                 .toList();
 
-        String startedLabel = processInstanceTask.getStarted().format(DATE_TIME_FORMATTER);
+        String startedLabel = DATE_TIME_FORMATTER.withZone(ApplicationTimeZone.getZoneId()).format(processInstanceTask.getStarted());
         String deadlineLabel = processInstanceTask.getDeadline() != null
-                ? processInstanceTask.getDeadline().format(DATE_TIME_FORMATTER)
+                ? DATE_TIME_FORMATTER.withZone(ApplicationTimeZone.getZoneId()).format(processInstanceTask.getDeadline())
                 : null;
 
         var mailData = new HashMap<String, Object>();

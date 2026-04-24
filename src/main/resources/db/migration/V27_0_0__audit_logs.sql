@@ -1,7 +1,7 @@
 create table audit_logs
 (
     id              bigserial    not null,
-    timestamp       timestamp    not null default now(),
+    timestamp       timestamptz  not null default now(),
     actor_type      varchar(32)  not null,
     actor_id        varchar(255) null,
     origin          text         not null,

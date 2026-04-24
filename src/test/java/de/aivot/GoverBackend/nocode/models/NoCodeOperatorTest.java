@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
@@ -91,7 +92,7 @@ class NoCodeOperatorTest {
 
         // Test casting to ZonedDateTime
         ZonedDateTime now = ZonedDateTime.now();
-        assertEquals(now, operator.castToTypeOfReference(now, now.toString()));
+        assertEquals(now.toInstant().atZone(ZoneOffset.UTC), operator.castToTypeOfReference(now, now.toString()));
     }
 
     @Test
@@ -139,6 +140,8 @@ class NoCodeOperatorTest {
         ZonedDateTime now = ZonedDateTime.now();
         assertEquals(now, operator.castToDateTime(now));
         assertEquals(ZonedDateTime.parse("2023-01-01T00:00:00Z"), operator.castToDateTime("2023-01-01T00:00:00Z"));
+        assertDoesNotThrow(() -> operator.castToDateTime("invalid"));
+        assertDoesNotThrow(() -> operator.castToTypeOfReference(now, "invalid"));
     }
 
     @Test

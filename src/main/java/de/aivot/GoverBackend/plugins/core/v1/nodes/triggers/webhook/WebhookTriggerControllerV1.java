@@ -30,7 +30,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.multipart.support.StandardMultipartHttpServletRequest;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -243,6 +243,7 @@ public class WebhookTriggerControllerV1 {
         // Check if authentication is required and valid
         checkAuthentication(config, authToken, authorizationHeader);
 
+        var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
                 null,
@@ -253,8 +254,8 @@ public class WebhookTriggerControllerV1 {
                 null,
                 List.of(),
                 Map.of(),
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                startedAt,
+                startedAt,
                 null,
                 null,
                 new HashMap<>(),
@@ -311,7 +312,7 @@ public class WebhookTriggerControllerV1 {
             requestData.put("queryParameters", request.getParameterMap());
             initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_REQUEST, requestData);
 
-            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_STARTED, LocalDateTime.now());
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_STARTED, startedAt);
 
             createdInstance
                     .setInitialPayload(initialPayload)

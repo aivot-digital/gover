@@ -16,7 +16,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -132,16 +132,16 @@ public class FormVersionEntity {
     private FormLayoutElement rootElement;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime published;
+    private Instant published;
 
     @Nullable
-    private LocalDateTime revoked;
+    private Instant revoked;
 
     // region Constructors
 
@@ -174,10 +174,10 @@ public class FormVersionEntity {
                              @Nonnull List<IdentityProviderLink> identityProviders,
                              @Nonnull Boolean identityVerificationRequired,
                              @Nonnull FormLayoutElement rootElement,
-                             @Nonnull LocalDateTime created,
-                             @Nonnull LocalDateTime updated,
-                             @Nullable LocalDateTime published,
-                             @Nullable LocalDateTime revoked) {
+                             @Nonnull Instant created,
+                             @Nonnull Instant updated,
+                             @Nullable Instant published,
+                             @Nullable Instant revoked) {
         this.formId = formId;
         this.publicTitle = publicTitle;
         this.version = version;
@@ -214,13 +214,13 @@ public class FormVersionEntity {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -513,41 +513,41 @@ public class FormVersionEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public FormVersionEntity setCreated(@Nonnull LocalDateTime created) {
+    public FormVersionEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public FormVersionEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public FormVersionEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getPublished() {
+    public Instant getPublished() {
         return published;
     }
 
-    public FormVersionEntity setPublished(@Nullable LocalDateTime published) {
+    public FormVersionEntity setPublished(@Nullable Instant published) {
         this.published = published;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getRevoked() {
+    public Instant getRevoked() {
         return revoked;
     }
 
-    public FormVersionEntity setRevoked(@Nullable LocalDateTime revoked) {
+    public FormVersionEntity setRevoked(@Nullable Instant revoked) {
         this.revoked = revoked;
         return this;
     }

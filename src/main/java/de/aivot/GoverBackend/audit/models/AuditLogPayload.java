@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.*;
 
@@ -17,7 +18,7 @@ public class AuditLogPayload {
     public static final String ACTOR_TYPE_PROCESS = "Process";
 
     @Nullable
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     @Nullable
     private String actorType;
@@ -60,7 +61,7 @@ public class AuditLogPayload {
 
     public static AuditLogPayload create(ScopedAuditService service) {
         return new AuditLogPayload(service)
-                .setTimestamp(LocalDateTime.now());
+                .setTimestamp(Instant.now());
     }
 
     public AuditLogPayload withUser(@Nonnull UserEntity user) {
@@ -272,6 +273,7 @@ public class AuditLogPayload {
                 || value instanceof Boolean
                 || value instanceof Character
                 || value instanceof Enum<?>
+                || value instanceof Instant
                 || value instanceof LocalDateTime;
     }
 
@@ -292,11 +294,11 @@ public class AuditLogPayload {
     // region Getters & Setters
 
     @Nullable
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public AuditLogPayload setTimestamp(@Nullable LocalDateTime timestamp) {
+    public AuditLogPayload setTimestamp(@Nullable Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }

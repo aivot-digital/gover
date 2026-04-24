@@ -7,7 +7,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
@@ -25,7 +25,7 @@ public class AuditLogEntity {
     @Nonnull
     @NotNull(message = "Der Zeitstempel darf nicht null sein.")
     @Column(name = "timestamp")
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     @Nonnull
     @NotNull(message = "Der Akteur-Typ darf nicht null sein.")
@@ -104,11 +104,11 @@ public class AuditLogEntity {
     }
 
     @Nonnull
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public AuditLogEntity setTimestamp(@Nonnull LocalDateTime timestamp) {
+    public AuditLogEntity setTimestamp(@Nonnull Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }

@@ -366,7 +366,7 @@ public class OZGCloudDataFormatService {
                 .format(
                         DateTimeFormatter
                                 .ofPattern("yyyy-MM-dd")
-                                .withZone(DateInputElement.zoneId)
+                                .withZone(DateInputElement.getZoneId())
                 );
 
 

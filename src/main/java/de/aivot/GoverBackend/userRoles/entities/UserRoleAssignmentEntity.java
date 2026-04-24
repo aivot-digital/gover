@@ -5,7 +5,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "domain_role_assignments")
@@ -28,13 +28,13 @@ public class UserRoleAssignmentEntity {
     private Integer userRoleId;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     // region Signales
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
+        created = Instant.now();
     }
 
     // endregion
@@ -82,11 +82,11 @@ public class UserRoleAssignmentEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public UserRoleAssignmentEntity setCreated(@Nonnull LocalDateTime created) {
+    public UserRoleAssignmentEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }

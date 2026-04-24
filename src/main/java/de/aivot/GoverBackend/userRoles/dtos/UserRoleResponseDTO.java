@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.userRoles.dtos;
 
 import de.aivot.GoverBackend.userRoles.entities.UserRoleEntity;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record UserRoleResponseDTO(
@@ -10,8 +10,8 @@ public record UserRoleResponseDTO(
         String name,
         String description,
         List<String> permissions,
-        LocalDateTime created,
-        LocalDateTime updated
+        Instant created,
+        Instant updated
 ) {
     public static UserRoleResponseDTO fromEntity(UserRoleEntity entity) {
         return new UserRoleResponseDTO(

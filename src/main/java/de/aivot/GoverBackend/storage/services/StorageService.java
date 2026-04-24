@@ -31,7 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.FilterInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -109,8 +109,8 @@ public class StorageService {
                         FOLDER_MIME_TYPE,
                         false,
                         StorageItemMetadata.empty(),
-                        LocalDateTime.now(),
-                        LocalDateTime.now()
+                        Instant.now(),
+                        Instant.now()
                 );
                 storageIndexItemRepository
                         .save(indexItem);
@@ -590,8 +590,8 @@ public class StorageService {
                         .orElse(UNKNOWN_MIME_TYPE),
                 false,
                 document.getMetadata(),
-                LocalDateTime.now(),
-                LocalDateTime.now()
+                Instant.now(),
+                Instant.now()
         );
         storageIndexItemRepository.save(indexItem);
     }
@@ -621,8 +621,8 @@ public class StorageService {
                 FOLDER_MIME_TYPE,
                 false,
                 StorageItemMetadata.empty(),
-                LocalDateTime.now(),
-                LocalDateTime.now()
+                Instant.now(),
+                Instant.now()
         );
         storageIndexItemRepository.save(indexItem);
     }

@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.enums.TimeType;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -16,7 +17,9 @@ import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
 public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
-    private static final ZoneId zoneId = ZoneId.of("Europe/Berlin");
+    private static ZoneId zoneId() {
+        return DateInputElement.getZoneId();
+    }
 
     @Nullable
     private String placeholder;
@@ -49,9 +52,9 @@ public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implem
 
         return value
                 .format(
-                        DateTimeFormatter
+                                DateTimeFormatter
                                 .ofPattern(mode == TimeType.Second ? "dd.MM.yyyy HH:mm:ss" : "dd.MM.yyyy HH:mm")
-                                .withZone(zoneId)
+                                .withZone(zoneId())
                 ) + " Uhr";
     }
 
@@ -120,7 +123,7 @@ public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implem
             return false;
         }
 
-        var now = ZonedDateTime.now(zoneId);
+        var now = ZonedDateTime.now(zoneId());
 
         return switch (operator) {
             case YearsInPast -> {
@@ -156,21 +159,26 @@ public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implem
         return switch (value) {
             case null -> null;
             case ZonedDateTime zValue -> zValue;
-            case LocalDateTime lValue -> lValue.atZone(zoneId);
-            case LocalDate ldValue -> ZonedDateTime.of(ldValue, LocalTime.now(), zoneId);
-            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(), lValue, zoneId);
-            case Instant iValue -> iValue.atZone(zoneId);
+            case LocalDate ldValue -> ldValue.atStartOfDay(zoneId());
+            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(zoneId()), lValue, zoneId());
+            case Instant iValue -> iValue.atZone(zoneId());
             case String sValue -> {
                 try {
-                    yield ZonedDateTime.parse(sValue);
+                    // UI datetime pickers submit UTC ISO strings. Convert them into the office
+                    // timezone only where the backend renders or evaluates local business rules.
+                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, zoneId()).atZone(zoneId());
                 } catch (DateTimeException ex) {
                     try {
-                        yield LocalDateTime.parse(sValue).atZone(zoneId);
+                        yield LocalDateTime.parse(sValue).atZone(zoneId());
                     } catch (DateTimeException ex1) {
                         try {
-                            yield LocalDateTime.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")).atZone(zoneId);
+                            yield LocalDateTime.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")).atZone(zoneId());
                         } catch (DateTimeParseException ex2) {
-                            yield DateInputElement._formatValue(sValue);
+                            try {
+                                yield LocalDateTime.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")).atZone(zoneId());
+                            } catch (DateTimeParseException ex3) {
+                                yield DateInputElement._formatValue(sValue);
+                            }
                         }
                     }
                 }

@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.destination.enums.DestinationType;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "destinations")
@@ -25,10 +25,10 @@ public class Destination {
     private DestinationType type;
 
     @NotNull
-    private LocalDateTime created;
+    private Instant created;
 
     @NotNull
-    private LocalDateTime updated;
+    private Instant updated;
 
     private String mailTo;
     private String mailCC;
@@ -43,13 +43,13 @@ public class Destination {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     //region Getters & Setters
@@ -78,19 +78,19 @@ public class Destination {
         this.type = type;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public void setCreated(LocalDateTime created) {
+    public void setCreated(Instant created) {
         this.created = created;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public void setUpdated(LocalDateTime updated) {
+    public void setUpdated(Instant updated) {
         this.updated = updated;
     }
 

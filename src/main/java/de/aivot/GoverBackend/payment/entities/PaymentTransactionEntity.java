@@ -10,7 +10,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -36,20 +36,20 @@ public class PaymentTransactionEntity {
     private String redirectUrl;
 
     @NotNull
-    private LocalDateTime created;
+    private Instant created;
 
     @NotNull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     @Nonnull
@@ -98,20 +98,20 @@ public class PaymentTransactionEntity {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public PaymentTransactionEntity setCreated(LocalDateTime created) {
+    public PaymentTransactionEntity setCreated(Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public PaymentTransactionEntity setUpdated(LocalDateTime updated) {
+    public PaymentTransactionEntity setUpdated(Instant updated) {
         this.updated = updated;
         return this;
     }

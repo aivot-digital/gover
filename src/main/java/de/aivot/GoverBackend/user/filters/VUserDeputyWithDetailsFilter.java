@@ -3,11 +3,11 @@ package de.aivot.GoverBackend.user.filters;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.user.entities.UserDeputyEntity;
 import de.aivot.GoverBackend.user.entities.VUserDeputyWithDetailsEntity;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 
 public class VUserDeputyWithDetailsFilter implements Filter<VUserDeputyWithDetailsEntity> {
     private String originalUserId;
@@ -32,7 +32,7 @@ public class VUserDeputyWithDetailsFilter implements Filter<VUserDeputyWithDetai
 
         if (fromTimestamp != null) {
             builder = builder
-                    .withGreaterThan("fromTimestamp", fromTimestamp.atZone(ZoneId.systemDefault()).toEpochSecond());
+                    .withGreaterThan("fromTimestamp", fromTimestamp.atZone(ApplicationTimeZone.getZoneId()).toEpochSecond());
         }
 
         if (Boolean.TRUE.equals(untilTimestampIsNull)) {

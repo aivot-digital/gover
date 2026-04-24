@@ -6,7 +6,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -42,10 +42,10 @@ public class VStorageIndexItemWithAssetEntity {
     private StorageItemMetadata metadata;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Nonnull
     private UUID assetKey;
@@ -69,8 +69,8 @@ public class VStorageIndexItemWithAssetEntity {
                                             @Nonnull Long sizeInBytes,
                                             @Nonnull Boolean missing,
                                             @Nonnull StorageItemMetadata metadata,
-                                            @Nonnull LocalDateTime created,
-                                            @Nonnull LocalDateTime updated,
+                                            @Nonnull Instant created,
+                                            @Nonnull Instant updated,
                                             @Nonnull UUID assetKey,
                                             @Nullable String assetUploaderId,
                                             @Nullable Boolean assetIsPrivate) {
@@ -170,21 +170,21 @@ public class VStorageIndexItemWithAssetEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public VStorageIndexItemWithAssetEntity setCreated(@Nonnull LocalDateTime created) {
+    public VStorageIndexItemWithAssetEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public VStorageIndexItemWithAssetEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public VStorageIndexItemWithAssetEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

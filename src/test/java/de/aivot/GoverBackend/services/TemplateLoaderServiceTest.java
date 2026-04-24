@@ -242,16 +242,16 @@ class TemplateLoaderServiceTest {
         dateTimeRangeElement.setMode(TimeType.Minute);
 
         var dateRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 0, 0, 0, 0, DateInputElement.zoneId),
-                ZonedDateTime.of(2025, 1, 5, 0, 0, 0, 0, DateInputElement.zoneId)
+                ZonedDateTime.of(2025, 1, 2, 0, 0, 0, 0, DateInputElement.getZoneId()),
+                ZonedDateTime.of(2025, 1, 5, 0, 0, 0, 0, DateInputElement.getZoneId())
         );
         var timeRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, DateInputElement.zoneId),
-                ZonedDateTime.of(2025, 1, 2, 11, 45, 15, 0, DateInputElement.zoneId)
+                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, DateInputElement.getZoneId()),
+                ZonedDateTime.of(2025, 1, 2, 11, 45, 15, 0, DateInputElement.getZoneId())
         );
         var dateTimeRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 9, 15, 0, 0, DateInputElement.zoneId),
-                ZonedDateTime.of(2025, 1, 5, 17, 0, 0, 0, DateInputElement.zoneId)
+                ZonedDateTime.of(2025, 1, 2, 9, 15, 0, 0, DateInputElement.getZoneId()),
+                ZonedDateTime.of(2025, 1, 5, 17, 0, 0, 0, DateInputElement.getZoneId())
         );
 
         var form = new VFormVersionWithDetailsEntity()
@@ -315,7 +315,7 @@ class TemplateLoaderServiceTest {
                                 List.of(
                                         new PdfElement(
                                                 dateTimeElement,
-                                                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, DateInputElement.zoneId),
+                                                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, DateInputElement.getZoneId()),
                                                 null
                                         ),
                                         new PdfElement(chipInputElement, List.of("Alpha", "Beta"), null),

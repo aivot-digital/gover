@@ -11,7 +11,7 @@ import de.aivot.GoverBackend.submission.services.SubmissionService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -47,8 +47,8 @@ class FormServiceTest {
                 .setInternalTitle("Altes Formular")
                 .setDevelopingDepartmentId(3)
                 .setVersionCount(1)
-                .setCreated(LocalDateTime.now().minusDays(1))
-                .setUpdated(LocalDateTime.now().minusHours(1));
+                .setCreated(Instant.now().minusSeconds(86_400))
+                .setUpdated(Instant.now().minusSeconds(3_600));
 
         var updatedForm = new FormEntity()
                 .setSlug("new-slug")

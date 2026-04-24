@@ -71,7 +71,7 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
 
         var formatter = DateTimeFormatter
                 .ofPattern(pattern)
-                .withZone(DateInputElement.zoneId);
+                .withZone(DateInputElement.getZoneId());
 
         var start = value.getStart() == null ? "Keine Angabe" : value.getStart().format(formatter);
         var end = value.getEnd() == null ? "Keine Angabe" : value.getEnd().format(formatter);

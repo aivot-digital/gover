@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -67,14 +67,17 @@ public class ProcessInstanceEntity {
 
     @Nonnull
     @NotNull(message = "Das Startdatum darf nicht null sein.")
-    private LocalDateTime started;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant started;
 
     @Nonnull
     @NotNull(message = "Das Aktualisierungsdatum darf nicht null sein.")
-    private LocalDateTime updated;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime finished;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant finished;
 
     @Nullable
     @Column(columnDefinition = "interval", insertable = false, updatable = false)
@@ -91,7 +94,8 @@ public class ProcessInstanceEntity {
     private Integer initialNodeId;
 
     @Nullable
-    private LocalDateTime keepUntil;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant keepUntil;
 
     @Nullable
     private Integer createdForTestClaimId;
@@ -111,13 +115,13 @@ public class ProcessInstanceEntity {
                                  @Nullable String assignedUserId,
                                  @Nonnull List<String> assignedFileNumbers,
                                  @Nonnull Map<String, ProcessIdentityItem> identities,
-                                 @Nonnull LocalDateTime started,
-                                 @Nonnull LocalDateTime updated,
-                                 @Nullable LocalDateTime finished,
+                                 @Nonnull Instant started,
+                                 @Nonnull Instant updated,
+                                 @Nullable Instant finished,
                                  @Nullable Duration runtime,
                                  @Nonnull Map<String, Object> initialPayload,
                                  @Nonnull Integer initialNodeId,
-                                 @Nullable LocalDateTime keepUntil,
+                                 @Nullable Instant keepUntil,
                                  @Nullable Integer createdForTestClaimId) {
         this.id = id;
         this.accessKey = accessKey;
@@ -239,31 +243,31 @@ public class ProcessInstanceEntity {
     }
 
     @Nonnull
-    public LocalDateTime getStarted() {
+    public Instant getStarted() {
         return started;
     }
 
-    public ProcessInstanceEntity setStarted(@Nonnull LocalDateTime started) {
+    public ProcessInstanceEntity setStarted(@Nonnull Instant started) {
         this.started = started;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public ProcessInstanceEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public ProcessInstanceEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getFinished() {
+    public Instant getFinished() {
         return finished;
     }
 
-    public ProcessInstanceEntity setFinished(@Nullable LocalDateTime finished) {
+    public ProcessInstanceEntity setFinished(@Nullable Instant finished) {
         this.finished = finished;
         return this;
     }
@@ -309,11 +313,11 @@ public class ProcessInstanceEntity {
     }
 
     @Nullable
-    public LocalDateTime getKeepUntil() {
+    public Instant getKeepUntil() {
         return keepUntil;
     }
 
-    public ProcessInstanceEntity setKeepUntil(@Nullable LocalDateTime keepUntil) {
+    public ProcessInstanceEntity setKeepUntil(@Nullable Instant keepUntil) {
         this.keepUntil = keepUntil;
         return this;
     }

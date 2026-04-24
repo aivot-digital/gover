@@ -9,7 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
@@ -65,14 +65,17 @@ public class ProcessInstanceTaskEntity {
 
     @Nonnull
     @NotNull(message = "Das Startdatum darf nicht null sein.")
-    private LocalDateTime started;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant started;
 
     @Nonnull
     @NotNull(message = "Das Aktualisierungsdatum darf nicht null sein.")
-    private LocalDateTime updated;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime finished;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant finished;
 
     @Nullable
     @Column(columnDefinition = "interval", insertable = false, updatable = false)
@@ -101,16 +104,19 @@ public class ProcessInstanceTaskEntity {
     private String assignedUserId;
 
     @Nullable
-    private LocalDateTime deadline;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant deadline;
 
     @Nullable
-    private LocalDateTime postponedUntil;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant postponedUntil;
 
     @Nullable
     private Integer retryCount;
 
     @Nullable
-    private LocalDateTime nextRetryAt;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant nextRetryAt;
 
     // region Constructors
 
@@ -130,18 +136,18 @@ public class ProcessInstanceTaskEntity {
                                      @Nullable String previousProcessNodePortKey,
                                      @Nonnull ProcessTaskStatus status,
                                      @Nullable String statusOverride,
-                                     @Nonnull LocalDateTime started,
-                                     @Nonnull LocalDateTime updated,
-                                     @Nullable LocalDateTime finished,
+                                     @Nonnull Instant started,
+                                     @Nonnull Instant updated,
+                                     @Nullable Instant finished,
                                      @Nullable Duration runtime,
                                      @Nonnull Map<String, Object> runtimeData,
                                      @Nonnull Map<String, Object> nodeData,
                                      @Nonnull Map<String, Object> processData,
                                      @Nullable String assignedUserId,
-                                     @Nullable LocalDateTime deadline,
-                                     @Nullable LocalDateTime postponedUntil,
+                                     @Nullable Instant deadline,
+                                     @Nullable Instant postponedUntil,
                                      @Nullable Integer retryCount,
-                                     @Nullable LocalDateTime nextRetryAt) {
+                                     @Nullable Instant nextRetryAt) {
         this.id = id;
         this.accessKey = accessKey;
         this.processInstanceId = processInstanceId;
@@ -282,31 +288,31 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nonnull
-    public LocalDateTime getStarted() {
+    public Instant getStarted() {
         return started;
     }
 
-    public ProcessInstanceTaskEntity setStarted(@Nonnull LocalDateTime started) {
+    public ProcessInstanceTaskEntity setStarted(@Nonnull Instant started) {
         this.started = started;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public ProcessInstanceTaskEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public ProcessInstanceTaskEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getFinished() {
+    public Instant getFinished() {
         return finished;
     }
 
-    public ProcessInstanceTaskEntity setFinished(@Nullable LocalDateTime finished) {
+    public ProcessInstanceTaskEntity setFinished(@Nullable Instant finished) {
         this.finished = finished;
         return this;
     }
@@ -362,21 +368,21 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nullable
-    public LocalDateTime getDeadline() {
+    public Instant getDeadline() {
         return deadline;
     }
 
-    public ProcessInstanceTaskEntity setDeadline(@Nullable LocalDateTime deadline) {
+    public ProcessInstanceTaskEntity setDeadline(@Nullable Instant deadline) {
         this.deadline = deadline;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getPostponedUntil() {
+    public Instant getPostponedUntil() {
         return postponedUntil;
     }
 
-    public ProcessInstanceTaskEntity setPostponedUntil(@Nullable LocalDateTime postponedUntil) {
+    public ProcessInstanceTaskEntity setPostponedUntil(@Nullable Instant postponedUntil) {
         this.postponedUntil = postponedUntil;
         return this;
     }
@@ -392,11 +398,11 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nullable
-    public LocalDateTime getNextRetryAt() {
+    public Instant getNextRetryAt() {
         return nextRetryAt;
     }
 
-    public ProcessInstanceTaskEntity setNextRetryAt(@Nullable LocalDateTime nextRetryAt) {
+    public ProcessInstanceTaskEntity setNextRetryAt(@Nullable Instant nextRetryAt) {
         this.nextRetryAt = nextRetryAt;
         return this;
     }

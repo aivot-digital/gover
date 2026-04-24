@@ -1,2 +1,2 @@
 alter table data_object_items
-add column deleted timestamp null;
+add column deleted timestamptz null;

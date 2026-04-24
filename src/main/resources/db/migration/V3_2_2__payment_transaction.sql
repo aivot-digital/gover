@@ -8,6 +8,6 @@ create table payment_transactions
     payment_information  jsonb        null,
     payment_error        text         null,
     redirect_url         varchar(255) not null,
-    created              timestamp    not null,
-    updated              timestamp    not null
+    created              timestamptz  not null,
+    updated              timestamptz  not null
 )

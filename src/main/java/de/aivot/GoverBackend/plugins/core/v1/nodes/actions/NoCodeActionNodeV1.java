@@ -26,9 +26,13 @@ import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
+
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 
 @Component
 public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
@@ -400,6 +404,9 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
         if (value instanceof LocalDate date) {
             return date.toString();
         }
+        if (value instanceof Instant instant) {
+            return instant.atZone(ZoneOffset.UTC).toLocalDate().toString();
+        }
         if (value instanceof LocalDateTime dateTime) {
             return dateTime.toLocalDate().toString();
         }
@@ -415,7 +422,11 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
                 return LocalDate.parse(trimmed).toString();
             } catch (Exception ignored) {
                 try {
-                    return LocalDateTime.parse(trimmed).toLocalDate().toString();
+                    return IsoTimestampUtils
+                            .parseIsoTimestamp(trimmed, ZoneOffset.UTC)
+                            .atZone(ZoneOffset.UTC)
+                            .toLocalDate()
+                            .toString();
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum umgewandelt werden.",
@@ -433,11 +444,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     private static String castToDateTime(Object value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        // Normalize runtime datetime outputs to UTC ISO-8601 so process payloads always carry
+        // absolute instants, independent from the environment where the node was executed.
+        if (value instanceof Instant instant) {
+            return instant.toString();
+        }
         if (value instanceof LocalDateTime dateTime) {
-            return dateTime.toString();
+            return dateTime.toInstant(ZoneOffset.UTC).toString();
         }
         if (value instanceof LocalDate date) {
-            return date.atStartOfDay().toString();
+            return date.atStartOfDay(ZoneOffset.UTC).toInstant().toString();
         }
         if (value instanceof String s) {
             var trimmed = s.trim();
@@ -448,10 +464,10 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
             }
 
             try {
-                return LocalDateTime.parse(trimmed).toString();
+                return IsoTimestampUtils.parseIsoTimestamp(trimmed, ZoneOffset.UTC).toString();
             } catch (Exception ignored) {
                 try {
-                    return LocalDate.parse(trimmed).atStartOfDay().toString();
+                    return LocalDate.parse(trimmed).atStartOfDay(ZoneOffset.UTC).toInstant().toString();
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum und Uhrzeit umgewandelt werden.",

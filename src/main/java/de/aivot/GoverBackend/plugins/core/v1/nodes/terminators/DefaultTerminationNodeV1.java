@@ -14,11 +14,12 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -161,7 +162,8 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
         var retentionTimeUnit = String.valueOf(configuration
                 .getOrDefault(RETENTION_UNIT_FIELD_KEY, DEFAULT_RETENTION_UNIT));
 
-        var retentionTime = LocalDateTime.now();
+        // Apply retention periods in local business time before storing the resulting absolute instant.
+        var retentionTime = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
         switch (retentionTimeUnit) {
             case RETENTION_UNIT_DAYS -> retentionTime = retentionTime.plusDays(retentionTimeValue);
             case RETENTION_UNIT_WEEKS -> retentionTime = retentionTime.plusWeeks(retentionTimeValue);
@@ -170,6 +172,6 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
         }
 
         return new ProcessNodeExecutionResultInstanceCompleted()
-                .setRetentionDate(retentionTime);
+                .setRetentionDate(retentionTime.toInstant());
     }
 }

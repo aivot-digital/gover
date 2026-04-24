@@ -7,7 +7,6 @@ import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
@@ -102,4 +101,3 @@ public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
         return this;
     }
 }
-

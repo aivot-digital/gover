@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -193,7 +193,7 @@ class PdfActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -210,7 +210,7 @@ class PdfActionNodeV1Test {
     }
 
     private static ProcessInstanceTaskEntity task() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
