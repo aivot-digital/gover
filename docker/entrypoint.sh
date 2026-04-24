@@ -4,9 +4,9 @@ echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
 
 if [ "$1" = "serve" ]; then
   echo "serve" > /app/runtime-mode
-  echo "Waiting for IDP to be available at ${GOVER_HOSTNAME}/idp/realms/staff…"
+  echo "Waiting for IDP to be available at ${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff…"
 
-  until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/idp/realms/staff/"; do
+  until curl --output /dev/null --silent --head --fail "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff/"; do
       sleep 5
   done
 
