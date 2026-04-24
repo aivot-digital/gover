@@ -260,6 +260,7 @@ public class AuthController {
         accessCookie.setHttpOnly(true);
         accessCookie.setPath(ACCESS_COOKIE_PATH);
         accessCookie.setMaxAge(tokenResponse.expires_in);
+        accessCookie.setAttribute("SameSite", "Strict");
         return accessCookie;
     }
 
@@ -270,6 +271,7 @@ public class AuthController {
         refreshCookie.setHttpOnly(true);
         refreshCookie.setPath(REFRESH_COOKIE_PATH);
         refreshCookie.setMaxAge(tokenResponse.refresh_expires_in);
+        refreshCookie.setAttribute("SameSite", "Strict");
         return refreshCookie;
     }
 
