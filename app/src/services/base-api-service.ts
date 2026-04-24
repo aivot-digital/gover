@@ -100,15 +100,23 @@ export class BaseApiService {
     }
 
     public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
-        if (!this.auth.isAccessTokenValid()) {
+        if (!this.auth.isAccessTokenValid() || (this.requiresCsrfProtection(method) && this.auth.getCsrfToken() == null)) {
             await this.auth.refresh();
+        }
+
+        const defaultHeaders = this.createDefaultHeaders();
+        if (this.requiresCsrfProtection(method)) {
+            const csrfToken = this.auth.getCsrfToken();
+            if (csrfToken != null) {
+                defaultHeaders['X-CSRF-TOKEN'] = csrfToken;
+            }
         }
 
         let response: Response;
         try {
             response = await fetch(this.combineUrl(path, options), {
                 method: method,
-                headers: this.combineHeaders(this.createDefaultHeaders(), options),
+                headers: this.combineHeaders(defaultHeaders, options),
                 signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
                 body: body,
             });
@@ -129,6 +137,10 @@ export class BaseApiService {
         }
 
         return response;
+    }
+
+    private requiresCsrfProtection(method: string): boolean {
+        return !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method.toUpperCase());
     }
 
     protected combineUrl(path: string, options?: RequestOptions): string {

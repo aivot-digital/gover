@@ -190,6 +190,8 @@ gover:
   sentryServer: "${GOVER_SENTRY_SERVER:}"
   sentryWebApp: "${GOVER_SENTRY_WEB_APP:}"
   environment: "${GOVER_ENVIRONMENT:}"
+  security:
+    csrfTtlSeconds: "${GOVER_CSRF_TTL_SECONDS:86400}"
   fileExtensions: "${GOVER_FILE_EXTENSIONS}"
   contentTypes: "${GOVER_CONTENT_TYPES}"
   maxSubmissionCopyRetryCount: 3

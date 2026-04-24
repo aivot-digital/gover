@@ -13,6 +13,7 @@ import jakarta.annotation.Nullable;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -68,9 +69,11 @@ public class AuthController {
     private String oidcClientSecret;
 
     private final HttpService httpService;
+    private final CsrfTokenRepository csrfTokenRepository;
 
-    public AuthController(HttpService httpService) {
+    public AuthController(HttpService httpService, CsrfTokenRepository csrfTokenRepository) {
         this.httpService = httpService;
+        this.csrfTokenRepository = csrfTokenRepository;
     }
 
     @GetMapping("login")
@@ -110,7 +113,6 @@ public class AuthController {
             description = "Redirects the user to the authentication provider login page or directly to the specified redirect URL if already authenticated."
     )
     public AuthStatusResponse refresh(
-            @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response,
             @Nonnull @CookieValue(value = REFRESH_COOKIE_NAME) String refreshToken
     ) throws ResponseException {
@@ -173,12 +175,13 @@ public class AuthController {
         response.sendRedirect(appRedirectLocation);
     }
 
-    @GetMapping("logout")
+    @PostMapping("logout")
     @Operation(
             summary = "Logout",
             description = "Terminates the authentication provider session and clears local authentication cookies."
     )
     public void logout(
+            @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response,
             @Nullable @CookieValue(value = REFRESH_COOKIE_NAME, required = false) String refreshToken
     ) throws ResponseException {
@@ -187,6 +190,7 @@ public class AuthController {
                 performOidcLogout(refreshToken);
             }
         } finally {
+            csrfTokenRepository.saveToken(null, request, response);
             response.addCookie(getExpiredAccessCookie());
             response.addCookie(getExpiredRefreshCookie(REFRESH_COOKIE_PATH));
         }

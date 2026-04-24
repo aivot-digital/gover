@@ -2,10 +2,12 @@ import {Location} from 'react-router-dom';
 
 const APP_URI_QUERY_PARAM = 'app_uri';
 const AUTH_EXPIRATION_LOCAL_STORAGE_KEY = 'auth_expiration';
+const CSRF_HEADER_NAME = 'X-CSRF-TOKEN';
 
 interface JWT {
     accessExpires: number;
     refreshExpires: number;
+    csrfToken?: string;
 }
 
 class _AuthService {
@@ -31,15 +33,34 @@ class _AuthService {
             return;
         }
 
-        this.activeRefresh = fetch('/api/auth/refresh')
-            .then(r => r.json())
-            .then((jwt: JWT) => {
-                localStorage.setItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY, JSON.stringify(jwt));
+        this.activeRefresh = (async () => {
+            const response = await fetch('/api/auth/refresh', {
+                credentials: 'same-origin',
             });
 
-        await this.activeRefresh;
+            if (!response.ok) {
+                this.logout();
+                throw new Error(`Authentication refresh failed with status ${response.status}`);
+            }
 
-        this.activeRefresh = null;
+            const csrfToken = response.headers.get(CSRF_HEADER_NAME);
+            if (csrfToken == null || csrfToken.length === 0) {
+                this.logout();
+                throw new Error('Authentication refresh did not return a CSRF token');
+            }
+
+            const jwt = await response.json() as JWT;
+            localStorage.setItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY, JSON.stringify({
+                ...jwt,
+                csrfToken,
+            }));
+        })();
+
+        try {
+            await this.activeRefresh;
+        } finally {
+            this.activeRefresh = null;
+        }
     }
 
     /**
@@ -47,6 +68,16 @@ class _AuthService {
      */
     public logout(): void {
         localStorage.removeItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY);
+    }
+
+    public getCsrfToken(): string | null {
+        const storedJwt = localStorage.getItem(AUTH_EXPIRATION_LOCAL_STORAGE_KEY);
+        if (storedJwt == null) {
+            return null;
+        }
+
+        const jwt = JSON.parse(storedJwt) as JWT;
+        return jwt.csrfToken ?? null;
     }
 
     /**

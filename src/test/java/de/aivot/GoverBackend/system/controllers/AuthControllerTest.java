@@ -6,7 +6,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.net.URI;
@@ -27,13 +29,15 @@ import static org.mockito.Mockito.when;
 class AuthControllerTest {
     @Mock
     private HttpService httpService;
+    @Mock
+    private CsrfTokenRepository csrfTokenRepository;
 
     private AuthController controller;
 
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        controller = new AuthController(httpService);
+        controller = new AuthController(httpService, csrfTokenRepository);
         ReflectionTestUtils.setField(controller, "oidcIssuerURI", "https://auth.example.com/realms/gover");
         ReflectionTestUtils.setField(controller, "oidcClientId", "gover-client");
         ReflectionTestUtils.setField(controller, "oidcClientSecret", "gover-secret");
@@ -52,13 +56,15 @@ class AuthControllerTest {
                 )
         )).thenReturn(logoutResponse);
 
+        var request = new MockHttpServletRequest();
         var response = new MockHttpServletResponse();
 
-        controller.logout(response, "refresh-token");
+        controller.logout(request, response, "refresh-token");
 
         assertEquals(204, response.getStatus());
         assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
+        verify(csrfTokenRepository).saveToken(null, request, response);
         verify(httpService).postFormUrlEncoded(
                 eq(URI.create("https://auth.example.com/realms/gover/protocol/openid-connect/logout")),
                 argThat(payload ->
@@ -71,13 +77,15 @@ class AuthControllerTest {
 
     @Test
     void logoutShouldClearCookiesWithoutOidcLogoutWhenRefreshCookieIsMissing() throws Exception {
+        var request = new MockHttpServletRequest();
         var response = new MockHttpServletResponse();
 
-        controller.logout(response, null);
+        controller.logout(request, response, null);
 
         assertEquals(204, response.getStatus());
         assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
+        verify(csrfTokenRepository).saveToken(null, request, response);
         verifyNoInteractions(httpService);
     }
 
@@ -90,11 +98,13 @@ class AuthControllerTest {
                 argThat(payload -> "refresh-token".equals(payload.get("refresh_token")))
         )).thenReturn(logoutResponse);
 
+        var request = new MockHttpServletRequest();
         var response = new MockHttpServletResponse();
 
-        assertThrows(ResponseException.class, () -> controller.logout(response, "refresh-token"));
+        assertThrows(ResponseException.class, () -> controller.logout(request, response, "refresh-token"));
         assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
+        verify(csrfTokenRepository).saveToken(null, request, response);
     }
 
     private static void assertClearsCookie(
