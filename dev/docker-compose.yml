@@ -110,7 +110,7 @@ services:
       KC_FEATURES: "transient-users,update-email,hostname:v2"
 
   keycloak-setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.17
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.18
     depends_on:
       - keycloak
     environment:
