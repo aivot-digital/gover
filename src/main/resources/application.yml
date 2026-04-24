@@ -120,10 +120,6 @@ spring:
     username: "${GOVER_RABBITMQ_USERNAME}"
     password: "${GOVER_RABBITMQ_PASSWORD}"
 
-# Set cors configuration
-cors:
-  allowed-origins: "${GOVER_FRONTEND_ORIGINS:}"
-
 management:
   endpoints:
     access:

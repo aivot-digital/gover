@@ -412,7 +412,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 
 ### Bug Fixes
 
-* **Project:** Fix CORS settings for local development
+* **Project:** Fix local development settings
 
 
 ## [2.0.0](https://github.com/aivot-digital/gover/compare/v1.0.6...v2.0.0) (2023-01-05)

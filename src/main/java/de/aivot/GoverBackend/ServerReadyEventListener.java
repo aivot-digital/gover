@@ -1,9 +1,7 @@
 package de.aivot.GoverBackend;
 
-import com.beust.jcommander.Strings;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
-import de.aivot.GoverBackend.system.properties.CORSProperties;
 import io.sentry.Sentry;
 import jakarta.annotation.Nonnull;
 import jakarta.validation.constraints.NotNull;
@@ -20,23 +18,19 @@ public class ServerReadyEventListener implements ApplicationListener<Application
     private static final Logger logger = LoggerFactory.getLogger(ServerReadyEventListener.class);
     private final BuildProperties buildProperties;
     private final GoverConfig goverConfig;
-    private final CORSProperties corsProperties;
 
     @Autowired
     public ServerReadyEventListener(
             BuildProperties buildProperties,
-            GoverConfig goverConfig,
-            CORSProperties corsProperties
+            GoverConfig goverConfig
     ) {
         this.buildProperties = buildProperties;
         this.goverConfig = goverConfig;
-        this.corsProperties = corsProperties;
     }
 
     @Override
     public void onApplicationEvent(@Nonnull @NotNull final ApplicationReadyEvent event) {
         logBuildInfo();
-        logCorsConfiguration();
 
         initializeSentry();
     }
@@ -78,26 +72,6 @@ public class ServerReadyEventListener implements ApplicationListener<Application
             logger
                     .atWarn()
                     .setMessage("Starting server without Sentry.")
-                    .log();
-        }
-    }
-
-    private void logCorsConfiguration() {
-        if (corsProperties.isEnabled()) {
-            var message = String.format(
-                    "CORS configuration: allowed origins: %s",
-                    Strings.join(", ", corsProperties.getAllowedOrigins())
-            );
-
-            logger
-                    .atInfo()
-                    .setMessage(message)
-                    .addKeyValue("allowedOrigins", corsProperties.getAllowedOrigins())
-                    .log();
-        } else {
-            logger
-                    .atInfo()
-                    .setMessage("CORS is disabled.")
                     .log();
         }
     }
