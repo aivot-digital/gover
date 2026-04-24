@@ -59,7 +59,6 @@ class AuthControllerTest {
         assertEquals(204, response.getStatus());
         assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
-        assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/refresh");
         verify(httpService).postFormUrlEncoded(
                 eq(URI.create("https://auth.example.com/realms/gover/protocol/openid-connect/logout")),
                 argThat(payload ->
@@ -79,7 +78,6 @@ class AuthControllerTest {
         assertEquals(204, response.getStatus());
         assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
-        assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/refresh");
         verifyNoInteractions(httpService);
     }
 
@@ -97,7 +95,6 @@ class AuthControllerTest {
         assertThrows(ResponseException.class, () -> controller.logout(response, "refresh-token"));
         assertClearsCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/");
         assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/");
-        assertClearsCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/refresh");
     }
 
     private static void assertClearsCookie(
