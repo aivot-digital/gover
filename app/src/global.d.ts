@@ -1,22 +1,4 @@
 declare var AppConfig: {
-    oidc: {
-        realm: string;
-        client: string;
-        hostname: string;
-        idp_hint: string;
-    };
-    api: {
-        hostname: string;
-    };
-    registry: {
-        url: string;
-    },
-    sentry: {
-        dsn: string;
-    };
-};
-
-declare var AppConfigV2: {
     knownFileExtensions: {
         name: string;
         mime: string;
@@ -45,4 +27,9 @@ declare var AppConfigV2: {
     apiHostname: string;
     registryHostname: string;
     sentryDsn: string;
+    oidc: {
+        hostname: string;
+        realm: string;
+        clientId: string;
+    },
 };

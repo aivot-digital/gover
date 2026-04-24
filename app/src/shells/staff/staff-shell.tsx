@@ -74,7 +74,7 @@ export function StaffShell(): ReactNode {
         fetchSetup()
             .then((setup) => {
                 dispatch(setSetup(setup));
-                dispatch(setSystemConfigsFromMap(AppConfigV2.systemConfigs));
+                dispatch(setSystemConfigsFromMap(AppConfig.systemConfigs));
             })
             .catch((err) => {
                 if (isApiError(err) && err.status >= 500) {
@@ -241,7 +241,7 @@ async function authenticateWithOidcCode(): Promise<{
     const permissionSet = await new PermissionApiService()
         .getPermissionSetForUser(user.id);
 
-    const configs = AppConfigV2.systemConfigs;
+    const configs = AppConfig.systemConfigs;
 
     return {
         user,

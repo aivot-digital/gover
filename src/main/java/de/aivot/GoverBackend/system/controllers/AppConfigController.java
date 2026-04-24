@@ -17,6 +17,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -35,6 +36,15 @@ public class AppConfigController {
     private final AssetService assetService;
     private final SystemService systemService;
     private final KnownExtensionsService knownExtensionsService;
+
+    @Value("${keycloak.oidc.hostname}")
+    private String oidcIssuerURI;
+
+    @Value("${spring.security.oauth2.client.registration.keycloak.client-id}")
+    private String oidcClientId;
+
+    @Value("${keycloak.oidc.realm}")
+    private String oidcRealm;
 
     @Autowired
     public AppConfigController(GoverConfig goverConfig,
@@ -58,6 +68,11 @@ public class AppConfigController {
     private static final String API_HOSTNAME_CONFIG_KEY = "apiHostname";
     private static final String REGISTRY_HOSTNAME_CONFIG_KEY = "registryHostname";
     private static final String SENTRY_DSN = "sentryDsn";
+
+    private static final String OIDC_KEY = "oidc";
+    private static final String OIDC_REALM_KEY = "realm";
+    private static final String OIDC_HOSTNAME_KEY = "hostname";
+    private static final String OIDC_CLIENT_ID_KEY = "clientId";
 
     @GetMapping("app-config.js")
     public ResponseEntity<String> getAppConfigJs() throws ResponseException {
@@ -90,6 +105,12 @@ public class AppConfigController {
         appConfig.put(REGISTRY_HOSTNAME_CONFIG_KEY, goverConfig.getRegistryHostname());
         appConfig.put(SENTRY_DSN, goverConfig.getSentryWebApp());
 
+        var oidc = new HashMap<String, String>();
+        oidc.put(OIDC_HOSTNAME_KEY, oidcIssuerURI);
+        oidc.put(OIDC_REALM_KEY, oidcRealm);
+        oidc.put(OIDC_CLIENT_ID_KEY, oidcClientId);
+        appConfig.put(OIDC_KEY, oidc);
+
         String configJson;
         try {
             configJson = ObjectMapperFactory
@@ -99,7 +120,7 @@ public class AppConfigController {
             throw ResponseException.internalServerError(e);
         }
 
-        var content = "window.AppConfigV2 = " + configJson + ";";
+        var content = "window.AppConfig = " + configJson + ";";
 
         // Do not declare `produces` on this handler. The global MVC configuration defaults
         // request negotiation to JSON, which would otherwise make this JS endpoint unroutable.

@@ -13,9 +13,9 @@ const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);
 root.render(<CustomerShellRouter />);
 
-if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {
+if (isStringNotNullOrEmpty(AppConfig.sentryDsn)) {
     Sentry.init({
-        dsn: AppConfig.sentry.dsn,
+        dsn: AppConfig.sentryDsn,
         integrations: [
             Sentry.reactRouterV7BrowserTracingIntegration({
                 useEffect: React.useEffect,
