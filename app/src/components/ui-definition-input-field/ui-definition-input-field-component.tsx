@@ -1,4 +1,4 @@
-import React, {useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
@@ -26,6 +26,7 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ElementChildOptions} from '../../data/element-type/element-child-options';
 import {isRootElement} from '../../models/elements/root-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
+import {deepEquals} from '../../utils/equality-utils';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -50,6 +51,10 @@ function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string 
     return `${countLabel}`;
 }
 
+function cloneUiDefinitionValue(value: UiDefinitionInputFieldElementItem): UiDefinitionInputFieldElementItem {
+    return JSON.parse(JSON.stringify(value)) as UiDefinitionInputFieldElementItem;
+}
+
 export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldComponentProps) {
     const theme = useTheme();
     const confirm = useConfirm();
@@ -70,6 +75,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const displayLabel = `${label}${required ? ' *' : ''}`;
     const [showDraftDialog, setShowDraftDialog] = useState<boolean>(false);
     const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
+    const [initialDraftValue, setInitialDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
     const [inputData, setInputData] = useState<AuthoredElementValues>({});
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
@@ -95,6 +101,15 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         return generateElementWithDefaultValues(expectedRootType ?? ElementType.GroupLayout) as UiDefinitionInputFieldElementItem;
     }, [expectedRootType]);
     const effectiveValue = draftValue ?? value ?? defaultValue;
+
+    const hasUnsavedChanges = useMemo(() => {
+        if (!showDraftDialog || draftValue == null || initialDraftValue == null) {
+            return false;
+        }
+
+        return !deepEquals(initialDraftValue, draftValue);
+    }, [draftValue, initialDraftValue, showDraftDialog]);
+
     const allowedRootChildTypes = useMemo(() => {
         return ElementChildOptions[displayContext][effectiveValue.type] ?? [];
     }, [displayContext, effectiveValue.type]);
@@ -122,10 +137,40 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const handleClose = () => {
         setShowDraftDialog(false);
         setTimeout(() => {
-            setDraftValue(generateElementWithDefaultValues(expectedRootType ?? ElementType.GroupLayout) as UiDefinitionInputFieldElementItem);
+            setDraftValue(null);
+            setInitialDraftValue(null);
             setInputData({});
         }, 300);
     };
+
+    const openDialog = useCallback(() => {
+        const nextDraftValue = cloneUiDefinitionValue(value ?? defaultValue);
+        setDraftValue(nextDraftValue);
+        setInitialDraftValue(cloneUiDefinitionValue(nextDraftValue));
+        setShowDraftDialog(true);
+    }, [defaultValue, value]);
+
+    const requestClose = useCallback(async () => {
+        if (!hasUnsavedChanges) {
+            handleClose();
+            return;
+        }
+
+        const shouldDiscard = await confirm({
+            title: 'Ungespeicherte Änderungen',
+            children: (
+                <Typography>
+                    Sie haben ungespeicherte Änderungen an der UI-Definition. Möchten Sie den Dialog wirklich schließen? Dabei gehen alle ungespeicherten Änderungen verloren.
+                </Typography>
+            ),
+        });
+
+        if (!shouldDiscard) {
+            return;
+        }
+
+        handleClose();
+    }, [confirm, hasUnsavedChanges]);
 
     const handleDeleteElement = (element: AnyElement) => {
         if (draftValue == null) {
@@ -235,10 +280,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         ml: 'auto',
                     }}
                     disabled={disabled}
-                    onClick={() => {
-                        setDraftValue(value ?? defaultValue);
-                        setShowDraftDialog(true);
-                    }}
+                    onClick={openDialog}
                 >
                     Bearbeiten
                 </Button>
@@ -320,7 +362,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
             <Dialog
                 open={showDraftDialog}
-                onClose={handleClose}
+                onClose={() => {
+                    void requestClose();
+                }}
                 fullWidth
                 maxWidth="xl"
             >
@@ -328,7 +372,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     sx={{
                         boxShadow: '0px 1px 3px rgba(0, 0, 0, 0.2)',
                     }}
-                    onClose={handleClose}
+                    onClose={() => {
+                        void requestClose();
+                    }}
                 >
                     {displayLabel}
                 </DialogTitleWithClose>
@@ -430,7 +476,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         sx={{
                             ml: 'auto',
                         }}
-                        onClick={handleClose}
+                        onClick={() => {
+                            void requestClose();
+                        }}
                     >
                         Abbrechen
                     </Button>
