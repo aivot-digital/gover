@@ -310,7 +310,7 @@ class ManualActionNodeV1Test {
         @SuppressWarnings("unchecked")
         var diff = (List<DiffItem>) completed.getNodeData().get("diff");
         assertEquals(1, diff.size());
-        assertEquals("/applicant/name", diff.getFirst().field());
+        assertEquals("applicant.name", diff.getFirst().field());
         assertEquals("Ada", diff.getFirst().oldValue());
         assertEquals("Grace", diff.getFirst().newValue());
     }

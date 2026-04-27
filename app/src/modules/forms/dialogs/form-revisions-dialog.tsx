@@ -3,7 +3,7 @@ import {Box, Button, Card, Dialog, DialogContent, DialogContentText, Grid, Skele
 import {User} from '../../users/models/user';
 import {DiffItem} from '../../../models/entities/form-revision';
 import {AnyElement, AnyElementType} from '../../../models/elements/any-element';
-import {DeletedElementReference, isDeletedElementReference, resolveElementPath} from '../../../utils/resolve-element-path';
+import {DeletedElementReference, getLeafDiffPathSegment, isDeletedElementReference, resolveElementPath} from '../../../utils/resolve-element-path';
 import {Api, useApi} from '../../../hooks/use-api';
 import {Page} from '../../../models/dtos/page';
 import {UsersApiService} from '../../users/users-api-service';
@@ -104,7 +104,7 @@ async function fetchRevisions(form: LoadedForm, lastPage: Page<Revision> | undef
                 title: resolveElementLabel(element),
                 path: elementPath.slice(1).map(e => resolveElementLabel(e)).join(' → '),
                 ...diff,
-                field: diff.field.split('/').pop() ?? '',
+                field: getLeafDiffPathSegment(diff.field),
             };
             diffs.push(revDiff);
         }

@@ -523,11 +523,27 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         return DiffService
                 .createDiff(new JSONObject(originalForDiff), new JSONObject(updatedForDiff))
                 .stream()
-                .filter(diffItem -> !"/id".equals(diffItem.field()))
+                .filter(diffItem -> !"id".equals(diffItem.field()))
                 .map(diffItem -> {
-                    if (diffItem.field().startsWith("/" + DIFF_WRAPPER_KEY)) {
+                    if (diffItem.field().equals(DIFF_WRAPPER_KEY)) {
+                        return new DiffItem(
+                                "",
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + ".")) {
                         return new DiffItem(
                                 diffItem.field().substring(DIFF_WRAPPER_KEY.length() + 1),
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + "[")) {
+                        return new DiffItem(
+                                diffItem.field().substring(DIFF_WRAPPER_KEY.length()),
                                 diffItem.oldValue(),
                                 diffItem.newValue()
                         );
