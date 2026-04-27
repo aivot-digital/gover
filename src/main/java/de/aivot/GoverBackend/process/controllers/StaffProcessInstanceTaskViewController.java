@@ -243,9 +243,15 @@ public class StaffProcessInstanceTaskViewController {
 
         Optional<ProcessNodeExecutionResult> res;
         try {
-            res = taskViewData
-                    .provider
-                    .onUpdateFromStaff(context, inputs, cleanEvent);
+            if (cleanEvent == null) {
+                res = taskViewData
+                        .provider
+                        .onAutoSaveFromStaffTaskView(context, inputs);
+            } else {
+                res = taskViewData
+                        .provider
+                        .onEventFromStaffTaskView(context, inputs, cleanEvent);
+            }
         } catch (ResponseException e) {
             throw e;
         } catch (Exception e) {

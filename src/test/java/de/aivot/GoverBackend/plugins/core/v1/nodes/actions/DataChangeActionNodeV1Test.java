@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSe
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
@@ -17,6 +18,7 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
@@ -46,6 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataChangeActionNodeV1Test {
@@ -108,7 +111,10 @@ class DataChangeActionNodeV1Test {
                 processInstance("process-owner"),
                 task(
                         77,
-                        Map.of("draftData", authored("applicantName", "Grace")),
+                        Map.of(
+                                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
+                                authored("applicantName", "Grace")
+                        ),
                         Map.of(),
                         Map.of("applicant", Map.of("name", "Ada"))
                 ),
@@ -158,42 +164,36 @@ class DataChangeActionNodeV1Test {
     }
 
     @Test
-    void onUpdateFromStaff_SaveKeepsTaskRunningAndPersistsDraft() throws Exception {
-        var result = node.onUpdateFromStaff(
-                new ProcessNodeExecutionContextUIStaff(
-                        logger(),
-                        processNode(configuration()),
-                        processInstance("process-owner"),
-                        task(
-                                77,
-                                Map.of(),
-                                Map.of("existing", "node-data"),
-                                Map.of("applicant", Map.of("name", "Ada"))
+    void onEventFromStaffTaskView_SaveIsRejectedAsUnknownEvent() {
+        var ex = assertThrows(
+                ResponseException.class,
+                () -> node.onEventFromStaffTaskView(
+                        new ProcessNodeExecutionContextUIStaff(
+                                logger(),
+                                processNode(configuration()),
+                                processInstance("process-owner"),
+                                task(
+                                        77,
+                                        Map.of(),
+                                        Map.of("existing", "node-data"),
+                                        Map.of("applicant", Map.of("name", "Ada"))
+                                ),
+                                null,
+                                user("staff-1"),
+                                runtime(configuration()),
+                                null
                         ),
-                        null,
-                        user("staff-1"),
-                        runtime(configuration()),
-                        null
-                ),
-                authored("applicantName", "Grace"),
-                "save"
+                        authored("applicantName", "Grace"),
+                        "save"
+                )
         );
 
-        assertTrue(result.isPresent());
-
-        var assigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result.get());
-        assertEquals("staff-1", assigned.getAssignedUserId());
-        assertEquals(Map.of("applicant", Map.of("name", "Ada")), assigned.getProcessData());
-        assertEquals(Map.of("existing", "node-data"), assigned.getNodeData());
-
-        var draftData = assigned.getRuntimeData().get("draftData");
-        assertNotNull(draftData);
-        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
+        assertEquals("Unbekannte Aktion: save", ex.getMessage());
     }
 
     @Test
-    void onUpdateFromStaff_WithoutEventPersistsDraftInRuntimeData() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void onAutoSaveFromStaffTaskView_PersistsDraftInRuntimeData() throws Exception {
+        var result = node.onAutoSaveFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configuration()),
@@ -209,8 +209,7 @@ class DataChangeActionNodeV1Test {
                         runtime(configuration()),
                         null
                 ),
-                authored("applicantName", "Grace"),
-                null
+                authored("applicantName", "Grace")
         );
 
         assertTrue(result.isPresent());
@@ -220,21 +219,24 @@ class DataChangeActionNodeV1Test {
         assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
         assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
 
-        var draftData = updated.getRuntimeData().get("draftData");
+        var draftData = updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
         assertNotNull(draftData);
         assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
     }
 
     @Test
-    void onUpdateFromStaff_CompleteMergesProcessDataAndStoresDiff() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void onEventFromStaffTaskView_CompleteMergesProcessDataAndStoresDiff() throws Exception {
+        var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configuration()),
                         processInstance("process-owner"),
                         task(
                                 77,
-                                Map.of("draftData", authored("applicantName", "Draft")),
+                                Map.of(
+                                        ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
+                                        authored("applicantName", "Draft")
+                                ),
                                 Map.of(),
                                 Map.of(
                                         "applicant", Map.of("name", "Ada", "age", 33),

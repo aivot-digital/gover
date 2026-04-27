@@ -20,6 +20,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUICustomer;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
@@ -44,6 +45,101 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class CitizenProcessInstanceTaskViewControllerTest {
+    @Test
+    void update_AutoSavePersistsNormalizedInputsAndReturnsMergedCustomerTaskViewData() throws ResponseException {
+        var procAccess = UUID.randomUUID();
+        var taskAccess = UUID.randomUUID();
+
+        var instance = new ProcessInstanceEntity(
+                42L,
+                procAccess,
+                7,
+                1,
+                ProcessInstanceStatus.Running,
+                null,
+                null,
+                List.of(),
+                Map.of(),
+                LocalDateTime.now(),
+                LocalDateTime.now(),
+                null,
+                null,
+                Map.of(),
+                11,
+                null,
+                null
+        );
+
+        var task = new ProcessInstanceTaskEntity(
+                9L,
+                taskAccess,
+                instance.getId(),
+                instance.getProcessId(),
+                1,
+                11,
+                null,
+                null,
+                null,
+                ProcessTaskStatus.Running,
+                null,
+                LocalDateTime.now(),
+                LocalDateTime.now(),
+                null,
+                null,
+                Map.of("keep", "value"),
+                Map.of("existing", "node-data"),
+                Map.of("processField", "process-value"),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        var provider = new AutoSaveCustomerProcessNodeDefinition();
+        var node = new ProcessNodeEntity()
+                .setId(11)
+                .setProcessId(instance.getProcessId())
+                .setProcessVersion(1)
+                .setName("Citizen node")
+                .setDataKey("citizenNode")
+                .setProcessNodeDefinitionKey(provider.getKey())
+                .setProcessNodeDefinitionVersion(provider.getMajorVersion())
+                .setConfiguration(new AuthoredElementValues())
+                .setOutputMappings(Map.of());
+
+        var normalizedInputs = new AuthoredElementValues();
+        normalizedInputs.put("field", "normalized");
+        normalizedInputs.put("extra", "saved");
+
+        var controller = new CitizenProcessInstanceTaskViewController(
+                new TestProcessInstanceService(instance),
+                new TestProcessInstanceTaskService(task),
+                new ProcessNodeDefinitionService(List.of(provider)),
+                new TestProcessNodeService(node),
+                new ApplyingProcessNodeExecutionResultHandler(),
+                new TestProcessNodeExecutionLoggerFactory(),
+                new TestElementDerivationService(normalizedInputs),
+                new TestTaskViewMultipartInputService(normalizedInputs)
+        );
+
+        var response = controller.update(
+                procAccess,
+                taskAccess,
+                "{\"field\":\"submitted\"}",
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertEquals("initial", response.data().get("defaultField"));
+        assertEquals("normalized", response.data().get("field"));
+        assertEquals("saved", response.data().get("extra"));
+        assertEquals(List.of(new TaskViewEvent("Submit", "submit")), response.events());
+        assertEquals("value", task.getRuntimeData().get("keep"));
+    }
+
     @Test
     void update_ReturnsNormalizedInputs_WhenCustomerUpdateIsNoOp() throws ResponseException {
         var procAccess = UUID.randomUUID();
@@ -285,6 +381,27 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
     }
 
+    private static final class ApplyingProcessNodeExecutionResultHandler extends ProcessNodeExecutionResultHandler {
+        private ApplyingProcessNodeExecutionResultHandler() {
+            super(null, null, null, null, null, null, null, null);
+        }
+
+        @Override
+        public void handleResult(ProcessNodeExecutionLogger logger,
+                                 de.aivot.GoverBackend.user.entities.UserEntity triggeringUser,
+                                 ProcessNodeDefinition provider,
+                                 ProcessNodeEntity currentNode,
+                                 ProcessInstanceEntity processInstance,
+                                 ProcessInstanceTaskEntity processInstanceTask,
+                                 ProcessInstanceTaskEntity previousTask,
+                                 ProcessNodeExecutionResult executionResult) {
+            var updatedTask = (ProcessNodeExecutionResultTaskUpdated) executionResult;
+            processInstanceTask.setRuntimeData(updatedTask.getRuntimeData());
+            processInstanceTask.setNodeData(updatedTask.getNodeData());
+            processInstanceTask.setProcessData(updatedTask.getProcessData());
+        }
+    }
+
     private static final class NoOpCustomerProcessNodeDefinition implements ProcessNodeDefinition {
         @Override
         public String getParentPluginKey() {
@@ -342,11 +459,78 @@ class CitizenProcessInstanceTaskViewControllerTest {
             return List.of(new TaskViewEvent("Submit", "submit"));
         }
 
+        @Nonnull
         @Override
         public AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
             var persistedData = new AuthoredElementValues();
             persistedData.put("field", "persisted");
             return persistedData;
+        }
+    }
+
+    private static final class AutoSaveCustomerProcessNodeDefinition implements ProcessNodeDefinition {
+        @Override
+        public String getParentPluginKey() {
+            return "test";
+        }
+
+        @Override
+        public String getComponentKey() {
+            return "citizen-autosave";
+        }
+
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Override
+        public String getName() {
+            return "Citizen autosave";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Customer autosave test provider";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+            throw new UnsupportedOperationException("Not used in this test");
+        }
+
+        @Nonnull
+        @Override
+        public GroupLayoutElement getCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+            var layout = new GroupLayoutElement();
+            layout.setId("customer-root");
+            return layout;
+        }
+
+        @Nonnull
+        @Override
+        public List<TaskViewEvent> getCustomerTaskViewEvents(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+            return List.of(new TaskViewEvent("Submit", "submit"));
+        }
+
+        @Nonnull
+        @Override
+        public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+            var initialData = new AuthoredElementValues();
+            initialData.put("defaultField", "initial");
+            return initialData;
         }
     }
 }

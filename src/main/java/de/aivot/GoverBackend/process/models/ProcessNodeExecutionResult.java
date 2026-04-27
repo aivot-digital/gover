@@ -5,6 +5,7 @@ import jakarta.annotation.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public abstract class ProcessNodeExecutionResult {
     private @Nullable Map<String, Object> runtimeData;
@@ -61,5 +62,9 @@ public abstract class ProcessNodeExecutionResult {
     public ProcessNodeExecutionResult setClearTaskStatusOverride(@Nullable Boolean clearTaskStatusOverride) {
         this.clearTaskStatusOverride = clearTaskStatusOverride;
         return this;
+    }
+
+    public Optional<ProcessNodeExecutionResult> asOptional() {
+        return Optional.of(this);
     }
 }

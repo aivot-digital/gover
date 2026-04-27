@@ -50,10 +50,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     private static final String PORT_OUTPUT = "output";
 
-    private static final String EVENT_SAVE = "save";
     private static final String EVENT_COMPLETE = "complete";
 
-    private static final String RUNTIME_DATA_DRAFT_KEY = "draftData";
     private static final String DIFF_ROOT_ID = "__data_change_root__";
     private static final String DIFF_WRAPPER_KEY = "data";
 
@@ -282,33 +280,19 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
         var config = loadConfigurationForUi(context);
 
-        var initialData = elementDataTransformService
+        return elementDataTransformService
                 .buildEffectiveValues(config.dataDefinition(), context.getThisTask().getProcessData())
                 .toAuthoredElementValues();
-
-        var draftData = readDraftData(context.getThisTask().getRuntimeData());
-        if (draftData == null || draftData.isEmpty()) {
-            return initialData;
-        }
-
-        var mergedData = new AuthoredElementValues();
-        mergedData.putAll(initialData);
-        mergedData.putAll(draftData);
-        return mergedData;
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                  @Nonnull AuthoredElementValues update,
-                                                                  @Nullable String event) throws ResponseException {
-        if (event == null) {
-            return Optional.of(updateRuntimeData(context, update));
-        }
-
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                         @Nonnull AuthoredElementValues update,
+                                                                         @Nonnull String event) throws ResponseException {
         var config = loadConfigurationForUi(context);
 
         var derivationRequest = new ElementDerivationRequest(
@@ -321,36 +305,9 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                 .derive(derivationRequest, derivationLogger);
 
         return switch (event) {
-            case EVENT_SAVE -> Optional.of(saveDraft(context, update));
             case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues()));
             default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         };
-    }
-
-    @Nonnull
-    private ProcessNodeExecutionResultTaskAssigned saveDraft(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                             @Nonnull AuthoredElementValues update) {
-        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
-        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
-
-        var result = ProcessNodeExecutionResultTaskAssigned.of(resolveAssignedUserId(context));
-        result.setRuntimeData(runtimeData);
-        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
-        result.setProcessData(context.getThisTask().getProcessData());
-        return result;
-    }
-
-    @Nonnull
-    private ProcessNodeExecutionResultTaskUpdated updateRuntimeData(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                    @Nonnull AuthoredElementValues update) {
-        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
-        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
-
-        var result = new ProcessNodeExecutionResultTaskUpdated();
-        result.setRuntimeData(runtimeData);
-        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
-        result.setProcessData(context.getThisTask().getProcessData());
-        return result;
     }
 
     @Nonnull
@@ -502,31 +459,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         }
 
         return copiedElement;
-    }
-
-    @Nullable
-    private static AuthoredElementValues readDraftData(@Nonnull Map<String, Object> runtimeData) {
-        var rawDraftData = runtimeData.get(RUNTIME_DATA_DRAFT_KEY);
-        if (rawDraftData == null) {
-            return null;
-        }
-
-        return ObjectMapperFactory
-                .getInstance()
-                .convertValue(rawDraftData, AuthoredElementValues.class);
-    }
-
-    @Nonnull
-    private static AuthoredElementValues copyAuthoredElementValues(@Nonnull AuthoredElementValues source) {
-        return ObjectMapperFactory
-                .getInstance()
-                .convertValue(source, AuthoredElementValues.class);
-    }
-
-    @Nonnull
-    private static String resolveAssignedUserId(@Nonnull ProcessNodeExecutionContextUIStaff context) {
-        var assignedUserId = context.getThisTask().getAssignedUserId();
-        return assignedUserId != null ? assignedUserId : context.getUser().getId();
     }
 
     @Nonnull

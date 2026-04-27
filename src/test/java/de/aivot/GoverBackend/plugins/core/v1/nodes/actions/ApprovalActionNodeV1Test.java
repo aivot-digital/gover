@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
@@ -145,8 +146,34 @@ class ApprovalActionNodeV1Test {
     }
 
     @Test
-    void onUpdateFromStaff_CompletesTaskViaSelectedPort() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void getStaffTaskViewData_LoadsSavedRemarkFromRuntimeData() throws Exception {
+        var context = new ProcessNodeExecutionContextUIStaff(
+                logger(),
+                processNode(dataModeConfiguration()),
+                processInstance("process-owner"),
+                task(
+                        77,
+                        Map.of(
+                                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
+                                authored("approvalRemark", "<p>Schon geprüft</p>")
+                        ),
+                        Map.of(),
+                        Map.of("approvalValue", "Freizugebender Inhalt")
+                ),
+                null,
+                user("staff-1"),
+                runtime(),
+                null
+        );
+
+        var data = node.getStaffTaskViewData(context);
+        assertEquals("Freizugebender Inhalt", data.get("approvalValue"));
+        assertEquals("<p>Schon geprüft</p>", data.get("approvalRemark"));
+    }
+
+    @Test
+    void onEventFromStaffTaskView_CompletesTaskViaSelectedPort() throws Exception {
+        var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(dataModeConfiguration()),
@@ -249,6 +276,15 @@ class ApprovalActionNodeV1Test {
             Map<String, Object> nodeData,
             Map<String, Object> processData
     ) {
+        return task(previousProcessNodeId, Map.of(), nodeData, processData);
+    }
+
+    private static ProcessInstanceTaskEntity task(
+            Integer previousProcessNodeId,
+            Map<String, Object> runtimeData,
+            Map<String, Object> nodeData,
+            Map<String, Object> processData
+    ) {
         var now = LocalDateTime.now();
 
         return new ProcessInstanceTaskEntity()
@@ -264,7 +300,7 @@ class ApprovalActionNodeV1Test {
                 .setStatus(ProcessTaskStatus.Running)
                 .setStarted(now)
                 .setUpdated(now)
-                .setRuntimeData(Map.of())
+                .setRuntimeData(runtimeData)
                 .setNodeData(nodeData)
                 .setProcessData(processData);
     }

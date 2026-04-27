@@ -44,7 +44,6 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
-import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
@@ -355,12 +354,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         return root;
     }
 
+    @Nonnull
     @Override
-    public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        var savedData = context
-                .getThisTask()
-                .getRuntimeData();
-
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
         EMailActionNodeConfig config;
         try {
             config = ElementPOJOMapper
@@ -374,27 +370,45 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
 
         var authoredValues = new AuthoredElementValues();
 
-        var subject = savedData.get(STAFF_TASK_SUBJECT_FIELD_ID);
-        if (subject == null) {
-            subject = templateRenderService
-                    .interpolate(
-                            context.getProcessData(),
-                            config.manualContent.subject
-                    );
-        }
+        var subject = templateRenderService
+                .interpolate(
+                        context.getProcessData(),
+                        config.manualContent.subject
+                );
         authoredValues.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
 
-        var content = savedData.get(STAFF_TASK_CONTENT_FIELD_ID);
-        if (content == null) {
-            content = templateRenderService
-                    .interpolate(
-                            context.getProcessData(),
-                            config.manualContent.content
-                    );
-        }
+        var content = templateRenderService
+                .interpolate(
+                        context.getProcessData(),
+                        config.manualContent.content
+                );
         authoredValues.put(STAFF_TASK_CONTENT_FIELD_ID, content);
 
         return authoredValues;
+    }
+
+    @Nullable
+    @Override
+    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+        var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
+        if (savedData != null) {
+            return savedData;
+        }
+
+        var runtimeData = context.getThisTask().getRuntimeData();
+        var legacySavedData = new AuthoredElementValues();
+
+        var subject = runtimeData.get(STAFF_TASK_SUBJECT_FIELD_ID);
+        if (subject != null) {
+            legacySavedData.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
+        }
+
+        var content = runtimeData.get(STAFF_TASK_CONTENT_FIELD_ID);
+        if (content != null) {
+            legacySavedData.put(STAFF_TASK_CONTENT_FIELD_ID, content);
+        }
+
+        return legacySavedData.isEmpty() ? null : legacySavedData;
     }
 
     private static final String STAFF_TASK_SEND_EVENT = "send";
@@ -410,16 +424,11 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         );
     }
 
+    @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                  @Nonnull AuthoredElementValues update,
-                                                                  @Nullable String event) throws ResponseException, ProcessNodeExecutionException {
-        if (event == null) {
-            var result = new ProcessNodeExecutionResultTaskUpdated()
-                    .setRuntimeData(update);
-            return Optional.of(result);
-        }
-
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                         @Nonnull AuthoredElementValues update,
+                                                                         @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         if (!event.equals(STAFF_TASK_SEND_EVENT)) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     "Das Event %s wird von diesem Prozesselement nicht unterstützt.",

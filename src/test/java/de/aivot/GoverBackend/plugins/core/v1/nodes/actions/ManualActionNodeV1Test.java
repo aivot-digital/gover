@@ -9,6 +9,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputEl
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
@@ -17,6 +18,7 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
@@ -28,6 +30,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRep
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,6 +49,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ManualActionNodeV1Test {
@@ -64,7 +68,8 @@ class ManualActionNodeV1Test {
         node = new ManualActionNodeV1(
                 assigneeResolverService,
                 new ElementDataTransformService(),
-                derivationService()
+                derivationService(),
+                new TemplateRenderService(new JavascriptEngineFactoryService(List.of()))
         );
     }
 
@@ -116,7 +121,7 @@ class ManualActionNodeV1Test {
                 task(
                         77,
                         Map.of(
-                                "draftData",
+                                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
                                 authored(
                                         "applicantName", "Grace",
                                         "manualActionRemark", "<p>Entwurf gespeichert.</p>"
@@ -182,46 +187,39 @@ class ManualActionNodeV1Test {
     }
 
     @Test
-    void onUpdateFromStaff_SaveKeepsTaskRunningAndPersistsDraft() throws Exception {
-        var result = node.onUpdateFromStaff(
-                new ProcessNodeExecutionContextUIStaff(
-                        logger(),
-                        processNode(configuration()),
-                        processInstance("process-owner"),
-                        task(
-                                77,
-                                Map.of(),
-                                Map.of("existing", "node-data"),
-                                Map.of("applicant", Map.of("name", "Ada"))
+    void onEventFromStaffTaskView_SaveIsRejectedAsUnknownEvent() {
+        var ex = assertThrows(
+                ResponseException.class,
+                () -> node.onEventFromStaffTaskView(
+                        new ProcessNodeExecutionContextUIStaff(
+                                logger(),
+                                processNode(configuration()),
+                                processInstance("process-owner"),
+                                task(
+                                        77,
+                                        Map.of(),
+                                        Map.of("existing", "node-data"),
+                                        Map.of("applicant", Map.of("name", "Ada"))
+                                ),
+                                null,
+                                user("staff-1"),
+                                runtime(configuration()),
+                                null
                         ),
-                        null,
-                        user("staff-1"),
-                        runtime(configuration()),
-                        null
-                ),
-                authored(
-                        "applicantName", "Grace",
-                        "manualActionRemark", "<p>Entwurf gespeichert.</p>"
-                ),
-                "save"
+                        authored(
+                                "applicantName", "Grace",
+                                "manualActionRemark", "<p>Entwurf gespeichert.</p>"
+                        ),
+                        "save"
+                )
         );
 
-        assertTrue(result.isPresent());
-
-        var assigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result.get());
-        assertEquals("staff-1", assigned.getAssignedUserId());
-        assertEquals(Map.of("applicant", Map.of("name", "Ada")), assigned.getProcessData());
-        assertEquals(Map.of("existing", "node-data"), assigned.getNodeData());
-
-        var draftData = assigned.getRuntimeData().get("draftData");
-        assertNotNull(draftData);
-        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
-        assertEquals("<p>Entwurf gespeichert.</p>", ((Map<?, ?>) draftData).get("manualActionRemark"));
+        assertEquals("Unbekannte Aktion: save", ex.getMessage());
     }
 
     @Test
-    void onUpdateFromStaff_WithoutEventPersistsDraftInRuntimeData() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void onAutoSaveFromStaffTaskView_PersistsDraftInRuntimeData() throws Exception {
+        var result = node.onAutoSaveFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configuration()),
@@ -240,8 +238,7 @@ class ManualActionNodeV1Test {
                 authored(
                         "applicantName", "Grace",
                         "manualActionRemark", "<p>Entwurf gespeichert.</p>"
-                ),
-                null
+                )
         );
 
         assertTrue(result.isPresent());
@@ -251,23 +248,23 @@ class ManualActionNodeV1Test {
         assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
         assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
 
-        var draftData = updated.getRuntimeData().get("draftData");
+        var draftData = updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
         assertNotNull(draftData);
         assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
         assertEquals("<p>Entwurf gespeichert.</p>", ((Map<?, ?>) draftData).get("manualActionRemark"));
     }
 
     @Test
-    void onUpdateFromStaff_CompleteMergesProcessDataAndStoresRemarkAndDiff() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void onEventFromStaffTaskView_CompleteMergesProcessDataAndStoresRemarkAndDiff() throws Exception {
+        var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configuration()),
                         processInstance("process-owner"),
                         task(
-                                77,
-                                Map.of(
-                                        "draftData",
+                        77,
+                        Map.of(
+                                        ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
                                         authored(
                                                 "applicantName", "Draft",
                                                 "manualActionRemark", "<p>Vorab erfasst.</p>"
@@ -319,8 +316,8 @@ class ManualActionNodeV1Test {
     }
 
     @Test
-    void onUpdateFromStaff_WithoutUiDefinitionCompletesWithoutDataChanges() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void onEventFromStaffTaskView_WithoutUiDefinitionCompletesWithoutDataChanges() throws Exception {
+        var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configurationWithoutUi()),

@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.process.models;
 
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
@@ -14,11 +15,23 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
+/**
+ * Contract for process node definitions that provide configuration, UI and execution behavior for process tasks.
+ */
 public interface ProcessNodeDefinition extends PluginComponent {
+    /**
+     * Reserved runtime data key used to persist saved staff task view inputs. Because staff and customer tasks may write to the same runtime data, they need to use different keys
+     * to persist their data to avoid conflicts.
+     */
+    String STAFF_TASK_VIEW_DATA_RUNTIME_KEY = "staffTaskViewData";
+    /**
+     * Reserved runtime data key used to persist saved customer task view inputs. Because staff and customer tasks may write to the same runtime data, they need to use different
+     * keys to persist their data to avoid conflicts.
+     */
+    String CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY = "customerTaskViewData";
+
     @Nonnull
     @Override
     default PluginComponentType getComponentType() {
@@ -42,9 +55,10 @@ public interface ProcessNodeDefinition extends PluginComponent {
     List<ProcessNodePort> getPorts();
 
     /**
-     * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration.
+     * Get the outputs of the process node. The outputs are data produced by this node that can be mapped in the node configuration. This list must be equivalent to the data stored
+     * in the process node element data.
      *
-     * @return The outputs of the process node.
+     * @return The output fields of the process node.
      */
     @Nonnull
     default List<ProcessNodeOutput> getOutputs() {
@@ -52,7 +66,9 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the configuration layout for nodes of this provider type.
+     * Get the configuration layout for nodes of this provider type. This is rendered in the process node editor. <br/> Make sure to display all configuration fields defined for
+     * this node in the layout returned by this method, otherwise they won't be saved when editing a node of this type. If no layout is returned, only the default fields of a node
+     * can be configured.
      *
      * @param context The configuration context.
      * @return The configuration layout.
@@ -66,7 +82,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the testing layout for nodes of this provider type. This layout is used to display the node during testing of process definitions.
+     * Get the testing layout for nodes of this provider type. This layout is used to be displayed in the testing tab of the node during an active test claim. <br/> Use this to
+     * display additional information for the user which is usefull for the testing.
      *
      * @param context The testing context.
      * @return The testing layout, or null if not provided.
@@ -78,7 +95,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Cleans the configuration data for export.
+     * Cleans the configuration data for export. Make sure to remove all system specific data from the configuration in this method, as the exported configuration can be imported
+     * in a different system. This includes for example references to users, departments or teams.
      *
      * @param configuration The configuration data to be cleaned.
      * @return The cleaned configuration data.
@@ -89,7 +107,8 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Prefills the configuration data on import.
+     * Prefills the configuration data on import. Use this to set default data, whenever a new node is created by import. This can be used to set default values for configuration
+     * fields, which makes sure that the node is configured correctly after import.
      *
      * @param configuration The configuration data to be prefilled.
      * @return The prefilled configuration data.
@@ -100,7 +119,9 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Validates the configuration of a process definition node entity.
+     * Validates the configuration of a process definition node entity. This used to check if the configuration of a node is valid before saving it or publishing the parent
+     * process. When errors are returned, the flag {@link ProcessNodeEntity#setSavedWithErrors(Boolean)} is set. Nodes can be saved with errors but a process cannot be published
+     * when at least one node does not validate correctly.
      *
      * @param processNodeEntity         The process definition node entity to be validated.
      * @param derivedRuntimeElementData Derived Runtime Element data.
@@ -115,7 +136,12 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Initialize a task by this node provider during process instance execution.
+     * Initialize a task by this node provider during process instance execution. The initialization should return a result to determine how to proceed from here.
+     * <ul>
+     *     <li>If a staff task should be assigned, return a {@link ProcessNodeExecutionResultTaskAssigned} result.</li>
+     *     <li>If this task is completed and should move on, return a {@link ProcessNodeExecutionResultTaskCompleted} result.</li>
+     *     <li>If this is a completion node, use the {@link ProcessNodeExecutionResultInstanceCompleted} to complete the whole process.</li>
+     * </ul>
      *
      * @param context The initialization context.
      * @return The result of the node execution.
@@ -151,7 +177,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
-     * Get the task view events for nodes of this provider type. These events can be used to trigger actions in the task view UI.
+     * Get the staff task view events for nodes of this provider type. These events can be used to trigger actions in the task view UI.
      *
      * @param context The context to build the events for.
      * @return The task view events.
@@ -163,30 +189,97 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
+     * Build the initial staff task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on top
+     * by {@link #getStaffTaskViewData(ProcessNodeExecutionContextUIStaff)}.
+     *
+     * @param context The context to build the data for.
+     * @return The initial task view data.
+     * @throws ResponseException If an error occurs while generating the data.
+     */
+    @Nonnull
+    default AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+        return new AuthoredElementValues();
+    }
+
+    /**
+     * Read saved staff task view data from the task runtime data.
+     *
+     * @param context The context to read the data for.
+     * @return The saved task view data, or null if none exists.
+     */
+    @Nullable
+    default AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+        var rawSavedData = context
+                .getThisTask()
+                .getRuntimeData()
+                .get(STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
+        if (rawSavedData == null) {
+            return null;
+        }
+
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(rawSavedData, AuthoredElementValues.class);
+    }
+
+    /**
      * Get the staff task view data for nodes of this provider type.
      *
      * @param context The context to build the data for.
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
+    @Nonnull
     default AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return new AuthoredElementValues();
+        var initialData = createDefaultStaffTaskViewData(context);
+        var savedData = getAutoSavedStaffTaskViewData(context);
+        if (savedData == null || savedData.isEmpty()) {
+            return initialData;
+        }
+
+        var mergedData = new AuthoredElementValues();
+        mergedData.putAll(initialData);
+        mergedData.putAll(savedData);
+        return mergedData;
     }
 
     /**
-     * Update an existing task by this node provider during process instance execution. If this returns an empty Optional, the task is considered not updated.
+     * Handle an event that was triggered from the staff task view. If this returns an empty Optional, the task is considered not updated.
      *
      * @param context The context for the update.
-     * @param update  The update data passed to this node.
+     * @param update  The current task view data.
      * @param event   The event that triggered the update.
      * @return An Optional containing the result of the node execution, or empty if the task was not updated.
      * @throws ResponseException             If an error occurs during execution.
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
-    default Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                   @Nonnull AuthoredElementValues update,
-                                                                   @Nullable String event) throws ResponseException, ProcessNodeExecutionException {
+    @Nonnull
+    default Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                          @Nonnull AuthoredElementValues update,
+                                                                          @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
+    }
+
+    /**
+     * Handle automatically saved data from the staff task view. If this returns an empty Optional, the task is considered not updated.
+     *
+     * @param context The context for the update.
+     * @param update  The automatically saved task view data.
+     * @return An Optional containing the result of the node execution, or empty if the task was not updated.
+     * @throws ResponseException             If an error occurs during execution.
+     * @throws ProcessNodeExecutionException If an error occurs during execution.
+     */
+    @Nonnull
+    default Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                             @Nonnull AuthoredElementValues update) throws ResponseException, ProcessNodeExecutionException {
+        var rtd = new HashMap<>(context.getThisTask().getRuntimeData());
+        rtd.put(STAFF_TASK_VIEW_DATA_RUNTIME_KEY, update);
+
+        return new ProcessNodeExecutionResultTaskUpdated()
+                .setRuntimeData(rtd)
+                .setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()))
+                .setProcessData(context.getThisTask().getProcessData())
+                .asOptional();
     }
 
     /**
@@ -216,30 +309,100 @@ public interface ProcessNodeDefinition extends PluginComponent {
     }
 
     /**
+     * Build the initial customer task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on
+     * top by {@link #getCustomerTaskViewData(ProcessNodeExecutionContextUICustomer)}.
+     *
+     * @param context The context to build the data for.
+     * @return The initial task view data.
+     * @throws ResponseException If an error occurs while generating the data.
+     */
+    @Nonnull
+    default AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
+        return new AuthoredElementValues();
+    }
+
+    /**
+     * Read saved customer task view data from the task runtime data.
+     *
+     * @param context The context to read the data for.
+     * @return The saved task view data, or null if none exists.
+     */
+    @Nullable
+    default AuthoredElementValues getAutoSavedCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+        var rawSavedData = context
+                .getThisTask()
+                .getRuntimeData()
+                .get(CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY);
+        if (rawSavedData == null) {
+            return null;
+        }
+
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(rawSavedData, AuthoredElementValues.class);
+    }
+
+    /**
      * Get the customer task view data for nodes of this provider type.
      *
      * @param context The context to build the data for.
      * @return The task view data.
      * @throws ResponseException If an error occurs while generating the data.
      */
+    @Nonnull
     default AuthoredElementValues getCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) throws ResponseException {
-        return new AuthoredElementValues();
+        var initialData = createDefaultCustomerTaskViewData(context);
+        var savedData = getAutoSavedCustomerTaskViewData(context);
+        if (savedData == null || savedData.isEmpty()) {
+            return initialData;
+        }
+
+        var mergedData = new AuthoredElementValues();
+        mergedData.putAll(initialData);
+        mergedData.putAll(savedData);
+        return mergedData;
     }
 
     /**
-     * Update an existing task by this node provider during process instance execution. If this returns an empty Optional, the task is considered not updated.
+     * Handle an event that was triggered from the customer task view. If this returns an empty Optional, the task is considered not updated.
      *
      * @param context The context for the update.
-     * @param update  The update data passed to this node.
+     * @param update  The current task view data.
+     * @param derived The derived runtime element data for the current task view data.
      * @param event   The event that triggered the update.
      * @return An Optional containing the result of the node execution, or empty if the task was not updated.
      * @throws ResponseException             If an error occurs during execution.
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
-    default Optional<ProcessNodeExecutionResult> onUpdateFromCustomer(@Nonnull ProcessNodeExecutionContextUICustomer context,
-                                                                      @Nonnull AuthoredElementValues update,
-                                                                      @Nonnull DerivedRuntimeElementData derived,
-                                                                      @Nullable String event) throws ResponseException, ProcessNodeExecutionException {
+    @Nonnull
+    default Optional<ProcessNodeExecutionResult> onEventFromCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context,
+                                                                             @Nonnull AuthoredElementValues update,
+                                                                             @Nonnull DerivedRuntimeElementData derived,
+                                                                             @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
+    }
+
+    /**
+     * Handle automatically saved data from the customer task view. If this returns an empty Optional, the task is considered not updated.
+     *
+     * @param context The context for the update.
+     * @param update  The automatically saved task view data.
+     * @param derived The derived runtime element data for the current task view data.
+     * @return An Optional containing the result of the node execution, or empty if the task was not updated.
+     * @throws ResponseException             If an error occurs during execution.
+     * @throws ProcessNodeExecutionException If an error occurs during execution.
+     */
+    @Nonnull
+    default Optional<ProcessNodeExecutionResult> onAutoSaveFromCustomerTaskView(@Nonnull ProcessNodeExecutionContextUICustomer context,
+                                                                                @Nonnull AuthoredElementValues update,
+                                                                                @Nonnull DerivedRuntimeElementData derived) throws ResponseException, ProcessNodeExecutionException {
+        var rtd = new HashMap<>(context.getThisTask().getRuntimeData());
+        rtd.put(CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, update);
+
+        return new ProcessNodeExecutionResultTaskUpdated()
+                .setRuntimeData(rtd)
+                .setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()))
+                .setProcessData(context.getThisTask().getProcessData())
+                .asOptional();
     }
 }

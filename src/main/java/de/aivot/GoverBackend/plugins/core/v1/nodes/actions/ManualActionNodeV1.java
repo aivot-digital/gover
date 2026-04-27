@@ -50,6 +50,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.services.DiffService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import jakarta.annotation.Nonnull;
@@ -68,10 +69,8 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "manual_action";
 
     private static final String PORT_OUTPUT = "output";
-    private static final String EVENT_SAVE = "save";
     private static final String EVENT_COMPLETE = "complete";
 
-    private static final String RUNTIME_DATA_DRAFT_KEY = "draftData";
     private static final String DIFF_ROOT_ID = "__manual_action_root__";
     private static final String DIFF_WRAPPER_KEY = "data";
 
@@ -92,13 +91,17 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
     private final ElementDerivationService elementDerivationService;
+    private final TemplateRenderService templateRenderService;
+
 
     public ManualActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService,
                               ElementDataTransformService elementDataTransformService,
-                              ElementDerivationService elementDerivationService) {
+                              ElementDerivationService elementDerivationService,
+                              TemplateRenderService templateRenderService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
         this.elementDerivationService = elementDerivationService;
+        this.templateRenderService = templateRenderService;
     }
 
     @Nonnull
@@ -290,24 +293,13 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return buildStaffTaskView(loadConfigurationForUi(context));
+        return buildStaffTaskView(loadConfigurationForUi(context), context);
     }
 
     @Nonnull
     @Override
     public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) {
         return List.of(
-                // new TaskViewEvent(
-                //         "Speichern",
-                //         EVENT_SAVE
-                // ),
-                // new TaskViewEvent(
-                //         "Speichern und abschließen",
-                //         EVENT_COMPLETE,
-                //         "outlined",
-                //         null,
-                //         "right"
-                // ),
                 new TaskViewEvent(
                         "Aufgabe abschließen",
                         EVENT_COMPLETE
@@ -317,46 +309,31 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
         var config = loadConfigurationForUi(context);
-        var initialData = config.uiDefinition() != null
+        return config.uiDefinition() != null
                 ? elementDataTransformService
                 .buildEffectiveValues(config.uiDefinition(), context.getThisTask().getProcessData())
                 .toAuthoredElementValues()
                 : new AuthoredElementValues();
-
-        var draftData = readDraftData(context.getThisTask().getRuntimeData());
-        if (draftData == null || draftData.isEmpty()) {
-            return initialData;
-        }
-
-        var mergedData = new AuthoredElementValues();
-        mergedData.putAll(initialData);
-        mergedData.putAll(draftData);
-        return mergedData;
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                  @Nonnull AuthoredElementValues update,
-                                                                  @Nullable String event) throws ResponseException {
-        if (event == null) {
-            return Optional.of(updateRuntimeData(context, update));
-        }
-
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                         @Nonnull AuthoredElementValues update,
+                                                                         @Nonnull String event) throws ResponseException {
         var config = loadConfigurationForUi(context);
         var effectiveUiUpdate = deriveEffectiveUiUpdate(config, update);
 
         return switch (event) {
-            case EVENT_SAVE -> Optional.of(saveDraft(context, update));
             case EVENT_COMPLETE -> Optional.of(completeTask(context, config, effectiveUiUpdate, update));
             default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         };
     }
 
     @Nonnull
-    private static GroupLayoutElement buildStaffTaskView(@Nonnull ResolvedConfiguration config) {
+    private GroupLayoutElement buildStaffTaskView(@Nonnull ResolvedConfiguration config, @Nonnull ProcessNodeExecutionContextUIStaff context) {
         var layout = new GroupLayoutElement();
         layout.setId(TASK_VIEW_ROOT_ID);
 
@@ -366,7 +343,9 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
         var descriptionContent = new RichTextContentElement();
         descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
-        descriptionContent.setContent(config.taskDescription());
+        var renderedDescription = templateRenderService
+                .interpolate(context.getProcessData(), config.taskDescription());
+        descriptionContent.setContent(renderedDescription);
 
         var children = new java.util.ArrayList<BaseFormElement>();
         children.add(descriptionHeadline);
@@ -400,19 +379,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
         layout.setChildren(children);
         return layout;
-    }
-
-    @Nonnull
-    private ProcessNodeExecutionResultTaskUpdated updateRuntimeData(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                    @Nonnull AuthoredElementValues update) {
-        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
-        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
-
-        var result = new ProcessNodeExecutionResultTaskUpdated();
-        result.setRuntimeData(runtimeData);
-        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
-        result.setProcessData(context.getThisTask().getProcessData());
-        return result;
     }
 
     @Nonnull
@@ -542,19 +508,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private ProcessNodeExecutionResultTaskAssigned saveDraft(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                             @Nonnull AuthoredElementValues update) {
-        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
-        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
-
-        var result = ProcessNodeExecutionResultTaskAssigned.of(resolveAssignedUserId(context));
-        result.setRuntimeData(runtimeData);
-        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
-        result.setProcessData(context.getThisTask().getProcessData());
-        return result;
-    }
-
-    @Nonnull
     private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                  @Nonnull ResolvedConfiguration config,
                                                                  @Nonnull EffectiveElementValues effectiveUiUpdate,
@@ -579,31 +532,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
         result.setNodeData(nodeData);
         result.setRuntimeData(Map.of());
         return result;
-    }
-
-    @Nullable
-    private static AuthoredElementValues readDraftData(@Nonnull Map<String, Object> runtimeData) {
-        var rawDraftData = runtimeData.get(RUNTIME_DATA_DRAFT_KEY);
-        if (rawDraftData == null) {
-            return null;
-        }
-
-        return ObjectMapperFactory
-                .getInstance()
-                .convertValue(rawDraftData, AuthoredElementValues.class);
-    }
-
-    @Nonnull
-    private static AuthoredElementValues copyAuthoredElementValues(@Nonnull AuthoredElementValues source) {
-        return ObjectMapperFactory
-                .getInstance()
-                .convertValue(source, AuthoredElementValues.class);
-    }
-
-    @Nonnull
-    private static String resolveAssignedUserId(@Nonnull ProcessNodeExecutionContextUIStaff context) {
-        var assignedUserId = context.getThisTask().getAssignedUserId();
-        return assignedUserId != null ? assignedUserId : context.getUser().getId();
     }
 
     @Nullable

@@ -134,7 +134,7 @@ public class CitizenProcessInstanceTaskViewController {
             @RequestParam(value = "inputs", required = true) String rawInputs,
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
-            @Nullable @RequestParam(value = "event", required = true) String event,
+            @Nullable @RequestParam(value = "event", required = false) String rawEvent,
             @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(
@@ -183,11 +183,16 @@ public class CitizenProcessInstanceTaskViewController {
                 .getCustomerTaskViewEvents(context);
 
         // Test if the event is valid
-        events
+        var cleanEvent = events
                 .stream()
-                .filter(e -> e.event().equals(event))
+                .filter(e -> e.event().equals(rawEvent))
                 .findFirst()
-                .orElseThrow(() -> ResponseException.badRequest("Invalid event: " + event));
+                .map(TaskViewEvent::event)
+                .orElse(null);
+
+        if (rawEvent != null && cleanEvent == null) {
+            throw ResponseException.badRequest("Invalid event: " + rawEvent);
+        }
 
         AuthoredElementValues inputs;
         try {
@@ -221,14 +226,24 @@ public class CitizenProcessInstanceTaskViewController {
 
         Optional<ProcessNodeExecutionResult> res;
         try {
-            res = taskViewData
-                    .provider
-                    .onUpdateFromCustomer(
-                            context,
-                            inputs,
-                            derivedElementData,
-                            event
-                    );
+            if (cleanEvent == null) {
+                res = taskViewData
+                        .provider
+                        .onAutoSaveFromCustomerTaskView(
+                                context,
+                                inputs,
+                                derivedElementData
+                        );
+            } else {
+                res = taskViewData
+                        .provider
+                        .onEventFromCustomerTaskView(
+                                context,
+                                inputs,
+                                derivedElementData,
+                                cleanEvent
+                        );
+            }
         } catch (Exception e) {
             logger.logException(e);
             throw ResponseException.internalServerError(e);

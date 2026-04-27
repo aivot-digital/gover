@@ -306,45 +306,44 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        Map<String, Object> data = new HashMap<>();
-
-        // Load runtime data if some exist
-        data.putAll(context
-                .getThisTask()
-                .getRuntimeData());
-
-        // Merge the runtime data with all process data
-        data.putAll(context
-                .getThisTask()
-                .getProcessData());
-
-        // Create the list of effective values based on the combined data
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
         return elementDataTransformService
                 .buildEffectiveValues(
                         getStaffTaskView(context),
-                        data
+                        context.getThisTask().getProcessData()
                 )
                 .toAuthoredElementValues();
     }
 
-    @Nonnull
+    @Nullable
     @Override
-    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                  @Nonnull AuthoredElementValues update,
-                                                                  @Nullable String event) throws ResponseException {
-        // If no event was given, update the runtime data.
-        if (event == null) {
-            var mixedData = new HashMap<String, Object>();
-            mixedData.putAll(update);
-            mixedData.putAll(context.getThisTask().getProcessData());
-
-            var result = new ProcessNodeExecutionResultTaskUpdated()
-                    .setRuntimeData(mixedData);
-
-            return Optional.of(result);
+    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+        var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
+        if (savedData != null) {
+            return savedData;
         }
 
+        var runtimeData = context.getThisTask().getRuntimeData();
+        if (runtimeData.isEmpty()) {
+            return null;
+        }
+
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(runtimeData, AuthoredElementValues.class);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                            @Nonnull AuthoredElementValues update) throws ResponseException, ProcessNodeExecutionException {
+        return ProcessNodeDefinition.super.onAutoSaveFromStaffTaskView(context, update);
+    }
+    @Nonnull
+    @Override
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+                                                                         @Nonnull AuthoredElementValues update,
+                                                                         @Nonnull String event) throws ResponseException {
         var remark = update.get(TASK_VIEW_REMARK_FIELD_ID);
         var remarkText = remark != null ? remark.toString() : null;
 
