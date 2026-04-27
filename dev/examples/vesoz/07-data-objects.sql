@@ -84,10 +84,12 @@ values ('leistungserbringer',
           "children": [
             {
               "id": "leistungserbringer_id",
-              "type": 15,
+              "type": 41,
               "label": "Leistungserbringer",
               "required": true,
-              "weight": 12
+              "weight": 12,
+              "dataModelKey": "leistungserbringer",
+              "dataLabelAttributeKey": "name"
             },
             {
               "id": "bezeichner",
