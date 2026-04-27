@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.core.services;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpResponseImpl;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
+import de.aivot.GoverBackend.core.properties.HttpServiceProperties;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -14,7 +15,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpResponse;
@@ -24,23 +24,20 @@ import java.util.stream.Collectors;
 
 @Service
 public class HttpService {
-    private static final long CONNECTION_TIMEOUT_SECONDS = 2;
-    private static final long READ_TIMEOUT_SECONDS = 30;
-
     private final RestClient httpClient;
 
-    public HttpService() {
+    public HttpService(HttpServiceProperties httpConfig) {
         this.httpClient = RestClient
                 .builder()
-                .requestFactory(clientHttpRequestFactory())
+                .requestFactory(clientHttpRequestFactory(httpConfig))
                 .build();
     }
 
-    static ClientHttpRequestFactory clientHttpRequestFactory() {
+    static ClientHttpRequestFactory clientHttpRequestFactory(HttpServiceProperties httpConfig) {
         ClientHttpRequestFactorySettings settings = ClientHttpRequestFactorySettings
                 .defaults()
-                .withConnectTimeout(Duration.ofSeconds(CONNECTION_TIMEOUT_SECONDS))
-                .withReadTimeout(Duration.ofSeconds(READ_TIMEOUT_SECONDS));
+                .withConnectTimeout(Duration.ofSeconds(httpConfig.getConnectionTimeoutSeconds()))
+                .withReadTimeout(Duration.ofSeconds(httpConfig.getReadTimeoutSeconds()));
 
         return ClientHttpRequestFactoryBuilder
                 .jdk()
