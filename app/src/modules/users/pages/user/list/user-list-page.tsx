@@ -2,7 +2,7 @@ import {GenericListPage} from '../../../../../components/generic-list-page/gener
 import {PageWrapper} from '../../../../../components/page-wrapper/page-wrapper';
 import {Link, Typography} from '@mui/material';
 import {EditOutlined, MailOutlined, PeopleOutlined} from '@mui/icons-material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
@@ -16,6 +16,7 @@ import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
 import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../slices/snackbar-slice';
+import {GenericListPropsFetchOptions} from '../../../../../components/generic-list/generic-list-props';
 
 const Filters = [
     {
@@ -162,6 +163,89 @@ export function UserListPage() {
         },
     ], [isSystemRolesLoading, systemRoleNamesById]);
 
+    const header = useMemo(() => ({
+        icon: <PeopleOutlined/>,
+        title: 'Mitarbeiter:innen',
+        actions: [
+            {
+                label: 'Neue Mitarbeiter:in anlegen',
+                icon: <Add/>,
+                to: "/users/new",
+                variant: 'contained' as const,
+                disabled: !hasAccess,
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Mitarbeiter:innen',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography>
+                        Mitarbeiter:innen sind Benutzer:innen, die Zugriff auf das System haben und die
+                        Anwendung nutzen können.
+                        In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen
+                        einsehen.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Informationen zu Mitarbeitenden werden von einem Identity Provider (IDP) System
+                        bereitgestellt.
+                        Änderungen an den hier angezeigten Daten sind nur über die Verwaltungsoberfläche des
+                        IDP möglich.
+                    </Typography>
+                </>
+            ),
+        },
+    }), [hasAccess]);
+
+    const fetchUsers = useCallback((options: GenericListPropsFetchOptions<User>) => {
+        const filters: Partial<UserFilter> = {
+            name: options.search,
+        };
+
+        switch (options.filter) {
+            case 'active':
+                filters.deletedInIdp = false;
+                filters.disabledInIdp = false;
+                break;
+            case 'inactive':
+                filters.deletedInIdp = false;
+                filters.disabledInIdp = true;
+                break;
+            case 'deleted':
+                filters.deletedInIdp = true;
+                filters.disabledInIdp = undefined;
+                break;
+        }
+
+        return new UsersApiService()
+            .list(
+                options.page,
+                options.size,
+                options.sort,
+                options.order,
+                filters,
+            );
+    }, []);
+
+    const columnIcon = useMemo(() => <Person/>, []);
+
+    const getRowIdentifier = useCallback((row: User) => row.id.toString(), []);
+
+    const rowActions = useCallback((item: User) => [
+        {
+            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
+            to: `/users/${item.id}`,
+            tooltip: hasAccess ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
+        },
+        {
+            icon: <MailOutlined/>,
+            href: `mailto:${item.email}`,
+            tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
+            disabled: item.deletedInIdp,
+            disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
+        },
+    ], [hasAccess]);
+
     return (
         <PageWrapper
             title="Mitarbeiter:innen"
@@ -171,90 +255,17 @@ export function UserListPage() {
             <GenericListPage<User>
                 filters={Filters}
                 defaultFilter="active"
-                header={{
-                    icon: <PeopleOutlined/>,
-                    title: 'Mitarbeiter:innen',
-                    actions: [
-                        {
-                            label: 'Neue Mitarbeiter:in anlegen',
-                            icon: <Add/>,
-                            to: "/users/new",
-                            variant: 'contained',
-                            disabled: !hasAccess,
-                        },
-                    ],
-                    helpDialog: {
-                        title: 'Hilfe zu Mitarbeiter:innen',
-                        tooltip: 'Hilfe anzeigen',
-                        content: (
-                            <>
-                                <Typography>
-                                    Mitarbeiter:innen sind Benutzer:innen, die Zugriff auf das System haben und die
-                                    Anwendung nutzen können.
-                                    In dieser Oberfläche können Sie die im System verfügbaren Mitarbeiter:innen
-                                    einsehen.
-                                </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Informationen zu Mitarbeitenden werden von einem Identity Provider (IDP) System
-                                    bereitgestellt.
-                                    Änderungen an den hier angezeigten Daten sind nur über die Verwaltungsoberfläche des
-                                    IDP möglich.
-                                </Typography>
-                            </>
-                        ),
-                    },
-                }}
+                header={header}
                 searchLabel="Mitarbeiter:in suchen"
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
-                fetch={(options) => {
-                    const filters: Partial<UserFilter> = {
-                        name: options.search,
-                    };
-
-                    switch (options.filter) {
-                        case 'active':
-                            filters.deletedInIdp = false;
-                            filters.disabledInIdp = false;
-                            break;
-                        case 'inactive':
-                            filters.deletedInIdp = false;
-                            filters.disabledInIdp = true;
-                            break;
-                        case 'deleted':
-                            filters.deletedInIdp = true;
-                            filters.disabledInIdp = undefined;
-                            break;
-                    }
-
-                    return new UsersApiService()
-                        .list(
-                            options.page,
-                            options.size,
-                            options.sort,
-                            options.order,
-                            filters,
-                        );
-                }}
-                columnIcon={<Person/>}
+                fetch={fetchUsers}
+                columnIcon={columnIcon}
                 columnDefinitions={columns}
-                getRowIdentifier={row => row.id.toString()}
+                getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder="Keine Mitarbeiter:innen angelegt"
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 rowActionsCount={2}
-                rowActions={(item: User) => [
-                    {
-                        icon: hasAccess ? <EditOutlined/> : <Visibility/>,
-                        to: `/users/${item.id}`,
-                        tooltip: hasAccess ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
-                    },
-                    {
-                        icon: <MailOutlined/>,
-                        href: `mailto:${item.email}`,
-                        tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
-                        disabled: item.deletedInIdp,
-                        disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
-                    },
-                ]}
+                rowActions={rowActions}
                 defaultSortField="lastName"
                 disableFullWidthToggle={true}
             />

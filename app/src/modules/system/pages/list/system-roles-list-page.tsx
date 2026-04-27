@@ -3,7 +3,7 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import React from 'react';
+import React, {useCallback, useMemo} from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
@@ -17,6 +17,7 @@ import {
     DefaultUserSystemRoleBadge,
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
+import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function SystemRolesListPage() {
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
@@ -26,6 +27,94 @@ export function SystemRolesListPage() {
         messageType: 'snackbar',
     });
 
+    const header = useMemo(() => ({
+        icon: ModuleIcons.roles,
+        title: 'Systemrollen',
+        actions: [
+            {
+                label: 'Neue Systemrolle',
+                icon: <AddOutlinedIcon/>,
+                to: '/system-roles/new',
+                variant: 'contained' as const,
+                disabled: !hasAccess,
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Systemrollen',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography
+                        variant="body1"
+                        component="p"
+                    >
+                        Systemrollen definieren Berechtigungen auf Systemebene und gelten
+                        anwendungsweit in Gover.
+                    </Typography>
+                    <Typography
+                        variant="body1"
+                        component="p"
+                    >
+                        Sie steuern damit grundlegende Zugriffe, etwa auf Administration,
+                        Konfiguration und andere globale Funktionen. Im Unterschied zu
+                        Domänenrollen sind Systemrollen nicht an einzelne Organisationseinheiten
+                        oder Teams gebunden.
+                    </Typography>
+                </>
+            ),
+        },
+    }), [hasAccess]);
+
+    const fetchSystemRoles = useCallback((options: GenericListPropsFetchOptions<SystemRoleEntity>) => {
+        return new SystemRolesApiService()
+            .list(
+                options.page,
+                options.size,
+                options.sort,
+                options.order,
+                {
+                    name: options.search,
+                },
+            );
+    }, []);
+
+    const columnIcon = useCallback(() => ModuleIcons.roles, []);
+
+    const columnDefinitions = useMemo(() => [
+        {
+            field: 'name',
+            headerName: 'Name',
+            flex: 1,
+            renderCell: (params: any) => (
+                <CellLink
+                    to={`/system-roles/${params.id}`}
+                    title={hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
+                >
+                    {String(params.value)}
+                    {
+                        isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
+                        <DefaultUserSystemRoleBadge sx={{ml: 1}} />
+                    }
+                </CellLink>
+            ),
+        },
+        {
+            field: 'description',
+            headerName: 'Beschreibung',
+            flex: 2,
+        },
+    ], [defaultSystemRoleId, hasAccess]);
+
+    const getRowIdentifier = useCallback((row: SystemRoleEntity) => row.id.toString(), []);
+
+    const rowActions = useCallback((item: SystemRoleEntity) => [
+        {
+            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
+            to: `/system-roles/${item.id}`,
+            tooltip: hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen',
+        },
+    ], [hasAccess]);
+
     return (
         <PageWrapper
             title="Systemrollen"
@@ -33,93 +122,17 @@ export function SystemRolesListPage() {
             background
         >
             <GenericListPage<SystemRoleEntity>
-                header={{
-                    icon: ModuleIcons.roles,
-                    title: 'Systemrollen',
-                    actions: [
-                        {
-                            label: 'Neue Systemrolle',
-                            icon: <AddOutlinedIcon/>,
-                            to: '/system-roles/new',
-                            variant: 'contained',
-                            disabled: !hasAccess,
-                        },
-                    ],
-                    helpDialog: {
-                        title: 'Hilfe zu Systemrollen',
-                        tooltip: 'Hilfe anzeigen',
-                        content: (
-                            <>
-                                <Typography
-                                    variant="body1"
-                                    component="p"
-                                >
-                                    Systemrollen definieren Berechtigungen auf Systemebene und gelten
-                                    anwendungsweit in Gover.
-                                </Typography>
-                                <Typography
-                                    variant="body1"
-                                    component="p"
-                                >
-                                    Sie steuern damit grundlegende Zugriffe, etwa auf Administration,
-                                    Konfiguration und andere globale Funktionen. Im Unterschied zu
-                                    Domänenrollen sind Systemrollen nicht an einzelne Organisationseinheiten
-                                    oder Teams gebunden.
-                                </Typography>
-                            </>
-                        ),
-                    },
-                }}
+                header={header}
                 searchLabel="Systemrolle suchen"
                 searchPlaceholder="Name der Systemrolle eingeben…"
-                fetch={(options) => {
-                    return new SystemRolesApiService()
-                        .list(
-                            options.page,
-                            options.size,
-                            options.sort,
-                            options.order,
-                            {
-                                name: options.search,
-                            },
-                        );
-                }}
-                columnIcon={() => ModuleIcons.roles}
-                columnDefinitions={[
-                    {
-                        field: 'name',
-                        headerName: 'Name',
-                        flex: 1,
-                        renderCell: (params) => (
-                            <CellLink
-                                to={`/system-roles/${params.id}`}
-                                title={hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
-                            >
-                                {String(params.value)}
-                                {
-                                    isDefaultUserSystemRole(params.row.id, defaultSystemRoleId) &&
-                                    <DefaultUserSystemRoleBadge sx={{ml: 1}} />
-                                }
-                            </CellLink>
-                        ),
-                    },
-                    {
-                        field: 'description',
-                        headerName: 'Beschreibung',
-                        flex: 2,
-                    },
-                ]}
-                getRowIdentifier={row => row.id.toString()}
+                fetch={fetchSystemRoles}
+                columnIcon={columnIcon}
+                columnDefinitions={columnDefinitions}
+                getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder="Keine Systemrolle angelegt"
                 noSearchResultsPlaceholder="Keine Systemrolle gefunden"
                 rowActionsCount={1}
-                rowActions={(item) => [
-                    {
-                        icon: hasAccess ? <EditOutlined/> : <Visibility/>,
-                        to: `/system-roles/${item.id}`,
-                        tooltip: hasAccess ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen',
-                    },
-                ]}
+                rowActions={rowActions}
                 defaultSortField="name"
                 disableFullWidthToggle={true}
             />

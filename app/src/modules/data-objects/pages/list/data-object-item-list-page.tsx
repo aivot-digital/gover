@@ -3,7 +3,7 @@ import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
-import {useEffect, useMemo, useState} from 'react';
+import {useCallback, useEffect, useMemo, useState} from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
@@ -33,6 +33,7 @@ import {
 } from '../../../../components/domain-user-select-field/domain-user-select-options';
 import {DomainAndUserSelectItem} from '../../../../models/elements/form/input/domain-user-select-field-element';
 import {AssignmentContextValue} from '../../../../models/elements/form/input/assignment-context-field-element';
+import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function DataObjectItemListPage() {
     const api = useApi();
@@ -89,7 +90,80 @@ export function DataObjectItemListPage() {
             },
             ...dataObjectSchemaExtractDisplayFields(dataObjectSchema),
         ];
-    }, [dataObjectSchema]);
+    }, [dataObjectSchema, hasAccess]);
+
+    const dataObjectSchemaKey = dataObjectSchema?.key ?? '';
+    const dataObjectSchemaName = dataObjectSchema?.name ?? '';
+
+    const header = useMemo(() => ({
+        icon: <DataObject />,
+        title: `Datenobjekte: ${dataObjectSchemaName}`,
+        actions: [
+            {
+                icon: <FolderData />,
+                to: `/data-models/${dataObjectSchemaKey}`,
+                variant: 'text' as const,
+                label: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+            },
+            {
+                label: 'Neues Datenobjekt',
+                icon: <AddOutlinedIcon />,
+                to: `/data-objects/${dataObjectSchemaKey}/new`,
+                variant: 'contained' as const,
+                disabled: !hasAccess,
+                tooltip: !hasAccess ? 'Sie haben keine Berechtigung zum Anlegen von Datenobjekten' : undefined,
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Datenobjekten',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography>
+                        Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells. Es enthält die tatsächlichen Werte zu den im Datenmodell definierten Feldern und bildet damit die „laufenden“ Fachinformationen im System ab.
+                        Datenobjekte fließen durch Prozesse, Komponenten und Schnittstellen. Ihre Struktur, Datentypen und Prüfregeln ergeben sich immer aus dem verknüpften Datenmodell.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Typischerweise enthält ein Datenobjekt Werte für Text, Zahlen, Datums- oder Wahrheitsfelder sowie gegebenenfalls verschachtelte Strukturen. Neben den Nutzdaten können Metadaten wie Erstell- und
+                        Änderungszeitpunkte, Quelle oder Status sowie Referenzen auf andere Objekte vorhanden sein. Beim Anlegen werden Standardwerte aus dem Datenmodell übernommen; Validierungen stellen sicher, dass nur
+                        erlaubte, vollständige und konsistente Inhalte gespeichert werden. Änderungen an der Struktur erfolgen nicht am Datenobjekt selbst, sondern am zugrunde liegenden Datenmodell, das dann die Prüfung neuer
+                        oder geänderter Objekte steuert.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Ein einfaches Beispiel: Das Datenmodell „Bauvorhaben“ definiert Felder und Regeln, und das Datenobjekt „Erweiterungsbau Grundschule #2025-123“ füllt diese Felder mit konkreten Angaben.
+                    </Typography>
+                </>
+            ),
+        },
+    }), [dataObjectSchemaKey, dataObjectSchemaName, hasAccess]);
+
+    const fetchDataObjectItems = useCallback((options: GenericListPropsFetchOptions<DataObjectItem>) => {
+        return new DataObjectItemsApiService(options.api, dataObjectSchemaKey)
+            .list(
+                options.page,
+                options.size,
+                options.sort,
+                options.order,
+                {
+                    id: options.search,
+                },
+            );
+    }, [dataObjectSchemaKey]);
+
+    const getRowIdentifier = useCallback((row: DataObjectItem) => row.id.toString(), []);
+
+    const rowActions = useCallback((item: DataObjectItem) => [
+        {
+            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+            to: `/data-objects/${item.schemaKey}/${item.id}`,
+            tooltip: hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekte anzeigen',
+        },
+        {
+            icon: ModuleIcons.dataModels,
+            to: `/data-models/${item.schemaKey}`,
+            tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+        },
+    ], [hasAccess]);
 
     if (dataObjectSchema == null) {
         return (
@@ -104,78 +178,16 @@ export function DataObjectItemListPage() {
             background
         >
             <GenericListPage<DataObjectItem>
-                header={{
-                    icon: <DataObject />,
-                    title: `Datenobjekte: ${dataObjectSchema.name}`,
-                    actions: [
-                        {
-                            icon: <FolderData />,
-                            to: `/data-models/${dataObjectSchema.key}`,
-                            variant: 'text',
-                            label: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
-                        },
-                        {
-                            label: 'Neues Datenobjekt',
-                            icon: <AddOutlinedIcon />,
-                            to: `/data-objects/${dataObjectSchema.key}/new`,
-                            variant: 'contained',
-                            disabled: !hasAccess,
-                            tooltip: !hasAccess ? 'Sie haben keine Berechtigung zum Anlegen von Datenobjekten' : undefined,
-                        },
-                    ],
-                    helpDialog: {
-                        title: 'Hilfe zu Datenobjekten',
-                        tooltip: 'Hilfe anzeigen',
-                        content: (
-                            <>
-                                <Typography>
-                                    Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells. Es enthält die tatsächlichen Werte zu den im Datenmodell definierten Feldern und bildet damit die „laufenden“ Fachinformationen im System ab.
-                                    Datenobjekte fließen durch Prozesse, Komponenten und Schnittstellen. Ihre Struktur, Datentypen und Prüfregeln ergeben sich immer aus dem verknüpften Datenmodell.
-                                </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Typischerweise enthält ein Datenobjekt Werte für Text, Zahlen, Datums- oder Wahrheitsfelder sowie gegebenenfalls verschachtelte Strukturen. Neben den Nutzdaten können Metadaten wie Erstell- und
-                                    Änderungszeitpunkte, Quelle oder Status sowie Referenzen auf andere Objekte vorhanden sein. Beim Anlegen werden Standardwerte aus dem Datenmodell übernommen; Validierungen stellen sicher, dass nur
-                                    erlaubte, vollständige und konsistente Inhalte gespeichert werden. Änderungen an der Struktur erfolgen nicht am Datenobjekt selbst, sondern am zugrunde liegenden Datenmodell, das dann die Prüfung neuer
-                                    oder geänderter Objekte steuert.
-                                </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Ein einfaches Beispiel: Das Datenmodell „Bauvorhaben“ definiert Felder und Regeln, und das Datenobjekt „Erweiterungsbau Grundschule #2025-123“ füllt diese Felder mit konkreten Angaben.
-                                </Typography>
-                            </>
-                        ),
-                    },
-                }}
+                header={header}
                 searchLabel="Datenobjekt suchen"
                 searchPlaceholder="ID des Datenobjekts eingeben…"
-                fetch={(options) => {
-                    return new DataObjectItemsApiService(options.api, dataObjectSchema?.key)
-                        .list(
-                            options.page,
-                            options.size,
-                            options.sort,
-                            options.order,
-                            {
-                                id: options.search,
-                            },
-                        );
-                }}
+                fetch={fetchDataObjectItems}
                 columnDefinitions={columns}
-                getRowIdentifier={row => row.id.toString()}
+                getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder="Keine Datenobjekte angelegt"
                 noSearchResultsPlaceholder="Keine Datenobjekte gefunden"
                 rowActionsCount={2}
-                rowActions={(item: DataObjectItem) => [
-                    {
-                        icon: hasAccess ? <EditOutlined /> : <Visibility />,
-                        to: `/data-objects/${item.schemaKey}/${item.id}`,
-                        tooltip: hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekte anzeigen',
-                    },
-                    {
-                        icon: ModuleIcons.dataModels,
-                        to: `/data-models/${item.schemaKey}`,
-                        tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
-                    },
-                ]}
+                rowActions={rowActions}
                 defaultSortField="id"
                 disableFullWidthToggle={true}
             />

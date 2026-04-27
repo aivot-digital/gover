@@ -86,13 +86,13 @@ export function ProcessInstanceListPage(): ReactNode {
 
     const listRef = useRef<ListControlRef | null>(null);
 
-    const handleListRefresh = (): void => {
+    const handleListRefresh = useCallback((): void => {
         if (listRef.current != null) {
             listRef.current.refresh();
         }
-    };
+    }, []);
 
-    const handleDelete = (item: ProcessInstanceEntity): void => {
+    const handleDelete = useCallback((item: ProcessInstanceEntity): void => {
         confirm({
             title: 'Vorgang löschen',
             isDestructive: true,
@@ -116,12 +116,12 @@ export function ProcessInstanceListPage(): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Vorgang konnte nicht gelöscht werden'));
             });
-    };
+    }, [confirm, dispatch, handleListRefresh]);
 
     const [showEventsForInstanceId, setShowEventsForInstanceId] = React.useState<number | null>(null);
 
     // Wrap fetchData to inject processId and processVersion
-    const fetchDataWithParams = async (options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> => {
+    const fetchDataWithParams = useCallback(async (options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> => {
         const allProcesses = await new ProcessDefinitionApiService().listAll();
         const filter: any = {
             statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
@@ -149,7 +149,7 @@ export function ProcessInstanceListPage(): ReactNode {
                 };
             }),
         };
-    };
+    }, [processId, processVersion]);
 
     const header: GenericPageHeaderProps = useMemo(() => ({
         icon: ModuleIcons.submissions,
@@ -181,7 +181,7 @@ export function ProcessInstanceListPage(): ReactNode {
                 </>
             ),
         },
-    }), []);
+    }), [handleListRefresh, processDefinition, processVersion]);
 
     const columns: GridColDef<ProcessInstanceEntityWithProcessInfo>[] = useMemo(() => [
         {
@@ -269,7 +269,7 @@ export function ProcessInstanceListPage(): ReactNode {
             tooltip: 'Prozessverlauf ansehen',
             to: `/processes/${item.processId}/versions/${item.initialProcessVersion}/?instanceId=${item.id}`,
         },
-    ], []);
+    ], [handleDelete]);
 
     return (
         <>

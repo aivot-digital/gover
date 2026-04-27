@@ -1,4 +1,4 @@
-import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Box, Chip, Tooltip, Typography} from '@mui/material';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
@@ -134,17 +134,221 @@ export function AuditLogsListPage(): ReactNode {
         );
     }, [filterOptions.actors]);
 
-    const handleModuleChange = (value: string[] | null | undefined) => {
+    const handleModuleChange = useCallback((value: string[] | null | undefined) => {
         setSelectedModules(value ?? undefined);
-    };
+    }, []);
 
-    const handleTriggerTypeChange = (value: string[] | null | undefined) => {
+    const handleTriggerTypeChange = useCallback((value: string[] | null | undefined) => {
         setSelectedTriggerTypes(value ?? undefined);
-    };
+    }, []);
 
-    const handleActorChange = (value: string[] | null | undefined) => {
+    const handleActorChange = useCallback((value: string[] | null | undefined) => {
         setSelectedActors(value ?? undefined);
-    };
+    }, []);
+
+    const header = useMemo(() => ({
+        icon: ModuleIcons.audit,
+        title: 'Audit-Log',
+    }), []);
+
+    const preSearchElements = useMemo(() => [
+        <ChipInputFieldComponent
+            key="modules"
+            label="Modul"
+            value={selectedModules}
+            onChange={handleModuleChange}
+            size="small"
+            placeholder="z.B. Prozess"
+            suggestions={filterOptions.modules}
+        />,
+        <ChipInputFieldComponent
+            key="triggerTypes"
+            label="Auslösende Aktion"
+            value={selectedTriggerTypes}
+            onChange={handleTriggerTypeChange}
+            size="small"
+            placeholder="z.B. Update"
+            suggestions={filterOptions.triggerTypes}
+        />,
+        <ChipInputFieldComponent
+            key="actors"
+            label="Akteur"
+            value={selectedActors}
+            onChange={handleActorChange}
+            size="small"
+            placeholder="Akteur-ID oder Name"
+            suggestions={filterOptions.actors.map((entry) => entry.label)}
+        />,
+    ], [
+        filterOptions.actors,
+        filterOptions.modules,
+        filterOptions.triggerTypes,
+        handleActorChange,
+        handleModuleChange,
+        handleTriggerTypeChange,
+        selectedActors,
+        selectedModules,
+        selectedTriggerTypes,
+    ]);
+
+    const fetchAuditLogs = useCallback((options: {
+        page: number;
+        size: number;
+        sort?: string;
+        order?: 'ASC' | 'DESC';
+        filter?: string;
+    }) => {
+        const filter: Partial<AuditLogFilter> = {};
+
+        if (selectedModules != null && selectedModules.length > 0) {
+            filter.modules = selectedModules;
+        }
+
+        if (options.filter != null && options.filter !== 'all') {
+            filter.actorType = options.filter;
+        }
+
+        if (selectedTriggerTypes != null && selectedTriggerTypes.length > 0) {
+            filter.triggerTypes = selectedTriggerTypes;
+        }
+
+        if (selectedActors != null && selectedActors.length > 0) {
+            filter.actors = selectedActors
+                .map((entry) => entry.trim())
+                .filter((entry) => entry.length > 0)
+                .map((entry) => actorLabelToValue[entry] ?? entry);
+        }
+
+        const sortField = options.sort ?? 'timestamp';
+        const sortOrder = options.order ?? 'DESC';
+
+        return new AuditLogsApiService().list(
+            options.page,
+            options.size,
+            sortField,
+            sortOrder,
+            filter,
+        );
+    }, [actorLabelToValue, selectedActors, selectedModules, selectedTriggerTypes]);
+
+    const columnDefinitions = useMemo(() => [
+        {
+            field: 'timestamp',
+            headerName: 'Zeitpunkt',
+            width: 200,
+            renderCell: (params: any) => (
+                <CellContentWrapper>
+                    <Tooltip title={formatDateTime(params.row.timestamp)} arrow>
+                        <Box>
+                            <Typography variant="body2"
+                                        fontWeight={500}>
+                                {formatRelative(params.row.timestamp)}
+                            </Typography>
+                            <Typography variant="caption"
+                                        color="text.secondary">
+                                {formatDateTime(params.row.timestamp)}
+                            </Typography>
+                        </Box>
+                    </Tooltip>
+                </CellContentWrapper>
+            ),
+        },
+        {
+            field: 'module',
+            headerName: 'Modul',
+            width: 190,
+            renderCell: (params: any) => (
+                <CellContentWrapper>
+                    <Typography variant="body2"
+                                noWrap>
+                        {String(params.value)}
+                    </Typography>
+                </CellContentWrapper>
+            ),
+        },
+        {
+            field: 'triggerType',
+            headerName: 'Auslösende Aktion',
+            width: 180,
+            renderCell: (params: any) => {
+                const Icon = getTriggerTypeIcon(params.row.triggerType);
+                return (
+                    <CellContentWrapper>
+                        <Chip
+                            icon={Icon != null ? <Icon/> : undefined}
+                            size="small"
+                            label={getTriggerTypeLabel(params.row.triggerType)}
+                            color={getTriggerTypeColor(params.row.triggerType)}
+                            variant="outlined"
+                        />
+                    </CellContentWrapper>
+                );
+            },
+        },
+        {
+            field: 'actorType',
+            headerName: 'Auslösender Akteur',
+            width: 220,
+            renderCell: (params: any) => {
+                const actorType = params.row.actorType;
+                const actorId = params.row.actorId?.trim() || undefined;
+                const isUser = actorType === 'User';
+                const actorLabel = isUser
+                    ? ((actorId != null ? actorValueToLabel[actorId] : undefined) || actorId || getActorTypeLabel(actorType))
+                    : getActorTypeLabel(actorType);
+                const Icon = getActorTypeIcon(actorType);
+
+                return (
+                    <CellContentWrapper>
+                        <Tooltip title={isUser ? (actorId ?? '-') : actorLabel} arrow>
+                            <Chip
+                                size="small"
+                                variant="outlined"
+                                icon={Icon != null ? <Icon/> : undefined}
+                                label={trimValue(actorLabel, 32)}
+                                color={getActorTypeColor(actorType)}
+                            />
+                        </Tooltip>
+                    </CellContentWrapper>
+                );
+            },
+        },
+        {
+            field: 'message',
+            headerName: 'Nachricht',
+            flex: 1,
+            renderCell: (params: any) => (
+                <CellContentWrapper>
+                    <Typography variant="body2"
+                                noWrap>
+                        {String(params.value)}
+                    </Typography>
+                </CellContentWrapper>
+            ),
+        },
+    ], [actorValueToLabel]);
+
+    const getRowIdentifier = useCallback((row: AuditLogEntity) => row.id.toString(), []);
+
+    const rowActions = useCallback((row: AuditLogEntity) => [
+        {
+            icon: <MoreVert/>,
+            tooltip: 'Mehr Informationen',
+            onClick: () => {
+                confirm({
+                    title: 'Weitere Informationen',
+                    hideCancelButton: true,
+                    confirmButtonText: 'Schließen',
+                    children: (
+                        <AuditLogDetailsDialogContent
+                            row={row}
+                            actorLabelsById={actorValueToLabel}
+                        />
+                    ),
+                });
+            },
+        },
+    ], [actorValueToLabel, confirm]);
 
     if (!hasReadAccess) {
         return (
@@ -163,190 +367,17 @@ export function AuditLogsListPage(): ReactNode {
             <GenericListPage<AuditLogEntity>
                 defaultFilter="all"
                 filters={actorFilters}
-                header={{
-                    icon: ModuleIcons.audit,
-                    title: 'Audit-Log',
-                }}
-                preSearchElements={[
-                    <ChipInputFieldComponent
-                        label="Modul"
-                        value={selectedModules}
-                        onChange={handleModuleChange}
-                        size="small"
-                        placeholder="z.B. Prozess"
-                        suggestions={filterOptions.modules}
-                    />,
-                    <ChipInputFieldComponent
-                        label="Auslösende Aktion"
-                        value={selectedTriggerTypes}
-                        onChange={handleTriggerTypeChange}
-                        size="small"
-                        placeholder="z.B. Update"
-                        suggestions={filterOptions.triggerTypes}
-                    />,
-                    <ChipInputFieldComponent
-                        label="Akteur"
-                        value={selectedActors}
-                        onChange={handleActorChange}
-                        size="small"
-                        placeholder="Akteur-ID oder Name"
-                        suggestions={filterOptions.actors.map((entry) => entry.label)}
-                    />,
-                ]}
-                fetch={(options) => {
-                    const filter: Partial<AuditLogFilter> = {};
-
-                    if (selectedModules != null && selectedModules.length > 0) {
-                        filter.modules = selectedModules;
-                    }
-
-                    if (options.filter != null && options.filter !== 'all') {
-                        filter.actorType = options.filter;
-                    }
-
-                    if (selectedTriggerTypes != null && selectedTriggerTypes.length > 0) {
-                        filter.triggerTypes = selectedTriggerTypes;
-                    }
-
-                    if (selectedActors != null && selectedActors.length > 0) {
-                        filter.actors = selectedActors
-                            .map((entry) => entry.trim())
-                            .filter((entry) => entry.length > 0)
-                            .map((entry) => actorLabelToValue[entry] ?? entry);
-                    }
-
-                    const sortField = (options.sort as string | undefined) ?? 'timestamp';
-                    const sortOrder = options.order ?? 'DESC';
-
-                    return new AuditLogsApiService().list(
-                        options.page,
-                        options.size,
-                        sortField,
-                        sortOrder,
-                        filter,
-                    );
-                }}
+                header={header}
+                preSearchElements={preSearchElements}
+                fetch={fetchAuditLogs}
                 columnIcon={ModuleIcons.audit}
-                columnDefinitions={[
-                    {
-                        field: 'timestamp',
-                        headerName: 'Zeitpunkt',
-                        width: 200,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Tooltip title={formatDateTime(params.row.timestamp)} arrow>
-                                    <Box>
-                                        <Typography variant="body2"
-                                                    fontWeight={500}>
-                                            {formatRelative(params.row.timestamp)}
-                                        </Typography>
-                                        <Typography variant="caption"
-                                                    color="text.secondary">
-                                            {formatDateTime(params.row.timestamp)}
-                                        </Typography>
-                                    </Box>
-                                </Tooltip>
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'module',
-                        headerName: 'Modul',
-                        width: 190,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Typography variant="body2"
-                                            noWrap>
-                                    {String(params.value)}
-                                </Typography>
-                            </CellContentWrapper>
-                        ),
-                    },
-                    {
-                        field: 'triggerType',
-                        headerName: 'Auslösende Aktion',
-                        width: 180,
-                        renderCell: (params) => {
-                            const Icon = getTriggerTypeIcon(params.row.triggerType);
-                            return (
-                                <CellContentWrapper>
-                                    <Chip
-                                        icon={Icon != null ? <Icon/> : undefined}
-                                        size="small"
-                                        label={getTriggerTypeLabel(params.row.triggerType)}
-                                        color={getTriggerTypeColor(params.row.triggerType)}
-                                        variant="outlined"
-                                    />
-                                </CellContentWrapper>
-                            );
-                        },
-                    },
-                    {
-                        field: 'actorType',
-                        headerName: 'Auslösender Akteur',
-                        width: 220,
-                        renderCell: (params) => {
-                            const actorType = params.row.actorType;
-                            const actorId = params.row.actorId?.trim() || undefined;
-                            const isUser = actorType === 'User';
-                            const actorLabel = isUser
-                                ? ((actorId != null ? actorValueToLabel[actorId] : undefined) || actorId || getActorTypeLabel(actorType))
-                                : getActorTypeLabel(actorType);
-                            const Icon = getActorTypeIcon(actorType);
-
-                            return (
-                                <CellContentWrapper>
-                                    <Tooltip title={isUser ? (actorId ?? '-') : actorLabel} arrow>
-                                        <Chip
-                                            size="small"
-                                            variant="outlined"
-                                            icon={Icon != null ? <Icon/> : undefined}
-                                            label={trimValue(actorLabel, 32)}
-                                            color={getActorTypeColor(actorType)}
-                                        />
-                                    </Tooltip>
-                                </CellContentWrapper>
-                            );
-                        },
-                    },
-                    {
-                        field: 'message',
-                        headerName: 'Nachricht',
-                        flex: 1,
-                        renderCell: (params) => (
-                            <CellContentWrapper>
-                                <Typography variant="body2"
-                                            noWrap>
-                                    {String(params.value)}
-                                </Typography>
-                            </CellContentWrapper>
-                        ),
-                    },
-                ]}
-                getRowIdentifier={(row) => row.id.toString()}
+                columnDefinitions={columnDefinitions}
+                getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder="Kein Audit-Log vorhanden"
                 noSearchResultsPlaceholder="Kein Audit-Log für diese Filter gefunden"
                 dynamicRowHeight={true}
                 rowActionsCount={1}
-                rowActions={(row) => [
-                    {
-                        icon: <MoreVert/>,
-                        tooltip: 'Mehr Informationen',
-                        onClick: () => {
-                            confirm({
-                                title: 'Weitere Informationen',
-                                hideCancelButton: true,
-                                confirmButtonText: 'Schließen',
-                                children: (
-                                    <AuditLogDetailsDialogContent
-                                        row={row}
-                                        actorLabelsById={actorValueToLabel}
-                                    />
-                                ),
-                            });
-                        },
-                    },
-                ]}
+                rowActions={rowActions}
             />
         </PageWrapper>
     );

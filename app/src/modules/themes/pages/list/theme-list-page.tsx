@@ -14,6 +14,8 @@ import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import React, {useCallback, useMemo} from 'react';
+import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 const activeThemeChip = (
     <Chip
@@ -36,6 +38,137 @@ export function ThemeListPage() {
         messageType: 'snackbar',
     });
 
+    const header = useMemo(() => ({
+        icon: <PaletteOutlinedIcon />,
+        title: 'Erscheinungsbilder',
+        actions: [
+            {
+                label: 'Neues Erscheinungsbild',
+                icon: <AddOutlinedIcon />,
+                to: '/themes/new',
+                variant: 'contained' as const,
+                disabled: !hasAccess,
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Erscheinungsbildern',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography>
+                        Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Gover fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
+                        So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Ein Erscheinungsbild besteht aus einem Namen, Farben sowie optional einem Logo und Favicon. Bei der Auswahl der Farben sollte die Barrierefreiheit berücksichtigt werden.
+                    </Typography>
+                </>
+            ),
+        },
+    }), [hasAccess]);
+
+    const fetchThemes = useCallback((options: GenericListPropsFetchOptions<Theme>) => {
+        return new ThemesApiService(options.api)
+            .list(
+                options.page,
+                options.size,
+                options.sort,
+                options.order,
+                {
+                    name: options.search,
+                },
+            );
+    }, []);
+
+    const columnDefinitions = useMemo(() => [
+        {
+            field: 'icon',
+            headerName: '',
+            renderCell: () => <CellContentWrapper><PaletteOutlinedIcon /></CellContentWrapper>,
+            disableColumnMenu: true,
+            width: 24,
+            sortable: false,
+        },
+        {
+            field: 'name',
+            headerName: 'Name',
+            flex: 1,
+            renderCell: (params: any) => (
+                <CellLink
+                    to={`/themes/${params.id}`}
+                    title={hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
+                >
+                    {String(params.value)}
+                    {params.row.id === Number(appThemeId) && activeThemeChip}
+                </CellLink>
+            ),
+        },
+        {
+            field: 'colors',
+            headerName: 'Farben',
+            flex: 1,
+            disableColumnMenu: true,
+            sortable: false,
+            renderCell: (params: any) => {
+                const colors = params.row;
+                const colorKeys = ['main', 'mainDark', 'accent', '|', 'error', 'warning', 'info', 'success'];
+
+                return (
+                    <CellContentWrapper sx={{gap: 1, position: 'relative', zIndex: 2}}>
+                        {colorKeys.map((key, index) => (
+                            key === '|' ? (
+                                <Box
+                                    key={index}
+                                    sx={{width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5}}
+                                />
+                            ) : (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        position: 'relative',
+                                        width: 18,
+                                        height: 18,
+                                        borderRadius: '50%',
+                                        backgroundColor: colors[key as keyof typeof colors] || '#ccc',
+                                        border: '2px solid white',
+                                        margin: '0 5px 0 5px',
+                                        '::before': {
+                                            content: '""',
+                                            position: 'absolute',
+                                            display: 'block',
+                                            width: 20,
+                                            height: 20,
+                                            left: '-3px',
+                                            top: '-3px',
+                                            borderRadius: '50%',
+                                            backgroundColor: '#C0C0C0',
+                                            zIndex: -1,
+                                        },
+                                    }}
+                                />
+                            )
+                        ))}
+                    </CellContentWrapper>
+                );
+            },
+        },
+    ], [appThemeId, hasAccess]);
+
+    const getRowIdentifier = useCallback((row: Theme) => row.id.toString(), []);
+
+    const rowActions = useCallback((item: Theme) => [
+        {
+            icon: hasAccess ? <EditOutlined /> : <Visibility/>,
+            to: `/themes/${item.id}`,
+            tooltip: hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
+        },
+        {
+            icon: <DescriptionOutlined />,
+            to: `/themes/${item.id}/forms`,
+            tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
+        },
+    ], [hasAccess]);
+
     return (
         <PageWrapper
             title="Erscheinungsbilder"
@@ -43,137 +176,16 @@ export function ThemeListPage() {
             background
         >
             <GenericListPage<Theme>
-                header={{
-                    icon: <PaletteOutlinedIcon />,
-                    title: 'Erscheinungsbilder',
-                    actions: [
-                        {
-                            label: 'Neues Erscheinungsbild',
-                            icon: <AddOutlinedIcon />,
-                            to: '/themes/new',
-                            variant: 'contained',
-                            disabled: !hasAccess,
-                        },
-                    ],
-                    helpDialog: {
-                        title: 'Hilfe zu Erscheinungsbildern',
-                        tooltip: 'Hilfe anzeigen',
-                        content: (
-                            <>
-                                <Typography>
-                                    Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Gover fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
-                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
-                                </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Ein Erscheinungsbild besteht aus einem Namen, Farben sowie optional einem Logo und Favicon. Bei der Auswahl der Farben sollte die Barrierefreiheit berücksichtigt werden.
-                                </Typography>
-                            </>
-                        ),
-                    },
-                }}
+                header={header}
                 searchLabel="Erscheinungsbild suchen"
                 searchPlaceholder="Name des Erscheinungsbildes eingeben…"
-                fetch={(options) => {
-                    return new ThemesApiService(options.api)
-                        .list(
-                            options.page,
-                            options.size,
-                            options.sort,
-                            options.order,
-                            {
-                                name: options.search,
-                            },
-                        );
-                }}
-                columnDefinitions={[
-                    {
-                        field: 'icon',
-                        headerName: '',
-                        renderCell: () => <CellContentWrapper><PaletteOutlinedIcon /></CellContentWrapper>,
-                        disableColumnMenu: true,
-                        width: 24,
-                        sortable: false,
-                    },
-                    {
-                        field: 'name',
-                        headerName: 'Name',
-                        flex: 1,
-                        renderCell: (params) => (
-                            <CellLink
-                                to={`/themes/${params.id}`}
-                                title={hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
-                            >
-                                {String(params.value)}
-                                {params.row.id === Number(appThemeId) && activeThemeChip}
-                            </CellLink>
-                        ),
-                    },
-                    {
-                        field: 'colors',
-                        headerName: 'Farben',
-                        flex: 1,
-                        disableColumnMenu: true,
-                        sortable: false,
-                        renderCell: (params) => {
-                            const colors = params.row;
-                            const colorKeys = ['main', 'mainDark', 'accent', '|', 'error', 'warning', 'info', 'success'];
-
-                            return (
-                                <CellContentWrapper sx={{gap: 1, position: 'relative', zIndex: 2}}>
-                                    {colorKeys.map((key, index) => (
-                                        key === '|' ? (
-                                            <Box
-                                                key={index}
-                                                sx={{width: 2, height: 16, backgroundColor: '#D4D4D4', mx: 0.5}}
-                                            />
-                                        ) : (
-                                            <Box
-                                                key={index}
-                                                sx={{
-                                                    position: 'relative',
-                                                    width: 18,
-                                                    height: 18,
-                                                    borderRadius: '50%',
-                                                    backgroundColor: colors[key as keyof typeof colors] || '#ccc',
-                                                    border: '2px solid white',
-                                                    margin: '0 5px 0 5px',
-                                                    '::before': {
-                                                        content: '""',
-                                                        position: 'absolute',
-                                                        display: 'block',
-                                                        width: 20,
-                                                        height: 20,
-                                                        left: '-3px',
-                                                        top: '-3px',
-                                                        borderRadius: '50%',
-                                                        backgroundColor: '#C0C0C0',
-                                                        zIndex: -1,
-                                                    },
-                                                }}
-                                            />
-                                        )
-                                    ))}
-                                </CellContentWrapper>
-                            );
-                        },
-                    },
-                ]}
-                getRowIdentifier={row => row.id.toString()}
+                fetch={fetchThemes}
+                columnDefinitions={columnDefinitions}
+                getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder="Keine Erscheinungsbilder angelegt"
                 noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden"
                 rowActionsCount={2}
-                rowActions={(item: Theme) => [
-                    {
-                        icon: hasAccess ? <EditOutlined /> : <Visibility/>,
-                        to: `/themes/${item.id}`,
-                        tooltip: hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
-                    },
-                    {
-                        icon: <DescriptionOutlined />,
-                        to: `/themes/${item.id}/forms`,
-                        tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
-                    },
-                ]}
+                rowActions={rowActions}
                 defaultSortField="name"
                 disableFullWidthToggle={true}
             />
