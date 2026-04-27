@@ -8,6 +8,7 @@ export enum ElementTypeGroups {
     DateTime,
     Select,
     Group,
+    Step,
     Other,
 }
 
@@ -18,6 +19,7 @@ export const elementTypeGroupLabels: Record<ElementTypeGroups, string> = {
     [ElementTypeGroups.Input]: 'Eingabe',
     [ElementTypeGroups.DateTime]: 'Datum und Zeit',
     [ElementTypeGroups.Group]: 'Gruppierung',
+    [ElementTypeGroups.Step]: 'Abschnitt',
     [ElementTypeGroups.Other]: 'Sonstige',
 };
 
@@ -25,7 +27,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.Alert]: ElementTypeGroups.Information,
     [ElementType.Image]: ElementTypeGroups.Information,
     [ElementType.GroupLayout]: ElementTypeGroups.Display,
-    [ElementType.Step]: null,
+    [ElementType.Step]: ElementTypeGroups.Step,
     [ElementType.FormLayout]: null,
     [ElementType.Checkbox]: ElementTypeGroups.Select,
     [ElementType.Date]: ElementTypeGroups.DateTime,
@@ -53,10 +55,10 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.NoCodeInput]: ElementTypeGroups.Input,
     [ElementType.FileUpload]: ElementTypeGroups.Input,
     [ElementType.RichTextInput]: ElementTypeGroups.Input,
-    [ElementType.IntroductionStep]: null,
-    [ElementType.SummaryStep]: null,
-    [ElementType.SubmitStep]: null,
-    [ElementType.SubmittedStep]: null,
+    [ElementType.IntroductionStep]: ElementTypeGroups.Step,
+    [ElementType.SummaryStep]: ElementTypeGroups.Step,
+    [ElementType.SubmitStep]: ElementTypeGroups.Step,
+    [ElementType.SubmittedStep]: ElementTypeGroups.Step,
     [ElementType.DialogLayout]: null,
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
