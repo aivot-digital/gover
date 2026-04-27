@@ -4,24 +4,20 @@ import {SnackbarProvider} from './snackbar-provider';
 import {PromptProvider} from './prompt-provider';
 import {ConfirmProvider} from './confirm-provider';
 import {Provider as TextBalanceProvider} from 'react-wrap-balancer';
-import {useAppSelector} from '../hooks/use-app-selector';
-import {selectTheme} from '../slices/shell-slice';
 import {BaseTheme} from '../theming/base-theme';
 import {createAppTheme, createDefaultAppTheme} from '../theming/themes';
 
 export function AppProvider({children, theme: __theme}: PropsWithChildren<{ theme?: Theme }>) {
-    const themeObject = useAppSelector(selectTheme);
-
     const theme = useMemo(() => {
-        if (themeObject == null) {
+        if (AppConfig.systemTheme == null) {
             return createDefaultAppTheme(BaseTheme);
         }
-        return createAppTheme(themeObject, BaseTheme);
-    }, [themeObject]);
+        return createAppTheme(AppConfig.systemTheme, BaseTheme);
+    }, []);
 
     return (
         <ThemeProvider theme={theme}>
-            <CssBaseline />
+            <CssBaseline/>
             <TextBalanceProvider>
                 <SnackbarProvider>
                     <PromptProvider>

@@ -50,7 +50,6 @@ interface ShellState {
     lastLoadingStartedAt?: number;
     loading?: LoadingMessage;
     error?: ErrorMessage;
-    setup?: SystemSetupDTO;
     minimizeDrawer: boolean;
     showSearchDialog: boolean;
     showAboutGoverDialog: boolean;
@@ -70,9 +69,6 @@ const shellSlice = createSlice({
     reducers: {
         setStatus(state, action: PayloadAction<ShellStatus>) {
             state.status = action.payload;
-        },
-        setSetup(state, action: PayloadAction<SystemSetupDTO>) {
-            state.setup = action.payload;
         },
         setMinimizeDrawer(state, action: PayloadAction<boolean>) {
             state.minimizeDrawer = action.payload;
@@ -120,7 +116,6 @@ const shellSlice = createSlice({
 
 export const {
     setStatus,
-    setSetup,
     setMinimizeDrawer,
     setShowSearchDialog,
     setShowAboutGoverDialog,
@@ -132,8 +127,6 @@ export const {
 } = shellSlice.actions;
 
 export const selectStatus = (state: RootState) => state.shell.status;
-export const selectSetup = (state: RootState) => state.shell.setup;
-export const selectTheme = (state: RootState) => state.shell.setup?.providerTheme;
 export const selectMinimizeDrawer = (state: RootState) => state.shell.minimizeDrawer;
 export const selectShowSearchDialog = (state: RootState) => state.shell.showSearchDialog;
 export const selectShowAboutGoverDialog = (state: RootState) => state.shell.showAboutGoverDialog;

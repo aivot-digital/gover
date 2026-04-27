@@ -1,7 +1,17 @@
 import {ReactNode, useEffect, useMemo} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {addSnackbarMessage, ErrorMessage, selectErrorMessage, selectSetup, selectStatus, setErrorMessage, setSetup, setStatus, ShellStatus, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    ErrorMessage,
+    selectErrorMessage,
+    selectStatus,
+    setErrorMessage,
+    setStatus,
+    ShellStatus,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../slices/shell-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
 import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
 import Box from '@mui/material/Box';
@@ -17,7 +27,6 @@ import {StaffShellError} from '../staff/staff-shell-error';
 export function CustomerShell() {
     const routerError = useRouteError();
     const dispatch = useAppDispatch();
-    const setup = useAppSelector(selectSetup);
     const status = useAppSelector(selectStatus);
     const appError = useAppSelector(selectErrorMessage);
     const location = useLocation();
@@ -32,23 +41,6 @@ export function CustomerShell() {
                 type: SnackbarType.Dismissable,
             }));
         });
-    }, []);
-
-    // Fetch the setup on mount to determine if the system is online, the theme, logo, etc.
-    useEffect(() => {
-        fetchSetup()
-            .then((setup) => {
-                dispatch(setSetup(setup));
-                dispatch(setSystemConfigsFromMap(setup.publicConfigs));
-                dispatch(setStatus(ShellStatus.Ready));
-            })
-            .catch((err) => {
-                if (isApiError(err) && err.status >= 500) {
-                    dispatch(setStatus(ShellStatus.Offline));
-                } else {
-                    console.error(err);
-                }
-            });
     }, []);
 
     const error: ErrorMessage | undefined = useMemo(() => {
@@ -82,19 +74,15 @@ export function CustomerShell() {
 
     if (status === ShellStatus.Offline) {
         return (
-            <ShellOffline />
+            <ShellOffline/>
         );
-    }
-
-    if (setup == null) {
-        return null;
     }
 
     return (
         <>
             {
                 status === ShellStatus.Loading &&
-                <ShellLoader />
+                <ShellLoader/>
             }
             {
                 status === ShellStatus.Ready &&
@@ -113,15 +101,15 @@ export function CustomerShell() {
                                 overflowY: 'auto',
                             }}
                         >
-                            <ShellProgress />
+                            <ShellProgress/>
 
                             {
                                 error != null &&
-                                <StaffShellError error={error} />
+                                <StaffShellError error={error}/>
                             }
                             {
                                 error == null &&
-                                <Outlet />
+                                <Outlet/>
                             }
                         </Box>
                     </Box>
@@ -129,9 +117,4 @@ export function CustomerShell() {
             }
         </>
     );
-}
-
-async function fetchSetup(): Promise<SystemSetupDTO> {
-    return new SystemApiService()
-        .fetchSetup();
 }

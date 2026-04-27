@@ -2,7 +2,6 @@ import HeroDecord from './hero-decor.svg';
 import {Box, Divider, Paper, Skeleton, SxProps, Typography, useTheme} from '@mui/material';
 import React from 'react';
 import {useAppSelector} from '../../../hooks/use-app-selector';
-import {selectSetup} from '../../../slices/shell-slice';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 import NorthWest from '@aivot/mui-material-symbols-400-outlined/dist/north-west/NorthWest';
 
@@ -25,11 +24,6 @@ const Links = [
 
 export function DashboardHero(props: DashboardHeroProps) {
     const theme = useTheme();
-    const setup = useAppSelector(selectSetup);
-
-    if (setup == null) {
-        return <Skeleton height="395px" />;
-    }
 
     return (
         <Paper
@@ -67,7 +61,7 @@ export function DashboardHero(props: DashboardHeroProps) {
                         Antragsmanagement
                     </span>
                     <br />
-                    {setup.providerName}
+                    {AppConfig.providerName}
                 </Typography>
 
                 <Divider
