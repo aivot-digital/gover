@@ -2,7 +2,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, Divider, Grid, Typogr
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectLoadedForm} from '../../slices/app-slice';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ElementType} from '../../data/element-type/element-type';
 import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -31,13 +31,14 @@ import Chip from '@mui/material/Chip';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {AuthoredElementValues, createDerivedRuntimeElementData, DerivedRuntimeElementData} from '../../models/element-data';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import {createCustomerPath} from '../../utils/url-path-utils';
 
 interface PrefillFormDialogProps {
     open: boolean;
     onClose: () => void;
 }
 
-const relevantElementTypes = [
+const prefillableElementTypes = [
     ElementType.Text,
     ElementType.Number,
     ElementType.Date,
@@ -52,12 +53,6 @@ const relevantElementTypes = [
     ElementType.TimeRange,
     ElementType.DateTimeRange,
     ElementType.MapPoint,
-    ElementType.DomainAndUserSelect,
-    ElementType.AssignmentContext,
-    ElementType.DataModelSelect,
-    ElementType.DataObjectSelect,
-    ElementType.NoCodeInput,
-    ElementType.RichTextInput,
 ];
 
 const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but some browsers may have lower limits, so playing safe here.
@@ -65,39 +60,61 @@ const MAX_LINK_LENGTH = 2000; // Most sources suggest 2048 maximum for URLs, but
 export function canPrefillElement(e: AnyElement): boolean {
     return (
         isAnyInputElement(e) &&
-        relevantElementTypes.includes(e.type) &&
+        prefillableElementTypes.includes(e.type) &&
         e.technical != true &&
         e.disabled != true
     );
 }
 
+function buildPrefillValues(elementData: AuthoredElementValues): AuthoredElementValues {
+    const inputs: AuthoredElementValues = {};
+
+    for (const key of Object.keys(elementData)) {
+        const dataObject = elementData[key];
+        if (dataObject != null) {
+            inputs[key] = dataObject;
+        }
+    }
+
+    return inputs;
+}
+
+function buildPrefillLink(slug: string, version: number, elementData: AuthoredElementValues): string {
+    const versionedLink = createCustomerPath(`${slug}/${version}`);
+    const queryParams = new URLSearchParams({
+        [prefillQueryParamKey]: JSON.stringify(buildPrefillValues(elementData)),
+    }).toString();
+
+    return `${versionedLink}?${queryParams}`;
+}
+
 export function PrefillFormDialog(props: PrefillFormDialogProps) {
     const dispatch = useAppDispatch();
-    const [elementData, setElementData] = useState<AuthoredElementValues>({});
+    const [elementData, setElementDataState] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
     const [hasPrefillableElements, setHasPrefillableElements] = useState<Boolean>(false);
     const form = useAppSelector(selectLoadedForm);
+    const elementDataRef = useRef<AuthoredElementValues>({});
+
+    const setElementData = useCallback((nextData: AuthoredElementValues) => {
+        elementDataRef.current = nextData;
+        setElementDataState(nextData);
+    }, []);
+
+    const allElements = useMemo(() => {
+        if (form == null) {
+            return [];
+        }
+
+        return flattenElements(form.version.rootElement, true);
+    }, [form]);
 
     const link = useMemo(() => {
         if (form == null) {
             return '';
         }
 
-        const versionedLink = `${window.location.protocol}//${window.location.host}/${form.form.slug}/${form.version.version}`;
-
-        const inputs: Record<string, any> = {};
-        for (const key of Object.keys(elementData)) {
-            const dataObject = elementData[key];
-            if (dataObject != null) {
-                inputs[key] = dataObject;
-            }
-        }
-
-        const queryParams = new URLSearchParams({
-            [prefillQueryParamKey]: JSON.stringify(inputs),
-        }).toString();
-
-        return `${versionedLink}?${queryParams}`;
+        return buildPrefillLink(form.form.slug, form.version.version, elementData);
     }, [elementData, form]);
 
     const linkTooLong = useMemo(() => {
@@ -131,13 +148,32 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         setHasPrefillableElements(allElementsPerStep.some((x) => x.elements.length > 0));
     }, [allElementsPerStep]);
 
-    const handleCopyLink = async () => {
+    const flushPendingElementData = useCallback(async (): Promise<AuthoredElementValues> => {
+        const activeElement = document.activeElement;
+        if (activeElement instanceof HTMLElement) {
+            activeElement.blur();
+            await new Promise<void>((resolve) => {
+                window.setTimeout(resolve, 0);
+            });
+        }
+
+        return elementDataRef.current;
+    }, []);
+
+    const handleCopyLink = useCallback(async () => {
         if (form == null) {
             return;
         }
 
         try {
-            const success = await copyToClipboardText(link);
+            const latestElementData = await flushPendingElementData();
+            const latestLink = buildPrefillLink(form.form.slug, form.version.version, latestElementData);
+            if (latestLink.length > MAX_LINK_LENGTH) {
+                dispatch(showErrorSnackbar('Der erzeugte Link ist zu lang und kann nicht kopiert werden.'));
+                return;
+            }
+
+            const success = await copyToClipboardText(latestLink);
             if (!success) {
                 throw new Error('copy failed');
             }
@@ -145,27 +181,35 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
         } catch {
             dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
         }
-    };
+    }, [dispatch, flushPendingElementData, form]);
 
-    const handleDownloadQrCode = async () => {
+    const handleDownloadQrCode = useCallback(async () => {
         if (form == null) {
             return;
         }
 
         try {
-            await downloadQrCode(link, `${form.form.slug}-${form.version.version}-prefill.png`);
+            const latestElementData = await flushPendingElementData();
+            const latestLink = buildPrefillLink(form.form.slug, form.version.version, latestElementData);
+            if (latestLink.length > MAX_LINK_LENGTH) {
+                dispatch(showErrorSnackbar('Der erzeugte Link ist zu lang und kann nicht als QR-Code bereitgestellt werden.'));
+                return;
+            }
+
+            await downloadQrCode(latestLink, `${form.form.slug}-${form.version.version}-prefill.png`);
             dispatch(showSuccessSnackbar('QR-Code wurde als PNG heruntergeladen!'));
         } catch {
             dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
         }
-    };
+    }, [dispatch, flushPendingElementData, form]);
 
-    const handleExport = () => {
+    const handleExport = async () => {
         if (form == null) {
             return;
         }
 
-        downloadObjectFile(`prefill-${form.form.slug}-${form.version.version}.json`, elementData);
+        const latestElementData = await flushPendingElementData();
+        downloadObjectFile(`prefill-${form.form.slug}-${form.version.version}.json`, buildPrefillValues(latestElementData));
     };
 
     const handleImport = () => {
@@ -204,6 +248,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
     const handleClose = () => {
         setElementData({});
+        setDerivedData(createDerivedRuntimeElementData());
         props.onClose();
     };
 
@@ -253,7 +298,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                 }}
                             >
                                 <li>Es können ausschließlich die folgenden Felder vorbefüllt werden: {
-                                    relevantElementTypes
+                                    prefillableElementTypes
                                         .map(getElementNameForType)
                                         .join(', ')
                                 }. Technische Felder und deaktivierte Felder können nicht vorbefüllt werden.
@@ -278,7 +323,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                         >
                             Um dieses Werkzeug nutzen zu können, muss das Formular Eingabefelder enthalten, die vorbefüllt werden können.
                             Es können ausschließlich die folgenden Felder vorbefüllt werden: {
-                            relevantElementTypes
+                            prefillableElementTypes
                                 .map(getElementNameForType)
                                 .join(', ')
                         }.
@@ -321,7 +366,7 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
                                                         <Grid>
                                                             <AlertComponent color={'info'} title={"Dieser Abschnitt enthält keine vorbefüllbaren Felder"} sx={{mt: 1, mb: 0}}>
                                                                 Es können ausschließlich die folgenden Felder vorbefüllt werden: {
-                                                                    relevantElementTypes
+                                                                    prefillableElementTypes
                                                                         .map(getElementNameForType)
                                                                         .join(', ')
                                                                 }.
@@ -332,9 +377,9 @@ export function PrefillFormDialog(props: PrefillFormDialogProps) {
 
                                                     {elements.map((element) => (
                                                         <ViewDispatcherComponent
-                                                            rootElement={element}
+                                                            rootElement={form!.version.rootElement}
                                                             key={element.id}
-                                                            allElements={[]}
+                                                            allElements={allElements}
                                                             element={element}
                                                             isBusy={false}
                                                             isDeriving={false}

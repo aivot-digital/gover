@@ -926,8 +926,7 @@ export function FormDetailsPage() {
                 label: 'Formular vorbefüllen',
                 icon: <Draw/>,
                 onClick: () => {
-                    //setShowPrefillDialog(true);
-                    notImplemented();
+                    setShowPrefillDialog(true);
                 },
             },
             'separator',
