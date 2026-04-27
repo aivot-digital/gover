@@ -1,4 +1,4 @@
-import {ReactNode, useEffect, useMemo} from 'react';
+import {useEffect, useMemo} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {
@@ -12,15 +12,11 @@ import {
     SnackbarSeverity,
     SnackbarType,
 } from '../../slices/shell-slice';
-import {SystemApiService} from '../../modules/system/system-api-service';
-import {SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
 import Box from '@mui/material/Box';
 import {ShellProgress} from './components/shell-progress';
 import {Outlet, useLocation, useRouteError} from 'react-router-dom';
 import {ShellLoader} from './components/shell-loader';
-import {isApiError} from '../../models/api-error';
 import {ShellOffline} from './components/shell-offline';
-import {setSystemConfigsFromMap} from '../../slices/system-config-slice';
 import {API_EVENT_UNREACHABLE} from '../../services/base-api-service';
 import {StaffShellError} from '../staff/staff-shell-error';
 
@@ -77,6 +73,10 @@ export function CustomerShell() {
             <ShellOffline/>
         );
     }
+
+    useEffect(() => {
+        dispatch(setStatus(ShellStatus.Ready));
+    }, []);
 
     return (
         <>
