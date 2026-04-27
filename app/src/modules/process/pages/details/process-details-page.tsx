@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
+import {Box, Button, Chip, Divider, IconButton, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -59,6 +59,8 @@ import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@mui/icons-material/Undo';
 import Redo from '@mui/icons-material/Redo';
 import Refresh from '@mui/icons-material/Refresh';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import ChevronRight from '@mui/icons-material/ChevronRight';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
@@ -86,6 +88,7 @@ const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
 const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
 const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
+const EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX = 24;
 
 interface RuntimeAttachment {
     key: string;
@@ -277,6 +280,10 @@ export function ProcessDetailsPage(): ReactNode {
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [processNodeProblems, setProcessNodeProblems] = useState<ProcessNodeProblems[]>([]);
     const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useState<Record<number, boolean>>({});
+    const [isEditorPaneCollapsed, setIsEditorPaneCollapsed] = useState(false);
+    const [hideEditorPaneExpandButton, setHideEditorPaneExpandButton] = useState(false);
+    const [editorPaneWidth, setEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
+    const [lastExpandedEditorPaneWidth, setLastExpandedEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -489,6 +496,50 @@ export function ProcessDetailsPage(): ReactNode {
 
         return processFlow.nodes.find((node) => node.id === selectedNodeId) ?? null;
     }, [params.nodeId, processFlow]);
+
+    const handleCollapseEditorPane = useCallback((): void => {
+        setLastExpandedEditorPaneWidth((previousWidth) => Math.max(previousWidth, editorPaneWidth, MIN_EDITOR_DRAWER_WIDTH_PX));
+        setEditorPaneWidth(0);
+        setIsEditorPaneCollapsed(true);
+    }, [editorPaneWidth]);
+
+    const handleExpandEditorPane = useCallback((): void => {
+        setEditorPaneWidth((currentWidth) => currentWidth > 0 ? currentWidth : lastExpandedEditorPaneWidth);
+        setIsEditorPaneCollapsed(false);
+    }, [lastExpandedEditorPaneWidth]);
+
+    const handleEditorPaneDragEnd = useCallback((sizes: number[]): void => {
+        const nextEditorPaneWidth = sizes[1] ?? MIN_EDITOR_DRAWER_WIDTH_PX;
+        if (nextEditorPaneWidth <= 0) {
+            return;
+        }
+
+        setHideEditorPaneExpandButton(false);
+        setEditorPaneWidth(nextEditorPaneWidth);
+        setLastExpandedEditorPaneWidth(nextEditorPaneWidth);
+    }, []);
+
+    const handleSelectNode = useCallback((node: ProcessNodeEntity | null): void => {
+        if (processFlow == null) {
+            return;
+        }
+
+        if (node == null) {
+            navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
+            return;
+        }
+
+        handleExpandEditorPane();
+        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
+    }, [handleExpandEditorPane, navigate, processFlow, searchParams]);
+
+    useEffect(() => {
+        if (selectedNode == null) {
+            return;
+        }
+
+        handleExpandEditorPane();
+    }, [handleExpandEditorPane, selectedNode?.id]);
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
@@ -1893,9 +1944,10 @@ export function ProcessDetailsPage(): ReactNode {
                 sx={{
                     height: '100vh',
                     '--focus-border': (theme) => theme.palette.secondary.main,
+                    position: 'relative',
                 }}
             >
-                <Allotment>
+                <Allotment onDragStart={() => setHideEditorPaneExpandButton(true)} onDragEnd={handleEditorPaneDragEnd}>
                     <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
                         <Box
                             sx={{
@@ -2065,13 +2117,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                     ) : undefined
                                                 }
                                                 selectedNode={selectedNode}
-                                                onSelectNode={(node) => {
-                                                    if (node == null) {
-                                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
-                                                        return;
-                                                    }
-                                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
-                                                }}
+                                                onSelectNode={handleSelectNode}
                                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
                                                     setNewNodeFor({
                                                         fromNodeId,
@@ -2181,6 +2227,7 @@ export function ProcessDetailsPage(): ReactNode {
                     <Allotment.Pane
                         minSize={MIN_EDITOR_DRAWER_WIDTH_PX}
                         preferredSize={MIN_EDITOR_DRAWER_WIDTH_PX}
+                        visible={!isEditorPaneCollapsed}
                     >
                         <Paper
                             sx={{
@@ -2208,8 +2255,38 @@ export function ProcessDetailsPage(): ReactNode {
                                 <Outlet/>
                             </ProcessDetailsPageProvider>
                         </Paper>
+
+
                     </Allotment.Pane>
                 </Allotment>
+
+                <IconButton
+                    aria-label={isEditorPaneCollapsed ? 'Editor einblenden' : 'Editor ausblenden'}
+                    onClick={isEditorPaneCollapsed ? handleExpandEditorPane : handleCollapseEditorPane}
+                    sx={{
+                        display: hideEditorPaneExpandButton ? 'none' : undefined,
+                        position: 'absolute',
+                        fontSize: '50%',
+                        top: '50%',
+                        right: isEditorPaneCollapsed
+                            ? 0
+                            : editorPaneWidth,
+                        transform: 'translateY(-50%)',
+                        zIndex: 40,
+                        width: EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX,
+                        height: 56,
+                        borderRadius: '12px 0 0 12px',
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: 'background.paper',
+                        boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.14)',
+                        '&:hover': {
+                            bgcolor: 'background.paper',
+                        },
+                    }}
+                >
+                    {isEditorPaneCollapsed ? <ChevronLeft/> : <ChevronRight/>}
+                </IconButton>
             </Box>
 
             <SelectNodeProviderDialog
