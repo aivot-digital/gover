@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -75,7 +77,9 @@ public class AppConfigController {
     private static final String OIDC_CLIENT_ID_KEY = "clientId";
 
     @GetMapping("app-config.js")
-    public ResponseEntity<String> getAppConfigJs() throws ResponseException {
+    public ResponseEntity<String> getAppConfigJs(
+            @Nullable @AuthenticationPrincipal Jwt jwt
+    ) throws ResponseException {
         var appConfig = new HashMap<String, Object>();
 
         var systemTheme = getSystemTheme();
@@ -83,7 +87,13 @@ public class AppConfigController {
         appConfig.put(KNOWN_EXTENSIONS_CONFIG_KEY, knownExtensionsService.getKnownExtensions());
         appConfig.put(PROVIDER_NAME_CONFIG_KEY, getProviderName());
         appConfig.put(SYSTEM_THEME_CONFIG_KEY, ThemeResponseDTO.fromEntity(systemTheme));
-        appConfig.put(PUBLIC_SYSTEM_CONFIGS_CONFIG_KEY, systemConfigService.getPublicConfigsAsMap());
+
+        if (jwt != null) {
+            appConfig.put(PUBLIC_SYSTEM_CONFIGS_CONFIG_KEY, systemConfigService.getAllConfigsAsMap());
+        } else {
+            appConfig.put(PUBLIC_SYSTEM_CONFIGS_CONFIG_KEY, systemConfigService.getPublicConfigsAsMap());
+        }
+
 
         String faviconUrl;
         if (systemTheme.getFaviconKey() == null) {
