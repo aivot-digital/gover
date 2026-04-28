@@ -186,7 +186,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
 
         var url = templateRenderService
                 .interpolate(
-                        context.getProcessData(),
+                        context.getProcessExecutionData(),
                         String.valueOf(configuration.getOrDefault(URL_FIELD_ID, ""))
                 );
 
@@ -210,7 +210,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
         } else {
             var payload = templateRenderService
                     .interpolate(
-                            context.getProcessData(),
+                            context.getProcessExecutionData(),
                             String.valueOf(configuration.getOrDefault(PAYLOAD_FIELD_ID, "{}"))
                     );
 

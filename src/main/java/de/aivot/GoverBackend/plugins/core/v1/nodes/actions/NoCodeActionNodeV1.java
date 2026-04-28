@@ -194,7 +194,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var sourceRoot = context.getProcessData().get("$");
+        var sourceRoot = context.getProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die Vorgangsdatenwurzel ($) ist kein Objekt."
@@ -211,7 +211,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition {
 
             var targetPath = parsePath(definition.name(), rowIndex, "Variablenname");
             var processDataContext = new ProcessExecutionData();
-            processDataContext.putAll(context.getProcessData());
+            processDataContext.putAll(context.getProcessExecutionData());
             processDataContext.put("$", outputRoot);
 
             final Object evaluatedValue;

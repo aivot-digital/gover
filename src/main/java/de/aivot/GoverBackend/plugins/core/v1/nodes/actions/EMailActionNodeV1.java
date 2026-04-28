@@ -262,14 +262,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        result.setProcessData(context.getProcessData());
+        //result.setProcessData(context.getProcessExecutionData().getProcessData());
 
         return result;
     }
 
     private ProcessNodeExecutionResult initAutomatic(@Nonnull ProcessNodeExecutionContextInit context,
                                                      @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
-        var processData = context.getProcessData();
+        var processData = context.getProcessExecutionData();
 
         var subject = templateRenderService
                 .interpolate(
@@ -305,7 +305,11 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        return sendMail(subject, interpolatedContentMarkdown, config, context.getProcessData(), context.getThisProcessInstance());
+        return sendMail(subject,
+                interpolatedContentMarkdown,
+                config,
+                context.getProcessExecutionData(),
+                context.getThisProcessInstance());
     }
 
     private ProcessNodeExecutionResult initManual(@Nonnull ProcessNodeExecutionContextInit context,
@@ -468,7 +472,11 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             throw ResponseException.badRequest(derivedRuntimeData);
         }
 
-        var res = sendMail(subject, content, config, context.getProcessData(), context.getThisProcessInstance());
+        var res = sendMail(subject,
+                content,
+                config,
+                context.getProcessData(),
+                context.getThisProcessInstance());
 
         return Optional.of(res);
     }

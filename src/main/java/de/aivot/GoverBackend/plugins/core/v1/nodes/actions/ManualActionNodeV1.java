@@ -44,7 +44,6 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
@@ -267,7 +266,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var config = loadConfiguration(context.getConfiguration().getEffectiveValues());
-        var workingProcessData = extractWorkingProcessData(context.getProcessData());
+        var workingProcessData = extractWorkingProcessData(context.getProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(

@@ -36,6 +36,15 @@ public class ProcessExecutionData extends HashMap<String, Object> {
         put(NODE_RESULTS_KEY, new HashMap<String, Object>());
     }
 
+    public Map<String, Object> getProcessData() {
+        var res = (Map<String, Object>) this.get(PROCESS_DATA_KEY);
+        if (res == null) {
+            res = new HashMap<>();
+            this.put(PROCESS_DATA_KEY, res);
+        }
+        return res;
+    }
+
     public static ProcessExecutionData of(Map<String, Object> data) {
         ProcessExecutionData executionData = new ProcessExecutionData();
         executionData.putAll(data);

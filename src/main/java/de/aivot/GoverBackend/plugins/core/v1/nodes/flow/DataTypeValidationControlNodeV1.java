@@ -232,7 +232,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var sourceRoot = context.getProcessData().get("$");
+        var sourceRoot = context.getProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die Vorgangsdatenwurzel ($) ist kein Objekt."

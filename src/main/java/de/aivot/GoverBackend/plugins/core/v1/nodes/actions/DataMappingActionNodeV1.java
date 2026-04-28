@@ -105,7 +105,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var sourceRoot = context.getProcessData().get("$");
+        var sourceRoot = context.getProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootMapRaw)) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     "Die Vorgangsdatenwurzel ($) ist kein Objekt und kann nicht für die Datenabbildung verwendet werden."
@@ -132,7 +132,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             ProcessDataService
-                    .fillJsEngineWithData(context.getProcessData(), engine);
+                    .fillJsEngineWithData(context.getProcessExecutionData(), engine);
 
             for (int i = 0; i < rules.size(); i++) {
                 var rule = rules.get(i);

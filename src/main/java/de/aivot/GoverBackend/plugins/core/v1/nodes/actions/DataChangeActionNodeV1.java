@@ -227,7 +227,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var config = loadConfiguration(context.getConfiguration().getEffectiveValues());
-        var workingProcessData = extractWorkingProcessData(context.getProcessData());
+        var workingProcessData = extractWorkingProcessData(context.getProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(

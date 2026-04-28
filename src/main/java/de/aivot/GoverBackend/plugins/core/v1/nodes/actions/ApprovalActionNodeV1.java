@@ -222,7 +222,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var config = loadConfiguration(context.getThisNode());
-        var workingProcessData = extractWorkingProcessData(context.getProcessData());
+        var workingProcessData = extractWorkingProcessData(context.getProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(

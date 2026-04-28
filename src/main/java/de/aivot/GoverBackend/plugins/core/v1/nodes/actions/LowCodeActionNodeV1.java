@@ -106,7 +106,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             ProcessDataService
-                    .fillJsEngineWithData(context.getProcessData(), engine);
+                    .fillJsEngineWithData(context.getProcessExecutionData(), engine);
 
             try {
                 var result = engine

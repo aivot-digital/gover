@@ -277,7 +277,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             ProcessDataService
-                    .fillJsEngineWithData(context.getProcessData(), engine);
+                    .fillJsEngineWithData(context.getProcessExecutionData(), engine);
 
             try {
                 var jsResult = engine
@@ -332,7 +332,7 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition {
                     .evaluate(
                             noCodeCondition,
                             new DerivedRuntimeElementData(),
-                            context.getProcessData()
+                            context.getProcessExecutionData()
                     );
             noCodeValue = noCodeResult.getValue();
             noCodeConditionValue = noCodeResult.getValueAsBoolean();

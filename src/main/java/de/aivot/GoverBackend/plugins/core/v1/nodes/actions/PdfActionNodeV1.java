@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.asset.services.AssetService;
-import de.aivot.GoverBackend.asset.services.VStorageIndexItemWithAssetService;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
@@ -254,7 +253,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         }
 
         var fileName = templateRenderService
-                .interpolate(context.getProcessData(), configuration.fileName);
+                .interpolate(context.getProcessExecutionData(), configuration.fileName);
         if (StringUtils.isNullOrEmpty(fileName)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Der Dateiname für das PDF wurde nicht angegeben."
@@ -273,7 +272,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
 
         var pdfHtmlSections = splitHtmlSections(contentHtml);
         var interpolatedContentHtml = templateRenderService
-                .interpolate(context.getProcessData(), pdfHtmlSections.contentHtml);
+                .interpolate(context.getProcessExecutionData(), pdfHtmlSections.contentHtml);
 
         if (StringUtils.isNullOrEmpty(interpolatedContentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -282,9 +281,9 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         }
 
         var interpolatedHeaderHtml = templateRenderService
-                .interpolate(context.getProcessData(), pdfHtmlSections.headerHtml);
+                .interpolate(context.getProcessExecutionData(), pdfHtmlSections.headerHtml);
         var interpolatedFooterHtml = templateRenderService
-                .interpolate(context.getProcessData(), pdfHtmlSections.footerHtml);
+                .interpolate(context.getProcessExecutionData(), pdfHtmlSections.footerHtml);
 
         byte[] pdfBytes;
         try {
@@ -348,12 +347,12 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE.equals(contentSource)) {
             return templateRenderService
-                    .interpolate(context.getProcessData(), configuration.contentHtml);
+                    .interpolate(context.getProcessExecutionData(), configuration.contentHtml);
         }
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(contentSource)) {
             var assetKeyStr = templateRenderService
-                    .interpolate(context.getProcessData(), configuration.contentHtmlAssetKey);
+                    .interpolate(context.getProcessExecutionData(), configuration.contentHtmlAssetKey);
             if (StringUtils.isNullOrEmpty(assetKeyStr)) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
                         "Der Asset-Schlüssel für die PDF-Vorlage wurde nicht angegeben."
@@ -375,7 +374,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             var assetTemplate = loadAssetContentAsString(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
             // Render the full asset template before splitting the individual HTML documents so shared
             // blocks defined outside a specific <html> section remain available to all use sites.
-            return templateRenderService.interpolate(context.getProcessData(), assetTemplate);
+            return templateRenderService.interpolate(context.getProcessExecutionData(), assetTemplate);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(

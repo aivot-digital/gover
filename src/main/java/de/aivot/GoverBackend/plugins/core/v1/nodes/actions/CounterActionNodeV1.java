@@ -4,13 +4,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.Core;
@@ -223,7 +220,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
 
         if (variablePath != null) {
             var path = parsePath(variablePath, "Vorgangsdatenvariable");
-            var outputRoot = resolveProcessDataRoot(context.getProcessData().get("$"));
+            var outputRoot = resolveProcessDataRoot(context.getProcessExecutionData().get("$"));
             var previousValue = readCounterValue(readPath(outputRoot, path), "Vorgangsdatenvariable");
             var nextValue = previousValue + increment;
 
@@ -273,14 +270,14 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
 
     private long readFallbackCounterValue(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var dataKey = context.getThisNode().getDataKey();
-        var directNodeData = context.getProcessData().get("_" + dataKey);
+        var directNodeData = context.getProcessExecutionData().get("_" + dataKey);
 
         var contextValue = extractStoredCounterValue(directNodeData);
         if (contextValue != null) {
             return contextValue;
         }
 
-        var groupedNodeData = context.getProcessData().get("_");
+        var groupedNodeData = context.getProcessExecutionData().get("_");
         if (groupedNodeData instanceof Map<?, ?> allNodeDataRaw) {
             var previousNodeData = allNodeDataRaw.get(dataKey);
             contextValue = extractStoredCounterValue(previousNodeData);
