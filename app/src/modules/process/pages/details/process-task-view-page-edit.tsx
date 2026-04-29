@@ -59,6 +59,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const lastPersistedTaskInputDataRef = useRef<AuthoredElementValues>({});
     const pendingOfflineRetryRef = useRef(false);
     const isResolvingBlockedNavigationRef = useRef(false);
+    const ignoreAuthoredValuesChangeRef = useRef(false);
+    const skipChangeBlockerRef = useRef(false);
 
     const [taskView, setTaskView] = useState<TaskView>();
     const [taskInputData, setTaskInputData] = useState<AuthoredElementValues>({});
@@ -177,6 +179,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     useEffect(() => {
         return () => {
             taskSessionRef.current += 1;
+            ignoreAuthoredValuesChangeRef.current = false;
+            skipChangeBlockerRef.current = false;
             if (pushUpdateTimeoutRef.current != null) {
                 clearTimeout(pushUpdateTimeoutRef.current);
             }
@@ -190,6 +194,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         pendingOfflineRetryRef.current = false;
         inFlightSavePromiseRef.current = null;
         isResolvingBlockedNavigationRef.current = false;
+        ignoreAuthoredValuesChangeRef.current = false;
+        skipChangeBlockerRef.current = false;
         setPendingBlockedNavigation(null);
         setDerivedErrors(null);
         if (pushUpdateTimeoutRef.current != null) {
@@ -301,6 +307,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             return;
         }
 
+        let shouldNavigateAway = false;
+        ignoreAuthoredValuesChangeRef.current = true;
+
         if (pushUpdateTimeoutRef.current != null) {
             window.clearTimeout(pushUpdateTimeoutRef.current);
             pushUpdateTimeoutRef.current = null;
@@ -316,9 +325,11 @@ export function ProcessTaskViewPageEdit(): ReactNode {
             estimatedTime: 500,
         }));
 
+        const eventPayload = latestTaskInputDataRef.current;
+
         withDelay(
             new ProcessInstanceTaskApiService()
-                .putStaffTaskView(item.task.processInstanceId, item.task.id, latestTaskInputDataRef.current, evt.event),
+                .putStaffTaskView(item.task.processInstanceId, item.task.id, eventPayload, evt.event),
             500,
         )
             .then(async (updatedTaskView) => {
@@ -339,6 +350,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 setLastSavedAt(new Date());
                 setTaskInputDataSaveState(ProcessTaskInputSaveState.Saved);
+                shouldNavigateAway = true;
+                skipChangeBlockerRef.current = true;
+                setPendingBlockedNavigation(null);
                 setTimeout(() => {
                     navigate('/tasks');
                 }, 1);
@@ -352,12 +366,20 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                 }
             })
             .finally(() => {
+                ignoreAuthoredValuesChangeRef.current = false;
+                if (!shouldNavigateAway) {
+                    skipChangeBlockerRef.current = false;
+                }
                 dispatch(clearLoadingMessage());
             });
     };
 
     const handleAuthoredValuesChange = (authoredValues: AuthoredElementValues) => {
         if (item == null) {
+            return;
+        }
+
+        if (ignoreAuthoredValuesChangeRef.current) {
             return;
         }
 
@@ -395,6 +417,10 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     };
 
     const blocker = useBlocker(({currentLocation, nextLocation}) => {
+        if (skipChangeBlockerRef.current) {
+            return false;
+        }
+
         if (currentLocation.pathname === nextLocation.pathname &&
             currentLocation.search === nextLocation.search) {
             return false;
