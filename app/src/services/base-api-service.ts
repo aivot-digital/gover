@@ -1,5 +1,10 @@
 import {AuthService} from './auth-service';
-import {ApiError, createApiError} from '../models/api-error';
+import {
+    ApiError,
+    API_ERROR_REASON_NETWORK_UNREACHABLE,
+    API_ERROR_REASON_TIMEOUT,
+    createApiError,
+} from '../models/api-error';
 import {createApiPath} from '../utils/url-path-utils';
 import {isStringNotNullOrEmpty} from '../utils/string-utils';
 
@@ -129,9 +134,6 @@ export class BaseApiService {
                 if (response.status === 401) {
                     this.auth.logout();
                 }
-                if (response.status > 500) {
-                    dispatchApiUnreachableEvent();
-                }
             }
             throw await createApiError(response);
         }
@@ -209,7 +211,10 @@ export function handleFetchError(error: any): Response {
     if (error.name === 'TimeoutError') {
         const payload: ApiError = {
             status: 504,
-            details: null,
+            details: {
+                reason: API_ERROR_REASON_TIMEOUT,
+                online: typeof navigator !== 'undefined' ? navigator.onLine : undefined,
+            },
             message: 'Die Anfrage hat zu lange gedauert und wurde abgebrochen. Versuchen Sie es später erneut.',
             displayableToUser: true,
         };
@@ -222,9 +227,14 @@ export function handleFetchError(error: any): Response {
     }
 
     if (error.name === 'TypeError') {
+        dispatchApiUnreachableEvent();
+
         const payload: ApiError = {
             status: 503,
-            details: null,
+            details: {
+                reason: API_ERROR_REASON_NETWORK_UNREACHABLE,
+                online: typeof navigator !== 'undefined' ? navigator.onLine : undefined,
+            },
             message: 'Der Server ist nicht erreichbar. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
             displayableToUser: true,
         };
