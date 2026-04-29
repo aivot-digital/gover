@@ -6,6 +6,11 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -17,10 +22,12 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -30,11 +37,6 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     public static final String NODE_KEY = "data_mapping";
 
     private static final String PORT_NAME = "output";
-
-    private static final String MAPPINGS_FIELD_ID = "mappings";
-    private static final String FROM_FIELD_COLUMN_KEY = "fromField";
-    private static final String TO_FIELD_COLUMN_KEY = "toField";
-    private static final String TRANSFORM_FUNCTION_COLUMN_KEY = "transformFunction";
 
     private static final String TRANSFORM_ARGS_OBJECT_NAME = "__mappingArgs";
 
@@ -104,6 +106,117 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AuthoredElementValues configuration,
+                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+        var errors = new LinkedHashMap<String, String>();
+        var rulesState = derivedRuntimeElementData
+                .getElementStates()
+                .computeIfAbsent(DataMappingActionNodeV1Config.RULES_FIELD_ID, ignored -> new ComputedElementState());
+        var rowStates = new ArrayList<ComputedElementStates>();
+        rulesState.setError(null);
+        rulesState.setSubStates(rowStates);
+
+        var rawRules = derivedRuntimeElementData
+                .getEffectiveValues()
+                .get(DataMappingActionNodeV1Config.RULES_FIELD_ID);
+
+        if (!(rawRules instanceof Collection<?> rows)) {
+            var error = "Die Konfiguration des Feldes \"Abbildungsregeln\" ist ungültig. Es wird eine Liste von Abbildungsregeln erwartet.";
+            rulesState.setError(error);
+            errors.put(DataMappingActionNodeV1Config.RULES_FIELD_ID, error);
+            return errors;
+        }
+
+        if (rows.isEmpty()) {
+            var error = "Es wurde keine Abbildungsregel angegeben.";
+            rulesState.setError(error);
+            errors.put(DataMappingActionNodeV1Config.RULES_FIELD_ID, error);
+            return errors;
+        }
+
+        String topLevelError = null;
+        var rowIndex = 1;
+        var hasRowErrors = false;
+
+        for (var rowObj : rows) {
+            var rowState = new ComputedElementStates();
+            rowStates.add(rowState);
+
+            if (!(rowObj instanceof Map<?, ?> rowRaw)) {
+                if (topLevelError == null) {
+                    topLevelError = String.format(
+                            "Die Abbildungsregel in Zeile %d ist ungültig. Es wird ein Objekt erwartet.",
+                            rowIndex
+                    );
+                }
+                hasRowErrors = true;
+                rowIndex++;
+                continue;
+            }
+
+            var row = castStringObjectMap(rowRaw);
+            var source = toNullableTrimmedString(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.SOURCE_FIELD_ID));
+            var target = toNullableTrimmedString(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.TARGET_FIELD_ID));
+            var deleteOnly = toBoolean(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.DELETE_ONLY_FIELD_ID));
+
+            if (source == null) {
+                putFieldError(
+                        rowState,
+                        DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.SOURCE_FIELD_ID,
+                        String.format("Die Abbildungsregel in Zeile %d enthält keinen gültigen Ausgangspfad.", rowIndex)
+                );
+                hasRowErrors = true;
+            } else {
+                try {
+                    parsePath(source, rowIndex, "Ausgangspfad");
+                } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+                    putFieldError(
+                            rowState,
+                            DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.SOURCE_FIELD_ID,
+                            e.getMessage()
+                    );
+                    hasRowErrors = true;
+                }
+            }
+
+            if (!deleteOnly) {
+                if (target == null) {
+                    putFieldError(
+                            rowState,
+                            DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.TARGET_FIELD_ID,
+                            String.format("Die Abbildungsregel in Zeile %d enthält keinen gültigen Zielpfad.", rowIndex)
+                    );
+                    hasRowErrors = true;
+                } else {
+                    try {
+                        parsePath(target, rowIndex, "Zielpfad");
+                    } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
+                        putFieldError(
+                                rowState,
+                                DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.TARGET_FIELD_ID,
+                                e.getMessage()
+                        );
+                        hasRowErrors = true;
+                    }
+                }
+            }
+
+            rowIndex++;
+        }
+
+        if (hasRowErrors) {
+            var error = topLevelError != null
+                    ? topLevelError
+                    : "Bitte überprüfen Sie die markierten Abbildungsregeln.";
+            rulesState.setError(error);
+            errors.put(DataMappingActionNodeV1Config.RULES_FIELD_ID, error);
+        }
+
+        return errors.isEmpty() ? null : errors;
+    }
+
+    @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
         var sourceRoot = context.getProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootMapRaw)) {
@@ -115,60 +228,49 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         @SuppressWarnings("unchecked")
         var sourceRootMap = (Map<String, Object>) sourceRootMapRaw;
         var outputRoot = deepCopyMap(sourceRootMap);
-
-        DataMappingActionNodeV1Config config;
-        try {
-            config = ElementPOJOMapper.mapToPOJO(context.getConfiguration().getEffectiveValues(), DataMappingActionNodeV1Config.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des Datenabbildungsprozesses ist ungültig: %s",
-                    e.getMessage()
-            );
-        }
-
-        var rules = config.rules;
+        var config = loadConfiguration(context.getConfiguration().getEffectiveValues());
+        var rules = config.rules();
         var mappedValues = new ArrayList<Map<String, Object>>();
 
-        try (var engine = javascriptEngineFactoryService.getEngine()) {
-            ProcessDataService
-                    .fillJsEngineWithData(context.getProcessExecutionData(), engine);
-
+        try (var engine = initializeEngine(context.getProcessExecutionData())) {
             for (int i = 0; i < rules.size(); i++) {
                 var rule = rules.get(i);
                 var rowIndex = i + 1;
 
-                var sourcePath = parsePath(rule.source, rowIndex, "From Field");
-                var targetPath = parsePath(rule.target, rowIndex, "To Field");
+                var sourcePath = parsePath(rule.source(), rowIndex, "Ausgangspfad");
+                var targetPath = rule.deleteOnly()
+                        ? null
+                        : parsePath(rule.target(), rowIndex, "Zielpfad");
 
                 var sourceValue = readPath(outputRoot, sourcePath);
-                var transformedValue = applyTransform(
-                        engine,
-                        rowIndex,
-                        null,
-                        sourceValue,
-                        sourceRootMap,
-                        outputRoot
-                );
+                Object transformedValue = null;
 
-                writePath(outputRoot, targetPath, transformedValue, rowIndex);
+                if (!rule.deleteOnly()) {
+                    transformedValue = applyTransform(
+                            engine,
+                            rowIndex,
+                            null,
+                            sourceValue,
+                            sourceRootMap,
+                            outputRoot
+                    );
 
-                var data = Map.of(
-                        "originalPath", rule.source,
-                        "newPath", rule.target,
-                        "original", sourceValue != null ? sourceValue.toString() : "null",
-                        "mapped", transformedValue
-                );
+                    writePath(outputRoot, Objects.requireNonNull(targetPath), transformedValue, rowIndex);
+                }
 
-                mappedValues.add(data);
+                if (rule.cleanupSource() && (rule.deleteOnly() || !sourcePath.equals(targetPath))) {
+                    removePath(outputRoot, sourcePath, config.cleanupEmptyContainers());
+                }
+
+                mappedValues.add(createMappedValueEntry(rule, sourceValue, transformedValue));
             }
         } catch (ProcessNodeExecutionException e) {
             throw e;
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
-                    "Fehler beim Initialisieren der JavaScript-Engine für die Datenabbildung: %s",
-                    e.getMessage()
+                    "Fehler bei der Datenabbildung: %s",
+                    defaultMessage(e)
             );
         }
 
@@ -182,62 +284,138 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private List<MappingRule> parseRules(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var rawMappings = context
-                .getConfiguration()
-                .getEffectiveValues()
-                .getOrDefault(MAPPINGS_FIELD_ID, List.of());
-
-        if (!(rawMappings instanceof Collection<?> rows)) {
+    private ResolvedConfiguration loadConfiguration(@Nonnull Map<String, Object> rawConfiguration)
+            throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        DataMappingActionNodeV1Config config;
+        try {
+            var configuration = new EffectiveElementValues();
+            configuration.putAll(rawConfiguration);
+            config = ElementPOJOMapper.mapToPOJO(configuration, DataMappingActionNodeV1Config.class);
+        } catch (ElementDataConversionException e) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Konfiguration des Feldes %s ist ungültig. Es wird eine Liste von Abbildungsregeln erwartet.",
-                    StringUtils.quote(MAPPINGS_FIELD_ID)
+                    e,
+                    "Die Konfiguration des Datenabbildungsprozesses ist ungültig: %s",
+                    e.getMessage()
             );
         }
 
-        var result = new ArrayList<MappingRule>();
-        var rowIndex = 1;
-
-        for (var rowObj : rows) {
-            if (!(rowObj instanceof Map<?, ?> rowRaw)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Abbildungsregel in Zeile %d ist ungültig. Es wird ein Objekt erwartet.",
-                        rowIndex
-                );
-            }
-
-            var row = castStringObjectMap(rowRaw);
-            var fromField = toNullableTrimmedString(row.get(FROM_FIELD_COLUMN_KEY));
-            var toField = toNullableTrimmedString(row.get(TO_FIELD_COLUMN_KEY));
-            var transformFunction = toNullableTrimmedString(row.get(TRANSFORM_FUNCTION_COLUMN_KEY));
-
-            if (StringUtils.isNullOrEmpty(fromField)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Abbildungsregel in Zeile %d enthält kein gültiges %s.",
-                        rowIndex,
-                        StringUtils.quote("From Field")
-                );
-            }
-
-            if (StringUtils.isNullOrEmpty(toField)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die Abbildungsregel in Zeile %d enthält kein gültiges %s.",
-                        rowIndex,
-                        StringUtils.quote("To Field")
-                );
-            }
-
-            result.add(new MappingRule(fromField, toField, transformFunction));
-            rowIndex++;
-        }
-
-        if (result.isEmpty()) {
+        if (config.rules == null || config.rules.isEmpty()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Es wurde keine Abbildungsregel angegeben."
             );
         }
 
-        return result;
+        var resolvedRules = new ArrayList<ResolvedRule>();
+        for (int i = 0; i < config.rules.size(); i++) {
+            var rowIndex = i + 1;
+            var rule = config.rules.get(i);
+
+            if (rule == null) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Die Abbildungsregel in Zeile %d ist ungültig.",
+                        rowIndex
+                );
+            }
+
+            var source = requireRulePath(rule.source, rowIndex, "Ausgangspfad");
+            var target = toNullableTrimmedString(rule.target);
+            var deleteOnly = Boolean.TRUE.equals(rule.deleteOnly);
+
+            if (!deleteOnly && target == null) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Die Abbildungsregel in Zeile %d enthält keinen gültigen Zielpfad.",
+                        rowIndex
+                );
+            }
+
+            resolvedRules.add(new ResolvedRule(
+                    source,
+                    target,
+                    Boolean.TRUE.equals(rule.cleanupSource) || deleteOnly,
+                    deleteOnly
+            ));
+        }
+
+        return new ResolvedConfiguration(
+                resolvedRules,
+                Boolean.TRUE.equals(config.cleanupEmptyContainers)
+        );
+    }
+
+    @Nonnull
+    private de.aivot.GoverBackend.javascript.services.JavascriptEngine initializeEngine(@Nonnull Map<String, Object> processExecutionData)
+            throws ProcessNodeExecutionExceptionUnknown {
+        de.aivot.GoverBackend.javascript.services.JavascriptEngine engine = null;
+        try {
+            engine = javascriptEngineFactoryService.getEngine();
+            ProcessDataService.fillJsEngineWithData(processExecutionData, engine);
+            return engine;
+        } catch (Exception e) {
+            if (engine != null) {
+                try {
+                    engine.close();
+                } catch (Exception ignored) {
+                    // Ignore close errors and surface the original initialization problem.
+                }
+            }
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Fehler beim Initialisieren der JavaScript-Engine für die Datenabbildung: %s",
+                    defaultMessage(e)
+            );
+        }
+    }
+
+    @Nonnull
+    private static String requireRulePath(@Nullable String path,
+                                          int rowIndex,
+                                          @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var normalized = toNullableTrimmedString(path);
+        if (normalized == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die Abbildungsregel in Zeile %d enthält keinen gültigen %s.",
+                    rowIndex,
+                    fieldLabel
+            );
+        }
+        return normalized;
+    }
+
+    @Nonnull
+    private static Map<String, Object> createMappedValueEntry(@Nonnull ResolvedRule rule,
+                                                              Object sourceValue,
+                                                              Object mappedValue) {
+        var data = new LinkedHashMap<String, Object>();
+        data.put("originalPath", rule.source());
+        data.put("newPath", rule.deleteOnly() ? null : rule.target());
+        data.put("cleanupSource", rule.cleanupSource());
+        data.put("deleteOnly", rule.deleteOnly());
+        data.put("original", sourceValue != null ? sourceValue.toString() : "null");
+        data.put("mapped", mappedValue);
+        return data;
+    }
+
+    private static void putFieldError(@Nonnull ComputedElementStates rowState,
+                                      @Nonnull String fieldId,
+                                      @Nonnull String error) {
+        rowState
+                .computeIfAbsent(fieldId, ignored -> new ComputedElementState())
+                .setError(error);
+    }
+
+    private static boolean toBoolean(@Nullable Object value) {
+        if (value instanceof Boolean b) {
+            return b;
+        }
+        if (value instanceof String s) {
+            return Boolean.parseBoolean(s.trim());
+        }
+        return false;
+    }
+
+    @Nonnull
+    private static String defaultMessage(@Nonnull Exception e) {
+        return e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
     }
 
     @Nonnull
@@ -280,10 +458,22 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private static List<PathPart> parsePath(@Nonnull String path,
+    private static List<PathPart> parsePath(@Nullable String path,
                                             int rowIndex,
                                             @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        if (path == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die Pfadangabe %s in Zeile %d darf nicht leer sein.",
+                    StringUtils.quote(fieldLabel),
+                    rowIndex
+            );
+        }
+
         var trimmedPath = path.trim();
+        if (trimmedPath.startsWith("$.")) {
+            trimmedPath = trimmedPath.substring(2).trim();
+        }
+
         if (trimmedPath.isEmpty()) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die Pfadangabe %s in Zeile %d darf nicht leer sein.",
@@ -294,16 +484,24 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
         var result = new ArrayList<PathPart>();
         var token = new StringBuilder();
+        var expectingSegment = true;
 
         for (int i = 0; i < trimmedPath.length(); i++) {
             char c = trimmedPath.charAt(i);
 
             if (c == '.') {
+                if (expectingSegment) {
+                    throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Leeres Objektsegment ist nicht erlaubt.");
+                }
                 flushObjectToken(token, result, trimmedPath, rowIndex, fieldLabel);
+                expectingSegment = true;
                 continue;
             }
 
             if (c == '[') {
+                if (expectingSegment) {
+                    throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Pfad muss mit einem Objektsegment beginnen.");
+                }
                 flushObjectToken(token, result, trimmedPath, rowIndex, fieldLabel);
 
                 int closingBracket = trimmedPath.indexOf(']', i);
@@ -329,6 +527,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
                 result.add(new ArrayPathPart(index));
                 i = closingBracket;
+                expectingSegment = false;
                 continue;
             }
 
@@ -337,6 +536,11 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
             }
 
             token.append(c);
+            expectingSegment = false;
+        }
+
+        if (expectingSegment) {
+            throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Leeres Objektsegment ist nicht erlaubt.");
         }
 
         flushObjectToken(token, result, trimmedPath, rowIndex, fieldLabel);
@@ -413,6 +617,83 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         }
 
         return current;
+    }
+
+    private static boolean removePath(@Nonnull Map<String, Object> targetRoot,
+                                      @Nonnull List<PathPart> path,
+                                      boolean cleanupEmptyContainers) {
+        return removePathRecursive(targetRoot, path, 0, cleanupEmptyContainers).removed();
+    }
+
+    @Nonnull
+    private static PathRemovalResult removePathRecursive(Object current,
+                                                         @Nonnull List<PathPart> path,
+                                                         int pathIndex,
+                                                         boolean cleanupEmptyContainers) {
+        if (current == null) {
+            return PathRemovalResult.NOT_FOUND;
+        }
+
+        var currentPart = path.get(pathIndex);
+        var isLeaf = pathIndex == path.size() - 1;
+
+        if (currentPart instanceof ObjectPathPart objectPathPart) {
+            if (!(current instanceof Map<?, ?> currentMapRaw)) {
+                return PathRemovalResult.NOT_FOUND;
+            }
+
+            @SuppressWarnings("unchecked")
+            var currentMap = (Map<String, Object>) currentMapRaw;
+
+            if (isLeaf) {
+                if (!currentMap.containsKey(objectPathPart.key())) {
+                    return PathRemovalResult.NOT_FOUND;
+                }
+
+                currentMap.remove(objectPathPart.key());
+                return new PathRemovalResult(true, currentMap.isEmpty());
+            }
+
+            var child = currentMap.get(objectPathPart.key());
+            var childResult = removePathRecursive(child, path, pathIndex + 1, cleanupEmptyContainers);
+            if (!childResult.removed()) {
+                return PathRemovalResult.NOT_FOUND;
+            }
+
+            if (cleanupEmptyContainers && childResult.containerEmpty()) {
+                currentMap.remove(objectPathPart.key());
+            }
+
+            return new PathRemovalResult(true, currentMap.isEmpty());
+        }
+
+        var arrayPathPart = (ArrayPathPart) currentPart;
+        if (!(current instanceof List<?> currentListRaw)) {
+            return PathRemovalResult.NOT_FOUND;
+        }
+
+        @SuppressWarnings("unchecked")
+        var currentList = (List<Object>) currentListRaw;
+        if (arrayPathPart.index() < 0 || arrayPathPart.index() >= currentList.size()) {
+            return PathRemovalResult.NOT_FOUND;
+        }
+
+        if (isLeaf) {
+            currentList.remove(arrayPathPart.index());
+            return new PathRemovalResult(true, currentList.isEmpty());
+        }
+
+        var child = currentList.get(arrayPathPart.index());
+        var childResult = removePathRecursive(child, path, pathIndex + 1, cleanupEmptyContainers);
+        if (!childResult.removed()) {
+            return PathRemovalResult.NOT_FOUND;
+        }
+
+        if (cleanupEmptyContainers && childResult.containerEmpty()) {
+            currentList.remove(arrayPathPart.index());
+        }
+
+        return new PathRemovalResult(true, currentList.isEmpty());
     }
 
     private static void writePath(@Nonnull Map<String, Object> targetRoot,
@@ -573,12 +854,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         if (value == null) {
             return null;
         }
-        return value.toString().trim();
-    }
-
-    private record MappingRule(@Nonnull String fromField,
-                               @Nonnull String toField,
-                               String transformFunction) {
+        var trimmed = value.toString().trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     private sealed interface PathPart permits ObjectPathPart, ArrayPathPart {
@@ -590,9 +867,30 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     private record ArrayPathPart(int index) implements PathPart {
     }
 
+    private record PathRemovalResult(boolean removed, boolean containerEmpty) {
+        private static final PathRemovalResult NOT_FOUND = new PathRemovalResult(false, false);
+    }
+
+    private record ResolvedConfiguration(@Nonnull List<ResolvedRule> rules,
+                                         boolean cleanupEmptyContainers) {
+    }
+
+    private record ResolvedRule(@Nonnull String source,
+                                @Nullable String target,
+                                boolean cleanupSource,
+                                boolean deleteOnly) {
+    }
+
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class DataMappingActionNodeV1Config {
+        private static final String CLEANUP_EMPTY_CONTAINERS_FIELD_ID = "cleanupEmptyContainers";
         private static final String RULES_FIELD_ID = "rules";
+
+        @InputElementPOJOBinding(id = CLEANUP_EMPTY_CONTAINERS_FIELD_ID, type = ElementType.Checkbox, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Leere Objekte und Arrays bereinigen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Entfernt nach dem Bereinigen eines Ausgangswerts auch leere Objekte und Arrays. Wenn deaktiviert, bleiben leere Container bestehen.")
+        })
+        public Boolean cleanupEmptyContainers;
         public List<DataMappingActionNodeV1Rule> rules;
 
         @ReplicatingContainerLayoutElementElementPOJOBinding(id = RULES_FIELD_ID, properties = {
@@ -607,7 +905,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
             public static final String SOURCE_FIELD_ID = "source";
             @InputElementPOJOBinding(id = SOURCE_FIELD_ID, type = ElementType.Text, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangspfad"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden Wert. Wenn der Pfad nicht existiert, wird null abgebildet. Pfade können mit Punktnotation und Array-Indizes angegeben werden, z.B. $.person.name oder $.items.0.price."),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert. Wenn der Pfad nicht existiert, wird null verwendet. Pfade können mit Punktnotation und Array-Indizes angegeben werden, z.B. person.name oder items[0].price. Ein führendes $. ist optional."),
                     @ElementPOJOBindingProperty(key = "required", boolValue = true),
                     @ElementPOJOBindingProperty(key = "prefix", strValue = "$.")
             })
@@ -616,11 +914,24 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
             public static final String TARGET_FIELD_ID = "target";
             @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.Text, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt."),
-                    @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt. Kann leer bleiben, wenn der Wert nur gelöscht werden soll."),
                     @ElementPOJOBindingProperty(key = "prefix", strValue = "$.")
             })
             public String target;
+
+            public static final String CLEANUP_SOURCE_FIELD_ID = "cleanupSource";
+            @InputElementPOJOBinding(id = CLEANUP_SOURCE_FIELD_ID, type = ElementType.Checkbox, properties = {
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangswert bereinigen"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Entfernt den Ausgangswert nach dem Schreiben aus den Vorgangsdaten.")
+            })
+            public Boolean cleanupSource;
+
+            public static final String DELETE_ONLY_FIELD_ID = "deleteOnly";
+            @InputElementPOJOBinding(id = DELETE_ONLY_FIELD_ID, type = ElementType.Checkbox, properties = {
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Wert nur löschen"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Löscht den Ausgangswert ohne ihn in einen Zielpfad zu kopieren.")
+            })
+            public Boolean deleteOnly;
         }
     }
 }
