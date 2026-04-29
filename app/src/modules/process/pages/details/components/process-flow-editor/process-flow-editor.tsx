@@ -75,11 +75,15 @@ const NOOP_CONNECT_NODE_TO_EXISTING = (_node: ProcessNodeEntity, _preferredPortK
 };
 const NOOP_START_REPLACE_NODE = (_node: ProcessNodeEntity): void => {
 };
+const NOOP_START_CLONE_NODE = (_node: ProcessNodeEntity): void => {
+};
 const NOOP_ADD_FOLLOW_UP_NODE = (_fromNodeId: number, _viaPortKey: string): void => {
 };
 const NOOP_ADD_INBETWEEN_NODE = (_forEdgeId: number): void => {
 };
 const NOOP_ADD_TRIGGER = (): void => {
+};
+const NOOP_SELECT_NODE = (_node: ProcessNodeEntity | null): void => {
 };
 
 interface ProcessFlowEditorProps {
@@ -410,13 +414,14 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         showTargetHandles,
 
         selectedNode: selectedNode ?? null,
+        onSelectNode: onSelectNode ?? NOOP_SELECT_NODE,
 
         onAddEdge: onAddEdge ?? NOOP_ADD_EDGE,
         onDeleteEdge: onDeleteEdge ?? NOOP_DELETE_EDGE,
         onDeleteNode: onDeleteNode ?? NOOP_DELETE_NODE,
         onConnectNodeToExisting: onConnectNodeToExisting ?? NOOP_CONNECT_NODE_TO_EXISTING,
         onStartReplaceNode: onStartReplaceNode ?? NOOP_START_REPLACE_NODE,
-        onStartCloneNode: onStartCloneNode ?? NOOP_START_REPLACE_NODE,
+        onStartCloneNode: onStartCloneNode ?? NOOP_START_CLONE_NODE,
 
         onReloadRuntimeData: onReloadRuntimeData,
 
@@ -436,12 +441,14 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onDeleteEdge,
         onDeleteNode,
         onStartReplaceNode,
+        onStartCloneNode,
         runtimeData,
         onReloadRuntimeData,
         selectedNode,
         showTargetHandles,
         nodeProblems,
         showNodeProblemsForNodes,
+        onSelectNode,
     ]);
     const handleToggleViewportLock = useCallback(() => {
         setIsViewportLocked((current) => !current);
