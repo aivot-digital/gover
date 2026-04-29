@@ -12,8 +12,10 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -57,6 +59,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     private static final String OUTPUT_DATA = "data";
     private static final String OUTPUT_DIFF = "diff";
+    private static final String OUTPUT_REMARK = "remark";
     private static final String OUTPUT_PROCESSED_BY_USER_ID = "processedByUserId";
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
 
@@ -64,6 +67,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     private static final String TASK_VIEW_DESCRIPTION_HEADLINE_ID = "data-change-task-view-description-headline";
     private static final String TASK_VIEW_DESCRIPTION_CONTENT_ID = "data-change-task-view-description-content";
     private static final String TASK_VIEW_UI_HEADLINE_ID = "data-change-task-view-ui-headline";
+    private static final String TASK_VIEW_REMARK_SPACER_ID = "data-change-task-view-remark-spacer";
+    private static final String TASK_VIEW_REMARK_FIELD_ID = "dataChangeRemark";
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
@@ -183,6 +188,11 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                         "Die Liste aller Änderungen zwischen den ursprünglichen und den übernommenen Vorgangsdaten."
                 ),
                 new ProcessNodeOutput(
+                        OUTPUT_REMARK,
+                        "Änderungsvermerk",
+                        "Der optionale interne Vermerk zur vorgenommenen Datenanpassung."
+                ),
+                new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
                         "Die ID der Mitarbeiter:in, die die Datenänderung übernommen hat."
@@ -199,28 +209,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     public Map<String, String> validateConfiguration(@Nonnull de.aivot.GoverBackend.process.entities.ProcessNodeEntity processNodeEntity,
                                                      @Nonnull AuthoredElementValues configuration,
                                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
-        /* TODO: Fix this validation
-        boolean hasErrors = false;
-
-        try {
-            resolveDataDefinition(derivedRuntimeElementData.getEffectiveValues().get(DataChangeActionNodeConfig.DATA_DEFINITION_FIELD_ID));
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            setValidationError(derivedRuntimeElementData, DataChangeActionNodeConfig.DATA_DEFINITION_FIELD_ID, e.getMessage());
-            hasErrors = true;
-        }
-
-        try {
-            resolveAssignmentContext(derivedRuntimeElementData.getEffectiveValues().get(DataChangeActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID));
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            setValidationError(derivedRuntimeElementData, DataChangeActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID, e.getMessage());
-            hasErrors = true;
-        }
-
-        if (hasErrors) {
-            throw ResponseException.badRequest(derivedRuntimeElementData);
-        }
-         */
-
         return null;
     }
 
@@ -260,17 +248,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     @Override
     public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) {
         return List.of(
-                // new TaskViewEvent(
-                //         "Speichern",
-                //         EVENT_SAVE
-                // ),
-                // new TaskViewEvent(
-                //         "Speichern und abschließen",
-                //         EVENT_COMPLETE,
-                //         "outlined",
-                //         null,
-                //         "right"
-                // ),
                 new TaskViewEvent(
                         "Aufgabe abschließen",
                         EVENT_COMPLETE
@@ -305,7 +282,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                 .derive(derivationRequest, derivationLogger);
 
         return switch (event) {
-            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues()));
+            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues(), update));
             default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         };
     }
@@ -313,15 +290,18 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff context,
                                                                  @Nonnull ResolvedConfiguration config,
-                                                                 @Nonnull EffectiveElementValues update) {
+                                                                 @Nonnull EffectiveElementValues update,
+                                                                 @Nonnull AuthoredElementValues authoredUpdate) {
         var payloadUpdate = elementDataTransformService.buildPayload(config.dataDefinition(), update);
         var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
         var updatedProcessData = mergeProcessData(originalProcessData, payloadUpdate);
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
+        var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);
         nodeData.put(OUTPUT_DIFF, diff);
+        nodeData.put(OUTPUT_REMARK, remark);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, LocalDateTime.now().toString());
 
@@ -357,6 +337,20 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         uiHeadline.setContent("Daten zu dieser Aufgabe");
         children.add(uiHeadline);
         children.add(cloneDataDefinition(config.dataDefinition()));
+
+        var remarkSpacer = new SpacerContentElement();
+        remarkSpacer.setId(TASK_VIEW_REMARK_SPACER_ID);
+        remarkSpacer.setHeight("16");
+        children.add(remarkSpacer);
+
+        var remarkField = new RichTextInputElement();
+        remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
+        remarkField.setLabel("Änderungsvermerk");
+        remarkField.setHint("Optionaler interner Vermerk zur vorgenommenen Datenanpassung.");
+        remarkField.setRequired(false);
+        remarkField.setWeight(6.0);
+        children.add(remarkField);
+
         layout.setChildren(children);
         return layout;
     }
@@ -567,13 +561,14 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         return result;
     }
 
-    private static void setValidationError(@Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
-                                           @Nonnull String fieldId,
-                                           @Nonnull String error) {
-        derivedRuntimeElementData
-                .getElementStates()
-                .computeIfAbsent(fieldId, ignored -> new ComputedElementState())
-                .setError(error);
+    @Nullable
+    private static String normalizeRemark(@Nullable Object rawRemark) {
+        if (rawRemark == null) {
+            return null;
+        }
+
+        var remark = rawRemark.toString();
+        return remark.isBlank() ? null : remark;
     }
 
     private record ResolvedConfiguration(
