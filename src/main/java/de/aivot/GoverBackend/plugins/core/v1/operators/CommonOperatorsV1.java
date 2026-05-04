@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.plugins.core.v1.operators;
 
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeAndOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeNotOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeOrOperator;
@@ -19,8 +19,6 @@ import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserEmailOpera
 import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserFullNameOperator;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -48,7 +46,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

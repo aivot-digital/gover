@@ -23,7 +23,7 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentSerializationException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPayCallbackResponse;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPayPaymentRequest;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPaymentStartResponse;
@@ -75,7 +75,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

@@ -6,11 +6,11 @@ import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 @Component
-public class Core implements Plugin {
+public class CorePlugin implements Plugin {
     public static final String PLUGIN_KEY = "de.aivot.core";
     private final BuildProperties buildProperties;
 
-    public Core(BuildProperties buildProperties) {
+    public CorePlugin(BuildProperties buildProperties) {
         this.buildProperties = buildProperties;
     }
 
