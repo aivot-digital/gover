@@ -5,9 +5,9 @@ import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.GoverConfig;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +16,6 @@ import org.springframework.web.bind.annotation.*;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.io.IOException;
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -27,7 +26,7 @@ import java.util.UUID;
         description = "These endpoints are used for authentication with external identity providers and retrieving identity data."
 )
 public class IdentityController {
-    public static final String IDENTITY_HEADER_NAME = "gover-identity-id";
+    public static final String IDENTITY_COOKIE_NAME = "GOVER_IDENTITY_ID";
 
     private final IdentityCacheRepository identityCacheRepository;
     private final IdentityService identityService;
@@ -95,6 +94,13 @@ public class IdentityController {
                         origin
                 );
 
+        var cookie = new Cookie(IDENTITY_COOKIE_NAME, identitySessionId.toString());
+        cookie.setHttpOnly(true);
+        cookie.setSecure(true);
+        cookie.setAttribute("SameSite", "Strict");
+        cookie.setPath("/api/public/");
+
+        response.addCookie(cookie);
         response.sendRedirect(redirectUrl);
     }
 
@@ -104,7 +110,7 @@ public class IdentityController {
             description = "Retrieves the identity data associated with the provided identity session ID."
     )
     public IdentityData get(
-            @Nullable @RequestHeader(name = IDENTITY_HEADER_NAME, required = true) UUID identitySessionId
+            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) UUID identitySessionId
     ) throws ResponseException {
         if (identitySessionId == null) {
             throw ResponseException
