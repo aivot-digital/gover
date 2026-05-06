@@ -8,11 +8,13 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
+import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -36,7 +38,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -252,6 +255,14 @@ class WebhookTriggerControllerV1Test {
             effectiveValues.put(WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY, requestBodyType);
         }
 
+        var webhookConfig = new WebhookTriggerConfigV1();
+        webhookConfig.slug = "example-slug";
+        webhookConfig.requestMethod = requestMethod;
+        if (requestBodyType != null) {
+            webhookConfig.requestBodyConfig = new WebhookTriggerConfigV1.WebhookRequestBodyConfig();
+            webhookConfig.requestBodyConfig.requestBodyType = requestBodyType;
+        }
+
         var processInstanceService = mock(ProcessInstanceService.class);
         when(processInstanceService.create(any(ProcessInstanceEntity.class))).thenAnswer(invocation -> {
             var entity = invocation.getArgument(0, ProcessInstanceEntity.class);
@@ -259,9 +270,17 @@ class WebhookTriggerControllerV1Test {
             return entity;
         });
 
+        ProcessNodeDefinition<WebhookTriggerConfigV1> processNodeDefinition = mock(ProcessNodeDefinition.class);
         var processNodeService = mock(ProcessNodeService.class);
-        when(processNodeService.deriveConfiguration(any(ProcessNodeEntity.class), anyBoolean()))
-                .thenReturn(new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates()));
+        when(processNodeService.deriveConfiguration(any(ProcessNodeEntity.class), eq(processNodeDefinition), isNull(), eq(true)))
+                .thenReturn(new ProcessNodeService.ProcessConfigurationDetails<>(
+                        webhookConfig,
+                        new DerivedRuntimeElementData(effectiveValues, new ComputedElementStates())
+                ));
+
+        var processNodeDefinitionService = mock(ProcessNodeDefinitionService.class);
+        when(processNodeDefinitionService.getProcessNodeDefinition(any(ProcessNodeEntity.class)))
+                .thenReturn(Optional.of(processNodeDefinition));
 
         var processRepository = mock(ProcessRepository.class);
         when(processRepository.findOne(any(Specification.class))).thenReturn(Optional.of(process));
@@ -276,7 +295,8 @@ class WebhookTriggerControllerV1Test {
                 mock(ProcessInstanceAttachmentService.class),
                 processNodeService,
                 processService,
-                processNodeRepository
+                processNodeRepository,
+                processNodeDefinitionService
         );
 
         return new TestControllerFixture(controller, processInstanceService);

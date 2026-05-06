@@ -350,7 +350,7 @@ class ProcessNodeExecutionResultHandlerTest {
         }
     }
 
-    private static final class TestProcessNodeDefinition implements ProcessNodeDefinition {
+    private static final class TestProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         private final String name;
 
         private TestProcessNodeDefinition(String name) {
@@ -395,8 +395,14 @@ class ProcessNodeExecutionResultHandlerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
             throw new UnsupportedOperationException("Not used in this test");
+        }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
         }
     }
 }

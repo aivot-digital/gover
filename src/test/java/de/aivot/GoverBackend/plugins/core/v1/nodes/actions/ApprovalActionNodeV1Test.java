@@ -1,6 +1,9 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
@@ -11,7 +14,7 @@ import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
-import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -38,7 +41,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static de.aivot.GoverBackend.TestData.authored;
-import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -78,7 +80,7 @@ class ApprovalActionNodeV1Test {
                 task(77, Map.of(), Map.of("approvalValue", "Freizugebender Inhalt")),
                 null,
                 processData,
-                runtime(dataModeConfiguration())
+                nodeConfiguration(dataModeConfiguration())
         ));
 
         var taskAssigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result);
@@ -100,7 +102,7 @@ class ApprovalActionNodeV1Test {
                 .addProcessData(Map.of("approvalValue", "Freizugebender Inhalt"));
 
         assertThrows(
-                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                ProcessNodeExecutionExceptionInvalidAssignment.class,
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configurationWithPreferenceOnlyAssignmentContext()),
@@ -108,22 +110,24 @@ class ApprovalActionNodeV1Test {
                         task(77, Map.of(), Map.of("approvalValue", "Freizugebender Inhalt")),
                         null,
                         processData,
-                        runtime(configurationWithPreferenceOnlyAssignmentContext())
+                        nodeConfiguration(configurationWithPreferenceOnlyAssignmentContext())
                 ))
         );
     }
 
     @Test
     void getStaffTaskViewData_RendersConfiguredDataSummaryUi() throws Exception {
+        var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
+
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger(),
                 processNode(dataModeConfiguration()),
                 processInstance("process-owner"),
-                task(77, Map.of("approvalRemark", "<p>Schon geprüft</p>"), Map.of("approvalValue", "Freizugebender Inhalt")),
+                task(77, Map.of("approvalRemark", "<p>Schon geprüft</p>"), processData),
                 null,
                 user("staff-1"),
-                runtime(),
-                null
+                nodeConfiguration(dataModeConfiguration()),
+                currentProcessData(processData)
         );
 
         var layout = node.getStaffTaskView(context);
@@ -147,6 +151,8 @@ class ApprovalActionNodeV1Test {
 
     @Test
     void getStaffTaskViewData_LoadsSavedRemarkFromRuntimeData() throws Exception {
+        var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
+
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger(),
                 processNode(dataModeConfiguration()),
@@ -158,12 +164,12 @@ class ApprovalActionNodeV1Test {
                                 authored("approvalRemark", "<p>Schon geprüft</p>")
                         ),
                         Map.of(),
-                        Map.of("approvalValue", "Freizugebender Inhalt")
+                        processData
                 ),
                 null,
                 user("staff-1"),
-                runtime(),
-                null
+                nodeConfiguration(dataModeConfiguration()),
+                currentProcessData(processData)
         );
 
         var data = node.getStaffTaskViewData(context);
@@ -173,16 +179,18 @@ class ApprovalActionNodeV1Test {
 
     @Test
     void onEventFromStaffTaskView_CompletesTaskViaSelectedPort() throws Exception {
+        var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
+
         var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(dataModeConfiguration()),
                         processInstance("process-owner"),
-                        task(77, Map.of(), Map.of("approvalValue", "Freizugebender Inhalt")),
+                        task(77, Map.of(), processData),
                         null,
                         user("staff-1"),
-                        runtime(),
-                        null
+                        nodeConfiguration(dataModeConfiguration()),
+                        currentProcessData(processData)
                 ),
                 authored("approvalRemark", "<p>Passt</p>"),
                 "approve"
@@ -238,6 +246,17 @@ class ApprovalActionNodeV1Test {
                         .setPreferUninvolvedUser(false)
                         .setPreferProcessInstanceAssignee(false)
         );
+    }
+
+    private static ApprovalActionNodeV1.ApprovalConfiguration nodeConfiguration(AuthoredElementValues configuration)
+            throws ElementDataConversionException {
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.putAll(configuration);
+        return ElementPOJOMapper.mapToPOJO(effectiveValues, ApprovalActionNodeV1.ApprovalConfiguration.class);
+    }
+
+    private static ProcessExecutionData currentProcessData(Map<String, Object> processData) {
+        return new ProcessExecutionData().addProcessData(processData);
     }
 
     private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {

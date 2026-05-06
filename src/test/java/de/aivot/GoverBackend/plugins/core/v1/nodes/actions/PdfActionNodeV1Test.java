@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -144,11 +143,7 @@ class PdfActionNodeV1Test {
                 task(),
                 null,
                 new ProcessExecutionData(),
-                runtime(
-                        PdfActionNodeV1.PdfActionNodeConfig.FILE_NAME_FIELD_ID, "report",
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE,
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_CODE_FIELD_ID, html
-                )
+                codeConfiguration(html)
         );
     }
 
@@ -160,12 +155,24 @@ class PdfActionNodeV1Test {
                 task(),
                 null,
                 new ProcessExecutionData(),
-                runtime(
-                        PdfActionNodeV1.PdfActionNodeConfig.FILE_NAME_FIELD_ID, "report",
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY,
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_ASSET_KEY_FIELD_ID, assetKey.toString()
-                )
+                assetConfiguration(assetKey)
         );
+    }
+
+    private static PdfActionNodeV1.PdfActionNodeConfig codeConfiguration(String html) {
+        var configuration = new PdfActionNodeV1.PdfActionNodeConfig();
+        configuration.fileName = "report";
+        configuration.contentHtmlSource = PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE;
+        configuration.contentHtml = html;
+        return configuration;
+    }
+
+    private static PdfActionNodeV1.PdfActionNodeConfig assetConfiguration(UUID assetKey) {
+        var configuration = new PdfActionNodeV1.PdfActionNodeConfig();
+        configuration.fileName = "report";
+        configuration.contentHtmlSource = PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY;
+        configuration.contentHtmlAssetKey = assetKey.toString();
+        return configuration;
     }
 
     private PdfActionNodeV1 createNode(TemplateRenderService templateRenderService) {

@@ -403,7 +403,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
     }
 
-    private static final class NoOpCustomerProcessNodeDefinition implements ProcessNodeDefinition {
+    private static final class NoOpCustomerProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         @Override
         public String getParentPluginKey() {
             return "test";
@@ -442,7 +442,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
             throw new UnsupportedOperationException("Not used in this test");
         }
 
@@ -467,9 +467,15 @@ class CitizenProcessInstanceTaskViewControllerTest {
             persistedData.put("field", "persisted");
             return persistedData;
         }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
+        }
     }
 
-    private static final class AutoSaveCustomerProcessNodeDefinition implements ProcessNodeDefinition {
+    private static final class AutoSaveCustomerProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         @Override
         public String getParentPluginKey() {
             return "test";
@@ -508,7 +514,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
             throw new UnsupportedOperationException("Not used in this test");
         }
 
@@ -532,6 +538,12 @@ class CitizenProcessInstanceTaskViewControllerTest {
             var initialData = new AuthoredElementValues();
             initialData.put("defaultField", "initial");
             return initialData;
+        }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
         }
     }
 }

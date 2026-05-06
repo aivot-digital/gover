@@ -1,10 +1,12 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ComputedElementState;
 import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -27,7 +29,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -74,7 +75,7 @@ class CounterActionNodeV1Test {
                         task(),
                         null,
                         processData,
-                        runtime(configuration("loop.count", 3L))
+                        nodeConfiguration(configuration("loop.count", 3L))
                 ))
         );
 
@@ -106,7 +107,7 @@ class CounterActionNodeV1Test {
                         task(),
                         null,
                         processData,
-                        runtime(configuration(null, 2L))
+                        nodeConfiguration(configuration(null, 2L))
                 ))
         );
 
@@ -132,7 +133,7 @@ class CounterActionNodeV1Test {
                         task(),
                         null,
                         processData,
-                        runtime(configuration(null, null))
+                        nodeConfiguration(configuration(null, null))
                 ))
         );
 
@@ -158,7 +159,7 @@ class CounterActionNodeV1Test {
                         task(),
                         null,
                         processData,
-                        runtime(configuration("loop.count", 1L))
+                        nodeConfiguration(configuration("loop.count", 1L))
                 ))
         );
     }
@@ -207,6 +208,13 @@ class CounterActionNodeV1Test {
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(configuration)
                 .setOutputMappings(Map.of());
+    }
+
+    private static CounterActionNodeV1.CounterConfiguration nodeConfiguration(AuthoredElementValues configuration)
+            throws ElementDataConversionException {
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.putAll(configuration);
+        return ElementPOJOMapper.mapToPOJO(effectiveValues, CounterActionNodeV1.CounterConfiguration.class);
     }
 
     private static DerivedRuntimeElementData validationRuntime(AuthoredElementValues configuration) {

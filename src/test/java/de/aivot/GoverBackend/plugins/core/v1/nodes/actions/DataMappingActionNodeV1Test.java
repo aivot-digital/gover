@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -24,7 +25,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -63,7 +63,7 @@ class DataMappingActionNodeV1Test {
                         task(Map.of()),
                         null,
                         processData,
-                        runtime(configuration(List.of(Map.of(
+                        nodeConfiguration(configuration(List.of(Map.of(
                                 "source", "missing.path",
                                 "target", "mapped.value"
                         )), false))
@@ -103,7 +103,7 @@ class DataMappingActionNodeV1Test {
                         task(Map.of()),
                         null,
                         processData,
-                        runtime(configuration(List.of(Map.of(
+                        nodeConfiguration(configuration(List.of(Map.of(
                                 "source", "person.firstName",
                                 "target", "applicant.firstName",
                                 "cleanupSource", true
@@ -137,7 +137,7 @@ class DataMappingActionNodeV1Test {
                         task(Map.of()),
                         null,
                         processData,
-                        runtime(configuration(List.of(Map.of(
+                        nodeConfiguration(configuration(List.of(Map.of(
                                 "source", "person.middleName",
                                 "deleteOnly", true
                         )), false))
@@ -155,24 +155,20 @@ class DataMappingActionNodeV1Test {
         var invalidConfig = configuration(List.of(Map.of(
                 "source", "person.firstName"
         )), false);
-        var invalidRuntime = validationRuntime(invalidConfig);
-
-        var invalidErrors = node.validateConfiguration(processNode(invalidConfig), invalidConfig, invalidRuntime);
+        var invalidErrors = node.validateConfiguration(processNode(invalidConfig), nodeConfiguration(invalidConfig));
 
         assertNotNull(invalidErrors);
         assertTrue(invalidErrors.containsKey("rules"));
         assertEquals(
-                "Die Abbildungsregel in Zeile 1 enthält keinen gültigen Zielpfad.",
-                invalidRuntime.getElementStates().get("rules").getSubStates().getFirst().get("target").getError()
+                "Bitte überprüfen Sie die markierten Abbildungsregeln.",
+                invalidErrors.get("rules")
         );
 
         var validConfig = configuration(List.of(Map.of(
                 "source", "person.firstName",
                 "deleteOnly", true
         )), false);
-        var validRuntime = validationRuntime(validConfig);
-
-        var validErrors = node.validateConfiguration(processNode(validConfig), validConfig, validRuntime);
+        var validErrors = node.validateConfiguration(processNode(validConfig), nodeConfiguration(validConfig));
 
         assertNull(validErrors);
     }
@@ -184,10 +180,11 @@ class DataMappingActionNodeV1Test {
         return config;
     }
 
-    private static DerivedRuntimeElementData validationRuntime(AuthoredElementValues configuration) {
+    private static DataMappingActionNodeV1.DataMappingActionNodeV1Config nodeConfiguration(AuthoredElementValues configuration)
+            throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
         effectiveValues.putAll(configuration);
-        return runtime(effectiveValues, new ComputedElementStates());
+        return ElementPOJOMapper.mapToPOJO(effectiveValues, DataMappingActionNodeV1.DataMappingActionNodeV1Config.class);
     }
 
     private static ProcessNodeEntity processNode(AuthoredElementValues configuration) {

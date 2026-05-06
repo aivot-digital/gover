@@ -166,7 +166,7 @@ class ProcessWorkerTest {
         return null;
     }
 
-    private static final class ThrowingProcessNodeDefinition implements ProcessNodeDefinition {
+    private static final class ThrowingProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         @Override
         public String getParentPluginKey() {
             return "test";
@@ -205,8 +205,14 @@ class ProcessWorkerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
             throw new RuntimeException("init failure");
+        }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
         }
     }
 
@@ -217,8 +223,13 @@ class ProcessWorkerTest {
 
         @Nonnull
         @Override
-        public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity, boolean skipErrors) {
-            return new DerivedRuntimeElementData();
+        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                                        de.aivot.GoverBackend.user.entities.UserEntity user,
+                                                                                        @Nonnull Boolean skipErrors) {
+            @SuppressWarnings("unchecked")
+            var configuration = (NodeConfig) new AuthoredElementValues();
+            return new ProcessConfigurationDetails<>(configuration, new DerivedRuntimeElementData());
         }
     }
 

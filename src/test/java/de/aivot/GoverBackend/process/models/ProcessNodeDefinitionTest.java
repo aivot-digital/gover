@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class ProcessNodeDefinitionTest {
     @Test
     void getStaffTaskViewData_DefaultMergesSavedDataOntoInitialData() throws Exception {
-        ProcessNodeDefinition definition = new ProcessNodeDefinition() {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
                 return "test.plugin";
@@ -67,7 +67,7 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
             }
 
@@ -78,6 +78,12 @@ class ProcessNodeDefinitionTest {
                 initialData.put("defaultField", "initial");
                 initialData.put("sharedField", "initial");
                 return initialData;
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
             }
         };
 
@@ -102,7 +108,7 @@ class ProcessNodeDefinitionTest {
 
     @Test
     void onAutoSaveFromStaffTaskView_DefaultPersistsSavedSnapshotAndPreservesTaskData() throws Exception {
-        ProcessNodeDefinition definition = new ProcessNodeDefinition() {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
                 return "test.plugin";
@@ -141,8 +147,14 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
             }
         };
 
@@ -169,7 +181,7 @@ class ProcessNodeDefinitionTest {
 
     @Test
     void getCustomerTaskViewData_DefaultMergesSavedDataOntoInitialData() throws Exception {
-        ProcessNodeDefinition definition = new ProcessNodeDefinition() {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
                 return "test.plugin";
@@ -208,7 +220,7 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
             }
 
@@ -219,6 +231,12 @@ class ProcessNodeDefinitionTest {
                 initialData.put("defaultField", "initial");
                 initialData.put("sharedField", "initial");
                 return initialData;
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
             }
         };
 
@@ -243,7 +261,7 @@ class ProcessNodeDefinitionTest {
 
     @Test
     void onAutoSaveFromCustomerTaskView_DefaultPersistsSavedSnapshotAndPreservesTaskData() throws Exception {
-        ProcessNodeDefinition definition = new ProcessNodeDefinition() {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
                 return "test.plugin";
@@ -282,8 +300,14 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
             }
         };
 

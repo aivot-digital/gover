@@ -1,7 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
@@ -43,7 +46,6 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static de.aivot.GoverBackend.TestData.authored;
-import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -88,7 +90,7 @@ class DataChangeActionNodeV1Test {
                 task(77, Map.of(), Map.of(), Map.of("applicant", Map.of("name", "Ada"))),
                 null,
                 processData,
-                runtime(configuration())
+                nodeConfiguration(configuration())
         ));
 
         var taskAssigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result);
@@ -105,6 +107,8 @@ class DataChangeActionNodeV1Test {
 
     @Test
     void getStaffTaskViewData_LoadsSavedDraftFromRuntimeData() throws Exception {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
+
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger(),
                 processNode(configuration()),
@@ -116,12 +120,12 @@ class DataChangeActionNodeV1Test {
                                 authored("applicantName", "Grace")
                         ),
                         Map.of(),
-                        Map.of("applicant", Map.of("name", "Ada"))
+                        processData
                 ),
                 null,
                 user("staff-1"),
-                runtime(configuration()),
-                null
+                nodeConfiguration(configuration()),
+                currentProcessData(processData)
         );
 
         var layout = node.getStaffTaskView(context);
@@ -139,6 +143,8 @@ class DataChangeActionNodeV1Test {
 
     @Test
     void getStaffTaskView_RendersConfiguredTaskDescription() throws Exception {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
+
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger(),
                 processNode(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
@@ -147,12 +153,12 @@ class DataChangeActionNodeV1Test {
                         77,
                         Map.of(),
                         Map.of(),
-                        Map.of("applicant", Map.of("name", "Ada"))
+                        processData
                 ),
                 null,
                 user("staff-1"),
-                runtime(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
-                null
+                nodeConfiguration(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
+                currentProcessData(processData)
         );
 
         var layout = node.getStaffTaskView(context);
@@ -165,6 +171,8 @@ class DataChangeActionNodeV1Test {
 
     @Test
     void onEventFromStaffTaskView_SaveIsRejectedAsUnknownEvent() {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
+
         var ex = assertThrows(
                 ResponseException.class,
                 () -> node.onEventFromStaffTaskView(
@@ -176,12 +184,12 @@ class DataChangeActionNodeV1Test {
                                         77,
                                         Map.of(),
                                         Map.of("existing", "node-data"),
-                                        Map.of("applicant", Map.of("name", "Ada"))
+                                        processData
                                 ),
                                 null,
                                 user("staff-1"),
-                                runtime(configuration()),
-                                null
+                                nodeConfiguration(configuration()),
+                                currentProcessData(processData)
                         ),
                         authored("applicantName", "Grace"),
                         "save"
@@ -193,6 +201,8 @@ class DataChangeActionNodeV1Test {
 
     @Test
     void onAutoSaveFromStaffTaskView_PersistsDraftInRuntimeData() throws Exception {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
+
         var result = node.onAutoSaveFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
@@ -202,12 +212,12 @@ class DataChangeActionNodeV1Test {
                                 77,
                                 Map.of("keep", "value"),
                                 Map.of("existing", "node-data"),
-                                Map.of("applicant", Map.of("name", "Ada"))
+                                processData
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configuration()),
-                        null
+                        nodeConfiguration(configuration()),
+                        currentProcessData(processData)
                 ),
                 authored("applicantName", "Grace")
         );
@@ -226,6 +236,11 @@ class DataChangeActionNodeV1Test {
 
     @Test
     void onEventFromStaffTaskView_CompleteMergesProcessDataAndStoresDiff() throws Exception {
+        var processData = Map.<String, Object>of(
+                "applicant", Map.of("name", "Ada", "age", 33),
+                "untouched", "value"
+        );
+
         var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
@@ -234,19 +249,16 @@ class DataChangeActionNodeV1Test {
                         task(
                                 77,
                                 Map.of(
-                                        ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
-                                        authored("applicantName", "Draft")
-                                ),
+                                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
+                                authored("applicantName", "Draft")
+                        ),
                                 Map.of(),
-                                Map.of(
-                                        "applicant", Map.of("name", "Ada", "age", 33),
-                                        "untouched", "value"
-                                )
+                                processData
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configuration()),
-                        null
+                        nodeConfiguration(configuration()),
+                        currentProcessData(processData)
                 ),
                 authored("applicantName", "Grace"),
                 "complete"
@@ -329,6 +341,17 @@ class DataChangeActionNodeV1Test {
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(configuration)
                 .setOutputMappings(Map.of());
+    }
+
+    private static DataChangeActionNodeV1.DataChangeActionNodeConfig nodeConfiguration(AuthoredElementValues configuration)
+            throws ElementDataConversionException {
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.putAll(configuration);
+        return ElementPOJOMapper.mapToPOJO(effectiveValues, DataChangeActionNodeV1.DataChangeActionNodeConfig.class);
+    }
+
+    private static ProcessExecutionData currentProcessData(Map<String, Object> processData) {
+        return new ProcessExecutionData().addProcessData(processData);
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {

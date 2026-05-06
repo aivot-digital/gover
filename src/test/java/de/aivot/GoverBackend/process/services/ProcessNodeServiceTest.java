@@ -14,6 +14,7 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
 import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
+import de.aivot.GoverBackend.process.models.ProcessDataKeyHintType;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -100,9 +101,9 @@ class ProcessNodeServiceTest {
 
         assertEquals(
                 List.of(
-                        new ProcessDataKeyHintResponse("a", nodeA),
-                        new ProcessDataKeyHintResponse("b", nodeB),
-                        new ProcessDataKeyHintResponse("c", nodeC)
+                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
+                        new ProcessDataKeyHintResponse("b", ProcessDataKeyHintType.ProcessData, nodeB),
+                        new ProcessDataKeyHintResponse("c", ProcessDataKeyHintType.ProcessData, nodeC)
                 ),
                 result
         );
@@ -127,8 +128,8 @@ class ProcessNodeServiceTest {
 
         assertEquals(
                 List.of(
-                        new ProcessDataKeyHintResponse("a", nodeA),
-                        new ProcessDataKeyHintResponse("b", nodeB)
+                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
+                        new ProcessDataKeyHintResponse("b", ProcessDataKeyHintType.ProcessData, nodeB)
                 ),
                 result
         );
@@ -227,7 +228,7 @@ class ProcessNodeServiceTest {
                                                                      @Nonnull TestNodeConfig configuration,
                                                                      @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
             var hints = new java.util.ArrayList<>(previousDataKeys);
-            hints.add(new ProcessDataKeyHint(processNodeEntity.getDataKey()));
+            hints.add(new ProcessDataKeyHint(processNodeEntity.getDataKey(), ProcessDataKeyHintType.ProcessData));
             return hints;
         }
 
