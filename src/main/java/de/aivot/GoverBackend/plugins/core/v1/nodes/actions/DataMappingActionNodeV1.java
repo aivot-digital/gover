@@ -135,7 +135,20 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         for (var rowObj : rows) {
             var rowState = new ComputedElementStates();
 
-            if (!(rowObj instanceof Map<?, ?> rowRaw)) {
+            String source;
+            String target;
+            boolean deleteOnly;
+
+            if (rowObj instanceof DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule rule) {
+                source = toNullableTrimmedString(rule.source);
+                target = toNullableTrimmedString(rule.target);
+                deleteOnly = toBoolean(rule.deleteOnly);
+            } else if (rowObj instanceof Map<?, ?> rowRaw) {
+                var row = castStringObjectMap(rowRaw);
+                source = toNullableTrimmedString(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.SOURCE_FIELD_ID));
+                target = toNullableTrimmedString(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.TARGET_FIELD_ID));
+                deleteOnly = toBoolean(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.DELETE_ONLY_FIELD_ID));
+            } else {
                 if (topLevelError == null) {
                     topLevelError = String.format(
                             "Die Abbildungsregel in Zeile %d ist ungültig. Es wird ein Objekt erwartet.",
@@ -146,11 +159,6 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                 rowIndex++;
                 continue;
             }
-
-            var row = castStringObjectMap(rowRaw);
-            var source = toNullableTrimmedString(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.SOURCE_FIELD_ID));
-            var target = toNullableTrimmedString(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.TARGET_FIELD_ID));
-            var deleteOnly = toBoolean(row.get(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.DELETE_ONLY_FIELD_ID));
 
             if (source == null) {
                 putFieldError(
@@ -227,16 +235,19 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             for (int i = 0; i < rules.size(); i++) {
                 var rule = rules.get(i);
                 var rowIndex = i + 1;
+                var deleteOnly = Boolean.TRUE.equals(rule.deleteOnly);
+                var cleanupSource = Boolean.TRUE.equals(rule.cleanupSource);
+                var cleanupEmptyContainers = Boolean.TRUE.equals(config.cleanupEmptyContainers);
 
                 var sourcePath = parsePath(rule.source, rowIndex, "Ausgangspfad");
-                var targetPath = rule.deleteOnly
+                var targetPath = deleteOnly
                         ? null
                         : parsePath(rule.target, rowIndex, "Zielpfad");
 
                 var sourceValue = readPath(outputRoot, sourcePath);
                 Object transformedValue = null;
 
-                if (!rule.deleteOnly) {
+                if (!deleteOnly) {
                     transformedValue = applyTransform(
                             engine,
                             rowIndex,
@@ -249,8 +260,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                     writePath(outputRoot, Objects.requireNonNull(targetPath), transformedValue, rowIndex);
                 }
 
-                if (rule.cleanupSource && (rule.deleteOnly || !sourcePath.equals(targetPath))) {
-                    removePath(outputRoot, sourcePath, config.cleanupEmptyContainers);
+                if (deleteOnly || (cleanupSource && !sourcePath.equals(targetPath))) {
+                    removePath(outputRoot, sourcePath, cleanupEmptyContainers);
                 }
 
                 mappedValues.add(createMappedValueEntry(rule, sourceValue, transformedValue));
@@ -376,11 +387,13 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     private Map<String, Object> createMappedValueEntry(@Nonnull DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule rule,
                                                               Object sourceValue,
                                                               Object mappedValue) {
+        var deleteOnly = Boolean.TRUE.equals(rule.deleteOnly);
+        var cleanupSource = Boolean.TRUE.equals(rule.cleanupSource);
         var data = new LinkedHashMap<String, Object>();
         data.put("originalPath", rule.source);
-        data.put("newPath", rule.deleteOnly ? null : rule.target);
-        data.put("cleanupSource", rule.cleanupSource);
-        data.put("deleteOnly", rule.deleteOnly);
+        data.put("newPath", deleteOnly ? null : rule.target);
+        data.put("cleanupSource", cleanupSource);
+        data.put("deleteOnly", deleteOnly);
         data.put("original", sourceValue != null ? sourceValue.toString() : "null");
         data.put("mapped", mappedValue);
         return data;
