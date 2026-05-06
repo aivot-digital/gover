@@ -1,11 +1,10 @@
 import React from 'react';
-import {useSelector} from 'react-redux';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import {Box, Typography} from '@mui/material';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {BaseViewProps} from '../../views/base-view';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 
 export const SummaryUserInputKey = '__summary__'; // TODO: Remove
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__'; // TODO: Solve
@@ -21,11 +20,9 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
         errors,
     } = props;
 
-    const form = useSelector(selectLoadedForm);
-
-    if (form == null) {
-        return null;
-    }
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
     return (
         <>
@@ -42,8 +39,8 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
             </Typography>
 
             <SummaryDispatcherComponent
-                key={form.version.rootElement.id}
-                element={form.version.rootElement}
+                key={rootElement.id}
+                element={rootElement}
                 showTechnical={false}
                 allowStepNavigation={true}
                 authoredElementValues={authoredElementValues}

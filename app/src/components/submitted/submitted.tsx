@@ -13,26 +13,27 @@ import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
 import {Rating} from '../rating/rating';
-import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
-import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
-import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {createApiPath} from '../../utils/url-path-utils';
-import {FormEntity} from '../../modules/forms/entities/form-entity';
-import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {CanvasConfettiOverlay} from '../confetti/canvas-confetti-overlay';
+import {FormLayoutElement} from '../../models/elements/form-layout-element';
+import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
+import {ProcessEntity} from '../../modules/process/entities/process-entity';
+import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 
 interface SubmittedProps {
-    submission: SubmissionListResponseDTO;
-    form: FormEntity;
-    version: FormVersionEntity;
+    startedProcessAccessKey: string;
+    formElement: FormLayoutElement;
+    node: ProcessNodeEntity;
+    process: ProcessEntity;
+    version: ProcessVersionEntity;
 }
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
@@ -54,8 +55,11 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 };
 
 export function Submitted(props: SubmittedProps) {
-    const api = useApi();
-    const submitStep = props.version.rootElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
+    const {
+        formElement,
+    } = props;
+
+    const submitStep = formElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
     const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
@@ -79,12 +83,6 @@ export function Submitted(props: SubmittedProps) {
             mediaQuery.removeEventListener('change', handleChange);
         };
     }, [confettiDisabled]);
-
-    useEffect(() => {
-        /*new SubmissionsApiService()
-            .getStatus(props.submission.id)
-            .then(setStatus);*/
-    }, [api, props.submission]);
 
     useEffect(() => {
         if (
@@ -150,7 +148,13 @@ export function Submitted(props: SubmittedProps) {
     };
 
     return (
-        <>
+        <Box
+            sx={{
+                px: 4,
+                pt: 8,
+                pb: 16,
+            }}
+        >
             {
                 status != null &&
                 status.paymentProviderName != null &&
@@ -174,8 +178,10 @@ export function Submitted(props: SubmittedProps) {
                             >
                                 <p>
                                     Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
-                                    Die Zahlung wird durch den Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
-                                    Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
+                                    Die Zahlung wird durch den
+                                    Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
+                                    Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben
+                                    und den Bezahlvorgang vollständig abschließen.
                                 </p>
                                 <p>
                                     <strong>Wichtig:</strong>
@@ -245,7 +251,8 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 >
                     Sie haben Ihre Gebühren erfolgreich online bezahlt.
-                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb weniger Minuten) für die weitere Bearbeitung freigegeben.
+                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb
+                    weniger Minuten) für die weitere Bearbeitung freigegeben.
                     Vielen Dank!
                 </AlertComponent>
             }
@@ -261,23 +268,24 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 >
                     Die Bezahlung der Gebühren ist fehlgeschlagen. Bitte wenden Sie sich an die zuständige Dienststelle.
-                    <br />
-                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
+                    <br/>
+                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                    an: {status.submissionId}.
                 </AlertComponent>
             }
             {
                 status != null &&
                 status.paymentProviderName != null &&
                 status.paymentProviderUrl != null &&
-                <Divider sx={{my: 8}} />
+                <Divider sx={{my: 8}}/>
             }
             {
                 submitStep?.textPostSubmit != null &&
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={(props.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
-                    logoAlt={(props.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
+                    logoLink={(formElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
+                    logoAlt={(formElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
             {
@@ -397,18 +405,22 @@ export function Submitted(props: SubmittedProps) {
                         color="warning"
                         title="Zugriff abgelaufen"
                     >
-                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen der Gebühren vergeht.
-                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
+                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies
+                        passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen
+                        der Gebühren vergeht.
+                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre
+                        Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
                         onClick={() => {
                             dispatch(showDialog(HelpDialogId));
                         }}
                     >Hilfe-Seite</Link>.
-                        <br />
-                        Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
+                        <br/>
+                        Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                        an: {status.submissionId}.
                     </AlertComponent>
                 </Box>
             }
-            <Divider sx={{my: 8}} />
+            <Divider sx={{my: 8}}/>
             <Typography
                 component="h3"
                 variant="h5"
@@ -457,8 +469,9 @@ export function Submitted(props: SubmittedProps) {
                     setShowMailSentDialog(false);
                 }}
             >
-                Eine E-Mail mit dem eingereichten Antrag wurde an die angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
+                Eine E-Mail mit dem eingereichten Antrag wurde an die
+                angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
             </InfoDialog>
-        </>
+        </Box>
     );
 }

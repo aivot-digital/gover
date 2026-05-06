@@ -555,7 +555,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
                                 computedErrors={derivedErrors?.elementStates}
-                                doDerive={(aev) => {
+                                onDeriveOverride={(aev) => {
                                     if (item == null || item.instance == null || item.task == null) {
                                         return Promise.resolve({
                                             effectiveValues: {},

@@ -6,6 +6,11 @@ import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
@@ -62,7 +67,7 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
             }
 
@@ -136,7 +141,7 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
             }
         };
@@ -203,7 +208,7 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
             }
 
@@ -277,7 +282,7 @@ class ProcessNodeDefinitionTest {
             }
 
             @Override
-            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
                 return new ProcessNodeExecutionResultTaskUpdated();
             }
         };

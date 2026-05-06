@@ -1,16 +1,25 @@
-import {useMemo} from 'react';
+import {useCallback, useMemo} from 'react';
 import {BaseViewProps} from './base-view';
 import {
     UiDefinitionInputFieldElement,
-    UiDefinitionInputFieldElementItem
+    UiDefinitionInputFieldElementItem,
 } from '../models/elements/form/input/ui-definition-input-field-element';
-import {UiDefinitionInputFieldComponent} from '../components/ui-definition-input-field/ui-definition-input-field-component';
+import {
+    UiDefinitionInputFieldComponent,
+} from '../components/ui-definition-input-field/ui-definition-input-field-component';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {ElementDisplayContext} from '../data/element-type/element-child-options';
+import {
+    useProcessNodeEditorContext,
+} from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
+import {useNavigate} from 'react-router-dom';
+import {ElementType} from '../data/element-type/element-type';
 
 export function UiDefinitionInputFieldView(
     props: BaseViewProps<UiDefinitionInputFieldElement, UiDefinitionInputFieldElementItem>
 ) {
+    const navigate = useNavigate();
+
     const {
         element,
         setValue,
@@ -28,6 +37,14 @@ export function UiDefinitionInputFieldView(
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
+    const {
+        node,
+    } = useProcessNodeEditorContext();
+
+    const openOverride = useCallback(() => {
+        navigate(`/form-triggers/${node.id}/${element.id}/${element.elementType ?? ElementType.GroupLayout}`);
+    }, [node]);
+
     return (
         <UiDefinitionInputFieldComponent
             label={element.label ?? ''}
@@ -39,6 +56,7 @@ export function UiDefinitionInputFieldView(
             expectedRootType={element.elementType}
             onChange={setValue}
             displayContext={element.displayContext ?? ElementDisplayContext.CitizenFacing}
+            openOverride={element.openExternalEditor ? openOverride : undefined}
         />
     );
 }

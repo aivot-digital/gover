@@ -12,6 +12,9 @@ import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.GoverBackend.process.models.executionResult.*;
+import de.aivot.GoverBackend.process.models.processContext.*;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -20,7 +23,7 @@ import java.util.*;
 /**
  * Contract for process node definitions that provide configuration, UI and execution behavior for process tasks.
  */
-public interface ProcessNodeDefinition extends PluginComponent {
+public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     /**
      * Reserved runtime data key used to persist saved staff task view inputs. Because staff and customer tasks may write to the same runtime data, they need to use different keys
      * to persist their data to avoid conflicts.
@@ -75,7 +78,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the layout.
      */
     @Nonnull
-    default ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+    default ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         var layout = new ConfigLayoutElement();
         layout.setId(getKey() + "-config");
         return layout;
@@ -90,7 +93,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the layout.
      */
     @Nullable
-    default GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionContextTesting context) throws ResponseException {
+    default GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<NodeConfig> context) throws ResponseException {
         return null;
     }
 
@@ -123,16 +126,27 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * process. When errors are returned, the flag {@link ProcessNodeEntity#setSavedWithErrors(Boolean)} is set. Nodes can be saved with errors but a process cannot be published
      * when at least one node does not validate correctly.
      *
-     * @param processNodeEntity         The process definition node entity to be validated.
-     * @param derivedRuntimeElementData Derived Runtime Element data.
+     * @param processNodeEntity The process definition node entity to be validated.
+     * @param configuration     The configuration to be validated.
      * @return A map of configuration field keys to an error messages for that field. If the configuration is valid, null is returned.
      * @throws ResponseException If the configuration is invalid.
      */
     @Nullable
     default Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                      @Nonnull AuthoredElementValues configuration,
-                                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+                                                      @Nonnull NodeConfig configuration) throws ResponseException {
         return null;
+    }
+
+    /**
+     * Calculate the list of all process data keys, this process node might pass on during the process execution as process data.
+     *
+     * @param processNodeEntity The current node.
+     * @param configuration The configuration of the current node.
+     * @param previousDataKeys The list of all process data keys from previous nodes. Use this to build the complete list of process data keys by adding the keys from this node to the list of previous data keys.
+     * @return The list of all process node keys this node passes onto the next node.
+     */
+    default List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull NodeConfig configuration, @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
+        return previousDataKeys;
     }
 
     /**
@@ -147,7 +161,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The result of the node execution.
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
-    ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException;
+    ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NodeConfig> context) throws ProcessNodeExecutionException;
 
     /**
      * Get the task status layout for nodes of this provider type. This layout is used to display the status of the task in task lists and overviews. It is optional and can be
@@ -158,7 +172,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the layout.
      */
     @Nullable
-    default LayoutElement<?> getTaskStatusLayout(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    default LayoutElement<?> getTaskStatusLayout(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         return null;
     }
 
@@ -170,7 +184,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the layout.
      */
     @Nonnull
-    default LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    default LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         var layout = new GroupLayoutElement();
         layout.setId(getKey() + "-staff-task-view");
         return layout;
@@ -184,7 +198,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the events.
      */
     @Nonnull
-    default List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    default List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         return List.of();
     }
 
@@ -197,7 +211,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the data.
      */
     @Nonnull
-    default AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    default AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         return new AuthoredElementValues();
     }
 
@@ -208,7 +222,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @return The saved task view data, or null if none exists.
      */
     @Nullable
-    default AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+    default AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) {
         var rawSavedData = context
                 .getThisTask()
                 .getRuntimeData()
@@ -230,7 +244,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ResponseException If an error occurs while generating the data.
      */
     @Nonnull
-    default AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    default AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context) throws ResponseException {
         var initialData = createDefaultStaffTaskViewData(context);
         var savedData = getAutoSavedStaffTaskViewData(context);
         if (savedData == null || savedData.isEmpty()) {
@@ -254,7 +268,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     @Nonnull
-    default Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+    default Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context,
                                                                           @Nonnull AuthoredElementValues update,
                                                                           @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         return Optional.empty();
@@ -270,7 +284,7 @@ public interface ProcessNodeDefinition extends PluginComponent {
      * @throws ProcessNodeExecutionException If an error occurs during execution.
      */
     @Nonnull
-    default Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+    default Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<NodeConfig> context,
                                                                              @Nonnull AuthoredElementValues update) throws ResponseException, ProcessNodeExecutionException {
         var rtd = new HashMap<>(context.getThisTask().getRuntimeData());
         rtd.put(STAFF_TASK_VIEW_DATA_RUNTIME_KEY, update);
@@ -404,5 +418,27 @@ public interface ProcessNodeDefinition extends PluginComponent {
                 .setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()))
                 .setProcessData(context.getThisTask().getProcessData())
                 .asOptional();
+    }
+
+    /**
+     * Return the class of the configuration pojo. This will automatically be converted and injected into the corresponding methods.
+     *
+     * @return The class of the configuration pojo.
+     */
+    @Nonnull
+    Class<NodeConfig> getNodeConfigurationClass();
+
+    /**
+     * Resolve the name of a process node instance for this node definition. By default, this returns the name of the node entity if it is set, otherwise it returns the name of the
+     * node definition. You can override this to provide dynamic names for process node instances based on their configuration or other factors.
+     *
+     * @param nodeEntity The process node entity to resolve the name for.
+     * @return The name of the node.
+     */
+    default String resolveNodeName(ProcessNodeEntity nodeEntity) {
+        if (StringUtils.isNotNullOrEmpty(nodeEntity.getName())) {
+            return nodeEntity.getName();
+        }
+        return getName();
     }
 }

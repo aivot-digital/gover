@@ -1,7 +1,7 @@
 import {ElementType} from '../data/element-type/element-type';
 import {AnyElement} from '../models/elements/any-element';
 import {isAnyElementWithChildren} from '../models/elements/any-element-with-children';
-import {generateComponentTitle} from './generate-component-title';
+import {generateComponentTitle, generateInternalComponentTitle} from './generate-component-title';
 import {ElementWithParents, flattenElementsWithParents} from './flatten-elements';
 import {getElementNameForType} from '../data/element-type/element-names';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
@@ -77,7 +77,7 @@ function elementToContextStateInterface({element, parents}: ElementWithParents):
     /**
      * Der Runtime-State für das Element "${generateComponentTitle(element)}".
      * Das Element hat die ID "${element.id}" und den Typ "${getElementNameForType(element.type)}".
-     * Der Pfad zu diesem Element lautet: ${parents.map(generateComponentTitle).join(' -> ')}
+     * Der Pfad zu diesem Element lautet: ${parents.map(generateInternalComponentTitle).join(' -> ')}
      */
     declare interface ${createElementStateInterfaceName(element)} {
         /** Gibt an, ob das Element sichtbar ist. */

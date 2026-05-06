@@ -1,19 +1,18 @@
 import {BaseEditorProps} from './base-editor';
-import {DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
-import {Grid} from '@mui/material';
-import {TextFieldComponent} from '../components/text-field/text-field-component';
-import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {
     DomainAndUserSelectItemType,
     DomainAndUserSelectItemTypes,
     DomainAndUserSelectProcessAccessConstraint,
+    DomainUserSelectFieldElement,
 } from '../models/elements/form/input/domain-user-select-field-element';
+import {Grid} from '@mui/material';
+import {TextFieldComponent} from '../components/text-field/text-field-component';
+import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-checkbox-component';
 import {StringListInput2} from '../components/string-list-input/string-list-input-2';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 
-export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSelectFieldElement, ElementTreeEntity>) {
+export function DomainUserSelectFieldEditor(props: BaseEditorProps<DomainUserSelectFieldElement>) {
     const {
         element,
         editable,

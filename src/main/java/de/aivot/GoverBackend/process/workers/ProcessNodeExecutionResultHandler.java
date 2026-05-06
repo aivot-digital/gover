@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionBro
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.*;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
@@ -338,14 +339,14 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,
-                                    @Nullable UserEntity triggeringUser,
-                                    @Nonnull ProcessNodeDefinition provider,
-                                    @Nonnull ProcessNodeEntity currentNode,
-                                    @Nonnull ProcessInstanceEntity processInstance,
-                                    @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                                    @Nullable ProcessInstanceTaskEntity previousTask,
-                                    @Nonnull ProcessNodeExecutionResultTaskCompleted taskCompleted) throws ProcessNodeExecutionException {
+    private <NodeConfig> void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,
+                                                 @Nullable UserEntity triggeringUser,
+                                                 @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                 @Nonnull ProcessNodeEntity currentNode,
+                                                 @Nonnull ProcessInstanceEntity processInstance,
+                                                 @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+                                                 @Nullable ProcessInstanceTaskEntity previousTask,
+                                                 @Nonnull ProcessNodeExecutionResultTaskCompleted taskCompleted) throws ProcessNodeExecutionException {
         var port = provider
                 .getPorts()
                 .stream()
@@ -529,7 +530,6 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceRepository.save(processInstance);
 
 
-
         logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
                 true,
@@ -540,10 +540,10 @@ public class ProcessNodeExecutionResultHandler {
         );
     }
 
-    private static Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition provider,
-                                                           @Nonnull Map<String, String> outputMappings,
-                                                           @Nonnull Map<String, Object> nodeData,
-                                                           @Nonnull Map<String, Object> processData) {
+    private static <NodeConfig> Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                        @Nonnull Map<String, String> outputMappings,
+                                                                        @Nonnull Map<String, Object> nodeData,
+                                                                        @Nonnull Map<String, Object> processData) {
         var updatedProcessData = new HashMap<>(processData);
 
         for (var nodeProviderOutput : provider.getOutputs()) {

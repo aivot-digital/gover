@@ -3,7 +3,7 @@ import {FormStatus} from '../enums/form-status';
 import {FormType} from '../enums/form-type';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {ElementType} from '../../../data/element-type/element-type';
-import {RootElement} from '../../../models/elements/root-element';
+import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {VFormVersionWithDetailsEntity} from '../entities/v-form-version-with-details-entity';
 
 interface FormVersionFilter {
@@ -78,7 +78,7 @@ export class VFormVersionWithDetailsService extends BaseCrudApiService<VFormVers
             publishedVersion: 0,
             responsibleDepartmentId: 0,
             revoked: '',
-            rootElement: generateElementWithDefaultValues(ElementType.FormLayout) as RootElement,
+            rootElement: generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
             slug: '',
             status: FormStatus.Drafted,
             submissionRetentionWeeks: 0,

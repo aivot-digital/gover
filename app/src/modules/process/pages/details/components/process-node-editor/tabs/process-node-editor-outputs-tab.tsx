@@ -94,7 +94,7 @@ export function ProcessNodeEditorOutputsTab() {
                         <ProcessNodeOutputCard
                             key={output.key}
                             label={output.label}
-                            outputKey={output.key}
+                            outputKey={`_.${node.dataKey}.${output.key}`}
                             description={output.description}
                             sx={{
                                 mb: 1,

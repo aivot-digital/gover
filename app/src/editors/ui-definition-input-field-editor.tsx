@@ -2,7 +2,6 @@ import {useMemo} from 'react';
 import {Grid} from '@mui/material';
 import {BaseEditorProps} from './base-editor';
 import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
 import {ElementType} from '../data/element-type/element-type';
@@ -48,7 +47,7 @@ const supportedRootTypes: ElementType[] = [
     ElementType.NoCodeInput,
 ];
 
-export function UiDefinitionInputFieldEditor(props: BaseEditorProps<UiDefinitionInputFieldElement, ElementTreeEntity>) {
+export function UiDefinitionInputFieldEditor(props: BaseEditorProps<UiDefinitionInputFieldElement>) {
     const {
         element,
         onPatch,

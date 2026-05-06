@@ -20,8 +20,8 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUICustomer;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
@@ -79,7 +79,7 @@ public class CitizenProcessInstanceTaskViewController {
     public TaskViewResponse retrieve(
             @Nonnull @PathVariable UUID procAccess,
             @Nonnull @PathVariable UUID taskAccess,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(
                 procAccess,
@@ -135,7 +135,7 @@ public class CitizenProcessInstanceTaskViewController {
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(
                 procAccess,
@@ -294,7 +294,7 @@ public class CitizenProcessInstanceTaskViewController {
         );
     }
 
-    private TaskViewData fetchTaskViewData(
+    private <NodeConfig> TaskViewData<NodeConfig> fetchTaskViewData(
             @Nonnull UUID procAccess,
             @Nonnull UUID taskAccess
     ) throws ResponseException {
@@ -323,11 +323,11 @@ public class CitizenProcessInstanceTaskViewController {
                 .retrieve(task.getProcessNodeId())
                 .orElseThrow(ResponseException::notFound);
 
-        var provider = processNodeProviderService
+        var provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::notFound);
 
-        return new TaskViewData(
+        return new TaskViewData<>(
                 instance,
                 task,
                 node,
@@ -335,7 +335,7 @@ public class CitizenProcessInstanceTaskViewController {
         );
     }
 
-    private record TaskViewData(
+    private record TaskViewData<NodeConfig>(
             @Nonnull
             ProcessInstanceEntity instance,
             @Nonnull
@@ -343,7 +343,7 @@ public class CitizenProcessInstanceTaskViewController {
             @Nonnull
             ProcessNodeEntity node,
             @Nonnull
-            ProcessNodeDefinition provider
+            ProcessNodeDefinition<NodeConfig> provider
     ) {
 
     }

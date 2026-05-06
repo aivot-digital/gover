@@ -8,7 +8,7 @@ import {useTheme} from '@mui/material/styles';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
-import {selectLoadedForm, showDialog} from '../../slices/app-slice';
+import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty, stringOrUndefined} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
@@ -25,10 +25,11 @@ import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {ExpandableList} from '../expandable-list/expandable-list';
-import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {MarkdownContent} from '../markdown-content/markdown-content';
+import {isRootElement} from '../../models/elements/form-layout-element';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 
 function cleanDocuments(documents: Array<string> | undefined | null) {
     if (documents) {
@@ -43,19 +44,16 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const theme = useTheme();
 
     const {
-        rootElement,
         element,
         value,
         setValue,
         errors,
-        authoredElementValues,
-        derivedData,
-        onAuthoredElementValuesChange,
     } = props;
 
-    const {} = element;
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
-    const application = useAppSelector(selectLoadedForm);
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
@@ -70,11 +68,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const initiativeName = stringOrUndefined(element.initiativeName);
 
     useEffect(() => {
-        if (application != null) {
-            if (application.version.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== application.version.responsibleDepartmentId) {
+        if (isRootElement(rootElement)) {
+            if (rootElement.responsibleDepartmentId != null) {
+                if (responsibleDepartment == null || responsibleDepartment.id !== rootElement.responsibleDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(application.version.responsibleDepartmentId)
+                        .retrievePublic(rootElement.responsibleDepartmentId)
                         .then(setResponsibleDepartment)
                         .catch((err) => {
                             console.error(err);
@@ -85,10 +83,10 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 setResponsibleDepartment(undefined);
             }
 
-            if (application.version.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== application.version.managingDepartmentId) {
+            if (rootElement.managingDepartmentId != null) {
+                if (managingDepartment == null || managingDepartment.id !== rootElement.managingDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(application.version.managingDepartmentId)
+                        .retrievePublic(rootElement.managingDepartmentId)
                         .then(setManagingDepartment)
                         .catch((err) => {
                             console.error(err);
@@ -99,7 +97,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 setManagingDepartment(undefined);
             }
         }
-    }, [props.element, application?.version.responsibleDepartmentId, application?.version.managingDepartmentId]);
+    }, [rootElement]);
 
     const renderEligiblePerson = (person: string, index: number) => (
         <ListItem
@@ -107,7 +105,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             key={String(index) + person}
         >
             <ListItemIcon sx={{minWidth: '34px'}}>
-                <PersonOutlineOutlinedIcon sx={{color: theme.palette.primary.main}} />
+                <PersonOutlineOutlinedIcon sx={{color: theme.palette.primary.main}}/>
             </ListItemIcon>
             <ListItemText>{person}</ListItemText>
         </ListItem>
@@ -119,7 +117,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             key={String(index) + document}
         >
             <ListItemIcon sx={{minWidth: '34px'}}>
-                <DescriptionOutlinedIcon sx={{color: theme.palette.primary.main}} />
+                <DescriptionOutlinedIcon sx={{color: theme.palette.primary.main}}/>
             </ListItemIcon>
             <ListItemText>{document}</ListItemText>
         </ListItem>
@@ -131,7 +129,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             key={String(index) + document}
         >
             <ListItemIcon sx={{minWidth: '34px'}}>
-                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}} />
+                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}}/>
             </ListItemIcon>
             <ListItemText>{document}</ListItemText>
         </ListItem>
@@ -232,6 +230,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         );
     }
 
+    /* TODO
     if (application != null &&
         !isStringNullOrEmpty(application?.version.rootElement.expiring)) {
         sections.push(
@@ -252,6 +251,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             </Box>,
         );
     }
+     */
 
     if (props.element.expectedCosts != null &&
         !isStringNullOrEmpty(props.element.expectedCosts)) {
@@ -294,7 +294,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     (props.element.eligiblePersons ?? []).length > 0 ||
                     (props.element.supportingDocuments ?? []).length > 0 ||
                     (props.element.documentsToAttach ?? []).length > 0 ||
-                    !isStringNullOrEmpty(application?.version.rootElement.expiring) ||
+                    /* TODO: !isStringNullOrEmpty(application?.version.rootElement.expiring) || */
                     !isStringNullOrEmpty(props.element.expectedCosts)
                 ) &&
                 <FadingPaper>
@@ -321,6 +321,8 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 </FadingPaper>
             }
 
+            {
+                /* TODO
             <IdentityButtonGroup
                 rootElement={rootElement}
                 isBusy={props.isBusy}
@@ -331,6 +333,8 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 form={application?.form!}
                 version={application?.version!}
             />
+                 */
+            }
 
             <Typography
                 component="h4"
@@ -343,7 +347,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             </Typography>
 
             {
-                application?.version.rootElement.privacyText != null &&
+                element.privacyText != null &&
                 <Box
                     sx={{
                         maxWidth: '600px',
@@ -351,7 +355,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     }}
                 >
                     <FormattedTextWithDialogTags
-                        text={application.version.rootElement.privacyText}
+                        text={element.privacyText}
                     />
                 </Box>
             }

@@ -5,7 +5,7 @@ import {type SubmitStepElement} from '../models/elements/steps/submit-step-eleme
 import {type AnyElement, AnyElementType} from '../models/elements/any-element';
 import {generateElementIdForType} from './id-utils';
 import {DateFieldComponentModelMode, DateFieldElement} from '../models/elements/form/input/date-field-element';
-import {RootElement} from '../models/elements/root-element';
+import {FormLayoutElement} from '../models/elements/form-layout-element';
 import {BaseElement} from '../models/elements/base-element';
 import {StepElement} from '../models/elements/steps/step-element';
 import {AlertElement} from '../models/elements/form/content/alert-element';
@@ -85,7 +85,7 @@ function makeInputBase<T extends ElementType>(t: T, id: string): Omit<BaseInputE
 }
 
 const elementConstructors: {
-    [ElementType.FormLayout]: (id: string) => RootElement;
+    [ElementType.FormLayout]: (id: string) => FormLayoutElement;
     [ElementType.Step]: (id: string) => StepElement;
     [ElementType.Alert]: (id: string) => AlertElement;
     [ElementType.GroupLayout]: (id: string) => GroupLayout;
@@ -142,6 +142,16 @@ const elementConstructors: {
         introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
         summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
         submitStep: generateElementWithDefaultValues(ElementType.SubmitStep) as SubmitStepElement,
+        publicTitle: undefined,
+        managingDepartmentId: undefined,
+        responsibleDepartmentId: undefined,
+        legalSupportDepartmentId: undefined,
+        technicalSupportDepartmentId: undefined,
+        imprintDepartmentId: undefined,
+        privacyDepartmentId: undefined,
+        accessibilityDepartmentId: undefined,
+        themeId: undefined,
+        pdfTemplateKey: undefined,
     }),
     [ElementType.Step]: (id) => ({
         ...makeBase(ElementType.Step, id),
@@ -316,6 +326,7 @@ const elementConstructors: {
         supportingDocuments: undefined,
         documentsToAttach: undefined,
         expectedCosts: undefined,
+        privacyText: undefined,
     }),
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
@@ -368,6 +379,7 @@ const elementConstructors: {
         label: 'UI-Definition',
         elementType: undefined,
         displayContext: undefined,
+        openExternalEditor: undefined,
     }),
     [ElementType.IdentityInput]: (id) => ({}),
     [ElementType.TabLayout]: (id) => ({}),

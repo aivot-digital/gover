@@ -4,7 +4,6 @@ import {
     type SelectFieldElement,
     type SelectFieldElementOption,
 } from '../models/elements/form/input/select-field-element';
-import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {OptionListInput} from '../components/option-list-input/option-list-input';
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
@@ -14,7 +13,7 @@ import {useElementTreeContext} from '../components/element-tree-2/element-tree-c
 import {SelectFieldComponentOption} from '../components/select-field-2/select-field-component';
 import Grid from '@mui/material/Grid';
 
-export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement, ElementTreeEntity>) {
+export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
     const {
         element,
         editable,

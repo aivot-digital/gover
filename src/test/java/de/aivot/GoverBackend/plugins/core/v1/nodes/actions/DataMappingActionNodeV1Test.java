@@ -11,9 +11,9 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,7 +53,7 @@ class DataMappingActionNodeV1Test {
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(new ProcessNodeExecutionContextInit(
+                node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
                                 "source", "missing.path",
@@ -92,7 +92,7 @@ class DataMappingActionNodeV1Test {
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(new ProcessNodeExecutionContextInit(
+                node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
                                 "source", "person.firstName",
@@ -127,7 +127,7 @@ class DataMappingActionNodeV1Test {
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(new ProcessNodeExecutionContextInit(
+                node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(List.of(Map.of(
                                 "source", "person.middleName",

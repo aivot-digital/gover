@@ -12,9 +12,9 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,7 +67,7 @@ class CounterActionNodeV1Test {
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(new ProcessNodeExecutionContextInit(
+                node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration("loop.count", 3L)),
                         processInstance(),
@@ -99,7 +99,7 @@ class CounterActionNodeV1Test {
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(new ProcessNodeExecutionContextInit(
+                node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(null, 2L)),
                         processInstance(),
@@ -125,7 +125,7 @@ class CounterActionNodeV1Test {
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(new ProcessNodeExecutionContextInit(
+                node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration(null, null)),
                         processInstance(),
@@ -151,7 +151,7 @@ class CounterActionNodeV1Test {
 
         assertThrows(
                 ProcessNodeExecutionExceptionInvalidConfiguration.class,
-                () -> node.init(new ProcessNodeExecutionContextInit(
+                () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration("loop.count", 1L)),
                         processInstance(),

@@ -1,6 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.terminators;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
@@ -8,12 +12,19 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElem
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -24,7 +35,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
+public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTerminationNodeV1.DefaultTerminationNodeV1Config> {
     private static final String NODE_KEY = "default-termination";
 
     private static final String RETENTION_VALUE_FIELD_KEY = "retention_value";
@@ -41,7 +52,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -83,83 +94,35 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        ConfigLayoutElement layout;
+        try {
+            layout = ElementPOJOMapper.createFromPOJO(DefaultTerminationNodeV1Config.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts für den DefaultTerminationNodeV1: %s", e.getMessage());
+        }
 
-        var retentionInput = new NumberInputElement();
-        retentionInput
-                .setWeight(8.0)
-                .setId(RETENTION_VALUE_FIELD_KEY);
-        retentionInput
-                .setLabel("Aufbewahrungsfrist")
-                .setHint("Geben Sie die Aufbewahrungsfrist für die Vorgangsdaten nach Abschluss des Vorgangs an (z.B. '30 Tage', '6 Monate', '1 Jahr').")
-                .setRequired(true);
-        layout.addChild(retentionInput);
-
-        var retentionUnitInput = new SelectInputElement();
-        retentionUnitInput
-                .setWeight(4.0)
-                .setId(RETENTION_UNIT_FIELD_KEY);
-        retentionUnitInput
-                .setLabel("Einheit der Aufbewahrungsfrist")
-                .setRequired(true);
-        retentionUnitInput
-                .setOptions(List.of(
-                        SelectInputElementOption.of(RETENTION_UNIT_DAYS, "Tage"),
-                        SelectInputElementOption.of(RETENTION_UNIT_WEEKS, "Wochen"),
-                        SelectInputElementOption.of(RETENTION_UNIT_MONTHS, "Monate"),
-                        SelectInputElementOption.of(RETENTION_UNIT_YEARS, "Jahre")
-                ));
-        layout.addChild(retentionUnitInput);
+        layout
+                .findChild(RETENTION_UNIT_FIELD_KEY, SelectInputElement.class)
+                .ifPresent(retentionUnitInput -> {
+                    retentionUnitInput
+                            .setOptions(List.of(
+                                    SelectInputElementOption.of(RETENTION_UNIT_DAYS, "Tage"),
+                                    SelectInputElementOption.of(RETENTION_UNIT_WEEKS, "Wochen"),
+                                    SelectInputElementOption.of(RETENTION_UNIT_MONTHS, "Monate"),
+                                    SelectInputElementOption.of(RETENTION_UNIT_YEARS, "Jahre")
+                            ));
+                        });
 
         return layout;
     }
 
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AuthoredElementValues configuration,
-                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
-        var res = new HashMap<String, String>();
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<DefaultTerminationNodeV1Config> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
 
-        var effectiveValues = derivedRuntimeElementData.getEffectiveValues();
-
-        var retentionValue = effectiveValues.get(RETENTION_VALUE_FIELD_KEY);
-        if (!(retentionValue instanceof Number)) {
-            res.put(RETENTION_VALUE_FIELD_KEY, "Ungültiger Wert für die Aufbewahrungsfrist.");
-        }
-
-        var retentionUnitObj = effectiveValues.get(RETENTION_UNIT_FIELD_KEY);
-        if (retentionUnitObj instanceof String retentionUnit) {
-            if (!retentionUnit.equals(RETENTION_UNIT_DAYS) &&
-                    !retentionUnit.equals(RETENTION_UNIT_WEEKS) &&
-                    !retentionUnit.equals(RETENTION_UNIT_MONTHS) &&
-                    !retentionUnit.equals(RETENTION_UNIT_YEARS)) {
-                res.put(RETENTION_UNIT_FIELD_KEY, "Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
-            }
-        } else {
-            res.put(RETENTION_UNIT_FIELD_KEY, "Ungültiger Wert für die Einheit der Aufbewahrungsfrist.");
-        }
-
-        return res.isEmpty() ? null : res;
-    }
-
-    @Nullable
-    @Override
-    public LayoutElement<?> getTaskStatusLayout(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return null; // TODO
-    }
-
-    @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context.getConfiguration().getEffectiveValues();
-
-        var retentionTimeValue = ((Number) configuration
-                .getOrDefault(RETENTION_VALUE_FIELD_KEY, DEFAULT_RETENTION_VALUE))
-                .longValue();
-
-        var retentionTimeUnit = String.valueOf(configuration
-                .getOrDefault(RETENTION_UNIT_FIELD_KEY, DEFAULT_RETENTION_UNIT));
+        var retentionTimeValue = configuration.retentionValue.longValue();
+        var retentionTimeUnit = configuration.retentionUnit;
 
         var retentionTime = LocalDateTime.now();
         switch (retentionTimeUnit) {
@@ -171,5 +134,30 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition {
 
         return new ProcessNodeExecutionResultInstanceCompleted()
                 .setRetentionDate(retentionTime);
+    }
+
+    @Nonnull
+    @Override
+    public Class<DefaultTerminationNodeV1Config> getNodeConfigurationClass() {
+        return DefaultTerminationNodeV1Config.class;
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    public static class DefaultTerminationNodeV1Config {
+        @InputElementPOJOBinding(id = RETENTION_VALUE_FIELD_KEY, type = ElementType.Number, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Aufbewahrungsfrist"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie die Aufbewahrungsfrist für die Vorgangsdaten nach Abschluss des Vorgangs an (z.B. '30 Tage', '6 Monate', '1 Jahr')."),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0)
+        })
+        public Number retentionValue;
+
+        @InputElementPOJOBinding(id = RETENTION_UNIT_FIELD_KEY, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Einheit der Aufbewahrungsfrist"),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String retentionUnit;
     }
 }

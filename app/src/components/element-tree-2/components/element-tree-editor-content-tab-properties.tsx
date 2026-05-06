@@ -4,7 +4,7 @@ import {useElementTreeEditorContext} from './element-tree-editor-context';
 import React, {ReactNode, useMemo} from 'react';
 import {ElementEditorSectionHeader} from '../../element-editor-section-header/element-editor-section-header';
 import {Grid, Typography} from '@mui/material';
-import {TextFieldComponent} from '../../text-field/text-field-component';
+import {AutocompleteTextField, TextFieldComponent} from '../../text-field/text-field-component';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -15,7 +15,6 @@ import {AnyInputElement, isAnyInputElement} from '../../../models/elements/form/
 import {editors} from '../../../editors';
 import {EditorDispatcher} from '../../editor-dispatcher';
 import {CheckboxFieldComponent} from '../../checkbox-field/checkbox-field-component';
-import {LoadedForm} from '../../../slices/app-slice';
 import {AlertComponent} from '../../alert/alert-component';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
@@ -25,11 +24,15 @@ import {createElementEditorNavigationLink} from '../../../hooks/use-element-edit
 import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
 import {normalizeElementWeight} from '../../../utils/element-widths';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
+import {
+    useOptionalProcessNodeEditorContext,
+} from '../../../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
 
 export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const dispatch = useAppDispatch();
 
     const {
+        root,
         editable,
         allElements,
         allowElementIdEditing,
@@ -41,6 +44,8 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         onChangeCurrentElement,
         parents,
     } = useElementTreeEditorContext<T>();
+
+    const opec = useOptionalProcessNodeEditorContext();
 
     const {
         type,
@@ -88,6 +93,21 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         });
     }, [currentElement, normalizedWeight, onChangeCurrentElement]);
 
+    const dataKeySuggestions = useMemo(() => {
+        if (opec == null || opec.processDataKeyHints == null) {
+            return [];
+        }
+
+        return opec
+            .processDataKeyHints
+            .filter((hint) => hint.type === 'ProcessData')
+            .map((hint) => ({
+                id: hint.key,
+                label: hint.key,
+                subLabel: hint.node.name ?? '',
+            }));
+    }, [opec]);
+
     return (
         <>
             <ElementEditorSectionHeader
@@ -109,26 +129,29 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 container
                 columnSpacing={4}
             >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <TextFieldComponent
-                        label="Interner Name"
-                        value={currentElement.name}
-                        onChange={(val) => {
-                            onChangeCurrentElement({
-                                ...currentElement,
-                                name: val ?? '',
-                            });
+                {
+                    root !== currentElement &&
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
                         }}
-                        hint="Vergeben Sie einen internen Namen zur besseren Identifikation. Nur für Sie und Ihr Team sichtbar."
-                        maxCharacters={30}
-                        disabled={!editable}
-                    />
-                </Grid>
+                    >
+                        <TextFieldComponent
+                            label="Interner Name"
+                            value={currentElement.name}
+                            onChange={(val) => {
+                                onChangeCurrentElement({
+                                    ...currentElement,
+                                    name: val ?? '',
+                                });
+                            }}
+                            hint="Vergeben Sie einen internen Namen zur besseren Identifikation. Nur für Sie und Ihr Team sichtbar."
+                            maxCharacters={30}
+                            disabled={!editable}
+                        />
+                    </Grid>
+                }
 
                 {
                     isAnyFormElement(currentElement) &&
@@ -232,9 +255,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         ...patch,
                     });
                 }}
-                entity={{} as LoadedForm}
-                onPatchEntity={() => {
-                }}
                 editable={editable}
                 scope={'application' /* TODO: remove this */}
                 hasSummaryLayoutParent={hasSummaryLayoutParent}
@@ -332,13 +352,15 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         title="Datenzuordnung"
                         sx={{mt: 8}}
                     >
-                        Legen Sie fest, mit welchem Datenschlüssel der Wert dieses Feldes im Datensatz ausgelesen (soweit vorhanden) und gespeichert wird (sogenanntes 2-Way-Data-Binding).
+                        Legen Sie fest, mit welchem Datenschlüssel der Wert dieses Feldes im Datensatz ausgelesen
+                        (soweit vorhanden) und gespeichert wird (sogenanntes 2-Way-Data-Binding).
                         Ohne eigenen Schlüssel wird standardmäßig die Element-ID verwendet.
-                        Mit Punktnotation, wie beispielsweise „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen
+                        Mit Punktnotation, wie beispielsweise „person.vorname“, können Sie Werte in verschachtelte
+                        Datenstrukturen
                         schreiben und lesen.
                     </ElementEditorSectionHeader>
 
-                    <TextFieldComponent
+                    <AutocompleteTextField
                         value={currentElement.destinationKey ?? undefined}
                         label="Datenschlüssel"
                         onChange={(val) => {
@@ -350,6 +372,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         startIcon="$."
                         hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
                         disabled={!editable}
+                        suggestions={dataKeySuggestions}
                     />
 
                     {

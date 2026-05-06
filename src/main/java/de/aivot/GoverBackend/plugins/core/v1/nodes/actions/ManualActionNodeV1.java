@@ -8,8 +8,6 @@ import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.ComputedElementState;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
@@ -31,19 +29,19 @@ import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskAssigned;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
@@ -64,7 +62,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-public class ManualActionNodeV1 implements ProcessNodeDefinition {
+public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNodeV1.ManualActionNodeConfig> {
     public static final String NODE_KEY = "manual_action";
 
     private static final String PORT_OUTPUT = "output";
@@ -118,7 +116,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -142,7 +140,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement layout;
         try {
             layout = ElementPOJOMapper.createFromPOJO(ManualActionNodeConfig.class);
@@ -181,6 +179,12 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(ManualActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID);
         return configuration;
+    }
+
+    @Nonnull
+    @Override
+    public Class<ManualActionNodeConfig> getNodeConfigurationClass() {
+        return ManualActionNodeConfig.class;
     }
 
     @Nonnull
@@ -229,44 +233,14 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AuthoredElementValues configuration,
-                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
-       /* TODO: Fix this validation
-        boolean hasErrors = false;
-
-        try {
-            resolveTaskDescription(derivedRuntimeElementData.getEffectiveValues().get(ManualActionNodeConfig.TASK_DESCRIPTION_FIELD_ID));
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            setValidationError(derivedRuntimeElementData, ManualActionNodeConfig.TASK_DESCRIPTION_FIELD_ID, e.getMessage());
-            hasErrors = true;
-        }
-
-        try {
-            resolveUiDefinition(derivedRuntimeElementData.getEffectiveValues().get(ManualActionNodeConfig.UI_DEFINITION_FIELD_ID));
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            setValidationError(derivedRuntimeElementData, ManualActionNodeConfig.UI_DEFINITION_FIELD_ID, e.getMessage());
-            hasErrors = true;
-        }
-
-        try {
-            resolveAssignmentContext(derivedRuntimeElementData.getEffectiveValues().get(ManualActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID));
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            setValidationError(derivedRuntimeElementData, ManualActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID, e.getMessage());
-            hasErrors = true;
-        }
-
-        if (hasErrors) {
-            throw ResponseException.badRequest(derivedRuntimeElementData);
-        }
-        */
-
+                                                     @Nonnull ManualActionNodeConfig configuration) throws ResponseException {
         return null;
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var config = loadConfiguration(context.getConfiguration().getEffectiveValues());
-        var workingProcessData = extractWorkingProcessData(context.getProcessExecutionData());
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<ManualActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var config = loadConfiguration(context.getConfigurationOfExecutingNode());
+        var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(
@@ -291,13 +265,13 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
         return buildStaffTaskView(loadConfigurationForUi(context), context);
     }
 
     @Nonnull
     @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) {
         return List.of(
                 new TaskViewEvent(
                         "Aufgabe abschließen",
@@ -308,7 +282,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
         var config = loadConfigurationForUi(context);
         return config.uiDefinition() != null
                 ? elementDataTransformService
@@ -319,7 +293,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context,
                                                                          @Nonnull AuthoredElementValues update,
                                                                          @Nonnull String event) throws ResponseException {
         var config = loadConfigurationForUi(context);
@@ -332,7 +306,8 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private GroupLayoutElement buildStaffTaskView(@Nonnull ResolvedConfiguration config, @Nonnull ProcessNodeExecutionContextUIStaff context) {
+    private GroupLayoutElement buildStaffTaskView(@Nonnull ResolvedConfiguration config,
+                                                  @Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) {
         var layout = new GroupLayoutElement();
         layout.setId(TASK_VIEW_ROOT_ID);
 
@@ -343,7 +318,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
         var descriptionContent = new RichTextContentElement();
         descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
         var renderedDescription = templateRenderService
-                .interpolate(context.getProcessData(), config.taskDescription());
+                .interpolate(context.getCurrentProcessExecutionData(), config.taskDescription());
         descriptionContent.setContent(renderedDescription);
 
         var children = new java.util.ArrayList<BaseFormElement>();
@@ -381,30 +356,17 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private ResolvedConfiguration loadConfigurationForUi(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    private ResolvedConfiguration loadConfigurationForUi(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context) throws ResponseException {
         try {
-            return loadConfiguration(context.getRuntimeElementData().getEffectiveValues());
+            return loadConfiguration(context.getConfigurationOfExecutingNode());
         } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
             throw ResponseException.internalServerError(e);
         }
     }
 
     @Nonnull
-    private ResolvedConfiguration loadConfiguration(@Nonnull Map<String, Object> rawConfiguration)
+    private ResolvedConfiguration loadConfiguration(@Nonnull ManualActionNodeConfig config)
             throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        ManualActionNodeConfig config;
-        try {
-            var configuration = new EffectiveElementValues();
-            configuration.putAll(rawConfiguration);
-            config = ElementPOJOMapper.mapToPOJO(configuration, ManualActionNodeConfig.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des Knotens für die manuelle Aktion ist ungültig: %s",
-                    e.getMessage()
-            );
-        }
-
         return new ResolvedConfiguration(
                 resolveTaskDescription(config.taskDescription),
                 resolveUiDefinition(config.uiDefinition),
@@ -507,7 +469,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff context,
+    private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context,
                                                                  @Nonnull ResolvedConfiguration config,
                                                                  @Nonnull EffectiveElementValues effectiveUiUpdate,
                                                                  @Nonnull AuthoredElementValues update) {
@@ -523,7 +485,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
         nodeData.put(OUTPUT_DATA, payloadUpdate);
         nodeData.put(OUTPUT_DIFF, diff);
         nodeData.put(OUTPUT_REMARK, remark);
-        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
+        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, LocalDateTime.now().toString());
 
         var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
@@ -647,15 +609,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition {
             }
         }
         return result;
-    }
-
-    private static void setValidationError(@Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
-                                           @Nonnull String fieldId,
-                                           @Nonnull String error) {
-        derivedRuntimeElementData
-                .getElementStates()
-                .computeIfAbsent(fieldId, ignored -> new ComputedElementState())
-                .setError(error);
     }
 
     private record ResolvedConfiguration(

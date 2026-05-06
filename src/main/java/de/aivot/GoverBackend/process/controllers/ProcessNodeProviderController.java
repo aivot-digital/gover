@@ -9,7 +9,6 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
-import jakarta.validation.constraints.NotNull;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,7 +35,7 @@ public class ProcessNodeProviderController {
             summary = "List Process Node Providers",
             description = "Retrieve a list of all available process node providers."
     )
-    public List<ProcessNodeDefinition> list() throws ResponseException {
+    public List<ProcessNodeDefinition<?>> list() throws ResponseException {
         return processNodeProviderService
                 .getAllProcessNodeDefinitions();
     }
@@ -46,8 +45,8 @@ public class ProcessNodeProviderController {
             summary = "Retrieve Process Node Provider",
             description = "Retrieve a specific process node provider by its key and version."
     )
-    public ProcessNodeDefinition retrieve(@Nonnull @PathVariable String key,
-                                          @Nonnull @PathVariable Integer version) throws ResponseException {
+    public ProcessNodeDefinition<?> retrieve(@Nonnull @PathVariable String key,
+                                             @Nonnull @PathVariable Integer version) throws ResponseException {
         return processNodeProviderService
                 .getProcessNodeDefinition(key, version)
                 .orElseThrow(ResponseException::notFound);

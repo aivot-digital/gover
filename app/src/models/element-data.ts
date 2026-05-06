@@ -1,4 +1,5 @@
 import {AnyElement} from './elements/any-element';
+import {isStringNotNullOrEmpty} from '../utils/string-utils';
 
 export type AuthoredElementValues = Partial<Record<string, any>>;
 
@@ -124,4 +125,44 @@ export function applyComputedErrors(computedErrors: ComputedElementErrors, compu
     }
 
     return nextComputedElementStates;
+}
+
+export function clearDerivedErrorsRecursively(derivedData: DerivedRuntimeElementData): DerivedRuntimeElementData {
+    return {
+        ...derivedData,
+        elementStates: Object.fromEntries(
+            Object.entries(derivedData.elementStates).map(([elementId, state]) => [
+                elementId,
+                {
+                    ...state,
+                    error: null,
+                    subStates: state?.subStates?.map((subState) => clearDerivedErrorsRecursively({
+                        effectiveValues: {},
+                        elementStates: subState ?? {},
+                    }).elementStates) ?? null,
+                },
+            ]),
+        ),
+    };
+}
+
+export function hasAnyErrorRecursively(elementStates: ComputedElementStates): boolean {
+    return Object
+        .keys(elementStates)
+        .some((key) => {
+            const state = elementStates[key];
+            if (state == null) {
+                return false;
+            }
+
+            if (isStringNotNullOrEmpty(state.error)) {
+                return true;
+            }
+
+            if (state.subStates != null) {
+                return state.subStates.some((subState) => hasAnyErrorRecursively(subState ?? {}));
+            }
+
+            return false;
+        });
 }

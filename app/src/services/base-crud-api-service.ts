@@ -54,8 +54,8 @@ export abstract class BaseCrudApiService<CreateRequest, ListRes, DetailsRes, Upd
         return await this.get<DetailsRes>(this.buildPath(id), {});
     }
 
-    public async update(id: Id, link: UpdateRequest): Promise<DetailsRes> {
-        return await this.put<UpdateRequest, DetailsRes>(this.buildPath(id), link, {});
+    public async update(id: Id, link: UpdateRequest, options?: RequestOptions): Promise<DetailsRes> {
+        return await this.put<UpdateRequest, DetailsRes>(this.buildPath(id), link, options);
     }
 
     public async destroy(id: Id, options?: RequestOptions): Promise<void> {

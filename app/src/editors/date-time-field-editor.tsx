@@ -1,6 +1,5 @@
 import {BaseEditorProps} from './base-editor';
 import {DateTimeFieldElement} from '../models/elements/form/input/date-time-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
 import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
@@ -16,7 +15,7 @@ const modes: SelectFieldComponentOption[] = [
     },
 ];
 
-export function DateTimeFieldEditor(props: BaseEditorProps<DateTimeFieldElement, ElementTreeEntity>) {
+export function DateTimeFieldEditor(props: BaseEditorProps<DateTimeFieldElement>) {
     const {
         element,
         onPatch,

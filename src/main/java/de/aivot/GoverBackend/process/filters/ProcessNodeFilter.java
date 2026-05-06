@@ -16,10 +16,11 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
     private Integer notId;
     private String name;
     private Integer processId;
+    private List<Integer> processIds;
     private Integer processVersion;
     private String dataKey;
     private String processNodeDefinitionKey;
-    private String processNodeDefinitionVersion;
+    private Integer processNodeDefinitionVersion;
 
     private Map<String, String> configEquals = new HashMap<>();
 
@@ -37,6 +38,7 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
                 .withEquals("id", id)
                 .withNotEquals("id", notId)
                 .withEquals("processId", processId)
+                .withInList("processId", processIds)
                 .withEquals("processVersion", processVersion)
                 .withContains("name", name)
                 .withEquals("dataKey", dataKey)
@@ -109,11 +111,11 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
         return this;
     }
 
-    public String getProcessNodeDefinitionVersion() {
+    public Integer getProcessNodeDefinitionVersion() {
         return processNodeDefinitionVersion;
     }
 
-    public ProcessNodeFilter setProcessNodeDefinitionVersion(String processNodeDefinitionVersion) {
+    public ProcessNodeFilter setProcessNodeDefinitionVersion(Integer processNodeDefinitionVersion) {
         this.processNodeDefinitionVersion = processNodeDefinitionVersion;
         return this;
     }
@@ -134,6 +136,11 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
 
     public ProcessNodeFilter setNotId(Integer notId) {
         this.notId = notId;
+        return this;
+    }
+
+    public ProcessNodeFilter setProcessIds(List<Integer> processIds) {
+        this.processIds = processIds;
         return this;
     }
 }

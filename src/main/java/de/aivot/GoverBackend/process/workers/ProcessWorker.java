@@ -4,14 +4,16 @@ import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
@@ -27,6 +29,7 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Service;
+import org.w3c.dom.Node;
 
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -136,6 +139,24 @@ public class ProcessWorker {
                         currentNode.getProcessNodeDefinitionVersion()
                 ));
 
+        dodo(
+                currentNode,
+                currentNodeProvider,
+                logger,
+                processInstance,
+                previousTaskId,
+                previousNodeId,
+                previousNodePortKey
+        );
+    }
+
+    private <NodeConfig> void dodo(@Nonnull ProcessNodeEntity currentNode,
+                                   @Nonnull ProcessNodeDefinition<NodeConfig> currentNodeProvider,
+                                   @Nonnull ProcessNodeExecutionLogger logger,
+                                   @Nonnull ProcessInstanceEntity processInstance,
+                                   @Nullable Long previousTaskId,
+                                   @Nullable Integer previousNodeId,
+                                   @Nullable String previousNodePortKey) throws ProcessNodeExecutionException {
         var deadline = currentNode.getTimeLimitDays() != null ?
                 LocalDateTime.now().plusDays(currentNode.getTimeLimitDays()) :
                 null;
@@ -187,10 +208,10 @@ public class ProcessWorker {
                         previousNodeId
                 );
 
-        DerivedRuntimeElementData configuration;
+        ProcessNodeService.ProcessConfigurationDetails<NodeConfig> configuration;
         try {
             configuration = processNodeService
-                    .deriveConfiguration(currentNode, false);
+                    .deriveConfiguration(currentNode, currentNodeProvider,  null,false);
         } catch (ResponseException e) {
             var ex = new ProcessNodeExecutionExceptionUnknown(
                     e,
@@ -201,14 +222,14 @@ public class ProcessWorker {
             throw ex;
         }
 
-        var context = new ProcessNodeExecutionContextInit(
+        var context = new ProcessNodeExecutionInitContext<NodeConfig>(
                 logger,
                 currentNode,
                 processInstance,
                 taskEntity,
                 null,
                 processData,
-                configuration
+                configuration.configuration()
         );
 
         ProcessNodeExecutionResult initResult;

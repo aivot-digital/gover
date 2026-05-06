@@ -2,7 +2,6 @@ import {GenericListPage} from '../../../../components/generic-list-page/generic-
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box} from '@mui/material';
-import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
 import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
@@ -16,22 +15,17 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {FormVersionsDialog} from '../../dialogs/form-versions-dialog';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
-import {format} from 'date-fns/format';
 import {GridColDef} from '@mui/x-data-grid';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
-import {Link, useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {FormsListPageHelp} from '../../components/forms-list-page-help';
-import {FormStatusChipGroup, getFormStatus} from '../../components/form-status-chip-group';
-import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
 import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
 import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
-import {Page} from '../../../../models/dtos/page';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import EditFilled from '@aivot/mui-material-symbols-400-outlined/dist/edit/EditFilled';
 import {
     FormResourceAccessControlDialog,
 } from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
@@ -44,147 +38,53 @@ import {ExportFormDialog} from '../../dialogs/export-form-dialog';
 import {ImportFormDialog} from '../../dialogs/import-form-dialog';
 import {DeleteFormDialog} from '../../dialogs/delete-form-dialog';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
+import {FormTriggerApiService, FormTriggerListItem} from '../../services/form-trigger-api-service';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import {CellLink} from '../../../../components/cell-link/cell-link';
+import {IconBadge} from '../../../../components/icon-badge/icon-badge';
+import Flowsheet from '@aivot/mui-material-symbols-400-outlined/dist/flowsheet/Flowsheet';
 
-const availableFilter = [
-    {
-        label: 'Alle Formulare',
-        value: 'all',
-    },
-    {
-        label: 'Entwürfe',
-        value: 'drafted',
-    },
-    {
-        label: 'Veröffentlicht',
-        value: 'published',
-    },
-    {
-        label: 'Zurückgezogen',
-        value: 'revoked',
-    },
-];
-
-interface FormListEntry extends FormEntity {
-    developingDepartmentName?: string;
-    lastEditorName?: string;
-}
-
-const columns: GridColDef<FormListEntry>[] = [
+const columns: GridColDef<FormTriggerListItem>[] = [
     {
         field: 'icon',
         headerName: '',
-        renderCell: () => <CellContentWrapper sx={{
-            alignItems: 'start',
-            py: 2,
-        }}><DescriptionOutlinedIcon/></CellContentWrapper>,
+        renderCell: () => (
+            <CellContentWrapper
+                sx={{
+                    alignItems: 'start',
+                    py: 2,
+                }}
+            >
+                <DescriptionOutlinedIcon/>
+            </CellContentWrapper>),
         disableColumnMenu: true,
         width: 24,
         sortable: false,
     },
     {
-        field: 'internalTitle',
-        headerName: 'Formular',
-        flex: 2,
-        renderCell: (params) => {
-            const {
-                isDrafted,
-                isPublished,
-                isRevoked,
-            } = getFormStatus(params.row);
-
-            return (
-                <Box
-                    sx={{
-                        py: 2,
-                    }}
-                >
-                    <Typography
-                        variant="h5"
-                        sx={{
-                            mb: 0.5,
-                            fontSize: '1rem',
-                        }}
-                    >
-                        <Link
-                            style={{
-                                color: 'inherit',
-                                textDecoration: 'none',
-                            }}
-                            to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
-                            title="Formular bearbeiten"
-                        >
-                            {params.row.internalTitle}
-                        </Link>
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            mt: -0.75,
-                            fontSize: '0.875rem',
-                            lineHeight: '1.5rem',
-                        }}
-                        color="textSecondary"
-                    >
-                        {
-                            isPublished ?
-                                <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
-                                <span>{isRevoked ? 'Zurückgezogen' : 'Noch nicht veröffentlicht'}</span>
-                        }
-                        {
-                            isDrafted &&
-                            <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
-                        }
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            mt: -0.75,
-                            fontSize: '0.875rem',
-                            lineHeight: '1.5rem',
-                        }}
-                        color="textSecondary"
-                    >
-                        Entwickelt von: {params.row.developingDepartmentName ?? 'Unbekannt'}
-                    </Typography>
-                </Box>
-            );
-        },
-    },
-    {
-        field: 'updated',
-        headerName: 'Zuletzt bearbeitet',
+        field: 'node.name',
+        headerName: 'Formulareingang',
         flex: 1,
+        valueGetter: (_, row) => {
+            return row.node.name ?? 'Formulareingang';
+        },
         renderCell: (params) => (
-            <Box
-                sx={{
-                    py: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
-            >
-                <Typography sx={{fontSize: '0.875rem'}}>
-                    {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
-                </Typography>
-                <Typography
-                    color="textSecondary"
-                    sx={{fontSize: '0.875rem'}}
-                >
-                    {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
-                </Typography>
-            </Box>
+            <CellLink to={`/form-triggers/${params.row.node.id}/formLayout/0`}>
+                {params.row.node.name ?? 'Formulareingang'}
+            </CellLink>
         ),
     },
     {
-        field: 'publishedVersion',
-        headerName: 'Status',
-        flex: 0.75,
-        sortable: false,
+        field: 'process.internalTitle',
+        headerName: 'Prozess',
+        flex: 1,
+        valueGetter: (_, row) => {
+            return row.process.internalTitle;
+        },
         renderCell: (params) => (
-            <Box sx={{py: 2}}>
-                <FormStatusChipGroup form={params.row}/>
-            </Box>
+            <CellLink to={`/processes/${params.row.process.id}/versions/${params.row.version.processVersion}`}>
+                {params.row.process.internalTitle} (Version {params.row.version.processVersion})
+            </CellLink>
         ),
     },
 ];
@@ -192,7 +92,6 @@ const columns: GridColDef<FormListEntry>[] = [
 export function FormsListPage() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const api = useApi();
     const showConfirm = useConfirm();
 
     const user = useAppSelector(selectUser);
@@ -346,29 +245,30 @@ export function FormsListPage() {
     const fetch = useCallback(async (options: any) => {
         const deps = (await new DepartmentApiService().listAll()).content;
 
-        const formsPage = await new FormApiService()
+        const formsPage = await new FormTriggerApiService()
             .list(options.page, options.size, options.sort as any, options.order, {
-                internalTitle: options.search,
-                isPublished: options.filter === 'published',
-                isDrafted: options.filter === 'drafted',
-                isRevoked: options.filter === 'revoked',
+                name: options.search,
             });
 
-        const formIds = formsPage.content.map(form => form.id);
+        return formsPage;
+        /*
+                const formIds = formsPage.content.map(form => form.id);
 
-        const editorsList = await new FormApiService()
-            .listEditorsForForms(formIds);
+                const editorsList = await new FormApiService()
+                    .listEditorsForForms(formIds);
 
-        const extendedFormsPage: Page<FormListEntry> = {
-            ...formsPage,
-            content: formsPage.content.map(form => ({
-                ...form,
-                developingDepartmentName: deps.find(dep => dep.id === form.developingDepartmentId)?.name,
-                lastEditorName: editorsList.find(editor => editor.formId === form.id)?.fullName,
-            })),
-        };
+                const extendedFormsPage: Page<FormListEntry> = {
+                    ...formsPage,
+                    content: formsPage.content.map(form => ({
+                        ...form,
+                        developingDepartmentName: deps.find(dep => dep.id === form.developingDepartmentId)?.name,
+                        lastEditorName: editorsList.find(editor => editor.formId === form.id)?.fullName,
+                    })),
+                };
 
-        return extendedFormsPage;
+                return extendedFormsPage;
+
+         */
     }, []);
 
     const noDataPlaceholder = useMemo(() => (
@@ -408,38 +308,21 @@ export function FormsListPage() {
         </Box>
     ), [memberships]);
 
-    const rowActions = useCallback((item: FormListEntry) => [
+    const rowActions = useCallback((item: FormTriggerListItem) => [
         {
             icon: <Edit/>,
-            to: `/forms/${item.id}/${item.draftedVersion}`,
+            to: `/form-triggers/${item.node.id}/formLayout/0`,
             tooltip: 'Formular bearbeiten',
-            visible: item.draftedVersion != null,
         },
         {
-            icon: <Visibility/>,
-            to: `/forms/${item.id}`,
-            tooltip: 'Formular ansehen',
-            visible: item.draftedVersion === null,
+            icon: ModuleIcons.processes,
+            to: `/processes/${item.process.id}/versions/${item.version.processVersion}`,
+            tooltip: 'Prozess ansehen',
         },
         {
-            icon: <NewWindow/>,
-            onClick: () => handleNewDraft(item),
-            tooltip: 'Neuen Entwurf anlegen',
-            visible: item.draftedVersion == null,
-            disabled: item.publishedVersion == null && item.draftedVersion != null,
-        },
-        {
-            icon: <HomeStorage/>,
-            onClick: () => setShowFormVersionsDialogFor(item),
-            tooltip: 'Versionen anzeigen',
-        },
-        {
-            icon: <MoreVertOutlinedIcon/>,
-            onClick: (event: any) => setRowMenu({
-                target: event.currentTarget as HTMLElement,
-                form: item,
-            }),
-            tooltip: 'Optionen',
+            icon: <IconBadge icon={Flowsheet} badgeIcon={EditFilled} corner="top-right"/>,
+            to: `/processes/${item.process.id}/versions/${item.version.processVersion}/nodes/${item.node.id}`,
+            tooltip: 'Prozess ansehen',
         },
     ], []);
 
@@ -450,22 +333,21 @@ export function FormsListPage() {
                 fullWidth
                 background
             >
-                <GenericListPage<FormListEntry>
+                <GenericListPage<FormTriggerListItem>
                     controlRef={listControlRef}
                     dynamicRowHeight={true}
-                    filters={availableFilter}
                     defaultFilter="all"
                     header={header}
-                    searchLabel="Formular suchen"
-                    searchPlaceholder="Titel des Formulars eingeben…"
+                    searchLabel="Formulareingang suchen"
+                    searchPlaceholder="Titel des Formulareingangs eingeben…"
                     fetch={fetch}
                     columnDefinitions={columns}
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
-                    noSearchResultsPlaceholder="Keine Formulare gefunden"
-                    rowActionsCount={4}
+                    noSearchResultsPlaceholder="Keine Formulareingänge gefunden"
+                    rowActionsCount={3}
                     rowActions={rowActions}
-                    defaultSortField="internalTitle"
+                    defaultSortField={'id' as any}
                     disableFullWidthToggle={true}
                 />
             </PageWrapper>
@@ -597,6 +479,6 @@ export function FormsListPage() {
     );
 }
 
-function getRowIdentifier(row: FormListEntry): string {
-    return row.id.toString()
+function getRowIdentifier(row: FormTriggerListItem): string {
+    return row.node.id.toString();
 }

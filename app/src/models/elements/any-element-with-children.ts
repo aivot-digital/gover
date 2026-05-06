@@ -1,9 +1,9 @@
-import {type RootElement} from './root-element';
+import {type FormLayoutElement} from './form-layout-element';
 import {type StepElement} from './steps/step-element';
 import {type AnyLayoutElement} from './form/layout/any-layout-element';
 
 export type AnyElementWithChildren =
-    RootElement |
+    FormLayoutElement |
     StepElement |
     AnyLayoutElement;
 

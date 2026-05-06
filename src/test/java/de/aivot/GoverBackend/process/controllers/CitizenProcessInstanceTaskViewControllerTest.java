@@ -16,11 +16,11 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUICustomer;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskUpdated;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
@@ -270,8 +270,9 @@ class CitizenProcessInstanceTaskViewControllerTest {
             this.node = node;
         }
 
+        @Nonnull
         @Override
-        public Optional<ProcessNodeEntity> retrieve(Integer id) {
+        public Optional<ProcessNodeEntity> retrieve(@Nonnull Integer id) {
             return Optional.of(node);
         }
     }
@@ -441,7 +442,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
             throw new UnsupportedOperationException("Not used in this test");
         }
 
@@ -507,7 +508,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
             throw new UnsupportedOperationException("Not used in this test");
         }
 

@@ -3,8 +3,10 @@ package de.aivot.GoverBackend.process.services;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
 import jakarta.annotation.Nonnull;
@@ -24,12 +26,14 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
 
     private final ProcessVersionRepository processDefinitionVersionRepository;
     private final ProcessNodeService processNodeService;
+    private final ProcessNodeDefinitionService processNodeDefinitionService;
 
     @Autowired
     public ProcessVersionService(ProcessVersionRepository processDefinitionVersionRepository,
-                                 ProcessNodeService processNodeService) {
+                                 ProcessNodeService processNodeService, ProcessNodeDefinitionService processNodeDefinitionService) {
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
         this.processNodeService = processNodeService;
+        this.processNodeDefinitionService = processNodeDefinitionService;
     }
 
     @Nonnull
@@ -99,12 +103,20 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         var res = new LinkedList<ProcessNodeProblems>();
 
         for (var node : nodes) {
-            processNodeService
-                    .validate(node, true)
+            var provider = processNodeDefinitionService
+                    .getProcessNodeDefinition(node)
+                    .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
+
+            val(node, provider)
                     .ifPresent(res::add);
         }
 
         return res;
+    }
+
+    private <NodeConfig> Optional<ProcessNodeProblems> val(ProcessNodeEntity node, ProcessNodeDefinition<NodeConfig> provider) throws ResponseException {
+        return processNodeService
+                .validate(node, provider, true);
     }
 }
 

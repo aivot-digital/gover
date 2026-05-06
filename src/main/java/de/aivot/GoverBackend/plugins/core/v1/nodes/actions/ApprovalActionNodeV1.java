@@ -2,10 +2,13 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
@@ -15,18 +18,29 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContent
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
@@ -39,7 +53,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
+public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActionNodeV1.ApprovalConfiguration> {
     public static final String NODE_KEY = "approval";
 
     private static final String CRITERIA_FIELD_ID = "criteria";
@@ -89,7 +103,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -113,64 +127,53 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        ConfigLayoutElement layout;
+        try {
+            layout = ElementPOJOMapper.createFromPOJO(ApprovalConfiguration.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+        }
 
-        var criteriaField = new RichTextInputElement();
-        criteriaField.setId(CRITERIA_FIELD_ID);
-        criteriaField.setLabel("Freigabekriterien");
-        criteriaField.setHint("Beschreiben Sie die fachlichen Kriterien, auf deren Basis die Freigabe erfolgen soll.");
-        criteriaField.setRequired(true);
-        layout.addChild(criteriaField);
+        // Configure the content mode field
+        layout
+                .findChild(CONTENT_MODE_FIELD_ID, RadioInputElement.class)
+                .ifPresent(contentModeField -> {
+                    contentModeField.setValue(new ElementValueFunctions()
+                            .setType(ValueFunctionType.NoCode)
+                            .setNoCode(new NoCodeStaticValue(MODE_DATA)));
+                    contentModeField.setOptions(List.of(
+                            RadioInputElementOption.of(MODE_DATA, "Daten"),
+                            RadioInputElementOption.of(MODE_CUSTOM_CONTENT, "Eigene Inhalte")
+                    ));
+                });
 
-        var contentModeField = new RadioInputElement();
-        contentModeField.setId(CONTENT_MODE_FIELD_ID);
-        contentModeField.setLabel("Zu prüfende Inhalte");
-        contentModeField.setHint("Wählen Sie, ob die Freigabe auf Basis modellierter Daten oder freier Inhalte erfolgt.");
-        contentModeField.setRequired(true);
-        contentModeField.setToggleButtons(true);
-        contentModeField.setDisplayInline(true);
-        contentModeField.setValue(new ElementValueFunctions()
-                .setType(ValueFunctionType.NoCode)
-                .setNoCode(new NoCodeStaticValue(MODE_DATA)));
-        contentModeField.setOptions(List.of(
-                RadioInputElementOption.of(MODE_DATA, "Daten"),
-                RadioInputElementOption.of(MODE_CUSTOM_CONTENT, "Eigene Inhalte")
-        ));
-        layout.addChild(contentModeField);
+        // Configure the ui definition modeling field
+        layout
+                .findChild(DATA_CONTENT_FIELD_ID, UiDefinitionInputElement.class)
+                .ifPresent(dataContentField -> {
+                    dataContentField.setElementType(ElementType.SummaryLayout);
+                    dataContentField.setVisibility(buildModeVisibility(MODE_DATA));
+                    dataContentField.setDisplayContext(ElementDisplayContext.StaffFacing);
+                });
 
-        var dataContentField = new UiDefinitionInputElement();
-        dataContentField.setId(DATA_CONTENT_FIELD_ID);
-        dataContentField.setLabel("Zu prüfende Daten");
-        dataContentField.setHint("Modellieren Sie eine Gover-UI, in der die freizugebenden Inhalte dargestellt werden.");
-        dataContentField.setRequired(true);
-        dataContentField.setElementType(ElementType.SummaryLayout);
-        dataContentField.setVisibility(buildModeVisibility(MODE_DATA));
-        dataContentField.setDisplayContext(ElementDisplayContext.StaffFacing);
-        layout.addChild(dataContentField);
+        // Configure the text content field
+        layout
+                .findChild(CUSTOM_CONTENT_FIELD_ID, RichTextInputElement.class)
+                .ifPresent(customContentField -> {
+                    customContentField.setVisibility(buildModeVisibility(MODE_CUSTOM_CONTENT));
+                });
 
-        var customContentField = new RichTextInputElement();
-        customContentField.setId(CUSTOM_CONTENT_FIELD_ID);
-        customContentField.setLabel("Zu prüfende Inhalte");
-        customContentField.setHint("Beschreiben Sie die zu prüfenden Inhalte frei, z. B. wenn diese in einem Drittsystem geprüft werden.");
-        customContentField.setRequired(true);
-        customContentField.setVisibility(buildModeVisibility(MODE_CUSTOM_CONTENT));
-        layout.addChild(customContentField);
-
-        var assignmentContextField = new AssignmentContextInputElement();
-        assignmentContextField.setId(ASSIGNMENT_CONTEXT_FIELD_ID);
-        assignmentContextField.setLabel("Verantwortlicher Personenkreis");
-        assignmentContextField.setRequired(true);
-        assignmentContextField.setHeadline("Verantwortlicher Personenkreis");
-        assignmentContextField.setText("Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann.");
-        assignmentContextField.setPlaceholder("Organisationseinheit, Team oder Mitarbeiter:in suchen");
-        assignmentContextField.setAllowedTypes(List.of("orgUnit", "team", "user"));
-        assignmentContextField.setProcessAccessConstraint(new DomainAndUserSelectProcessAccessConstraint()
-                .setProcessId(context.processDefinition().getId())
-                .setProcessVersion(context.processDefinitionVersion().getProcessVersion())
-                .setRequiredPermissions(List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)));
-        layout.addChild(assignmentContextField);
+        // Configure the assignment field
+        layout
+                .findChild(ASSIGNMENT_CONTEXT_FIELD_ID, AssignmentContextInputElement.class)
+                .ifPresent(assignmentContextField -> {
+                    assignmentContextField.setAllowedTypes(List.of("orgUnit", "team", "user"));
+                    assignmentContextField.setProcessAccessConstraint(new DomainAndUserSelectProcessAccessConstraint()
+                            .setProcessId(context.processDefinition().getId())
+                            .setProcessVersion(context.processDefinitionVersion().getProcessVersion())
+                            .setRequiredPermissions(List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)));
+                });
 
         return layout;
     }
@@ -220,9 +223,9 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var config = loadConfiguration(context.getThisNode());
-        var workingProcessData = extractWorkingProcessData(context.getProcessExecutionData());
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<ApprovalConfiguration> context) throws ProcessNodeExecutionException {
+        var config = context.getConfigurationOfExecutingNode();
+        var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(
@@ -231,12 +234,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
                         context.getThisProcessInstance().getId(),
                         context.getThisTask().getPreviousProcessNodeId(),
                         context.getThisProcessInstance().getAssignedUserId(),
-                        config.assignmentContext(),
+                        config.assignmentContext,
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
-                        "Für das Prozesselement '%s' konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
-                        context.getThisNode().getName() != null ? context.getThisNode().getName() : getName()
+                        "Für das Prozesselement %s konnte keine geeignete Bearbeiter:in im konfigurierten Personenkreis ermittelt werden.",
+                        StringUtils.quote(this.resolveNodeName(context.getThisNode()))
                 ));
 
         return ProcessNodeExecutionResultTaskAssigned
@@ -246,8 +249,8 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        var config = loadConfigurationForUi(context);
+    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
+        var config = context.getConfigurationOfExecutingNode();
 
         var layout = new GroupLayoutElement();
         layout.setId(TASK_VIEW_ROOT_ID);
@@ -260,7 +263,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
         var criteriaContent = new RichTextContentElement();
         criteriaContent.setId("approval-criteria-content");
-        criteriaContent.setContent(config.criteria());
+        criteriaContent.setContent(config.criteria);
         children.add(criteriaContent);
 
         var contentHeadline = new HeadlineContentElement();
@@ -268,12 +271,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         contentHeadline.setContent("Inhalte");
         children.add(contentHeadline);
 
-        if (MODE_DATA.equals(config.contentMode())) {
-            children.add(config.dataContent());
+        if (MODE_DATA.equals(config.contentMode)) {
+            children.add(config.dataContent);
         } else {
             var customContent = new RichTextContentElement();
             customContent.setId("approval-custom-content");
-            customContent.setContent(config.customContent());
+            customContent.setContent(config.customContent);
             children.add(customContent);
         }
 
@@ -297,7 +300,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
         return List.of(
                 new TaskViewEvent("Freigeben", EVENT_APPROVE),
                 new TaskViewEvent("Ablehnen", EVENT_REJECT)
@@ -306,7 +309,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) throws ResponseException {
         return elementDataTransformService
                 .buildEffectiveValues(
                         getStaffTaskView(context),
@@ -317,7 +320,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nullable
     @Override
-    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context) {
         var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
         if (savedData != null) {
             return savedData;
@@ -335,13 +338,14 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+    public Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context,
                                                                             @Nonnull AuthoredElementValues update) throws ResponseException, ProcessNodeExecutionException {
         return ProcessNodeDefinition.super.onAutoSaveFromStaffTaskView(context, update);
     }
+
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context,
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context,
                                                                          @Nonnull AuthoredElementValues update,
                                                                          @Nonnull String event) throws ResponseException {
         var remark = update.get(TASK_VIEW_REMARK_FIELD_ID);
@@ -362,7 +366,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         var nodeData = new HashMap<String, Object>();
         nodeData.put(OUTPUT_DECISION, decision);
         nodeData.put(OUTPUT_REMARK, remarkText);
-        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
+        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, IsoTimestampUtils.nowUtc());
 
         var result = new ProcessNodeExecutionResultTaskCompleted()
@@ -372,86 +376,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
                 .setProcessData(context.getThisTask().getProcessData()); // Copy the process data for the next step
 
         return Optional.of(result);
-    }
-
-    @Nonnull
-    private ApprovalConfiguration loadConfigurationForUi(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        try {
-            return loadConfiguration(context.getThisNode());
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            throw ResponseException.internalServerError(e);
-        }
-    }
-
-    @Nonnull
-    private ApprovalConfiguration loadConfiguration(@Nonnull de.aivot.GoverBackend.process.entities.ProcessNodeEntity node)
-            throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var configuration = node.getConfiguration();
-
-        var criteria = readString(configuration, CRITERIA_FIELD_ID);
-        var contentMode = readString(configuration, CONTENT_MODE_FIELD_ID);
-        if (contentMode == null || contentMode.isBlank()) {
-            contentMode = MODE_DATA;
-        }
-
-        if (!MODE_DATA.equals(contentMode) && !MODE_CUSTOM_CONTENT.equals(contentMode)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Das Freigabe-Element ist mit einem ungültigen Inhaltsmodus %s konfiguriert.",
-                    StringUtils.quote(contentMode)
-            );
-        }
-
-        var dataContentRaw = configuration.get(DATA_CONTENT_FIELD_ID);
-        var dataContent = dataContentRaw != null
-                ? ObjectMapperFactory.getInstance().convertValue(dataContentRaw, BaseElement.class)
-                : null;
-
-        var customContent = readString(configuration, CUSTOM_CONTENT_FIELD_ID);
-        var assignmentContextRaw = configuration.get(ASSIGNMENT_CONTEXT_FIELD_ID);
-        var assignmentContext = AssignmentContextInputElement._formatValue(assignmentContextRaw);
-
-        if (criteria == null || criteria.isBlank()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für das Freigabe-Element müssen Freigabekriterien definiert sein."
-            );
-        }
-
-        if (MODE_DATA.equals(contentMode)) {
-            if (!(dataContent instanceof BaseFormElement)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Für den Modus 'Daten' muss eine darstellbare Gover-UI definiert sein."
-                );
-            }
-        } else if (customContent == null || customContent.isBlank()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den Modus 'Eigene Inhalte' muss ein Inhaltstext definiert sein."
-            );
-        }
-
-        if (assignmentContext == null ||
-                assignmentContext.getDomainAndUserSelection() == null ||
-                assignmentContext.getDomainAndUserSelection().isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für das Freigabe-Element muss ein Personenkreis definiert sein."
-            );
-        }
-
-        return new ApprovalConfiguration(
-                criteria,
-                contentMode,
-                (BaseFormElement) dataContent,
-                customContent,
-                assignmentContext
-        );
-    }
-
-    @Nullable
-    private static String readString(@Nonnull AuthoredElementValues configuration, @Nonnull String fieldId) {
-        var fld = configuration.get(fieldId);
-        if (fld != null) {
-            return fld.toString();
-        }
-        return null;
     }
 
     @Nonnull
@@ -493,12 +417,56 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition {
         return configuration;
     }
 
-    private record ApprovalConfiguration(
-            @Nonnull String criteria,
-            @Nonnull String contentMode,
-            @Nullable BaseFormElement dataContent,
-            @Nullable String customContent,
-            @Nonnull AssignmentContextInputElementValue assignmentContext
-    ) {
+    @Nonnull
+    @Override
+    public Class<ApprovalConfiguration> getNodeConfigurationClass() {
+        return ApprovalConfiguration.class;
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    public static class ApprovalConfiguration {
+        public static final String CRITERIA = CRITERIA_FIELD_ID;
+        @InputElementPOJOBinding(id = CRITERIA, type = ElementType.RichTextInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Freigabekriterien"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die fachlichen Kriterien, auf deren Basis die Freigabe erfolgen soll."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String criteria;
+
+        public static final String CONTENT_MODE = CONTENT_MODE_FIELD_ID;
+        @InputElementPOJOBinding(id = CONTENT_MODE, type = ElementType.Radio, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Inhalte"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie, ob die Freigabe auf Basis modellierter Daten oder freier Inhalte erfolgt."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),
+                @ElementPOJOBindingProperty(key = "displayInline", boolValue = true)
+        })
+        public String contentMode;
+
+        public static final String DATA_CONTENT = DATA_CONTENT_FIELD_ID;
+        @InputElementPOJOBinding(id = DATA_CONTENT, type = ElementType.UiDefinitionInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Daten"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Gover-UI, in der die freizugebenden Inhalte dargestellt werden."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public SummaryLayoutElement dataContent;
+
+        public static final String CUSTOM_CONTENT = CUSTOM_CONTENT_FIELD_ID;
+        @InputElementPOJOBinding(id = CUSTOM_CONTENT, type = ElementType.RichTextInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Zu prüfende Inhalte"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie die zu prüfenden Inhalte frei, z. B. wenn diese in einem Drittsystem geprüft werden."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String customContent;
+
+        public static final String ASSIGNMENT_CONTEXT = ASSIGNMENT_CONTEXT_FIELD_ID;
+        @InputElementPOJOBinding(id = ASSIGNMENT_CONTEXT, type = ElementType.AssignmentContext, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
+                @ElementPOJOBindingProperty(key = "headline", strValue = "Verantwortlicher Personenkreis"),
+                @ElementPOJOBindingProperty(key = "text", strValue = "Definieren Sie den Personenkreis, der für diese Aufgabe herangezogen werden kann."),
+                @ElementPOJOBindingProperty(key = "placeholder", strValue = "Organisationseinheit, Team oder Mitarbeiter:in suchen"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public AssignmentContextInputElementValue assignmentContext;
     }
 }

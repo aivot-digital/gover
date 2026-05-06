@@ -24,7 +24,7 @@ import {cloneElement} from '../../utils/clone-element';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {ElementChildOptions} from '../../data/element-type/element-child-options';
-import {isRootElement} from '../../models/elements/root-element';
+import {isRootElement} from '../../models/elements/form-layout-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 import {deepEquals} from '../../utils/equality-utils';
 
@@ -38,6 +38,7 @@ interface UiDefinitionInputFieldComponentProps {
     expectedRootType?: ElementType | null;
     onChange: (value: UiDefinitionInputFieldElementItem | undefined) => void;
     displayContext: ElementDisplayContext;
+    openOverride?: () => void;
 }
 
 function buildSummary(value?: UiDefinitionInputFieldElementItem | null): string {
@@ -70,6 +71,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         expectedRootType,
         onChange,
         displayContext,
+        openOverride,
     } = props;
 
     const displayLabel = `${label}${required ? ' *' : ''}`;
@@ -144,11 +146,15 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     };
 
     const openDialog = useCallback(() => {
-        const nextDraftValue = cloneUiDefinitionValue(value ?? defaultValue);
-        setDraftValue(nextDraftValue);
-        setInitialDraftValue(cloneUiDefinitionValue(nextDraftValue));
-        setShowDraftDialog(true);
-    }, [defaultValue, value]);
+        if (openOverride != null) {
+            openOverride();
+        } else {
+            const nextDraftValue = cloneUiDefinitionValue(value ?? defaultValue);
+            setDraftValue(nextDraftValue);
+            setInitialDraftValue(cloneUiDefinitionValue(nextDraftValue));
+            setShowDraftDialog(true);
+        }
+    }, [defaultValue, openOverride, value]);
 
     const requestClose = useCallback(async () => {
         if (!hasUnsavedChanges) {
@@ -282,7 +288,11 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     disabled={disabled}
                     onClick={openDialog}
                 >
-                    Bearbeiten
+                    {
+                        openOverride != null
+                            ? 'Editor öffnen'
+                            : 'Bearbeiten'
+                    }
                 </Button>
             </Box>
 

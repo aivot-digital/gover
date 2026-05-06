@@ -1,25 +1,30 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
@@ -38,7 +43,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class CounterActionNodeV1 implements ProcessNodeDefinition {
+public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionNodeV1.CounterConfiguration> {
     public static final String NODE_KEY = "counter";
 
     private static final String PORT_NAME = "output";
@@ -78,7 +83,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -102,31 +107,27 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        ConfigLayoutElement layout;
+        try {
+            layout = ElementPOJOMapper.createFromPOJO(CounterConfiguration.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+        }
 
-        var variableField = new TextInputElement();
-        variableField.setId(VARIABLE_FIELD_ID);
-        variableField.setLabel("Vorgangsdatenvariable");
-        variableField.setHint("Optionaler Pfad innerhalb der Vorgangsdatenwurzel, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselements aus den Elementdaten verwendet.");
-        variableField.setRequired(false);
-        variableField.setWeight(9.0);
-        layout.addChild(variableField);
-
-        var incrementField = new NumberInputElement();
-        incrementField.setId(INCREMENT_FIELD_ID);
-        incrementField.setLabel("Inkrement");
-        incrementField.setHint("Natürliche Zahl, um die der Zähler erhöht wird.");
-        incrementField.setRequired(false);
-        incrementField.setDecimalPlaces(0);
-        incrementField.setWeight(3.0);
-        incrementField.setValue(new ElementValueFunctions()
-                .setType(ValueFunctionType.NoCode)
-                .setNoCode(new NoCodeStaticValue(DEFAULT_INCREMENT)));
-        layout.addChild(incrementField);
+        layout
+                .findChild(INCREMENT_FIELD_ID, NumberInputElement.class)
+                .ifPresent(incrementField -> incrementField.setValue(new ElementValueFunctions()
+                        .setType(ValueFunctionType.NoCode)
+                        .setNoCode(new NoCodeStaticValue(DEFAULT_INCREMENT))));
 
         return layout;
+    }
+
+    @Nonnull
+    @Override
+    public Class<CounterConfiguration> getNodeConfigurationClass() {
+        return CounterConfiguration.class;
     }
 
     @Nonnull
@@ -168,7 +169,6 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
         );
     }
 
-    @Override
     public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                                      @Nonnull AuthoredElementValues configuration,
                                                      @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
@@ -208,19 +208,17 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context
-                .getConfiguration()
-                .getEffectiveValues();
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
 
-        var variablePath = toNullableTrimmedString(configuration.get(VARIABLE_FIELD_ID));
-        var increment = resolveIncrement(configuration.get(INCREMENT_FIELD_ID));
+        var variablePath = toNullableTrimmedString(configuration.variable);
+        var increment = resolveIncrement(configuration.increment);
 
         var nodeData = new LinkedHashMap<String, Object>();
 
         if (variablePath != null) {
             var path = parsePath(variablePath, "Vorgangsdatenvariable");
-            var outputRoot = resolveProcessDataRoot(context.getProcessExecutionData().get("$"));
+            var outputRoot = resolveProcessDataRoot(context.getCurrentProcessExecutionData().get("$"));
             var previousValue = readCounterValue(readPath(outputRoot, path), "Vorgangsdatenvariable");
             var nextValue = previousValue + increment;
 
@@ -268,16 +266,16 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
         return deepCopyMap(castStringObjectMap(rawMap));
     }
 
-    private long readFallbackCounterValue(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+    private long readFallbackCounterValue(@Nonnull ProcessNodeExecutionInitContext context) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         var dataKey = context.getThisNode().getDataKey();
-        var directNodeData = context.getProcessExecutionData().get("_" + dataKey);
+        var directNodeData = context.getCurrentProcessExecutionData().get("_" + dataKey);
 
         var contextValue = extractStoredCounterValue(directNodeData);
         if (contextValue != null) {
             return contextValue;
         }
 
-        var groupedNodeData = context.getProcessExecutionData().get("_");
+        var groupedNodeData = context.getCurrentProcessExecutionData().get("_");
         if (groupedNodeData instanceof Map<?, ?> allNodeDataRaw) {
             var previousNodeData = allNodeDataRaw.get(dataKey);
             contextValue = extractStoredCounterValue(previousNodeData);
@@ -763,5 +761,25 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition {
     }
 
     private record ArrayPathPart(int index) implements PathPart {
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    public static class CounterConfiguration {
+        public static final String VARIABLE = VARIABLE_FIELD_ID;
+        @InputElementPOJOBinding(id = VARIABLE, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdatenwurzel, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselements aus den Elementdaten verwendet."),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 9.0)
+        })
+        public String variable;
+
+        public static final String INCREMENT = INCREMENT_FIELD_ID;
+        @InputElementPOJOBinding(id = INCREMENT, type = ElementType.Number, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Natürliche Zahl, um die der Zähler erhöht wird."),
+                @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 3.0)
+        })
+        public Object increment;
     }
 }

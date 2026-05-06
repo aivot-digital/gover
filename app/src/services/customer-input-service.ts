@@ -3,7 +3,7 @@ import {IdentityCustomerInputKey} from '../modules/identity/constants/identity-c
 import {AppInfo} from '../app-info';
 import {AuthoredElementValues} from '../models/element-data';
 import {cleanAuthoredElementValues} from '../utils/element-data-utils';
-import {RootElement} from '../models/elements/root-element';
+import {FormLayoutElement} from '../models/elements/form-layout-element';
 
 const MAJOR_VERSION = AppInfo.version.split('.')[0];
 const DATA_KEY = 'state';
@@ -27,7 +27,7 @@ export class CustomerInputService {
         return StorageService.loadObject_unsafe<AuthoredElementValues>(key);
     }
 
-    public static storeCustomerInput(slug: string, version: number, root: RootElement, state: AuthoredElementValues): void {
+    public static storeCustomerInput(slug: string, version: number, root: FormLayoutElement, state: AuthoredElementValues): void {
         const stateCopy = cleanAuthoredElementValues(root, state);
         delete stateCopy[IdentityCustomerInputKey];
         StorageService.storeObject_unsafe(this.getKey(slug, version, DATA_KEY), stateCopy, StorageScope.Local);

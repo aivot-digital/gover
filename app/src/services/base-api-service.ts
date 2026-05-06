@@ -8,7 +8,7 @@ import {
 import {createApiPath} from '../utils/url-path-utils';
 import {isStringNotNullOrEmpty} from '../utils/string-utils';
 
-export type QueryParams = Record<string, string | number | boolean | string[] | undefined> | URLSearchParams;
+export type QueryParams = Record<string, string | number | boolean | string[] | undefined | null> | URLSearchParams;
 
 export interface RequestOptions {
     abort?: AbortSignal;
@@ -106,7 +106,11 @@ export class BaseApiService {
 
     public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
         if (!this.auth.isAccessTokenValid() || (this.requiresCsrfProtection(method) && this.auth.getCsrfToken() == null)) {
-            await this.auth.refresh();
+            try {
+                await this.auth.refresh();
+            } catch (error) {
+                // Ignore refresh errors
+            }
         }
 
         const defaultHeaders = this.createDefaultHeaders();

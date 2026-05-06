@@ -1,12 +1,11 @@
 import {
     applyComputedErrors,
-    AuthoredElementValues,
+    AuthoredElementValues, clearDerivedErrorsRecursively,
     ComputedElementErrors,
     createDerivedRuntimeElementData,
-    DerivedRuntimeElementData,
+    DerivedRuntimeElementData, hasAnyErrorRecursively,
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
-import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import React, {createContext, RefObject, useContext, useEffect, useMemo, useState} from 'react';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
@@ -15,6 +14,11 @@ import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
 import {synchronizeAuthoredElementValuesByDestinationPath} from '../../../utils/element-data-utils';
+import {ViewDispatcherComponent} from '../../../components/view-dispatcher/view-dispatcher.component';
+import {
+    ViewDispatcherContextProvider,
+    ViewDispatcherMode,
+} from '../../../components/view-dispatcher/view-dispatcher.context';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -27,7 +31,8 @@ interface ElementDerivationContextProps {
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
-    doDerive?: (aev: AuthoredElementValues) => Promise<DerivedRuntimeElementData>;
+    onDeriveOverride?: (aev: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
+    onEvent?: (values: AuthoredElementValues, event: string) => void;
 }
 
 export enum ElementDerivationContextRenderMode {
@@ -49,7 +54,7 @@ interface ElementDerivationContextType {
     derivedRuntimeElementData: DerivedRuntimeElementData | null;
     additionalComputedErrors: ComputedElementErrors | null;
 
-    supressErrors?: boolean;
+    suppressErrors?: boolean;
 }
 
 const ElementDerivationContextObject = createContext<ElementDerivationContextType | null>(null);
@@ -71,8 +76,8 @@ export function useElementDerivationContext(): ElementDerivationContextType {
             scrollContainerRef: null,
             showInvisible: false,
             showTechnical: false,
-            supressErrors: false,
-        }
+            suppressErrors: false,
+        };
     }
     return context;
 }
@@ -90,7 +95,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
-        doDerive,
+        onDeriveOverride,
+        onEvent,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -106,7 +112,6 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     const allElements = useMemo(() => {
         return flattenElements(element, false);
     }, [element]);
-
 
     const derivedData = useMemo(() => {
         const baseDerivedData = controlledDerivedData ?? internalDerivedData;
@@ -138,7 +143,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             derivedRuntimeElementData: derivedData,
             additionalComputedErrors: computedErrors ?? null,
 
-            supressErrors: suppressErrors,
+            suppressErrors: suppressErrors,
         };
     }, [
         disabled,
@@ -211,18 +216,18 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         });
     };
 
-    const derive = async (authoredElementValues: AuthoredElementValues) => {
+    const derive = async (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[] = []) => {
         try {
             if (onDerivationStarted != null) {
                 onDerivationStarted(authoredElementValues);
             }
 
-            const derivedRuntimeElementData = await (doDerive != null ? doDerive(authoredElementValues) : new ElementsApiService()
+            const derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(authoredElementValues, skipErrorsForElements) : new ElementsApiService()
                 .derive({
                     element: element,
                     authoredElementValues: authoredElementValues,
                     derivationOptions: {
-                        skipErrorsForElementIds: ['ALL'],
+                        skipErrorsForElementIds: skipErrorsForElements,
                         skipVisibilitiesForElementIds: [],
                         skipOverridesForElementIds: [],
                         skipValuesForElementIds: [],
@@ -241,6 +246,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             if (onDerivationFinished != null) {
                 onDerivationFinished(derivedRuntimeElementData);
             }
+
+            return derivedRuntimeElementData;
         } catch (error) {
             if (isApiError(error) && error.displayableToUser) {
                 dispatch(showErrorSnackbar(error.message));
@@ -249,24 +256,54 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                 dispatch(showErrorSnackbar('Beim Verarbeiten der Eingaben ist ein unbekannter Fehler aufgetreten'));
             }
         }
+
+        return {
+            effectiveValues: {},
+            elementStates: {},
+        };
     };
 
     return (
         <ElementDerivationContextProvider
             value={contextValue}
         >
-            <ViewDispatcherComponent
-                rootElement={element}
-                allElements={allElements}
-                element={element}
-                isBusy={mode === 'busy' || (disabled ?? false)}
-                isDeriving={mode === 'deriving'}
-                mode="editor"
-                authoredElementValues={authoredElementValues}
-                derivedData={derivedData}
-                onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
-                derivationTriggerIdQueue={derivationTriggerIdQueue}
-            />
+            <ViewDispatcherContextProvider
+                value={{
+                    rootElement: element,
+                    allElements: allElements,
+                    mode: ViewDispatcherMode.Editor,
+                    rootAuthoredElementValues: authoredElementValues,
+                    rootDerivedData: derivedData,
+                }}
+            >
+                <ViewDispatcherComponent
+                    element={element}
+                    isBusy={mode === 'busy' || (disabled ?? false)}
+                    isDeriving={mode === 'deriving'}
+                    authoredElementValues={authoredElementValues}
+                    derivedData={derivedData}
+                    onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
+                    derivationTriggerIdQueue={derivationTriggerIdQueue}
+                    onDerive={(authoredValues, _, skipErrorsForElements) => derive(authoredValues, skipErrorsForElements)}
+                    onEvent={(data, event) => {
+                        return derive(data)
+                            .then((derived) => {
+                                setInternalDerivedData(derived);
+                                if (!hasAnyErrorRecursively(derived.elementStates)) {
+                                    if (onEvent != null) {
+                                        onEvent(data, event);
+                                    }
+                                }
+                            });
+                    }}
+                    onResetErrors={() => {
+                        setInternalDerivedData((current) => {
+                            return clearDerivedErrorsRecursively(current);
+                        });
+                    }}
+                    suppressErrors={suppressErrors ?? false}
+                />
+            </ViewDispatcherContextProvider>
         </ElementDerivationContextProvider>
     );
 }

@@ -1,0 +1,387 @@
+import React, {ComponentType, useCallback, useMemo, useState} from 'react';
+import Grid from '@mui/material/Grid';
+import IconButton from '@mui/material/IconButton';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
+import {ContentPaste, Edit} from '@mui/icons-material';
+import JumpToElement from '@aivot/mui-material-symbols-400-outlined/dist/jump-to-element/JumpToElement';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import {BaseViewProps} from '../../views/base-view';
+import {AnyElement} from '../../models/elements/any-element';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectDisableElementContextMenu, setComponentTree} from '../../slices/admin-settings-slice';
+import {ElementErrorBoundary} from '../element-error-boundary/element-error-boundary';
+import {
+    resolveErrors,
+    resolveOverride,
+    resolveValueForResolvedOverride,
+    resolveVisibility,
+} from '../../utils/element-data-utils';
+import {useViewDispatcherContext, ViewDispatcherMode} from './view-dispatcher.context';
+import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {views as Views} from '../../views';
+import {generateComponentTitle} from '../../utils/generate-component-title';
+import {useAppDispatch} from '../../hooks/use-app-dispatch';
+import {useElementTreeInlineEditorContext} from '../element-tree-2/components/element-tree-inline-editor-context';
+import {copyToClipboardText} from '../../utils/copy-to-clipboard';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
+
+type Props<T extends AnyElement> = Omit<BaseViewProps<T, any>, 'value' | 'setValue' | 'onBlur' | 'errors'>
+
+export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
+    const disableElementContextMenu = useAppSelector(selectDisableElementContextMenu);
+
+    const {
+        element: initialElement,
+        isBusy: baseIsBusy,
+        isDeriving: baseIsDeriving,
+        authoredElementValues,
+        derivedData,
+        onAuthoredElementValuesChange,
+        onElementBlur,
+        derivationTriggerIdQueue,
+        suppressErrors,
+    } = props;
+
+    const {
+        mode,
+        rootAuthoredElementValues,
+        rootDerivedData,
+        showInvisibleElements,
+    } = useViewDispatcherContext();
+
+    const {
+        id: elementId,
+    } = initialElement;
+
+    const element: AnyElement = useMemo(() => {
+        return resolveOverride(initialElement, derivedData) as AnyElement;
+    }, [initialElement, derivedData]);
+
+    const value = useMemo(() => {
+        return resolveValueForResolvedOverride(element, authoredElementValues, derivedData);
+    }, [element, authoredElementValues, derivedData]);
+    const authoredValue = authoredElementValues[elementId];
+
+    const resolvedErrors: string[] | undefined | null = useMemo(() => {
+        return resolveErrors(element, derivedData);
+    }, [element, derivedData]);
+
+    const effectiveRootAuthoredElementValues = useMemo(() => {
+        return rootAuthoredElementValues ?? authoredElementValues;
+    }, [rootAuthoredElementValues, authoredElementValues]);
+
+    const effectiveRootDerivedData = useMemo(() => {
+        return rootDerivedData ?? derivedData;
+    }, [rootDerivedData, derivedData]);
+
+    const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
+        if (updatedValue == authoredValue) {
+            return;
+        }
+
+        const newAuthoredElementValues = {
+            ...authoredElementValues,
+            [elementId]: updatedValue ?? null,
+        };
+
+        onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [authoredValue, authoredElementValues, onAuthoredElementValuesChange, elementId]);
+
+    const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
+        if (updatedValue == authoredValue || onElementBlur == null) {
+            return;
+        }
+
+        const newAuthoredElementValues = {
+            ...authoredElementValues,
+            [elementId]: updatedValue ?? null,
+        };
+
+        onElementBlur(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
+    }, [authoredValue, authoredElementValues, onElementBlur, elementId]);
+
+    const ViewComponent: ComponentType<BaseViewProps<typeof element, any>> | null = useMemo(() => Views[element.type], [element.type]);
+
+    const isVisible = useMemo(() => {
+        if (showInvisibleElements) {
+            return true;
+        }
+
+        if (isAnyInputElement(element) && element.technical) {
+            return false;
+        }
+
+        return resolveVisibility(element, derivedData);
+    }, [derivedData, element, mode, showInvisibleElements]);
+
+    const isBusy: boolean = useMemo(() => {
+        return baseIsBusy || baseIsDeriving && (
+            (element.visibility?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false) ||
+            (element.override?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false) ||
+            (isAnyInputElement(element) && (element.value?.referencedIds?.some(refId => derivationTriggerIdQueue.includes(refId)) ?? false))
+        );
+    }, [baseIsBusy, baseIsDeriving, element]);
+
+    if (!isVisible) {
+        return null;
+    }
+
+    if (ViewComponent == null) {
+        return null;
+    }
+
+    return (
+        <Grid
+            id={elementId}
+            data-initial-id={elementId /* TODO: Remove here and where referenced */}
+            data-resolved-id={elementId /* TODO: Remove here and where referenced */}
+            sx={{
+                position: 'relative',
+                '&:hover > .editor-element-context-menu, &:hover > .editor-element-context-menu-cutout': {
+                    display: mode === ViewDispatcherMode.Editor && !disableElementContextMenu ? 'block' : 'none',
+                },
+            }}
+            size={{
+                xs: 12,
+                md: ('weight' in element && element.weight != null) ? element.weight : 12,
+            }}
+        >
+            <ContextMenuButton
+                element={element}
+            />
+
+            <ElementErrorBoundary element={element} >
+                <ViewComponent
+                    {...props}
+                    value={value}
+                    setValue={handleSetValue}
+                    onBlur={handleOnBlur}
+                    errors={suppressErrors ? undefined : resolvedErrors}
+                />
+            </ElementErrorBoundary>
+        </Grid>
+    );
+}
+
+interface ContextMenuButtonProps {
+    element: AnyElement;
+}
+
+function ContextMenuButton(props: ContextMenuButtonProps) {
+    const {
+        element,
+    } = props;
+
+    const dispatch = useAppDispatch();
+    const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+    const open = Boolean(anchorEl);
+
+    const inlineEditorContext = useElementTreeInlineEditorContext();
+
+    const {
+        mode,
+    } = useViewDispatcherContext();
+
+    if (inlineEditorContext == null || mode !== ViewDispatcherMode.Editor || !isAnyInputElement(element)) {
+        return null;
+    }
+
+    const {
+        navigateToElementEditor,
+        highlightElementInTree,
+        cloneElement,
+        deleteElement,
+        editable,
+    } = inlineEditorContext;
+
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        event.stopPropagation();
+        setAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setAnchorEl(null);
+    };
+
+    const handleEdit = () => {
+        dispatch(setComponentTree(true));
+        navigateToElementEditor(element);
+        handleMenuClose();
+    };
+
+    const handleHighlightInTree = () => {
+        dispatch(setComponentTree(true));
+        highlightElementInTree(element);
+        handleMenuClose();
+    };
+
+    const handleCopyId = async () => {
+        const success = await copyToClipboardText(element.id ?? '');
+        if (success) {
+            dispatch(showSuccessSnackbar('Element-ID in Zwischenablage kopiert'));
+        } else {
+            dispatch(showErrorSnackbar('Element-ID konnte nicht in Zwischenablage kopiert werden'));
+        }
+
+        handleMenuClose();
+    };
+
+    const handleCloneElement = () => {
+        cloneElement(element);
+        handleMenuClose();
+    };
+
+    const handleDeleteElement = () => {
+        deleteElement(element);
+        handleMenuClose();
+    };
+
+    const elementTitle = generateComponentTitle(element);
+
+    return (
+        <>
+            <Box
+                className="editor-element-context-menu-cutout"
+                sx={{
+                    position: 'absolute',
+                    top: 6,
+                    right: -13,
+                    zIndex: 9,
+                    display: 'none',
+                    height: 24,
+                    width: 24,
+                    backgroundColor: 'rgb(255,255,255)',
+                    borderRadius: '50%',
+                    transform: 'scale(1.25)',
+                }}
+            />
+            <IconButton
+                className="editor-element-context-menu"
+                onClick={handleMenuOpen}
+                size="small"
+                color="primary"
+                sx={{
+                    position: 'absolute',
+                    top: 6,
+                    right: -13,
+                    zIndex: 10,
+                    display: 'none',
+                    p: 0.25,
+                    height: 24,
+                    width: 24,
+                    lineHeight: '24px',
+                    backgroundColor: 'rgba(0,0,0,.05)',
+                }}
+            >
+                <MoreVert sx={{fontSize: '1.25rem'}}/>
+            </IconButton>
+
+            <Menu
+                anchorEl={anchorEl}
+                open={open}
+                onClose={handleMenuClose}
+                anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
+                transformOrigin={{vertical: 'top', horizontal: 'right'}}
+            >
+                <Box
+                    sx={{
+                        px: 2,
+                        pt: .25,
+                        pb: 0.75,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 0.25,
+                    }}
+                >
+                    <Typography
+                        variant="body1"
+                        sx={{
+                            fontWeight: 600,
+                            color: '#111',
+                            lineHeight: 1.2,
+                            maxWidth: 200,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'block',
+                        }}
+                        title={elementTitle}
+                    >
+                        {elementTitle}
+                    </Typography>
+                    <Typography
+                        variant="caption"
+                        sx={{
+                            color: 'rgba(0,0,0,0.5)',
+                            fontWeight: 500,
+                            mb: '-2px',
+                            maxWidth: 200,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'block',
+                        }}
+                        title={element.id}
+                    >
+                        ID: {element.id}
+                    </Typography>
+                </Box>
+
+                <Divider sx={{my: 1}}/>
+
+                <MenuItem
+                    onClick={handleEdit}
+                >
+                    <ListItemIcon>
+                        <Edit fontSize="small"/>
+                    </ListItemIcon>
+                    <ListItemText primary={editable ? 'Element bearbeiten' : 'Element anzeigen'}/>
+                </MenuItem>
+
+                <MenuItem onClick={handleHighlightInTree}>
+                    <ListItemIcon>
+                        <JumpToElement fontSize="small"/>
+                    </ListItemIcon>
+                    <ListItemText primary="Element in Struktur hervorheben"/>
+                </MenuItem>
+
+                <MenuItem onClick={handleCopyId}>
+                    <ListItemIcon>
+                        <ContentPaste fontSize="small"/>
+                    </ListItemIcon>
+                    <ListItemText primary="Element-ID kopieren"/>
+                </MenuItem>
+
+                <MenuItem
+                    onClick={handleCloneElement}
+                    disabled={!editable}
+                >
+                    <ListItemIcon>
+                        <ContentCopy fontSize="small"/>
+                    </ListItemIcon>
+                    <ListItemText primary="Element duplizieren"/>
+                </MenuItem>
+
+                <Divider/>
+
+                <MenuItem
+                    onClick={handleDeleteElement}
+                    disabled={!editable}
+                >
+                    <ListItemIcon>
+                        <Delete fontSize="small"
+                                color="error"/>
+                    </ListItemIcon>
+                    <ListItemText
+                        primary="Element löschen"
+                        sx={{
+                            color: 'error.main',
+                        }}
+                    />
+                </MenuItem>
+            </Menu>
+        </>
+    );
+}

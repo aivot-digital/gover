@@ -1,7 +1,18 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, IconButton, InputAdornment, TextField, Typography} from '@mui/material';
+import {
+    Box,
+    IconButton,
+    InputAdornment,
+    ListItem,
+    ListItemButton,
+    ListItemText,
+    MenuItem,
+    TextField,
+    Typography,
+} from '@mui/material';
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
+import Autocomplete from '@mui/material/Autocomplete';
 
 // Utility function for number-to-word conversion
 function getCharacterCount(count: number): string {
@@ -42,6 +53,58 @@ function cleanValue(originalValue: string | undefined, flag: 'keepTrailingWhites
     return cleanedValue;
 }
 
+export function AutocompleteTextField(props: TextFieldComponentProps & {
+    suggestions: string[] | {
+        id: string;
+        label: string;
+        subLabel?: string;
+    }[];
+}) {
+    const {
+        suggestions,
+        ...rest
+    } = props;
+
+    const options = useMemo(() => {
+        return suggestions
+            .map((s) => typeof s === 'string'
+                ? ({
+                    id: s,
+                    label: s,
+                    subLabel: undefined,
+                })
+                : ({
+                    id: s.id,
+                    label: s.label,
+                    subLabel: s.subLabel,
+                }));
+    }, [suggestions]);
+
+    return (
+        <Autocomplete
+            disablePortal
+            freeSolo
+            fullWidth
+            onChange={(_, value) => {
+                rest.onChange((value as any).id);
+            }}
+            value={rest.value ?? null}
+            options={options}
+            renderOption={(optionProps, option) => (
+                <MenuItem {...optionProps}>
+                    <ListItemText
+                        primary={option.label}
+                        secondary={option.subLabel}
+                    />
+                </MenuItem>
+            )}
+            renderInput={(params) => (
+                <TextFieldComponent {...rest} muiPassTroughProps={params} />
+            )}
+        />
+    );
+}
+
 export function TextFieldComponent(props: TextFieldComponentProps) {
     const [inputValue, setInputValue] = useState(props.value ?? '');
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -78,7 +141,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 
     // Handle blur event
     const handleBlur = () => {
-        const cleanedValue = cleanValue(inputValue, 'dropTrailingWhitespace')
+        const cleanedValue = cleanValue(inputValue, 'dropTrailingWhitespace');
 
         if (props.bufferInputUntilBlur) {
             if (cleanedValue !== props.value) {
@@ -137,17 +200,16 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     const helperMessage = patternError ?? props.error ?? props.hint;
     const showMaxCharacters = Boolean(
         props.maxCharacters &&
-        (!props.minCharacters || inputValue.length >= props.minCharacters)
+        (!props.minCharacters || inputValue.length >= props.minCharacters),
     );
     const showMinCharacters = Boolean(
-        props.minCharacters && inputValue.length < props.minCharacters
+        props.minCharacters && inputValue.length < props.minCharacters,
     );
     const minCharacters = props.minCharacters ?? 0;
     const showSoftLimitWarning = Boolean(
-        props.softLimitCharacters && isSoftLimitExceeded
+        props.softLimitCharacters && isSoftLimitExceeded,
     );
     const hasHelperTextContent = Boolean(helperMessage || showMaxCharacters || showMinCharacters || showSoftLimitWarning);
-
 
 
     return (
@@ -173,7 +235,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                                     justifyContent: 'space-between',
                                     flexWrap: {
                                         xs: 'wrap',
-                                        sm: 'nowrap'
+                                        sm: 'nowrap',
                                     },
                                     columnGap: 3,
                                     rowGap: .5,
@@ -231,7 +293,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                         position="start"
                         sx={{
                             whiteSpace: 'nowrap',
-                            '> p' : {
+                            '> p': {
                                 whiteSpace: 'nowrap',
                             },
                         }}
@@ -255,8 +317,8 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             required={props.required}
             sx={{
                 ...props.sx,
-                backgroundColor: props.busy ? "#F8F8F8" : undefined,
-                cursor: props.busy ? "not-allowed" : undefined,
+                backgroundColor: props.busy ? '#F8F8F8' : undefined,
+                cursor: props.busy ? 'not-allowed' : undefined,
             }}
             size={props.size}
         />
@@ -264,7 +326,11 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
 }
 
 // Render function for IconButtons
-export function renderIconButton(action: { icon: React.ReactNode; onClick: () => void; tooltip?: string }, key?: number) {
+export function renderIconButton(action: {
+    icon: React.ReactNode;
+    onClick: () => void;
+    tooltip?: string
+}, key?: number) {
     if (action.tooltip != null) {
         return (
             <Tooltip

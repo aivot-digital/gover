@@ -83,6 +83,20 @@ public class ProcessNodeEntity {
     @Nonnull
     private Boolean savedWithErrors = false;
 
+    // region Properties
+
+    public String getDisplayName() {
+        if (StringUtils.isNotNullOrEmpty(name)) {
+            return name;
+        }
+
+        // TODO: Get the name of the Process Definition Node based on the getName of the corresponding ProcessNodeDefinition
+
+        return "";
+    }
+
+    // endregion
+
     // region Constructors
 
     public ProcessNodeEntity() {

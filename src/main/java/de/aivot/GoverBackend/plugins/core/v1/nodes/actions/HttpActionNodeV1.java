@@ -4,23 +4,34 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
-import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -33,7 +44,9 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class HttpActionNodeV1 implements ProcessNodeDefinition {
+public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.HttpActionNodeConfig> {
+    public static final String NODE_KEY = "http_request";
+
     private static final String METHOD_FIELD_ID = "method";
     private static final String URL_FIELD_ID = "url";
     private static final String PAYLOAD_FIELD_ID = "payload";
@@ -44,6 +57,9 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
     private static final String OUTPUT_NAME_STATUS_CODE = "statusCode";
     private static final String OUTPUT_NAME_HEADERS = "headers";
     private static final String OUTPUT_NAME_BODY = "body";
+
+    private static final String METHOD_GET = "GET";
+    private static final String METHOD_POST = "POST";
 
     private final HttpService httpService;
     private final TemplateRenderService templateRenderService;
@@ -56,7 +72,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getComponentKey() {
-        return "http_request";
+        return NODE_KEY;
     }
 
     @Nonnull
@@ -68,7 +84,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -92,56 +108,37 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        ConfigLayoutElement layout;
+        try {
+            layout = ElementPOJOMapper.createFromPOJO(HttpActionNodeConfig.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+        }
 
-        var method = new SelectInputElement();
-        method.setId(METHOD_FIELD_ID);
-        method.setLabel("HTTP-Methode");
-        method.setHint("Die HTTP-Methode, die für die Anfrage verwendet werden soll.");
-        method.setRequired(true);
-        method.setOptions(List.of(
-                new SelectInputElementOption()
-                        .setLabel("GET")
-                        .setValue("GET"),
-                new SelectInputElementOption()
-                        .setLabel("POST")
-                        .setValue("POST")
-        ));
-        layout.addChild(method);
+        layout
+                .findChild(METHOD_FIELD_ID, SelectInputElement.class)
+                .ifPresent(methodField -> {
+                    methodField.setValue(new ElementValueFunctions()
+                            .setType(ValueFunctionType.NoCode)
+                            .setNoCode(new NoCodeStaticValue(METHOD_GET)));
+                    methodField.setOptions(List.of(
+                            SelectInputElementOption.of(METHOD_GET, METHOD_GET),
+                            SelectInputElementOption.of(METHOD_POST, METHOD_POST)
+                    ));
+                });
 
-        var url = new TextInputElement();
-        url.setId(URL_FIELD_ID);
-        url.setLabel("URL");
-        url.setHint("Die URL, von der die Daten geladen werden sollen.");
-        url.setRequired(true);
-        layout.addChild(url);
-
-        var payload = new CodeInputElement();
-        payload.setId(PAYLOAD_FIELD_ID);
-        payload.setLabel("JSON-Payload");
-        payload.setHint("Der JSON-Request-Body für POST-Anfragen. Sie können Platzhalter zur String-Interpolation verwenden.");
-        payload.setLanguage("json");
-        payload.setVisibility(
-                ElementVisibilityFunctions
-                        .of(NoCodeExpression.of(
-                                NoCodeEqualsOperator.OPERATOR_ID,
-                                new NoCodeReference(METHOD_FIELD_ID),
-                                new NoCodeStaticValue("POST")
-                        ))
-                        .recalculateReferencedIds()
-        );
-        layout.addChild(payload);
-
-
-        var isJSON = new CheckboxInputElement();
-        isJSON.setId(IS_JSON_FIELD_ID);
-        isJSON.setLabel("JSON-Antwort");
-        isJSON.setHint("Geben Sie an, ob die Antwort im JSON-Format erwartet wird. Falls ja, wird diese automatisch verarbeitet.");
-        layout.addChild(isJSON);
+        layout
+                .findChild(PAYLOAD_FIELD_ID, CodeInputElement.class)
+                .ifPresent(payloadField -> payloadField.setVisibility(buildMethodVisibility(METHOD_POST)));
 
         return layout;
+    }
+
+    @Nonnull
+    @Override
+    public Class<HttpActionNodeConfig> getNodeConfigurationClass() {
+        return HttpActionNodeConfig.class;
     }
 
     @Nonnull
@@ -179,25 +176,25 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context.getConfiguration().getEffectiveValues();
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<HttpActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
 
-        var method = String.valueOf(configuration.getOrDefault(METHOD_FIELD_ID, "GET"));
+        var method = StringUtils.isNullOrEmpty(configuration.method)
+                ? METHOD_GET
+                : configuration.method;
 
         var url = templateRenderService
                 .interpolate(
-                        context.getProcessExecutionData(),
-                        String.valueOf(configuration.getOrDefault(URL_FIELD_ID, ""))
+                        context.getCurrentProcessExecutionData(),
+                        configuration.url == null ? "" : configuration.url
                 );
 
-        var isJson = StringUtils.isNotNullOrEmpty(
-                String.valueOf(configuration.getOrDefault(IS_JSON_FIELD_ID, ""))
-        );
+        var isJson = Boolean.TRUE.equals(configuration.isJson);
 
         var uri = URI.create(url);
 
         HttpResponse<String> response;
-        if (method.equals("GET")) {
+        if (method.equals(METHOD_GET)) {
             try {
                 response = httpService.get(uri);
             } catch (HttpConnectionException e) {
@@ -210,8 +207,8 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
         } else {
             var payload = templateRenderService
                     .interpolate(
-                            context.getProcessExecutionData(),
-                            String.valueOf(configuration.getOrDefault(PAYLOAD_FIELD_ID, "{}"))
+                            context.getCurrentProcessExecutionData(),
+                            configuration.payload == null ? "{}" : configuration.payload
                     );
 
             if (StringUtils.isNullOrEmpty(payload)) {
@@ -268,5 +265,50 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition {
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
                 .setNodeData(metadata);
+    }
+
+    @Nonnull
+    private static ElementVisibilityFunctions buildMethodVisibility(@Nonnull String expectedMethod) {
+        return ElementVisibilityFunctions
+                .of(NoCodeExpression.of(
+                        NoCodeEqualsOperator.OPERATOR_ID,
+                        new NoCodeReference(METHOD_FIELD_ID),
+                        new NoCodeStaticValue(expectedMethod)
+                ))
+                .recalculateReferencedIds();
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    public static class HttpActionNodeConfig {
+        public static final String METHOD = METHOD_FIELD_ID;
+        @InputElementPOJOBinding(id = METHOD, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Methode"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die HTTP-Methode, die für die Anfrage verwendet werden soll."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String method;
+
+        public static final String URL = URL_FIELD_ID;
+        @InputElementPOJOBinding(id = URL, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "URL"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Die URL, von der die Daten geladen werden sollen."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String url;
+
+        public static final String PAYLOAD = PAYLOAD_FIELD_ID;
+        @InputElementPOJOBinding(id = PAYLOAD, type = ElementType.CodeInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Payload"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Der JSON-Request-Body für POST-Anfragen. Sie können Platzhalter zur String-Interpolation verwenden."),
+                @ElementPOJOBindingProperty(key = "language", strValue = "json")
+        })
+        public String payload;
+
+        public static final String IS_JSON = IS_JSON_FIELD_ID;
+        @InputElementPOJOBinding(id = IS_JSON, type = ElementType.Checkbox, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "JSON-Antwort"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie an, ob die Antwort im JSON-Format erwartet wird. Falls ja, wird diese automatisch verarbeitet.")
+        })
+        public Boolean isJson;
     }
 }

@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.process.services;
 
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
@@ -7,15 +8,20 @@ import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.process.entities.ProcessEdgeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
+import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
+import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
@@ -135,8 +141,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         existingEntity.setRequirements(entity.getRequirements());
         existingEntity.setConfiguration(entity.getConfiguration());
 
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(existingEntity)
+                .orElseThrow(ResponseException::badRequest);
+
         // Validate the node configuration
-        validate(existingEntity, false).ifPresentOrElse(
+        validate(existingEntity, provider, false).ifPresentOrElse(
                 (ignored) -> {
                     existingEntity.setSavedWithErrors(true);
                 },
@@ -154,16 +164,11 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     @Nonnull
-    public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity,
-                                                         boolean skipErrors) throws ResponseException {
-        return deriveConfiguration(entity, skipErrors, null);
-    }
-
-    @Nonnull
-    public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity,
-                                                         boolean skipErrors,
-                                                         @Nullable UserEntity user) throws ResponseException {
-        var layout = getConfigLayoutElement(entity, user);
+    public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                                                    @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                                    @Nullable UserEntity user,
+                                                                                    @Nonnull Boolean skipErrors) throws ResponseException {
+        var layout = getConfigLayoutElement(entity, provider, user);
 
         var edo = new ElementDerivationOptions();
 
@@ -179,11 +184,21 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var dummyLogger = new ElementDerivationLogger();
         var derivedData = elementDerivationService.derive(edr, dummyLogger);
 
-        return derivedData;
+        NodeConfig config;
+        try {
+            config = ElementPOJOMapper.mapToPOJO(derivedData.getEffectiveValues(), provider.getNodeConfigurationClass());
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Die Ableitung der Knotenkonfiguration ist fehlgeschlagen: %s", e.getMessage());
+        }
+
+        return new ProcessConfigurationDetails<NodeConfig>(
+                config,
+                derivedData
+        );
     }
 
     @Nonnull
-    private ConfigLayoutElement getConfigLayoutElement(@Nonnull ProcessNodeEntity entity, @Nullable UserEntity user) throws ResponseException {
+    private <NodeConfig> ConfigLayoutElement getConfigLayoutElement(@Nonnull ProcessNodeEntity entity, @Nonnull ProcessNodeDefinition<NodeConfig> provider, @Nullable UserEntity user) throws ResponseException {
         if (user == null &&
                 SecurityContextHolder.getContext().getAuthentication() != null &&
                 SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
@@ -200,11 +215,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 .findById(ProcessVersionEntityId.of(processDefinition.getId(), entity.getProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
 
-        var provider = processNodeProviderService
-                .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
-                .orElseThrow(ResponseException::badRequest);
-
-        var context = new ProcessNodeDefinitionContextConfig(
+        var context = new ProcessNodeDefinitionConfigurationLayoutContext(
                 user,
                 processDefinition,
                 processVersion,
@@ -225,14 +236,161 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     @Nonnull
-    public Optional<ProcessNodeProblems> validate(@Nonnull Integer id, boolean checkPorts) throws ResponseException {
-        var node = retrieve(id)
-                .orElseThrow(ResponseException::notFound);
-        return validate(node, checkPorts);
+    public List<ProcessDataKeyHintResponse> getProcessDataKeyHintResponses(@Nonnull ProcessNodeEntity node) throws ResponseException {
+        var processNodesById = new LinkedHashMap<Integer, ProcessNodeEntity>();
+
+        processDefinitionNodeRepository
+                .findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
+                .stream()
+                .sorted(Comparator.comparing(ProcessNodeEntity::getId))
+                .forEach(processNode -> processNodesById.put(processNode.getId(), processNode));
+
+        var incomingEdgesByNodeId = buildIncomingEdgesByNodeId(
+                processEdgeRepository.findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
+        );
+
+        var previousNodes = new ArrayList<ProcessNodeEntity>();
+        collectPreviousNodes(
+                node.getId(),
+                node.getId(),
+                incomingEdgesByNodeId,
+                processNodesById,
+                new HashSet<>(),
+                new HashSet<>(),
+                previousNodes
+        );
+
+        var currentHints = new ArrayList<ProcessDataKeyHint>();
+        List<ProcessDataKeyHintResponse> responses = new ArrayList<>();
+
+        for (var previousNode : previousNodes) {
+            var updatedHints = calculateProcessDataKeyHintsForNode(previousNode, currentHints);
+            responses = mergeProcessDataKeyHintResponses(responses, updatedHints, previousNode);
+            currentHints = new ArrayList<>(updatedHints);
+        }
+
+        return responses;
     }
 
     @Nonnull
-    public Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node, boolean checkPorts) throws ResponseException {
+    private Map<Integer, List<ProcessEdgeEntity>> buildIncomingEdgesByNodeId(@Nonnull List<ProcessEdgeEntity> edges) {
+        var incomingEdgesByNodeId = new HashMap<Integer, List<ProcessEdgeEntity>>();
+
+        edges.stream()
+                .sorted(Comparator.comparing(ProcessEdgeEntity::getId))
+                .forEach(edge -> incomingEdgesByNodeId
+                        .computeIfAbsent(edge.getToNodeId(), ignored -> new ArrayList<>())
+                        .add(edge));
+
+        return incomingEdgesByNodeId;
+    }
+
+    private void collectPreviousNodes(@Nonnull Integer currentNodeId,
+                                      @Nonnull Integer targetNodeId,
+                                      @Nonnull Map<Integer, List<ProcessEdgeEntity>> incomingEdgesByNodeId,
+                                      @Nonnull Map<Integer, ProcessNodeEntity> processNodesById,
+                                      @Nonnull Set<Integer> visitedNodeIds,
+                                      @Nonnull Set<Integer> traversalStackNodeIds,
+                                      @Nonnull List<ProcessNodeEntity> previousNodes) {
+        var incomingEdges = incomingEdgesByNodeId.getOrDefault(currentNodeId, List.of());
+
+        for (var incomingEdge : incomingEdges) {
+            var previousNodeId = incomingEdge.getFromNodeId();
+
+            if (previousNodeId.equals(targetNodeId)) {
+                continue;
+            }
+
+            collectPreviousNode(
+                    previousNodeId,
+                    targetNodeId,
+                    incomingEdgesByNodeId,
+                    processNodesById,
+                    visitedNodeIds,
+                    traversalStackNodeIds,
+                    previousNodes
+            );
+        }
+    }
+
+    private void collectPreviousNode(@Nonnull Integer currentNodeId,
+                                     @Nonnull Integer targetNodeId,
+                                     @Nonnull Map<Integer, List<ProcessEdgeEntity>> incomingEdgesByNodeId,
+                                     @Nonnull Map<Integer, ProcessNodeEntity> processNodesById,
+                                     @Nonnull Set<Integer> visitedNodeIds,
+                                     @Nonnull Set<Integer> traversalStackNodeIds,
+                                     @Nonnull List<ProcessNodeEntity> previousNodes) {
+        if (currentNodeId.equals(targetNodeId) ||
+                visitedNodeIds.contains(currentNodeId) ||
+                !traversalStackNodeIds.add(currentNodeId)) {
+            return;
+        }
+
+        collectPreviousNodes(
+                currentNodeId,
+                targetNodeId,
+                incomingEdgesByNodeId,
+                processNodesById,
+                visitedNodeIds,
+                traversalStackNodeIds,
+                previousNodes
+        );
+
+        traversalStackNodeIds.remove(currentNodeId);
+        visitedNodeIds.add(currentNodeId);
+
+        var currentNode = processNodesById.get(currentNodeId);
+        if (currentNode != null) {
+            previousNodes.add(currentNode);
+        }
+    }
+
+    @Nonnull
+    @SuppressWarnings("unchecked")
+    private <NodeConfig> List<ProcessDataKeyHint> calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
+                                                                                       @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) throws ResponseException {
+        var provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
+                .getProcessNodeDefinition(node)
+                .orElseThrow(ResponseException::badRequest);
+
+        var configuration = deriveConfiguration(node, provider, null, true);
+        var updatedHints = provider.calculateProcessDataKeyHints(
+                node,
+                configuration.configuration(),
+                previousDataKeyHints
+        );
+
+        return updatedHints != null ? updatedHints : previousDataKeyHints;
+    }
+
+    @Nonnull
+    private List<ProcessDataKeyHintResponse> mergeProcessDataKeyHintResponses(@Nonnull List<ProcessDataKeyHintResponse> existingResponses,
+                                                                              @Nonnull List<ProcessDataKeyHint> updatedHints,
+                                                                              @Nonnull ProcessNodeEntity currentNode) {
+        var sourceNodeByHint = new LinkedHashMap<ProcessDataKeyHint, ProcessNodeEntity>();
+        for (var existingResponse : existingResponses) {
+            sourceNodeByHint.put(
+                    new ProcessDataKeyHint(existingResponse.key(), existingResponse.type()),
+                    existingResponse.node()
+            );
+        }
+
+        var mergedResponses = new ArrayList<ProcessDataKeyHintResponse>();
+        for (var updatedHint : updatedHints) {
+            mergedResponses.add(new ProcessDataKeyHintResponse(
+                    updatedHint.key(),
+                    updatedHint.type(),
+                    sourceNodeByHint.getOrDefault(updatedHint, currentNode)
+            ));
+        }
+
+        return mergedResponses;
+    }
+
+    @Nonnull
+    public <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
+                                                               @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                               @Nonnull Boolean checkPorts) throws ResponseException {
         var commonErrors = new HashMap<String, String>();
         var problems = new LinkedList<String>();
 
@@ -255,41 +413,40 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             }
         }
 
-        var layout = getConfigLayoutElement(node, null);
+        var layout = getConfigLayoutElement(node, provider, null);
 
-        var derivedConfiguration = new DerivedRuntimeElementData();
+        ProcessConfigurationDetails<NodeConfig> derivedConfiguration;
         try {
             derivedConfiguration = this
-                    .deriveConfiguration(node, false);
+                    .deriveConfiguration(node, provider,  null,false);
         } catch (ResponseException e) {
             problems.add(e.getMessage());
+            derivedConfiguration = null;
         }
 
-        ElementStreamUtils.applyAction(
-                layout,
-                derivedConfiguration.getElementStates(),
-                (e, state) -> {
-                    if (e instanceof BaseInputElement<?> input) {
-                        if (StringUtils.isNotNullOrEmpty(state.getError())) {
-                            problems.add(input.getLabel() + ": " + state.getError());
+        if (derivedConfiguration != null) {
+            ElementStreamUtils.applyAction(
+                    layout,
+                    derivedConfiguration.derivedRuntimeElementData.getElementStates(),
+                    (e, state) -> {
+                        if (e instanceof BaseInputElement<?> input) {
+                            if (StringUtils.isNotNullOrEmpty(state.getError())) {
+                                problems.add(input.getLabel() + ": " + state.getError());
+                            }
                         }
                     }
+            );
+
+            var validationErrors = provider
+                    .validateConfiguration(node, derivedConfiguration.configuration);
+
+            if (validationErrors != null) {
+                for (var err : validationErrors.entrySet()) {
+                    layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
+                            element -> problems.add(element.getLabel() + ": " + err.getValue()),
+                            () -> problems.add("Element mit ID " + err.getKey() + ": " + err.getValue())
+                    );
                 }
-        );
-
-        var provider = processNodeProviderService
-                .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
-                .orElseThrow(ResponseException::internalServerError);
-
-        var validationErrors = provider
-                .validateConfiguration(node, node.getConfiguration(), derivedConfiguration);
-
-        if (validationErrors != null) {
-            for (var err : validationErrors.entrySet()) {
-                layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
-                        element -> problems.add(element.getLabel() + ": " + err.getValue()),
-                        () -> problems.add("Element mit ID " + err.getKey() + ": " + err.getValue())
-                );
             }
         }
 
@@ -311,7 +468,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         if (problems.isEmpty()) {
             return Optional.empty();
         } else {
-            return Optional.of(new ProcessNodeProblems(node, problems, commonErrors, derivedConfiguration));
+
+            return Optional.of(new ProcessNodeProblems(node, problems, commonErrors, derivedConfiguration != null ? derivedConfiguration.derivedRuntimeElementData : new DerivedRuntimeElementData()));
         }
+    }
+
+    public record ProcessConfigurationDetails<NodeConfig>(
+            @Nonnull NodeConfig configuration,
+            @Nonnull DerivedRuntimeElementData derivedRuntimeElementData
+    ) {
     }
 }

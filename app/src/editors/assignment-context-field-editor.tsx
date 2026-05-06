@@ -1,6 +1,5 @@
 import {BaseEditorProps} from './base-editor';
 import {AssignmentContextFieldElement} from '../models/elements/form/input/assignment-context-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
@@ -13,7 +12,7 @@ import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-c
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {StringListInput2} from '../components/string-list-input/string-list-input-2';
 
-export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentContextFieldElement, ElementTreeEntity>) {
+export function AssignmentContextFieldEditor(props: BaseEditorProps<AssignmentContextFieldElement>) {
     const {
         element,
         editable,

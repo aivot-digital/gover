@@ -1,9 +1,7 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {useSelector} from 'react-redux';
 import {type AccessibilityDialogProps} from './accessibility-dialog-props';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
@@ -14,7 +12,7 @@ import {MarkdownContent} from '../../components/markdown-content/markdown-conten
 export const AccessibilityDialogId = 'accessibility';
 
 export function AccessibilityDialog(props: AccessibilityDialogProps) {
-    const application = useSelector(selectLoadedForm);
+    const application = props.form;
 
     const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
@@ -22,11 +20,11 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.version.accessibilityDepartmentId != null &&
-            (department == null || department.id !== application.version.accessibilityDepartmentId)
+            application.accessibilityDepartmentId != null &&
+            (department == null || department.id !== application.accessibilityDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.version.accessibilityDepartmentId)
+                .retrievePublic(application.accessibilityDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&
@@ -62,7 +60,8 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
-                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen Fachbereich als Quelle für die Informationen zur Barrierefreiheit aus.
+                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen
+                            Fachbereich als Quelle für die Informationen zur Barrierefreiheit aus.
                         </Alert>
                     </DialogContent>
             }

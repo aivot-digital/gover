@@ -1,6 +1,5 @@
-import {RootElement} from '../../../models/elements/root-element';
+import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {IdentityProviderLink} from '../../identity/models/identity-provider-link';
-import {LoadedForm} from '../../../slices/app-slice';
 import {FormEntity} from '../entities/form-entity';
 import {FormVersionEntity} from '../entities/form-version-entity';
 import {FormType} from '../enums/form-type';
@@ -12,7 +11,7 @@ export interface FormCitizenDetailsResponseDTO {
     slug: string;
     version: number;
     title: string;
-    root: RootElement;
+    root: FormLayoutElement;
     legalSupportDepartmentId?: number;
     technicalSupportDepartmentId?: number;
     imprintDepartmentId?: number;
@@ -27,7 +26,7 @@ export interface FormCitizenDetailsResponseDTO {
 }
 
 
-export function formCitizenDetailsResponseDTO(citizenForm: FormCitizenDetailsResponseDTO): LoadedForm {
+export function formCitizenDetailsResponseDTO(citizenForm: FormCitizenDetailsResponseDTO): any {
     const form: FormEntity = {
         id: citizenForm.id,
         internalTitle: '',

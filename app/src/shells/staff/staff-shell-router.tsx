@@ -28,6 +28,7 @@ import {processRoutes} from "../../modules/process/process-routes";
 import {systemRolesRoutes} from "../../modules/system/system-roles-routes";
 import {storageRoutes} from '../../modules/storage/storage-routes';
 import {auditRoutes} from '../../modules/audit/audit-routes';
+import {elementsRoutes} from '../../modules/elements/elements-routes';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -64,6 +65,7 @@ const router = sentryCreateBrowserRouter(
                 ...usersRoutes,
                 ...accountRoutes,
                 ...systemRolesRoutes,
+                ...elementsRoutes,
 
                 {
                     path: '/testinghall',

@@ -26,4 +26,8 @@ export class ElementsApiService extends BaseApiService {
     public async derive(request: ElementDerivationRequest): Promise<DerivedRuntimeElementData> {
         return await this.post<ElementDerivationRequest, DerivedRuntimeElementData>('/api/elements/derive/', request);
     }
+
+    public async recalculateReferencedIds<T extends AnyElement>(element: T): Promise<T> {
+        return await this.post<T, T>('/api/elements/recalculate-referenced-ids/', element);
+    }
 }

@@ -2,8 +2,10 @@ package de.aivot.GoverBackend.elements.controllers;
 
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -41,7 +43,24 @@ public class ElementDerivationController {
     ) throws ResponseException {
         var derivationLogger = new ElementDerivationLogger();
 
+        ElementStreamUtils
+                .applyAction(request.element(), BaseElement::recalculateReferencedIds);
+
         return elementDerivationServiceV2
                 .derive(request, derivationLogger);
+    }
+
+    @PostMapping("recalculate-referenced-ids/")
+    @Operation(
+            summary = "Recalculate Referenced IDs",
+            description = "Recalculates the referenced IDs of the provided element and all its children. This is necessary, when the element structure is changed"
+    )
+    public BaseElement recalculateReferencedIds(
+            @Nonnull @RequestBody @Valid BaseElement element
+    ) throws ResponseException {
+        ElementStreamUtils
+                .applyAction(element, BaseElement::recalculateReferencedIds);
+
+        return element;
     }
 }

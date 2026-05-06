@@ -1,27 +1,29 @@
-import {type AnyElement} from '../models/elements/any-element';
-import React, {type FunctionComponent} from 'react';
-import {type AuthoredElementValues, type DerivedRuntimeElementData} from '../models/element-data';
+import type {AnyElement} from '../models/elements/any-element';
+import type {FunctionComponent} from 'react';
+import type {AuthoredElementValues, DerivedRuntimeElementData} from '../models/element-data';
 
 export interface BaseViewProps<M extends AnyElement, V> {
-    rootElement: AnyElement;
     element: M;
-    setValue: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
-    onBlur: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
-    errors?: string[] | null | undefined;
-    value?: V | null | undefined;
-    allElements: AnyElement[];
-    scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+
     isBusy: boolean;
     isDeriving: boolean;
-    mode: 'editor' | 'viewer';
+
+    value?: V | null | undefined;
+    setValue: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
+    onBlur: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
+
+    errors?: string[] | null | undefined;
+
     authoredElementValues: AuthoredElementValues;
-    derivedData: DerivedRuntimeElementData;
-    rootAuthoredElementValues: AuthoredElementValues;
-    rootDerivedData: DerivedRuntimeElementData;
     onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
     onElementBlur?: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;
-    onDerivedDataChange?: (data: DerivedRuntimeElementData | ((prev: DerivedRuntimeElementData) => DerivedRuntimeElementData)) => void;
-    disableVisibility?: boolean;
+
+    derivedData: DerivedRuntimeElementData;
+    onDerive: (data: AuthoredElementValues, triggeringElementIds: string[], skipErrorsForElements?: string[]) => Promise<DerivedRuntimeElementData>;
+    onEvent: (data: AuthoredElementValues, event: string) => Promise<void>;
+    onResetErrors: () => void;
+    suppressErrors: boolean;
+
     derivationTriggerIdQueue: string[];
 }
 

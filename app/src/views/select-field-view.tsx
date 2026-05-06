@@ -6,7 +6,7 @@ import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {resolveValue} from '../utils/element-data-utils';
 import {ElementType} from '../data/element-type/element-type';
 import {isStringNullOrEmpty} from '../utils/string-utils';
-
+import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 
 export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>) {
     const {
@@ -16,12 +16,15 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
         errors,
         isBusy: isGloballyDisabled,
         isDeriving,
-        allElements,
         authoredElementValues,
         derivedData,
+    } = props;
+
+    const {
+        allElements,
         rootAuthoredElementValues,
         rootDerivedData,
-    } = props;
+    } = useViewDispatcherContext();
 
     const {
         options: baseOptions,
@@ -145,7 +148,6 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
             required={element.required ?? undefined}
             options={options}
             emptyStatePlaceholder={emptyStatePlaceholder}
-
             sx={{
                 backgroundColor: isBusy ? '#F8F8F8' : undefined,
                 cursor: isBusy ? 'not-allowed' : undefined,

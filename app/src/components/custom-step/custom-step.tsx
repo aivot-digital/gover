@@ -208,7 +208,6 @@ export function CustomStep(props: CustomStepProps & StepProps) {
                     {
                         onNext != null &&
                         isLastStep &&
-                        isSubmitStep &&
                         <Button
                             variant="contained"
                             onClick={onNext}

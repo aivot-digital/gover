@@ -50,7 +50,7 @@ import {type ProcessInstanceEventEntity} from '../../entities/process-instance-e
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {ProcessInstanceStatus} from '../../enums/process-instance-status';
-import {BaseApiService} from '../../../../services/base-api-service';
+import {BaseApiService, RequestOptions} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
@@ -80,7 +80,9 @@ import {ProcessNodeProblems} from '../../entities/process-node-problems';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {generateId} from '../../../../utils/id-utils';
-import {PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY} from './components/process-node-editor/process-node-editor-change-blocker';
+import {
+    PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY,
+} from './components/process-node-editor/process-node-editor-change-blocker';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -1233,12 +1235,13 @@ export function ProcessDetailsPage(): ReactNode {
         }
     };
 
-    const handleSaveNode = async (node: ProcessNodeEntity): Promise<ProcessNodeEntity> => {
+    const handleSaveNode = async (node: ProcessNodeEntity, options?: RequestOptions): Promise<ProcessNodeEntity> => {
         if (processFlow == null) {
             throw new Error('Process flow is not loaded');
         }
 
-        const updated = await new ProcessNodeApiService().update(node.id, node);
+        const updated = await new ProcessNodeApiService()
+            .update(node.id, node, options);
 
         setProcessFlow({
             ...processFlow,
@@ -1259,7 +1262,8 @@ export function ProcessDetailsPage(): ReactNode {
             children: (
                 <>
                     <Typography>
-                        Sie können den Prozess exportieren, um ihn z. B. in einem anderen System weiterzuverwenden oder zu archivieren.
+                        Sie können den Prozess exportieren, um ihn z. B. in einem anderen System weiterzuverwenden oder
+                        zu archivieren.
                         Der Export erfolgt im offenen .json-Format.
                     </Typography>
 
@@ -1271,8 +1275,10 @@ export function ProcessDetailsPage(): ReactNode {
                         }}
                     >
                         <p>
-                            Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind für die importierende Person nicht sichtbar.
-                            Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und Referenzen auf auslösende Formulare.
+                            Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind
+                            für die importierende Person nicht sichtbar.
+                            Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und
+                            Referenzen auf auslösende Formulare.
                         </p>
                         <p>
                             Bei Bedarf müssen Sie diese Informationen nach einem Import im Zielsystem neu konfigurieren.
@@ -1280,14 +1286,14 @@ export function ProcessDetailsPage(): ReactNode {
                     </AlertComponent>
                 </>
             ),
-            confirmButtonText: 'Prozess als .json-Datei herunterladen'
+            confirmButtonText: 'Prozess als .json-Datei herunterladen',
         })
             .then((confirmed) => {
                 if (!confirmed) {
                     return null;
                 }
                 return new ProcessDefinitionApiService()
-                    .export(processId, processVersion)
+                    .export(processId, processVersion);
             })
             .then((exp) => {
                 if (exp == null) {
@@ -1305,14 +1311,14 @@ export function ProcessDetailsPage(): ReactNode {
             confirm({
                 title: 'Testmodus bereits aktiv',
                 children: (
-                        <Typography>
-                            Der Prozess befindet sich bereits im Testmodus.
-                            Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen Starten können.
-                        </Typography>
+                    <Typography>
+                        Der Prozess befindet sich bereits im Testmodus.
+                        Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen Starten können.
+                    </Typography>
                 ),
                 confirmButtonText: 'Ok',
                 hideCancelButton: true,
-            })
+            });
             return;
         }
 
@@ -1347,7 +1353,8 @@ export function ProcessDetailsPage(): ReactNode {
                                 }}
                             >
                                 Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
-                                Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der ungültigen Konfiguration kommen.
+                                Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der
+                                ungültigen Konfiguration kommen.
 
                                 <ul>
                                     {
@@ -1366,7 +1373,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                         }
                                                     </ul>
                                                 </li>
-                                            )
+                                            );
                                         })
                                     }
                                 </ul>
@@ -1551,7 +1558,7 @@ export function ProcessDetailsPage(): ReactNode {
             })
             .finally(() => {
                 dispatch(clearLoadingMessage());
-            })
+            });
     }, []);
     const handleImportNode = useCallback(async (context: NodeImportContext): Promise<void> => {
         if (processFlow == null) {
@@ -1947,7 +1954,8 @@ export function ProcessDetailsPage(): ReactNode {
                     position: 'relative',
                 }}
             >
-                <Allotment onDragStart={() => setHideEditorPaneExpandButton(true)} onDragEnd={handleEditorPaneDragEnd}>
+                <Allotment onDragStart={() => setHideEditorPaneExpandButton(true)}
+                           onDragEnd={handleEditorPaneDragEnd}>
                     <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
                         <Box
                             sx={{

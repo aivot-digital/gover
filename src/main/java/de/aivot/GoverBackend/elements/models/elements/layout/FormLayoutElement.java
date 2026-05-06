@@ -14,6 +14,7 @@ import jakarta.annotation.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
 public class FormLayoutElement extends BaseElement implements LayoutElement<BaseStepElement> {
     private String tabTitle;
@@ -21,10 +22,22 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     private String expiring;
 
-    private String privacyText;
-
     private String offlineSubmissionText;
     private Boolean offlineSignatureNeeded;
+
+    private String publicTitle;
+
+    private Integer managingDepartmentId;
+    private Integer responsibleDepartmentId;
+    private Integer legalSupportDepartmentId;
+    private Integer technicalSupportDepartmentId;
+    private Integer imprintDepartmentId;
+    private Integer privacyDepartmentId;
+    private Integer accessibilityDepartmentId;
+
+    private Integer themeId;
+
+    private UUID pdfTemplateKey;
 
     public FormLayoutElement() {
         super(ElementType.FormLayout);
@@ -35,20 +48,26 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         FormLayoutElement that = (FormLayoutElement) o;
-        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) && Objects.equals(expiring, that.expiring) && Objects.equals(privacyText, that.privacyText) && Objects.equals(offlineSubmissionText, that.offlineSubmissionText) && Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded);
+        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) && Objects.equals(expiring, that.expiring) &&
+                Objects.equals(offlineSubmissionText, that.offlineSubmissionText) && Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded) &&
+                Objects.equals(publicTitle, that.publicTitle) && Objects.equals(managingDepartmentId, that.managingDepartmentId) &&
+                Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) &&
+                Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) &&
+                Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) &&
+                Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), tabTitle, children, expiring, privacyText, offlineSubmissionText, offlineSignatureNeeded);
+        return Objects.hash(super.hashCode(), tabTitle, children, expiring, offlineSubmissionText, offlineSignatureNeeded, publicTitle, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, themeId, pdfTemplateKey);
     }
 
     @JsonIgnore
     public String getCleanedPrivacyText() {
-        if (privacyText == null) {
+        if (getPrivacyText() == null) {
             return null;
         }
-        return privacyText.replaceAll("\\{[^}]+}", "");
+        return getPrivacyText().replaceAll("\\{[^}]+}", "");
     }
 
     // region Getters & Setters
@@ -90,13 +109,12 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
         return this;
     }
 
+    @JsonIgnore
     public String getPrivacyText() {
-        return privacyText;
-    }
-
-    public FormLayoutElement setPrivacyText(String privacyText) {
-        this.privacyText = privacyText;
-        return this;
+        return findChild(c -> c.getType() == ElementType.IntroductionStep)
+                .filter(IntroductionStepElement.class::isInstance)
+                .map(c -> ((IntroductionStepElement) c).getPrivacyText())
+                .orElse(null);
     }
 
     public String getOfflineSubmissionText() {
@@ -114,6 +132,96 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     public FormLayoutElement setOfflineSignatureNeeded(Boolean offlineSignatureNeeded) {
         this.offlineSignatureNeeded = offlineSignatureNeeded;
+        return this;
+    }
+
+    public String getPublicTitle() {
+        return publicTitle;
+    }
+
+    public FormLayoutElement setPublicTitle(String publicTitle) {
+        this.publicTitle = publicTitle;
+        return this;
+    }
+
+    public Integer getManagingDepartmentId() {
+        return managingDepartmentId;
+    }
+
+    public FormLayoutElement setManagingDepartmentId(Integer managingDepartmentId) {
+        this.managingDepartmentId = managingDepartmentId;
+        return this;
+    }
+
+    public Integer getResponsibleDepartmentId() {
+        return responsibleDepartmentId;
+    }
+
+    public FormLayoutElement setResponsibleDepartmentId(Integer responsibleDepartmentId) {
+        this.responsibleDepartmentId = responsibleDepartmentId;
+        return this;
+    }
+
+    public Integer getLegalSupportDepartmentId() {
+        return legalSupportDepartmentId;
+    }
+
+    public FormLayoutElement setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
+        return this;
+    }
+
+    public Integer getTechnicalSupportDepartmentId() {
+        return technicalSupportDepartmentId;
+    }
+
+    public FormLayoutElement setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        return this;
+    }
+
+    public Integer getImprintDepartmentId() {
+        return imprintDepartmentId;
+    }
+
+    public FormLayoutElement setImprintDepartmentId(Integer imprintDepartmentId) {
+        this.imprintDepartmentId = imprintDepartmentId;
+        return this;
+    }
+
+    public Integer getPrivacyDepartmentId() {
+        return privacyDepartmentId;
+    }
+
+    public FormLayoutElement setPrivacyDepartmentId(Integer privacyDepartmentId) {
+        this.privacyDepartmentId = privacyDepartmentId;
+        return this;
+    }
+
+    public Integer getAccessibilityDepartmentId() {
+        return accessibilityDepartmentId;
+    }
+
+    public FormLayoutElement setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
+        return this;
+    }
+
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public FormLayoutElement setThemeId(Integer themeId) {
+        this.themeId = themeId;
+        return this;
+    }
+
+    public UUID getPdfTemplateKey() {
+        return pdfTemplateKey;
+    }
+
+    public FormLayoutElement setPdfTemplateKey(UUID pdfTemplateKey) {
+        this.pdfTemplateKey = pdfTemplateKey;
         return this;
     }
 

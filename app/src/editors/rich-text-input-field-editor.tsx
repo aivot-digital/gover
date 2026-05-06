@@ -1,10 +1,9 @@
 import {BaseEditorProps} from './base-editor';
 import {RichTextInputElement} from '../models/elements/form/input/rich-text-input-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid, Typography} from '@mui/material';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 
-export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputElement, ElementTreeEntity>) {
+export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputElement>) {
     const {
         element,
         onPatch,
@@ -32,7 +31,8 @@ export function RichTextInputFieldEditor(props: BaseEditorProps<RichTextInputEle
                 />
                 {
                     !editable &&
-                    <Typography variant="caption" color="text.secondary">
+                    <Typography variant="caption"
+                                color="text.secondary">
                         Das Element befindet sich im Nur-Lesen-Modus.
                     </Typography>
                 }

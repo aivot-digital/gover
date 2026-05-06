@@ -9,9 +9,9 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceAttachmentRepository;
@@ -205,7 +205,7 @@ class ProcessWorkerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext context) {
             throw new RuntimeException("init failure");
         }
     }
@@ -215,8 +215,9 @@ class ProcessWorkerTest {
             super(null, null, null, null, null, null, null);
         }
 
+        @Nonnull
         @Override
-        public DerivedRuntimeElementData deriveConfiguration(ProcessNodeEntity entity, boolean skipErrors) {
+        public DerivedRuntimeElementData deriveConfiguration(@Nonnull ProcessNodeEntity entity, boolean skipErrors) {
             return new DerivedRuntimeElementData();
         }
     }

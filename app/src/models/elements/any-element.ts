@@ -1,4 +1,4 @@
-import {type RootElement} from './root-element';
+import {type FormLayoutElement} from './form-layout-element';
 import {type StepElement} from './steps/step-element';
 import {type IntroductionStepElement} from './steps/introduction-step-element';
 import {type SubmitStepElement} from './steps/submit-step-element';
@@ -40,7 +40,7 @@ import {UiDefinitionInputFieldElement} from './form/input/ui-definition-input-fi
 import {SummaryLayoutElement} from './form/layout/summary-layout-element';
 
 export type AnyElement =
-    RootElement |
+    FormLayoutElement |
 
     StepElement |
     IntroductionStepElement |

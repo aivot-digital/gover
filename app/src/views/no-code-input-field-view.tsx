@@ -8,6 +8,7 @@ import {NoCodeDataType} from '../data/no-code-data-type';
 import {NoCodeInputFieldComponent} from '../components/no-code-input-field/no-code-input-field-component';
 import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
+import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 
 function mapReturnTypeToNoCodeDataType(returnType: NoCodeInputFieldReturnType | null | undefined): NoCodeDataType {
     switch (returnType) {
@@ -30,7 +31,6 @@ function mapReturnTypeToNoCodeDataType(returnType: NoCodeInputFieldReturnType | 
 
 export function NoCodeInputFieldView(props: BaseViewProps<NoCodeInputFieldElement, NoCodeInputFieldElementItem>) {
     const {
-        rootElement,
         element,
         value,
         setValue,
@@ -38,6 +38,10 @@ export function NoCodeInputFieldView(props: BaseViewProps<NoCodeInputFieldElemen
         isBusy: isGloballyDisabled,
         isDeriving,
     } = props;
+
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
     const isDisabled = useMemo(() => {
         return element.disabled || isGloballyDisabled;

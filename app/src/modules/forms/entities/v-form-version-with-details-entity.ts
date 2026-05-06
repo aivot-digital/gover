@@ -1,4 +1,4 @@
-import {RootElement} from '../../../models/elements/root-element';
+import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {PaymentProduct} from '../../../models/payment/payment-product';
 import {IdentityProviderLink} from '../../identity/models/identity-provider-link';
 import {FormType} from '../enums/form-type';
@@ -32,7 +32,7 @@ export interface VFormVersionWithDetailsEntity {
     identityVerificationRequired: boolean;
     customerAccessHours: number;
     submissionRetentionWeeks: number;
-    rootElement: RootElement;
+    rootElement: FormLayoutElement;
     created: string;
     updated: string;
     published: string;

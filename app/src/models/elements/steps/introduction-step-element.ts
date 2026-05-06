@@ -11,4 +11,5 @@ export interface IntroductionStepElement extends BaseElement<ElementType.Introdu
     supportingDocuments: string[] | null | undefined;
     documentsToAttach: string[] | null | undefined;
     expectedCosts: string | null | undefined;
+    privacyText: string | null | undefined;
 }

@@ -17,13 +17,17 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -33,7 +37,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 @Component
-public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
+public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappingActionNodeV1.DataMappingActionNodeV1Config> {
     public static final String NODE_KEY = "data_mapping";
 
     private static final String PORT_NAME = "output";
@@ -61,7 +65,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -73,7 +77,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getName() {
-        return "Daten abbilden";
+        return "Datenfelder kopieren";
     }
 
     @Nonnull
@@ -85,7 +89,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         try {
             return ElementPOJOMapper.createFromPOJO(DataMappingActionNodeV1Config.class);
         } catch (ElementDataConversionException e) {
@@ -107,30 +111,19 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
     @Override
     public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AuthoredElementValues configuration,
-                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+                                                     @Nonnull DataMappingActionNodeV1Config configuration) throws ResponseException {
         var errors = new LinkedHashMap<String, String>();
-        var rulesState = derivedRuntimeElementData
-                .getElementStates()
-                .computeIfAbsent(DataMappingActionNodeV1Config.RULES_FIELD_ID, ignored -> new ComputedElementState());
-        var rowStates = new ArrayList<ComputedElementStates>();
-        rulesState.setError(null);
-        rulesState.setSubStates(rowStates);
 
-        var rawRules = derivedRuntimeElementData
-                .getEffectiveValues()
-                .get(DataMappingActionNodeV1Config.RULES_FIELD_ID);
+        var rawRules = configuration.rules;
 
         if (!(rawRules instanceof Collection<?> rows)) {
             var error = "Die Konfiguration des Feldes \"Abbildungsregeln\" ist ungültig. Es wird eine Liste von Abbildungsregeln erwartet.";
-            rulesState.setError(error);
             errors.put(DataMappingActionNodeV1Config.RULES_FIELD_ID, error);
             return errors;
         }
 
         if (rows.isEmpty()) {
             var error = "Es wurde keine Abbildungsregel angegeben.";
-            rulesState.setError(error);
             errors.put(DataMappingActionNodeV1Config.RULES_FIELD_ID, error);
             return errors;
         }
@@ -141,7 +134,6 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
 
         for (var rowObj : rows) {
             var rowState = new ComputedElementStates();
-            rowStates.add(rowState);
 
             if (!(rowObj instanceof Map<?, ?> rowRaw)) {
                 if (topLevelError == null) {
@@ -209,7 +201,6 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
             var error = topLevelError != null
                     ? topLevelError
                     : "Bitte überprüfen Sie die markierten Abbildungsregeln.";
-            rulesState.setError(error);
             errors.put(DataMappingActionNodeV1Config.RULES_FIELD_ID, error);
         }
 
@@ -217,8 +208,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var sourceRoot = context.getProcessExecutionData().get("$");
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<DataMappingActionNodeV1Config> context) throws ProcessNodeExecutionException {
+        var sourceRoot = context.getCurrentProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootMapRaw)) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     "Die Vorgangsdatenwurzel ($) ist kein Objekt und kann nicht für die Datenabbildung verwendet werden."
@@ -228,24 +219,24 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
         @SuppressWarnings("unchecked")
         var sourceRootMap = (Map<String, Object>) sourceRootMapRaw;
         var outputRoot = deepCopyMap(sourceRootMap);
-        var config = loadConfiguration(context.getConfiguration().getEffectiveValues());
-        var rules = config.rules();
+        var config = context.getConfigurationOfExecutingNode();
+        var rules = config.rules;
         var mappedValues = new ArrayList<Map<String, Object>>();
 
-        try (var engine = initializeEngine(context.getProcessExecutionData())) {
+        try (var engine = initializeEngine(context.getCurrentProcessExecutionData())) {
             for (int i = 0; i < rules.size(); i++) {
                 var rule = rules.get(i);
                 var rowIndex = i + 1;
 
-                var sourcePath = parsePath(rule.source(), rowIndex, "Ausgangspfad");
-                var targetPath = rule.deleteOnly()
+                var sourcePath = parsePath(rule.source, rowIndex, "Ausgangspfad");
+                var targetPath = rule.deleteOnly
                         ? null
-                        : parsePath(rule.target(), rowIndex, "Zielpfad");
+                        : parsePath(rule.target, rowIndex, "Zielpfad");
 
                 var sourceValue = readPath(outputRoot, sourcePath);
                 Object transformedValue = null;
 
-                if (!rule.deleteOnly()) {
+                if (!rule.deleteOnly) {
                     transformedValue = applyTransform(
                             engine,
                             rowIndex,
@@ -258,8 +249,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
                     writePath(outputRoot, Objects.requireNonNull(targetPath), transformedValue, rowIndex);
                 }
 
-                if (rule.cleanupSource() && (rule.deleteOnly() || !sourcePath.equals(targetPath))) {
-                    removePath(outputRoot, sourcePath, config.cleanupEmptyContainers());
+                if (rule.cleanupSource && (rule.deleteOnly || !sourcePath.equals(targetPath))) {
+                    removePath(outputRoot, sourcePath, config.cleanupEmptyContainers);
                 }
 
                 mappedValues.add(createMappedValueEntry(rule, sourceValue, transformedValue));
@@ -382,14 +373,14 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private static Map<String, Object> createMappedValueEntry(@Nonnull ResolvedRule rule,
+    private Map<String, Object> createMappedValueEntry(@Nonnull DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule rule,
                                                               Object sourceValue,
                                                               Object mappedValue) {
         var data = new LinkedHashMap<String, Object>();
-        data.put("originalPath", rule.source());
-        data.put("newPath", rule.deleteOnly() ? null : rule.target());
-        data.put("cleanupSource", rule.cleanupSource());
-        data.put("deleteOnly", rule.deleteOnly());
+        data.put("originalPath", rule.source);
+        data.put("newPath", rule.deleteOnly ? null : rule.target);
+        data.put("cleanupSource", rule.cleanupSource);
+        data.put("deleteOnly", rule.deleteOnly);
         data.put("original", sourceValue != null ? sourceValue.toString() : "null");
         data.put("mapped", mappedValue);
         return data;
@@ -879,6 +870,12 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition {
                                 @Nullable String target,
                                 boolean cleanupSource,
                                 boolean deleteOnly) {
+    }
+
+    @Nonnull
+    @Override
+    public Class<DataMappingActionNodeV1Config> getNodeConfigurationClass() {
+        return DataMappingActionNodeV1Config.class;
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)

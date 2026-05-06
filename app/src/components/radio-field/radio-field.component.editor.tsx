@@ -1,11 +1,10 @@
 import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
-import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {OptionListInput} from '../option-list-input/option-list-input';
 import React from 'react';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
-export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldElement, ElementTreeEntity>) {
+export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldElement>) {
     return (
         <>
             <OptionListInput

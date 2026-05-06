@@ -1,16 +1,19 @@
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
-import DatabaseSearch from '@aivot/mui-material-symbols-400-outlined/dist/database-search/DatabaseSearch';
-import {Box, Grid, Stack} from '@mui/material';
+import {Grid, Stack} from '@mui/material';
 import {
     isNoCodeNodeDataReference,
+    isNoCodeProcessDataReference,
     NoCodeInstanceDataReference,
     NoCodeNodeDataReference,
     NoCodeProcessDataReference,
-    isNoCodeProcessDataReference,
 } from '../../../models/functions/no-code-expression';
-import {TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {AutocompleteTextField, TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {Actions} from '../../../components/actions/actions';
+import {
+    useOptionalProcessNodeEditorContext,
+} from '../../process/pages/details/components/process-node-editor/process-node-editor-context';
+import {useMemo} from 'react';
 
 interface NoCodeOperandEditorProcessDataReferenceProps {
     label: string;
@@ -29,6 +32,8 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
         onAddEnclosingExpression,
     } = props;
 
+    const opec = useOptionalProcessNodeEditorContext();
+
     const isProcessDataReference = isNoCodeProcessDataReference(value);
     const isNodeDataReference = isNoCodeNodeDataReference(value);
     const sourceLabel = isProcessDataReference
@@ -42,6 +47,27 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
         : isNodeDataReference
             ? `_.${value.nodeDataKey}.`
             : '$$.';
+
+    const suggestions = useMemo(() => {
+        if (opec == null || opec.processDataKeyHints == null) {
+            return [];
+        }
+
+        const data = opec
+            .processDataKeyHints
+            .filter((hint) => hint.type === (isProcessDataReference ? 'ProcessData' : isNodeDataReference ? 'ElementData' : undefined))
+            .map((hint) => ({
+                id: hint.key,
+                label: hint.key,
+                subLabel: hint.node.name ?? undefined,
+            }));
+
+        if (data.length === 0) {
+            return [];
+        }
+
+        return data;
+    }, [opec, isProcessDataReference, isNodeDataReference]);
 
     return (
         <Grid
@@ -70,7 +96,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                     direction="row"
                     alignItems="flex-start"
                 >
-                    <TextFieldComponent
+                    <AutocompleteTextField
                         label={`${label ?? ''} — (${sourceLabel})`}
                         hint={hint}
                         value={value.path ?? undefined}
@@ -94,6 +120,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                             },
                         ]}
                         muiPassTroughProps={{margin: 'none'}}
+                        suggestions={suggestions}
                     />
 
                     {

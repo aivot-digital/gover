@@ -13,9 +13,9 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
@@ -136,8 +136,8 @@ class PdfActionNodeV1Test {
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
     }
 
-    private static ProcessNodeExecutionContextInit context(String html) {
-        return new ProcessNodeExecutionContextInit(
+    private static ProcessNodeExecutionInitContext context(String html) {
+        return new ProcessNodeExecutionInitContext(
                 logger(),
                 processNode(),
                 processInstance(),
@@ -152,8 +152,8 @@ class PdfActionNodeV1Test {
         );
     }
 
-    private static ProcessNodeExecutionContextInit assetContext(UUID assetKey) {
-        return new ProcessNodeExecutionContextInit(
+    private static ProcessNodeExecutionInitContext assetContext(UUID assetKey) {
+        return new ProcessNodeExecutionInitContext(
                 logger(),
                 processNode(),
                 processInstance(),

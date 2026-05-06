@@ -7,7 +7,7 @@ import {AlertView} from './alert-view';
 import {SelectFieldView} from './select-field-view';
 import {ContainerView} from './container-view';
 import {DateFieldView} from './date-field-view';
-import {RootComponentView} from '../components/root/root.component.view';
+import {RootComponentView} from '../components/form/root.component.view';
 import {StepComponentView} from '../components/step/step.component.view';
 import {ImageView} from '../components/image/image-view';
 import {HeadlineComponentView} from '../components/headline/headline.component.view';

@@ -2,15 +2,14 @@ import {type NumberFieldElement} from '../models/elements/form/input/number-fiel
 import {BaseEditorProps} from './base-editor';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement, ElementTreeEntity>){
+export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement>) {
     const {
         element,
         onPatch,
         editable,
-        hasSummaryLayoutParent
+        hasSummaryLayoutParent,
     } = props;
     return (
         <Grid
@@ -22,7 +21,7 @@ export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement, Ele
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
+                        lg: 6,
                     }}>
                     <TextFieldComponent
                         value={element.placeholder ?? ''}
@@ -32,7 +31,7 @@ export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement, Ele
                                 placeholder: val,
                             });
                         }}
-                        hint={"Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse."}
+                        hint={'Ein Platzhalter zeigt ein Beispiel für die erwartete Eingabe an, z. B. „hallo@bad-musterstadt.de“ bei einer E-Mail-Adresse.'}
                         disabled={!editable}
                     />
                 </Grid>
@@ -41,7 +40,7 @@ export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement, Ele
             <Grid
                 size={{
                     xs: 12,
-                    lg: 6
+                    lg: 6,
                 }}>
                 <TextFieldComponent
                     value={element.suffix ?? ''}
@@ -52,13 +51,13 @@ export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement, Ele
                         });
                     }}
                     disabled={!editable}
-                    hint={"Geben Sie optional an, mit welcher Einheit die Zahl angezeigt wird, z. B. „€“, „kg“ oder „Stück“."}
+                    hint={'Geben Sie optional an, mit welcher Einheit die Zahl angezeigt wird, z. B. „€“, „kg“ oder „Stück“.'}
                 />
             </Grid>
             <Grid
                 size={{
                     xs: 12,
-                    lg: 6
+                    lg: 6,
                 }}>
                 <NumberFieldComponent
                     value={element.decimalPlaces ?? undefined}
@@ -69,7 +68,7 @@ export function NumberFieldEditor(props: BaseEditorProps<NumberFieldElement, Ele
                         });
                     }}
                     disabled={!editable}
-                    hint={"Geben Sie an, wie viele Dezimalstellen angezeigt werden sollen. Dies ist nützlich für Währungen oder Maßeinheiten."}
+                    hint={'Geben Sie an, wie viele Dezimalstellen angezeigt werden sollen. Dies ist nützlich für Währungen oder Maßeinheiten.'}
                 />
             </Grid>
         </Grid>

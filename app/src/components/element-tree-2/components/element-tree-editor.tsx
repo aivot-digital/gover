@@ -19,6 +19,7 @@ import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import {ElementType} from '../../../data/element-type/element-type';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
+import {ElementsApiService} from '../../../modules/elements/elements-api-service';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -73,6 +74,27 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     const handleSetCurrentTab = (newTab: string): void => {
         navigateToEditorTab(newTab);
+    };
+
+    const handleSave = (): void => {
+        if (updatedElement == null) {
+            handleClose();
+            return;
+        }
+
+        setIsBusy(true);
+        new ElementsApiService()
+            .recalculateReferencedIds(updatedElement)
+            .then((recalculatedElement) => {
+                onChange(recalculatedElement);
+            })
+            .catch(() => {
+                // If the recalculation fails, we can still try to save the element with the risk of broken references.
+                onChange(updatedElement);
+            })
+            .finally(() => {
+                setIsBusy(false);
+            });
     };
 
     const handleClose = async (): Promise<void> => {
@@ -282,7 +304,8 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         }
 
                         {
-                            // The root of an element tree cannot have visibility.
+                            // The root of an element tree cannot have a dynamic structure.
+                            !isRoot &&
                             displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Tab
                                 label="Dynamische Struktur"
@@ -291,6 +314,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         }
 
                         {
+                            !isRoot &&
                             displayContext != ElementDisplayContext.DataObjectSchema &&
                             <Box
                                 sx={{
@@ -355,13 +379,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                 {
                                     icon: <Save/>,
                                     label: 'Speichern',
-                                    onClick: () => {
-                                        if (updatedElement != null) {
-                                            onChange(updatedElement);
-                                        } else {
-                                            handleClose();
-                                        }
-                                    },
+                                    onClick: handleSave,
                                     disabled: isBusy || updatedElement == null,
                                     visible: editable,
                                     variant: 'contained',
