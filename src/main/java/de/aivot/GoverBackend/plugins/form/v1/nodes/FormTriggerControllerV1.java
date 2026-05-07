@@ -171,8 +171,14 @@ public class FormTriggerControllerV1 {
         );
          */
 
+        var formLayout = config
+                .configuration()
+                .formLayout;
+
+        ElementStreamUtils.applyAction(formLayout, BaseElement::removeInternalInformation);
+
         return new RetrieveResponse(
-                config.configuration().formLayout,
+                formLayout,
                 node,
                 process,
                 processVersion
