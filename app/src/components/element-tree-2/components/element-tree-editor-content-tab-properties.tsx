@@ -341,18 +341,31 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         schreiben und lesen.
                     </ElementEditorSectionHeader>
 
-                    <ProcessDataKeyInputComponent
-                        label="Datenschlüssel"
-                        value={currentElement.destinationKey}
-                        onChange={(val) => {
-                            onChangeCurrentElement({
-                                ...currentElement,
-                                destinationKey: val,
-                            } as T);
-                        }}
-                        hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
-                        disabled={!editable}
-                    />
+                    <Grid
+                        container
+                        columnSpacing={4}
+                    >
+                        <Grid
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                                xl: 3,
+                            }}
+                        >
+                            <ProcessDataKeyInputComponent
+                                label="Datenschlüssel"
+                                value={currentElement.destinationKey}
+                                onChange={(val) => {
+                                    onChangeCurrentElement({
+                                        ...currentElement,
+                                        destinationKey: val,
+                                    } as T);
+                                }}
+                                hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
+                                disabled={!editable}
+                            />
+                        </Grid>
+                    </Grid>
 
                     {
                         httpKeyProblems.length > 0 &&
