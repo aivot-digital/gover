@@ -3,6 +3,7 @@ import {
     AuthoredElementValues,
     clearDerivedErrorsRecursively,
     ComputedElementErrors,
+    ComputedElementStates,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     hasAnyErrorRecursively,
@@ -15,12 +16,16 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
-import {synchronizeAuthoredElementValuesByDestinationPath} from '../../../utils/element-data-utils';
+import {
+    synchronizeAuthoredElementValuesByDestinationPath,
+    walkAuthoredElementValues,
+} from '../../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher/view-dispatcher.component';
 import {
     ViewDispatcherContextProvider,
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
+import {deepEquals} from '../../../utils/equality-utils';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -111,6 +116,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     const [internalDerivedData, setInternalDerivedData] = useState<DerivedRuntimeElementData>(
         controlledDerivedData ?? createDerivedRuntimeElementData(),
     );
+    const [suppressedErrorElementIds, setSuppressedErrorElementIds] = useState<string[]>([]);
 
     const allElements = useMemo(() => {
         return flattenElements(element, false);
@@ -121,15 +127,19 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [controlledDerivedData, internalDerivedData]);
 
     const derivedData = useMemo(() => {
-        if (computedErrors == null || Object.keys(computedErrors).length === 0 || suppressErrors) {
-            return baseDerivedData;
+        const derivedDataWithComputedErrors = computedErrors == null || Object.keys(computedErrors).length === 0 || suppressErrors ?
+            baseDerivedData :
+            {
+                ...baseDerivedData,
+                elementStates: applyComputedErrors(computedErrors, baseDerivedData.elementStates),
+            };
+
+        if (suppressedErrorElementIds.length === 0) {
+            return derivedDataWithComputedErrors;
         }
 
-        return {
-            ...baseDerivedData,
-            elementStates: applyComputedErrors(computedErrors, baseDerivedData.elementStates),
-        };
-    }, [computedErrors, baseDerivedData]);
+        return clearDerivedErrorsForElementIds(derivedDataWithComputedErrors, suppressedErrorElementIds);
+    }, [computedErrors, baseDerivedData, suppressErrors, suppressedErrorElementIds]);
 
     const contextValue = useMemo<ElementDerivationContextType>(() => {
         const allElements = flattenElementsWithParents(element, [], false);
@@ -168,6 +178,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     useEffect(() => {
         setMode('busy');
+        setSuppressedErrorElementIds([]);
         derive(authoredElementValues)
             .finally(() => {
                 setMode('idle');
@@ -186,6 +197,21 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         );
         const effectiveNewData = synchronizedUpdate.authoredElementValues;
         const effectiveTriggeringElementIds = synchronizedUpdate.triggeringElementIds;
+        const changedElementIds = getChangedAuthoredElementIds(
+            element,
+            authoredElementValues,
+            effectiveNewData,
+        );
+
+        if (changedElementIds.length > 0) {
+            setSuppressedErrorElementIds((current) => {
+                const updated = new Set(current);
+                for (const id of changedElementIds) {
+                    updated.add(id);
+                }
+                return Array.from(updated);
+            });
+        }
 
         const relevantIds: string[] = [];
         for (const id of effectiveTriggeringElementIds) {
@@ -208,7 +234,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ...relevantIds,
         ]);
         setMode('deriving');
-        await derive(effectiveNewData);
+        await derive(effectiveNewData, []);
         setMode('idle');
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];
@@ -298,7 +324,13 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     derivedData={derivedData}
                     onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
                     derivationTriggerIdQueue={derivationTriggerIdQueue}
-                    onDerive={(authoredValues, _, skipErrorsForElements) => derive(authoredValues, skipErrorsForElements)}
+                    onDerive={(authoredValues, _, skipErrorsForElements) => {
+                        setInternalDerivedData((current) => {
+                            return clearDerivedErrorsRecursively(current);
+                        });
+                        setSuppressedErrorElementIds([]);
+                        return derive(authoredValues, skipErrorsForElements);
+                    }}
                     onEvent={(data, event) => {
                         return derive(data)
                             .then((derived) => {
@@ -311,6 +343,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                             });
                     }}
                     onResetErrors={() => {
+                        setSuppressedErrorElementIds([]);
                         setInternalDerivedData((current) => {
                             return clearDerivedErrorsRecursively(current);
                         });
@@ -337,21 +370,65 @@ function checkElementReferencesId(element: AnyElement, id: string): boolean {
     return false;
 }
 
-export function clearDerivedErrorsRecursively2(derivedData: DerivedRuntimeElementData, onlyForFilter?:(elementId: string) => boolean): DerivedRuntimeElementData {
+function clearDerivedErrorsForElementIds(derivedData: DerivedRuntimeElementData, elementIds: string[]): DerivedRuntimeElementData {
+    const elementIdSet = new Set(elementIds);
+
     return {
         ...derivedData,
-        elementStates: Object.fromEntries(
-            Object.entries(derivedData.elementStates).map(([elementId, state]) => [
-                elementId,
-                {
-                    ...state,
-                    error: onlyForFilter == null || !onlyForFilter(elementId) ? null : state?.error,
-                    subStates: state?.subStates?.map((subState) => clearDerivedErrorsRecursively({
-                        effectiveValues: {},
-                        elementStates: subState ?? {},
-                    }).elementStates) ?? null,
-                },
-            ]),
-        ),
+        elementStates: clearComputedElementStateErrorsByElementId(derivedData.elementStates, elementIdSet),
     };
+}
+
+function clearComputedElementStateErrorsByElementId(
+    elementStates: ComputedElementStates,
+    elementIdSet: Set<string>,
+): ComputedElementStates {
+    return Object.fromEntries(
+        Object.entries(elementStates).map(([elementId, state]) => [
+            elementId,
+            {
+                ...state,
+                error: elementIdSet.has(elementId) ? null : state?.error,
+                subStates: state?.subStates?.map((subState) => {
+                    return clearComputedElementStateErrorsByElementId(subState ?? {}, elementIdSet);
+                }) ?? null,
+            },
+        ]),
+    );
+}
+
+function getChangedAuthoredElementIds(
+    rootElement: AnyElement,
+    previousValues: AuthoredElementValues,
+    nextValues: AuthoredElementValues,
+): string[] {
+    const previousValuesByElementId = collectAuthoredValuesByElementId(rootElement, previousValues);
+    const nextValuesByElementId = collectAuthoredValuesByElementId(rootElement, nextValues);
+    const elementIds = new Set([
+        ...Object.keys(previousValuesByElementId),
+        ...Object.keys(nextValuesByElementId),
+    ]);
+
+    return Array.from(elementIds)
+        .filter((elementId) => !deepEquals(
+            previousValuesByElementId[elementId] ?? [],
+            nextValuesByElementId[elementId] ?? [],
+        ));
+}
+
+function collectAuthoredValuesByElementId(
+    rootElement: AnyElement,
+    authoredValues: AuthoredElementValues,
+): Record<string, any[]> {
+    const valuesByElementId: Record<string, any[]> = {};
+
+    walkAuthoredElementValues(rootElement, authoredValues, (element, value) => {
+        if (valuesByElementId[element.id] == null) {
+            valuesByElementId[element.id] = [];
+        }
+
+        valuesByElementId[element.id].push(value);
+    });
+
+    return valuesByElementId;
 }
