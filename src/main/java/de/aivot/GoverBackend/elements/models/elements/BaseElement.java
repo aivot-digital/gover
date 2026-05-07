@@ -115,6 +115,23 @@ public abstract class BaseElement implements Serializable {
         }
     }
 
+    public void removeInternalInformation() {
+        this.name = "";
+        this.testProtocolSet = null;
+
+        if (this.visibility != null) {
+            this.visibility = new ElementVisibilityFunctions()
+                    .setType(this.visibility.getType())
+                    .setReferencedIds(this.visibility.getReferencedIds());
+        }
+
+        if (this.override != null) {
+            this.override = new ElementOverrideFunctions()
+                    .setType(this.override.getType())
+                    .setReferencedIds(this.override.getReferencedIds());
+        }
+    }
+
     @JsonIgnore
     @Deprecated
     public ElementApprovalStatus getApproval() {

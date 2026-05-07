@@ -89,6 +89,23 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
     }
 
     @Override
+    public void removeInternalInformation() {
+        super.removeInternalInformation();
+
+        if (this.validation != null) {
+            this.validation = new ElementValidationFunctions()
+                    .setType(this.validation.getType())
+                    .setReferencedIds(this.validation.getReferencedIds());
+        }
+
+        if (this.value != null) {
+            this.value = new ElementValueFunctions()
+                    .setType(this.value.getType())
+                    .setReferencedIds(this.value.getReferencedIds());
+        }
+    }
+
+    @Override
     protected boolean testIfTechnicalApprovalNeeded() {
         var superResult = super.testIfTechnicalApprovalNeeded();
 
