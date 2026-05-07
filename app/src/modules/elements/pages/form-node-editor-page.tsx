@@ -98,6 +98,7 @@ import {createCustomerPath} from '../../../utils/url-path-utils';
 import {ProcessTestClaimEntity} from '../../process/entities/process-test-claim-entity';
 import {downloadQrCode} from '../../../utils/download-qrcode';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
+import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 
 export const DialogSearchParam = 'dialog';
 
@@ -752,6 +753,9 @@ export function FormNodeEditorPage() {
                                                         onAuthoredElementValuesChange={setAuthoredElementValues}
                                                         onEvent={handleSubmitEvent}
                                                         onDerivedDataChange={setDerivedData}
+                                                        mode={ViewDispatcherMode.Editor}
+                                                        disableValidation={disableValidation}
+                                                        disableVisibilities={disableVisibility}
                                                     />
                                                 </ElementTreeInlineEditorContextProvider>
                                             }

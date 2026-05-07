@@ -1,9 +1,11 @@
 import {
     applyComputedErrors,
-    AuthoredElementValues, clearDerivedErrorsRecursively,
+    AuthoredElementValues,
+    clearDerivedErrorsRecursively,
     ComputedElementErrors,
     createDerivedRuntimeElementData,
-    DerivedRuntimeElementData, hasAnyErrorRecursively,
+    DerivedRuntimeElementData,
+    hasAnyErrorRecursively,
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
 import React, {createContext, RefObject, useContext, useEffect, useMemo, useState} from 'react';
@@ -33,15 +35,13 @@ interface ElementDerivationContextProps {
     suppressErrors?: boolean;
     onDeriveOverride?: (aev: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
     onEvent?: (values: AuthoredElementValues, event: string) => void;
-}
-
-export enum ElementDerivationContextRenderMode {
-    Editor,
-    Viewer,
+    mode?: ViewDispatcherMode;
+    disableValidation?: boolean;
+    disableVisibilities?: boolean;
 }
 
 interface ElementDerivationContextType {
-    renderMode: ElementDerivationContextRenderMode;
+    renderMode: ViewDispatcherMode;
     isEditable: boolean;
     showInvisible: boolean;
     showTechnical: boolean;
@@ -71,7 +71,7 @@ export function useElementDerivationContext(): ElementDerivationContextType {
             authoredElementValues: {},
             derivedRuntimeElementData: null,
             isEditable: false,
-            renderMode: ElementDerivationContextRenderMode.Viewer,
+            renderMode: ViewDispatcherMode.Viewer,
             rootElement: {} as AnyElement,
             scrollContainerRef: null,
             showInvisible: false,
@@ -97,6 +97,9 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         suppressErrors,
         onDeriveOverride,
         onEvent,
+        mode: renderMode = ViewDispatcherMode.Viewer,
+        disableValidation,
+        disableVisibilities,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -113,9 +116,11 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         return flattenElements(element, false);
     }, [element]);
 
-    const derivedData = useMemo(() => {
-        const baseDerivedData = controlledDerivedData ?? internalDerivedData;
+    const baseDerivedData = useMemo(() => {
+        return controlledDerivedData ?? internalDerivedData;
+    }, [controlledDerivedData, internalDerivedData]);
 
+    const derivedData = useMemo(() => {
         if (computedErrors == null || Object.keys(computedErrors).length === 0 || suppressErrors) {
             return baseDerivedData;
         }
@@ -124,13 +129,13 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ...baseDerivedData,
             elementStates: applyComputedErrors(computedErrors, baseDerivedData.elementStates),
         };
-    }, [computedErrors, controlledDerivedData, internalDerivedData]);
+    }, [computedErrors, baseDerivedData]);
 
     const contextValue = useMemo<ElementDerivationContextType>(() => {
         const allElements = flattenElementsWithParents(element, [], false);
 
         return {
-            renderMode: ElementDerivationContextRenderMode.Editor,
+            renderMode: renderMode,
             isEditable: !disabled,
             showInvisible: false,
             showTechnical: true,
@@ -152,6 +157,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         derivedData,
         computedErrors,
         suppressErrors,
+        renderMode,
     ]);
 
     useEffect(() => {
@@ -216,19 +222,19 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         });
     };
 
-    const derive = async (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[] = []) => {
+    const derive = async (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[] = ['ALL']) => {
         try {
             if (onDerivationStarted != null) {
                 onDerivationStarted(authoredElementValues);
             }
 
-            const derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(authoredElementValues, skipErrorsForElements) : new ElementsApiService()
+            let derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(authoredElementValues, skipErrorsForElements) : new ElementsApiService()
                 .derive({
                     element: element,
                     authoredElementValues: authoredElementValues,
                     derivationOptions: {
-                        skipErrorsForElementIds: skipErrorsForElements,
-                        skipVisibilitiesForElementIds: [],
+                        skipErrorsForElementIds: disableValidation && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : skipErrorsForElements,
+                        skipVisibilitiesForElementIds: disableVisibilities && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : [],
                         skipOverridesForElementIds: [],
                         skipValuesForElementIds: [],
                     },
@@ -263,6 +269,13 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         };
     };
 
+    // Derive all data if the disable visibilities flag is reset
+    useEffect(() => {
+        if (!disableVisibilities) {
+            derive(authoredElementValues);
+        }
+    }, [disableVisibilities]);
+
     return (
         <ElementDerivationContextProvider
             value={contextValue}
@@ -271,9 +284,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                 value={{
                     rootElement: element,
                     allElements: allElements,
-                    mode: ViewDispatcherMode.Editor,
+                    mode: renderMode,
                     rootAuthoredElementValues: authoredElementValues,
                     rootDerivedData: derivedData,
+                    showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
                 }}
             >
                 <ViewDispatcherComponent
@@ -321,4 +335,23 @@ function checkElementReferencesId(element: AnyElement, id: string): boolean {
         }
     }
     return false;
+}
+
+export function clearDerivedErrorsRecursively2(derivedData: DerivedRuntimeElementData, onlyForFilter?:(elementId: string) => boolean): DerivedRuntimeElementData {
+    return {
+        ...derivedData,
+        elementStates: Object.fromEntries(
+            Object.entries(derivedData.elementStates).map(([elementId, state]) => [
+                elementId,
+                {
+                    ...state,
+                    error: onlyForFilter == null || !onlyForFilter(elementId) ? null : state?.error,
+                    subStates: state?.subStates?.map((subState) => clearDerivedErrorsRecursively({
+                        effectiveValues: {},
+                        elementStates: subState ?? {},
+                    }).elementStates) ?? null,
+                },
+            ]),
+        ),
+    };
 }
