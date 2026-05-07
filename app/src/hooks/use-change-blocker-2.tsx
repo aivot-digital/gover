@@ -1,5 +1,5 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {Blocker, useBlocker} from 'react-router-dom';
+import {Blocker, useBeforeUnload, useBlocker} from 'react-router-dom';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
 
@@ -47,8 +47,17 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
             return !deepEquals(original, edited);
         }
 
-        return shallowEquals(original, edited);
+        return !shallowEquals(original, edited);
     }, [original, edited, useDeepEquals, isActive]);
+
+    useBeforeUnload(useCallback((event: BeforeUnloadEvent) => {
+        if (!hasChanged) {
+            return;
+        }
+
+        event.preventDefault();
+        event.returnValue = '';
+    }, [hasChanged]));
 
     const [pendingBlocker, setPendingBlocker] = useState<Blocker | null>(null);
 
