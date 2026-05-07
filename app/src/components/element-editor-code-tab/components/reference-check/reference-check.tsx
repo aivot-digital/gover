@@ -70,6 +70,7 @@ export function ReferenceCheck(props: ReferenceCheckProps) {
                                 const Icon = getElementIcon(refElement);
                                 return (
                                     <Paper
+                                        key={refElement.id}
                                         variant="outlined"
                                         sx={{
                                             borderColor: isForwardReference ? 'error.main' : 'success.main',
