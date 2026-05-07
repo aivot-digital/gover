@@ -65,7 +65,10 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
             {},
         ];
 
-        setValue(updatedValue, [`${element.id}.${updatedValue.length - 1}`]);
+        const allChildIds = flattenElements(element, false)
+            .map(child => child.id);
+
+        setValue(updatedValue, allChildIds);
     }, [element, setValue, value]);
 
     const handleDelete = useCallback((_: AuthoredElementValues, index: number) => {
