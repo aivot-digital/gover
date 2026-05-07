@@ -18,7 +18,7 @@ import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
-import de.aivot.GoverBackend.form.dtos.FormCitizenDetailsResponseDTO;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.form.enums.FormStatus;
@@ -35,7 +35,6 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.dtos.MaxFileSizeDto;
 import de.aivot.GoverBackend.payment.exceptions.PaymentException;
 import de.aivot.GoverBackend.payment.services.PaymentProviderService;
-import de.aivot.GoverBackend.plugins.form.FormPlugin;
 import de.aivot.GoverBackend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
@@ -145,10 +144,10 @@ public class FormTriggerControllerV1 {
 
     @GetMapping("")
     public RetrieveResponse retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                                  @Nonnull @PathVariable UUID processAccessKey,
-                                                  @Nonnull @PathVariable String formSlug,
-                                                  @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                                  @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId) throws ResponseException {
+                                     @Nonnull @PathVariable UUID processAccessKey,
+                                     @Nonnull @PathVariable String formSlug,
+                                     @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+                                     @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId) throws ResponseException {
         var execUser = getExecUser(jwt);
 
         var process = getProcessEntity(processAccessKey);
@@ -194,7 +193,8 @@ public class FormTriggerControllerV1 {
             ProcessEntity process,
             @Nonnull
             ProcessVersionEntity version
-    ) {}
+    ) {
+    }
 
     @Nonnull
     private ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> getConfigurationDetails(ProcessNodeEntity node, FormTriggerNodeV1 provider, UserEntity execUser) throws ResponseException {
