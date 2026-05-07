@@ -105,13 +105,17 @@ export function ProcessInstanceListPage(): ReactNode {
         })
             .then((conf) => {
                 if (!conf) {
-                    return;
+                    return false;
                 }
 
-                return new ProcessInstanceApiService().destroy(item.id);
+                return new ProcessInstanceApiService()
+                    .destroy(item.id)
+                    .then(() => true);
             })
-            .then(() => {
-                handleListRefresh();
+            .then((reload) => {
+                if (reload) {
+                    handleListRefresh();
+                }
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Vorgang konnte nicht gelöscht werden'));
