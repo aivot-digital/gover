@@ -3,10 +3,12 @@ package de.aivot.GoverBackend.plugins.form.v1.nodes;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -22,6 +24,7 @@ import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -169,6 +172,30 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
 
         return config;
+    }
+
+    @Nullable
+    @Override
+    public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<FormTriggerConfigV1> context) throws ResponseException {
+        var link = goverConfig
+                .createUrl(
+                        "/forms/v1/",
+                        context.processDefinition().getAccessKey().toString(),
+                        context.configuration().formSlug
+                ) + "?" + FormTriggerControllerV1.TEST_CLAIM_QUERY_PARAM + "=" + context.testClaim().getAccessKey();
+
+        var layout = new GroupLayoutElement();
+        layout.setId("testing");
+
+        var rtx = new RichTextContentElement();
+        rtx.setId("rtx");
+        rtx.setContent(String.format("""
+                Sie können das Formular abrufen unter [%s](%s).
+                """, link, link));
+
+        layout.addChild(rtx);
+
+        return layout;
     }
 
     @Nullable
