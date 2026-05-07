@@ -1,4 +1,4 @@
-import {Box, Breadcrumbs, Button, Drawer, Tab, Tabs, Typography} from '@mui/material';
+import {Box, Breadcrumbs, Button, Divider, Drawer, Tab, Tabs, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {createTheme, ThemeProvider, useTheme} from '@mui/material/styles';
 import {AnyElement} from '../../../models/elements/any-element';
@@ -242,6 +242,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     .parents
                                     .map((element) => (
                                         <a
+                                            key={element.id}
                                             href={createElementEditorNavigationLink(element.id)}
                                         >
                                             {generateComponentTitle(element)}
