@@ -246,6 +246,11 @@ public class ElementDataTransformService {
             return;
         }
 
+        var existingItems = resolveExistingReplicatingContainerItems(
+                payload,
+                replicatingContainer,
+                replicationIndices
+        );
         var mappedItems = new LinkedList<Object>();
         for (var itemIndex = 0; itemIndex < rawItems.size(); itemIndex++) {
             var rawItem = rawItems.get(itemIndex);
@@ -261,7 +266,7 @@ public class ElementDataTransformService {
                     continue;
                 }
 
-                var itemPayload = new LinkedHashMap<String, Object>();
+                var itemPayload = resolveExistingReplicatingContainerItemPayload(existingItems, itemIndex);
                 for (var child : replicatingContainer.getChildren()) {
                     mergeDestinationKeyPayload(child, itemEffectiveValues, itemPayload, itemReplicationIndices);
                 }
@@ -273,6 +278,32 @@ public class ElementDataTransformService {
         }
 
         writePayloadValue(payload, replicatingContainer.getDestinationKey(), mappedItems, replicationIndices);
+    }
+
+    @Nonnull
+    private List<?> resolveExistingReplicatingContainerItems(@Nonnull Map<String, Object> payload,
+                                                             @Nonnull ReplicatingContainerLayoutElement replicatingContainer,
+                                                             @Nonnull List<Integer> replicationIndices) {
+        if (StringUtils.isNullOrEmpty(replicatingContainer.getDestinationKey())) {
+            return List.of();
+        }
+
+        var existingContainerValue = readPayloadValue(
+                payload,
+                replicatingContainer.getDestinationKey(),
+                replicationIndices
+        );
+        return existingContainerValue instanceof List<?> existingItems ? existingItems : List.of();
+    }
+
+    @Nonnull
+    private LinkedHashMap<String, Object> resolveExistingReplicatingContainerItemPayload(@Nonnull List<?> existingItems,
+                                                                                         int itemIndex) {
+        if (itemIndex >= 0 && itemIndex < existingItems.size() && existingItems.get(itemIndex) instanceof Map<?, ?> existingItemMap) {
+            return toStringObjectMap(existingItemMap);
+        }
+
+        return new LinkedHashMap<>();
     }
 
     /**
