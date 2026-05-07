@@ -85,6 +85,7 @@ public abstract class BaseElement implements Serializable {
     private String name;
 
     @Nullable
+    @Deprecated
     private TestProtocolSet testProtocolSet;
 
     @Nullable
