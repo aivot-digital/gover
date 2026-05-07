@@ -86,7 +86,11 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
             freeSolo
             fullWidth
             onChange={(_, value) => {
-                rest.onChange((value as any).id);
+                if (value == null) {
+                    rest.onChange(undefined);
+                } else {
+                    rest.onChange((value as any).id);
+                }
             }}
             value={rest.value ?? null}
             options={options}
