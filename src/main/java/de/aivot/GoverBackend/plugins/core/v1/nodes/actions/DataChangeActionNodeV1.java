@@ -74,8 +74,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
 
     private static final String TASK_VIEW_ROOT_ID = "data-change-task-view";
-    private static final String TASK_VIEW_DESCRIPTION_HEADLINE_ID = "data-change-task-view-description-headline";
-    private static final String TASK_VIEW_DESCRIPTION_CONTENT_ID = "data-change-task-view-description-content";
     private static final String TASK_VIEW_UI_HEADLINE_ID = "data-change-task-view-ui-headline";
     private static final String TASK_VIEW_REMARK_SPACER_ID = "data-change-task-view-remark-spacer";
     private static final String TASK_VIEW_REMARK_FIELD_ID = "dataChangeRemark";
@@ -250,18 +248,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         layout.setId(TASK_VIEW_ROOT_ID);
 
         var children = new java.util.ArrayList<BaseFormElement>();
-
-        if (StringUtils.isNotNullOrEmpty(config.taskDescription)) {
-            var descriptionHeadline = new HeadlineContentElement();
-            descriptionHeadline.setId(TASK_VIEW_DESCRIPTION_HEADLINE_ID);
-            descriptionHeadline.setContent("Aufgabenbeschreibung");
-            children.add(descriptionHeadline);
-
-            var descriptionContent = new RichTextContentElement();
-            descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
-            descriptionContent.setContent(config.taskDescription);
-            children.add(descriptionContent);
-        }
 
         var uiHeadline = new HeadlineContentElement();
         uiHeadline.setId(TASK_VIEW_UI_HEADLINE_ID);
@@ -456,16 +442,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class DataChangeActionNodeConfig {
-        public static final String TASK_DESCRIPTION_FIELD_ID = "task_description";
         public static final String DATA_DEFINITION_FIELD_ID = "data_definition";
         public static final String ASSIGNMENT_CONTEXT_FIELD_ID = "assignment_context";
-
-        @InputElementPOJOBinding(id = TASK_DESCRIPTION_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie, welche Daten geprüft oder angepasst werden sollen."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = false)
-        })
-        public String taskDescription;
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),
