@@ -7,9 +7,11 @@ import de.aivot.GoverBackend.nocode.models.*;
 import jakarta.annotation.Nullable;
 
 public class NoCodeNotOperator extends NoCodeOperator {
+    public static final String OPERATOR_ID = "not";
+
     @Override
     public String getIdentifier() {
-        return "not";
+        return OPERATOR_ID;
     }
 
     @Override
