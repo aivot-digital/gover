@@ -251,6 +251,18 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         var children = new java.util.ArrayList<BaseFormElement>();
 
+        if (StringUtils.isNotNullOrEmpty(config.taskDescription)) {
+            var descriptionHeadline = new HeadlineContentElement();
+            descriptionHeadline.setId(TASK_VIEW_DESCRIPTION_HEADLINE_ID);
+            descriptionHeadline.setContent("Aufgabenbeschreibung");
+            children.add(descriptionHeadline);
+
+            var descriptionContent = new RichTextContentElement();
+            descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
+            descriptionContent.setContent(config.taskDescription);
+            children.add(descriptionContent);
+        }
+
         var uiHeadline = new HeadlineContentElement();
         uiHeadline.setId(TASK_VIEW_UI_HEADLINE_ID);
         uiHeadline.setContent("Daten zu dieser Aufgabe");
@@ -324,7 +336,11 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                                                                  @Nonnull AuthoredElementValues authoredUpdate) {
         var payloadUpdate = elementDataTransformService.buildPayload(config.dataDefinition, update);
         var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
-        var updatedProcessData = mergeProcessData(originalProcessData, payloadUpdate);
+        var updatedProcessData = elementDataTransformService.buildPayload(
+                config.dataDefinition,
+                update,
+                ObjectMapperFactory.Utils.convertToMap(originalProcessData)
+        );
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
         var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
 
@@ -377,32 +393,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     }
 
     @Nonnull
-    private static Map<String, Object> mergeProcessData(@Nonnull Map<String, Object> originalProcessData,
-                                                        @Nonnull Map<String, Object> payloadUpdate) {
-        var mergedProcessData = ObjectMapperFactory.Utils.convertToMap(originalProcessData);
-        mergeInto(mergedProcessData, payloadUpdate);
-        return mergedProcessData;
-    }
-
-    private static void mergeInto(@Nonnull Map<String, Object> target, @Nonnull Map<String, Object> patch) {
-        for (var entry : patch.entrySet()) {
-            var key = entry.getKey();
-            var patchValue = entry.getValue();
-            var targetValue = target.get(key);
-
-            if (patchValue instanceof Map<?, ?> patchMap && targetValue instanceof Map<?, ?> targetMap) {
-                var targetMapValue = castStringObjectMap(targetMap);
-                mergeInto(targetMapValue, castStringObjectMap(patchMap));
-                target.put(key, targetMapValue);
-            } else if (patchValue instanceof Map<?, ?> patchMap) {
-                target.put(key, castStringObjectMap(patchMap));
-            } else {
-                target.put(key, patchValue);
-            }
-        }
-    }
-
-    @Nonnull
     private static List<DiffItem> createProcessDataDiff(@Nonnull Map<String, Object> originalProcessData,
                                                         @Nonnull Map<String, Object> updatedProcessData) {
         var originalForDiff = Map.<String, Object>of(
@@ -448,19 +438,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 .toList();
     }
 
-    @Nonnull
-    private static Map<String, Object> castStringObjectMap(@Nonnull Object rawMap) {
-        var result = new LinkedHashMap<String, Object>();
-        if (rawMap instanceof Map<?, ?> map) {
-            for (var entry : map.entrySet()) {
-                if (entry.getKey() instanceof String key) {
-                    result.put(key, entry.getValue());
-                }
-            }
-        }
-        return result;
-    }
-
     @Nullable
     private static String normalizeRemark(@Nullable Object rawRemark) {
         if (rawRemark == null) {
@@ -479,8 +456,16 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class DataChangeActionNodeConfig {
+        public static final String TASK_DESCRIPTION_FIELD_ID = "task_description";
         public static final String DATA_DEFINITION_FIELD_ID = "data_definition";
         public static final String ASSIGNMENT_CONTEXT_FIELD_ID = "assignment_context";
+
+        @InputElementPOJOBinding(id = TASK_DESCRIPTION_FIELD_ID, type = ElementType.RichTextInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Beschreiben Sie, welche Daten geprüft oder angepasst werden sollen."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = false)
+        })
+        public String taskDescription;
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),

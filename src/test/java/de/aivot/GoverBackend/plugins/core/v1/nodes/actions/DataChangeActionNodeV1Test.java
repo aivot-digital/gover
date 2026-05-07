@@ -5,12 +5,14 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
@@ -290,19 +292,172 @@ class DataChangeActionNodeV1Test {
         assertEquals("Grace", diff.getFirst().newValue());
     }
 
+    @Test
+    void onEventFromStaffTaskView_CompletePatchesArrayItemWithoutReplacingArray() throws Exception {
+        var processData = Map.<String, Object>of(
+                "members", List.of(
+                        Map.of("name", "Ada", "age", 33),
+                        Map.of("name", "Bob", "age", 41)
+                ),
+                "untouched", "value"
+        );
+        var configuration = configuration("members.0.name", null);
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                processData
+                        ),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configuration),
+                        currentProcessData(processData)
+                ),
+                authored("applicantName", "Grace"),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+        assertEquals("value", completed.getProcessData().get("untouched"));
+
+        @SuppressWarnings("unchecked")
+        var members = (List<Map<String, Object>>) completed.getProcessData().get("members");
+        assertEquals(2, members.size());
+        assertEquals("Grace", members.getFirst().get("name"));
+        assertEquals(33, members.getFirst().get("age"));
+        assertEquals(Map.of("name", "Bob", "age", 41), members.get(1));
+
+        @SuppressWarnings("unchecked")
+        var changedData = (Map<String, Object>) completed.getNodeData().get("data");
+        assertEquals(List.of(Map.of("name", "Grace")), changedData.get("members"));
+
+        @SuppressWarnings("unchecked")
+        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
+        assertEquals(1, diff.size());
+        assertEquals("members[0].name", diff.getFirst().field());
+        assertEquals("Ada", diff.getFirst().oldValue());
+        assertEquals("Grace", diff.getFirst().newValue());
+    }
+
+    @Test
+    void onEventFromStaffTaskView_CompletePatchesReplicatingContainerRowsWithoutReplacingSiblingFields() throws Exception {
+        var processData = Map.<String, Object>of(
+                "members", List.of(
+                        Map.of(
+                                "name", "Ada",
+                                "age", 33,
+                                "address", Map.of("street", "Main Street 1")
+                        ),
+                        Map.of(
+                                "name", "Bob",
+                                "age", 41,
+                                "address", Map.of("street", "Side Alley 2")
+                        )
+                ),
+                "untouched", "value"
+        );
+
+        var memberName = new TextInputElement();
+        memberName.setId("memberName");
+        memberName.setLabel("Name");
+        memberName.setDestinationKey("name");
+
+        var members = new ReplicatingContainerLayoutElement();
+        members.setId("membersEditor");
+        members.setDestinationKey("members");
+        members.setChildren(List.<BaseFormElement>of(memberName));
+
+        var configuration = configuration(List.<BaseFormElement>of(members), null);
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                processData
+                        ),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configuration),
+                        currentProcessData(processData)
+                ),
+                authored(
+                        "membersEditor", List.of(
+                                authored("memberName", "Grace"),
+                                authored("memberName", "Bob")
+                        )
+                ),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+        assertEquals("value", completed.getProcessData().get("untouched"));
+
+        @SuppressWarnings("unchecked")
+        var membersData = (List<Map<String, Object>>) completed.getProcessData().get("members");
+        assertEquals(2, membersData.size());
+        assertEquals("Grace", membersData.getFirst().get("name"));
+        assertEquals(33, membersData.getFirst().get("age"));
+        assertEquals(Map.of("street", "Main Street 1"), membersData.getFirst().get("address"));
+        assertEquals(Map.of(
+                "name", "Bob",
+                "age", 41,
+                "address", Map.of("street", "Side Alley 2")
+        ), membersData.get(1));
+
+        @SuppressWarnings("unchecked")
+        var changedData = (Map<String, Object>) completed.getNodeData().get("data");
+        assertEquals(
+                List.of(
+                        Map.of("name", "Grace"),
+                        Map.of("name", "Bob")
+                ),
+                changedData.get("members")
+        );
+
+        @SuppressWarnings("unchecked")
+        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
+        assertEquals(1, diff.size());
+        assertEquals("members[0].name", diff.getFirst().field());
+        assertEquals("Ada", diff.getFirst().oldValue());
+        assertEquals("Grace", diff.getFirst().newValue());
+    }
+
     private static AuthoredElementValues configuration() {
         return configuration(null);
     }
 
     private static AuthoredElementValues configuration(String taskDescription) {
-        var contentRoot = new GroupLayoutElement();
-        contentRoot.setId("data-change-root");
+        return configuration("applicant.name", taskDescription);
+    }
 
+    private static AuthoredElementValues configuration(String destinationKey, String taskDescription) {
         var valueField = new TextInputElement();
         valueField.setId("applicantName");
         valueField.setLabel("Name");
-        valueField.setDestinationKey("applicant.name");
-        contentRoot.setChildren(List.of(valueField));
+        valueField.setDestinationKey(destinationKey);
+
+        return configuration(List.of(valueField), taskDescription);
+    }
+
+    private static AuthoredElementValues configuration(List<? extends BaseFormElement> children, String taskDescription) {
+        var contentRoot = new GroupLayoutElement();
+        contentRoot.setId("data-change-root");
+        contentRoot.setChildren(new java.util.ArrayList<BaseFormElement>(children));
 
         var configuration = new AuthoredElementValues();
         configuration.put("data_definition", contentRoot);
