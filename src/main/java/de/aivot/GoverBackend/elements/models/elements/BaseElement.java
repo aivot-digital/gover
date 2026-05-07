@@ -115,6 +115,7 @@ public abstract class BaseElement implements Serializable {
     }
 
     @JsonIgnore
+    @Deprecated
     public ElementApprovalStatus getApproval() {
         if (testProtocolSet == null) {
             return ElementApprovalStatus.MissingBothApprovals;
@@ -147,6 +148,7 @@ public abstract class BaseElement implements Serializable {
         }
     }
 
+    @Deprecated
     protected boolean testIfTechnicalApprovalNeeded() {
         if (visibility != null) {
             if (visibility.getJavascriptCode() != null && visibility.getJavascriptCode().isNotEmpty()) {
