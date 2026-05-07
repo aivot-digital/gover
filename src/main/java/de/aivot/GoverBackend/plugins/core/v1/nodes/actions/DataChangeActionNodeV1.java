@@ -118,13 +118,13 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     @Override
     public String getName() {
-        return "Daten ändern";
+        return "Datenanpassung";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erlaubt einer Mitarbeiter:in, konfigurierte Vorgangsdaten in einer Gover-UI zu bearbeiten, zwischenzuspeichern und zu übernehmen.";
+        return "Erlaubt einer Mitarbeiter:in, Daten in einer Gover-UI zu ändern, hinzuzufügen oder zu entfernen.";
     }
 
     @Nonnull
