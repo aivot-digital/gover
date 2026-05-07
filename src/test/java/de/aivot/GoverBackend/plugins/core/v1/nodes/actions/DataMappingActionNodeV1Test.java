@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
@@ -30,6 +31,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataMappingActionNodeV1Test {
@@ -148,6 +150,102 @@ class DataMappingActionNodeV1Test {
         var person = (Map<String, Object>) result.getProcessData().get("person");
         assertNotNull(person);
         assertTrue(person.isEmpty());
+    }
+
+    @Test
+    void init_ResolvesWildcardSourcePathToFirstMatchingArrayValue() throws Exception {
+        var processData = new ProcessExecutionData()
+                .addProcessData(Map.of(
+                        "hunde", List.of(
+                                Map.of("col", Map.of("farbe", "braun")),
+                                Map.of("col", Map.of("farbe", "schwarz"))
+                        )
+                ));
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(new ProcessNodeExecutionInitContext(
+                        logger(),
+                        processNode(configuration(List.of(Map.of(
+                                "source", "hunde.*.col.farbe",
+                                "target", "mapped.farbe"
+                        )), false)),
+                        processInstance(),
+                        task(Map.of()),
+                        null,
+                        processData,
+                        nodeConfiguration(configuration(List.of(Map.of(
+                                "source", "hunde.*.col.farbe",
+                                "target", "mapped.farbe"
+                        )), false))
+                ))
+        );
+
+        @SuppressWarnings("unchecked")
+        var mapped = (Map<String, Object>) result.getProcessData().get("mapped");
+        assertEquals("braun", mapped.get("farbe"));
+    }
+
+    @Test
+    void init_BroadcastsWildcardTargetPathAcrossExistingArrayItems() throws Exception {
+        var processData = new ProcessExecutionData()
+                .addProcessData(Map.of(
+                        "farbe", "grau",
+                        "hunde", List.of(
+                                Map.of("name", "Alpha"),
+                                Map.of("name", "Beta", "col", Map.of("farbe", "schwarz"))
+                        )
+                ));
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(new ProcessNodeExecutionInitContext(
+                        logger(),
+                        processNode(configuration(List.of(Map.of(
+                                "source", "farbe",
+                                "target", "hunde.*.col.farbe"
+                        )), false)),
+                        processInstance(),
+                        task(Map.of()),
+                        null,
+                        processData,
+                        nodeConfiguration(configuration(List.of(Map.of(
+                                "source", "farbe",
+                                "target", "hunde.*.col.farbe"
+                        )), false))
+                ))
+        );
+
+        @SuppressWarnings("unchecked")
+        var hunde = (List<Map<String, Object>>) result.getProcessData().get("hunde");
+        assertEquals(2, hunde.size());
+        assertEquals("Alpha", hunde.getFirst().get("name"));
+        assertEquals("Beta", hunde.get(1).get("name"));
+        assertEquals(Map.of("farbe", "grau"), hunde.getFirst().get("col"));
+        assertEquals(Map.of("farbe", "grau"), hunde.get(1).get("col"));
+    }
+
+    @Test
+    void init_RejectsBracketWildcardNotation() throws Exception {
+        var configuration = configuration(List.of(Map.of(
+                "source", "hunde[*].col.farbe",
+                "target", "mapped.farbe"
+        )), false);
+
+        var ex = assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> node.init(new ProcessNodeExecutionInitContext(
+                        logger(),
+                        processNode(configuration),
+                        processInstance(),
+                        task(Map.of()),
+                        null,
+                        new ProcessExecutionData().addProcessData(Map.of("hunde", List.of())),
+                        nodeConfiguration(configuration)
+                ))
+        );
+
+        assertTrue(ex.getMessage().contains("[*] ist nicht erlaubt"));
     }
 
     @Test

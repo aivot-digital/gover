@@ -6,24 +6,29 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ComputedElementState;
 import de.aivot.GoverBackend.elements.models.ComputedElementStates;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.ProcessDataKeyInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
+import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
+import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeNotOperator;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -43,6 +48,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     private static final String PORT_NAME = "output";
 
     private static final String TRANSFORM_ARGS_OBJECT_NAME = "__mappingArgs";
+    private static final Object PATH_NOT_FOUND = new Object();
+    private static final WildcardArrayPathPart WILDCARD_ARRAY_PATH_PART = new WildcardArrayPathPart();
 
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
 
@@ -90,11 +97,40 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     @Override
     @JsonIgnore
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        ConfigLayoutElement layoutElement;
         try {
-            return ElementPOJOMapper.createFromPOJO(DataMappingActionNodeV1Config.class);
+            layoutElement = ElementPOJOMapper.createFromPOJO(DataMappingActionNodeV1Config.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e);
         }
+
+        layoutElement
+                .findChild(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.DELETE_ONLY_FIELD_ID, CheckboxInputElement.class)
+                .ifPresent((field) -> {
+                    field.setVisibility(
+                            ElementVisibilityFunctions
+                                    .of(NoCodeReference.of(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.CLEANUP_SOURCE_FIELD_ID))
+                                    .recalculateReferencedIds()
+                    );
+                });
+
+        layoutElement
+                .findChild(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.TARGET_FIELD_ID, ProcessDataKeyInputElement.class)
+                .ifPresent((field) -> {
+                    field.setVisibility(
+                            ElementVisibilityFunctions
+                                    .of(
+                                            NoCodeExpression
+                                                    .of(
+                                                            NoCodeNotOperator.OPERATOR_ID,
+                                                            NoCodeReference.of(DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule.DELETE_ONLY_FIELD_ID)
+                                                    )
+                                    )
+                                    .recalculateReferencedIds()
+                    );
+                });
+
+        return layoutElement;
     }
 
     @Nonnull
@@ -385,8 +421,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
     @Nonnull
     private Map<String, Object> createMappedValueEntry(@Nonnull DataMappingActionNodeV1Config.DataMappingActionNodeV1Rule rule,
-                                                              Object sourceValue,
-                                                              Object mappedValue) {
+                                                       Object sourceValue,
+                                                       Object mappedValue) {
         var deleteOnly = Boolean.TRUE.equals(rule.deleteOnly);
         var cleanupSource = Boolean.TRUE.equals(rule.cleanupSource);
         var data = new LinkedHashMap<String, Object>();
@@ -517,6 +553,9 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                 if (indexStr.isEmpty()) {
                     throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Array-Index fehlt.");
                 }
+                if ("*".equals(indexStr)) {
+                    throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Array-Wildcards müssen als eigenes Segment '*' angegeben werden; [*] ist nicht erlaubt.");
+                }
 
                 int index;
                 try {
@@ -553,7 +592,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Pfad enthält keine Segmente.");
         }
 
-        if (result.getFirst() instanceof ArrayPathPart) {
+        if (result.getFirst() instanceof ArrayPathPart || result.getFirst() instanceof WildcardArrayPathPart) {
             throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Pfad muss mit einem Objektsegment beginnen.");
         }
 
@@ -576,6 +615,11 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             throw invalidPathException(path, rowIndex, fieldLabel, "Leeres Objektsegment ist nicht erlaubt.");
         }
 
+        if ("*".equals(key)) {
+            target.add(WILDCARD_ARRAY_PATH_PART);
+            return;
+        }
+
         target.add(new ObjectPathPart(key));
     }
 
@@ -595,32 +639,56 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
 
     private static Object readPath(@Nonnull Map<String, Object> sourceRoot,
                                    @Nonnull List<PathPart> path) {
-        Object current = sourceRoot;
+        var resolvedValue = readPathRecursive(sourceRoot, path, 0);
+        return resolvedValue == PATH_NOT_FOUND ? null : resolvedValue;
+    }
 
-        for (var pathPart : path) {
-            if (current == null) {
-                return null;
-            }
-
-            if (pathPart instanceof ObjectPathPart objectPathPart) {
-                if (!(current instanceof Map<?, ?> currentMap)) {
-                    return null;
-                }
-                current = currentMap.get(objectPathPart.key());
-                continue;
-            }
-
-            var arrayPathPart = (ArrayPathPart) pathPart;
-            if (!(current instanceof List<?> currentList)) {
-                return null;
-            }
-            if (arrayPathPart.index() < 0 || arrayPathPart.index() >= currentList.size()) {
-                return null;
-            }
-            current = currentList.get(arrayPathPart.index());
+    private static Object readPathRecursive(Object current,
+                                            @Nonnull List<PathPart> path,
+                                            int pathIndex) {
+        if (current == null) {
+            return PATH_NOT_FOUND;
         }
 
-        return current;
+        var currentPart = path.get(pathIndex);
+        var isLeaf = pathIndex == path.size() - 1;
+
+        if (currentPart instanceof ObjectPathPart objectPathPart) {
+            if (!(current instanceof Map<?, ?> currentMap)) {
+                return PATH_NOT_FOUND;
+            }
+
+            if (!currentMap.containsKey(objectPathPart.key())) {
+                return PATH_NOT_FOUND;
+            }
+
+            var value = currentMap.get(objectPathPart.key());
+            return isLeaf ? value : readPathRecursive(value, path, pathIndex + 1);
+        }
+
+        if (!(current instanceof List<?> currentList)) {
+            return PATH_NOT_FOUND;
+        }
+
+        if (currentPart instanceof ArrayPathPart arrayPathPart) {
+            if (arrayPathPart.index() < 0 || arrayPathPart.index() >= currentList.size()) {
+                return PATH_NOT_FOUND;
+            }
+
+            var value = currentList.get(arrayPathPart.index());
+            return isLeaf ? value : readPathRecursive(value, path, pathIndex + 1);
+        }
+
+        for (var item : currentList) {
+            var value = isLeaf
+                    ? item
+                    : readPathRecursive(item, path, pathIndex + 1);
+            if (value != PATH_NOT_FOUND) {
+                return value;
+            }
+        }
+
+        return PATH_NOT_FOUND;
     }
 
     private static boolean removePath(@Nonnull Map<String, Object> targetRoot,
@@ -671,13 +739,44 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             return new PathRemovalResult(true, currentMap.isEmpty());
         }
 
-        var arrayPathPart = (ArrayPathPart) currentPart;
         if (!(current instanceof List<?> currentListRaw)) {
             return PathRemovalResult.NOT_FOUND;
         }
 
         @SuppressWarnings("unchecked")
         var currentList = (List<Object>) currentListRaw;
+
+        if (currentPart instanceof WildcardArrayPathPart) {
+            var removedAny = false;
+
+            if (isLeaf) {
+                if (currentList.isEmpty()) {
+                    return PathRemovalResult.NOT_FOUND;
+                }
+
+                currentList.clear();
+                return new PathRemovalResult(true, true);
+            }
+
+            for (int i = currentList.size() - 1; i >= 0; i--) {
+                var child = currentList.get(i);
+                var childResult = removePathRecursive(child, path, pathIndex + 1, cleanupEmptyContainers);
+                if (!childResult.removed()) {
+                    continue;
+                }
+
+                removedAny = true;
+                if (cleanupEmptyContainers && childResult.containerEmpty()) {
+                    currentList.remove(i);
+                }
+            }
+
+            return removedAny
+                    ? new PathRemovalResult(true, currentList.isEmpty())
+                    : PathRemovalResult.NOT_FOUND;
+        }
+
+        var arrayPathPart = (ArrayPathPart) currentPart;
         if (arrayPathPart.index() < 0 || arrayPathPart.index() >= currentList.size()) {
             return PathRemovalResult.NOT_FOUND;
         }
@@ -704,88 +803,120 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                                   @Nonnull List<PathPart> path,
                                   Object value,
                                   int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        Object current = targetRoot;
+        writePathRecursive(targetRoot, path, 0, value, rowIndex);
+    }
 
-        for (int i = 0; i < path.size() - 1; i++) {
-            var currentPart = path.get(i);
-            var nextPart = path.get(i + 1);
+    private static void writePathRecursive(Object current,
+                                           @Nonnull List<PathPart> path,
+                                           int pathIndex,
+                                           Object value,
+                                           int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var currentPart = path.get(pathIndex);
+        var isLeaf = pathIndex == path.size() - 1;
 
-            if (currentPart instanceof ObjectPathPart objectPathPart) {
-                if (!(current instanceof Map<?, ?> currentMapRaw)) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Konflikt beim Schreiben der Abbildungsregel in Zeile %d: Erwartet wurde ein Objektsegment.",
-                            rowIndex
-                    );
-                }
-
-                @SuppressWarnings("unchecked")
-                var currentMap = (Map<String, Object>) currentMapRaw;
-                var existing = currentMap.get(objectPathPart.key());
-
-                if (existing == null) {
-                    var created = createContainerFor(nextPart);
-                    currentMap.put(objectPathPart.key(), created);
-                    current = created;
-                } else {
-                    current = ensureCompatibleContainer(existing, nextPart, rowIndex);
-                }
-                continue;
-            }
-
-            var arrayPathPart = (ArrayPathPart) currentPart;
-            if (!(current instanceof List<?> currentListRaw)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Konflikt beim Schreiben der Abbildungsregel in Zeile %d: Erwartet wurde ein Arraysegment.",
-                        rowIndex
-                );
-            }
-
-            @SuppressWarnings("unchecked")
-            var currentList = (List<Object>) currentListRaw;
-            ensureListSize(currentList, arrayPathPart.index());
-
-            var existing = currentList.get(arrayPathPart.index());
-            if (existing == null) {
-                var created = createContainerFor(nextPart);
-                currentList.set(arrayPathPart.index(), created);
-                current = created;
-            } else {
-                current = ensureCompatibleContainer(existing, nextPart, rowIndex);
-            }
-        }
-
-        var lastPart = path.get(path.size() - 1);
-        if (lastPart instanceof ObjectPathPart objectPathPart) {
+        if (currentPart instanceof ObjectPathPart objectPathPart) {
             if (!(current instanceof Map<?, ?> currentMapRaw)) {
                 throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Konflikt beim Schreiben der Abbildungsregel in Zeile %d: Das Ziel ist kein Objekt.",
+                        "Konflikt beim Schreiben der Abbildungsregel in Zeile %d: Erwartet wurde ein Objektsegment.",
                         rowIndex
                 );
             }
 
             @SuppressWarnings("unchecked")
             var currentMap = (Map<String, Object>) currentMapRaw;
-            currentMap.put(objectPathPart.key(), value);
+            if (isLeaf) {
+                currentMap.put(objectPathPart.key(), value);
+                return;
+            }
+
+            var nextPart = path.get(pathIndex + 1);
+            var existing = currentMap.get(objectPathPart.key());
+            if (existing == null) {
+                var created = createContainerFor(nextPart);
+                currentMap.put(objectPathPart.key(), created);
+                writePathRecursive(created, path, pathIndex + 1, value, rowIndex);
+                return;
+            }
+
+            writePathRecursive(
+                    ensureCompatibleContainer(existing, nextPart, rowIndex),
+                    path,
+                    pathIndex + 1,
+                    value,
+                    rowIndex
+            );
             return;
         }
 
-        var arrayPathPart = (ArrayPathPart) lastPart;
         if (!(current instanceof List<?> currentListRaw)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Konflikt beim Schreiben der Abbildungsregel in Zeile %d: Das Ziel ist kein Array.",
+                    "Konflikt beim Schreiben der Abbildungsregel in Zeile %d: Erwartet wurde ein Arraysegment.",
                     rowIndex
             );
         }
 
         @SuppressWarnings("unchecked")
         var currentList = (List<Object>) currentListRaw;
+
+        if (currentPart instanceof WildcardArrayPathPart) {
+            if (currentList.isEmpty()) {
+                return;
+            }
+
+            if (isLeaf) {
+                Collections.fill(currentList, value);
+                return;
+            }
+
+            var nextPart = path.get(pathIndex + 1);
+            for (var i = 0; i < currentList.size(); i++) {
+                var existing = currentList.get(i);
+                if (existing == null) {
+                    var created = createContainerFor(nextPart);
+                    currentList.set(i, created);
+                    writePathRecursive(created, path, pathIndex + 1, value, rowIndex);
+                } else {
+                    writePathRecursive(
+                            ensureCompatibleContainer(existing, nextPart, rowIndex),
+                            path,
+                            pathIndex + 1,
+                            value,
+                            rowIndex
+                    );
+                }
+            }
+            return;
+        }
+
+        var arrayPathPart = (ArrayPathPart) currentPart;
         ensureListSize(currentList, arrayPathPart.index());
-        currentList.set(arrayPathPart.index(), value);
+
+        if (isLeaf) {
+            currentList.set(arrayPathPart.index(), value);
+            return;
+        }
+
+        var nextPart = path.get(pathIndex + 1);
+        var existing = currentList.get(arrayPathPart.index());
+        if (existing == null) {
+            var created = createContainerFor(nextPart);
+            currentList.set(arrayPathPart.index(), created);
+            writePathRecursive(created, path, pathIndex + 1, value, rowIndex);
+            return;
+        }
+
+        writePathRecursive(
+                ensureCompatibleContainer(existing, nextPart, rowIndex),
+                path,
+                pathIndex + 1,
+                value,
+                rowIndex
+        );
     }
 
     @Nonnull
     private static Object createContainerFor(@Nonnull PathPart nextPart) {
-        return nextPart instanceof ArrayPathPart
+        return nextPart instanceof ArrayPathPart || nextPart instanceof WildcardArrayPathPart
                 ? new ArrayList<>()
                 : new HashMap<String, Object>();
     }
@@ -794,7 +925,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     private static Object ensureCompatibleContainer(Object existing,
                                                     @Nonnull PathPart nextPart,
                                                     int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (nextPart instanceof ArrayPathPart && !(existing instanceof List<?>)) {
+        if ((nextPart instanceof ArrayPathPart || nextPart instanceof WildcardArrayPathPart) && !(existing instanceof List<?>)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Konflikt beim Schreiben der Abbildungsregel in Zeile %d: Erwartet wurde ein Array, aber ein anderes Format ist bereits vorhanden.",
                     rowIndex
@@ -862,13 +993,16 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         return trimmed.isEmpty() ? null : trimmed;
     }
 
-    private sealed interface PathPart permits ObjectPathPart, ArrayPathPart {
+    private sealed interface PathPart permits ObjectPathPart, ArrayPathPart, WildcardArrayPathPart {
     }
 
     private record ObjectPathPart(@Nonnull String key) implements PathPart {
     }
 
     private record ArrayPathPart(int index) implements PathPart {
+    }
+
+    private record WildcardArrayPathPart() implements PathPart {
     }
 
     private record PathRemovalResult(boolean removed, boolean containerEmpty) {
@@ -915,17 +1049,11 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             public static final String SOURCE_FIELD_ID = "source";
             @InputElementPOJOBinding(id = SOURCE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangspfad"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert. Wenn der Pfad nicht existiert, wird null verwendet. Pfade können mit Punktnotation und Array-Indizes angegeben werden, z.B. person.name oder items[0].price. Ein führendes $. ist optional."),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert. Wenn der Pfad nicht existiert, wird null verwendet. Pfade können mit Punktnotation, numerischen Array-Indizes und dem Array-Wildcard-Segment * angegeben werden, z.B. person.name, items[0].price oder hunde.*.col.farbe. Ein führendes $. ist optional. Die Schreibweise [*] ist nicht erlaubt."),
                     @ElementPOJOBindingProperty(key = "required", boolValue = true),
             })
             public String source;
 
-            public static final String TARGET_FIELD_ID = "target";
-            @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
-                    @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
-                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt. Kann leer bleiben, wenn der Wert nur gelöscht werden soll."),
-            })
-            public String target;
 
             public static final String CLEANUP_SOURCE_FIELD_ID = "cleanupSource";
             @InputElementPOJOBinding(id = CLEANUP_SOURCE_FIELD_ID, type = ElementType.Checkbox, properties = {
@@ -940,6 +1068,13 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                     @ElementPOJOBindingProperty(key = "hint", strValue = "Löscht den Ausgangswert ohne ihn in einen Zielpfad zu kopieren.")
             })
             public Boolean deleteOnly;
+
+            public static final String TARGET_FIELD_ID = "target";
+            @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
+                    @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
+                    @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt. Pfade unterstützen das Array-Wildcard-Segment *; die Schreibweise [*] ist nicht erlaubt. Kann leer bleiben, wenn der Wert nur gelöscht werden soll."),
+            })
+            public String target;
         }
     }
 }
