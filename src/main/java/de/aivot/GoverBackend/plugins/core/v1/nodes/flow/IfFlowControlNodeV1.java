@@ -402,7 +402,8 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingungsart"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, mit welchem Typ/Editor die Bedingung definiert wird."),
                 @ElementPOJOBindingProperty(key = "toggleButtons", boolValue = true),
-                @ElementPOJOBindingProperty(key = "displayInline", boolValue = true)
+                @ElementPOJOBindingProperty(key = "displayInline", boolValue = true),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String conditionType;
 
@@ -410,13 +411,15 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingung"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "JavaScript-Ausdruck oder -Funktion, der/die direkt zu true oder false ausgewertet wird."),
                 @ElementPOJOBindingProperty(key = "editorHeight", intValue = 140),
-                @ElementPOJOBindingProperty(key = "wordWrap", boolValue = true)
+                @ElementPOJOBindingProperty(key = "wordWrap", boolValue = true),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String condition;
 
         @InputElementPOJOBinding(id = CONDITION_NO_CODE_FIELD_ID, type = ElementType.NoCodeInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bedingung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "No-Code-Ausdruck, der zu true oder false ausgewertet wird.")
+                @ElementPOJOBindingProperty(key = "hint", strValue = "No-Code-Ausdruck, der zu true oder false ausgewertet wird."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public NoCodeInputElementItem conditionNoCode;
     }
