@@ -90,7 +90,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     @Nonnull
     @Override
     public String getDescription() {
-        return "Kopiert Werte von Quellfeldern in Zielfelder.";
+        return "Kopiert Werte von Quellfeldern in Zielfelder. Kann Optional verwendet werden, um Quellfelder zu löschen.";
     }
 
     @Nonnull
