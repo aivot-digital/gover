@@ -251,19 +251,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
         var children = new java.util.ArrayList<BaseFormElement>();
 
-        if (StringUtils.isNotNullOrEmpty(config.taskDescription)) {
-            var descriptionHeadline = new HeadlineContentElement();
-            descriptionHeadline.setId(TASK_VIEW_DESCRIPTION_HEADLINE_ID);
-            descriptionHeadline.setContent("Aufgabenbeschreibung");
-
-            var descriptionContent = new RichTextContentElement();
-            descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
-            descriptionContent.setContent(config.taskDescription);
-
-            children.add(descriptionHeadline);
-            children.add(descriptionContent);
-        }
-
         var uiHeadline = new HeadlineContentElement();
         uiHeadline.setId(TASK_VIEW_UI_HEADLINE_ID);
         uiHeadline.setContent("Daten zu dieser Aufgabe");
@@ -492,16 +479,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class DataChangeActionNodeConfig {
-        public static final String TASK_DESCRIPTION_FIELD_ID = "task_description";
         public static final String DATA_DEFINITION_FIELD_ID = "data_definition";
         public static final String ASSIGNMENT_CONTEXT_FIELD_ID = "assignment_context";
-
-        @InputElementPOJOBinding(id = TASK_DESCRIPTION_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Hinweis für die später zugewiesene Mitarbeiter:in, was in dieser Aufgabe zu tun ist."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = false)
-        })
-        public String taskDescription;
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),
