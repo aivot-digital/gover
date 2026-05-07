@@ -90,7 +90,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
     @Nonnull
     @Override
     public String getDescription() {
-        return "Bildet Werte von Quellfeldern auf Zielfelder ab und unterstützt optionale JavaScript-Transformationen.";
+        return "Kopiert Werte von Quellfeldern in Zielfelder.";
     }
 
     @Nonnull
