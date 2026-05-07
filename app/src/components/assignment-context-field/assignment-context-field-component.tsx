@@ -100,7 +100,7 @@ export function AssignmentContextFieldComponent(props: AssignmentContextFieldCom
     return (
         <Stack spacing={1.5}>
             <Typography variant="h6">
-                {headlineText}
+                {headlineText}{props.required ? ' *' : ''}
             </Typography>
 
             <Typography
