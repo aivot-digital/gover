@@ -61,7 +61,7 @@ const StaffFacingBaseElements: ElementType[] = [
     ElementType.TimeRange,
     ElementType.DateTimeRange,
     ElementType.MapPoint,
-    ElementType.FileUpload,
+    // TODO: Find a way to handle file uploads with ElementType.FileUpload,
     ElementType.ChipInput,
     ElementType.DataModelSelect,
     ElementType.DataObjectSelect,
