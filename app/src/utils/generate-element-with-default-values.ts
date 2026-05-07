@@ -48,6 +48,7 @@ import {
 } from '../models/elements/form/input/no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
 import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
+import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {getDefaultElementWeight} from './element-widths';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
@@ -129,6 +130,7 @@ const elementConstructors: {
     [ElementType.DataObjectSelect]: (id: string) => DataObjectSelectFieldElement;
     [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
     [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
+    [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -462,6 +464,10 @@ const elementConstructors: {
     [ElementType.SummaryLayout]: (id) => ({
         ...makeFormBase(ElementType.SummaryLayout, id),
         children: [],
+    }),
+    [ElementType.ProcessDataKeyInput]: (id) => ({
+        ...makeInputBase(ElementType.ProcessDataKeyInput, id),
+        label: 'Prozessdaten-Schlüssel',
     }),
 };
 

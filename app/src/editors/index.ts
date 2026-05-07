@@ -165,4 +165,5 @@ export const editors: ElementTypesMap<EditorSet | null> = {
         default: NoCodeInputFieldEditor,
     },
     [ElementType.SummaryLayout]: null,
+    [ElementType.ProcessDataKeyInput]: null,
 };

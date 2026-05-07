@@ -913,19 +913,17 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         })
         public static class DataMappingActionNodeV1Rule {
             public static final String SOURCE_FIELD_ID = "source";
-            @InputElementPOJOBinding(id = SOURCE_FIELD_ID, type = ElementType.Text, properties = {
+            @InputElementPOJOBinding(id = SOURCE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangspfad"),
                     @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert. Wenn der Pfad nicht existiert, wird null verwendet. Pfade können mit Punktnotation und Array-Indizes angegeben werden, z.B. person.name oder items[0].price. Ein führendes $. ist optional."),
                     @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                    @ElementPOJOBindingProperty(key = "prefix", strValue = "$.")
             })
             public String source;
 
             public static final String TARGET_FIELD_ID = "target";
-            @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.Text, properties = {
+            @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
                     @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt. Kann leer bleiben, wenn der Wert nur gelöscht werden soll."),
-                    @ElementPOJOBindingProperty(key = "prefix", strValue = "$.")
             })
             public String target;
 

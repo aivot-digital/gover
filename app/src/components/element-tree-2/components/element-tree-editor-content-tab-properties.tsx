@@ -1,10 +1,10 @@
 import {ElementType} from '../../../data/element-type/element-type';
 import {AnyElement} from '../../../models/elements/any-element';
 import {useElementTreeEditorContext} from './element-tree-editor-context';
-import React, {ReactNode, useMemo} from 'react';
+import React, {ReactNode, useEffect, useMemo} from 'react';
 import {ElementEditorSectionHeader} from '../../element-editor-section-header/element-editor-section-header';
 import {Grid, Typography} from '@mui/material';
-import {AutocompleteTextField, TextFieldComponent} from '../../text-field/text-field-component';
+import {TextFieldComponent} from '../../text-field/text-field-component';
 import ContentPasteIcon from '@mui/icons-material/ContentPaste';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -24,9 +24,7 @@ import {createElementEditorNavigationLink} from '../../../hooks/use-element-edit
 import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
 import {normalizeElementWeight} from '../../../utils/element-widths';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
-import {
-    useOptionalProcessNodeEditorContext,
-} from '../../../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
+import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
 
 export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const dispatch = useAppDispatch();
@@ -44,8 +42,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         onChangeCurrentElement,
         parents,
     } = useElementTreeEditorContext<T>();
-
-    const opec = useOptionalProcessNodeEditorContext();
 
     const {
         type,
@@ -74,7 +70,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         return normalizeElementWeight(currentElement.type, currentElement.weight);
     }, [currentElement]);
 
-    React.useEffect(() => {
+    useEffect(() => {
         if (!isAnyFormElement(currentElement)) {
             return;
         }
@@ -92,21 +88,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             weight: normalizedWeight,
         });
     }, [currentElement, normalizedWeight, onChangeCurrentElement]);
-
-    const dataKeySuggestions = useMemo(() => {
-        if (opec == null || opec.processDataKeyHints == null) {
-            return [];
-        }
-
-        return opec
-            .processDataKeyHints
-            .filter((hint) => hint.type === 'ProcessData')
-            .map((hint) => ({
-                id: hint.key,
-                label: hint.key,
-                subLabel: hint.node.name ?? '',
-            }));
-    }, [opec]);
 
     return (
         <>
@@ -360,19 +341,17 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         schreiben und lesen.
                     </ElementEditorSectionHeader>
 
-                    <AutocompleteTextField
-                        value={currentElement.destinationKey ?? undefined}
+                    <ProcessDataKeyInputComponent
                         label="Datenschlüssel"
+                        value={currentElement.destinationKey}
                         onChange={(val) => {
                             onChangeCurrentElement({
                                 ...currentElement,
                                 destinationKey: val,
                             } as T);
                         }}
-                        startIcon="$."
                         hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
                         disabled={!editable}
-                        suggestions={dataKeySuggestions}
                     />
 
                     {

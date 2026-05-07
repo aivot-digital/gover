@@ -48,6 +48,7 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.DataObjectSelect]: 'string',
     [ElementType.NoCodeInput]: '{noCode: Record<string, unknown> | null;}',
     [ElementType.SummaryLayout]: 'undefined',
+    [ElementType.ProcessDataKeyInput]: 'string',
 };
 
 export function formToTypeDefinition(form: FormVersionEntity): string {

@@ -78,4 +78,5 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.DataObjectSelect]: DataObjectSelectFieldSummary,
     [ElementType.NoCodeInput]: NoCodeInputSummary,
     [ElementType.SummaryLayout]: SummaryLayoutSummary,
+    [ElementType.ProcessDataKeyInput]: TextFieldSummary,
 };

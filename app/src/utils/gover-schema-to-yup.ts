@@ -94,6 +94,7 @@ const YupSchemaMap: {
     [ElementType.AssignmentContext]: assignmentContextFieldToYup,
     [ElementType.DataModelSelect]: dynamicSelectFieldToYup,
     [ElementType.DataObjectSelect]: dynamicSelectFieldToYup,
+    [ElementType.ProcessDataKeyInput]: processDataKeyInputFieldToYup,
     [ElementType.NoCodeInput]: noCodeInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
@@ -197,6 +198,26 @@ function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectS
     }
 
     return selectFieldSchema;
+}
+
+function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
+    let processDataKeySchema: StringSchema<string | undefined | null> = yup
+        .string()
+        .trim();
+
+    if (elem.required) {
+        processDataKeySchema = processDataKeySchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        processDataKeySchema = processDataKeySchema
+            .nullable();
+    }
+
+    return processDataKeySchema
+        .matches(
+            /^[a-zA-Z0-9.*_]+$/,
+            'Der Prozessdaten-Schlüssel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+        );
 }
 
 function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: ComputedElementStates): Schema {

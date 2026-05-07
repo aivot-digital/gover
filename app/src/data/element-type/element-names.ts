@@ -46,6 +46,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.DataObjectSelect]: 'Datenobjekt-Auswahl',
     [ElementType.NoCodeInput]: 'No-Code-Eingabe',
     [ElementType.SummaryLayout]: 'Zusammenfassung',
+    [ElementType.ProcessDataKeyInput]: 'Prozessdaten-Schlüssel',
 };
 
 export function getElementName(element: AnyElement): string {

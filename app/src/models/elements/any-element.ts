@@ -38,6 +38,7 @@ import {DataObjectSelectFieldElement} from './form/input/data-object-select-fiel
 import {NoCodeInputFieldElement} from './form/input/no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from './form/input/ui-definition-input-field-element';
 import {SummaryLayoutElement} from './form/layout/summary-layout-element';
+import {ProcessDataKeyInputFieldElement} from './form/input/process-data-key-input-field-element';
 
 export type AnyElement =
     FormLayoutElement |
@@ -85,6 +86,7 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                 T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
                                                                                                                                     T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
                                                                                                                                         T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
+                                                                                                                                            T extends ElementType.ProcessDataKeyInput ? ProcessDataKeyInputFieldElement :
                                                                                                                                             T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
                                                                                                                                                 T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
                                                                                                                                                     T extends ElementType.SummaryLayout ? SummaryLayoutElement : never;

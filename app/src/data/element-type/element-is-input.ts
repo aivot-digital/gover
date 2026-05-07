@@ -45,4 +45,5 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.DataObjectSelect]: true,
     [ElementType.NoCodeInput]: true,
     [ElementType.SummaryLayout]: false,
+    [ElementType.ProcessDataKeyInput]: true,
 };

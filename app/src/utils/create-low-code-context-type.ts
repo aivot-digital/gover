@@ -103,6 +103,7 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.Time:
         case ElementType.DataModelSelect:
         case ElementType.DataObjectSelect:
+        case ElementType.ProcessDataKeyInput:
         case ElementType.RichTextInput:
             return 'string';
         case ElementType.DateRange:
