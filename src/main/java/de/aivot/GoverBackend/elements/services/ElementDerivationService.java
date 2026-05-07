@@ -260,7 +260,8 @@ public class ElementDerivationService {
 
                             var om = ObjectMapperFactory.getInstance();
                             var childAuthoredElementValues = om.convertValue(mutableEffectiveChildDataSet, AuthoredElementValues.class);
-                            var childEffectiveElementValues = om.convertValue(mutableEffectiveChildDataSet, EffectiveElementValues.class);
+                            // Row-local effective values must be rebuilt from visible descendants only.
+                            var childEffectiveElementValues = new EffectiveElementValues();
                             var childReplicationIndices = appendReplicationIndex(
                                     replicationIndices,
                                     itemIndex

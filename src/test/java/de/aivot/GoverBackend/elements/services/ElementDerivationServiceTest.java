@@ -493,6 +493,40 @@ class ElementDerivationServiceTest {
         assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("row_child").getError());
     }
 
+    @Test
+    void shouldOmitHiddenReplicatingRowChildFromEffectiveValues() {
+        var visibleChild = new TextInputElement();
+        visibleChild.setId("visible_child");
+
+        var hiddenChild = new TextInputElement();
+        hiddenChild.setId("hidden_child");
+        hiddenChild.setVisibility(new ElementVisibilityFunctions().setNoCode(NoCodeStaticValue.of(false)));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(visibleChild, hiddenChild)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("visible_child", "visible value");
+        rowValues.put("hidden_child", "hidden value");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertEquals("visible value", firstRow.get("visible_child"));
+        assertFalse(firstRow.containsKey("hidden_child"));
+        assertFalse(result.getElementStates().get("rows").getSubStates().get(0).get("hidden_child").getVisible());
+    }
+
     private static DerivedRuntimeElementData derive(
             FormLayoutElement root,
             AuthoredElementValues authoredValues,
