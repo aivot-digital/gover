@@ -15,6 +15,7 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
@@ -40,7 +41,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.*;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/process-nodes/")
@@ -479,7 +482,7 @@ public class ProcessNodeController {
             summary = "Retrieve Process Definition Node Testing Layout",
             description = "Retrieve the testing layout of a process definition node by its ID."
     )
-    public GroupLayoutElement testing(
+    public <NodeConfig> GroupLayoutElement testing(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -491,7 +494,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var provider = processNodeProviderService
+        ProcessNodeDefinition<NodeConfig> provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
 
@@ -510,13 +513,13 @@ public class ProcessNodeController {
         var configuration = processDefinitionNodeService
                 .deriveConfiguration(node, provider, user, false);
 
-        var context = new ProcessNodeDefinitionTestingLayoutContext(
+        var context = new ProcessNodeDefinitionTestingLayoutContext<NodeConfig>(
                 user,
                 processDefinition,
                 processVersion,
                 node,
                 testClaim,
-                configuration
+                configuration.configuration()
         );
 
         return provider
@@ -536,7 +539,7 @@ public class ProcessNodeController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var  provider = processNodeProviderService
+        var provider = processNodeProviderService
                 .getProcessNodeDefinition(node)
                 .orElseThrow(ResponseException::badRequest);
 
