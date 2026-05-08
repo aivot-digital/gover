@@ -1,4 +1,4 @@
-import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
+import {Box, Button, Divider, Grid, Link, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import {showDialog} from '../../slices/app-slice';
@@ -58,6 +58,8 @@ export function Submitted(props: SubmittedProps) {
     const {
         formElement,
     } = props;
+
+    const theme = useTheme();
 
     const submitStep = formElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
     const confettiDisabled = submitStep?.disableConfetti === true;
@@ -150,9 +152,15 @@ export function Submitted(props: SubmittedProps) {
     return (
         <Box
             sx={{
-                px: 4,
+                px: 24,
                 pt: 8,
                 pb: 16,
+                [theme.breakpoints.down('md')]: {
+                    px: 8,
+                },
+                [theme.breakpoints.down('sm')]: {
+                    px: 4,
+                },
             }}
         >
             {
