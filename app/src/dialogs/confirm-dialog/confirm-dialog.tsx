@@ -15,6 +15,7 @@ interface ConfirmDialogProps {
     inputPlaceholder?: string;
     isDestructive?: boolean;
     confirmButtonText?: string;
+    confirmButtonColor?: 'primary' | 'secondary' | 'success' | 'warning' | 'error';
     hideCancelButton?: boolean;
     width?: 'sm' | 'md' | 'lg' | 'xl';
 }
@@ -111,7 +112,7 @@ export function ConfirmDialog(props: PropsWithChildren<ConfirmDialogProps>): Rea
                 <Button
                     onClick={props.onConfirm}
                     variant="contained"
-                    color={props.isDestructive ? 'error' : 'primary'}
+                    color={props.isDestructive ? 'error' : (props.confirmButtonColor ?? 'primary')}
                     disabled={isConfirmDisabled}
                     startIcon={props.isDestructive ? <Delete/> : undefined}
                 >
