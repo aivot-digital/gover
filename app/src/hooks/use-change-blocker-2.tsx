@@ -8,6 +8,7 @@ interface ChangeBlockerProps<T> {
     edited: T;
     customTitle?: string;
     customMessage?: string;
+    customConfirmButtonText?: string;
     useDeepEquals?: boolean;
     isActive?: boolean;
     shouldAllowNavigation?: (navigation: {
@@ -26,6 +27,7 @@ interface ChangeBlockerProps<T> {
 
 const DEFAULT_TITLE = 'Ungespeicherte Änderungen';
 const DEFAULT_MESSAGE = 'Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen? Dabei gehen alle ungespeicherten Änderungen verloren.';
+const DEFAULT_CONFIRM_BUTTON_TEXT = 'Änderungen verwerfen';
 
 export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
     const {
@@ -33,6 +35,7 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         edited,
         customTitle = DEFAULT_TITLE,
         customMessage = DEFAULT_MESSAGE,
+        customConfirmButtonText = DEFAULT_CONFIRM_BUTTON_TEXT,
         useDeepEquals = true,
         isActive = true,
         shouldAllowNavigation,
@@ -110,6 +113,8 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
                 title={customTitle}
                 onConfirm={handleConfirm}
                 onCancel={handleCancel}
+                confirmButtonText={customConfirmButtonText}
+                confirmButtonColor="error"
             >
                 {customMessage}
             </ConfirmDialog>
