@@ -155,6 +155,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
             <ElementErrorBoundary element={element} >
                 <ViewComponent
                     {...props}
+                    element={element}
                     value={value}
                     setValue={handleSetValue}
                     onBlur={handleOnBlur}
