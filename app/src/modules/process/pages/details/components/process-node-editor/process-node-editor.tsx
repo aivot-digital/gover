@@ -245,6 +245,17 @@ export function ProcessNodeEditor(): ReactNode {
         return 'configuration';
     }, [location]);
 
+    const editorTabContentContainerRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (editorTabContentContainerRef.current == null) {
+            return;
+        }
+        editorTabContentContainerRef.current.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    }, [location]);
+
     const handleSaveSelected = (): void => {
         if (!hasChanged || editedNode == null) {
             return;
@@ -501,6 +512,7 @@ export function ProcessNodeEditor(): ReactNode {
                     </Tabs>
 
                     <Box
+                        ref={editorTabContentContainerRef}
                         sx={{
                             px: 2,
                             py: 1,
