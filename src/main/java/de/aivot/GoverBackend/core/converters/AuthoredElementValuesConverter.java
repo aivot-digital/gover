@@ -6,8 +6,6 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
-import java.util.Map;
-
 @Converter
 public class AuthoredElementValuesConverter implements AttributeConverter<AuthoredElementValues, String> {
     @Override
@@ -24,7 +22,7 @@ public class AuthoredElementValuesConverter implements AttributeConverter<Author
 
     @Override
     public AuthoredElementValues convertToEntityAttribute(String s) {
-        var mapper =  ObjectMapperFactory
+        var mapper = ObjectMapperFactory
                 .getNullPreservingInstance();
 
         try {
