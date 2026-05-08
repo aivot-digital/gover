@@ -13,6 +13,7 @@ import java.util.Map;
 
 public class ObjectMapperFactory {
     private static ObjectMapper mapper;
+    private static ObjectMapper nullPreservingMapper;
 
     public static ObjectMapper getInstance() {
         if (mapper == null) {
@@ -23,6 +24,15 @@ public class ObjectMapperFactory {
                     .setSerializationInclusion(JsonInclude.Include.NON_NULL);
         }
         return mapper;
+    }
+
+    public static ObjectMapper getNullPreservingInstance() {
+        if (nullPreservingMapper == null) {
+            nullPreservingMapper = getInstance()
+                    .copy()
+                    .setSerializationInclusion(JsonInclude.Include.ALWAYS);
+        }
+        return nullPreservingMapper;
     }
 
     public static final class Utils {
