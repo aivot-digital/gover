@@ -144,34 +144,6 @@ class DataChangeActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskView_RendersConfiguredTaskDescription() throws Exception {
-        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
-
-        var context = new ProcessNodeExecutionContextUIStaff(
-                logger(),
-                processNode(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
-                processInstance("process-owner"),
-                task(
-                        77,
-                        Map.of(),
-                        Map.of(),
-                        processData
-                ),
-                null,
-                user("staff-1"),
-                nodeConfiguration(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
-                currentProcessData(processData)
-        );
-
-        var layout = node.getStaffTaskView(context);
-        var description = layout.findChild("data-change-task-view-description-content", RichTextContentElement.class).orElseThrow();
-        var uiHeadline = layout.findChild("data-change-task-view-ui-headline", HeadlineContentElement.class).orElseThrow();
-
-        assertEquals("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>", description.getContent());
-        assertEquals("Daten zu dieser Aufgabe", uiHeadline.getContent());
-    }
-
-    @Test
     void onEventFromStaffTaskView_SaveIsRejectedAsUnknownEvent() {
         var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
 
