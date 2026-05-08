@@ -1,10 +1,10 @@
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {ProcessEntity} from '../../entities/process-entity';
-import React, {ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {PermissionEntry} from '../../../permissions/models/permission-provider';
 import {PermissionApiService} from '../../../permissions/permission-api-service';
-import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {
     Autocomplete,
     Box,
@@ -26,18 +26,26 @@ import {Actions} from '../../../../components/actions/actions';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import {ProcessInstanceAccessControlPresetEntity} from '../../entities/process-instance-access-control-preset-entity';
 import {ProcessInstanceAccessControlPresetApiService} from '../../services/process-instance-access-control-preset-api-service';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
+import {deepEquals} from '../../../../utils/equality-utils';
 
 interface ProcessSettingsDialogTabProps {
+    open: boolean;
     process: ProcessEntity;
     version: ProcessVersionEntity;
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
+    onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
 }
 
-interface ProcessInstanceAccessControlPresetEntityWithDepartmentOrTeam extends ProcessInstanceAccessControlPresetEntity {
+interface ProcessInstanceAccessControlPresetDraft extends ProcessInstanceAccessControlPresetEntity {
+    clientId: string;
+}
+
+interface ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam extends ProcessInstanceAccessControlPresetDraft {
     department?: VDepartmentShadowedEntity;
     team?: TeamEntity;
 }
@@ -65,15 +73,40 @@ const relevantPermissions: string[] = [
     'process_instance.migrate',
 ];
 
+function createComparableAccessControlPreset(accessPreset: ProcessInstanceAccessControlPresetEntity | ProcessInstanceAccessControlPresetDraft) {
+    return {
+        id: accessPreset.id,
+        sourceDepartmentId: accessPreset.sourceDepartmentId,
+        sourceTeamId: accessPreset.sourceTeamId,
+        targetProcessId: accessPreset.targetProcessId,
+        targetProcessVersion: accessPreset.targetProcessVersion,
+        permissions: [...accessPreset.permissions].sort(),
+    };
+}
+
+function getAccessPresetDomainKey(accessPreset: Pick<ProcessInstanceAccessControlPresetEntity, 'sourceDepartmentId' | 'sourceTeamId'>): string {
+    if (accessPreset.sourceDepartmentId != null) {
+        return `department-${accessPreset.sourceDepartmentId}`;
+    }
+
+    if (accessPreset.sourceTeamId != null) {
+        return `team-${accessPreset.sourceTeamId}`;
+    }
+
+    return 'unknown';
+}
+
 export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: ProcessSettingsDialogTabProps) {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
 
     const {
+        open,
         process,
         version,
         departments,
         teams,
+        onUnsavedChangesChange,
     } = props;
 
     const {
@@ -86,8 +119,36 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
     } = version;
 
     const [permissions, setPermissions] = useState<PermissionEntry[]>([]);
-    const [accessPresets, setAccessPresets] = useState<ProcessInstanceAccessControlPresetEntity[]>([]);
+    const [persistedAccessPresets, setPersistedAccessPresets] = useState<ProcessInstanceAccessControlPresetEntity[]>([]);
+    const [draftAccessPresets, setDraftAccessPresets] = useState<ProcessInstanceAccessControlPresetDraft[]>([]);
     const [targetDomainOption, setTargetDomainOption] = useState<AddDomainOption | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const nextClientIdRef = useRef(0);
+
+    const createDraftAccessPreset = useCallback((accessPreset: ProcessInstanceAccessControlPresetEntity): ProcessInstanceAccessControlPresetDraft => {
+        return {
+            ...accessPreset,
+            clientId: `server-${accessPreset.id}`,
+        };
+    }, []);
+
+    const createNewClientId = useCallback(() => {
+        nextClientIdRef.current += 1;
+        return `new-${nextClientIdRef.current}`;
+    }, []);
+
+    const toAccessPresetEntity = useCallback((accessPreset: ProcessInstanceAccessControlPresetDraft): ProcessInstanceAccessControlPresetEntity => {
+        return {
+            id: accessPreset.id,
+            sourceDepartmentId: accessPreset.sourceDepartmentId,
+            sourceTeamId: accessPreset.sourceTeamId,
+            targetProcessId: accessPreset.targetProcessId,
+            targetProcessVersion: accessPreset.targetProcessVersion,
+            permissions: accessPreset.permissions,
+            created: accessPreset.created,
+            updated: accessPreset.updated,
+        };
+    }, []);
 
     useEffect(() => {
         new PermissionApiService()
@@ -104,24 +165,56 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der Berechtigungen für neue Vorgänge'));
             });
-    }, []);
+    }, [dispatch]);
 
-    useEffect(() => {
+    const loadAccessPresets = useCallback(() => {
         new ProcessInstanceAccessControlPresetApiService()
             .listAll({
                 targetProcessId: processesId,
                 targetProcessVersion: processVersion,
             })
             .then(({content}) => {
-                setAccessPresets(content);
+                nextClientIdRef.current = 0;
+                setPersistedAccessPresets(content);
+                setDraftAccessPresets(content.map(createDraftAccessPreset));
+                setTargetDomainOption(null);
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der Berechtigungen für neue Vorgänge'));
             });
-    }, [processesId, processVersion]);
+    }, [createDraftAccessPreset, dispatch, processVersion, processesId]);
 
-    const resolvedAccessControl: ProcessInstanceAccessControlPresetEntityWithDepartmentOrTeam[] = useMemo(() => {
-        return accessPresets
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        loadAccessPresets();
+    }, [loadAccessPresets, open]);
+
+    const hasUnsavedChanges = useMemo(() => {
+        const comparablePersistedAccessPresets = persistedAccessPresets
+            .map((accessPreset) => createComparableAccessControlPreset(accessPreset))
+            .sort((left, right) => getAccessPresetDomainKey(left).localeCompare(getAccessPresetDomainKey(right)));
+        const comparableDraftAccessPresets = draftAccessPresets
+            .map((accessPreset) => createComparableAccessControlPreset(accessPreset))
+            .sort((left, right) => getAccessPresetDomainKey(left).localeCompare(getAccessPresetDomainKey(right)));
+
+        return !deepEquals(comparablePersistedAccessPresets, comparableDraftAccessPresets);
+    }, [draftAccessPresets, persistedAccessPresets]);
+
+    useEffect(() => {
+        onUnsavedChangesChange?.(hasUnsavedChanges);
+    }, [hasUnsavedChanges, onUnsavedChangesChange]);
+
+    useEffect(() => {
+        return () => {
+            onUnsavedChangesChange?.(false);
+        };
+    }, [onUnsavedChangesChange]);
+
+    const resolvedAccessControl: ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam[] = useMemo(() => {
+        return draftAccessPresets
             .map((accessPreset) => {
                 return {
                     ...accessPreset,
@@ -129,13 +222,15 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                     team: accessPreset.sourceTeamId != null ? teams.find((d) => d.id === accessPreset.sourceTeamId) : undefined,
                 };
             });
-    }, [accessPresets, departments, teams]);
+    }, [departments, draftAccessPresets, teams]);
 
     const owningDepartment = useMemo(() => {
         return departments.find((d) => d.id === process.departmentId)!;
     }, [departments, process.departmentId]);
 
     const addDomainOptions: AddDomainOption[] = useMemo(() => {
+        const assignedDomainKeys = new Set(draftAccessPresets.map((accessPreset) => getAccessPresetDomainKey(accessPreset)));
+
         return [
             ...departments.map((department) => ({
                 label: department.name,
@@ -143,41 +238,44 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                 subLabel: getDepartmentPath(department),
                 icon: getDepartmentTypeIcons(department.depth),
                 type: 'department',
+                disabled: department.id === process.departmentId || assignedDomainKeys.has(`department-${department.id}`),
             } as AddDomainOption)),
             ...teams.map((team) => ({
                 label: team.name,
                 value: team.id,
                 icon: ModuleIcons.teams,
                 type: 'team',
+                disabled: assignedDomainKeys.has(`team-${team.id}`),
             } as AddDomainOption)),
         ];
-    }, [departments, teams, accessPresets]);
+    }, [departments, draftAccessPresets, process.departmentId, teams]);
 
     const handleAddAccessPreset = () => {
-        if (targetDomainOption == null) {
+        if (targetDomainOption == null || isSaving) {
             return;
         }
 
-        new ProcessInstanceAccessControlPresetApiService()
-            .create({
+        setDraftAccessPresets((prev) => [
+            ...prev,
+            {
                 ...ProcessInstanceAccessControlPresetApiService.initialize(),
+                clientId: createNewClientId(),
                 sourceDepartmentId: targetDomainOption.type === 'department' ? targetDomainOption.value : null,
                 sourceTeamId: targetDomainOption.type === 'team' ? targetDomainOption.value : null,
                 targetProcessId: processesId,
                 targetProcessVersion: processVersion,
                 permissions: [],
-            })
-            .then((created) => {
-                setAccessPresets((prev) => [...prev, created]);
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Hinzufügen der Berechtigungen für neue Vorgänge'));
-            });
+            },
+        ]);
 
         setTargetDomainOption(null);
     };
 
-    const togglePermissionForAccessPreset = (accessPreset: ProcessInstanceAccessControlPresetEntity, permission: string) => {
+    const togglePermissionForAccessPreset = (accessPreset: ProcessInstanceAccessControlPresetDraft, permission: string) => {
+        if (isSaving) {
+            return;
+        }
+
         const updatedPermissions = [
             ...accessPreset.permissions,
         ];
@@ -193,19 +291,10 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
             permissions: updatedPermissions,
         };
 
-        setAccessPresets((prev) => prev.map((a) => a.id === updatedAccessPreset.id ? updatedAccessPreset : a));
-
-        new ProcessInstanceAccessControlPresetApiService()
-            .update(accessPreset.id, updatedAccessPreset)
-            .then((updated) => {
-                setAccessPresets((prev) => prev.map((a) => a.id === updated.id ? updated : a));
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Aktualisieren der Berechtigungen für neue Vorgänge'));
-            });
+        setDraftAccessPresets((prev) => prev.map((a) => a.clientId === updatedAccessPreset.clientId ? updatedAccessPreset : a));
     };
 
-    const getAccessLabel = (accessPreset: ProcessInstanceAccessControlPresetEntityWithDepartmentOrTeam) => {
+    const getAccessLabel = (accessPreset: ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam) => {
         if (accessPreset.team != null) {
             return accessPreset.team.name;
         }
@@ -217,8 +306,8 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         return 'diese Domäne';
     };
 
-    const handleDeleteAccessPreset = async (accessPreset: ProcessInstanceAccessControlPresetEntityWithDepartmentOrTeam) => {
-        if (accessPreset.sourceDepartmentId === process.departmentId) {
+    const handleDeleteAccessPreset = async (accessPreset: ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam) => {
+        if (accessPreset.sourceDepartmentId === process.departmentId || isSaving) {
             return;
         }
 
@@ -236,14 +325,81 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
             return;
         }
 
-        new ProcessInstanceAccessControlPresetApiService()
-            .destroy(accessPreset.id)
-            .then(() => {
-                setAccessPresets((prev) => prev.filter((a) => a.id !== accessPreset.id));
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Entfernen der Berechtigungen für neue Vorgänge'));
+        setDraftAccessPresets((prev) => prev.filter((a) => a.clientId !== accessPreset.clientId));
+    };
+
+    const handleSave = async () => {
+        if (!hasUnsavedChanges || isSaving) {
+            return;
+        }
+
+        const apiService = new ProcessInstanceAccessControlPresetApiService();
+        let nextPersistedAccessPresets = [...persistedAccessPresets];
+        let nextDraftAccessPresets = [...draftAccessPresets];
+
+        setIsSaving(true);
+
+        try {
+            const draftAccessPresetsById = new Map(
+                nextDraftAccessPresets
+                    .filter((accessPreset) => accessPreset.id > 0)
+                    .map((accessPreset) => [accessPreset.id, accessPreset]),
+            );
+            const deletedAccessPresets = nextPersistedAccessPresets.filter((accessPreset) => !draftAccessPresetsById.has(accessPreset.id));
+
+            for (const accessPreset of deletedAccessPresets) {
+                await apiService.destroy(accessPreset.id);
+                nextPersistedAccessPresets = nextPersistedAccessPresets.filter((currentAccessPreset) => currentAccessPreset.id !== accessPreset.id);
+            }
+
+            const persistedAccessPresetsById = new Map(nextPersistedAccessPresets.map((accessPreset) => [accessPreset.id, accessPreset]));
+            const updatedAccessPresets = nextDraftAccessPresets.filter((accessPreset) => {
+                if (accessPreset.id <= 0) {
+                    return false;
+                }
+
+                const persistedAccessPresetEntry = persistedAccessPresetsById.get(accessPreset.id);
+                return persistedAccessPresetEntry != null && !deepEquals(
+                    createComparableAccessControlPreset(persistedAccessPresetEntry),
+                    createComparableAccessControlPreset(accessPreset),
+                );
             });
+
+            for (const accessPreset of updatedAccessPresets) {
+                const updated = await apiService.update(accessPreset.id, toAccessPresetEntity(accessPreset));
+
+                nextPersistedAccessPresets = nextPersistedAccessPresets.map((currentAccessPreset) => currentAccessPreset.id === updated.id ? updated : currentAccessPreset);
+                nextDraftAccessPresets = nextDraftAccessPresets.map((currentAccessPreset) => currentAccessPreset.clientId === accessPreset.clientId ? {
+                    ...updated,
+                    clientId: currentAccessPreset.clientId,
+                } : currentAccessPreset);
+            }
+
+            const createdAccessPresets = nextDraftAccessPresets.filter((accessPreset) => accessPreset.id <= 0);
+
+            for (const accessPreset of createdAccessPresets) {
+                const created = await apiService.create(toAccessPresetEntity(accessPreset));
+
+                nextPersistedAccessPresets = [
+                    ...nextPersistedAccessPresets,
+                    created,
+                ];
+                nextDraftAccessPresets = nextDraftAccessPresets.map((currentAccessPreset) => currentAccessPreset.clientId === accessPreset.clientId ? {
+                    ...created,
+                    clientId: currentAccessPreset.clientId,
+                } : currentAccessPreset);
+            }
+
+            setPersistedAccessPresets(nextPersistedAccessPresets);
+            setDraftAccessPresets(nextDraftAccessPresets);
+            dispatch(showSuccessSnackbar('Die Berechtigungen für neue Vorgänge wurden gespeichert.'));
+        } catch (err) {
+            setPersistedAccessPresets(nextPersistedAccessPresets);
+            setDraftAccessPresets(nextDraftAccessPresets);
+            dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Berechtigungen für neue Vorgänge'));
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -303,7 +459,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                         {
                             resolvedAccessControl
                                 .map((accessPreset) => (
-                                    <TableRow key={accessPreset.id}>
+                                    <TableRow key={accessPreset.clientId}>
                                         <TableCell>
                                             {
                                                 accessPreset.team != null &&
@@ -323,6 +479,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                                                         <CheckboxFieldComponent
                                                             label=""
                                                             value={accessPreset.permissions.includes(permission.permission)}
+                                                            busy={isSaving}
                                                             onChange={() => {
                                                                 togglePermissionForAccessPreset(accessPreset, permission.permission);
                                                             }}
@@ -333,6 +490,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                                         }
                                         <TableCell align="right">
                                             <Actions
+                                                isBusy={isSaving}
                                                 actions={[
                                                     {
                                                         icon: <Delete/>,
@@ -370,8 +528,9 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                         setTargetDomainOption(value);
                     }}
                     fullWidth={true}
+                    disabled={isSaving}
                     getOptionLabel={(option) => option.label}
-                    isOptionEqualToValue={(option, value) => option.value === value.value}
+                    isOptionEqualToValue={(option, value) => option.type === value.type && option.value === value.value}
                     getOptionDisabled={(option) => option.disabled ?? false}
                     noOptionsText="Keine gültigen Ziel-Domäne verfügbar"
                     renderOption={(props, option) => (
@@ -438,13 +597,25 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                     )}
                 />
 
-                <Actions actions={[
-                    {
-                        label: 'Hinzufügen',
-                        onClick: handleAddAccessPreset,
-                        icon: <Add/>,
-                    },
-                ]}/>
+                <Actions
+                    isBusy={isSaving}
+                    actions={[
+                        {
+                            label: 'Hinzufügen',
+                            onClick: handleAddAccessPreset,
+                            icon: <Add/>,
+                            disabled: targetDomainOption == null,
+                        },
+                        {
+                            label: 'Speichern',
+                            onClick: () => {
+                                void handleSave();
+                            },
+                            icon: <Save/>,
+                            disabled: !hasUnsavedChanges,
+                        },
+                    ]}
+                />
             </Stack>
         </>
     );

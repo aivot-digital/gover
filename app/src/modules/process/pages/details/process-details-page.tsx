@@ -73,7 +73,6 @@ import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
 import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test-claim-process-instances-dialog';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
-import {showExperimentalFeatures} from '../../../../hooks/use-show-experimental-features';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
@@ -1854,11 +1853,8 @@ export function ProcessDetailsPage(): ReactNode {
                 ariaLabel: 'Einstellungen',
                 icon: <Settings/>,
                 onClick: () => {
-                    if (showExperimentalFeatures()) {
-                        setShowSettingsDialog(true);
-                    } else {
-                        notImplemented();
-                    }
+                    setShowSettingsDialog(true);
+                    setShowSettingsDialog(true);
                 },
             },
             {
