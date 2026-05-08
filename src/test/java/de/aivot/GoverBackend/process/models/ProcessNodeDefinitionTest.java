@@ -23,6 +23,7 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProcessNodeDefinitionTest {
@@ -104,6 +105,83 @@ class ProcessNodeDefinitionTest {
         assertEquals("initial", data.get("defaultField"));
         assertEquals("saved", data.get("sharedField"));
         assertEquals("saved", data.get("savedField"));
+    }
+
+    @Test
+    void getStaffTaskViewData_DefaultTreatsSavedNullAsExplicitDeletion() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+                var initialData = new AuthoredElementValues();
+                initialData.put("defaultField", "initial");
+                return initialData;
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var runtimeData = new HashMap<String, Object>();
+        var savedData = new HashMap<String, Object>();
+        savedData.put("defaultField", null);
+        runtimeData.put(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY, savedData);
+
+        var context = staffContext(
+                runtimeData,
+                Map.of(),
+                Map.of()
+        );
+
+        var data = definition.getStaffTaskViewData(context);
+
+        assertTrue(data.containsKey("defaultField"));
+        assertNull(data.get("defaultField"));
     }
 
     @Test
@@ -257,6 +335,83 @@ class ProcessNodeDefinitionTest {
         assertEquals("initial", data.get("defaultField"));
         assertEquals("saved", data.get("sharedField"));
         assertEquals("saved", data.get("savedField"));
+    }
+
+    @Test
+    void getCustomerTaskViewData_DefaultTreatsSavedNullAsExplicitDeletion() throws Exception {
+        ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
+            @Override
+            public String getParentPluginKey() {
+                return "test.plugin";
+            }
+
+            @Override
+            public String getComponentKey() {
+                return "test-node";
+            }
+
+            @Override
+            public String getComponentVersion() {
+                return "1.0.0";
+            }
+
+            @Override
+            public String getName() {
+                return "Test Node";
+            }
+
+            @Override
+            public String getDescription() {
+                return "Test node description";
+            }
+
+            @Nonnull
+            @Override
+            public ProcessNodeType getType() {
+                return ProcessNodeType.Action;
+            }
+
+            @Nonnull
+            @Override
+            public List<ProcessNodePort> getPorts() {
+                return List.of();
+            }
+
+            @Override
+            public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+                return new ProcessNodeExecutionResultTaskUpdated();
+            }
+
+            @Nonnull
+            @Override
+            public AuthoredElementValues createDefaultCustomerTaskViewData(@Nonnull ProcessNodeExecutionContextUICustomer context) {
+                var initialData = new AuthoredElementValues();
+                initialData.put("defaultField", "initial");
+                return initialData;
+            }
+
+            @Nonnull
+            @Override
+            public Class<AuthoredElementValues> getNodeConfigurationClass() {
+                return AuthoredElementValues.class;
+            }
+        };
+
+        var runtimeData = new HashMap<String, Object>();
+        var savedData = new HashMap<String, Object>();
+        savedData.put("defaultField", null);
+        runtimeData.put(ProcessNodeDefinition.CUSTOMER_TASK_VIEW_DATA_RUNTIME_KEY, savedData);
+
+        var context = customerContext(
+                runtimeData,
+                Map.of(),
+                Map.of()
+        );
+
+        var data = definition.getCustomerTaskViewData(context);
+
+        assertTrue(data.containsKey("defaultField"));
+        assertNull(data.get("defaultField"));
     }
 
     @Test

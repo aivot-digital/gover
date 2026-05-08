@@ -204,7 +204,8 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
 
     /**
      * Build the initial staff task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on top
-     * by {@link #getStaffTaskViewData(ProcessNodeExecutionContextUIStaff)}.
+     * by {@link #getStaffTaskViewData(ProcessNodeExecutionContextUIStaff)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override regenerated
+     * defaults.
      *
      * @param context The context to build the data for.
      * @return The initial task view data.
@@ -232,7 +233,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         }
 
         return ObjectMapperFactory
-                .getInstance()
+                .getNullPreservingInstance()
                 .convertValue(rawSavedData, AuthoredElementValues.class);
     }
 
@@ -324,7 +325,8 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
 
     /**
      * Build the initial customer task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on
-     * top by {@link #getCustomerTaskViewData(ProcessNodeExecutionContextUICustomer)}.
+     * top by {@link #getCustomerTaskViewData(ProcessNodeExecutionContextUICustomer)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override
+     * regenerated defaults.
      *
      * @param context The context to build the data for.
      * @return The initial task view data.
@@ -352,7 +354,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
         }
 
         return ObjectMapperFactory
-                .getInstance()
+                .getNullPreservingInstance()
                 .convertValue(rawSavedData, AuthoredElementValues.class);
     }
 
