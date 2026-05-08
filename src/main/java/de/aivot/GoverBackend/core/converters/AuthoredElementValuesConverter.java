@@ -13,7 +13,7 @@ public class AuthoredElementValuesConverter implements AttributeConverter<Author
     @Override
     public String convertToDatabaseColumn(AuthoredElementValues baseElement) {
         var mapper = ObjectMapperFactory
-                .getInstance();
+                .getNullPreservingInstance();
 
         try {
             return mapper.writeValueAsString(baseElement);
@@ -25,7 +25,7 @@ public class AuthoredElementValuesConverter implements AttributeConverter<Author
     @Override
     public AuthoredElementValues convertToEntityAttribute(String s) {
         var mapper =  ObjectMapperFactory
-                .getInstance();
+                .getNullPreservingInstance();
 
         try {
             return mapper.readValue(s, AuthoredElementValues.class);

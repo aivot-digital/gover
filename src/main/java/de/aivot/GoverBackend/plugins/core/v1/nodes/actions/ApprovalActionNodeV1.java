@@ -332,7 +332,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         }
 
         return ObjectMapperFactory
-                .getInstance()
+                .getNullPreservingInstance()
                 .convertValue(runtimeData, AuthoredElementValues.class);
     }
 
