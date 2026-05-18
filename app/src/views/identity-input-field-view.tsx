@@ -46,16 +46,11 @@ export function IdentityInputFieldView(props: BaseViewProps<IdentityInputFieldEl
 
     const currentStep = useAppSelector(selectCurrentStep);
     const [searchParams] = useSearchParams();
-    const {processAccessKey, formSlug} = useParams<{
-        processAccessKey: string;
-        formSlug: string;
-    }>();
 
     const [providers, setProviders] = useState<FormTriggerIdentityDetailsDTO[]>([]);
     const [providersError, setProvidersError] = useState<string>();
     const [isLoadingProviders, setIsLoadingProviders] = useState(false);
 
-    const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const fieldError = useMemo(() => errors?.join(' '), [errors]);
     const currentMailValue = useMemo(() => extractIdentityInputMailValue(value), [value]);
 
@@ -92,16 +87,12 @@ export function IdentityInputFieldView(props: BaseViewProps<IdentityInputFieldEl
     }, [element, isDeriving, isLoadingProviders]);
 
     useEffect(() => {
-        if (processAccessKey == null || formSlug == null) {
-            return;
-        }
-
         let cancelled = false;
         setIsLoadingProviders(true);
         setProvidersError(undefined);
 
         new FormTriggerApiService()
-            .getIdentityProviders(processAccessKey, formSlug, testClaimKey)
+            .getIdentityProviders()
             .then((res) => {
                 if (!cancelled) {
                     setProviders(res);
@@ -123,7 +114,7 @@ export function IdentityInputFieldView(props: BaseViewProps<IdentityInputFieldEl
         return () => {
             cancelled = true;
         };
-    }, [formSlug, processAccessKey, testClaimKey]);
+    }, []);
 
     const handleStartIdentityAuth = (option: IdentityInputFieldOption) => {
         if (option.identityProviderKey == null || isDisabled || isFieldBusy) {

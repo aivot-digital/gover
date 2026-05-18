@@ -19,24 +19,14 @@ export function IdentityInputFieldSummary(props: BaseSummaryProps<IdentityInputF
 
     const theme = useTheme();
     const [providers, setProviders] = useState<FormTriggerIdentityDetailsDTO[]>([]);
-    const [searchParams] = useSearchParams();
-    const {processAccessKey, formSlug} = useParams<{
-        processAccessKey: string;
-        formSlug: string;
-    }>();
 
-    const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const mailValue = useMemo(() => extractIdentityInputMailValue(value), [value]);
 
     useEffect(() => {
-        if (processAccessKey == null || formSlug == null) {
-            return;
-        }
-
         let cancelled = false;
 
         new FormTriggerApiService()
-            .getIdentityProviders(processAccessKey, formSlug, testClaimKey)
+            .getIdentityProviders()
             .then((res) => {
                 if (!cancelled) {
                     setProviders(res);
@@ -52,7 +42,7 @@ export function IdentityInputFieldSummary(props: BaseSummaryProps<IdentityInputF
         return () => {
             cancelled = true;
         };
-    }, [formSlug, processAccessKey, testClaimKey]);
+    }, []);
 
     const providerName = useMemo(() => {
         if (value?.identityProviderKey == null) {
