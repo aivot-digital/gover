@@ -80,13 +80,17 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         entity.setId(null);
 
         // Check if the referenced process node provider exists.
-        processNodeProviderService
+        var provider = processNodeProviderService
                 .getProcessNodeDefinition(entity.getProcessNodeDefinitionKey(), entity.getProcessNodeDefinitionVersion())
                 .orElseThrow(() -> ResponseException.badRequest(
                         "Der Prozesselement-Funktionsanbieter %s (Version %s) existiert nicht.",
                         StringUtils.quote(entity.getProcessNodeDefinitionKey()),
                         entity.getProcessNodeDefinitionVersion()
                 ));
+
+        if (entity.getName() == null || StringUtils.isNullOrEmpty(entity.getName())) {
+            entity.setName(provider.getName());
+        }
 
         // Save the process node.
         return processDefinitionNodeRepository.save(entity);
@@ -144,6 +148,10 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(existingEntity)
                 .orElseThrow(ResponseException::badRequest);
+
+        if (existingEntity.getName() == null || StringUtils.isNullOrEmpty(existingEntity.getName())) {
+            existingEntity.setName(provider.getName());
+        }
 
         // Validate the node configuration
         validate(existingEntity, provider, false).ifPresentOrElse(
