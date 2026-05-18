@@ -299,6 +299,9 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                 <Grid
                     container
                     spacing={2}
+                    sx={{
+                        mt: 4,
+                    }}
                 >
                     {
                         element
