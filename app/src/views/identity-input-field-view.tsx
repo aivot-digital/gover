@@ -240,7 +240,7 @@ export function IdentityInputFieldView(props: BaseViewProps<IdentityInputFieldEl
             {
                 unavailableProviderCount > 0 &&
                 <Alert severity="warning">
-                    Mindestens ein konfigurierter Identifizierungsanbieter ist derzeit nicht verfuegbar.
+                    Mindestens ein konfigurierter Identitätsanbieter ist derzeit nicht verfügbar.
                 </Alert>
             }
 
@@ -266,7 +266,7 @@ export function IdentityInputFieldView(props: BaseViewProps<IdentityInputFieldEl
                     value={currentMailValue}
                     onChange={handleMailChange}
                     placeholder="name@beispiel.de"
-                    hint={activeProvider != null ? 'Eine Eingabe ersetzt den Identitaetsnachweis fuer dieses Feld.' : element.hint ?? undefined}
+                    hint={activeProvider != null ? 'Eine Eingabe ersetzt den Identitätsnachweis für dieses Feld.' : element.hint ?? undefined}
                     error={currentMailValue != null ? (mailError ?? fieldError) : undefined}
                     required={element.required ?? undefined}
                     disabled={isDisabled || isFieldBusy}
@@ -277,7 +277,7 @@ export function IdentityInputFieldView(props: BaseViewProps<IdentityInputFieldEl
                 !hasConfiguredIdentityOption &&
                 element.allowsMail !== true &&
                 <Alert severity="info">
-                    Fuer dieses Element ist derzeit keine Identifizierungsmethode verfuegbar.
+                    Für dieses Element ist derzeit keine Identifizierungsmethode verfügbar.
                 </Alert>
             }
 

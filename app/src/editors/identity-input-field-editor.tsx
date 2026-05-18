@@ -153,7 +153,7 @@ export function IdentityInputFieldEditor(props: BaseEditorProps<IdentityInputFie
                 >
                     <CheckboxFieldComponent
                         label="Alternative E-Mail-Eingabe erlauben"
-                        hint="Wenn aktiviert, koennen antragstellende Personen statt der Identifizierung eine E-Mail-Adresse angeben."
+                        hint="Wenn aktiviert, können antragstellende Personen statt der Identifizierung eine E-Mail-Adresse angeben."
                         value={element.allowsMail ?? false}
                         onChange={(allowsMail) => {
                             onPatch({
@@ -167,7 +167,7 @@ export function IdentityInputFieldEditor(props: BaseEditorProps<IdentityInputFie
 
                 <Grid size={12}>
                     <Alert severity="info">
-                        Attributzuordnungen in Wiederholungscontainern sind nicht verfuegbar.
+                        Attributzuordnungen in Wiederholungscontainern sind nicht verfügbar.
                     </Alert>
                 </Grid>
 
@@ -291,7 +291,7 @@ export function IdentityInputFieldEditor(props: BaseEditorProps<IdentityInputFie
                                                         options={providerOptions}
                                                         hint="Alle aktivierten Identifizierungsanbieter stehen hier zur Auswahl."
                                                         disabled={!editable}
-                                                        emptyStatePlaceholder="Keine aktivierten Anbieter verfuegbar"
+                                                        emptyStatePlaceholder="Keine aktivierten Anbieter verfügbar"
                                                     />
                                                 </Grid>
 
@@ -309,8 +309,8 @@ export function IdentityInputFieldEditor(props: BaseEditorProps<IdentityInputFie
                                                                 additionalScopes,
                                                             });
                                                         }}
-                                                        hint="Optionale zusaetzliche Berechtigungen fuer den gewaehlten Anbieter."
-                                                        placeholder="Scope hinzufuegen"
+                                                        hint="Optionale zusätzliche Berechtigungen für den gewählten Anbieter."
+                                                        placeholder="Scope hinzufügen"
                                                         disabled={!editable}
                                                         allowDuplicates={false}
                                                     />
@@ -396,9 +396,9 @@ export function IdentityInputFieldEditor(props: BaseEditorProps<IdentityInputFie
                                                                                             });
                                                                                         }}
                                                                                         options={attributeOptions}
-                                                                                        hint="Nur Attribute des aktuell gewaehlten Anbieters stehen zur Auswahl."
+                                                                                        hint="Nur Attribute des aktuell gewählten Anbieters stehen zur Auswahl."
                                                                                         disabled={!editable || selectedProvider == null}
-                                                                                        emptyStatePlaceholder="Keine Anbieterattribute verfuegbar"
+                                                                                        emptyStatePlaceholder="Keine Anbieterattribute verfügbar"
                                                                                     />
                                                                                 </Grid>
 
@@ -437,7 +437,7 @@ export function IdentityInputFieldEditor(props: BaseEditorProps<IdentityInputFie
                                                                                                     fontWeight: 600,
                                                                                                 }}
                                                                                             >
-                                                                                                {selectedTarget?.title ?? 'Zielelement auswaehlen'}
+                                                                                                {selectedTarget?.title ?? 'Zielelement auswählen'}
                                                                                             </Typography>
                                                                                             <Typography
                                                                                                 component="span"
@@ -535,7 +535,7 @@ function createProviderOptions(
 
     if (selectedProviderKey != null && !providers.some((provider) => provider.key === selectedProviderKey)) {
         options.push({
-            label: 'Nicht verfuegbarer Anbieter',
+            label: 'Nicht verfügbarer Anbieter',
             subLabel: selectedProviderKey,
             value: selectedProviderKey,
         });
@@ -556,7 +556,7 @@ function createAttributeOptions(
 
     if (selectedAttributeKey != null && !options.some((option) => option.value === selectedAttributeKey)) {
         options.push({
-            label: 'Nicht verfuegbares Attribut',
+            label: 'Nicht verfügbares Attribut',
             subLabel: selectedAttributeKey,
             value: selectedAttributeKey,
         });

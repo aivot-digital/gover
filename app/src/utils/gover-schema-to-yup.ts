@@ -249,8 +249,8 @@ function identityInputFieldToYup(elem: IdentityInputFieldElement): Schema {
                         typeof typedValue.identityAttributes === 'object' &&
                         !Array.isArray(typedValue.identityAttributes)
                     ) || this.createError({
-                        message: 'Die Identifizierung ist unvollstaendig.',
-                    });
+                        message: 'Die Identifizierung ist unvollständig.',
+                    }) as any;
                 }
 
                 if (elem.allowsMail !== true) {

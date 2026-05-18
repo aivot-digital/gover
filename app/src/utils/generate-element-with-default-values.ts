@@ -387,7 +387,7 @@ const elementConstructors: {
     }),
     [ElementType.IdentityInput]: (id) => ({
         ...makeInputBase(ElementType.IdentityInput, id),
-        label: 'Identitaetsnachweis',
+        label: 'Identitätsnachweis',
         options: [],
         allowsMail: false,
     }),

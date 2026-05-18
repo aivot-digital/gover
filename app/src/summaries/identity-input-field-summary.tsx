@@ -65,7 +65,7 @@ export function IdentityInputFieldSummary(props: BaseSummaryProps<IdentityInputF
     const content = mailValue ??
         (providerName != null
             ? `Authentifiziert ueber ${providerName}`
-            : (value?.identityProviderKey != null ? 'Identitaet bestaetigt' : 'Keine Angabe'));
+            : (value?.identityProviderKey != null ? 'Identität bestätigt' : 'Keine Angabe'));
 
     return (
         <Grid

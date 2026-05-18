@@ -200,7 +200,7 @@ export function CustomerFormPage() {
                     .find(({element}) => element.id === pendingAuthContext.elementId);
 
                 if (sourceEntry == null || !isIdentityInputFieldElement(sourceEntry.element)) {
-                    dispatch(showErrorSnackbar('Das verknuepfte Identitaetselement konnte nicht gefunden werden.'));
+                    dispatch(showErrorSnackbar('Das verknüpfte Identitätselement konnte nicht gefunden werden.'));
                     cleanupCallbackState();
                     return;
                 }
