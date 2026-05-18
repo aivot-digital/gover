@@ -279,7 +279,7 @@ export function FormNodeEditorPage() {
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const publicFormLink = createCustomerPath(`/forms/v1/${process?.accessKey}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
+    const publicFormLink = createCustomerPath(`/${process?.accessKey}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
 
     const handleOpenPreview = () => {
         window.open(publicFormLink, '_blank', 'noopener,noreferrer');
