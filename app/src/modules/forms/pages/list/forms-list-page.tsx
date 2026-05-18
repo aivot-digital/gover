@@ -298,11 +298,6 @@ export function FormsListPage() {
             to: `/processes/${item.process.id}/versions/${item.version.processVersion}`,
             tooltip: 'Prozess ansehen',
         },
-        {
-            icon: <IconBadge icon={Flowsheet} badgeIcon={EditFilled} corner="top-right"/>,
-            to: `/processes/${item.process.id}/versions/${item.version.processVersion}/nodes/${item.node.id}`,
-            tooltip: 'Prozess ansehen',
-        },
     ], []);
 
     return (
@@ -324,7 +319,7 @@ export function FormsListPage() {
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Formulareingänge gefunden"
-                    rowActionsCount={3}
+                    rowActionsCount={2}
                     rowActions={rowActions}
                     defaultSortField={'id' as any}
                     disableFullWidthToggle={true}
