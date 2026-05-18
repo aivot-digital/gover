@@ -72,15 +72,8 @@ export class FormTriggerApiService extends BaseApiService {
         return await this.listPublic(0, 999, undefined, undefined, filters);
     }
 
-    public async getIdentityProviders(
-        processAccessKey: string,
-        formSlug: string,
-        testClaimAccessKey?: string | null,
-    ): Promise<FormTriggerIdentityDetailsDTO[]> {
-        return await this.get<FormTriggerIdentityDetailsDTO[]>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/identity-providers/`, {
-            query: {
-                'test-claim': testClaimAccessKey,
-            },
+    public async getIdentityProviders(): Promise<FormTriggerIdentityDetailsDTO[]> {
+        return await this.get<FormTriggerIdentityDetailsDTO[]>(`/api/public/identity/providers/`, {
             skipAuthCheck: true,
         });
     }

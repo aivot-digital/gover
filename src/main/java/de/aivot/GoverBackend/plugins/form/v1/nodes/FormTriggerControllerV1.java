@@ -13,8 +13,6 @@ import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.IdentityInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.IdentityInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
@@ -30,7 +28,6 @@ import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
-import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
@@ -68,7 +65,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/public/forms/v1/{processAccessKey}/{formSlug}/")
@@ -248,61 +244,6 @@ public class FormTriggerControllerV1 {
                                                          @Nonnull @RequestBody AuthoredElementValues values) throws PaymentException, ResponseException {
         // TODO: Implement
         return new FormCostCalculationResponseDTO(BigDecimal.ZERO, List.of(), "");
-    }
-
-    @GetMapping("identity-providers/")
-    @Operation(
-            summary = "List identity providers linked to a form",
-            description = "Retrieve a list of identity providers that are linked to the specified form. " +
-                    "Only enabled identity providers will be included in the response."
-    )
-    public List<IdentityDetailsDTO> getIdentityProviders(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                                         @Nonnull @PathVariable UUID processAccessKey,
-                                                         @Nonnull @PathVariable String formSlug,
-                                                         @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                                         @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId) throws ResponseException {
-        var execUser = getExecUser(jwt);
-        var process = getProcessEntity(processAccessKey);
-        var processVersion = getProcessVersionEntity(testClaimAccessKey, process);
-        var node = getProcessNodeEntity(formSlug, process, processVersion);
-        var provider = getProvider(node);
-        var config = getConfigurationDetails(node, provider, execUser);
-
-        return resolveIdentityProviders(config.configuration().formLayout);
-    }
-
-    @Nonnull
-    List<IdentityDetailsDTO> resolveIdentityProviders(@Nullable FormLayoutElement formLayout) throws ResponseException {
-        if (formLayout == null) {
-            return List.of();
-        }
-
-        var identityProviderKeys = ElementFlattenUtils
-                .flattenElements(formLayout)
-                .stream()
-                .filter(IdentityInputElement.class::isInstance)
-                .map(IdentityInputElement.class::cast)
-                .map(IdentityInputElement::getOptions)
-                .filter(Objects::nonNull)
-                .flatMap(Collection::stream)
-                .map(IdentityInputElementOption::getIdentityProviderKey)
-                .filter(Objects::nonNull)
-                .collect(Collectors.toCollection(LinkedHashSet::new));
-
-        var identityProviders = new ArrayList<IdentityDetailsDTO>(identityProviderKeys.size());
-        for (var identityProviderKey : identityProviderKeys) {
-            var identityProvider = identityProviderService
-                    .retrieve(identityProviderKey)
-                    .orElse(null);
-
-            if (identityProvider == null || !Boolean.TRUE.equals(identityProvider.getIsEnabled())) {
-                continue;
-            }
-
-            identityProviders.add(IdentityDetailsDTO.from(identityProvider));
-        }
-
-        return identityProviders;
     }
 
     @PostMapping("derive/")

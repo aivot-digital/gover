@@ -2,7 +2,10 @@ package de.aivot.GoverBackend.identity.controllers;
 
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
+import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
+import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
 import de.aivot.GoverBackend.identity.models.IdentityData;
+import de.aivot.GoverBackend.identity.services.IdentityProviderService;
 import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -30,12 +34,14 @@ public class IdentityController {
 
     private final IdentityCacheRepository identityCacheRepository;
     private final IdentityService identityService;
+    private final IdentityProviderService identityProviderService;
 
     @Autowired
     public IdentityController(IdentityCacheRepository identityCacheRepository,
-                              IdentityService identityService) {
+                              IdentityService identityService, IdentityProviderService identityProviderService) {
         this.identityCacheRepository = identityCacheRepository;
         this.identityService = identityService;
+        this.identityProviderService = identityProviderService;
     }
 
     @GetMapping("{providerKey}/start/")
@@ -124,5 +130,20 @@ public class IdentityController {
 
         return IdentityData
                 .from(identityCacheEntity);
+    }
+
+    @GetMapping("providers/")
+    @Operation(
+            summary = "Get Identity Data",
+            description = "Retrieves the identity data associated with the provided identity session ID."
+    )
+    public List<IdentityDetailsDTO> listProviders(
+            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) UUID identitySessionId
+    ) throws ResponseException {
+        return identityProviderService
+                .list(IdentityProviderFilter.create().setIsEnabled(true))
+                .stream()
+                .map(IdentityDetailsDTO::from)
+                .toList();
     }
 }
