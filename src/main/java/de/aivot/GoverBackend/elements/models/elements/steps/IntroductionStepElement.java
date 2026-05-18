@@ -6,9 +6,9 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.jspecify.annotations.NonNull;
 
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
@@ -33,8 +33,8 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     private String expectedCosts;
     @Nullable
     private String privacyText;
-    @Nullable
-    private List<BaseFormElement> children;
+    @Nonnull
+    private List<BaseFormElement> children = new LinkedList<>();
 
     public IntroductionStepElement() {
         super(ElementType.IntroductionStep);
@@ -206,13 +206,14 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     }
 
     @Override
-    @Nullable
-    public @NonNull List<BaseFormElement> getChildren() {
+    @Nonnull
+    public List<BaseFormElement> getChildren() {
         return children;
     }
 
     @Override
-    public @NonNull IntroductionStepElement setChildren(@Nullable List<BaseFormElement> children) {
+    @Nonnull
+    public IntroductionStepElement setChildren(List<BaseFormElement> children) {
         this.children = children;
         return this;
     }
