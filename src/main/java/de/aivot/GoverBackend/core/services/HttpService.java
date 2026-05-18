@@ -9,10 +9,13 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
 import java.net.URI;
@@ -27,10 +30,14 @@ public class HttpService {
     private final RestClient httpClient;
 
     public HttpService(HttpServiceProperties httpConfig) {
-        this.httpClient = RestClient
+        this(RestClient
                 .builder()
                 .requestFactory(clientHttpRequestFactory(httpConfig))
-                .build();
+                .build());
+    }
+
+    HttpService(RestClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     static ClientHttpRequestFactory clientHttpRequestFactory(HttpServiceProperties httpConfig) {
@@ -271,6 +278,66 @@ public class HttpService {
                 })
                 .retrieve()
                 .toEntity(clazz);
+    }
+
+    // endregion
+
+    // region Generic Request
+
+    @Nonnull
+    public ResponseEntity<byte[]> request(@Nonnull HttpMethod method,
+                                          @Nonnull URI uri) throws HttpConnectionException {
+        return request(method, uri, (Object) null, null);
+    }
+
+    @Nonnull
+    public ResponseEntity<byte[]> request(@Nonnull HttpMethod method,
+                                          @Nonnull URI uri,
+                                          @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
+        return request(method, uri, (Object) null, headers);
+    }
+
+    @Nonnull
+    public ResponseEntity<byte[]> request(@Nonnull HttpMethod method,
+                                          @Nonnull URI uri,
+                                          @Nonnull MultipartUtils.MultipartBodyPublisher body,
+                                          @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
+        return request(method, uri, body.build(), headers);
+    }
+
+    @Nonnull
+    public ResponseEntity<byte[]> request(@Nonnull HttpMethod method,
+                                          @Nonnull URI uri,
+                                          @Nullable Object body,
+                                          @Nullable HttpServiceHeaders headers) throws HttpConnectionException {
+        try {
+            var request = httpClient
+                    .method(method)
+                    .uri(uri)
+                    .headers(_headers -> {
+                        if (headers != null) {
+                            headers.forEach(_headers::add);
+                        }
+                    });
+
+            if (body != null) {
+                return request
+                        .body(body)
+                        .retrieve()
+                        .toEntity(byte[].class);
+            }
+
+            return request
+                    .retrieve()
+                    .toEntity(byte[].class);
+        } catch (RestClientResponseException e) {
+            return ResponseEntity
+                    .status(e.getStatusCode())
+                    .headers(e.getResponseHeaders() != null ? e.getResponseHeaders() : HttpHeaders.EMPTY)
+                    .body(e.getResponseBodyAsByteArray());
+        } catch (RestClientException e) {
+            throw new HttpConnectionException(e);
+        }
     }
 
     // endregion
