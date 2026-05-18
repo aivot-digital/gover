@@ -62,6 +62,7 @@ export function ProcessNodeEditorConfigurationTab() {
                     }, false);
                 }}
                 maxCharacters={96}
+                required={true}
             />
 
             <TextFieldComponent

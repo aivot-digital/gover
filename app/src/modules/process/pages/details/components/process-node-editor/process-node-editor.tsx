@@ -270,8 +270,10 @@ export function ProcessNodeEditor(): ReactNode {
                 omitConfigSave: fieldsToOmit,
             }
         })
-            .then(() => {
-                setOriginalNode(editedNode);
+            .then((savedNode) => {
+                setOriginalNode(savedNode);
+                setEditedNode(savedNode);
+
                 dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
 
                 return new ProcessNodeApiService()
