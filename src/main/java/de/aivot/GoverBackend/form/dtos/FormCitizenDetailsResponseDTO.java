@@ -51,7 +51,6 @@ public record FormCitizenDetailsResponseDTO(
         ElementStreamUtils
                 .applyAction(form.getRootElement(), element -> {
                     element.setName("");
-                    element.setTestProtocolSet(null);
                 });
 
         if (obfuscateSteps) {

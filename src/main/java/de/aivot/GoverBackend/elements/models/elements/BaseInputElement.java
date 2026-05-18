@@ -105,41 +105,6 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
         }
     }
 
-    @Override
-    protected boolean testIfTechnicalApprovalNeeded() {
-        var superResult = super.testIfTechnicalApprovalNeeded();
-
-        if (superResult) {
-            return true;
-        }
-
-        if (validation != null) {
-            if (validation.getJavascriptCode() != null && validation.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
-                return true;
-            }
-
-            if (validation.getConditionSet() != null) {
-                return true;
-            }
-        }
-
-        if (value != null) {
-            if (value.getJavascriptCode() != null && value.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (value.getNoCode() != null) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     // region Hash & Equals
 
     @Override

@@ -86,10 +86,6 @@ public abstract class BaseElement implements Serializable {
     private String name;
 
     @Nullable
-    @Deprecated
-    private TestProtocolSet testProtocolSet;
-
-    @Nullable
     private ElementVisibilityFunctions visibility;
     @Nullable
     private ElementOverrideFunctions override;
@@ -118,7 +114,6 @@ public abstract class BaseElement implements Serializable {
 
     public void removeInternalInformation() {
         this.name = "";
-        this.testProtocolSet = null;
 
         if (this.visibility != null) {
             this.visibility = new ElementVisibilityFunctions()
@@ -133,69 +128,6 @@ public abstract class BaseElement implements Serializable {
         }
     }
 
-    @JsonIgnore
-    @Deprecated
-    public ElementApprovalStatus getApproval() {
-        if (testProtocolSet == null) {
-            return ElementApprovalStatus.MissingBothApprovals;
-        }
-
-        var hasGeneralTest = testProtocolSet.getProfessionalTest() != null && StringUtils.isNotNullOrEmpty(testProtocolSet.getProfessionalTest().getUserId());
-
-        if (testIfTechnicalApprovalNeeded()) {
-            var hasTechnicalTest = testProtocolSet.getTechnicalTest() != null && StringUtils.isNotNullOrEmpty(testProtocolSet.getTechnicalTest().getUserId());
-
-            if (hasGeneralTest && hasTechnicalTest) {
-                return ElementApprovalStatus.Approved;
-            }
-
-            if (!hasGeneralTest && !hasTechnicalTest) {
-                return ElementApprovalStatus.MissingBothApprovals;
-            }
-
-            if (!hasGeneralTest) {
-                return ElementApprovalStatus.MissingGeneralApproval;
-            }
-
-            return ElementApprovalStatus.MissingTechnicalApproval;
-        } else {
-            if (hasGeneralTest) {
-                return ElementApprovalStatus.Approved;
-            }
-
-            return ElementApprovalStatus.MissingGeneralApproval;
-        }
-    }
-
-    @Deprecated
-    protected boolean testIfTechnicalApprovalNeeded() {
-        if (visibility != null) {
-            if (visibility.getJavascriptCode() != null && visibility.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (visibility.getNoCode() != null) {
-                return true;
-            }
-
-            if (visibility.getConditionSet() != null) {
-                return true;
-            }
-        }
-
-        if (override != null) {
-            if (override.getJavascriptCode() != null && override.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (override.getFieldNoCodeMap() != null) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     // region Hash & Equals
 
     @Override
@@ -203,7 +135,7 @@ public abstract class BaseElement implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
 
         BaseElement that = (BaseElement) o;
-        return type == that.type && id.equals(that.id) && Objects.equals(name, that.name) && Objects.equals(testProtocolSet, that.testProtocolSet) && Objects.equals(visibility, that.visibility) && Objects.equals(override, that.override) && Objects.equals(metadata, that.metadata);
+        return type == that.type && id.equals(that.id) && Objects.equals(name, that.name) && Objects.equals(visibility, that.visibility) && Objects.equals(override, that.override) && Objects.equals(metadata, that.metadata);
     }
 
     @Override
@@ -211,7 +143,6 @@ public abstract class BaseElement implements Serializable {
         int result = type.hashCode();
         result = 31 * result + id.hashCode();
         result = 31 * result + Objects.hashCode(name);
-        result = 31 * result + Objects.hashCode(testProtocolSet);
         result = 31 * result + Objects.hashCode(visibility);
         result = 31 * result + Objects.hashCode(override);
         result = 31 * result + Objects.hashCode(metadata);
@@ -249,16 +180,6 @@ public abstract class BaseElement implements Serializable {
 
     public BaseElement setName(@Nullable String name) {
         this.name = name;
-        return this;
-    }
-
-    @Nullable
-    public TestProtocolSet getTestProtocolSet() {
-        return testProtocolSet;
-    }
-
-    public BaseElement setTestProtocolSet(@Nullable TestProtocolSet testProtocolSet) {
-        this.testProtocolSet = testProtocolSet;
         return this;
     }
 

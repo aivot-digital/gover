@@ -485,7 +485,6 @@ public class FormController {
         ElementStreamUtils
                 .applyAction(version.getRootElement(), element -> {
                     element.setName("");
-                    element.setTestProtocolSet(null);
                 });
 
         return new FormExportDTO(
