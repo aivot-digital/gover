@@ -143,19 +143,15 @@ export function CustomerFormPage() {
 
     const [theme, setTheme] = useState<Theme>();
 
-    if (data == null || allElements == null) {
-        return null;
-    }
-
     const {
         layoutElement,
         node,
         process,
         version,
-    } = data;
+    } = data ?? {};
 
     useEffect(() => {
-        if (startedProcessAccessKey != null) {
+        if (startedProcessAccessKey != null || layoutElement == null) {
             return;
         }
 
@@ -276,7 +272,7 @@ export function CustomerFormPage() {
     ]);
 
     useEffect(() => {
-        if (pendingStepRestore == null || derivedDataVersion < pendingStepRestore.minimumDerivedDataVersion) {
+        if (layoutElement == null || pendingStepRestore == null || derivedDataVersion < pendingStepRestore.minimumDerivedDataVersion) {
             return;
         }
 
@@ -292,10 +288,10 @@ export function CustomerFormPage() {
             ),
         ));
         setPendingStepRestore(null);
-    }, [pendingStepRestore, derivedData, derivedDataVersion, dispatch, layoutElement.children]);
+    }, [pendingStepRestore, derivedData, derivedDataVersion, dispatch, layoutElement]);
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
-        if (event !== SUBMIT_EVENT) {
+        if (event !== SUBMIT_EVENT || layoutElement == null || node == null) {
             return;
         }
 
@@ -355,6 +351,10 @@ export function CustomerFormPage() {
                 return res.elementData;
             });
     };
+
+    if (layoutElement == null || node == null || process == null || version == null) {
+        return null;
+    }
 
     return (
         <ThemeProvider theme={baseTheme}>
