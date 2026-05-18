@@ -1,8 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box} from '@mui/material';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
@@ -10,7 +8,6 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectMemberships, selectUser} from '../../../../slices/user-slice';
 import {AddFormDialog} from '../../dialogs/add-form-dialog';
 import {downloadFormExportFile} from '../../../../utils/download-utils';
-import {useApi} from '../../../../hooks/use-api';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {FormVersionsDialog} from '../../dialogs/form-versions-dialog';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
@@ -25,7 +22,6 @@ import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
 import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import EditFilled from '@aivot/mui-material-symbols-400-outlined/dist/edit/EditFilled';
 import {
     FormResourceAccessControlDialog,
 } from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
@@ -41,8 +37,10 @@ import {GenericPageHeaderProps} from '../../../../components/generic-page-header
 import {FormTriggerApiService, FormTriggerListItem} from '../../services/form-trigger-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {IconBadge} from '../../../../components/icon-badge/icon-badge';
-import Flowsheet from '@aivot/mui-material-symbols-400-outlined/dist/flowsheet/Flowsheet';
+import {ProcessStatusChip} from '../../../process/components/process-status/process-status-chip';
+import {Action} from '../../../../components/actions/actions-props';
+import {ProcessStatus} from '../../../process/enums/process-status';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 const columns: GridColDef<FormTriggerListItem>[] = [
     {
@@ -83,7 +81,7 @@ const columns: GridColDef<FormTriggerListItem>[] = [
         },
         renderCell: (params) => (
             <CellLink to={`/processes/${params.row.process.id}/versions/${params.row.version.processVersion}`}>
-                {params.row.process.internalTitle} (Version {params.row.version.processVersion})
+                {params.row.process.internalTitle} (Version {params.row.version.processVersion}) <ProcessStatusChip status={params.row.version.status}/>
             </CellLink>
         ),
     },
@@ -287,11 +285,18 @@ export function FormsListPage() {
         </Box>
     ), [memberships]);
 
-    const rowActions = useCallback((item: FormTriggerListItem) => [
+    const rowActions = useCallback((item: FormTriggerListItem): Action[] => [
         {
             icon: <Edit/>,
             to: `/form-triggers/${item.node.id}/formLayout/0`,
             tooltip: 'Formular bearbeiten',
+            visible: item.version.status === ProcessStatus.Drafted,
+        },
+        {
+            icon: <ArrowForward/>,
+            to: `/form-triggers/${item.node.id}/formLayout/0`,
+            tooltip: 'Formular ansehen',
+            visible: item.version.status !== ProcessStatus.Drafted,
         },
         {
             icon: ModuleIcons.processes,
