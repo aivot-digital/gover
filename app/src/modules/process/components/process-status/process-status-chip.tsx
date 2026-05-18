@@ -1,14 +1,16 @@
 import {alpha, useTheme} from '@mui/material/styles';
 import Chip from '@mui/material/Chip';
 import {ProcessStatus, ProcessStatusColors, ProcessStatusIcons, ProcessStatusLabels} from '../../enums/process-status';
+import {SxProps} from '@mui/material';
 
 interface FormStatusChipProps {
     status: ProcessStatus;
     size?: 'small' | 'medium';
     variant?: 'outlined' | 'filled' | 'soft';
+    sx?: SxProps;
 }
 
-export function ProcessStatusChip({status, size = 'medium', variant = 'outlined'}: FormStatusChipProps) {
+export function ProcessStatusChip({status, size = 'medium', variant = 'outlined', sx}: FormStatusChipProps) {
     const theme = useTheme();
 
     const label = ProcessStatusLabels[status];
@@ -19,13 +21,16 @@ export function ProcessStatusChip({status, size = 'medium', variant = 'outlined'
     const softStyles =
         variant === 'soft'
             ? {
+                ...sx,
                 color: paletteColor.main,
                 backgroundColor: alpha(paletteColor.main, 0.08),
                 '& .MuiChip-icon': {
                     color: paletteColor.main,
                 },
             }
-            : {};
+            : {
+                ...sx,
+            };
 
     return (
         <Chip
