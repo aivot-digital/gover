@@ -30,14 +30,10 @@ public class HttpService {
     private final RestClient httpClient;
 
     public HttpService(HttpServiceProperties httpConfig) {
-        this(RestClient
+        this.httpClient = RestClient
                 .builder()
                 .requestFactory(clientHttpRequestFactory(httpConfig))
-                .build());
-    }
-
-    HttpService(RestClient httpClient) {
-        this.httpClient = httpClient;
+                .build();
     }
 
     static ClientHttpRequestFactory clientHttpRequestFactory(HttpServiceProperties httpConfig) {
@@ -197,16 +193,16 @@ public class HttpService {
 
     @Nonnull
     public <T> ResponseEntity<T> postFormUrlEncodedEntity(@Nonnull URI uri,
-                                                    @Nonnull Map<String, String> body,
-                                                    @Nonnull Class<T> clazz) throws RestClientResponseException {
+                                                          @Nonnull Map<String, String> body,
+                                                          @Nonnull Class<T> clazz) throws RestClientResponseException {
         return postFormUrlEncodedEntity(uri, body, null, clazz);
     }
 
     @Nonnull
     public <T> ResponseEntity<T> postFormUrlEncodedEntity(@Nonnull URI uri,
-                                                    @Nonnull Map<String, String> body,
-                                                    @Nullable HttpServiceHeaders headers,
-                                                    @Nonnull Class<T> clazz) throws RestClientResponseException {
+                                                          @Nonnull Map<String, String> body,
+                                                          @Nullable HttpServiceHeaders headers,
+                                                          @Nonnull Class<T> clazz) throws RestClientResponseException {
         var formUrlEncodedBody = body
                 .entrySet()
                 .stream()
@@ -257,16 +253,16 @@ public class HttpService {
 
     @Nonnull
     public <T> ResponseEntity<T> postMultipartEntity(@Nonnull URI uri,
-                                               @Nonnull MultipartUtils.MultipartBodyPublisher body,
-                                               @Nonnull Class<T> clazz) throws RestClientResponseException {
+                                                     @Nonnull MultipartUtils.MultipartBodyPublisher body,
+                                                     @Nonnull Class<T> clazz) throws RestClientResponseException {
         return postMultipartEntity(uri, body, null, clazz);
     }
 
     @Nonnull
     public <T> ResponseEntity<T> postMultipartEntity(@Nonnull URI uri,
-                                               @Nonnull MultipartUtils.MultipartBodyPublisher body,
-                                               @Nullable HttpServiceHeaders headers,
-                                               @Nonnull Class<T> clazz) throws RestClientResponseException {
+                                                     @Nonnull MultipartUtils.MultipartBodyPublisher body,
+                                                     @Nullable HttpServiceHeaders headers,
+                                                     @Nonnull Class<T> clazz) throws RestClientResponseException {
         return httpClient
                 .post()
                 .uri(uri)
