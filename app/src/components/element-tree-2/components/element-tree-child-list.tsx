@@ -220,6 +220,40 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                 </Paper>
             ),
         });
+    } else if (!editable && entries.length === 0) {
+        entries.push({
+            key: 'empty-placeholder',
+            targetIndex: value.length,
+            content: (
+                <Paper
+                    component="div"
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 0.75,
+                        minWidth: 0,
+                        px: 1,
+                        py: 0.5,
+                        minHeight: `${ELEMENT_TREE_LAYOUT.itemHeightPx}px`,
+                        cursor: 'default',
+                        width: '100%',
+                        maxWidth: '100%',
+                        boxSizing: 'border-box',
+                        borderStyle: 'dashed',
+                        borderRadius: 1,
+                        justifyContent: 'flex-start',
+                        textAlign: 'left',
+                        appearance: 'none',
+                        backgroundColor: 'background.paper',
+                        color: 'text.secondary',
+                        transition: 'background-color 120ms ease, border-color 120ms ease',
+                    }}
+                    variant="outlined"
+                >
+                    <em>Keine Element vorhanden</em>
+                </Paper>
+            ),
+        })
     }
 
     return (
