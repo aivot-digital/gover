@@ -16,10 +16,12 @@ export function isAnyElementWithChildren(obj: any): obj is AnyElementWithChildre
         [
             ElementType.FormLayout,
             ElementType.Step,
-            ElementType.IntroductionStep,
             ElementType.GroupLayout,
             ElementType.ReplicatingContainer,
-            ElementType.SummaryLayout,
+            ElementType.IntroductionStep,
             ElementType.StepperLayout,
+            ElementType.ConfigLayout,
+            ElementType.TabLayout,
+            ElementType.SummaryLayout,
         ].includes(obj.type);
 }
