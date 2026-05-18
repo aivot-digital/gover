@@ -214,27 +214,6 @@ export function FormsListPage() {
     const header: GenericPageHeaderProps = useMemo(() => ({
         icon: <DescriptionOutlinedIcon/>,
         title: 'Formulare',
-        actions: [
-            {
-                icon: <CloudUploadOutlinedIcon/>,
-                onClick: () => {
-                    setShowImportFormDialog(true);
-                },
-                variant: 'text',
-                label: 'Importieren',
-            },
-            {
-                label: 'Neues Formular',
-                icon: <AddOutlinedIcon/>,
-                onClick: () => {
-                    setNewForm({
-                        form: FormApiService.initialize(),
-                        version: FormVersionApiService.initialize(),
-                    });
-                },
-                variant: 'contained',
-            },
-        ],
         helpDialog: {
             title: 'Hilfe zu Formularen',
             tooltip: 'Hilfe anzeigen',
