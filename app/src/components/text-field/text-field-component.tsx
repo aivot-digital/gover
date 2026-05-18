@@ -1,15 +1,5 @@
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {
-    Box,
-    IconButton,
-    InputAdornment,
-    ListItem,
-    ListItemButton,
-    ListItemText,
-    MenuItem,
-    TextField,
-    Typography,
-} from '@mui/material';
+import {Box, IconButton, InputAdornment, ListItemText, MenuItem, TextField, Typography} from '@mui/material';
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
@@ -86,6 +76,10 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
             freeSolo
             fullWidth
             onChange={(_, value) => {
+                if (rest.disabled) {
+                    return;
+                }
+
                 if (value == null) {
                     rest.onChange(undefined);
                 } else {
@@ -95,7 +89,7 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
             value={rest.value ?? null}
             options={options}
             renderOption={(optionProps, option) => (
-                <MenuItem {...optionProps}>
+                <MenuItem {...optionProps} disabled={rest.disabled}>
                     <ListItemText
                         primary={option.label}
                         secondary={option.subLabel}
@@ -103,7 +97,8 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
                 </MenuItem>
             )}
             renderInput={(params) => (
-                <TextFieldComponent {...rest} muiPassTroughProps={params} />
+                <TextFieldComponent {...rest} muiPassTroughProps={params}
+                                    disabled={rest.disabled}/>
             )}
         />
     );
