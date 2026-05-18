@@ -19,11 +19,11 @@ const router = sentryCreateBrowserRouter(
             errorElement: <CustomerShell/>,
             children: [
                 {
-                    path: '/forms/v1/',
+                    index: true,
                     element: <CustomerListPage/>,
                 },
                 {
-                    path: '/forms/v1/:processAccessKey/:formSlug',
+                    path: '/:processAccessKey/:formSlug',
                     element: <CustomerFormPage/>,
                 },
             ],
