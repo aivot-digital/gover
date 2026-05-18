@@ -1,6 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {Box} from '@mui/material';
+import {Box, Stack} from '@mui/material';
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
@@ -80,9 +80,20 @@ const columns: GridColDef<FormTriggerListItem>[] = [
             return row.process.internalTitle;
         },
         renderCell: (params) => (
-            <CellLink to={`/processes/${params.row.process.id}/versions/${params.row.version.processVersion}`}>
-                {params.row.process.internalTitle} (Version {params.row.version.processVersion}) <ProcessStatusChip status={params.row.version.status}/>
-            </CellLink>
+            <Stack direction="row"
+                   alignItems="center"
+                   height="100%">
+                <CellLink to={`/processes/${params.row.process.id}/versions/${params.row.version.processVersion}`}>
+                    {params.row.process.internalTitle} (Version {params.row.version.processVersion})
+                </CellLink>
+
+                <ProcessStatusChip
+                    sx={{
+                        ml: 1,
+                    }}
+                    status={params.row.version.status}
+                />
+            </Stack>
         ),
     },
 ];
