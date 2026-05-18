@@ -31,6 +31,7 @@ const CitizenFacingBaseElements: ElementType[] = [
     ElementType.MapPoint,
     ElementType.FileUpload,
     ElementType.ChipInput,
+    ElementType.IdentityInput,
 
     // Layouts
     ElementType.ReplicatingContainer,
@@ -119,6 +120,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
     [ElementDisplayContext.CitizenFacing]: {
         [ElementType.GroupLayout]: CitizenFacingBaseElements,
         [ElementType.Step]: CitizenFacingBaseElements,
+        [ElementType.IntroductionStep]: CitizenFacingBaseElements,
         [ElementType.FormLayout]: [
             ElementType.Step,
             ElementType.IntroductionStep,
