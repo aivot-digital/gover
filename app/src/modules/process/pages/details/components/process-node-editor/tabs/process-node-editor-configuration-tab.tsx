@@ -12,6 +12,7 @@ export function ProcessNodeEditorConfigurationTab() {
         node: localNode,
         setNode: setLocalNode,
         problems,
+        isEditable,
     } = useProcessNodeEditorContext();
 
     const {
@@ -32,7 +33,9 @@ export function ProcessNodeEditorConfigurationTab() {
                 Eigenschaften des Elements
             </Typography>
             <Typography variant="body1"
-                        mt={1} mb={2} maxWidth={400}>
+                        mt={1}
+                        mb={2}
+                        maxWidth={400}>
                 Konfigurieren Sie dieses Prozesselement gemäß ihrer fachlichen Anforderungen.
             </Typography>
 
@@ -49,6 +52,7 @@ export function ProcessNodeEditorConfigurationTab() {
                 required={true}
                 maxCharacters={32}
                 error={problems?.commonErrors.dataKey}
+                disabled={!isEditable}
             />
 
             <TextFieldComponent
@@ -63,6 +67,7 @@ export function ProcessNodeEditorConfigurationTab() {
                 }}
                 maxCharacters={96}
                 required={true}
+                disabled={!isEditable}
             />
 
             <TextFieldComponent
@@ -77,6 +82,7 @@ export function ProcessNodeEditorConfigurationTab() {
                 }}
                 multiline={true}
                 maxCharacters={512}
+                disabled={!isEditable}
             />
 
             <ElementDerivationContext
@@ -97,6 +103,7 @@ export function ProcessNodeEditorConfigurationTab() {
                 }}
                 computedErrors={problems?.derivedRuntimeElementData.elementStates}
                 suppressErrors={!localNode.savedWithErrors && !showNodeProblemsForNodes[localNode.id]}
+                disabled={!isEditable}
             />
         </Box>
     );

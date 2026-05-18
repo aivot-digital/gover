@@ -535,7 +535,7 @@ export function ProcessNodeEditor(): ReactNode {
                                     }
                                     setEditedNode(node);
                                 },
-                                isEditable: true,
+                                isEditable: editable,
                                 problems: problems,
                                 processDataKeyHints: processDataKeyHints,
                             }}
