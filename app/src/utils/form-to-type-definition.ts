@@ -34,7 +34,7 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.CodeInput]: 'string',
     [ElementType.RichTextInput]: 'string',
     [ElementType.UiDefinitionInput]: 'Record<string, unknown>',
-    [ElementType.IdentityInput]: 'undefined',
+    [ElementType.IdentityInput]: '{identityProviderKey: string | null | undefined; identityAttributes: Record<string, unknown> | null | undefined;}',
     [ElementType.TabLayout]: 'undefined',
     [ElementType.ChipInput]: 'string[]',
     [ElementType.DateTime]: 'string',

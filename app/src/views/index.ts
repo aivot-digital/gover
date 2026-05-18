@@ -39,6 +39,7 @@ import {NoCodeInputFieldView} from './no-code-input-field-view';
 import {UiDefinitionInputFieldView} from './ui-definition-input-field-view';
 import {SummaryLayoutView} from './summary-layout-view';
 import {ProcessDataKeyInputFieldView} from './process-data-key-input-field-view';
+import {IdentityInputFieldView} from './identity-input-field-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -71,7 +72,7 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.CodeInput]: CodeInputView,
     [ElementType.RichTextInput]: RichTextView,
     [ElementType.UiDefinitionInput]: UiDefinitionInputFieldView,
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityInput]: IdentityInputFieldView,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputFieldView,
     [ElementType.DateTime]: DateTimeFieldView,

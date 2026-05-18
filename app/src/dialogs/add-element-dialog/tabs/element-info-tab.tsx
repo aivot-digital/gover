@@ -1265,7 +1265,19 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Typography>
         </Box>
     ),
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityInput]: (
+        <Box>
+            <Typography>
+                Das Element „Identitätseingabe“ startet die Anmeldung über einen konfigurierten
+                Identifizierungsanbieter und kann optional eine alternative E-Mail-Eingabe erlauben.
+            </Typography>
+
+            <Typography sx={{mt: 2}}>
+                Attribute aus der Identifizierung können anschließend in andere Formularfelder
+                außerhalb von Wiederholungscontainern übernommen werden.
+            </Typography>
+        </Box>
+    ),
     [ElementType.TabLayout]: null,
     [ElementType.SummaryLayout]: (
         <Box>

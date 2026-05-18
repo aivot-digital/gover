@@ -66,7 +66,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.FunctionInput]: null,
     [ElementType.CodeInput]: ElementTypeGroups.Input,
     [ElementType.UiDefinitionInput]: ElementTypeGroups.Input,
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityInput]: ElementTypeGroups.Input,
     [ElementType.TabLayout]: null,
     [ElementType.SummaryLayout]: ElementTypeGroups.Display,
 };
@@ -104,6 +104,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.CodeInput]: 'Erfasst technischen oder ausführbaren Code.',
     [ElementType.RichTextInput]: 'Erfasst formatierte Texte in Markdown.',
     [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',
+    [ElementType.IdentityInput]: 'Ermöglicht eine Identifizierung über Servicekonten oder alternativ die Eingabe einer E-Mail-Adresse.',
     [ElementType.SummaryLayout]: 'Fasst mehrere Elemente zu einer Übersicht zusammen.',
     [ElementType.SummaryStep]: 'Ein Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
     [ElementType.IntroductionStep]: 'Ein Abschnitt, der am Anfang eines mehrstufigen Formulars steht und zur Einführung in den Prozess oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',

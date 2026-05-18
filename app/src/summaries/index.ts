@@ -32,6 +32,7 @@ import {CodeInputSummary} from './code-input-summary';
 import {NoCodeInputSummary} from './no-code-input-summary';
 import {UiDefinitionInputSummary} from './ui-definition-input-summary';
 import {SummaryLayoutSummary} from './summary-layout-summary';
+import {IdentityInputFieldSummary} from './identity-input-field-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -64,7 +65,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.CodeInput]: CodeInputSummary,
     [ElementType.RichTextInput]: RichTextInputSummary,
     [ElementType.UiDefinitionInput]: UiDefinitionInputSummary,
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityInput]: IdentityInputFieldSummary,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputFieldSummary,
     [ElementType.DateTime]: DateTimeFieldSummary,
