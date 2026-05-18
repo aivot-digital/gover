@@ -7,6 +7,7 @@ import type {QueryParams} from '../../../services/base-api-service';
 import type {ProcessEntity} from '../../process/entities/process-entity';
 import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
+import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 
 export interface FormTriggerFilter {
     id: number;
@@ -69,6 +70,19 @@ export class FormTriggerApiService extends BaseApiService {
 
     public async listPublicAll(filters?: Partial<FormTriggerFilter>): Promise<Page<FormTriggerListItem>> {
         return await this.listPublic(0, 999, undefined, undefined, filters);
+    }
+
+    public async getIdentityProviders(
+        processAccessKey: string,
+        formSlug: string,
+        testClaimAccessKey?: string | null,
+    ): Promise<FormTriggerIdentityDetailsDTO[]> {
+        return await this.get<FormTriggerIdentityDetailsDTO[]>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/identity-providers/`, {
+            query: {
+                'test-claim': testClaimAccessKey,
+            },
+            skipAuthCheck: true,
+        });
     }
 
     private buildListQuery(

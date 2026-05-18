@@ -6,11 +6,13 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.jspecify.annotations.NonNull;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Objects;
 
-public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean> {
+public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean>, LayoutElement<BaseFormElement> {
     @Nullable
     private String initiativeName;
     @Nullable
@@ -31,6 +33,8 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     private String expectedCosts;
     @Nullable
     private String privacyText;
+    @Nullable
+    private List<BaseFormElement> children;
 
     public IntroductionStepElement() {
         super(ElementType.IntroductionStep);
@@ -88,14 +92,14 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
                 Objects.equals(initiativeLink, that.initiativeLink) && Objects.equals(teaserText, that.teaserText) &&
                 Objects.equals(organization, that.organization) && Objects.equals(eligiblePersons, that.eligiblePersons) &&
                 Objects.equals(supportingDocuments, that.supportingDocuments) && Objects.equals(documentsToAttach, that.documentsToAttach) &&
-                Objects.equals(expectedCosts, that.expectedCosts) && Objects.equals(privacyText, that.privacyText);
+                Objects.equals(expectedCosts, that.expectedCosts) && Objects.equals(privacyText, that.privacyText) &&
+                Objects.equals(children, that.children);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), initiativeName, initiativeLogoLink, initiativeLink, teaserText, organization, eligiblePersons, supportingDocuments, documentsToAttach, expectedCosts, privacyText);
+        return Objects.hash(super.hashCode(), initiativeName, initiativeLogoLink, initiativeLink, teaserText, organization, eligiblePersons, supportingDocuments, documentsToAttach, expectedCosts, privacyText, children);
     }
-
 
     // endregion
 
@@ -198,6 +202,18 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
 
     public IntroductionStepElement setPrivacyText(@Nullable String privacyText) {
         this.privacyText = privacyText;
+        return this;
+    }
+
+    @Override
+    @Nullable
+    public @NonNull List<BaseFormElement> getChildren() {
+        return children;
+    }
+
+    @Override
+    public @NonNull IntroductionStepElement setChildren(@Nullable List<BaseFormElement> children) {
+        this.children = children;
         return this;
     }
 

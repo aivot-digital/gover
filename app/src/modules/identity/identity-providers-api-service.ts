@@ -51,14 +51,14 @@ export class IdentityProvidersApiService extends CrudApiService<IdentityProvider
         });
     }
 
-    public static createLink(key: string, additionalScopes?: string[]): string {
+    public static createLink(key: string, additionalScopes?: string[], origin?: string): string {
         const path = createApiPath('/api/public/identity/' + key + '/start/');
 
-        const origin = `${window.location.origin}${window.location.pathname}`;
+        const resolvedOrigin = origin ?? `${window.location.origin}${window.location.pathname}`;
         const additionalScopesParam = additionalScopes != null ? additionalScopes.join(' ') : '';
 
         const searchParams = new URLSearchParams();
-        searchParams.set('origin', origin);
+        searchParams.set('origin', resolvedOrigin);
         if (additionalScopesParam) {
             searchParams.set('additionalScopes', additionalScopesParam);
         }

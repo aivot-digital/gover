@@ -39,6 +39,7 @@ import {RichTextInputFieldEditor} from './rich-text-input-field-editor';
 import {CodeInputFieldEditor} from './code-input-field-editor';
 import {NoCodeInputFieldEditor} from './no-code-input-field-editor';
 import {UiDefinitionInputFieldEditor} from './ui-definition-input-field-editor';
+import {IdentityInputFieldEditor} from './identity-input-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -129,7 +130,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.UiDefinitionInput]: {
         default: UiDefinitionInputFieldEditor,
     },
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityInput]: {
+        default: IdentityInputFieldEditor,
+    },
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: {
         default: ChipInputFieldEditor,

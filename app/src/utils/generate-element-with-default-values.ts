@@ -49,6 +49,7 @@ import {
 import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
 import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
+import {IdentityInputFieldElement} from '../models/elements/form/input/identity-input-field-element';
 import {getDefaultElementWeight} from './element-widths';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
@@ -116,7 +117,7 @@ const elementConstructors: {
     [ElementType.CodeInput]: (id: string) => CodeInputElement;
     [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
     [ElementType.UiDefinitionInput]: (id: string) => UiDefinitionInputFieldElement;
-    [ElementType.IdentityInput]: (id: string) => void;
+    [ElementType.IdentityInput]: (id: string) => IdentityInputFieldElement;
     [ElementType.TabLayout]: (id: string) => void;
     [ElementType.ChipInput]: (id: string) => ChipInputFieldElement;
     [ElementType.DateTime]: (id: string) => DateTimeFieldElement;
@@ -329,6 +330,7 @@ const elementConstructors: {
         documentsToAttach: undefined,
         expectedCosts: undefined,
         privacyText: undefined,
+        children: [],
     }),
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
@@ -383,7 +385,12 @@ const elementConstructors: {
         displayContext: undefined,
         openExternalEditor: undefined,
     }),
-    [ElementType.IdentityInput]: (id) => ({}),
+    [ElementType.IdentityInput]: (id) => ({
+        ...makeInputBase(ElementType.IdentityInput, id),
+        label: 'Identitaetsnachweis',
+        options: [],
+        allowsMail: false,
+    }),
     [ElementType.TabLayout]: (id) => ({}),
     [ElementType.ChipInput]: (id) => ({
         ...makeInputBase(ElementType.ChipInput, id),

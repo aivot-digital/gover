@@ -26,6 +26,7 @@ import {DataObjectSelectFieldElement} from './data-object-select-field-element';
 import {NoCodeInputFieldElement} from './no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from './ui-definition-input-field-element';
 import {ProcessDataKeyInputFieldElement} from './process-data-key-input-field-element';
+import {IdentityInputFieldElement} from './identity-input-field-element';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -54,6 +55,7 @@ export type AnyInputElement = (
     DataObjectSelectFieldElement |
     ProcessDataKeyInputFieldElement |
     UiDefinitionInputFieldElement |
+    IdentityInputFieldElement |
     NoCodeInputFieldElement |
 
     ReplicatingContainerLayout
@@ -86,6 +88,7 @@ export function isAnyInputElement(obj: any): obj is AnyInputElement {
         ElementType.DataObjectSelect,
         ElementType.ProcessDataKeyInput,
         ElementType.UiDefinitionInput,
+        ElementType.IdentityInput,
         ElementType.NoCodeInput,
         ElementType.ReplicatingContainer,
     ].includes(obj.type);

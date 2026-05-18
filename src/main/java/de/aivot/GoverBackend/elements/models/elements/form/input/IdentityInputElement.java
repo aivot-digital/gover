@@ -45,7 +45,7 @@ public class IdentityInputElement extends BaseInputElement<IdentityInputElementI
 
     @Nonnull
     public String toDisplayValue(@Nullable IdentityInputElementItem value) {
-        return value != null ? value.getIdentityData().toString() : "Keine Angabe";
+        return value != null ? value.getIdentityAttributes().toString() : "Keine Angabe";
     }
 
     // region Hash & Equals

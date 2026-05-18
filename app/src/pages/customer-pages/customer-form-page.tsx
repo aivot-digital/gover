@@ -9,7 +9,12 @@ import {useApi} from '../../hooks/use-api';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {selectIdentityId} from '../../slices/identity-slice';
-import {AuthoredElementValues, DerivedRuntimeElementData, ElementDerivationResponse} from '../../models/element-data';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+    ElementDerivationResponse,
+} from '../../models/element-data';
 import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
@@ -26,7 +31,7 @@ import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/priva
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {AnyElement} from '../../models/elements/any-element';
-import {flattenElements} from '../../utils/flatten-elements';
+import {flattenElements, flattenElementsWithParents} from '../../utils/flatten-elements';
 import {RootComponentFooter} from '../../components/form/root-component-footer';
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {SUBMIT_EVENT} from '../../components/form/root.component.view';
@@ -34,9 +39,22 @@ import {FileUploadElementItem, isFileUploadElementItem} from '../../models/eleme
 import {walkAuthoredElementValues} from '../../utils/element-data-utils';
 import {ElementType} from '../../data/element-type/element-type';
 import {Submitted} from '../../components/submitted/submitted';
-
-export const TestClaimSearchParam = 'test-claim';
-export const DialogSearchParam = 'dialog';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
+import {IdentityStateQueryParam} from '../../modules/identity/constants/identity-state-query-param';
+import {IdentityResultState} from '../../modules/identity/enums/identity-result-state';
+import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
+import {extractVisibleFormSteps} from '../../utils/visible-form-steps';
+import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {isIdentityInputFieldElement} from '../../models/elements/form/input/identity-input-field-element';
+import {
+    clampStepIndex,
+    clearPendingIdentityInputAuthContext,
+    getIdentityInputOptionForProvider,
+    isElementNestedInReplicatingContainer,
+    loadPendingIdentityInputAuthContext,
+} from '../../utils/identity-input-field-utils';
+import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -49,7 +67,7 @@ export function CustomerFormPage() {
     const baseTheme = useTheme();
     const api = useApi();
 
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
@@ -69,8 +87,16 @@ export function CustomerFormPage() {
     const [allElements, setAllElements] = useState<AnyElement[] | null>(null);
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const [derivedDataVersion, setDerivedDataVersion] = useState(0);
+    const [pendingStepRestore, setPendingStepRestore] = useState<{
+        stepId: string | null;
+        stepIndex: number;
+        minimumDerivedDataVersion: number;
+    } | null>(null);
 
     const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
+    const handledIdentityCallbackRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (processAccessKey == null || formSlug == null) {
@@ -86,6 +112,8 @@ export function CustomerFormPage() {
             .then((res) => {
                 setData(res);
                 setAllElements(flattenElements(res.layoutElement, false));
+                setDerivedData(createDerivedRuntimeElementData());
+                setDerivedDataVersion(0);
             })
             .catch((err) => {
                 if (isApiError(err)) {
@@ -119,14 +147,152 @@ export function CustomerFormPage() {
         return null;
     }
 
-    console.log(data);
-
     const {
         layoutElement,
         node,
         process,
         version,
     } = data;
+
+    useEffect(() => {
+        if (startedProcessAccessKey != null) {
+            return;
+        }
+
+        const callbackIdentityId = searchParams.get(IdentityIdQueryParam);
+        if (callbackIdentityId == null || handledIdentityCallbackRef.current === callbackIdentityId) {
+            return;
+        }
+
+        handledIdentityCallbackRef.current = callbackIdentityId;
+
+        const callbackStateRaw = searchParams.get(IdentityStateQueryParam);
+        const callbackState = callbackStateRaw != null ? parseInt(callbackStateRaw, 10) : NaN;
+        const pendingAuthContext = loadPendingIdentityInputAuthContext();
+
+        const cleanupCallbackState = () => {
+            clearPendingIdentityInputAuthContext();
+            clearIdentityCallbackSearchParams(searchParams, setSearchParams);
+        };
+
+        if (pendingAuthContext == null) {
+            cleanupCallbackState();
+            return;
+        }
+
+        if (Number.isNaN(callbackState) || callbackState !== IdentityResultState.Success) {
+            dispatch(showErrorSnackbar('Die Identifizierung konnte nicht abgeschlossen werden.'));
+            cleanupCallbackState();
+            return;
+        }
+
+        let isCancelled = false;
+
+        IdentityProvidersApiService
+            .fetchIdentity(callbackIdentityId)
+            .then((identityData) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                const flattenedElementsWithParents = flattenElementsWithParents(layoutElement, [], false);
+                const sourceEntry = flattenedElementsWithParents
+                    .find(({element}) => element.id === pendingAuthContext.elementId);
+
+                if (sourceEntry == null || !isIdentityInputFieldElement(sourceEntry.element)) {
+                    dispatch(showErrorSnackbar('Das verknuepfte Identitaetselement konnte nicht gefunden werden.'));
+                    cleanupCallbackState();
+                    return;
+                }
+
+                const sourceElement = sourceEntry.element;
+                const selectedOption = getIdentityInputOptionForProvider(
+                    sourceElement,
+                    pendingAuthContext.optionIdentityProviderKey ?? identityData.providerKey,
+                );
+
+                let nextAuthoredValues: AuthoredElementValues = {
+                    ...(pendingAuthContext.authoredElementValues ?? {}),
+                    [sourceElement.id]: {
+                        identityProviderKey: identityData.providerKey,
+                        identityAttributes: identityData.attributes,
+                    },
+                };
+
+                nextAuthoredValues = applyIdentityInputAttributeMappings(
+                    flattenedElementsWithParents,
+                    sourceElement.id,
+                    nextAuthoredValues,
+                    selectedOption?.attributeMappings ?? [],
+                    identityData.attributes,
+                );
+
+                setAuthoredElementValues(nextAuthoredValues);
+
+                const nextDerivedDataVersion = derivedDataVersion + 1;
+                handleDerive(nextAuthoredValues, ['ALL'])
+                    .then((nextDerivedData) => {
+                        if (isCancelled) {
+                            return;
+                        }
+
+                        setDerivedData(nextDerivedData);
+                        setDerivedDataVersion((current) => current + 1);
+                        setPendingStepRestore({
+                            stepId: pendingAuthContext.stepId,
+                            stepIndex: pendingAuthContext.stepIndex,
+                            minimumDerivedDataVersion: nextDerivedDataVersion,
+                        });
+
+                        cleanupCallbackState();
+                    })
+                    .catch((error) => {
+                        console.error('Error deriving restored identity data:', error);
+                        if (!isCancelled) {
+                            dispatch(showErrorSnackbar('Die Formulardaten konnten nach der Identifizierung nicht aktualisiert werden.'));
+                            cleanupCallbackState();
+                        }
+                    });
+            })
+            .catch((error) => {
+                console.error('Error restoring identity callback data:', error);
+                if (!isCancelled) {
+                    dispatch(showErrorSnackbar('Die Identifizierungsdaten konnten nicht geladen werden.'));
+                    cleanupCallbackState();
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [
+        authoredElementValues,
+        derivedDataVersion,
+        dispatch,
+        layoutElement,
+        searchParams,
+        setSearchParams,
+        startedProcessAccessKey,
+    ]);
+
+    useEffect(() => {
+        if (pendingStepRestore == null || derivedDataVersion < pendingStepRestore.minimumDerivedDataVersion) {
+            return;
+        }
+
+        const visibleSteps = extractVisibleFormSteps(layoutElement.children, derivedData);
+        const restoredStepIndex = pendingStepRestore.stepId == null ?
+            -1 :
+            visibleSteps.findIndex((step) => step.id === pendingStepRestore.stepId);
+
+        dispatch(setCurrentStep(
+            clampStepIndex(
+                restoredStepIndex >= 0 ? restoredStepIndex : pendingStepRestore.stepIndex,
+                visibleSteps.length,
+            ),
+        ));
+        setPendingStepRestore(null);
+    }, [pendingStepRestore, derivedData, derivedDataVersion, dispatch, layoutElement.children]);
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
         if (event !== SUBMIT_EVENT) {
@@ -213,6 +379,9 @@ export function CustomerFormPage() {
                         onDeleteFormData={() => {
                             dispatch(setCurrentStep(0));
                             setAuthoredElementValues({});
+                            setDerivedData(createDerivedRuntimeElementData());
+                            setDerivedDataVersion(0);
+                            setPendingStepRestore(null);
                             setStartedProcessAccessKey(null);
                         }}
                     />
@@ -222,6 +391,11 @@ export function CustomerFormPage() {
                         <ElementDerivationContext
                             element={layoutElement}
                             authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
+                            onDerivedDataChange={(nextDerivedData) => {
+                                setDerivedData(nextDerivedData);
+                                setDerivedDataVersion((current) => current + 1);
+                            }}
                             onAuthoredElementValuesChange={setAuthoredElementValues}
                             onEvent={handleSubmitEvent}
                             onDeriveOverride={handleDerive}
@@ -272,140 +446,59 @@ export function CustomerFormPage() {
             </SnackbarProvider>
         </ThemeProvider>
     );
+}
 
-    /*
-    const handleSetElementData = (data: AuthoredElementValues, storeData: boolean = true) => {
-        setAuthoredElementValues(data);
+function clearIdentityCallbackSearchParams(
+    searchParams: URLSearchParams,
+    setSearchParams: ReturnType<typeof useSearchParams>[1],
+): void {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete(IdentityIdQueryParam);
+    nextSearchParams.delete(IdentityStateQueryParam);
 
-        if (storeData && form != null) {
-            // CustomerInputService
-            //     .storeCustomerInput(form.form.slug, form.version.version, form.version.rootElement, data);
-        }
+    setSearchParams(nextSearchParams, {
+        replace: true,
+    });
+}
+
+function applyIdentityInputAttributeMappings(
+    flattenedElementsWithParents: ReturnType<typeof flattenElementsWithParents>,
+    sourceElementId: string,
+    authoredElementValues: AuthoredElementValues,
+    attributeMappings: Array<{
+        fromIdentityProviderAttribute: string | null | undefined;
+        toFormElementWithId: string | null | undefined;
+    }>,
+    identityAttributes: Record<string, string>,
+): AuthoredElementValues {
+    const eligibleTargetIds = new Set(
+        flattenedElementsWithParents
+            .filter(({element, parents}) => (
+                element.id !== sourceElementId &&
+                isAnyInputElement(element) &&
+                !isElementNestedInReplicatingContainer(parents)
+            ))
+            .map(({element}) => element.id),
+    );
+
+    const nextAuthoredElementValues = {
+        ...authoredElementValues,
     };
 
-    useEffect(() => {
-        dispatch(showDialog(metaDialogName ?? undefined));
-    }, [metaDialogName]);
-
-    useEffect(() => {
-        if (slug == null) {
-            return;
+    for (const mapping of attributeMappings) {
+        const attributeKey = mapping.fromIdentityProviderAttribute;
+        const targetElementId = mapping.toFormElementWithId;
+        if (attributeKey == null || targetElementId == null || !eligibleTargetIds.has(targetElementId)) {
+            continue;
         }
 
-        new FormApiService()
-            .retrieveBySlugAndVersion(slug, version, identityId)
-            .then((application) => {
-                const form = formCitizenDetailsResponseDTO(application);
-                // TODO: dispatch(updateLoadedForm(form));
-            })
-            .catch(err => {
-                if (err.status === 404) {
-                    dispatch(setErrorMessage({
-                        status: 404,
-                        message: 'Das angeforderte Formular wurde nicht gefunden.',
-                    }));
-                } else if (isApiError(err) && err.displayableToUser) {
-                    dispatch(setErrorMessage({
-                        status: err.status,
-                        message: err.message,
-                    }));
-                } else {
-                    dispatch(setErrorMessage({
-                        status: 500,
-                        message: 'Beim Laden des Formulars ist ein unbekannter Fehler aufgetreten.',
-                    }));
-                    console.error(err);
-                }
-            });
-    }, [slug, api, identityId]);
-
-    useEffect(() => {
-        if (slug == null) {
-            return;
+        const mappedValue = identityAttributes[attributeKey];
+        if (mappedValue == null) {
+            continue;
         }
 
-        new FormApiService()
-            .getFormTheme(slug, version != null ? parseInt(version) : undefined)
-            .then(setTheme)
-            .catch(() => {
-                // Ignore theme loading errors
-            });
-    }, [slug, version]);
-
-    return null;
-
-
-    const _theme = useMemo(() => {
-        return createAppTheme(theme, baseTheme);
-    }, [theme, baseTheme]);
-
-    if (form == null) {
-        return (
-            <LoadingPlaceholder />
-        );
-    } else {
-        const allElements = flattenElements(form.version.rootElement);
-        const pageTitle = stringOrUndefined(form.version.rootElement.tabTitle) ??
-            stringOrUndefined(form.version.publicTitle) ??
-            stringOrUndefined(form.version.rootElement.headline) ??
-            '';
-
-        return (
-            <ThemeProvider theme={_theme}>
-                <SnackbarProvider>
-                    <MetaElement
-                        faviconUrl={new FormApiService().getFormFaviconLink(form.form.slug, form.version.version)}
-                        title={pageTitle}
-                        titlePrefix={provider}
-                    />
-
-                    <Box
-                        sx={{
-                            backgroundColor: 'white',
-                        }}
-                    >
-                        <ViewDispatcherComponent
-                            rootElement={form.version.rootElement}
-                            allElements={allElements}
-                            element={form.version.rootElement}
-                            isBusy={false}
-                            isDeriving={false}
-                            mode="viewer"
-                            authoredElementValues={authoredElementValues}
-                            derivedData={derivedData}
-                            onAuthoredElementValuesChange={(data) => handleSetElementData(data)}
-                            onDerivedDataChange={setDerivedData}
-                            derivationTriggerIdQueue={[]}
-                            disableVisibility={false}
-                        />
-                    </Box>
-
-                    <HelpDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === HelpDialogId}
-                        form={{} as any}
-                    />
-
-                    <PrivacyDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === PrivacyDialogId}
-                        form={{} as any}
-                    />
-
-                    <ImprintDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === ImprintDialogId}
-                        form={{} as any}
-                    />
-
-                    <AccessibilityDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === AccessibilityDialogId}
-                        form={{} as any}
-                    />
-                </SnackbarProvider>
-            </ThemeProvider>
-        );
+        nextAuthoredElementValues[targetElementId] = mappedValue;
     }
-     */
+
+    return nextAuthoredElementValues;
 }

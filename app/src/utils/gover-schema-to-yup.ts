@@ -39,6 +39,12 @@ import {
     createDomainAndUserSelectValueKey,
     normalizeDomainAndUserSelectItem,
 } from '../components/domain-user-select-field/domain-user-select-options';
+import {
+    IdentityInputFieldElement,
+    IdentityInputFieldElementItem,
+} from '../models/elements/form/input/identity-input-field-element';
+import {extractIdentityInputMailValue} from './identity-input-field-utils';
+import {validateEmail} from './validate-email';
 
 
 export function goverSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
@@ -96,6 +102,7 @@ const YupSchemaMap: {
     [ElementType.DataObjectSelect]: dynamicSelectFieldToYup,
     [ElementType.ProcessDataKeyInput]: processDataKeyInputFieldToYup,
     [ElementType.NoCodeInput]: noCodeInputFieldToYup,
+    [ElementType.IdentityInput]: identityInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
 
@@ -217,6 +224,45 @@ function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
         .matches(
             /^[a-zA-Z0-9.*_]+$/,
             'Der Prozessdaten-Schlüssel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+        );
+}
+
+function identityInputFieldToYup(elem: IdentityInputFieldElement): Schema {
+    return yup
+        .mixed()
+        .nullable()
+        .test(
+            'identity-input-value',
+            `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+            function (value) {
+                const typedValue = value as IdentityInputFieldElementItem | null | undefined;
+
+                if (typedValue == null) {
+                    return elem.required !== true || this.createError({
+                        message: `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+                    });
+                }
+
+                if (typedValue.identityProviderKey != null) {
+                    return (
+                        typedValue.identityAttributes != null &&
+                        typeof typedValue.identityAttributes === 'object' &&
+                        !Array.isArray(typedValue.identityAttributes)
+                    ) || this.createError({
+                        message: 'Die Identifizierung ist unvollstaendig.',
+                    });
+                }
+
+                if (elem.allowsMail !== true) {
+                    return this.createError({
+                        message: `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+                    });
+                }
+
+                return validateEmail(extractIdentityInputMailValue(typedValue)) || this.createError({
+                    message: 'Bitte geben Sie eine gueltige E-Mail-Adresse ein.',
+                });
+            },
         );
 }
 
