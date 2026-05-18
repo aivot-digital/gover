@@ -82,6 +82,7 @@ import {generateId} from '../../../../utils/id-utils';
 import {
     PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY,
 } from './components/process-node-editor/process-node-editor-change-blocker';
+import {ProcessStatus} from '../../enums/process-status';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -1987,7 +1988,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     isFlowEditorReady || shouldKeepFlowEditorMounted ?
                                         <ReactFlowProvider>
                                             <ProcessFlowEditor
-                                                editable={currentTestClaim == null}
+                                                editable={currentTestClaim == null && processFlow.version.status === ProcessStatus.Drafted}
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
@@ -2246,7 +2247,7 @@ export function ProcessDetailsPage(): ReactNode {
                         >
                             <ProcessDetailsPageProvider
                                 value={{
-                                    editable: currentTestClaim == null,
+                                    editable: currentTestClaim == null && processFlow.version.status === ProcessStatus.Drafted,
                                     onSave: handleSaveNode,
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
