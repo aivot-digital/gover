@@ -99,6 +99,7 @@ import {ProcessTestClaimEntity} from '../../process/entities/process-test-claim-
 import {downloadQrCode} from '../../../utils/download-qrcode';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
+import {ProcessStatus} from '../../process/enums/process-status';
 
 export const DialogSearchParam = 'dialog';
 
@@ -224,7 +225,7 @@ export function FormNodeEditorPage() {
 
     const notImplemented = useNotImplemented();
 
-    const isEditable = true;
+    const isEditable = processVersion?.status === ProcessStatus.Drafted;
 
     const {
         ref: containerRef,
@@ -499,13 +500,13 @@ export function FormNodeEditorPage() {
             tooltip: 'Änderung rückgängig machen',
             icon: <UndoIcon/>,
             onClick: handleUndo,
-            disabled: !hasPastLoadedForm && isEditable,
+            disabled: !hasPastLoadedForm || !isEditable,
         },
         {
             tooltip: 'Änderung wiederherstellen',
             icon: <RedoIcon/>,
             onClick: handleRedo,
-            disabled: !hasFutureLoadedForm && isEditable,
+            disabled: !hasFutureLoadedForm || !isEditable,
         },
         'separator' as const,
         {
