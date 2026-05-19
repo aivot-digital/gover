@@ -10,7 +10,7 @@ import {isStringNullOrEmpty} from '../utils/string-utils';
 
 const processDataKeyPattern = {
     regex: '^[a-zA-Z0-9.\\*_]+$',
-    message: 'Der Prozessdaten-Schlüssel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+    message: 'Der Datenschlüssel darf nur Buchstaben (a-z und A-Z), Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
 };
 
 export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKeyInputFieldElement, string>) {
