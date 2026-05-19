@@ -83,6 +83,7 @@ import {
     PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY,
 } from './components/process-node-editor/process-node-editor-change-blocker';
 import {ProcessStatus} from '../../enums/process-status';
+import {useSyncState} from '../../../../hooks/use-sync-state';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -303,10 +304,10 @@ export function ProcessDetailsPage(): ReactNode {
         version: 0,
     });
 
-    const [currentTestClaim, setCurrentTestClaim] = useState<{
+    const [currentTestClaim, setCurrentTestClaim] = useSyncState<{
         claim: ProcessTestClaimEntity;
         user: User | null;
-    } | null>(null);
+    } | null>('process_test_claim', null);
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
