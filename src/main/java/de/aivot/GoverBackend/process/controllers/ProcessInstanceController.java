@@ -8,11 +8,14 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.entities.VUserProcessInstanceAccessPermissionsEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
+import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.utils.specification.SpecificationBuilderArrayContains;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -46,10 +49,10 @@ public class ProcessInstanceController {
 
     @Autowired
     public ProcessInstanceController(AuditService auditService,
-                                    UserService userService,
-                                    ProcessInstanceService processInstanceService,
-                                    DepartmentService departmentService,
-                                    ProcessService processDefinitionService) {
+                                     UserService userService,
+                                     ProcessInstanceService processInstanceService,
+                                     DepartmentService departmentService,
+                                     ProcessService processDefinitionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceService = processInstanceService;
@@ -63,9 +66,32 @@ public class ProcessInstanceController {
             description = "List all process instances with optional filtering and pagination."
     )
     public Page<ProcessInstanceEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessInstanceFilter filter
     ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
+            var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
+            var processRoot = subquery.from(VUserProcessInstanceAccessPermissionsEntity.class);
+
+            subquery.select(processRoot).where(
+                    criteriaBuilder.equal(processRoot.get("targetProcessId"), root.get("processId")),
+                    criteriaBuilder.equal(processRoot.get("userId"), execUser.getId()),
+                    criteriaBuilder.isTrue(SpecificationBuilderArrayContains.getFunc(
+                            criteriaBuilder,
+                            processRoot,
+                            "permissions",
+                            ProcessPermissionProvider.PROCESS_INSTANCE_READ
+                    ))
+            );
+
+            return criteriaBuilder.exists(subquery);
+        });
+
         return processInstanceService
                 .list(pageable, filter);
     }
