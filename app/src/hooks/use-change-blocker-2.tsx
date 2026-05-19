@@ -2,6 +2,7 @@ import {useCallback, useEffect, useMemo, useState} from 'react';
 import {Blocker, useBeforeUnload, useBlocker} from 'react-router-dom';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
+import {AuthService} from '../services/auth-service';
 
 interface ChangeBlockerProps<T> {
     original: T;
@@ -54,7 +55,7 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
     }, [original, edited, useDeepEquals, isActive]);
 
     useBeforeUnload(useCallback((event: BeforeUnloadEvent) => {
-        if (!hasChanged) {
+        if (!hasChanged || !AuthService.isAuthenticated()) {
             return;
         }
 
@@ -67,6 +68,10 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
     const [showDialog, setShowDialog] = useState(false);
 
     const blocker = useBlocker(({currentLocation, nextLocation}) => {
+        if (!AuthService.isAuthenticated()) {
+            return false;
+        }
+
         if (shouldAllowNavigation?.({currentLocation, nextLocation}) === true) {
             return false;
         }
