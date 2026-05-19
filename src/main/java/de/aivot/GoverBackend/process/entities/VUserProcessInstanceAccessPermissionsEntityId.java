@@ -16,21 +16,21 @@ public class VUserProcessInstanceAccessPermissionsEntityId {
     private Integer viaSourceDepartmentId;
 
     @Nonnull
-    private Integer targetProcessId;
+    private Integer targetProcessInstanceId;
 
     public VUserProcessInstanceAccessPermissionsEntityId() {
         userId = "";
-        targetProcessId = 0;
+        targetProcessInstanceId = 0;
     }
 
     public VUserProcessInstanceAccessPermissionsEntityId(@Nonnull String userId,
                                                          @Nullable Integer viaSourceTeamId,
                                                          @Nullable Integer viaSourceDepartmentId,
-                                                         @Nonnull Integer targetProcessId) {
+                                                         @Nonnull Integer targetProcessInstanceId) {
         this.userId = userId;
         this.viaSourceTeamId = viaSourceTeamId;
         this.viaSourceDepartmentId = viaSourceDepartmentId;
-        this.targetProcessId = targetProcessId;
+        this.targetProcessInstanceId = targetProcessInstanceId;
     }
 
     @Override
@@ -38,12 +38,12 @@ public class VUserProcessInstanceAccessPermissionsEntityId {
         if (o == null || getClass() != o.getClass()) return false;
         VUserProcessInstanceAccessPermissionsEntityId that = (VUserProcessInstanceAccessPermissionsEntityId) o;
         return Objects.equals(userId, that.userId) && Objects.equals(viaSourceTeamId, that.viaSourceTeamId) &&
-                Objects.equals(viaSourceDepartmentId, that.viaSourceDepartmentId) && Objects.equals(targetProcessId, that.targetProcessId);
+                Objects.equals(viaSourceDepartmentId, that.viaSourceDepartmentId) && Objects.equals(targetProcessInstanceId, that.targetProcessInstanceId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId, viaSourceTeamId, viaSourceDepartmentId, targetProcessId);
+        return Objects.hash(userId, viaSourceTeamId, viaSourceDepartmentId, targetProcessInstanceId);
     }
 
     @Nonnull
@@ -77,12 +77,12 @@ public class VUserProcessInstanceAccessPermissionsEntityId {
     }
 
     @Nonnull
-    public Integer getTargetProcessId() {
-        return targetProcessId;
+    public Integer getTargetProcessInstanceId() {
+        return targetProcessInstanceId;
     }
 
-    public VUserProcessInstanceAccessPermissionsEntityId setTargetProcessId(@Nonnull Integer targetProcessId) {
-        this.targetProcessId = targetProcessId;
+    public VUserProcessInstanceAccessPermissionsEntityId setTargetProcessInstanceId(@Nonnull Integer targetProcessId) {
+        this.targetProcessInstanceId = targetProcessId;
         return this;
     }
 }

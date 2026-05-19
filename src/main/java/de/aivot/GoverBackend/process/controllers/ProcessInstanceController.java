@@ -79,7 +79,7 @@ public class ProcessInstanceController {
             var processRoot = subquery.from(VUserProcessInstanceAccessPermissionsEntity.class);
 
             subquery.select(processRoot).where(
-                    criteriaBuilder.equal(processRoot.get("targetProcessId"), root.get("processId")),
+                    criteriaBuilder.equal(processRoot.get("targetProcessInstanceId"), root.get("id")),
                     criteriaBuilder.equal(processRoot.get("userId"), execUser.getId()),
                     criteriaBuilder.isTrue(SpecificationBuilderArrayContains.getFunc(
                             criteriaBuilder,
