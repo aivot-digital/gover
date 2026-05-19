@@ -215,6 +215,9 @@ public class ElementDerivationService {
                         logger
                 );
                 effectiveValue = inputElement.formatValue(effectiveValue);
+                if (effectiveValue instanceof String s) {
+                    effectiveValue = s.trim();
+                }
                 effectiveElementValues.put(currentElement.getId(), effectiveValue);
 
                 var err = deriveError(
