@@ -8,12 +8,9 @@ import {
     NoCodeNodeDataReference,
     NoCodeProcessDataReference,
 } from '../../../models/functions/no-code-expression';
-import {AutocompleteTextField, TextFieldComponent} from '../../../components/text-field/text-field-component';
+import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {Actions} from '../../../components/actions/actions';
-import {
-    useOptionalProcessNodeEditorContext,
-} from '../../process/pages/details/components/process-node-editor/process-node-editor-context';
-import {useMemo} from 'react';
+import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
 
 interface NoCodeOperandEditorProcessDataReferenceProps {
     label: string;
@@ -32,8 +29,6 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
         onAddEnclosingExpression,
     } = props;
 
-    const opec = useOptionalProcessNodeEditorContext();
-
     const isProcessDataReference = isNoCodeProcessDataReference(value);
     const isNodeDataReference = isNoCodeNodeDataReference(value);
     const sourceLabel = isProcessDataReference
@@ -48,26 +43,18 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
             ? `_.${value.nodeDataKey}.`
             : '$$.';
 
-    const suggestions = useMemo(() => {
-        if (opec == null || opec.processDataKeyHints == null) {
-            return [];
-        }
-
-        const data = opec
-            .processDataKeyHints
-            .filter((hint) => hint.type === (isProcessDataReference ? 'ProcessData' : isNodeDataReference ? 'ElementData' : undefined))
-            .map((hint) => ({
-                id: hint.key,
-                label: hint.key,
-                subLabel: hint.node.name ?? undefined,
-            }));
-
-        if (data.length === 0) {
-            return [];
-        }
-
-        return data;
-    }, [opec, isProcessDataReference, isNodeDataReference]);
+    const referenceActions = [
+        {
+            icon: <Delete/>,
+            tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
+            onClick: () => onChange(undefined),
+        },
+        {
+            tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
+            icon: <Functions/>,
+            onClick: onAddEnclosingExpression,
+        },
+    ];
 
     return (
         <Grid
@@ -96,32 +83,53 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                     direction="row"
                     alignItems="flex-start"
                 >
-                    <AutocompleteTextField
-                        label={`${label ?? ''} — (${sourceLabel})`}
-                        hint={hint}
-                        value={value.path ?? undefined}
-                        onChange={(path) => {
-                            onChange({
-                                ...value,
-                                path: path ?? undefined,
-                            });
-                        }}
-                        startIcon={startIcon}
-                        endAction={isNodeDataReference ? undefined : [
-                            {
-                                icon: <Delete/>,
-                                tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
-                                onClick: () => onChange(undefined),
-                            },
-                            {
-                                tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
-                                icon: <Functions/>,
-                                onClick: onAddEnclosingExpression,
-                            },
-                        ]}
-                        muiPassTroughProps={{margin: 'none'}}
-                        suggestions={suggestions}
-                    />
+                    {
+                        isProcessDataReference
+                            ? (
+                                <ProcessDataKeyInputComponent
+                                    label={`${label ?? ''} — (${sourceLabel})`}
+                                    hint={hint}
+                                    value={value.path ?? undefined}
+                                    onChange={(path) => {
+                                        onChange({
+                                            ...value,
+                                            path: path ?? undefined,
+                                        });
+                                    }}
+                                />
+                            )
+                            : (
+                                <TextFieldComponent
+                                    label={`${label ?? ''} — (${sourceLabel})`}
+                                    hint={hint}
+                                    value={value.path ?? undefined}
+                                    onChange={(path) => {
+                                        onChange({
+                                            ...value,
+                                            path: path ?? undefined,
+                                        });
+                                    }}
+                                    startIcon={startIcon}
+                                    endAction={isNodeDataReference ? undefined : referenceActions}
+                                    muiPassTroughProps={{margin: 'none'}}
+                                />
+                            )
+                    }
+
+                    {
+                        isProcessDataReference &&
+                        <Actions
+                            size="small"
+                            dense={true}
+                            color="inherit"
+                            actions={referenceActions}
+                            sx={{
+                                mt: 1.5,
+                                ml: 1,
+                                opacity: 0.66,
+                            }}
+                        />
+                    }
 
                     {
                         isNodeDataReference &&
@@ -129,18 +137,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                             size="small"
                             dense={true}
                             color="inherit"
-                            actions={[
-                                {
-                                    icon: <Delete/>,
-                                    tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
-                                    onClick: () => onChange(undefined),
-                                },
-                                {
-                                    tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
-                                    icon: <Functions/>,
-                                    onClick: onAddEnclosingExpression,
-                                },
-                            ]}
+                            actions={referenceActions}
                             sx={{
                                 mt: 1.5,
                                 ml: 1,
