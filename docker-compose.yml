@@ -116,6 +116,7 @@ services:
       - "traefik.http.services.keycloak.loadbalancer.server.port=8080"
       - "traefik.http.routers.keycloak.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
       - "traefik.http.routers.keycloak.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.docker.network=gover_common" # Bindet Traefik an das untenstehende `common`-Netzwerk. Bei Containern mit mehreren Netzwerken zwingend erforderlich, da Traefik sonst zufällig eines auswählt.
 
 
   gover:
@@ -189,6 +190,7 @@ services:
       - "traefik.http.services.gover_api.loadbalancer.server.port=8080"
       - "traefik.http.routers.gover_api.tls=true" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
       - "traefik.http.routers.gover_api.tls.certresolver=ssl_resolver" # Aktivieren Sie die TLS-Verschlüsselung für den Reverse-Proxy Traefik. Falls Sie keine TLS-Verschlüsselung verwenden möchten oder diese extern realisiert wird, entfernen Sie diese Zeile.
+      - "traefik.docker.network=gover_common" # Bindet Traefik an das untenstehende `common`-Netzwerk. Bei Containern mit mehreren Netzwerken zwingend erforderlich, da Traefik sonst zufällig eines auswählt.
 
 
   gover_staff_app:
@@ -261,3 +263,4 @@ networks:
   keycloak:
   gover:
   common:
+    name: gover_common # Expliziter Netzwerkname, damit der Wert von `traefik.docker.network` unabhängig vom Compose-Projektnamen funktioniert.
