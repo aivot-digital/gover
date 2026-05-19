@@ -55,4 +55,14 @@ public class NumberUtils {
             }
         }
     }
+
+    @Nullable
+    public static Number asNumber(Object value) {
+        return switch (value) {
+            case Number n -> n;
+            case String s -> new BigDecimal(s);
+            case Boolean b -> b ? 1 : 0;
+            default -> null;
+        };
+    }
 }
