@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.storage.services;
 
 import de.aivot.GoverBackend.TestData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
@@ -17,6 +18,7 @@ import org.springframework.util.unit.DataSize;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -116,6 +118,31 @@ class StorageProviderServiceTest {
         );
 
         assertEquals("Dieser Speicheranbieter kann nicht bearbeitet werden", exception.getMessage());
+        verifyNoInteractions(storageProviderRepository, rabbitTemplate, storageProviderDefinitionService, storageProviderConfigurationService);
+    }
+
+    @Test
+    void performUpdate_MaxFileSizeExceeded_ReturnsFieldDetails() {
+        var existingEntity = createProvider()
+                .setId(7)
+                .setSystemProvider(true)
+                .setStatus(StorageProviderStatus.Synced);
+        var updatedEntity = createProvider()
+                .setId(7)
+                .setSystemProvider(true)
+                .setStatus(StorageProviderStatus.SyncPending)
+                .setMaxFileSizeInBytes(DataSize.ofMegabytes(11).toBytes());
+
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> storageProviderService.performUpdate(existingEntity.getId(), updatedEntity, existingEntity)
+        );
+
+        var details = assertInstanceOf(DerivedRuntimeElementData.class, exception.getDetails());
+        assertEquals(
+                "Die maximale Dateigröße des Speicheranbieters darf die systemweite Grenze für Uploads nicht überschreiten. Systemweit gelten 10 Megabyte.",
+                details.getElementStates().get("maxFileSizeInBytes").getError()
+        );
         verifyNoInteractions(storageProviderRepository, rabbitTemplate, storageProviderDefinitionService, storageProviderConfigurationService);
     }
 
