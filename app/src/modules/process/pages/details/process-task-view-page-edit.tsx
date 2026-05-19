@@ -1,6 +1,6 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Button, Skeleton, Stack, Typography} from '@mui/material';
-import {Blocker, useBlocker, useNavigate} from 'react-router-dom';
+import {Blocker, useBeforeUnload, useBlocker, useNavigate} from 'react-router-dom';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
 import {useGenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
@@ -38,6 +38,7 @@ import {
 } from './components/process-task-input-save-state-chip';
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
+import {AuthService} from '../../../../services/auth-service';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -73,6 +74,23 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(taskInputData, lastPersistedTaskInputData);
     }, [lastPersistedTaskInputData, taskInputData]);
+
+    const hasPendingUnloadChanges = useCallback(() => {
+        if (skipChangeBlockerRef.current || !AuthService.isAuthenticated()) {
+            return false;
+        }
+
+        return !deepEquals(latestTaskInputDataRef.current, lastPersistedTaskInputDataRef.current);
+    }, []);
+
+    useBeforeUnload(useCallback((event: BeforeUnloadEvent) => {
+        if (!hasPendingUnloadChanges()) {
+            return;
+        }
+
+        event.preventDefault();
+        event.returnValue = '';
+    }, [hasPendingUnloadChanges]));
 
     const saveTaskInputData = useCallback(async (payload: AuthoredElementValues): Promise<boolean> => {
         if (item == null) {
