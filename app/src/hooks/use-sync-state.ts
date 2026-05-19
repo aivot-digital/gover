@@ -6,6 +6,11 @@ export function useSyncState<S>(key: string, initialState: S | (() => S)): [S, D
     const broadcastChannelRef: RefObject<BroadcastChannel | null> = useRef<BroadcastChannel | null>(null);
 
     useEffect(() => {
+        if (broadcastChannelRef.current != null) {
+            broadcastChannelRef.current.close();
+            broadcastChannelRef.current = null;
+        }
+
         broadcastChannelRef.current = new BroadcastChannel('sync_state__' + key);
 
         broadcastChannelRef.current.onmessage = (event: MessageEvent<S>) => {
@@ -15,9 +20,10 @@ export function useSyncState<S>(key: string, initialState: S | (() => S)): [S, D
         return () => {
             if (broadcastChannelRef.current) {
                 broadcastChannelRef.current.close();
+                broadcastChannelRef.current = null;
             }
         };
-    }, []);
+    }, [key]);
 
     const setter: Dispatch<SetStateAction<S>> = useCallback((a: SetStateAction<S>) => {
         if (typeof a === 'function') {

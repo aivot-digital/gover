@@ -304,11 +304,6 @@ export function ProcessDetailsPage(): ReactNode {
         version: 0,
     });
 
-    const [currentTestClaim, setCurrentTestClaim] = useSyncState<{
-        claim: ProcessTestClaimEntity;
-        user: User | null;
-    } | null>('process_test_claim', null);
-
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
     const [showProcessTestClaimInstancesDialog, setShowProcessTestClaimInstancesDialog] = useState(false);
@@ -415,6 +410,12 @@ export function ProcessDetailsPage(): ReactNode {
             processVersion: parseInt(processVersion ?? '0'),
         };
     }, [params]);
+
+    const [currentTestClaim, setCurrentTestClaim] = useSyncState<{
+        claim: ProcessTestClaimEntity;
+        user: User | null;
+    } | null>(`process_${processId}_${processVersion}_test_claim`, null);
+
 
     useEffect(() => {
         if (processFlow == null || processVersion == null) {
