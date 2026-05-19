@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -21,6 +22,7 @@ public class DomainAndUserSelectInputElementValue implements Serializable {
         this.id = id;
     }
 
+    @JsonIgnore
     public boolean isEmpty() {
         return type == null || type.isBlank() || id == null || id.isBlank();
     }
