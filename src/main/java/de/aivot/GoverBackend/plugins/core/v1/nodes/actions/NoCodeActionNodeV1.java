@@ -170,6 +170,39 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     }
 
     @Override
+    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull NoCodeActionNodeConfiguration configuration, @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
+        var hints = new ArrayList<>(previousDataKeys);
+        var knownHints = new LinkedHashSet<>(hints);
+
+        if (configuration.variables == null) {
+            return hints;
+        }
+
+        for (int i = 0; i < configuration.variables.size(); i++) {
+            var row = configuration.variables.get(i);
+            var variableName = row == null
+                    ? null
+                    : StringUtils.toNullableTrimmedString(row.name);
+
+            if (variableName == null) {
+                continue;
+            }
+
+            try {
+                var normalizedPath = formatPath(parsePath(variableName, i + 1, "Variablenname"));
+                var hint = new ProcessDataKeyHint(normalizedPath, ProcessDataKeyHintType.ProcessData);
+                if (knownHints.add(hint)) {
+                    hints.add(hint);
+                }
+            } catch (ProcessNodeExecutionExceptionInvalidConfiguration ignored) {
+                // Invalid or unfinished rows should not break key hint aggregation in the editor.
+            }
+        }
+
+        return hints;
+    }
+
+    @Override
     public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                                      @Nonnull NoCodeActionNodeConfiguration configuration) throws ResponseException {
         // TODO: Check validity of this node configuration.
@@ -563,6 +596,26 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 detail,
                 StringUtils.quote(path)
         );
+    }
+
+    @Nonnull
+    private static String formatPath(@Nonnull List<PathPart> path) {
+        var builder = new StringBuilder();
+
+        for (var pathPart : path) {
+            if (pathPart instanceof ObjectPathPart objectPathPart) {
+                if (builder.length() > 0) {
+                    builder.append('.');
+                }
+                builder.append(objectPathPart.key());
+                continue;
+            }
+
+            var arrayPathPart = (ArrayPathPart) pathPart;
+            builder.append('[').append(arrayPathPart.index()).append(']');
+        }
+
+        return builder.toString();
     }
 
     private static void writePath(@Nonnull Map<String, Object> targetRoot,
