@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class FormPlugin implements Plugin {
-    public static final String PLUGIN_KEY = "form";
+    public static final String PLUGIN_KEY = "de.aivot.form";
     private final BuildProperties buildProperties;
 
     public FormPlugin(BuildProperties buildProperties) {
