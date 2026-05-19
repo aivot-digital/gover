@@ -1,5 +1,12 @@
 # Changelog
 
+
+## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.2...v4.6.3) (2026-XX-XX)
+
+### Bug Fixes
+* **Reverse Proxy:** Pin Traefik backend network on multi-homed routed services.
+
+
 ## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.1...v4.6.2) (2026-05-05)
 
 ### Bug Fixes
