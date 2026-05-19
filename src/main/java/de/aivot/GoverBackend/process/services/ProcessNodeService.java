@@ -19,6 +19,7 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
 import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
+import de.aivot.GoverBackend.process.models.ProcessDataKeyHintType;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -272,9 +273,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         List<ProcessDataKeyHintResponse> responses = new ArrayList<>();
 
         for (var previousNode : previousNodes) {
-            var updatedHints = calculateProcessDataKeyHintsForNode(previousNode, currentHints);
-            responses = mergeProcessDataKeyHintResponses(responses, updatedHints, previousNode);
-            currentHints = new ArrayList<>(updatedHints);
+            var hintCalculationResult = calculateProcessDataKeyHintsForNode(previousNode, currentHints);
+            responses = mergeProcessDataKeyHintResponses(
+                    responses,
+                    hintCalculationResult.hints(),
+                    hintCalculationResult.contributedKeys(),
+                    previousNode
+            );
+            currentHints = new ArrayList<>(hintCalculationResult.hints());
         }
 
         return responses;
@@ -355,32 +361,44 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
     @Nonnull
     @SuppressWarnings("unchecked")
-    private <NodeConfig> List<ProcessDataKeyHint> calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
-                                                                                       @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) throws ResponseException {
+    private <NodeConfig> ProcessDataKeyHintCalculationResult calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
+                                                                                                  @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) throws ResponseException {
         var provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node)
                 .orElseThrow(ResponseException::badRequest);
 
         var configuration = deriveConfiguration(node, provider, null, true);
-        var updatedHints = provider.calculateProcessDataKeyHints(
+        var providerHints = provider.calculateProcessDataKeyHints(
                 node,
                 configuration.configuration(),
                 previousDataKeyHints
         );
 
-        return updatedHints != null ? updatedHints : previousDataKeyHints;
+        var updatedHints = providerHints != null ? providerHints : previousDataKeyHints;
+        var contributedKeys = getContributedHintKeys(previousDataKeyHints, updatedHints);
+        var outputMappingHints = getOutputMappingProcessDataKeyHints(node, provider);
+
+        for (var outputMappingHint : outputMappingHints) {
+            contributedKeys.add(outputMappingHint.key());
+        }
+
+        var mergedHints = new ArrayList<>(updatedHints);
+        mergedHints.addAll(outputMappingHints);
+
+        return new ProcessDataKeyHintCalculationResult(
+                deduplicateProcessDataKeyHintsByKey(mergedHints),
+                contributedKeys
+        );
     }
 
     @Nonnull
     private List<ProcessDataKeyHintResponse> mergeProcessDataKeyHintResponses(@Nonnull List<ProcessDataKeyHintResponse> existingResponses,
                                                                               @Nonnull List<ProcessDataKeyHint> updatedHints,
+                                                                              @Nonnull Set<String> contributedKeys,
                                                                               @Nonnull ProcessNodeEntity currentNode) {
-        var sourceNodeByHint = new LinkedHashMap<ProcessDataKeyHint, ProcessNodeEntity>();
+        var sourceNodeByKey = new LinkedHashMap<String, ProcessNodeEntity>();
         for (var existingResponse : existingResponses) {
-            sourceNodeByHint.put(
-                    new ProcessDataKeyHint(existingResponse.key(), existingResponse.type()),
-                    existingResponse.node()
-            );
+            sourceNodeByKey.put(existingResponse.key(), existingResponse.node());
         }
 
         var mergedResponses = new ArrayList<ProcessDataKeyHintResponse>();
@@ -388,11 +406,70 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             mergedResponses.add(new ProcessDataKeyHintResponse(
                     updatedHint.key(),
                     updatedHint.type(),
-                    sourceNodeByHint.getOrDefault(updatedHint, currentNode)
+                    contributedKeys.contains(updatedHint.key())
+                            ? currentNode
+                            : sourceNodeByKey.getOrDefault(updatedHint.key(), currentNode)
             ));
         }
 
         return mergedResponses;
+    }
+
+    @Nonnull
+    private Set<String> getContributedHintKeys(@Nonnull List<ProcessDataKeyHint> previousHints,
+                                               @Nonnull List<ProcessDataKeyHint> updatedHints) {
+        var previousHintsByKey = new LinkedHashMap<String, ProcessDataKeyHint>();
+        for (var previousHint : previousHints) {
+            previousHintsByKey.put(previousHint.key(), previousHint);
+        }
+
+        var contributedKeys = new LinkedHashSet<String>();
+        var seenKeys = new HashSet<String>();
+
+        for (var updatedHint : updatedHints) {
+            var previousHint = previousHintsByKey.get(updatedHint.key());
+            var hasSameKeyBeenSeenBefore = !seenKeys.add(updatedHint.key());
+            var isNewOrChangedHint = previousHint == null || !Objects.equals(previousHint, updatedHint);
+
+            if (hasSameKeyBeenSeenBefore || isNewOrChangedHint) {
+                contributedKeys.remove(updatedHint.key());
+                contributedKeys.add(updatedHint.key());
+            }
+        }
+
+        return contributedKeys;
+    }
+
+    @Nonnull
+    private <NodeConfig> List<ProcessDataKeyHint> getOutputMappingProcessDataKeyHints(@Nonnull ProcessNodeEntity node,
+                                                                                       @Nonnull ProcessNodeDefinition<NodeConfig> provider) {
+        var hints = new ArrayList<ProcessDataKeyHint>();
+
+        for (var output : provider.getOutputs()) {
+            var mappedProcessDataKey = StringUtils.toNullableTrimmedString(node.getOutputMappings().get(output.key()));
+            if (mappedProcessDataKey == null) {
+                continue;
+            }
+
+            hints.add(new ProcessDataKeyHint(
+                    mappedProcessDataKey,
+                    ProcessDataKeyHintType.ProcessData
+            ));
+        }
+
+        return hints;
+    }
+
+    @Nonnull
+    private List<ProcessDataKeyHint> deduplicateProcessDataKeyHintsByKey(@Nonnull List<ProcessDataKeyHint> hints) {
+        var hintsByKey = new LinkedHashMap<String, ProcessDataKeyHint>();
+
+        for (var hint : hints) {
+            hintsByKey.remove(hint.key());
+            hintsByKey.put(hint.key(), hint);
+        }
+
+        return new ArrayList<>(hintsByKey.values());
     }
 
     @Nonnull
@@ -484,6 +561,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public record ProcessConfigurationDetails<NodeConfig>(
             @Nonnull NodeConfig configuration,
             @Nonnull DerivedRuntimeElementData derivedRuntimeElementData
+    ) {
+    }
+
+    private record ProcessDataKeyHintCalculationResult(
+            @Nonnull List<ProcessDataKeyHint> hints,
+            @Nonnull Set<String> contributedKeys
     ) {
     }
 }

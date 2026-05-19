@@ -16,6 +16,7 @@ import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
 import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
 import de.aivot.GoverBackend.process.models.ProcessDataKeyHintType;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -135,6 +136,58 @@ class ProcessNodeServiceTest {
         );
     }
 
+    @Test
+    void getProcessDataKeyHintResponses_ShouldIncludeMappedOutputProcessDataKeys() throws Exception {
+        var nodeA = createNode(1, "a");
+        nodeA.getOutputMappings().put("result", "foo.bar");
+        var targetNode = createNode(2, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeA));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, nodeA.getId(), targetNode.getId())
+                ));
+
+        var result = service.getProcessDataKeyHintResponses(targetNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
+                        new ProcessDataKeyHintResponse("foo.bar", ProcessDataKeyHintType.ProcessData, nodeA)
+                ),
+                result
+        );
+    }
+
+    @Test
+    void getProcessDataKeyHintResponses_ShouldKeepOnlyLastNodeForDuplicateKeys() throws Exception {
+        var nodeA = createNode(1, "a");
+        nodeA.getOutputMappings().put("result", "shared");
+        var nodeB = createNode(2, "b");
+        nodeB.getOutputMappings().put("result", "shared");
+        var targetNode = createNode(3, "target");
+
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(targetNode, nodeB, nodeA));
+        when(processEdgeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(
+                        createEdge(1, nodeA.getId(), nodeB.getId()),
+                        createEdge(2, nodeB.getId(), targetNode.getId())
+                ));
+
+        var result = service.getProcessDataKeyHintResponses(targetNode);
+
+        assertEquals(
+                List.of(
+                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
+                        new ProcessDataKeyHintResponse("b", ProcessDataKeyHintType.ProcessData, nodeB),
+                        new ProcessDataKeyHintResponse("shared", ProcessDataKeyHintType.ProcessData, nodeB)
+                ),
+                result
+        );
+    }
+
     private ProcessEntity createProcess() {
         return new ProcessEntity()
                 .setId(PROCESS_ID)
@@ -221,6 +274,18 @@ class ProcessNodeServiceTest {
         @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodeOutput> getOutputs() {
+            return List.of(
+                    new ProcessNodeOutput(
+                            "result",
+                            "Result",
+                            "Mapped test result."
+                    )
+            );
         }
 
         @Override
