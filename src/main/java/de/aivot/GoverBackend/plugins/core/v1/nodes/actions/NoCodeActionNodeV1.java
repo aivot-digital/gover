@@ -749,7 +749,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Eintrag entfernen")
     })
     public static class NoCodeActionNodeVariableConfiguration {
-        @InputElementPOJOBinding(id = VARIABLE_NAME_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = VARIABLE_NAME_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Variablenname"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Name wird als Schlüssel in den Vorgangsdaten gespeichert."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
