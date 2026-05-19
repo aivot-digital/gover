@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
@@ -22,6 +23,7 @@ public class MapPointInputElementValue implements Serializable {
         this.address = address;
     }
 
+    @JsonIgnore
     public boolean isEmpty() {
         return latitude == null && longitude == null && (address == null || address.isBlank());
     }
