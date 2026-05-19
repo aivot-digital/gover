@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
@@ -19,6 +20,7 @@ public class AssignmentContextInputElementValue implements Serializable {
     @Nullable
     private Boolean preferProcessInstanceAssignee;
 
+    @JsonIgnore
     public boolean isEmpty() {
         var hasSelection = domainAndUserSelection != null && !domainAndUserSelection.isEmpty();
         var hasPreference = Boolean.TRUE.equals(preferPreviousTaskAssignee)
