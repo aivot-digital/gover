@@ -63,6 +63,7 @@ export function ProcessNodeEditor(): ReactNode {
 
     const {
         editable,
+        structureEditable,
         onSave,
         onDelete,
         onStartReplaceNode,
@@ -257,7 +258,7 @@ export function ProcessNodeEditor(): ReactNode {
     }, [location]);
 
     const handleSaveSelected = (): void => {
-        if (!hasChanged || editedNode == null) {
+        if (!editable || !hasChanged || editedNode == null) {
             return;
         }
 
@@ -301,7 +302,7 @@ export function ProcessNodeEditor(): ReactNode {
     };
 
     const handleDeleteSelected = (): void => {
-        if (originalNode == null || provider == null) {
+        if (!structureEditable || originalNode == null || provider == null) {
             return;
         }
 
@@ -560,7 +561,7 @@ export function ProcessNodeEditor(): ReactNode {
                         onClick={handleSaveSelected}
                         variant="contained"
                         startIcon={<Save/>}
-                        disabled={!hasChanged || isNodeLoading}
+                        disabled={!editable || !hasChanged || isNodeLoading}
                     >
                         Konfiguration speichern
                     </Button>
@@ -582,9 +583,10 @@ export function ProcessNodeEditor(): ReactNode {
                 onClose={() => {
                     setMenuAnchorEl(null);
                 }}
+                editable={structureEditable}
                 onExportNode={handleExportSelected}
                 onReplaceNode={() => {
-                    if (!editable || originalNode == null) {
+                    if (!structureEditable || originalNode == null) {
                         return;
                     }
 

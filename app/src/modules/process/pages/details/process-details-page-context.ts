@@ -7,6 +7,7 @@ import {RequestOptions} from '../../../../services/base-api-service';
 
 export interface ProcessDetailsPageContextType {
     editable: boolean;
+    structureEditable: boolean;
     onSave: (node: ProcessNodeEntity, options?: RequestOptions) => Promise<ProcessNodeEntity>;
     onDelete: (node: ProcessNodeEntity) => Promise<void>;
     onStartReplaceNode: (node: ProcessNodeEntity) => void;

@@ -1342,7 +1342,7 @@ export function ProcessDetailsPage(): ReactNode {
                     <>
                         <Typography>
                             Möchten Sie die Prozessmodellierung testen?
-                            Dabei wird die weitere Bearbeitung des Prozesses gesperrt, bis der Test abgeschlossen ist.
+                            Die Prozessversion kann während des Tests nicht veröffentlicht werden.
                             Sie können den Test jederzeit abbrechen.
                             Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
                         </Typography>
@@ -1406,7 +1406,7 @@ export function ProcessDetailsPage(): ReactNode {
                 user,
             });
 
-            dispatch(showSuccessSnackbar('Der Test wurde gestartet. Der Prozess ist nun für die Bearbeitung gesperrt.'));
+            dispatch(showSuccessSnackbar('Der Test wurde gestartet.'));
         } catch (err) {
             dispatch(showApiErrorSnackbar(err, 'Der Test konnte nicht gestartet werden.'));
         }
@@ -1940,6 +1940,9 @@ export function ProcessDetailsPage(): ReactNode {
         );
     }
 
+    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted;
+    const isProcessStructureEditable = isProcessEditable && currentTestClaim == null;
+
     return (
         <PageWrapper
             title="Prozess"
@@ -1990,7 +1993,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     isFlowEditorReady || shouldKeepFlowEditorMounted ?
                                         <ReactFlowProvider>
                                             <ProcessFlowEditor
-                                                editable={currentTestClaim == null && processFlow.version.status === ProcessStatus.Drafted}
+                                                editable={isProcessStructureEditable}
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
@@ -2249,7 +2252,8 @@ export function ProcessDetailsPage(): ReactNode {
                         >
                             <ProcessDetailsPageProvider
                                 value={{
-                                    editable: currentTestClaim == null && processFlow.version.status === ProcessStatus.Drafted,
+                                    editable: isProcessEditable,
+                                    structureEditable: isProcessStructureEditable,
                                     onSave: handleSaveNode,
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
