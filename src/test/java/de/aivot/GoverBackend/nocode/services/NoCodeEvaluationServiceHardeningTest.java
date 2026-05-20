@@ -262,10 +262,53 @@ class NoCodeEvaluationServiceHardeningTest {
         var nodeListIndexResult = service.evaluate(
                 new NoCodeNodeDataReference()
                         .setNodeDataKey("nodeB")
-                        .setPath("[1]"),
+                        .setPath("1"),
                 new DerivedRuntimeElementData(),
                 context
         );
         assertEquals("y", nodeListIndexResult.getValue());
+    }
+
+    @Test
+    void shouldResolveWildcardReferencesUsingProvidedBinding() {
+        var service = new NoCodeEvaluationService(List.of());
+        var context = ProcessExecutionData.of(Map.of(
+                "$", Map.of(
+                        "personen", List.of(
+                                Map.of("alter", 22),
+                                Map.of("alter", 41)
+                        )
+                )
+        ));
+
+        var result = service.evaluate(
+                new NoCodeProcessDataReference().setPath("personen.*.alter"),
+                new DerivedRuntimeElementData(),
+                context,
+                List.of(1)
+        );
+
+        assertEquals(41, result.getValue());
+    }
+
+    @Test
+    void shouldRejectImplicitWildcardReferenceWithoutBinding() {
+        var service = new NoCodeEvaluationService(List.of());
+        var context = ProcessExecutionData.of(Map.of(
+                "$", Map.of(
+                        "personen", List.of(
+                                Map.of("alter", 22)
+                        )
+                )
+        ));
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> service.evaluate(
+                        new NoCodeProcessDataReference().setPath("personen.*.alter"),
+                        new DerivedRuntimeElementData(),
+                        context
+                )
+        );
     }
 }

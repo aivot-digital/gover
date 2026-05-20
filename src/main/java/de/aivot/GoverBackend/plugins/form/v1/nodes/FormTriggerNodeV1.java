@@ -128,7 +128,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Override
     public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
                                                                  @Nonnull FormTriggerConfigV1 configuration,
-                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
+                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
         var res = new LinkedList<ProcessDataKeyHint>();
         ElementStreamUtils.applyAction(configuration.formLayout, (e) -> {
             if (e instanceof BaseInputElement<?> i && StringUtils.isNotNullOrEmpty(i.getDestinationKey())) {
