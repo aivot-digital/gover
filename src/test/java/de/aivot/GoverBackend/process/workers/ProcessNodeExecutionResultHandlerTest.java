@@ -14,8 +14,10 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
@@ -38,6 +40,76 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class ProcessNodeExecutionResultHandlerTest {
+    @Test
+    void handleResult_AppliesOutputMappingsWithExplicitArrayIndices() throws ProcessNodeExecutionException {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService());
+        var task = processInstanceTask(null);
+
+        handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Fallback task", List.of(
+                        new ProcessNodeOutput("result", "Result", "Mapped result")
+                )),
+                processNode("Pruefung", Map.of("result", "items.0.status")),
+                processInstance(),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setNodeData(Map.of("result", "done"))
+                        .setProcessData(Map.of())
+        );
+
+        assertEquals(1, savedTasks.size());
+        assertEquals(
+                Map.of(
+                        "items", List.of(
+                                Map.of("status", "done")
+                        )
+                ),
+                task.getProcessData()
+        );
+    }
+
+    @Test
+    void handleResult_AppliesOutputMappingsAcrossExistingWildcardBindings() throws ProcessNodeExecutionException {
+        var savedTasks = new ArrayList<ProcessInstanceTaskEntity>();
+        var handler = createHandler(savedTasks, Map.of(), new RecordingProcessTaskMailService());
+        var task = processInstanceTask(null);
+
+        handler.handleResult(
+                new RecordingProcessNodeExecutionLogger(),
+                null,
+                new TestProcessNodeDefinition("Fallback task", List.of(
+                        new ProcessNodeOutput("result", "Result", "Mapped result")
+                )),
+                processNode("Pruefung", Map.of("result", "items.*.status")),
+                processInstance(),
+                task,
+                null,
+                new ProcessNodeExecutionResultTaskUpdated()
+                        .setNodeData(Map.of("result", "done"))
+                        .setProcessData(Map.of(
+                                "items", List.of(
+                                        Map.of("id", 1),
+                                        Map.of("id", 2)
+                                )
+                        ))
+        );
+
+        assertEquals(1, savedTasks.size());
+        assertEquals(
+                Map.of(
+                        "items", List.of(
+                                Map.of("id", 1, "status", "done"),
+                                Map.of("id", 2, "status", "done")
+                        )
+                ),
+                task.getProcessData()
+        );
+    }
+
     @Test
     void handleResult_SendsAssignmentMail_ForNewAssignmentToOtherUser() throws ProcessNodeExecutionException {
         var triggeringUser = user("user-1", "Trigger User");
@@ -231,6 +303,10 @@ class ProcessNodeExecutionResultHandlerTest {
     }
 
     private static ProcessNodeEntity processNode(String name) {
+        return processNode(name, Map.of());
+    }
+
+    private static ProcessNodeEntity processNode(String name, Map<String, String> outputMappings) {
         return new ProcessNodeEntity()
                 .setId(11)
                 .setProcessId(7)
@@ -240,7 +316,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 .setProcessNodeDefinitionKey("test/task")
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(new AuthoredElementValues())
-                .setOutputMappings(Map.of());
+                .setOutputMappings(outputMappings);
     }
 
     private static UserEntity user(String id, String fullName) {
@@ -353,9 +429,15 @@ class ProcessNodeExecutionResultHandlerTest {
 
     private static final class TestProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         private final String name;
+        private final List<ProcessNodeOutput> outputs;
 
         private TestProcessNodeDefinition(String name) {
+            this(name, List.of());
+        }
+
+        private TestProcessNodeDefinition(String name, List<ProcessNodeOutput> outputs) {
             this.name = name;
+            this.outputs = outputs;
         }
 
         @Override
@@ -393,6 +475,12 @@ class ProcessNodeExecutionResultHandlerTest {
         @Override
         public List<ProcessNodePort> getPorts() {
             return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodeOutput> getOutputs() {
+            return outputs;
         }
 
         @Override
