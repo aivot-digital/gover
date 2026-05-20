@@ -49,6 +49,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
     void update_AutoSavePersistsNormalizedInputsAndReturnsMergedCustomerTaskViewData() throws ResponseException {
         var procAccess = UUID.randomUUID();
         var taskAccess = UUID.randomUUID();
+        var now = Instant.now();
 
         var instance = new ProcessInstanceEntity(
                 42L,
@@ -60,8 +61,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 List.of(),
                 Map.of(),
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                now,
+                now,
                 null,
                 null,
                 Map.of(),
@@ -82,8 +83,8 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 ProcessTaskStatus.Running,
                 null,
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                now,
+                now,
                 null,
                 null,
                 Map.of("keep", "value"),

@@ -47,7 +47,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,6 +63,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 .setId("user-1")
                 .setFirstName("Ada")
                 .setLastName("Lovelace");
+        var now = Instant.now();
 
         var jwt = new Jwt(
                 "token-value",
@@ -81,8 +81,8 @@ class StaffProcessInstanceTaskViewControllerTest {
                 1,
                 1,
                 1,
-                LocalDateTime.now(),
-                LocalDateTime.now()
+                now,
+                now
         );
 
         var version = new ProcessVersionEntity(
@@ -90,9 +90,9 @@ class StaffProcessInstanceTaskViewControllerTest {
                 1,
                 ProcessVersionStatus.Published,
                 "Test Process",
-                LocalDateTime.now(),
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                now,
+                now,
+                now,
                 null
         );
 
@@ -106,8 +106,8 @@ class StaffProcessInstanceTaskViewControllerTest {
                 null,
                 List.of(),
                 Map.of(),
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                now,
+                now,
                 null,
                 null,
                 Map.of(),
@@ -128,8 +128,8 @@ class StaffProcessInstanceTaskViewControllerTest {
                 null,
                 ProcessTaskStatus.Running,
                 null,
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                now,
+                now,
                 null,
                 null,
                 Map.of("keep", "value"),

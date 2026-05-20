@@ -331,8 +331,13 @@ class ManualActionNodeV1Test {
     }
 
     @Test
-    void onUpdateFromStaff_CompleteDoesNotCreateSpuriousDiffForEquivalentTemporalValues() throws Exception {
-        var result = node.onAutoSaveFromStaffTaskView(
+    void onEventFromStaffTaskView_CompleteDoesNotCreateSpuriousDiffForEquivalentTemporalValues() throws Exception {
+        var processData = Map.<String, Object>of(
+                "date", "2026-05-09T00:00:00+02:00",
+                "datetime", "2021-02-07T12:15:00+01:00"
+        );
+
+        var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configurationWithTemporalFields()),
@@ -341,20 +346,18 @@ class ManualActionNodeV1Test {
                                 77,
                                 Map.of(),
                                 Map.of(),
-                                Map.of(
-                                        "date", "2026-05-09T00:00:00+02:00",
-                                        "datetime", "2021-02-07T12:15:00+01:00"
-                                )
+                                processData
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configurationWithTemporalFields()),
-                        null
+                        nodeConfiguration(configurationWithTemporalFields()),
+                        currentProcessData(processData)
                 ),
                 authored(
                         "dateField", "2026-05-08T22:00:00.000Z",
                         "dateTimeField", "2021-02-07T11:15:00.000Z"
-                )
+                ),
+                "complete"
         );
 
         assertTrue(result.isPresent());
