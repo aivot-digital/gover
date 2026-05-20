@@ -1,12 +1,25 @@
 import Dialog from '@mui/material/Dialog';
 import DialogContent from '@mui/material/DialogContent';
-import {type ProcessEntity} from '../entities/process-entity';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import Stepper from '@mui/material/Stepper';
-import {Box, Button, Grid, Step, StepLabel, type SvgIconProps, type SxProps, Tooltip} from '@mui/material';
-import React, {type FC, type ReactNode, useEffect, useState} from 'react';
+import {
+    Box,
+    Button,
+    Card,
+    CardActionArea,
+    Divider,
+    Grid,
+    Step,
+    StepLabel,
+    type SvgIconProps,
+    type SxProps,
+} from '@mui/material';
+import {type StepIconProps} from '@mui/material/StepIcon';
+import React, {type FC, type ReactNode, useEffect, useMemo, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
+import Check from '@aivot/mui-material-symbols-400-outlined/dist/check/Check';
+import Draft from '@aivot/mui-material-symbols-400-outlined/dist/draft/Draft';
 import {uploadObjectFile} from '../../../utils/download-utils';
 import {type ProcessExport} from '../entities/process-export';
 import {
@@ -29,14 +42,25 @@ import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import {ProcessDefinitionApiService} from '../services/process-definition-api-service';
 import AddBox from '@aivot/mui-material-symbols-400-outlined/dist/add-box/AddBox';
 import {ProcessStatus} from '../enums/process-status';
-import {ProcessTemplatesService, TemplateRegistryProcessItem} from '../services/process-templates-service';
+import {ProcessTemplatesService, type TemplateRegistryProcessItem} from '../services/process-templates-service';
 import GridGuides from '@aivot/mui-material-symbols-400-outlined/dist/grid-guides/GridGuides';
 import {useNavigate} from 'react-router-dom';
 import {SHOW_ERRORS_ROUTER_STATE} from '../pages/details/process-details-page';
+import {AlertComponent} from '../../../components/alert/alert-component';
+import {StatusTable} from '../../../components/status-table/status-table';
+import {type StatusTablePropsItem} from '../../../components/status-table/status-table-props';
+import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
 
 interface NewProcessDialogProps {
     open: boolean;
     onCancel: () => void;
+}
+
+type StartPointType = 'empty' | 'import' | 'template';
+
+interface SelectedStartPoint {
+    label: string;
+    type: StartPointType;
 }
 
 export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
@@ -59,6 +83,64 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const [isLoading, setIsLoading] = useState(false);
 
     const [templates, setTemplates] = useState<TemplateRegistryProcessItem[] | null>(null);
+
+    const [activeStep, setActiveStep] = useState(0);
+    const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(null);
+    const [selectedStartPoint, setSelectedStartPoint] = useState<SelectedStartPoint | null>(null);
+
+    const selectedDepartment = useMemo(() => (
+        availableDepartments.find((department) => department.value === departmentOverride) ?? null
+    ), [availableDepartments, departmentOverride]);
+
+    const hasProcessConfigurationErrors = nameError != null || departmentError != null;
+
+    const summaryItems = useMemo<StatusTablePropsItem[]>(() => [
+        {
+            label: 'Startpunkt',
+            icon: <SummaryIcon>{getStartPointIcon(selectedStartPoint?.type)}</SummaryIcon>,
+            children: (
+                <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
+                    {selectedStartPoint?.label ?? 'Nicht ausgewählt'}
+                </Typography>
+            ),
+        },
+        {
+            label: 'Name',
+            icon: <SummaryIcon><Label/></SummaryIcon>,
+            children: (
+                <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
+                    {nameOverride?.trim() ?? 'Nicht angegeben'}
+                </Typography>
+            ),
+        },
+        {
+            label: 'Organisationseinheit',
+            icon: <SummaryIcon>{selectedDepartment?.icon}</SummaryIcon>,
+            children: (
+                <Box>
+                    <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
+                        {selectedDepartment?.label ?? 'Nicht ausgewählt'}
+                        {
+                            selectedDepartment?.subLabel != null &&
+                            <Typography component="span" color="text.secondary" sx={{ml: 0.5}}>
+                                ({selectedDepartment.subLabel})
+                            </Typography>
+                        }
+                    </Typography>
+
+                </Box>
+            ),
+        },
+        {
+            label: 'Status',
+            icon: <SummaryIcon><Draft/></SummaryIcon>,
+            children: (
+                <Typography variant="body2">
+                    Neue Prozesse werden als Entwurf angelegt.
+                </Typography>
+            ),
+        },
+    ], [nameOverride, selectedDepartment, selectedStartPoint]);
 
     useEffect(() => {
         if (user == null) {
@@ -83,7 +165,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheiten konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
             });
-    }, [user]);
+    }, [dispatch, user]);
 
     useEffect(() => {
         new ProcessTemplatesService()
@@ -93,24 +175,21 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 console.error(err);
                 dispatch(showErrorSnackbar('Die Vorlagen konnten nicht geladen werden. Bitte versuchen Sie es später erneut.'));
             });
-    }, []);
-
-    const [activeStep, setActiveStep] = useState(0);
-    const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(null);
+    }, [dispatch]);
 
     const validateName = (value: string | null): string | undefined => {
         const trimmedValue = value?.trim() ?? '';
 
         if (!isStringNotNullOrEmpty(trimmedValue)) {
-            return 'Bitte geben Sie einen Namen für das Verfahren an.';
+            return 'Bitte geben Sie einen Namen für den Prozess an.';
         }
 
         if (trimmedValue.length < 3) {
-            return 'Der Name des Verfahrens muss mindestens 3 Zeichen lang sein.';
+            return 'Der Name des Prozesses muss mindestens 3 Zeichen lang sein.';
         }
 
         if (trimmedValue.length > 96) {
-            return 'Der Name des Verfahrens darf maximal 96 Zeichen lang sein.';
+            return 'Der Name des Prozesses darf maximal 96 Zeichen lang sein.';
         }
 
         return undefined;
@@ -134,15 +213,26 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         return nextNameError == null && nextDepartmentError == null;
     };
 
+    const handleSelectStartPoint = (templateData: ProcessExport, startPoint: SelectedStartPoint): void => {
+        setSelectedTemplateData(templateData);
+        setSelectedStartPoint(startPoint);
+        setNameError(undefined);
+        setDepartmentError(undefined);
+        setActiveStep(1);
+    };
+
+    const resetDialogState = (): void => {
+        setActiveStep(0);
+        setSelectedTemplateData(null);
+        setSelectedStartPoint(null);
+        setNameOverride(null);
+        setDepartmentOverride(null);
+        setNameError(undefined);
+        setDepartmentError(undefined);
+    };
+
     const handleClose = (): void => {
         onCancel();
-        setTimeout(() => {
-            setActiveStep(0);
-            setNameOverride(null);
-            setDepartmentOverride(null);
-            setNameError(undefined);
-            setDepartmentError(undefined);
-        }, 300);
     };
 
     const handleImport = (): void => {
@@ -151,11 +241,32 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 if (importedProcessExport == null) {
                     return;
                 }
-                setSelectedTemplateData(importedProcessExport);
-                setActiveStep(1);
+                handleSelectStartPoint(importedProcessExport, {
+                    label: 'Importierte Datei',
+                    type: 'import',
+                });
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht importiert werden. Bitte versuchen Sie es erneut.'));
+            });
+    };
+
+    const handleLoadTemplate = (template: TemplateRegistryProcessItem): void => {
+        new ProcessTemplatesService()
+            .loadTemplate(template)
+            .then((templateData) => {
+                if (templateData == null) {
+                    return;
+                }
+
+                handleSelectStartPoint(templateData, {
+                    label: template.name,
+                    type: 'template',
+                });
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Die Vorlage konnte nicht geladen werden. Bitte versuchen Sie es später erneut.'));
             });
     };
 
@@ -173,13 +284,15 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             return;
         }
 
+        const processName = nameOverride.trim();
+
         setIsLoading(true);
 
         const data: ProcessExport = {
             ...selectedTemplateData,
             process: {
                 ...selectedTemplateData.process,
-                internalTitle: nameOverride,
+                internalTitle: processName,
                 departmentId: departmentOverride,
             },
         };
@@ -197,7 +310,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 }, 1);
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Das Verfahren konnte nicht erstellt werden, da der Datensatz fehlerhaft ist. Bitte probieren Sie eine andere Datei.'));
+                dispatch(showApiErrorSnackbar(err, 'Der Prozess konnte nicht erstellt werden, da der Datensatz fehlerhaft ist. Bitte probieren Sie eine andere Datei.'));
             })
             .finally(() => {
                 setIsLoading(false);
@@ -210,119 +323,175 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             onClose={handleClose}
             fullWidth
             maxWidth="md"
+            TransitionProps={{
+                onExited: resetDialogState,
+            }}
         >
             <DialogTitleWithClose onClose={handleClose}>
-                Neues Verfahren erstellen
+                Neuen Prozess anlegen
             </DialogTitleWithClose>
 
             <DialogContent
                 sx={{
-                    minHeight: '50vh',
+                    minHeight: 'min(620px, 74vh)',
                     display: 'flex',
                     flexDirection: 'column',
+                    p: 0,
                 }}
             >
-                <Stepper
-                    orientation="horizontal"
-                    activeStep={activeStep}
+                <Box
                     sx={{
-                        justifyContent: 'space-between',
-                        '& .MuiStepLabel-label' : {
-                            marginTop: 0,
-                            marginLeft: 0,
-                        },
-                        '& .MuiStepConnector-root': {
-                            display: 'block',
-                            marginLeft: '0.5rem',
-                            marginRight: '0.5rem',
-                        },
+                        px: 3,
+                        py: 1.75,
+                        borderTop: '1px solid',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                        bgcolor: 'rgba(15, 23, 42, 0.025)',
                     }}
                 >
-                    <Step
-                        completed={selectedTemplateData != null}
+                    <Stepper
+                        orientation="horizontal"
+                        activeStep={activeStep}
+                        sx={{
+                            '& .MuiStepConnector-root': {
+                                display: 'block',
+                                mx: 1.5,
+                            },
+                            '& .MuiStepConnector-line': {
+                                borderColor: 'divider',
+                            },
+                            '& .MuiStepLabel-root': {
+                                p: 0,
+                            },
+                            '& .MuiStepLabel-iconContainer': {
+                                p: 0,
+                            },
+                            '& .MuiStepLabel-label': {
+                                mt: 0,
+                                ml: 1,
+                                pt: 0,
+                                fontSize: '0.95rem',
+                                fontWeight: 500,
+                                color: 'text.secondary',
+                            },
+                            '& .MuiStepLabel-label.Mui-active': {
+                                color: 'primary.main',
+                                fontWeight: 700,
+                            },
+                            '& .MuiStepLabel-label.Mui-completed': {
+                                color: 'primary.main',
+                                fontWeight: 500,
+                            },
+                            '& .MuiStepIcon-root': {
+                                fontSize: 30,
+                            },
+                        }}
                     >
-                        <StepLabel>
-                            Vorlage
-                        </StepLabel>
-                    </Step>
-                    <Step completed={validateName(nameOverride) == null && validateDepartment(departmentOverride) == null}>
-                        <StepLabel>
-                            Anpassung
-                        </StepLabel>
-                    </Step>
-                    <Step>
-                        <StepLabel>
-                            Abschluss
-                        </StepLabel>
-                    </Step>
-                </Stepper>
+                        <Step completed={activeStep > 0 && selectedTemplateData != null}>
+                            <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                Startpunkt
+                            </StepLabel>
+                        </Step>
+                        <Step completed={activeStep > 1}>
+                            <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                Angaben
+                            </StepLabel>
+                        </Step>
+                        <Step>
+                            <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                Prüfen
+                            </StepLabel>
+                        </Step>
+                    </Stepper>
+                </Box>
 
                 <Box
                     sx={{
-                        pt: 4,
+                        p: 3,
                         display: 'flex',
                         flexDirection: 'column',
                         flex: 1,
+                        minHeight: 0,
+                        overflowY: 'auto',
                     }}
                 >
                     {
                         activeStep === 0 &&
-                        <>
-                            <Typography>
-                                Wählen Sie eine Vorlage für das neue Verfahren aus:
+                        <Box>
+                            <Typography variant="subtitle1" fontWeight={700}>
+                                Startpunkt wählen
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                                Wählen Sie, ob Sie leer beginnen, eine Datei importieren oder eine Vorlage übernehmen.
                             </Typography>
 
-                            <Grid
-                                container
-                                spacing={2}
-                                sx={{
-                                    marginTop: 2,
-                                }}
-                            >
-                                <ProcessTemplateCard
-                                    Icon={AddBox}
-                                    title="Leeres Verfahren"
-                                    description="Ein leeres Verfahren ohne vordefinierte Schritte oder Logik."
-                                    onClick={() => {
-                                        setSelectedTemplateData(EmptyProcess);
-                                        setActiveStep(1);
-                                    }}
-                                />
+                            <ProcessTemplateSection>
+                                <Grid
+                                    container
+                                    spacing={2}
+                                >
+                                    <ProcessTemplateCard
+                                        Icon={AddBox}
+                                        title="Leerer Prozess"
+                                        description="Ein frischer Prozess ohne vordefinierte Schritte oder Logik."
+                                        category="action"
+                                        onClick={() => {
+                                            handleSelectStartPoint(EmptyProcess, {
+                                                label: 'Leerer Prozess',
+                                                type: 'empty',
+                                            });
+                                        }}
+                                    />
 
-                                <ProcessTemplateCard
-                                    Icon={UploadFile}
-                                    title="Importieren"
-                                    description="Importieren Sie ein Verfahren aus einer Datei."
-                                    onClick={handleImport}
-                                    sx={{
-                                        borderStyle: 'dashed',
-                                    }}
-                                />
+                                    <ProcessTemplateCard
+                                        Icon={UploadFile}
+                                        title="Prozess importieren (JSON)"
+                                        description="Einen bestehenden Prozess aus einer Exportdatei importieren."
+                                        category="action"
+                                        onClick={handleImport}
+                                        sx={{
+                                            borderStyle: 'dashed',
+                                        }}
+                                    />
+                                </Grid>
+                            </ProcessTemplateSection>
 
+                            <Divider sx={{my: 3}}/>
+
+                            <ProcessTemplateSection title="Prozessvorlagen">
+                                <Grid
+                                    container
+                                    spacing={2}
+                                >
+                                    {
+                                        templates != null &&
+                                        templates.map((preset) => (
+                                            <ProcessTemplateCard
+                                                key={preset.path}
+                                                Icon={GridGuides}
+                                                title={preset.name}
+                                                description={preset.description}
+                                                category="template"
+                                                onClick={() => {
+                                                    handleLoadTemplate(preset);
+                                                }}
+                                            />
+                                        ))
+                                    }
+                                </Grid>
                                 {
-                                    templates != null &&
-                                    templates.map((preset) => (
-                                        <ProcessTemplateCard
-                                            key={preset.path}
-                                            Icon={GridGuides}
-                                            title={preset.name}
-                                            description={preset.description}
-                                            onClick={() => {
-                                                new ProcessTemplatesService()
-                                                    .loadTemplate(preset)
-                                                    .then((templateData) => {
-                                                        if (templateData == null) {
-                                                            return;
-                                                        }
-                                                        setSelectedTemplateData(templateData);
-                                                        setActiveStep(1);
-                                                    });
-                                            }}
-                                        />
-                                    ))
+                                    templates != null && templates.length === 0 &&
+                                    <AlertComponent
+                                        color="info"
+                                        sx={{
+                                            mt: 2,
+                                        }}
+                                    >
+                                        Aktuell stehen keine Prozessvorlagen zur Verfügung.
+                                    </AlertComponent>
                                 }
-                            </Grid>
-                        </>
+                            </ProcessTemplateSection>
+                        </Box>
                     }
                     {
                         activeStep === 1 &&
@@ -333,45 +502,42 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                 flex: 1,
                             }}
                         >
-                            <TextFieldComponent
-                                label="Name des Verfahrens"
-                                value={nameOverride}
-                                onChange={(val) => {
-                                    const nextValue = val ?? null;
-                                    setNameOverride(nextValue);
+                            <Box>
+                                <Typography variant="subtitle1" fontWeight={700}>
+                                    Angaben zum Prozess
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{mt: 0.5, mb: 2}}>
+                                    Diese Angaben werden beim Anlegen übernommen und können später bearbeitet werden.
+                                </Typography>
 
-                                    if (nameError != null) {
-                                        setNameError(validateName(nextValue));
-                                    }
-                                }}
-                                onBlur={(val) => {
-                                    const nextValue = val ?? null;
-                                    setNameOverride(nextValue);
-                                    setNameError(validateName(nextValue));
-                                }}
-                                required={true}
-                                disabled={isLoading}
-                                error={nameError}
-                                minCharacters={3}
-                                maxCharacters={96}
-                            />
+                                <ProcessConfigurationErrorAlert show={hasProcessConfigurationErrors}/>
 
-                            <SelectFieldComponent
-                                label="Organisationseinheit"
-                                value={departmentOverride}
-                                onChange={(newValue) => {
-                                    const nextValue = newValue ?? null;
-                                    setDepartmentOverride(nextValue);
+                                <TextFieldComponent
+                                    label="Name des Prozesses (intern)"
+                                    value={nameOverride}
+                                    onChange={(val) => {
+                                        setNameOverride(val ?? null);
+                                    }}
+                                    required={true}
+                                    disabled={isLoading}
+                                    error={nameError}
+                                    minCharacters={3}
+                                    maxCharacters={96}
+                                />
 
-                                    if (departmentError != null || nextValue == null) {
-                                        setDepartmentError(validateDepartment(nextValue));
-                                    }
-                                }}
-                                options={availableDepartments}
-                                required={true}
-                                disabled={isLoading}
-                                error={departmentError}
-                            />
+                                <SelectFieldComponent
+                                    label="Verwaltende Organisationseinheit"
+                                    value={departmentOverride}
+                                    onChange={(newValue) => {
+                                        setDepartmentOverride(newValue ?? null);
+                                    }}
+                                    options={availableDepartments}
+                                    required={true}
+                                    disabled={isLoading}
+                                    error={departmentError}
+                                    hint="Die ausgewählte Einheit wird als verantwortlich für diesen Prozess festgelegt und kann z. B. Berechtigungen verwalten."
+                                />
+                            </Box>
 
                             <Box
                                 sx={{
@@ -415,9 +581,26 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                 flex: 1,
                             }}
                         >
-                            <Typography>
-                                Klicken Sie auf {quoteString('Anlegen und Bearbeiten')}, um das neue Verfahren anzulegen.
+                            <Typography variant="subtitle1" fontWeight={700}>
+                                Angaben prüfen
                             </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{mt: 0.5}}>
+                                Klicken Sie auf {quoteString('Anlegen und Bearbeiten')}, um den neuen Prozess anzulegen.
+                            </Typography>
+
+                            <StatusTable
+                                sx={{mt: 3}}
+                                cardVariant="outlined"
+                                dense
+                                cardSx={{
+                                    borderRadius: 1,
+                                    boxShadow: 'none',
+                                    '& .MuiTableCell-root': {
+                                        py: 1.5,
+                                    },
+                                }}
+                                items={summaryItems}
+                            />
 
                             <Box
                                 sx={{
@@ -459,6 +642,7 @@ interface ProcessTemplateCardProps {
     title: string;
     description: string;
     onClick: () => void;
+    category: 'action' | 'template';
     sx?: SxProps;
 }
 
@@ -468,67 +652,223 @@ function ProcessTemplateCard(props: ProcessTemplateCardProps): ReactNode {
         title,
         description,
         onClick,
+        category,
         sx,
     } = props;
+    const isAction = category === 'action';
 
     return (
         <Grid
             size={{
                 xs: 12,
-                md: 6,
-                lg: 4,
+                sm: 6,
+                lg: 6,
             }}
         >
-            <Button
+            <Card
                 variant="outlined"
-                fullWidth
                 sx={{
+                    height: '100%',
+                    borderRadius: 1,
+                    borderColor: isAction ? 'primary.light' : 'divider',
+                    bgcolor: isAction ? 'rgba(25, 118, 210, 0.025)' : 'background.paper',
+                    transition: 'border-color 120ms ease, box-shadow 120ms ease, background-color 120ms ease',
+                    '&:hover': {
+                        borderColor: 'primary.main',
+                        boxShadow: 1,
+                    },
                     ...sx,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    px: 1,
-                    py: 2,
-                    height: '12em',
-                    width: '100%',
                 }}
-                onClick={onClick}
             >
-                <Icon
-                    fontSize="large"
+                <CardActionArea
+                    onClick={onClick}
                     sx={{
-                        mb: 2,
-                    }}
-                />
-
-                <Typography
-                    variant="h6"
-                    sx={{
-                        marginTop: 0.5,
-                        marginBottom: 0.25,
+                        height: '100%',
+                        minHeight: 136,
+                        display: 'flex',
+                        alignItems: 'flex-start',
+                        gap: 1.5,
+                        p: 2,
+                        textAlign: 'left',
                     }}
                 >
-                    {title}
-                </Typography>
-
-                <Tooltip title={description}>
-                    <Typography
-                        variant="body2"
-                        color="textSecondary"
+                    <Box
                         sx={{
-                            mb: 'auto',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            display: '-webkit-box',
-                            WebkitLineClamp: '2',
-                            WebkitBoxOrient: 'vertical',
+                            width: 42,
+                            height: 42,
+                            borderRadius: '50%',
+                            bgcolor: isAction ? 'primary.main' : 'grey.100',
+                            color: isAction ? 'primary.contrastText' : 'text.secondary',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
                         }}
                     >
-                        {description}
-                    </Typography>
-                </Tooltip>
-            </Button>
+                        <Icon sx={{fontSize: 24}}/>
+                    </Box>
+
+                    <Box
+                        sx={{
+                            minWidth: 0,
+                            flex: 1,
+                        }}
+                    >
+                        <Typography
+                            variant="subtitle1"
+                            fontWeight={700}
+                            sx={{
+                                lineHeight: 1.25,
+                            }}
+                        >
+                            {title}
+                        </Typography>
+
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            title={description}
+                            sx={{
+                                mt: 0.75,
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                display: '-webkit-box',
+                                WebkitLineClamp: '4',
+                                WebkitBoxOrient: 'vertical',
+                            }}
+                        >
+                            {description}
+                        </Typography>
+                    </Box>
+                </CardActionArea>
+            </Card>
         </Grid>
     );
+}
+
+interface ProcessTemplateSectionProps {
+    title?: string;
+    children: ReactNode;
+}
+
+function ProcessTemplateSection(props: ProcessTemplateSectionProps): ReactNode {
+    return (
+        <Box sx={{mt: 2.5}}>
+            {
+                props.title != null &&
+                <Typography
+                    variant="subtitle2"
+                    sx={{
+                        mb: 1.25,
+                        fontWeight: 700,
+                    }}
+                >
+                    {props.title}
+                </Typography>
+            }
+
+            {props.children}
+        </Box>
+    );
+}
+
+interface ProcessConfigurationErrorAlertProps {
+    show: boolean;
+}
+
+function ProcessConfigurationErrorAlert(props: ProcessConfigurationErrorAlertProps): ReactNode {
+    const {
+        show,
+    } = props;
+
+    if (!show) {
+        return null;
+    }
+
+    return (
+        <AlertComponent
+            title="Dieser Schritt enthält fehlerhafte oder fehlende Angaben"
+            color="error"
+            sx={{
+                mt: 2,
+                mb: 1,
+            }}
+        >
+            <Typography>
+                Bitte korrigieren Sie die markierten Angaben und klicken Sie erneut auf Weiter.
+            </Typography>
+        </AlertComponent>
+    );
+}
+
+function SummaryIcon(props: {children?: ReactNode}): ReactNode {
+    return (
+        <Box
+            sx={{
+                width: 34,
+                height: 34,
+                borderRadius: '50%',
+                bgcolor: 'grey.100',
+                color: 'text.secondary',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                '& svg': {
+                    fontSize: 19,
+                    color: 'text.secondary',
+                },
+            }}
+        >
+            {props.children}
+        </Box>
+    );
+}
+
+function OutlinedStepIcon(props: StepIconProps): ReactNode {
+    const isHighlighted = props.active || props.completed;
+    const content = props.completed ? <Check sx={{fontSize: 18}}/> : props.icon;
+    const backgroundColor = props.completed ? 'primary.main' : 'background.paper';
+    const color = props.completed ? 'primary.contrastText' : isHighlighted ? 'primary.main' : 'text.secondary';
+
+    return (
+        <Box
+            sx={{
+                width: 30,
+                height: 30,
+                borderRadius: '50%',
+                border: '2px solid',
+                borderColor: isHighlighted ? 'primary.main' : 'text.disabled',
+                bgcolor: backgroundColor,
+                color: color,
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '0.875rem',
+                fontWeight: 800,
+                lineHeight: 1,
+                '& svg': {
+                    fontSize: 18,
+                    color: 'inherit',
+                },
+            }}
+        >
+            {content}
+        </Box>
+    );
+}
+
+function getStartPointIcon(type: StartPointType | undefined): ReactNode {
+    switch (type) {
+        case 'empty':
+            return <AddBox sx={{fontSize: 20, color: 'text.secondary'}}/>;
+        case 'import':
+            return <UploadFile sx={{fontSize: 20, color: 'text.secondary'}}/>;
+        case 'template':
+            return <GridGuides sx={{fontSize: 20, color: 'text.secondary'}}/>;
+        default:
+            return undefined;
+    }
 }
 
 const EmptyProcess: ProcessExport = {
@@ -540,7 +880,7 @@ const EmptyProcess: ProcessExport = {
     nodes: [],
     process: {
         id: 0,
-        internalTitle: 'Neues Verfahren',
+        internalTitle: 'Neuer Prozess',
         departmentId: 0,
         accessKey: '',
         versionCount: 0,
@@ -553,7 +893,7 @@ const EmptyProcess: ProcessExport = {
         processId: 0,
         processVersion: 0,
         status: ProcessStatus.Drafted,
-        publicTitle: 'Neues Verfahren',
+        publicTitle: 'Neuer Prozess',
         crated: '',
         updated: '',
         published: null,
