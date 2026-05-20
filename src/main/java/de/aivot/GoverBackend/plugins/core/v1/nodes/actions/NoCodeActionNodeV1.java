@@ -28,6 +28,7 @@ import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecution
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.utils.MapUtils;
 import jakarta.annotation.Nonnull;
@@ -38,7 +39,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.*;
 
 import de.aivot.GoverBackend.utils.IsoTimestampUtils;
@@ -616,7 +617,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             return date.toString();
         }
         if (value instanceof Instant instant) {
-            return instant.atZone(ZoneOffset.UTC).toLocalDate().toString();
+            return instant.atZone(zoneId()).toLocalDate().toString();
         }
         if (value instanceof LocalDateTime dateTime) {
             return dateTime.toLocalDate().toString();
@@ -634,8 +635,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             } catch (Exception ignored) {
                 try {
                     return IsoTimestampUtils
-                            .parseIsoTimestamp(trimmed, ZoneOffset.UTC)
-                            .atZone(ZoneOffset.UTC)
+                            .parseIsoTimestamp(trimmed, zoneId())
+                            .atZone(zoneId())
                             .toLocalDate()
                             .toString();
                 } catch (Exception ignored2) {
@@ -655,16 +656,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     @Nonnull
     private static String castToDateTime(Object value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        // Normalize runtime datetime outputs to UTC ISO-8601 so process payloads always carry
-        // absolute instants, independent from the environment where the node was executed.
+        // Normalize runtime datetime outputs to UTC ISO-8601 while interpreting local
+        // date/date-time inputs in the configured business timezone.
         if (value instanceof Instant instant) {
             return instant.toString();
         }
         if (value instanceof LocalDateTime dateTime) {
-            return dateTime.toInstant(ZoneOffset.UTC).toString();
+            return dateTime.atZone(zoneId()).toInstant().toString();
         }
         if (value instanceof LocalDate date) {
-            return date.atStartOfDay(ZoneOffset.UTC).toInstant().toString();
+            return date.atStartOfDay(zoneId()).toInstant().toString();
         }
         if (value instanceof String s) {
             var trimmed = s.trim();
@@ -675,15 +676,15 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             }
 
             try {
-                return IsoTimestampUtils.parseIsoTimestamp(trimmed, ZoneOffset.UTC).toString();
+                return IsoTimestampUtils.parseIsoTimestamp(trimmed, zoneId()).toString();
             } catch (Exception ignored) {
                 try {
-                    return LocalDate.parse(trimmed).atStartOfDay(ZoneOffset.UTC).toInstant().toString();
+                    return LocalDate.parse(trimmed).atStartOfDay(zoneId()).toInstant().toString();
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
                             StringUtils.quote(s)
-                    );
+                        );
                 }
             }
         }
@@ -692,6 +693,11 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 "Der Typ %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
+    }
+
+    @Nonnull
+    private static ZoneId zoneId() {
+        return ApplicationTimeZone.getZoneId();
     }
 
     private record VariableDefinition(

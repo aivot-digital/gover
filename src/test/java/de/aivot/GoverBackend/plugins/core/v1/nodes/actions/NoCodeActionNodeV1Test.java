@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
 import de.aivot.GoverBackend.nocode.models.NoCodeProcessDataReference;
+import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -17,11 +18,16 @@ import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
+import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +49,7 @@ class NoCodeActionNodeV1Test {
 
     @BeforeEach
     void setUp() {
+        ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
         node = new NoCodeActionNodeV1(new NoCodeEvaluationService(List.of()));
     }
 
@@ -153,6 +160,70 @@ class NoCodeActionNodeV1Test {
         assertTrue(ex.getMessage().contains("Wildcard"));
     }
 
+    @Test
+    void init_ShouldPreserveBusinessLocalDateWhenCastingOffsetTimestampStringToDate() throws Exception {
+        var result = init(variable(
+                "localDate",
+                "date",
+                new NoCodeStaticValue("2026-05-09T00:00:00+02:00")
+        ));
+
+        assertEquals("2026-05-09", result.getProcessData().get("localDate"));
+
+        @SuppressWarnings("unchecked")
+        var variables = (List<Map<String, Object>>) result.getNodeData().get("variables");
+        assertEquals("2026-05-09", variables.getFirst().get("value"));
+    }
+
+    @Test
+    void init_ShouldPreserveBusinessLocalDateWhenCastingInstantToDate() throws Exception {
+        var result = init(variable(
+                "localDate",
+                "date",
+                new NoCodeStaticValue(Instant.parse("2026-05-08T22:00:00Z"))
+        ));
+
+        assertEquals("2026-05-09", result.getProcessData().get("localDate"));
+    }
+
+    @Test
+    void init_ShouldUseBusinessTimezoneWhenCastingLocalDateToDateTime() throws Exception {
+        var result = init(variable(
+                "appointment",
+                "datetime",
+                new NoCodeStaticValue(LocalDate.of(2026, 5, 9))
+        ));
+
+        assertEquals("2026-05-08T22:00:00Z", result.getProcessData().get("appointment"));
+    }
+
+    @Test
+    void init_ShouldUseBusinessTimezoneWhenCastingLocalDateTimeToDateTime() throws Exception {
+        var result = init(variable(
+                "appointment",
+                "datetime",
+                new NoCodeStaticValue(LocalDateTime.of(2026, 5, 9, 8, 30))
+        ));
+
+        assertEquals("2026-05-09T06:30:00Z", result.getProcessData().get("appointment"));
+    }
+
+    @Nonnull
+    private ProcessNodeExecutionResultTaskCompleted init(NoCodeActionNodeV1.NoCodeActionNodeVariableConfiguration... variables) throws Exception {
+        return assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(new ProcessNodeExecutionInitContext<>(
+                        logger(),
+                        processNode(),
+                        processInstance(),
+                        task(),
+                        null,
+                        new ProcessExecutionData(),
+                        configuration(variables)
+                ))
+        );
+    }
+
     private static NoCodeActionNodeV1.NoCodeActionNodeConfiguration configuration(NoCodeActionNodeV1.NoCodeActionNodeVariableConfiguration... variables) {
         var configuration = new NoCodeActionNodeV1.NoCodeActionNodeConfiguration();
         configuration.variables = Arrays.stream(variables).toList();
@@ -161,9 +232,15 @@ class NoCodeActionNodeV1Test {
 
     private static NoCodeActionNodeV1.NoCodeActionNodeVariableConfiguration variable(String name,
                                                                                       NoCodeOperand expression) {
+        return variable(name, "any", expression);
+    }
+
+    private static NoCodeActionNodeV1.NoCodeActionNodeVariableConfiguration variable(String name,
+                                                                                      String targetType,
+                                                                                      NoCodeOperand expression) {
         var variable = new NoCodeActionNodeV1.NoCodeActionNodeVariableConfiguration();
         variable.name = name;
-        variable.targetType = "any";
+        variable.targetType = targetType;
         if (expression != null) {
             variable.expression = new de.aivot.GoverBackend.elements.models.elements.form.input.NoCodeInputElementItem(expression);
         }
@@ -184,7 +261,7 @@ class NoCodeActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -201,7 +278,7 @@ class NoCodeActionNodeV1Test {
     }
 
     private static ProcessInstanceTaskEntity task() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)
