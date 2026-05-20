@@ -63,7 +63,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 @RestController
@@ -394,6 +394,7 @@ public class FormTriggerControllerV1 {
                                                @Nonnull ProcessNodeEntity nodeEntity,
                                                @Nonnull EffectiveElementValues effectiveValues,
                                                @Nullable MultipartFile[] files) throws ResponseException {
+        var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
                 null,
@@ -404,8 +405,8 @@ public class FormTriggerControllerV1 {
                 null,
                 List.of(),
                 Map.of(),
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                startedAt,
+                startedAt,
                 null,
                 null,
                 new HashMap<>(),
