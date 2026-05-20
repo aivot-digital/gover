@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
@@ -29,11 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CounterActionNodeV1Test {
     private static final Integer PROCESS_ID = 42;
@@ -84,6 +81,7 @@ class CounterActionNodeV1Test {
         assertEquals(2L, result.getNodeData().get("previousValue"));
         assertEquals(3L, result.getNodeData().get("increment"));
         assertEquals("loop.count", result.getNodeData().get("storageTarget"));
+        assertEquals("processData", result.getNodeData().get("storageMode"));
 
         @SuppressWarnings("unchecked")
         var loopData = (Map<String, Object>) result.getProcessData().get("loop");
@@ -95,7 +93,7 @@ class CounterActionNodeV1Test {
     void init_UsesPreviousNodeDataWhenVariablePathIsMissing() throws Exception {
         var processData = new ProcessExecutionData()
                 .addProcessData(Map.of("other", "value"));
-        processData.put("_counterNode", Map.of());
+
         previousIterationTask = previousIterationTask(Map.of("value", 4L));
 
         var result = assertInstanceOf(
@@ -112,11 +110,13 @@ class CounterActionNodeV1Test {
         );
 
         assertEquals("output", result.getViaPort());
-        assertNull(result.getProcessData());
+        assertNotNull(result.getProcessData());
+        assertFalse(result.getProcessData().isEmpty());
+        assertEquals("value", result.getProcessData().get("other"));
         assertEquals(6L, result.getNodeData().get("value"));
         assertEquals(4L, result.getNodeData().get("previousValue"));
         assertEquals(2L, result.getNodeData().get("increment"));
-        assertEquals("_counterNode.value", result.getNodeData().get("storageTarget"));
+        assertEquals("runtimeData", result.getNodeData().get("storageMode"));
     }
 
     @Test
@@ -140,7 +140,10 @@ class CounterActionNodeV1Test {
         assertEquals(1L, result.getNodeData().get("value"));
         assertEquals(0L, result.getNodeData().get("previousValue"));
         assertEquals(1L, result.getNodeData().get("increment"));
-        assertNull(result.getProcessData());
+        assertEquals("runtimeData", result.getNodeData().get("storageMode"));
+        assertNotNull(result.getProcessData());
+        assertFalse(result.getProcessData().isEmpty());
+        assertEquals("value", result.getProcessData().get("other"));
     }
 
     @Test
@@ -151,7 +154,7 @@ class CounterActionNodeV1Test {
                 ));
 
         assertThrows(
-                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                ProcessNodeExecutionExceptionInvalidDataType.class,
                 () -> node.init(new ProcessNodeExecutionInitContext(
                         logger(),
                         processNode(configuration("loop.count", 1L)),
@@ -162,28 +165,6 @@ class CounterActionNodeV1Test {
                         nodeConfiguration(configuration("loop.count", 1L))
                 ))
         );
-    }
-
-    @Test
-    void validateConfiguration_ReportsInvalidIncrement() throws Exception {
-        var config = configuration("loop.count", 0L);
-        var details = validationRuntime(config);
-
-        var errors = node.validateConfiguration(processNode(config), config, details);
-
-        assertEquals("Das Inkrement muss mindestens 1 betragen.", errors.get("increment"));
-        assertTrue(details.getElementStates().get("increment").getError().contains("mindestens 1"));
-    }
-
-    @Test
-    void validateConfiguration_ReportsInvalidVariablePath() throws Exception {
-        var config = configuration("loop..count", 1L);
-        var details = validationRuntime(config);
-
-        var errors = node.validateConfiguration(processNode(config), config, details);
-
-        assertTrue(errors.get("variable").contains("Ungültiger Pfad"));
-        assertTrue(details.getElementStates().get("variable").getError().contains("Ungültiger Pfad"));
     }
 
     private static AuthoredElementValues configuration(String variablePath, Long increment) {
@@ -245,14 +226,15 @@ class CounterActionNodeV1Test {
     }
 
     private static ProcessInstanceTaskEntity task() {
-        return task(TASK_ID, Map.of(), Map.of());
+        return task(TASK_ID, Map.of(), Map.of(), Map.of());
     }
 
-    private static ProcessInstanceTaskEntity previousIterationTask(Map<String, Object> nodeData) {
-        return task(PREVIOUS_TASK_ID, nodeData, Map.of("other", "value"));
+    private static ProcessInstanceTaskEntity previousIterationTask(Map<String, Object> runtimeData) {
+        return task(PREVIOUS_TASK_ID, runtimeData, Map.of(), Map.of("other", "value"));
     }
 
     private static ProcessInstanceTaskEntity task(Long taskId,
+                                                  Map<String, Object> runtimeData,
                                                   Map<String, Object> nodeData,
                                                   Map<String, Object> processData) {
         var now = LocalDateTime.now();
@@ -270,7 +252,7 @@ class CounterActionNodeV1Test {
                 .setStatus(ProcessTaskStatus.Running)
                 .setStarted(now)
                 .setUpdated(now)
-                .setRuntimeData(Map.of())
+                .setRuntimeData(runtimeData)
                 .setNodeData(nodeData)
                 .setProcessData(processData);
     }

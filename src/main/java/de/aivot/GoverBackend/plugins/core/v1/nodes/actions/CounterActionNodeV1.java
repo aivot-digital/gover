@@ -1,13 +1,11 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -16,31 +14,24 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
+import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
-import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
-import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.GoverBackend.utils.NumberUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionNodeV1.CounterConfiguration> {
@@ -55,12 +46,13 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     private static final String OUTPUT_PREVIOUS_VALUE = "previousValue";
     private static final String OUTPUT_INCREMENT = "increment";
     private static final String OUTPUT_STORAGE_TARGET = "storageTarget";
+    private static final String OUTPUT_STORAGE_MODE = "storageMode";
 
     private static final String STORAGE_MODE_PROCESS_DATA = "processData";
-    private static final String STORAGE_MODE_NODE_DATA = "nodeData";
+    private static final String STORAGE_MODE_RUNTIME_DATA = "runtimeData";
 
     private static final long DEFAULT_INCREMENT = 1L;
-    private static final String NODE_DATA_VALUE_KEY = OUTPUT_VALUE;
+    private static final String RUNTIME_DATA_VALUE_KEY = OUTPUT_VALUE;
 
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
 
@@ -160,615 +152,133 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                         OUTPUT_INCREMENT,
                         "Inkrement",
                         "Der Wert, um den der Zähler erhöht wurde."
-                ),
-                new ProcessNodeOutput(
-                        OUTPUT_STORAGE_TARGET,
-                        "Speicherziel",
-                        "Der verwendete Speicherpfad des Zählerstands."
                 )
         );
     }
 
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AuthoredElementValues configuration,
-                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
-        var res = new HashMap<String, String>();
+    @Override
+    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                                 @Nonnull CounterConfiguration configuration,
+                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
+        var variablePath = configuration.variable;
 
-        var variableField = derivedRuntimeElementData
-                .getEffectiveValues()
-                .get(VARIABLE_FIELD_ID);
+        if (StringUtils.isNullOrEmpty(variablePath)) {
+            return previousDataKeys;
+        }
 
-        var variablePath = toNullableTrimmedString(variableField);
-        if (variablePath != null) {
-            try {
-                parsePath(variablePath, "Vorgangsdatenvariable");
-            } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                derivedRuntimeElementData
-                        .getElementStates()
-                        .get(VARIABLE_FIELD_ID)
-                        .setError(e.getMessage());
-                res.put(VARIABLE_FIELD_ID, e.getMessage());
+        var res = new ArrayList<ProcessDataKeyHint>();
+
+        for (var existingDataKey : previousDataKeys) {
+            if (Objects.equals(existingDataKey.key(), variablePath)) {
+                continue;
             }
+            res.add(existingDataKey);
         }
 
-        var incrementField = derivedRuntimeElementData
-                .getEffectiveValues()
-                .get(INCREMENT_FIELD_ID);
-        try {
-            resolveIncrement(incrementField);
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            derivedRuntimeElementData
-                    .getElementStates()
-                    .get(INCREMENT_FIELD_ID)
-                    .setError(e.getMessage());
-            res.put(INCREMENT_FIELD_ID, e.getMessage());
-        }
+        res.add(new ProcessDataKeyHint(
+                variablePath,
+                ProcessDataKeyHintType.ProcessData
+        ));
 
-        return res.isEmpty() ? null : res;
+        return res;
     }
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
 
-        var variablePath = toNullableTrimmedString(configuration.variable);
-        var increment = resolveIncrement(configuration.increment);
-
-        var nodeData = new LinkedHashMap<String, Object>();
-
-        if (variablePath != null) {
-            var path = parsePath(variablePath, "Vorgangsdatenvariable");
-            var outputRoot = resolveProcessDataRoot(context.getCurrentProcessExecutionData().get("$"));
-            var previousValue = readCounterValue(readPath(outputRoot, path), "Vorgangsdatenvariable");
-            var nextValue = previousValue + increment;
-
-            writePath(outputRoot, path, nextValue);
-
-            nodeData.put(OUTPUT_VALUE, nextValue);
-            nodeData.put(OUTPUT_PREVIOUS_VALUE, previousValue);
-            nodeData.put(OUTPUT_INCREMENT, increment);
-            nodeData.put(OUTPUT_STORAGE_TARGET, variablePath);
-            nodeData.put("storageMode", STORAGE_MODE_PROCESS_DATA);
-
-            return new ProcessNodeExecutionResultTaskCompleted()
-                    .setViaPort(PORT_NAME)
-                    .setProcessData(outputRoot)
-                    .setNodeData(nodeData);
+        var variablePath = configuration.variable;
+        var incrementObj = configuration.increment;
+        var increment = DEFAULT_INCREMENT;
+        if (incrementObj != null) {
+            increment = incrementObj.longValue();
         }
 
-        var previousValue = readFallbackCounterValue(context);
-        var nextValue = previousValue + increment;
-        var fallbackStorageTarget = "_" + context.getThisNode().getDataKey() + "." + NODE_DATA_VALUE_KEY;
+        long lastIndex;
+        String storageType;
+        if (StringUtils.isNotNullOrEmpty(variablePath)) {
+            lastIndex = getLastIndexByVariablePath(context, variablePath);
+            storageType = STORAGE_MODE_PROCESS_DATA;
+        } else {
+            lastIndex = getLastIndexFromPreviousInstantiation(context);
+            storageType = STORAGE_MODE_RUNTIME_DATA;
+        }
 
-        nodeData.put(OUTPUT_VALUE, nextValue);
-        nodeData.put(OUTPUT_PREVIOUS_VALUE, previousValue);
+        var nextIndex = lastIndex + increment;
+
+        var nodeData = new LinkedHashMap<String, Object>();
+        nodeData.put(OUTPUT_VALUE, nextIndex);
+        nodeData.put(OUTPUT_PREVIOUS_VALUE, lastIndex);
         nodeData.put(OUTPUT_INCREMENT, increment);
-        nodeData.put(OUTPUT_STORAGE_TARGET, fallbackStorageTarget);
-        nodeData.put("storageMode", STORAGE_MODE_NODE_DATA);
+        nodeData.put(OUTPUT_STORAGE_TARGET, variablePath);
+        nodeData.put(OUTPUT_STORAGE_MODE, storageType);
+
+        var execData = context.getCurrentProcessExecutionData();
+        if (StringUtils.isNotNullOrEmpty(variablePath)) {
+            ProcessExecutionData.writeProcessDataValue(execData, variablePath, nextIndex);
+        }
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
+                .setProcessData(execData.getProcessData())
                 .setNodeData(nodeData);
     }
 
-    @Nonnull
-    private static Map<String, Object> resolveProcessDataRoot(@Nullable Object rawRoot) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawRoot == null) {
-            return new HashMap<>();
+    private static long getLastIndexByVariablePath(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context, String variablePath) throws ProcessNodeExecutionExceptionInvalidDataType {
+        long lastIndex;
+        var currentIndexObj = ProcessExecutionData.resolveProcessDataValue(
+                context.getCurrentProcessExecutionData(),
+                variablePath
+        );
+
+        if (currentIndexObj == null) {
+            currentIndexObj = 0;
         }
 
-        if (!(rawRoot instanceof Map<?, ?> rawMap)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Vorgangsdatenwurzel ($) ist kein Objekt und kann nicht für den Zähler verwendet werden."
+        try {
+            lastIndex = NumberUtils
+                    .asNumber(currentIndexObj)
+                    .orElse(0)
+                    .longValue();
+        } catch (NumberFormatException e) {
+            throw new ProcessNodeExecutionExceptionInvalidDataType(
+                    "Der aktuelle Wert der Vorgangsdatenvariable %s konnte nicht in eine Zahl umgewandelt werden. Der Wert war %s",
+                    StringUtils.quote(variablePath),
+                    StringUtils.quote(currentIndexObj.toString())
             );
         }
-
-        return deepCopyMap(castStringObjectMap(rawMap));
+        return lastIndex;
     }
 
-    private long readFallbackCounterValue(@Nonnull ProcessNodeExecutionInitContext context) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var dataKey = context.getThisNode().getDataKey();
-        var directNodeData = context.getCurrentProcessExecutionData().get("_" + dataKey);
-
-        var contextValue = extractStoredCounterValue(directNodeData);
-        if (contextValue != null) {
-            return contextValue;
-        }
-
-        var groupedNodeData = context.getCurrentProcessExecutionData().get("_");
-        if (groupedNodeData instanceof Map<?, ?> allNodeDataRaw) {
-            var previousNodeData = allNodeDataRaw.get(dataKey);
-            contextValue = extractStoredCounterValue(previousNodeData);
-            if (contextValue != null) {
-                return contextValue;
-            }
-        }
-
-        var previousIterationTask = context.getThisTask().getId() != null
-                ? processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(
-                context.getThisProcessInstance().getId(),
-                context.getThisNode().getId(),
-                context.getThisTask().getId()
-        ).orElse(null)
-                : processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
+    private long getLastIndexFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) {
+        long lastIndex;
+        var lastIterationTask = processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
                 context.getThisProcessInstance().getId(),
                 context.getThisNode().getId()
-        ).orElse(null);
-
-        var previousIterationValue = previousIterationTask == null
-                ? null
-                : extractStoredCounterValue(previousIterationTask.getNodeData());
-        if (previousIterationValue != null) {
-            return previousIterationValue;
-        }
-
-        return 0L;
-    }
-
-    @Nullable
-    private static Long extractStoredCounterValue(@Nullable Object rawNodeData) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (!(rawNodeData instanceof Map<?, ?> rawMap)) {
-            return null;
-        }
-
-        var nodeData = castStringObjectMap(rawMap);
-        if (!nodeData.containsKey(NODE_DATA_VALUE_KEY)) {
-            return null;
-        }
-
-        return readCounterValue(nodeData.get(NODE_DATA_VALUE_KEY), "Elementdaten");
-    }
-
-    private static long readCounterValue(@Nullable Object rawValue,
-                                         @Nonnull String sourceLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawValue == null) {
-            return 0L;
-        }
-
-        var normalized = toBigDecimal(rawValue, sourceLabel);
-        try {
-            var normalizedInteger = normalized.stripTrailingZeros();
-            if (normalizedInteger.scale() > 0) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Der vorhandene Zählwert in %s muss eine ganze, nicht negative Zahl sein.",
-                        StringUtils.quote(sourceLabel)
-                );
-            }
-
-            var value = normalizedInteger.longValueExact();
-            if (value < 0) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Der vorhandene Zählwert in %s muss eine ganze, nicht negative Zahl sein.",
-                        StringUtils.quote(sourceLabel)
-                );
-            }
-
-            return value;
-        } catch (ArithmeticException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Der vorhandene Zählwert in %s ist zu groß.",
-                    StringUtils.quote(sourceLabel)
-            );
-        }
-    }
-
-    private static long resolveIncrement(@Nullable Object rawValue) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawValue == null) {
-            return DEFAULT_INCREMENT;
-        }
-
-        if (rawValue instanceof String s && s.trim().isEmpty()) {
-            return DEFAULT_INCREMENT;
-        }
-
-        var normalized = toBigDecimal(rawValue, "Inkrement");
-        try {
-            var normalizedInteger = normalized.stripTrailingZeros();
-            if (normalizedInteger.scale() > 0) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Das Inkrement muss eine natürliche Zahl sein."
-                );
-            }
-
-            var increment = normalizedInteger.longValueExact();
-            if (increment < 1) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Das Inkrement muss mindestens 1 betragen."
-                );
-            }
-
-            return increment;
-        } catch (ArithmeticException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Das Inkrement ist zu groß."
-            );
-        }
-    }
-
-    @Nonnull
-    private static BigDecimal toBigDecimal(@Nullable Object rawValue,
-                                           @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawValue == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Das Feld %s enthält keinen gültigen Zahlenwert.",
-                    StringUtils.quote(fieldLabel)
-            );
-        }
-
-        try {
-            return switch (rawValue) {
-                case BigDecimal b -> b;
-                case BigInteger b -> new BigDecimal(b);
-                case Byte b -> BigDecimal.valueOf(b.longValue());
-                case Short s -> BigDecimal.valueOf(s.longValue());
-                case Integer i -> BigDecimal.valueOf(i.longValue());
-                case Long l -> BigDecimal.valueOf(l);
-                case Float f -> BigDecimal.valueOf(f.doubleValue());
-                case Double d -> BigDecimal.valueOf(d);
-                case Number n -> BigDecimal.valueOf(n.doubleValue());
-                case String s -> parseDecimalString(s, fieldLabel);
-                default -> throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Das Feld %s enthält keinen gültigen Zahlenwert.",
-                        StringUtils.quote(fieldLabel)
-                );
-            };
-        } catch (NumberFormatException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Das Feld %s enthält keinen gültigen Zahlenwert.",
-                    StringUtils.quote(fieldLabel)
-            );
-        }
-    }
-
-    @Nonnull
-    private static BigDecimal parseDecimalString(@Nonnull String value,
-                                                 @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var trimmedValue = value.trim();
-        if (trimmedValue.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Das Feld %s enthält keinen gültigen Zahlenwert.",
-                    StringUtils.quote(fieldLabel)
-            );
-        }
-
-        try {
-            return new BigDecimal(trimmedValue);
-        } catch (NumberFormatException ignored) {
-            var germanDecimal = NumberInputElement.parseGermanNumber(trimmedValue, 8);
-            if (germanDecimal != null) {
-                return germanDecimal;
-            }
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Das Feld %s enthält keinen gültigen Zahlenwert.",
-                    StringUtils.quote(fieldLabel)
-            );
-        }
-    }
-
-    @Nullable
-    private static String toNullableTrimmedString(@Nullable Object value) {
-        if (value == null) {
-            return null;
-        }
-
-        var trimmed = value.toString().trim();
-        return trimmed.isEmpty() ? null : trimmed;
-    }
-
-    @Nonnull
-    private static List<PathPart> parsePath(@Nonnull String path,
-                                            @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var trimmedPath = path.trim();
-        if (trimmedPath.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Pfadangabe für %s darf nicht leer sein.",
-                    StringUtils.quote(fieldLabel)
-            );
-        }
-
-        var result = new ArrayList<PathPart>();
-        var token = new StringBuilder();
-        var expectingSegment = true;
-
-        for (int i = 0; i < trimmedPath.length(); i++) {
-            char c = trimmedPath.charAt(i);
-
-            if (c == '.') {
-                if (expectingSegment) {
-                    throw invalidPathException(trimmedPath, fieldLabel, "Leeres Objektsegment ist nicht erlaubt.");
-                }
-                flushObjectToken(token, result, trimmedPath, fieldLabel);
-                expectingSegment = true;
-                continue;
-            }
-
-            if (c == '[') {
-                if (expectingSegment) {
-                    throw invalidPathException(trimmedPath, fieldLabel, "Pfad muss mit einem Objektsegment beginnen.");
-                }
-                flushObjectToken(token, result, trimmedPath, fieldLabel);
-
-                int closingBracket = trimmedPath.indexOf(']', i);
-                if (closingBracket < 0) {
-                    throw invalidPathException(trimmedPath, fieldLabel, "Schließende ] fehlt.");
-                }
-
-                var indexStr = trimmedPath.substring(i + 1, closingBracket).trim();
-                if (indexStr.isEmpty()) {
-                    throw invalidPathException(trimmedPath, fieldLabel, "Array-Index fehlt.");
-                }
-
-                int index;
-                try {
-                    index = Integer.parseInt(indexStr);
-                } catch (NumberFormatException e) {
-                    throw invalidPathException(trimmedPath, fieldLabel, "Array-Index ist keine Zahl.");
-                }
-
-                if (index < 0) {
-                    throw invalidPathException(trimmedPath, fieldLabel, "Array-Index darf nicht negativ sein.");
-                }
-
-                result.add(new ArrayPathPart(index));
-                i = closingBracket;
-                expectingSegment = false;
-                continue;
-            }
-
-            if (c == ']') {
-                throw invalidPathException(trimmedPath, fieldLabel, "Unerwartete ] gefunden.");
-            }
-
-            token.append(c);
-            expectingSegment = false;
-        }
-
-        if (expectingSegment) {
-            throw invalidPathException(trimmedPath, fieldLabel, "Leeres Objektsegment ist nicht erlaubt.");
-        }
-
-        flushObjectToken(token, result, trimmedPath, fieldLabel);
-
-        if (result.isEmpty()) {
-            throw invalidPathException(trimmedPath, fieldLabel, "Pfad enthält keine Segmente.");
-        }
-
-        if (result.getFirst() instanceof ArrayPathPart) {
-            throw invalidPathException(trimmedPath, fieldLabel, "Pfad muss mit einem Objektsegment beginnen.");
-        }
-
-        return result;
-    }
-
-    private static void flushObjectToken(@Nonnull StringBuilder token,
-                                         @Nonnull List<PathPart> target,
-                                         @Nonnull String path,
-                                         @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (token.isEmpty()) {
-            return;
-        }
-
-        var key = token.toString().trim();
-        token.setLength(0);
-
-        if (key.isEmpty()) {
-            throw invalidPathException(path, fieldLabel, "Leeres Objektsegment ist nicht erlaubt.");
-        }
-
-        target.add(new ObjectPathPart(key));
-    }
-
-    @Nonnull
-    private static ProcessNodeExecutionExceptionInvalidConfiguration invalidPathException(@Nonnull String path,
-                                                                                          @Nonnull String fieldLabel,
-                                                                                          @Nonnull String detail) {
-        return new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültiger Pfad in %s: %s Pfad: %s",
-                StringUtils.quote(fieldLabel),
-                detail,
-                StringUtils.quote(path)
         );
-    }
 
-    @Nullable
-    private static Object readPath(@Nonnull Map<String, Object> sourceRoot,
-                                   @Nonnull List<PathPart> path) {
-        Object current = sourceRoot;
+        var lastIterationIndex = lastIterationTask
+                .map(ProcessInstanceTaskEntity::getRuntimeData)
+                .map(runtimeData -> runtimeData.get(RUNTIME_DATA_VALUE_KEY))
+                .orElse(null);
 
-        for (var pathPart : path) {
-            if (current == null) {
-                return null;
-            }
-
-            if (pathPart instanceof ObjectPathPart objectPathPart) {
-                if (!(current instanceof Map<?, ?> currentMap)) {
-                    return null;
-                }
-                current = currentMap.get(objectPathPart.key());
-                continue;
-            }
-
-            var arrayPathPart = (ArrayPathPart) pathPart;
-            if (!(current instanceof List<?> currentList)) {
-                return null;
-            }
-            if (arrayPathPart.index() < 0 || arrayPathPart.index() >= currentList.size()) {
-                return null;
-            }
-            current = currentList.get(arrayPathPart.index());
+        if (lastIterationIndex == null) {
+            lastIterationIndex = 0;
         }
 
-        return current;
-    }
-
-    private static void writePath(@Nonnull Map<String, Object> targetRoot,
-                                  @Nonnull List<PathPart> path,
-                                  long value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        Object current = targetRoot;
-
-        for (int i = 0; i < path.size() - 1; i++) {
-            var currentPart = path.get(i);
-            var nextPart = path.get(i + 1);
-
-            if (currentPart instanceof ObjectPathPart objectPathPart) {
-                if (!(current instanceof Map<?, ?> currentMapRaw)) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Konflikt beim Schreiben des Zählers: Erwartet wurde ein Objektsegment."
-                    );
-                }
-
-                @SuppressWarnings("unchecked")
-                var currentMap = (Map<String, Object>) currentMapRaw;
-                var existing = currentMap.get(objectPathPart.key());
-
-                if (existing == null) {
-                    var created = createContainerFor(nextPart);
-                    currentMap.put(objectPathPart.key(), created);
-                    current = created;
-                } else {
-                    current = ensureCompatibleContainer(existing, nextPart);
-                }
-                continue;
-            }
-
-            var arrayPathPart = (ArrayPathPart) currentPart;
-            if (!(current instanceof List<?> currentListRaw)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Konflikt beim Schreiben des Zählers: Erwartet wurde ein Arraysegment."
-                );
-            }
-
-            @SuppressWarnings("unchecked")
-            var currentList = (List<Object>) currentListRaw;
-            ensureListSize(currentList, arrayPathPart.index());
-
-            var existing = currentList.get(arrayPathPart.index());
-            if (existing == null) {
-                var created = createContainerFor(nextPart);
-                currentList.set(arrayPathPart.index(), created);
-                current = created;
-            } else {
-                current = ensureCompatibleContainer(existing, nextPart);
-            }
-        }
-
-        var lastPart = path.get(path.size() - 1);
-        if (lastPart instanceof ObjectPathPart objectPathPart) {
-            if (!(current instanceof Map<?, ?> currentMapRaw)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Konflikt beim Schreiben des Zählers: Das Ziel ist kein Objekt."
-                );
-            }
-
-            @SuppressWarnings("unchecked")
-            var currentMap = (Map<String, Object>) currentMapRaw;
-            currentMap.put(objectPathPart.key(), value);
-            return;
-        }
-
-        var arrayPathPart = (ArrayPathPart) lastPart;
-        if (!(current instanceof List<?> currentListRaw)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Konflikt beim Schreiben des Zählers: Das Ziel ist kein Array."
-            );
-        }
-
-        @SuppressWarnings("unchecked")
-        var currentList = (List<Object>) currentListRaw;
-        ensureListSize(currentList, arrayPathPart.index());
-        currentList.set(arrayPathPart.index(), value);
-    }
-
-    @Nonnull
-    private static Object createContainerFor(@Nonnull PathPart nextPart) {
-        return nextPart instanceof ArrayPathPart
-                ? new LinkedList<>()
-                : new HashMap<String, Object>();
-    }
-
-    @Nonnull
-    private static Object ensureCompatibleContainer(@Nonnull Object existing,
-                                                    @Nonnull PathPart nextPart) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (nextPart instanceof ArrayPathPart) {
-            if (existing instanceof List<?>) {
-                return existing;
-            }
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Konflikt beim Schreiben des Zählers: Ein bestehender Wert verhindert die Erzeugung eines Arrays."
-            );
-        }
-
-        if (existing instanceof Map<?, ?>) {
-            return existing;
-        }
-        throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Konflikt beim Schreiben des Zählers: Ein bestehender Wert verhindert die Erzeugung eines Objekts."
-        );
-    }
-
-    private static void ensureListSize(@Nonnull List<Object> list, int index) {
-        while (list.size() <= index) {
-            list.add(null);
-        }
-    }
-
-    @Nonnull
-    private static Map<String, Object> deepCopyMap(@Nonnull Map<String, Object> source) {
-        var copy = new HashMap<String, Object>();
-        for (var entry : source.entrySet()) {
-            copy.put(entry.getKey(), deepCopyValue(entry.getValue()));
-        }
-        return copy;
-    }
-
-    @Nonnull
-    private static List<Object> deepCopyList(@Nonnull List<?> source) {
-        var copy = new ArrayList<Object>(source.size());
-        for (var value : source) {
-            copy.add(deepCopyValue(value));
-        }
-        return copy;
-    }
-
-    @Nullable
-    private static Object deepCopyValue(@Nullable Object value) {
-        return switch (value) {
-            case null -> null;
-            case Map<?, ?> map -> deepCopyMap(castStringObjectMap(map));
-            case List<?> list -> deepCopyList(list);
-            default -> value;
-        };
-    }
-
-    @Nonnull
-    private static Map<String, Object> castStringObjectMap(@Nonnull Map<?, ?> rawMap) {
-        var result = new HashMap<String, Object>();
-        for (var entry : rawMap.entrySet()) {
-            if (entry.getKey() instanceof String key) {
-                result.put(key, entry.getValue());
-            }
-        }
-        return result;
-    }
-
-    private sealed interface PathPart permits ObjectPathPart, ArrayPathPart {
-    }
-
-    private record ObjectPathPart(@Nonnull String key) implements PathPart {
-    }
-
-    private record ArrayPathPart(int index) implements PathPart {
+        lastIndex = NumberUtils
+                .asNumber(lastIterationIndex)
+                .orElse(0)
+                .longValue();
+        return lastIndex;
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class CounterConfiguration {
         public static final String VARIABLE = VARIABLE_FIELD_ID;
-        @InputElementPOJOBinding(id = VARIABLE, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = VARIABLE, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdatenwurzel, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselements aus den Elementdaten verwendet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdaten, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselements aus den Elementdaten verwendet."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 9.0)
         })
         public String variable;
@@ -778,8 +288,9 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Natürliche Zahl, um die der Zähler erhöht wird."),
                 @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 3.0)
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 3.0),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
-        public Object increment;
+        public Number increment;
     }
 }
