@@ -1,6 +1,7 @@
 import {Location} from 'react-router-dom';
 
 const APP_URI_QUERY_PARAM = 'app_uri';
+const APP_STATE_QUERY_PARAM = 'app_state';
 const AUTH_EXPIRATION_LOCAL_STORAGE_KEY = 'auth_expiration';
 const CSRF_HEADER_NAME = 'X-CSRF-TOKEN';
 
@@ -10,6 +11,8 @@ interface JWT {
     csrfToken?: string;
 }
 
+const STORAGE_KEY_POST_LOGIN_REDIRECT = 'oidc-post-login-redirect';
+
 class _AuthService {
     private activeRefresh: Promise<void> | null = null;
 
@@ -17,8 +20,12 @@ class _AuthService {
      * Get the login URL for redirecting the user to the OIDC provider.
      */
     public getLoginUrl(location: Location): string {
+        // Keep the post-login target per tab so multiple expired tabs do not overwrite each other.
+        sessionStorage.setItem(STORAGE_KEY_POST_LOGIN_REDIRECT, getNormalizedCurrentRelativeUrl());
+
         const query = new URLSearchParams({
-            [APP_URI_QUERY_PARAM]: '/staff' + location.pathname,
+            [APP_URI_QUERY_PARAM]:  '/staff' + location.pathname,
+            [APP_STATE_QUERY_PARAM]: location.search,
         });
         return `/api/auth/login?${query.toString()}`;
     }
@@ -147,6 +154,37 @@ class _AuthService {
     private isTokenExpired(token: number): boolean {
         return token <= Date.now();
     }
+
+    public consumePostLoginRedirect(): string | null {
+        const redirectTarget = sessionStorage.getItem(STORAGE_KEY_POST_LOGIN_REDIRECT);
+        sessionStorage.removeItem(STORAGE_KEY_POST_LOGIN_REDIRECT);
+
+        // Only accept in-app relative targets to avoid redirecting to arbitrary locations.
+        if (redirectTarget == null || !redirectTarget.startsWith('/')) {
+            return null;
+        }
+
+        return redirectTarget;
+    }
 }
 
 export const AuthService = new _AuthService();
+
+
+
+function getNormalizedCurrentRelativeUrl(): string {
+    const url = new URL(window.location.href);
+
+    // Remove temporary auth/logout query params before restoring the route after login.
+    [
+        'code',
+        'iss',
+        'session_state',
+        'logout',
+    ].forEach((param) => {
+        url.searchParams.delete(param);
+    });
+
+    const query = url.searchParams.toString();
+    return `${url.pathname}${query.length > 0 ? `?${query}` : ''}${url.hash}`;
+}
