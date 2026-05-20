@@ -2271,33 +2271,37 @@ export function ProcessDetailsPage(): ReactNode {
                     </Allotment.Pane>
                 </Allotment>
 
-                <IconButton
-                    aria-label={isEditorPaneCollapsed ? 'Editor einblenden' : 'Editor ausblenden'}
-                    onClick={isEditorPaneCollapsed ? handleExpandEditorPane : handleCollapseEditorPane}
-                    sx={{
-                        display: hideEditorPaneExpandButton ? 'none' : undefined,
-                        position: 'absolute',
-                        fontSize: '50%',
-                        top: '50%',
-                        right: isEditorPaneCollapsed
-                            ? 0
-                            : editorPaneWidth,
-                        transform: 'translateY(-50%)',
-                        zIndex: 40,
-                        width: EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX,
-                        height: 56,
-                        borderRadius: '12px 0 0 12px',
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'background.paper',
-                        boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.14)',
-                        '&:hover': {
+                {
+                    /* TODO: Implement this again, when the corresponding user story is worked on.
+                    <IconButton
+                        aria-label={isEditorPaneCollapsed ? 'Editor einblenden' : 'Editor ausblenden'}
+                        onClick={isEditorPaneCollapsed ? handleExpandEditorPane : handleCollapseEditorPane}
+                        sx={{
+                            display: hideEditorPaneExpandButton ? 'none' : undefined,
+                            position: 'absolute',
+                            fontSize: '50%',
+                            top: '50%',
+                            right: isEditorPaneCollapsed
+                                ? 0
+                                : editorPaneWidth,
+                            transform: 'translateY(-50%)',
+                            zIndex: 40,
+                            width: EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX,
+                            height: 56,
+                            borderRadius: '12px 0 0 12px',
+                            border: '1px solid',
+                            borderColor: 'divider',
                             bgcolor: 'background.paper',
-                        },
-                    }}
-                >
-                    {isEditorPaneCollapsed ? <ChevronLeft/> : <ChevronRight/>}
-                </IconButton>
+                            boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.14)',
+                            '&:hover': {
+                                bgcolor: 'background.paper',
+                            },
+                        }}
+                    >
+                        {isEditorPaneCollapsed ? <ChevronLeft/> : <ChevronRight/>}
+                    </IconButton>
+                    */
+                }
             </Box>
 
             <SelectNodeProviderDialog
