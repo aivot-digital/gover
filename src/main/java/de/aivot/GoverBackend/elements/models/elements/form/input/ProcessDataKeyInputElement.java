@@ -17,6 +17,8 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
     private static final String PROCESS_DATA_KEY_REGEX = "[a-zA-Z0-9\\.\\*_]+";
     private static final Pattern PROCESS_DATA_KEY_PATTERN = Pattern.compile(PROCESS_DATA_KEY_REGEX);
 
+    private Boolean disableWildCards;
+
     public ProcessDataKeyInputElement() {
         super(ElementType.ProcessDataKeyInput);
     }
@@ -38,7 +40,13 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
         }
 
         if (!PROCESS_DATA_KEY_PATTERN.matcher(value).matches()) {
-            throw new ValidationException(this, "Der Prozessdaten-Schluessel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.");
+            throw new ValidationException(this, "Der Prozessdaten-Schlüssel darf nur Buchstaben (A-Z), Zahlen, Punkte, Unterstriche und Sternchen enthalten.");
+        }
+
+        if (Boolean.TRUE.equals(disableWildCards)) {
+            if (value.contains("*")) {
+                throw new ValidationException(this, "Der Prozessdaten-Schlüssel darf keine Sternchen enthalten, da Wildcards deaktiviert sind.");
+            }
         }
     }
 
@@ -65,5 +73,14 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
             case NotEmpty -> StringUtils.isNotNullOrEmpty(valueA);
             default -> false;
         };
+    }
+
+    public Boolean getDisableWildCards() {
+        return disableWildCards;
+    }
+
+    public ProcessDataKeyInputElement setDisableWildCards(Boolean disableWildCards) {
+        this.disableWildCards = disableWildCards;
+        return this;
     }
 }

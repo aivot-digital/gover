@@ -47,6 +47,7 @@ export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKey
             hint={element.hint ?? undefined}
             disabled={isDisabled}
             busy={isBusy}
+            disableWildCards={element.disableWildCards ?? undefined}
         />
     );
 }
@@ -61,6 +62,7 @@ interface ProcessDataKeyInputComponentProps {
     error?: string;
     disabled?: boolean;
     busy?: boolean;
+    disableWildCards?: boolean;
 }
 
 export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponentProps) {
@@ -74,6 +76,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         busy,
         required,
         error,
+        disableWildCards = false,
     } = props;
 
     const opec = useOptionalProcessNodeEditorContext();
@@ -85,7 +88,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         }
 
         return opec.processDataKeyHints
-            .filter((hint) => hint.type === 'ProcessData')
+            .filter((hint) => hint.type === 'ProcessData' && (!disableWildCards || !hint.key.includes('*')))
             .map((hint) => ({
                 id: hint.key,
                 label: hint.key,

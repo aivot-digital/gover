@@ -475,6 +475,7 @@ const elementConstructors: {
     [ElementType.ProcessDataKeyInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessDataKeyInput, id),
         label: 'Prozessdaten-Schlüssel',
+        disableWildCards: false,
     }),
 };
 
