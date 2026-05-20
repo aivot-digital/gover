@@ -135,6 +135,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 Map.of("keep", "value"),
                 Map.of(),
                 Map.of(),
+                Map.of(),
                 null,
                 null,
                 null,

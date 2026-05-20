@@ -221,6 +221,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 Map.of("existing", true),
                 Map.of("meta", true),
                 Map.of("data", true),
+                Map.of(),
                 assignedUserId,
                 null,
                 null,
