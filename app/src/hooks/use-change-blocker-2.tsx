@@ -12,6 +12,7 @@ interface ChangeBlockerProps<T> {
     customConfirmButtonText?: string;
     useDeepEquals?: boolean;
     isActive?: boolean;
+    onConfirmNavigation?: () => void;
     shouldAllowNavigation?: (navigation: {
         currentLocation: {
             pathname: string;
@@ -39,6 +40,7 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         customConfirmButtonText = DEFAULT_CONFIRM_BUTTON_TEXT,
         useDeepEquals = true,
         isActive = true,
+        onConfirmNavigation,
         shouldAllowNavigation,
     } = props;
 
@@ -92,12 +94,14 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
     }, [blocker]);
 
     const handleConfirm = useCallback(() => {
+        onConfirmNavigation?.();
+
         if (pendingBlocker && pendingBlocker.proceed) {
             pendingBlocker.proceed();
         }
         setShowDialog(false);
         setPendingBlocker(null);
-    }, [pendingBlocker]);
+    }, [pendingBlocker, onConfirmNavigation]);
 
     const handleCancel = useCallback(() => {
         if (pendingBlocker != null && pendingBlocker.reset != null) {

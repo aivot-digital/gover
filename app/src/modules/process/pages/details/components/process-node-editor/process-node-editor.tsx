@@ -101,6 +101,9 @@ export function ProcessNodeEditor(): ReactNode {
         //customMessage: 'Die geöffnete Knotenkonfioguration (links) hat ungespeicherte Änderungen',
         original: originalNode,
         edited: editedNode,
+        onConfirmNavigation: () => {
+            setEditedNode(originalNode);
+        },
         shouldAllowNavigation: ({nextLocation}) => shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
     });
 
