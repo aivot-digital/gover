@@ -11,55 +11,77 @@ declare
     new_elem jsonb;
     diff_elem jsonb;
     arr_result jsonb;
+    max_len int;
 begin
     -- Case 1: Both are json Objects
     if jsonb_typeof(newVal) = 'object' and jsonb_typeof(oldVal) = 'object' then
-        result = newVal;
+        result = '{}'::jsonb;
+
+        -- 1. Check for changes and deletions based on keys that existed in oldVal
         for v in select * from jsonb_each(oldVal) loop
-                -- If values are identical, remove the key from the diff
-                if result -> v.key = v.value then
-                    result = result - v.key;
-                    -- If key exists in both but values differ, recurse deeper
-                elsif result ? v.key then
-                    result = result || jsonb_build_object(v.key, jsonb_diff_val(result -> v.key, v.value));
-                    -- Clean up empty objects/arrays resulting from the deep diff
-                    if result -> v.key = '{}'::jsonb or result -> v.key = '[]'::jsonb then
-                        result = result - v.key;
+                if newVal ? v.key then
+                    if newVal -> v.key = v.value then
+                        continue; -- Identical, skip it
+                    else
+                        -- Value changed: Recurse to find the specific historical parts
+                        diff_elem = jsonb_diff_val(newVal -> v.key, v.value);
+                        if diff_elem is not null and diff_elem != '{}'::jsonb and diff_elem != '[]'::jsonb then
+                            result = result || jsonb_build_object(v.key, diff_elem);
+                        end if;
                     end if;
-                    -- If key was deleted in newVal, set it to 'null'
                 else
+                    -- Key was entirely deleted in newVal. Preserve its old value.
+                    result = result || jsonb_build_object(v.key, v.value);
+                end if;
+            end loop;
+
+        -- 2. Check for brand new keys added in newVal
+        for v in select * from jsonb_each(newVal) loop
+                if not (oldVal ? v.key) then
+                    -- Key is brand new, meaning its previous value was non-existent ('null')
                     result = result || jsonb_build_object(v.key, 'null'::jsonb);
                 end if;
             end loop;
+
         return result;
 
-        -- Case 2: Both are json Arrays (Compare element-by-element by index)
+        -- Case 2: Both are json Arrays
     elsif jsonb_typeof(newVal) = 'array' and jsonb_typeof(oldVal) = 'array' then
         arr_result = '[]'::jsonb;
-        for i in 0 .. jsonb_array_length(newVal) - 1 loop
+        max_len = greatest(jsonb_array_length(newVal), jsonb_array_length(oldVal));
+
+        for i in 0 .. max_len - 1 loop
                 new_elem = newVal -> i;
-                old_elem = oldVal -> i; -- Returns null if old array is shorter
+                old_elem = oldVal -> i;
 
                 if old_elem is null then
-                    -- Element is brand new, keep it entirely
-                    arr_result = arr_result || jsonb_build_array(new_elem);
+                    -- Element was added out-of-bounds in newVal. It didn't exist before.
+                    arr_result = arr_result || jsonb_build_array('null'::jsonb);
+                elsif new_elem is null then
+                    -- Element was truncated/deleted in newVal. Keep the old element.
+                    arr_result = arr_result || jsonb_build_array(old_elem);
                 else
-                    -- Deep diff the elements at this index
-                    diff_elem = jsonb_diff_val(new_elem, old_elem);
-                    -- Only add to the array if there is an actual difference
-                    if diff_elem is not null and diff_elem != '{}'::jsonb then
-                        arr_result = arr_result || jsonb_build_array(diff_elem);
+                    -- Both exist. Check if they match.
+                    if old_elem = new_elem then
+                        -- To keep array positions aligned between diff and original array,
+                        -- we leave an empty placeholder object '{}' for unchanged items.
+                        arr_result = arr_result || jsonb_build_array('{}'::jsonb);
+                    else
+                        diff_elem = jsonb_diff_val(new_elem, old_elem);
+                        arr_result = arr_result || jsonb_build_array(coalesce(diff_elem, '{}'::jsonb));
                     end if;
                 end if;
             end loop;
+
         return arr_result;
 
-        -- Case 3: Flat values (Scalars) or mismatched types
+        -- Case 3: Flat values (Scalars) or completely mismatched types
     else
         if newVal = oldVal then
             return null;
         else
-            return newVal;
+            -- Core Change: Return oldVal instead of newVal to preserve history
+            return oldVal;
         end if;
     end if;
 end;
