@@ -146,24 +146,28 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     @Override
     public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
                                                                  @Nonnull CounterConfiguration configuration,
-                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
-        var variablePath = configuration.variable;
-
-        if (StringUtils.isNullOrEmpty(variablePath)) {
-            return previousDataKeys;
+                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
+        // Check if a process data key for the variable is set.
+        // If not, return all previously calculated process data key hints.
+        var variableProcessDestinationKey = configuration.variable;
+        if (StringUtils.isNullOrEmpty(variableProcessDestinationKey)) {
+            return previousDataKeyHints;
         }
 
+        // Create a list to store all previous calculated data key hints.
+        // Do not store a hint here, which has the same key as the current variable process data key, to avoid duplicates.
+        // The hint for the current variable process data key will be added at the end of this method.
         var res = new ArrayList<ProcessDataKeyHint>();
-
-        for (var existingDataKey : previousDataKeys) {
-            if (Objects.equals(existingDataKey.key(), variablePath)) {
+        for (var existingDataKey : previousDataKeyHints) {
+            if (Objects.equals(existingDataKey.key(), variableProcessDestinationKey)) {
                 continue;
             }
             res.add(existingDataKey);
         }
 
+        // Add the hint for the current process data key for the configured variable.
         res.add(new ProcessDataKeyHint(
-                variablePath,
+                variableProcessDestinationKey,
                 ProcessDataKeyHintType.ProcessData
         ));
 
