@@ -97,3 +97,23 @@ export function getTransferredProcessDataForEdge(
 
     return sourceTask?.processData ?? null;
 }
+
+export function getTransferredProcessDataDiffForEdge(
+    tasks: ProcessInstanceTaskEntity[],
+    fromNodeId: number,
+    toNodeId: number,
+    viaPort: string,
+): Record<string, any> | null {
+    const targetTask = getLatestTaskForEdge(tasks, fromNodeId, toNodeId, viaPort);
+    if (targetTask == null) {
+        return null;
+    }
+
+    const targetStarted = parseTimestamp(targetTask.started);
+    const sourceTask = pickLatestTask(tasks, (task) => (
+        task.processNodeId === fromNodeId &&
+        parseTaskEndTimestamp(task) <= targetStarted
+    ));
+
+    return sourceTask?.processDataDiff ?? null;
+}
