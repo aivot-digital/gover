@@ -177,6 +177,11 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [controlledDerivedData]);
 
     useEffect(() => {
+        // New external validation errors should be shown even if the field suppressed older edit-time errors.
+        setSuppressedErrorElementIds([]);
+    }, [computedErrors]);
+
+    useEffect(() => {
         setMode('busy');
         setSuppressedErrorElementIds([]);
         derive(authoredElementValues)
