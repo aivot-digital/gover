@@ -237,29 +237,30 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      */
     private static long getLastCounterValueByVariablePath(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context,
                                                           @Nonnull String variableProcessDataKey) throws ProcessNodeExecutionExceptionInvalidDataType {
-        long lastIndex;
-        var currentIndexObj = ProcessExecutionData.resolveProcessDataValue(
-                context.getCurrentProcessExecutionData(),
-                variableProcessDataKey
-        );
+        var currentCounterObj = ProcessExecutionData
+                .resolveProcessDataValue(
+                        context.getCurrentProcessExecutionData(),
+                        variableProcessDataKey
+                );
 
-        if (currentIndexObj == null) {
-            currentIndexObj = 0;
+        // If no counter value could be extracted, return 0.
+        if (currentCounterObj == null) {
+            return 0L;
         }
 
+        // If a counter value was extracted, try to convert it to a number.
         try {
-            lastIndex = NumberUtils
-                    .asNumber(currentIndexObj)
+            return NumberUtils
+                    .asNumber(currentCounterObj)
                     .orElse(0)
                     .longValue();
         } catch (NumberFormatException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
                     "Der aktuelle Wert der Vorgangsdatenvariable %s konnte nicht in eine Zahl umgewandelt werden. Der Wert war %s.",
                     StringUtils.quote(variableProcessDataKey),
-                    StringUtils.quote(currentIndexObj.toString())
+                    StringUtils.quote(currentCounterObj.toString())
             );
         }
-        return lastIndex;
     }
 
     /**
@@ -269,19 +270,21 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      * @return The last counter value or 0 if no previous instantiation exists.
      */
     private long getLastCounterValueFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) {
+        // Find the last instantiation of this process node.
         Optional<ProcessInstanceTaskEntity> lastIterationTask = processInstanceTaskRepository
                 .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
                         context.getThisProcessInstance().getId(),
                         context.getThisNode().getId()
                 );
 
-        Object lastIterationIndex = lastIterationTask
+        // Extract the last iteration counter value or 0 if none exists.
+        Object lastIterationCounter = lastIterationTask
                 .map(ProcessInstanceTaskEntity::getNodeData)
                 .map(nodeData -> nodeData.getOrDefault(OUTPUT_VALUE, 0))
                 .orElse(0);
 
         return NumberUtils
-                .asNumber(lastIterationIndex)
+                .asNumber(lastIterationCounter)
                 .orElse(0)
                 .longValue();
     }
