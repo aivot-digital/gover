@@ -4,21 +4,16 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
-import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
-import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -29,30 +24,30 @@ import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.utils.NumberUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
 
+/**
+ * This node is used to increment (or decrement) a counter when working with loops in a process. A user should be able to specify a process data key where the counter is stored as
+ * well as an increment step value. If no process data key is defined, the value is stored in the node data of the node and fetched from the previous iteration of this node.
+ */
 @Component
 public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionNodeV1.CounterConfiguration> {
     public static final String NODE_KEY = "counter";
 
     private static final String PORT_NAME = "output";
 
-    private static final String VARIABLE_FIELD_ID = "variable";
-    private static final String INCREMENT_FIELD_ID = "increment";
-
     private static final String OUTPUT_VALUE = "value";
     private static final String OUTPUT_PREVIOUS_VALUE = "previousValue";
     private static final String OUTPUT_INCREMENT = "increment";
     private static final String OUTPUT_STORAGE_TARGET = "storageTarget";
     private static final String OUTPUT_STORAGE_MODE = "storageMode";
-
     private static final String STORAGE_MODE_PROCESS_DATA = "processData";
-    private static final String STORAGE_MODE_RUNTIME_DATA = "runtimeData";
+    private static final String STORAGE_MODE_NODE_DATA = "nodeData";
 
     private static final long DEFAULT_INCREMENT = 1L;
-    private static final String RUNTIME_DATA_VALUE_KEY = OUTPUT_VALUE;
 
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
 
@@ -98,28 +93,20 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
 
     @Nonnull
     @Override
-    @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
-        ConfigLayoutElement layout;
-        try {
-            layout = ElementPOJOMapper.createFromPOJO(CounterConfiguration.class);
-        } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
-        }
-
-        layout
-                .findChild(INCREMENT_FIELD_ID, NumberInputElement.class)
-                .ifPresent(incrementField -> incrementField.setValue(new ElementValueFunctions()
-                        .setType(ValueFunctionType.NoCode)
-                        .setNoCode(new NoCodeStaticValue(DEFAULT_INCREMENT))));
-
-        return layout;
+    public Class<CounterConfiguration> getNodeConfigurationClass() {
+        return CounterConfiguration.class;
     }
 
     @Nonnull
     @Override
-    public Class<CounterConfiguration> getNodeConfigurationClass() {
-        return CounterConfiguration.class;
+    @JsonIgnore
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        try {
+            return ElementPOJOMapper
+                    .createFromPOJO(CounterConfiguration.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+        }
     }
 
     @Nonnull
@@ -187,48 +174,69 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
 
-        var variablePath = configuration.variable;
-        var incrementObj = configuration.increment;
-        var increment = DEFAULT_INCREMENT;
+        // Check if an increment exists in the configuration. If not, use the default.
+        long increment;
+        Number incrementObj = configuration.increment;
         if (incrementObj != null) {
             increment = incrementObj.longValue();
+        } else {
+            increment = DEFAULT_INCREMENT;
         }
 
-        long lastIndex;
+        // Create variables to store the relevant counter information for this iteration.
+        long lastCounterValue;
         String storageType;
-        if (StringUtils.isNotNullOrEmpty(variablePath)) {
-            lastIndex = getLastIndexByVariablePath(context, variablePath);
+
+        // Extract the variable process data key from the configuration.
+        String variableProcessDataKey = configuration.variable;
+
+        // If a process data key for the variable exists, extract the value from there, otherwise extract the value from the last set of node data.
+        if (StringUtils.isNotNullOrEmpty(variableProcessDataKey)) {
+            lastCounterValue = getLastCounterValueByVariablePath(context, variableProcessDataKey);
             storageType = STORAGE_MODE_PROCESS_DATA;
         } else {
-            lastIndex = getLastIndexFromPreviousInstantiation(context);
-            storageType = STORAGE_MODE_RUNTIME_DATA;
+            lastCounterValue = getLastCounterValueFromPreviousInstantiation(context);
+            storageType = STORAGE_MODE_NODE_DATA;
         }
 
-        var nextIndex = lastIndex + increment;
+        // Increment the last counter value by the defined increment to get the next counter value.
+        var nextCounterValue = lastCounterValue + increment;
 
+        // Build the node data wir all node specific information of this run.
         var nodeData = new LinkedHashMap<String, Object>();
-        nodeData.put(OUTPUT_VALUE, nextIndex);
-        nodeData.put(OUTPUT_PREVIOUS_VALUE, lastIndex);
+        nodeData.put(OUTPUT_VALUE, nextCounterValue);
+        nodeData.put(OUTPUT_PREVIOUS_VALUE, lastCounterValue);
         nodeData.put(OUTPUT_INCREMENT, increment);
-        nodeData.put(OUTPUT_STORAGE_TARGET, variablePath);
+        nodeData.put(OUTPUT_STORAGE_TARGET, variableProcessDataKey);
         nodeData.put(OUTPUT_STORAGE_MODE, storageType);
 
+        // Update the process data with the next counter value, if a process data key for the variable is defined.
         var execData = context.getCurrentProcessExecutionData();
-        if (StringUtils.isNotNullOrEmpty(variablePath)) {
-            ProcessExecutionData.writeProcessDataValue(execData, variablePath, nextIndex);
+        if (StringUtils.isNotNullOrEmpty(variableProcessDataKey)) {
+            ProcessExecutionData.writeProcessDataValue(execData, variableProcessDataKey, nextCounterValue);
         }
 
+        // Return the result with the updated process data and the node data containing all relevant information about this iteration.
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
                 .setProcessData(execData.getProcessData())
                 .setNodeData(nodeData);
     }
 
-    private static long getLastIndexByVariablePath(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context, String variablePath) throws ProcessNodeExecutionExceptionInvalidDataType {
+    /**
+     * Get the last counter value, based on the process data key of the variable. If no value is present in the process data, 0 is returned as the default value.
+     *
+     * @param context                The current execution context of this operation.
+     * @param variableProcessDataKey The process data key pointing to the previous counter value.
+     * @return The previous counter value at the variable process data key or 0 if no value is present.
+     * @throws ProcessNodeExecutionExceptionInvalidDataType This exception is thrown, when the existing counter value in the process data cannot be converted to a number.
+     */
+    private static long getLastCounterValueByVariablePath(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context,
+                                                          @Nonnull String variableProcessDataKey) throws ProcessNodeExecutionExceptionInvalidDataType {
         long lastIndex;
         var currentIndexObj = ProcessExecutionData.resolveProcessDataValue(
                 context.getCurrentProcessExecutionData(),
-                variablePath
+                variableProcessDataKey
         );
 
         if (currentIndexObj == null) {
@@ -242,55 +250,58 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                     .longValue();
         } catch (NumberFormatException e) {
             throw new ProcessNodeExecutionExceptionInvalidDataType(
-                    "Der aktuelle Wert der Vorgangsdatenvariable %s konnte nicht in eine Zahl umgewandelt werden. Der Wert war %s",
-                    StringUtils.quote(variablePath),
+                    "Der aktuelle Wert der Vorgangsdatenvariable %s konnte nicht in eine Zahl umgewandelt werden. Der Wert war %s.",
+                    StringUtils.quote(variableProcessDataKey),
                     StringUtils.quote(currentIndexObj.toString())
             );
         }
         return lastIndex;
     }
 
-    private long getLastIndexFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) {
-        long lastIndex;
-        var lastIterationTask = processInstanceTaskRepository.findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
-                context.getThisProcessInstance().getId(),
-                context.getThisNode().getId()
-        );
+    /**
+     * Get the last counter value based on the node data of the last instantiation of this process node. If no previous instantiation exists, 0 is returned.
+     *
+     * @param context The current execution context of this operation.
+     * @return The last counter value or 0 if no previous instantiation exists.
+     */
+    private long getLastCounterValueFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) {
+        Optional<ProcessInstanceTaskEntity> lastIterationTask = processInstanceTaskRepository
+                .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
+                        context.getThisProcessInstance().getId(),
+                        context.getThisNode().getId()
+                );
 
-        var lastIterationIndex = lastIterationTask
-                .map(ProcessInstanceTaskEntity::getRuntimeData)
-                .map(runtimeData -> runtimeData.get(RUNTIME_DATA_VALUE_KEY))
-                .orElse(null);
+        Object lastIterationIndex = lastIterationTask
+                .map(ProcessInstanceTaskEntity::getNodeData)
+                .map(nodeData -> nodeData.getOrDefault(OUTPUT_VALUE, 0))
+                .orElse(0);
 
-        if (lastIterationIndex == null) {
-            lastIterationIndex = 0;
-        }
-
-        lastIndex = NumberUtils
+        return NumberUtils
                 .asNumber(lastIterationIndex)
                 .orElse(0)
                 .longValue();
-        return lastIndex;
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class CounterConfiguration {
-        public static final String VARIABLE = VARIABLE_FIELD_ID;
-        @InputElementPOJOBinding(id = VARIABLE, type = ElementType.ProcessDataKeyInput, properties = {
+        public static final String VARIABLE_FIELD_ID = "variable";
+        @InputElementPOJOBinding(id = VARIABLE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdaten, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselements aus den Elementdaten verwendet."),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 9.0)
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 9.0),
+                @ElementPOJOBindingProperty(key = "disableWildCards", boolValue = true),
         })
+        @Nullable
         public String variable;
 
-        public static final String INCREMENT = INCREMENT_FIELD_ID;
-        @InputElementPOJOBinding(id = INCREMENT, type = ElementType.Number, properties = {
+        public static final String INCREMENT_FIELD_ID = "increment";
+        @InputElementPOJOBinding(id = INCREMENT_FIELD_ID, type = ElementType.Number, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Natürliche Zahl, um die der Zähler erhöht wird."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale Natürliche Zahl, um die der Zähler erhöht wird. Wenn leer, wird standardmäßig um 1 erhöht."),
                 @ElementPOJOBindingProperty(key = "decimalPlaces", intValue = 0),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 3.0),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 3.0)
         })
+        @Nullable
         public Number increment;
     }
 }
