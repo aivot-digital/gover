@@ -50,7 +50,7 @@ services:
 
 
   redis:
-    image: redis:7.4.14
+    image: redis:7.4.9
     restart: always
     networks:
       - gover
