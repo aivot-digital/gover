@@ -222,7 +222,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         // Update the process data with the next counter value, if a process data key for the variable is defined.
         var execData = context.getCurrentProcessExecutionData();
         if (StringUtils.isNotNullOrEmpty(variableProcessDataKey)) {
-            ProcessExecutionData.writeProcessDataValue(execData, variableProcessDataKey, nextCounterValue);
+            ProcessDataValueUtils.writeProcessDataValue(execData, variableProcessDataKey, nextCounterValue);
         }
 
         // Return the result with the updated process data and the node data containing all relevant information about this iteration.
@@ -242,7 +242,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      */
     private static long getLastCounterValueByVariablePath(@Nonnull ProcessNodeExecutionInitContext<CounterActionNodeV1Configuration> context,
                                                           @Nonnull String variableProcessDataKey) throws ProcessNodeExecutionExceptionInvalidDataType {
-        var currentCounterObj = ProcessExecutionData
+        var currentCounterObj = ProcessDataValueUtils
                 .resolveProcessDataValue(
                         context.getCurrentProcessExecutionData(),
                         variableProcessDataKey
