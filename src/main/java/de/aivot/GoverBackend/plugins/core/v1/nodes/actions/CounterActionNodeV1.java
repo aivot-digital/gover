@@ -299,7 +299,14 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class CounterActionNodeV1Configuration {
+        // Constants for the configuration field ids.
         public static final String VARIABLE_FIELD_ID = "variable";
+        public static final String INCREMENT_FIELD_ID = "increment";
+
+        /**
+         * This field contains the process data key variable where the counter value is stored id.
+         * It is nullable which will be handled by the node separately.
+         */
         @InputElementPOJOBinding(id = VARIABLE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdaten, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselements aus den Elementdaten verwendet."),
@@ -309,7 +316,10 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         @Nullable
         public String variable;
 
-        public static final String INCREMENT_FIELD_ID = "increment";
+        /**
+         * This field contains the increment value by which the counter is incremented on each instantiation.
+         * It is nullable which will be handled by the node separately.
+         */
         @InputElementPOJOBinding(id = INCREMENT_FIELD_ID, type = ElementType.Number, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optionale Natürliche Zahl, um die der Zähler erhöht wird. Wenn leer, wird standardmäßig um 1 erhöht."),
