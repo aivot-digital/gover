@@ -186,11 +186,11 @@ class CounterActionNodeV1Test {
                 .setOutputMappings(Map.of());
     }
 
-    private static CounterActionNodeV1.CounterConfiguration nodeConfiguration(AuthoredElementValues configuration)
+    private static CounterActionNodeV1.CounterActionNodeV1Configuration nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
         effectiveValues.putAll(configuration);
-        return ElementPOJOMapper.mapToPOJO(effectiveValues, CounterActionNodeV1.CounterConfiguration.class);
+        return ElementPOJOMapper.mapToPOJO(effectiveValues, CounterActionNodeV1.CounterActionNodeV1Configuration.class);
     }
 
     private static DerivedRuntimeElementData validationRuntime(AuthoredElementValues configuration) {

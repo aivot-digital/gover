@@ -34,21 +34,26 @@ import java.util.*;
  * well as an increment step value. If no process data key is defined, the value is stored in the node data of the node and fetched from the previous iteration of this node.
  */
 @Component
-public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionNodeV1.CounterConfiguration> {
+public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionNodeV1.CounterActionNodeV1Configuration> {
+    // The unique node key.
     public static final String NODE_KEY = "counter";
 
+    // Output ports of this node.
     private static final String PORT_NAME = "output";
 
+    // Constants for the node data output information of this node.
     private static final String OUTPUT_VALUE = "value";
     private static final String OUTPUT_PREVIOUS_VALUE = "previousValue";
     private static final String OUTPUT_INCREMENT = "increment";
     private static final String OUTPUT_STORAGE_TARGET = "storageTarget";
     private static final String OUTPUT_STORAGE_MODE = "storageMode";
-    private static final String STORAGE_MODE_PROCESS_DATA = "processData";
-    private static final String STORAGE_MODE_NODE_DATA = "nodeData";
+    private static final String VALUE_OUTPUT_STORAGE_MODE_PROCESS_DATA = "processData";
+    private static final String VALUE_OUTPUT_STORAGE_MODE_NODE_DATA = "nodeData";
 
+    // More constants for this node.
     private static final long DEFAULT_INCREMENT = 1L;
 
+    // Injected dependencies.
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
 
     public CounterActionNodeV1(ProcessInstanceTaskRepository processInstanceTaskRepository) {
@@ -93,8 +98,8 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
 
     @Nonnull
     @Override
-    public Class<CounterConfiguration> getNodeConfigurationClass() {
-        return CounterConfiguration.class;
+    public Class<CounterActionNodeV1Configuration> getNodeConfigurationClass() {
+        return CounterActionNodeV1Configuration.class;
     }
 
     @Nonnull
@@ -103,7 +108,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         try {
             return ElementPOJOMapper
-                    .createFromPOJO(CounterConfiguration.class);
+                    .createFromPOJO(CounterActionNodeV1Configuration.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
         }
@@ -145,7 +150,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
 
     @Override
     public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                                 @Nonnull CounterConfiguration configuration,
+                                                                 @Nonnull CounterActionNodeV1Configuration configuration,
                                                                  @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
         // Check if a process data key for the variable is set.
         // If not, return all previously calculated process data key hints.
@@ -175,7 +180,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) throws ProcessNodeExecutionException {
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<CounterActionNodeV1Configuration> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
 
         // Check if an increment exists in the configuration. If not, use the default.
@@ -197,10 +202,10 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         // If a process data key for the variable exists, extract the value from there, otherwise extract the value from the last set of node data.
         if (StringUtils.isNotNullOrEmpty(variableProcessDataKey)) {
             lastCounterValue = getLastCounterValueByVariablePath(context, variableProcessDataKey);
-            storageType = STORAGE_MODE_PROCESS_DATA;
+            storageType = VALUE_OUTPUT_STORAGE_MODE_PROCESS_DATA;
         } else {
             lastCounterValue = getLastCounterValueFromPreviousInstantiation(context);
-            storageType = STORAGE_MODE_NODE_DATA;
+            storageType = VALUE_OUTPUT_STORAGE_MODE_NODE_DATA;
         }
 
         // Increment the last counter value by the defined increment to get the next counter value.
@@ -235,7 +240,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      * @return The previous counter value at the variable process data key or 0 if no value is present.
      * @throws ProcessNodeExecutionExceptionInvalidDataType This exception is thrown, when the existing counter value in the process data cannot be converted to a number.
      */
-    private static long getLastCounterValueByVariablePath(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context,
+    private static long getLastCounterValueByVariablePath(@Nonnull ProcessNodeExecutionInitContext<CounterActionNodeV1Configuration> context,
                                                           @Nonnull String variableProcessDataKey) throws ProcessNodeExecutionExceptionInvalidDataType {
         var currentCounterObj = ProcessExecutionData
                 .resolveProcessDataValue(
@@ -269,7 +274,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
      * @param context The current execution context of this operation.
      * @return The last counter value or 0 if no previous instantiation exists.
      */
-    private long getLastCounterValueFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterConfiguration> context) {
+    private long getLastCounterValueFromPreviousInstantiation(@Nonnull ProcessNodeExecutionInitContext<CounterActionNodeV1Configuration> context) {
         // Find the last instantiation of this process node.
         Optional<ProcessInstanceTaskEntity> lastIterationTask = processInstanceTaskRepository
                 .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(
@@ -289,8 +294,11 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
                 .longValue();
     }
 
+    /**
+     * The configuration for the counter node.
+     */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
-    public static class CounterConfiguration {
+    public static class CounterActionNodeV1Configuration {
         public static final String VARIABLE_FIELD_ID = "variable";
         @InputElementPOJOBinding(id = VARIABLE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
