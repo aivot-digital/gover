@@ -1,13 +1,12 @@
 import {type BaseEditorProps} from './base-editor';
 import {type ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
-import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {OptionListInput} from '../components/option-list-input/option-list-input';
 
-export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElement, ElementTreeEntity>) {
+export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElement>) {
     const {
         element,
         editable,

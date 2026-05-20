@@ -3,7 +3,7 @@ import {FormVersionEntity} from '../entities/form-version-entity';
 import {FormStatus} from '../enums/form-status';
 import {FormType} from '../enums/form-type';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
-import {RootElement} from '../../../models/elements/root-element';
+import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {ElementType} from '../../../data/element-type/element-type';
 import {FormEditor} from '../dtos/form-editor';
 import {ApiError} from '../../../models/api-error';
@@ -73,7 +73,7 @@ export class FormVersionApiService extends BaseCrudApiService<FormVersionEntity,
             published: '',
             responsibleDepartmentId: 0,
             revoked: '',
-            rootElement: generateElementWithDefaultValues(ElementType.FormLayout) as RootElement,
+            rootElement: generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement,
             status: FormStatus.Drafted,
             submissionRetentionWeeks: 4,
             technicalSupportDepartmentId: 0,

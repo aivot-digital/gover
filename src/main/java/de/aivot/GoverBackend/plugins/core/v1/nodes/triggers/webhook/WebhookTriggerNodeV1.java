@@ -3,8 +3,6 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.triggers.webhook;
 import com.beust.jcommander.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
@@ -20,31 +18,33 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.utils.FormattedStringBuilder;
 import de.aivot.GoverBackend.utils.StringUtils;
-import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
 @Component
-public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
+public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTriggerConfigV1> {
     public static final String NODE_KEY = "webhook";
     private static final String PORT_NAME = "input";
 
@@ -66,7 +66,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -141,7 +141,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
         ConfigLayoutElement configLayout;
         try {
             configLayout = ElementPOJOMapper
@@ -159,7 +159,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                             .setMessage("Der Webhook-Slug darf nur aus Buchstaben, Zahlen und Bindestrichen bestehen.");
                     field.setPattern(pattern);
 
-                    field.setPrefix(goverConfig.createUrlWithTrailingSlash(".../webhooks/..."));
+                    field.setPrefix(goverConfig.createUrlWithTrailingSlash("…/webhooks/…"));
                 });
 
         // Add request method select options
@@ -322,18 +322,16 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
         return configLayout;
     }
 
+    @Nonnull
+    @Override
+    public Class<WebhookTriggerConfigV1> getNodeConfigurationClass() {
+        return WebhookTriggerConfigV1.class;
+    }
+
     @Nullable
     @Override
-    public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionContextTesting context) throws ResponseException {
-        WebhookTriggerConfigV1 config;
-        try {
-            config = getWebhookTriggerConfig(context.configuration().getEffectiveValues());
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            throw ResponseException.internalServerError(
-                    e,
-                    "Beim Abrufen der Webhook-Trigger-Konfiguration ist ein Fehler aufgetreten. Bitte überprüfen Sie die Knotenkonfiguration."
-            );
-        }
+    public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<WebhookTriggerConfigV1> context) throws ResponseException {
+        WebhookTriggerConfigV1 config = context.configuration();
 
         var layout = new GroupLayoutElement();
         layout.setId("layout");
@@ -468,8 +466,8 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var config = getWebhookTriggerConfig(context.getConfiguration().getEffectiveValues());
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<WebhookTriggerConfigV1> context) throws ProcessNodeExecutionException {
+        var config = context.getConfigurationOfExecutingNode();
 
         // Get the initial payload from the process instance.
         // This payload is set by the WebhookTriggerController when the webhook is called and contains the data received via the webhook.
@@ -562,20 +560,5 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition {
                 parameterName +
                 "=" +
                 (parameterValue == null ? "" : parameterValue);
-    }
-
-    @Nonnull
-    private static WebhookTriggerConfigV1 getWebhookTriggerConfig(@Nonnull EffectiveElementValues configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        WebhookTriggerConfigV1 config;
-        try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(configuration, WebhookTriggerConfigV1.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des Webhook-Trigger-Knotens ist ungültig."
-            );
-        }
-        return config;
     }
 }

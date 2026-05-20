@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.storage.services;
 
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
@@ -202,10 +203,11 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
 
     private void validateMaxFileSize(@Nonnull StorageProviderEntity entity) throws ResponseException {
         if (entity.getMaxFileSizeInBytes() > maxFileSize.toBytes()) {
-            throw ResponseException.badRequest(
-                    "Die maximale Dateigröße des Speicheranbieters darf die systemweite Grenze für Uploads nicht überschreiten. Systemweit gelten %d Megabyte."
-                            .formatted(maxFileSize.toMegabytes())
-            );
+            var message = "Die maximale Dateigröße des Speicheranbieters darf die systemweite Grenze für Uploads nicht überschreiten. Systemweit gelten %d Megabyte."
+                    .formatted(maxFileSize.toMegabytes());
+            var derivedRuntimeData = new DerivedRuntimeElementData();
+            derivedRuntimeData.putError("maxFileSizeInBytes", message);
+            throw ResponseException.badRequest(message, derivedRuntimeData);
         }
     }
 

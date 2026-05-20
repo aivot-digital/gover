@@ -1,22 +1,19 @@
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {AuthService} from '../../../services/auth-service';
-import {Link, useLocation} from 'react-router-dom';
+import {useLocation} from 'react-router-dom';
 import {createStaffPath} from '../../../utils/url-path-utils';
 
 export function ShellSessionExpiredDialog() {
-    const authService = new AuthService();
+    const authService = AuthService;
     const location = useLocation();
 
     const [isAuthenticated, setIsAuthenticated] = useState(true);
-    const [loginUrl, setLoginUrl] = useState<string>('');
 
-    useEffect(() => {
-        authService
-            .getLoginUrl()
-            .then(setLoginUrl);
-    }, [location.pathname, location.search, location.hash]);
+    const loginUrl = useMemo(() => {
+        return AuthService.getLoginUrl(location);
+    }, [location]);
 
     useEffect(() => {
         const intervalPointer = setInterval(() => {
@@ -49,7 +46,7 @@ export function ShellSessionExpiredDialog() {
                 <Button
                     variant="contained"
                     startIcon={
-                        <LoginOutlinedIcon />
+                        <LoginOutlinedIcon/>
                     }
                     component="a"
                     href={loginUrl}

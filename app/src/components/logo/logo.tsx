@@ -1,7 +1,5 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {useAppSelector} from '../../hooks/use-app-selector';
 import {Box} from '@mui/material';
-import {selectSetup} from '../../slices/shell-slice';
 import {createApiPath} from '../../utils/url-path-utils';
 
 interface LogoProps {
@@ -21,7 +19,6 @@ export function Logo(props: LogoProps) {
     } = props;
 
     const [imageStatus, setImageStatus] = useState<'loading' | 'failed' | 'present'>('loading');
-    const setup = useAppSelector(selectSetup);
 
     useEffect(() => {
         props.onStatusChange?.(imageStatus);
@@ -69,7 +66,7 @@ export function Logo(props: LogoProps) {
 
             <img
                 src={url}
-                alt={'Logo ' + setup?.providerName}
+                alt={'Logo ' + AppConfig.providerName}
                 style={{
                     width: 'auto',
                     maxWidth: width ?? 200,

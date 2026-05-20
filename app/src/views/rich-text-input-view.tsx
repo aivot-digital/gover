@@ -4,6 +4,7 @@ import {RichTextInputComponent} from "../components/rich-text-input-component/ri
 import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {ElementType} from '../data/element-type/element-type';
+import {useViewDispatcherContext} from '../components/view-dispatcher/view-dispatcher.context';
 
 export function RichTextView(props: BaseViewProps<RichTextInputElement, string>) {
     const {
@@ -13,8 +14,11 @@ export function RichTextView(props: BaseViewProps<RichTextInputElement, string>)
         errors,
         isBusy: isGloballyDisabled,
         isDeriving,
-        rootElement,
     } = props;
+
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
     const isDisabled = useMemo(() => {
         return element.disabled || isGloballyDisabled;

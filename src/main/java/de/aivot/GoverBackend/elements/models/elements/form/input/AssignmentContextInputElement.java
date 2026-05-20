@@ -374,28 +374,13 @@ public class AssignmentContextInputElement extends BaseInputElement<AssignmentCo
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         AssignmentContextInputElement that = (AssignmentContextInputElement) o;
-        return Objects.equals(headline, that.headline)
-                && Objects.equals(text, that.text)
-                && Objects.equals(placeholder, that.placeholder)
-                && Objects.equals(minItems, that.minItems)
-                && Objects.equals(maxItems, that.maxItems)
-                && Objects.equals(allowedTypes, that.allowedTypes)
-                && Objects.equals(processAccessConstraint, that.processAccessConstraint);
+        return Objects.equals(headline, that.headline) && Objects.equals(text, that.text) && Objects.equals(placeholder, that.placeholder) && Objects.equals(minItems, that.minItems) && Objects.equals(maxItems, that.maxItems) && Objects.equals(allowedTypes, that.allowedTypes) && Objects.equals(processAccessConstraint, that.processAccessConstraint);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(headline);
-        result = 31 * result + Objects.hashCode(text);
-        result = 31 * result + Objects.hashCode(placeholder);
-        result = 31 * result + Objects.hashCode(minItems);
-        result = 31 * result + Objects.hashCode(maxItems);
-        result = 31 * result + Objects.hashCode(allowedTypes);
-        result = 31 * result + Objects.hashCode(processAccessConstraint);
-        return result;
+        return Objects.hash(super.hashCode(), headline, text, placeholder, minItems, maxItems, allowedTypes, processAccessConstraint);
     }
 
     @Nullable

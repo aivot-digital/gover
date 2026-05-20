@@ -1,8 +1,6 @@
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {useSelector} from 'react-redux';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {type PrivacyDialogProps} from './privacy-dialog-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
@@ -14,7 +12,7 @@ import {MarkdownContent} from '../../components/markdown-content/markdown-conten
 export const PrivacyDialogId = 'privacy';
 
 export function PrivacyDialog(props: PrivacyDialogProps) {
-    const application = useSelector(selectLoadedForm);
+    const application = props.form;
 
     const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
@@ -22,18 +20,18 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.version.privacyDepartmentId != null &&
-            (department == null || department.id !== application.version.privacyDepartmentId)
+            application.privacyDepartmentId != null &&
+            (department == null || department.id !== application.privacyDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.version.privacyDepartmentId)
+                .retrievePublic(application.privacyDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&
             privacyDepartmentId != null &&
             privacyDepartmentId != '' &&
             (department == null || department.id !== parseInt(privacyDepartmentId))
-        ){
+        ) {
             new DepartmentApiService()
                 .retrievePublic(parseInt(privacyDepartmentId))
                 .then(setDepartment);
@@ -54,16 +52,17 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
                 Datenschutzerklärung
             </DialogTitleWithClose>
             {
-                department?.commonPrivacy?
-                <DialogContent>
-                    <MarkdownContent markdown={department.commonPrivacy}/>
-                </DialogContent>
-                :
-                <DialogContent tabIndex={0}>
-                    <Alert severity="info">
-                        Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen Fachbereich als Quelle für den Rechtstext der Datenschutzerklärung aus.
-                    </Alert>
-                </DialogContent>
+                department?.commonPrivacy ?
+                    <DialogContent>
+                        <MarkdownContent markdown={department.commonPrivacy}/>
+                    </DialogContent>
+                    :
+                    <DialogContent tabIndex={0}>
+                        <Alert severity="info">
+                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen
+                            Fachbereich als Quelle für den Rechtstext der Datenschutzerklärung aus.
+                        </Alert>
+                    </DialogContent>
             }
             <DialogActions>
                 <Box/>

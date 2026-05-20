@@ -1,5 +1,5 @@
 export function createApiPath(path: string) {
-    let hostname = AppConfig.api.hostname;
+    let hostname = AppConfig.apiHostname;
     if (hostname.endsWith('/')) {
         hostname = hostname.slice(0, -1);
     }

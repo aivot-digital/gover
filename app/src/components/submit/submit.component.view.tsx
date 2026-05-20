@@ -4,7 +4,6 @@ import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
@@ -20,17 +19,20 @@ import {DepartmentApiService} from '../../modules/departments/services/departmen
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {ElementType} from '../../data/element-type/element-type';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-
-export const SubmitPaymentDataKey = '__payment_data__';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {isRootElement} from '../../models/elements/form-layout-element';
 
 export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): React.ReactNode | null {
     const {
         element,
-        value,
         setValue,
         errors,
         authoredElementValues,
     } = props;
+
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
     const theme = useTheme();
 
@@ -38,13 +40,16 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
 
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
-    const form = useAppSelector(selectLoadedForm);
-
     const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
     const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
 
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
 
+    useEffect(() => {
+        setValue(undefined);
+    }, []);
+
+    /* TODO: calculate costs
     useEffect(() => {
         if (form == null) {
             return;
@@ -56,30 +61,33 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 setCosts(data);
             });
     }, [form]);
+     */
 
     useEffect(() => {
-        if (form != null) {
-            if (form.version.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== form.version.responsibleDepartmentId) {
+        if (!isRootElement(rootElement)) {
+            return;
+        }
+
+            if (rootElement.responsibleDepartmentId != null) {
+                if (responsibleDepartment == null || responsibleDepartment.id !== rootElement.responsibleDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(form.version.responsibleDepartmentId)
+                        .retrievePublic(rootElement.responsibleDepartmentId)
                         .then(setResponsibleDepartment);
                 }
             } else {
                 setResponsibleDepartment(undefined);
             }
 
-            if (form.version.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== form.version.managingDepartmentId) {
+            if (rootElement.managingDepartmentId != null) {
+                if (managingDepartment == null || managingDepartment.id !== rootElement.managingDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(form.version.managingDepartmentId)
+                        .retrievePublic(rootElement.managingDepartmentId)
                         .then(setManagingDepartment);
                 }
             } else {
                 setManagingDepartment(undefined);
             }
-        }
-    }, [form]);
+    }, [rootElement]);
 
     const renderDocumentToReceive = (doc: string, index: number) => (
         <ListItem
@@ -92,10 +100,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
             <ListItemText>{doc}</ListItemText>
         </ListItem>
     );
-
-    if (form == null) {
-        return null;
-    }
 
     const sections: React.ReactNode[] = [];
 
@@ -186,6 +190,10 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         );
     }
 
+    if (!isRootElement(rootElement)) {
+        return null;
+    }
+
     return (
         <>
             {
@@ -193,8 +201,8 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 !isStringNullOrEmpty(props.element.textPreSubmit) &&
                 <Preamble
                     text={props.element.textPreSubmit}
-                    logoLink={(form.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
-                    logoAlt={(form.version.rootElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
+                    logoLink={(rootElement.children?.find((c: any) => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
+                    logoAlt={(rootElement.children?.find((c: any) => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
 

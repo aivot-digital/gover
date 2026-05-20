@@ -1,12 +1,14 @@
 import {
     applyComputedErrors,
     AuthoredElementValues,
+    clearDerivedErrorsRecursively,
     ComputedElementErrors,
+    ComputedElementStates,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
+    hasAnyErrorRecursively,
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
-import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import React, {createContext, RefObject, useContext, useEffect, useMemo, useState} from 'react';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
@@ -14,7 +16,16 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
-import {synchronizeAuthoredElementValuesByDestinationPath} from '../../../utils/element-data-utils';
+import {
+    synchronizeAuthoredElementValuesByDestinationPath,
+    walkAuthoredElementValues,
+} from '../../../utils/element-data-utils';
+import {ViewDispatcherComponent} from '../../../components/view-dispatcher/view-dispatcher.component';
+import {
+    ViewDispatcherContextProvider,
+    ViewDispatcherMode,
+} from '../../../components/view-dispatcher/view-dispatcher.context';
+import {deepEquals} from '../../../utils/equality-utils';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -27,16 +38,15 @@ interface ElementDerivationContextProps {
     onDerivationStarted?: (triggeringElementData: AuthoredElementValues) => void;
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
-    doDerive?: (aev: AuthoredElementValues) => Promise<DerivedRuntimeElementData>;
-}
-
-export enum ElementDerivationContextRenderMode {
-    Editor,
-    Viewer,
+    onDeriveOverride?: (aev: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
+    onEvent?: (values: AuthoredElementValues, event: string) => void;
+    mode?: ViewDispatcherMode;
+    disableValidation?: boolean;
+    disableVisibilities?: boolean;
 }
 
 interface ElementDerivationContextType {
-    renderMode: ElementDerivationContextRenderMode;
+    renderMode: ViewDispatcherMode;
     isEditable: boolean;
     showInvisible: boolean;
     showTechnical: boolean;
@@ -49,7 +59,7 @@ interface ElementDerivationContextType {
     derivedRuntimeElementData: DerivedRuntimeElementData | null;
     additionalComputedErrors: ComputedElementErrors | null;
 
-    supressErrors?: boolean;
+    suppressErrors?: boolean;
 }
 
 const ElementDerivationContextObject = createContext<ElementDerivationContextType | null>(null);
@@ -66,13 +76,13 @@ export function useElementDerivationContext(): ElementDerivationContextType {
             authoredElementValues: {},
             derivedRuntimeElementData: null,
             isEditable: false,
-            renderMode: ElementDerivationContextRenderMode.Viewer,
+            renderMode: ViewDispatcherMode.Viewer,
             rootElement: {} as AnyElement,
             scrollContainerRef: null,
             showInvisible: false,
             showTechnical: false,
-            supressErrors: false,
-        }
+            suppressErrors: false,
+        };
     }
     return context;
 }
@@ -90,7 +100,11 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         onDerivationStarted,
         onDerivationFinished,
         suppressErrors,
-        doDerive,
+        onDeriveOverride,
+        onEvent,
+        mode: renderMode = ViewDispatcherMode.Viewer,
+        disableValidation,
+        disableVisibilities,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -102,30 +116,36 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     const [internalDerivedData, setInternalDerivedData] = useState<DerivedRuntimeElementData>(
         controlledDerivedData ?? createDerivedRuntimeElementData(),
     );
+    const [suppressedErrorElementIds, setSuppressedErrorElementIds] = useState<string[]>([]);
 
     const allElements = useMemo(() => {
         return flattenElements(element, false);
     }, [element]);
 
+    const baseDerivedData = useMemo(() => {
+        return controlledDerivedData ?? internalDerivedData;
+    }, [controlledDerivedData, internalDerivedData]);
 
     const derivedData = useMemo(() => {
-        const baseDerivedData = controlledDerivedData ?? internalDerivedData;
+        const derivedDataWithComputedErrors = computedErrors == null || Object.keys(computedErrors).length === 0 || suppressErrors ?
+            baseDerivedData :
+            {
+                ...baseDerivedData,
+                elementStates: applyComputedErrors(computedErrors, baseDerivedData.elementStates),
+            };
 
-        if (computedErrors == null || Object.keys(computedErrors).length === 0 || suppressErrors) {
-            return baseDerivedData;
+        if (suppressedErrorElementIds.length === 0) {
+            return derivedDataWithComputedErrors;
         }
 
-        return {
-            ...baseDerivedData,
-            elementStates: applyComputedErrors(computedErrors, baseDerivedData.elementStates),
-        };
-    }, [computedErrors, controlledDerivedData, internalDerivedData]);
+        return clearDerivedErrorsForElementIds(derivedDataWithComputedErrors, suppressedErrorElementIds);
+    }, [computedErrors, baseDerivedData, suppressErrors, suppressedErrorElementIds]);
 
     const contextValue = useMemo<ElementDerivationContextType>(() => {
         const allElements = flattenElementsWithParents(element, [], false);
 
         return {
-            renderMode: ElementDerivationContextRenderMode.Editor,
+            renderMode: renderMode,
             isEditable: !disabled,
             showInvisible: false,
             showTechnical: true,
@@ -138,7 +158,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             derivedRuntimeElementData: derivedData,
             additionalComputedErrors: computedErrors ?? null,
 
-            supressErrors: suppressErrors,
+            suppressErrors: suppressErrors,
         };
     }, [
         disabled,
@@ -147,6 +167,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         derivedData,
         computedErrors,
         suppressErrors,
+        renderMode,
     ]);
 
     useEffect(() => {
@@ -157,6 +178,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     useEffect(() => {
         setMode('busy');
+        setSuppressedErrorElementIds([]);
         derive(authoredElementValues)
             .finally(() => {
                 setMode('idle');
@@ -175,6 +197,21 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         );
         const effectiveNewData = synchronizedUpdate.authoredElementValues;
         const effectiveTriggeringElementIds = synchronizedUpdate.triggeringElementIds;
+        const changedElementIds = getChangedAuthoredElementIds(
+            element,
+            authoredElementValues,
+            effectiveNewData,
+        );
+
+        if (changedElementIds.length > 0) {
+            setSuppressedErrorElementIds((current) => {
+                const updated = new Set(current);
+                for (const id of changedElementIds) {
+                    updated.add(id);
+                }
+                return Array.from(updated);
+            });
+        }
 
         const relevantIds: string[] = [];
         for (const id of effectiveTriggeringElementIds) {
@@ -197,7 +234,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ...relevantIds,
         ]);
         setMode('deriving');
-        await derive(effectiveNewData);
+        await derive(effectiveNewData, []);
         setMode('idle');
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];
@@ -211,19 +248,19 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         });
     };
 
-    const derive = async (authoredElementValues: AuthoredElementValues) => {
+    const derive = async (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[] = ['ALL']) => {
         try {
             if (onDerivationStarted != null) {
                 onDerivationStarted(authoredElementValues);
             }
 
-            const derivedRuntimeElementData = await (doDerive != null ? doDerive(authoredElementValues) : new ElementsApiService()
+            let derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(authoredElementValues, skipErrorsForElements) : new ElementsApiService()
                 .derive({
                     element: element,
                     authoredElementValues: authoredElementValues,
                     derivationOptions: {
-                        skipErrorsForElementIds: ['ALL'],
-                        skipVisibilitiesForElementIds: [],
+                        skipErrorsForElementIds: disableValidation && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : skipErrorsForElements,
+                        skipVisibilitiesForElementIds: disableVisibilities && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : [],
                         skipOverridesForElementIds: [],
                         skipValuesForElementIds: [],
                     },
@@ -241,6 +278,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             if (onDerivationFinished != null) {
                 onDerivationFinished(derivedRuntimeElementData);
             }
+
+            return derivedRuntimeElementData;
         } catch (error) {
             if (isApiError(error) && error.displayableToUser) {
                 dispatch(showErrorSnackbar(error.message));
@@ -249,24 +288,69 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                 dispatch(showErrorSnackbar('Beim Verarbeiten der Eingaben ist ein unbekannter Fehler aufgetreten'));
             }
         }
+
+        return {
+            effectiveValues: {},
+            elementStates: {},
+        };
     };
+
+    // Derive all data if the disable visibilities flag is reset
+    useEffect(() => {
+        if (!disableVisibilities) {
+            derive(authoredElementValues);
+        }
+    }, [disableVisibilities]);
 
     return (
         <ElementDerivationContextProvider
             value={contextValue}
         >
-            <ViewDispatcherComponent
-                rootElement={element}
-                allElements={allElements}
-                element={element}
-                isBusy={mode === 'busy' || (disabled ?? false)}
-                isDeriving={mode === 'deriving'}
-                mode="editor"
-                authoredElementValues={authoredElementValues}
-                derivedData={derivedData}
-                onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
-                derivationTriggerIdQueue={derivationTriggerIdQueue}
-            />
+            <ViewDispatcherContextProvider
+                value={{
+                    rootElement: element,
+                    allElements: allElements,
+                    mode: renderMode,
+                    rootAuthoredElementValues: authoredElementValues,
+                    rootDerivedData: derivedData,
+                    showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
+                }}
+            >
+                <ViewDispatcherComponent
+                    element={element}
+                    isBusy={mode === 'busy' || (disabled ?? false)}
+                    isDeriving={mode === 'deriving'}
+                    authoredElementValues={authoredElementValues}
+                    derivedData={derivedData}
+                    onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
+                    derivationTriggerIdQueue={derivationTriggerIdQueue}
+                    onDerive={(authoredValues, _, skipErrorsForElements) => {
+                        setInternalDerivedData((current) => {
+                            return clearDerivedErrorsRecursively(current);
+                        });
+                        setSuppressedErrorElementIds([]);
+                        return derive(authoredValues, skipErrorsForElements);
+                    }}
+                    onEvent={(data, event) => {
+                        return derive(data)
+                            .then((derived) => {
+                                setInternalDerivedData(derived);
+                                if (!hasAnyErrorRecursively(derived.elementStates)) {
+                                    if (onEvent != null) {
+                                        onEvent(data, event);
+                                    }
+                                }
+                            });
+                    }}
+                    onResetErrors={() => {
+                        setSuppressedErrorElementIds([]);
+                        setInternalDerivedData((current) => {
+                            return clearDerivedErrorsRecursively(current);
+                        });
+                    }}
+                    suppressErrors={suppressErrors ?? false}
+                />
+            </ViewDispatcherContextProvider>
         </ElementDerivationContextProvider>
     );
 }
@@ -284,4 +368,67 @@ function checkElementReferencesId(element: AnyElement, id: string): boolean {
         }
     }
     return false;
+}
+
+function clearDerivedErrorsForElementIds(derivedData: DerivedRuntimeElementData, elementIds: string[]): DerivedRuntimeElementData {
+    const elementIdSet = new Set(elementIds);
+
+    return {
+        ...derivedData,
+        elementStates: clearComputedElementStateErrorsByElementId(derivedData.elementStates, elementIdSet),
+    };
+}
+
+function clearComputedElementStateErrorsByElementId(
+    elementStates: ComputedElementStates,
+    elementIdSet: Set<string>,
+): ComputedElementStates {
+    return Object.fromEntries(
+        Object.entries(elementStates).map(([elementId, state]) => [
+            elementId,
+            {
+                ...state,
+                error: elementIdSet.has(elementId) ? null : state?.error,
+                subStates: state?.subStates?.map((subState) => {
+                    return clearComputedElementStateErrorsByElementId(subState ?? {}, elementIdSet);
+                }) ?? null,
+            },
+        ]),
+    );
+}
+
+function getChangedAuthoredElementIds(
+    rootElement: AnyElement,
+    previousValues: AuthoredElementValues,
+    nextValues: AuthoredElementValues,
+): string[] {
+    const previousValuesByElementId = collectAuthoredValuesByElementId(rootElement, previousValues);
+    const nextValuesByElementId = collectAuthoredValuesByElementId(rootElement, nextValues);
+    const elementIds = new Set([
+        ...Object.keys(previousValuesByElementId),
+        ...Object.keys(nextValuesByElementId),
+    ]);
+
+    return Array.from(elementIds)
+        .filter((elementId) => !deepEquals(
+            previousValuesByElementId[elementId] ?? [],
+            nextValuesByElementId[elementId] ?? [],
+        ));
+}
+
+function collectAuthoredValuesByElementId(
+    rootElement: AnyElement,
+    authoredValues: AuthoredElementValues,
+): Record<string, any[]> {
+    const valuesByElementId: Record<string, any[]> = {};
+
+    walkAuthoredElementValues(rootElement, authoredValues, (element, value) => {
+        if (valuesByElementId[element.id] == null) {
+            valuesByElementId[element.id] = [];
+        }
+
+        valuesByElementId[element.id].push(value);
+    });
+
+    return valuesByElementId;
 }

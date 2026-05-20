@@ -3,7 +3,7 @@ import {AppInfo} from '../../../app-info';
 import {ProcessExport} from '../entities/process-export';
 
 const DEV = import.meta.env.DEV;
-const REG = AppConfigV2.registryHostname;
+const REG = AppConfig.registryHostname;
 
 export interface TemplateRegistryIndex {
     processes: TemplateRegistryProcessItem[];

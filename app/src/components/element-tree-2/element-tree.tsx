@@ -2,7 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Typography} from '@mui/material';
 import {DndProvider} from 'react-dnd';
 import {HTML5Backend} from 'react-dnd-html5-backend';
-import {isRootElement} from '../../models/elements/root-element';
+import {isRootElement} from '../../models/elements/form-layout-element';
 import {AnyElement} from '../../models/elements/any-element';
 import {AnyElementWithChildren, isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {getElementNameForType} from '../../data/element-type/element-names';
@@ -20,6 +20,8 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import {flattenElementsWithParents} from '../../utils/flatten-elements';
 import SearchOff from '@aivot/mui-material-symbols-400-outlined/dist/search-off/SearchOff';
+import {ElementTreeEditor} from './components/element-tree-editor';
+import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
@@ -55,6 +57,14 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
     const {
         type,
     } = value;
+
+
+    const {
+        navigateToElementEditor,
+        currentEditedElementId,
+        currentEditorTab,
+        closeElementEditor,
+    } = useElementEditorNavigation();
 
     const [showSearch, setShowSearch] = useState(false);
     const [search, setSearch] = useState('');
@@ -475,10 +485,28 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 addElementDialogTitle={isRootElement(value) ? 'Formularabschnitt hinzufügen' : undefined}
                                 openAddElementSignal={openRootAddElementSignal}
                             />
+
+
+                            <ElementTreeEditor
+                                open={currentEditedElementId === value.id && currentEditorTab != null}
+                                parents={[]}
+                                value={value}
+                                onChange={(updatedValue) => {
+                                    onChange(updatedValue);
+                                    closeElementEditor();
+                                }}
+                                onCancel={closeElementEditor}
+                                onDelete={() => {
+                                    closeElementEditor();
+                                }}
+                                onClone={() => {
+                                }}
+                            />
                         </ElementTreeContextProvider>
                     </DndProvider>
                 </Box>
             </Box>
+
         </Box>
     );
 }

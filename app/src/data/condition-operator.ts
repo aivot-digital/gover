@@ -198,6 +198,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.DataObjectSelect]: null,
     [ElementType.NoCodeInput]: null,
     [ElementType.SummaryLayout]: null,
+    [ElementType.ProcessDataKeyInput]: null,
 };
 
 export function getConditionOperatorHint(elementType?: ElementType, operator?: ConditionOperator): string | null {

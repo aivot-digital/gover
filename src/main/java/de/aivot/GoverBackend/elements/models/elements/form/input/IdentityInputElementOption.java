@@ -14,6 +14,9 @@ public class IdentityInputElementOption implements Serializable {
     @Nullable
     private List<String> additionalScopes;
 
+    @Nullable
+    private List<IdentityInputElementOptionAttributeMapping> attributeMappings;
+
     // region Constructors
 
     // Empty constructor
@@ -22,10 +25,13 @@ public class IdentityInputElementOption implements Serializable {
     }
 
     // Full constructor
+
     public IdentityInputElementOption(@Nullable UUID identityProviderKey,
-                                      @Nullable List<String> additionalScopes) {
+                                      @Nullable List<String> additionalScopes,
+                                      @Nullable List<IdentityInputElementOptionAttributeMapping> attributeMappings) {
         this.identityProviderKey = identityProviderKey;
         this.additionalScopes = additionalScopes;
+        this.attributeMappings = attributeMappings;
     }
 
     // endregion
@@ -36,12 +42,13 @@ public class IdentityInputElementOption implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         IdentityInputElementOption that = (IdentityInputElementOption) o;
-        return Objects.equals(identityProviderKey, that.identityProviderKey) && Objects.equals(additionalScopes, that.additionalScopes);
+        return Objects.equals(identityProviderKey, that.identityProviderKey) && Objects.equals(additionalScopes, that.additionalScopes) &&
+                Objects.equals(attributeMappings, that.attributeMappings);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityProviderKey, additionalScopes);
+        return Objects.hash(identityProviderKey, additionalScopes, attributeMappings);
     }
 
     // endregion
@@ -67,6 +74,17 @@ public class IdentityInputElementOption implements Serializable {
         this.additionalScopes = additionalScopes;
         return this;
     }
+
+    @Nullable
+    public List<IdentityInputElementOptionAttributeMapping> getAttributeMappings() {
+        return attributeMappings;
+    }
+
+    public IdentityInputElementOption setAttributeMappings(@Nullable List<IdentityInputElementOptionAttributeMapping> attributeMappings) {
+        this.attributeMappings = attributeMappings;
+        return this;
+    }
+
 
     // endregion
 }

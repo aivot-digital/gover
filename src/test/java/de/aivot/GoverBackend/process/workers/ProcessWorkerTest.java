@@ -9,9 +9,9 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceAttachmentRepository;
@@ -166,7 +166,7 @@ class ProcessWorkerTest {
         return null;
     }
 
-    private static final class ThrowingProcessNodeDefinition implements ProcessNodeDefinition {
+    private static final class ThrowingProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
         @Override
         public String getParentPluginKey() {
             return "test";
@@ -205,8 +205,14 @@ class ProcessWorkerTest {
         }
 
         @Override
-        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) {
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
             throw new RuntimeException("init failure");
+        }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
         }
     }
 
@@ -215,9 +221,15 @@ class ProcessWorkerTest {
             super(null, null, null, null, null, null, null);
         }
 
+        @Nonnull
         @Override
-        public DerivedRuntimeElementData deriveConfiguration(ProcessNodeEntity entity, boolean skipErrors) {
-            return new DerivedRuntimeElementData();
+        public <NodeConfig> ProcessConfigurationDetails<NodeConfig> deriveConfiguration(@Nonnull ProcessNodeEntity entity,
+                                                                                        @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                                        de.aivot.GoverBackend.user.entities.UserEntity user,
+                                                                                        @Nonnull Boolean skipErrors) {
+            @SuppressWarnings("unchecked")
+            var configuration = (NodeConfig) new AuthoredElementValues();
+            return new ProcessConfigurationDetails<>(configuration, new DerivedRuntimeElementData());
         }
     }
 

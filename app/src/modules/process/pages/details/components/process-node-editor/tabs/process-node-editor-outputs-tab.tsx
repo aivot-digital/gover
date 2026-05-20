@@ -3,12 +3,14 @@ import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {TextFieldComponent} from '../../../../../../../components/text-field/text-field-component';
 import Typography from '@mui/material/Typography';
 import {ProcessNodeOutputCard} from '../../../../../components/process-node-output-card';
+import {ProcessDataKeyInputComponent} from '../../../../../../../views/process-data-key-input-field-view';
 
 export function ProcessNodeEditorOutputsTab() {
     const {
         node,
         setNode,
         provider,
+        isEditable,
     } = useProcessNodeEditorContext();
 
     if (provider.outputs.length === 0) {
@@ -48,7 +50,7 @@ export function ProcessNodeEditorOutputsTab() {
 
             {
                 provider.outputs.map((output) => (
-                    <TextFieldComponent
+                    <ProcessDataKeyInputComponent
                         key={output.key}
                         label={output.label}
                         hint={output.description}
@@ -62,13 +64,7 @@ export function ProcessNodeEditorOutputsTab() {
                                 },
                             }, false);
                         }}
-                        muiPassTroughProps={{
-                            margin: 'none',
-                        }}
-                        sx={{
-                            mb: 2,
-                        }}
-                        startIcon="$."
+                        disabled={!isEditable}
                     />
                 ))
             }
@@ -94,7 +90,7 @@ export function ProcessNodeEditorOutputsTab() {
                         <ProcessNodeOutputCard
                             key={output.key}
                             label={output.label}
-                            outputKey={output.key}
+                            outputKey={`_.${node.dataKey}.${output.key}`}
                             description={output.description}
                             sx={{
                                 mb: 1,

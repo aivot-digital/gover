@@ -106,6 +106,82 @@ class DestinationKeyPayloadServiceTest {
     }
 
     @Test
+    void shouldPatchExistingReplicatingContainerRowsWithoutDroppingSiblingFields() {
+        var firstName = new TextInputElement();
+        firstName.setId("rowFirstName");
+        firstName.setDestinationKey("first_name");
+
+        var people = new ReplicatingContainerLayoutElement();
+        people.setId("people");
+        people.setDestinationKey("payload.people");
+        people.setChildren(new LinkedList<>(List.of(firstName)));
+
+        var firstPerson = new EffectiveElementValues();
+        firstPerson.put("rowFirstName", "Ada Updated");
+
+        var secondPerson = new EffectiveElementValues();
+        secondPerson.put("rowFirstName", "Grace Updated");
+
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.put("people", List.of(firstPerson, secondPerson));
+
+        var payload = service.buildPayload(
+                createRoot(people),
+                effectiveValues,
+                Map.of(
+                        "payload", Map.of(
+                                "people", List.of(
+                                        Map.of(
+                                                "first_name", "Ada",
+                                                "age", 33,
+                                                "address", Map.of(
+                                                        "street", "Main Street 1",
+                                                        "city", "Berlin"
+                                                )
+                                        ),
+                                        Map.of(
+                                                "first_name", "Grace",
+                                                "age", 41,
+                                                "address", Map.of(
+                                                        "street", "Side Alley 2",
+                                                        "city", "Hamburg"
+                                                )
+                                        )
+                                ),
+                                "untouched", "value"
+                        )
+                )
+        );
+
+        assertEquals(
+                Map.of(
+                        "payload", Map.of(
+                                "people", List.of(
+                                        Map.of(
+                                                "first_name", "Ada Updated",
+                                                "age", 33,
+                                                "address", Map.of(
+                                                        "street", "Main Street 1",
+                                                        "city", "Berlin"
+                                                )
+                                        ),
+                                        Map.of(
+                                                "first_name", "Grace Updated",
+                                                "age", 41,
+                                                "address", Map.of(
+                                                        "street", "Side Alley 2",
+                                                        "city", "Hamburg"
+                                                )
+                                        )
+                                ),
+                                "untouched", "value"
+                        )
+                ),
+                payload
+        );
+    }
+
+    @Test
     void shouldWriteDestinationKeysWithExplicitArrayIndexes() {
         var firstMemberName = new TextInputElement();
         firstMemberName.setId("firstMemberName");

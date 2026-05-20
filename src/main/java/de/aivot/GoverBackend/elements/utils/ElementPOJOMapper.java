@@ -117,6 +117,10 @@ public class ElementPOJOMapper {
         List<?> childElementData = (List<?>) elementData
                 .getOrDefault(annotation.id(), new LinkedList<>());
 
+        if (childElementData == null) {
+            return new LinkedList<>();
+        }
+
         List<Object> results = new LinkedList<>();
         for (Object childElementDataObject : childElementData) {
             if (childElementDataObject instanceof Map<?, ?> cd) {

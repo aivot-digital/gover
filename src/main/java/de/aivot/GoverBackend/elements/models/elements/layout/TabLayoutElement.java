@@ -9,6 +9,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 public class TabLayoutElement extends BaseElement implements LayoutElement<GenericStepElement> {
     private List<GenericStepElement> children = new LinkedList<>();
@@ -28,5 +29,18 @@ public class TabLayoutElement extends BaseElement implements LayoutElement<Gener
     public LayoutElement<GenericStepElement> setChildren(@Nullable List<GenericStepElement> children) {
         this.children = children;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        TabLayoutElement that = (TabLayoutElement) o;
+        return Objects.equals(children, that.children);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), children);
     }
 }

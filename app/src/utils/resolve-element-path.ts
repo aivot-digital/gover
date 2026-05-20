@@ -12,11 +12,65 @@ export function isDeletedElementReference(element: any): element is DeletedEleme
 }
 
 export function resolveElementPath(version: FormVersionEntity, path: string): (FormVersionEntity | AnyElement | DeletedElementReference)[] {
-    return _resolveElementPath(version, path.split('/').slice(1)).filter((element) => !Array.isArray(element));
+    return _resolveElementPath(version, splitDiffPath(path)).filter((element) => !Array.isArray(element));
+}
+
+export function splitDiffPath(path: string): string[] {
+    if (path.length === 0 || path === '/') {
+        return [];
+    }
+
+    if (path.includes('/')) {
+        return path.split('/').filter((segment) => segment.length > 0);
+    }
+
+    const segments: string[] = [];
+    let currentSegment = '';
+
+    for (let i = 0; i < path.length; i++) {
+        const currentChar = path[i];
+
+        if (currentChar === '.') {
+            if (currentSegment.length > 0) {
+                segments.push(currentSegment);
+                currentSegment = '';
+            }
+            continue;
+        }
+
+        if (currentChar === '[') {
+            if (currentSegment.length > 0) {
+                segments.push(currentSegment);
+                currentSegment = '';
+            }
+
+            const closingBracketIndex = path.indexOf(']', i);
+            if (closingBracketIndex === -1) {
+                break;
+            }
+
+            segments.push(path.slice(i + 1, closingBracketIndex));
+            i = closingBracketIndex;
+            continue;
+        }
+
+        currentSegment += currentChar;
+    }
+
+    if (currentSegment.length > 0) {
+        segments.push(currentSegment);
+    }
+
+    return segments;
+}
+
+export function getLeafDiffPathSegment(path: string): string {
+    const pathSegments = splitDiffPath(path);
+    return pathSegments[pathSegments.length - 1] ?? '';
 }
 
 function _resolveElementPath(currentElement: FormVersionEntity | AnyElement, path: string[]): (FormVersionEntity | AnyElement | DeletedElementReference)[] {
-    if (path.length === 1) {
+    if (path.length <= 1) {
         return [currentElement];
     }
 

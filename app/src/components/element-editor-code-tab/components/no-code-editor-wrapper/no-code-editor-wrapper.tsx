@@ -14,7 +14,7 @@ import {Collapse} from '../../../collapse/collapse';
 import {AuthoredElementValues, createDerivedRuntimeElementData} from '../../../../models/element-data';
 import {ElementDerivationContext} from '../../../../modules/elements/components/element-derivation-context';
 import {OperandEditor} from '../expression-editor/operand-editor';
-import {RootElement} from '../../../../models/elements/root-element';
+import {FormLayoutElement as RootElement} from '../../../../models/elements/form-layout-element';
 import {StepElement} from '../../../../models/elements/steps/step-element';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {ReplicatingContainerLayout} from '../../../../models/elements/form/layout/replicating-container-layout';

@@ -14,6 +14,8 @@ import {AppInfo} from '../../app-info';
 import {type PluginDTO, PluginsApiService} from '../../services/plugins-api-service';
 import {type User} from '../../modules/users/models/user';
 import {UsersApiService} from '../../modules/users/users-api-service';
+import {AuthService} from '../../services/auth-service';
+import {humanizeMilliseconds} from '../../utils/humanization-utils';
 
 interface DebugInformationDialogProps {
     open: boolean;
@@ -221,12 +223,12 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             `- compileDate: ${compileDate.toISOString()}`,
             `- appMode: ${AppInfo.mode}`,
             `- frontendMode: ${import.meta.env.MODE}`,
-            `- apiHostname: ${AppConfig.api.hostname}`,
+            `- apiHostname: ${AppConfig.apiHostname}`,
             `- oidcHostname: ${AppConfig.oidc.hostname}`,
             `- oidcRealm: ${AppConfig.oidc.realm}`,
-            `- oidcClient: ${AppConfig.oidc.client}`,
-            `- oidcIdpHintConfigured: ${toDebugBooleanString(AppConfig.oidc.idp_hint.length > 0)}`,
-            `- sentryDsnConfigured: ${toDebugBooleanString(AppConfig.sentry.dsn.length > 0)}`,
+            `- oidcClient: ${AppConfig.oidc.clientId}`,
+            `- registryHostname: ${AppConfig.registryHostname}`,
+            `- sentryDsnConfigured: ${toDebugBooleanString(AppConfig.sentryDsn.length > 0)}`,
             `- page: ${window.location.origin}${window.location.pathname}`,
             '',
             '## health',
@@ -303,6 +305,22 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             lines.push(`- globalRole: ${selfUser.globalRole}`);
             lines.push(`- systemRoleId: ${selfUser.systemRoleId ?? 'none'}`);
             lines.push(`- deletedInIdp: ${toDebugBooleanString(selfUser.deletedInIdp)}`);
+        }
+
+        lines.push('', '## session');
+        const accessExpiration = AuthService.getAccessExpirationTimestamp();
+        if (accessExpiration != null) {
+            lines.push(`- accessTokenExpiresAt: ${new Date(accessExpiration).toISOString()}`);
+            lines.push(`- timeUntilAccessTokenExpires: ${humanizeMilliseconds(accessExpiration - Date.now())}`);
+        } else {
+            lines.push('- accessToken: none or expired');
+        }
+        const refreshExpiration = AuthService.getExpirationTimestamp();
+        if (refreshExpiration != null) {
+            lines.push(`- refreshTokenExpiresAt: ${new Date(refreshExpiration).toISOString()}`);
+            lines.push(`- timeUntilRefreshTokenExpires: ${humanizeMilliseconds(refreshExpiration - Date.now())}`);
+        } else {
+            lines.push('- refreshToken: none or expired');
         }
 
         const colorScheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';

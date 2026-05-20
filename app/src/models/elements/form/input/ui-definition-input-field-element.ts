@@ -6,6 +6,13 @@ import {ElementDisplayContext} from '../../../../data/element-type/element-child
 export interface UiDefinitionInputFieldElement extends BaseInputElement<ElementType.UiDefinitionInput> {
     elementType: ElementType | null | undefined;
     displayContext: ElementDisplayContext | null | undefined;
+    openExternalEditor: boolean | null | undefined;
 }
 
 export type UiDefinitionInputFieldElementItem = AnyElement;
+
+export function isUiDefinitionInputFieldElement(
+    element: AnyElement
+): element is UiDefinitionInputFieldElement {
+    return element.type === ElementType.UiDefinitionInput;
+}

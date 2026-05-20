@@ -10,7 +10,6 @@ import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {Actions} from '../../actions/actions';
 import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
 import {
-    createElementEditorNavigationLink,
     useElementEditorNavigation,
 } from '../../../hooks/use-element-editor-navigation';
 import {ElementTreeEditor} from './element-tree-editor';
@@ -188,7 +187,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     }, [highlightedElementId, highlightedElementSignal, path, scrollToElement, valueId]);
 
     const icons: Action[] = useMemo(() => {
-        const leadingIcons: Action[] = getIcons(root, value, allElements);
+        const leadingIcons: Action[] = getIcons(root, value, allElements, navigateToElementEditor);
         const trailingIcons: Action[] = isAnyElementWithChildren(value) ? [
             {
                 icon: (
@@ -201,7 +200,9 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                     />
                 ),
                 tooltip: isCollapsed ? 'Ausklappen' : 'Einklappen',
-                onClick: () => {
+                onClick: (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
                     setIsCollapsed((prev => !prev));
                 },
                 visible: isAnyElementWithChildren(value),
@@ -213,7 +214,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             ...(leadingIcons.length > 0 && trailingIcons.length > 0 ? ['separator'] : []) as Action[],
             ...trailingIcons,
         ];
-    }, [allElements, isCollapsed, root, value]);
+    }, [allElements, isCollapsed, navigateToElementEditor, root, value]);
 
     const backgroundColor = isActiveSearchResult ?
         'action.focus' :
@@ -334,7 +335,8 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                     },
                 }}
                 variant="outlined"
-                onDoubleClick={() => {
+                onClick={() => {
+                    console.log(`ElementTreeItem clicked: ${value.id}`);
                     navigateToElementEditor(value.id);
                 }}
                 onContextMenu={handleContextMenuOpen}
@@ -486,14 +488,19 @@ function checkIfChildExists(element: AnyElementWithChildren, childId: string): b
     return element.children.some(child => child.id === childId || (isAnyElementWithChildren(child) && checkIfChildExists(child, childId)));
 }
 
-function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElements: ElementWithParents[]): Action[] {
+function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElements: ElementWithParents[], navigateToElementEditor: (elementId: string, tab?: (string | null)) => void): Action[] {
     const actions: Action[] = [];
+    const createNavigateToTabHandler = (tab?: string | null) => (event: React.MouseEvent) => {
+        event.stopPropagation();
+        event.preventDefault();
+        navigateToElementEditor(element.id, tab);
+    };
 
     if (isAnyInputElement(element) && element.technical) {
         actions.push({
             icon: <VisibilityOffOutlinedIcon/>,
             tooltip: 'Technisches Feld (im Formular nicht sichtbar)',
-            to: createElementEditorNavigationLink(element.id, DefaultTabs.properties),
+            onClick: createNavigateToTabHandler(DefaultTabs.properties),
         });
     }
 
@@ -502,7 +509,7 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElement
         actions.push({
             icon: <ReportOutlinedIcon color="error"/>,
             tooltip: msg,
-            to: createElementEditorNavigationLink(element.id, DefaultTabs.properties),
+            onClick: createNavigateToTabHandler(DefaultTabs.properties),
         });
     }
 
@@ -533,7 +540,7 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElement
         actions.push({
             icon: <BuildCircleOutlinedIcon/>,
             tooltip: 'Sichtbarkeit definiert',
-            to: createElementEditorNavigationLink(element.id, DefaultTabs.visibility),
+            onClick: createNavigateToTabHandler(DefaultTabs.visibility),
         });
     }
 
@@ -541,7 +548,7 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElement
         actions.push({
             icon: <BuildCircleOutlinedIcon/>,
             tooltip: 'Dynamische Struktur definiert',
-            to: createElementEditorNavigationLink(element.id, DefaultTabs.patch),
+            onClick: createNavigateToTabHandler(DefaultTabs.patch),
         });
     }
 
@@ -550,7 +557,7 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElement
             actions.push({
                 icon: <BuildCircleOutlinedIcon/>,
                 tooltip: 'Validierung definiert',
-                to: createElementEditorNavigationLink(element.id, DefaultTabs.validation),
+                onClick: createNavigateToTabHandler(DefaultTabs.validation),
             });
         }
 
@@ -558,7 +565,7 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElement
             actions.push({
                 icon: <BuildCircleOutlinedIcon/>,
                 tooltip: 'Dynamischer Wert definiert',
-                to: createElementEditorNavigationLink(element.id, DefaultTabs.value),
+                onClick: createNavigateToTabHandler(DefaultTabs.value),
             });
         }
     }

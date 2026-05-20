@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionBro
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.*;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
@@ -338,14 +339,14 @@ public class ProcessNodeExecutionResultHandler {
         }
     }
 
-    private void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,
-                                    @Nullable UserEntity triggeringUser,
-                                    @Nonnull ProcessNodeDefinition provider,
-                                    @Nonnull ProcessNodeEntity currentNode,
-                                    @Nonnull ProcessInstanceEntity processInstance,
-                                    @Nonnull ProcessInstanceTaskEntity processInstanceTask,
-                                    @Nullable ProcessInstanceTaskEntity previousTask,
-                                    @Nonnull ProcessNodeExecutionResultTaskCompleted taskCompleted) throws ProcessNodeExecutionException {
+    private <NodeConfig> void handleTaskComplete(@Nonnull ProcessNodeExecutionLogger logger,
+                                                 @Nullable UserEntity triggeringUser,
+                                                 @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                 @Nonnull ProcessNodeEntity currentNode,
+                                                 @Nonnull ProcessInstanceEntity processInstance,
+                                                 @Nonnull ProcessInstanceTaskEntity processInstanceTask,
+                                                 @Nullable ProcessInstanceTaskEntity previousTask,
+                                                 @Nonnull ProcessNodeExecutionResultTaskCompleted taskCompleted) throws ProcessNodeExecutionException {
         var port = provider
                 .getPorts()
                 .stream()
@@ -529,7 +530,6 @@ public class ProcessNodeExecutionResultHandler {
         processInstanceRepository.save(processInstance);
 
 
-
         logger.logf(
                 ProcessNodeExecutionLogLevel.Info,
                 true,
@@ -540,56 +540,52 @@ public class ProcessNodeExecutionResultHandler {
         );
     }
 
-    private static Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition provider,
-                                                           @Nonnull Map<String, String> outputMappings,
-                                                           @Nonnull Map<String, Object> nodeData,
-                                                           @Nonnull Map<String, Object> processData) {
-        var updatedProcessData = new HashMap<>(processData);
+    private static <NodeConfig> Map<String, Object> applyOutputMappings(@Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                        @Nonnull Map<String, String> outputMappings,
+                                                                        @Nonnull Map<String, Object> nodeData,
+                                                                        @Nonnull Map<String, Object> processData) {
+        var executionData = new ProcessExecutionData()
+                .addProcessData(new HashMap<>(processData));
 
         for (var nodeProviderOutput : provider.getOutputs()) {
-            var targetFieldPath = outputMappings.get(nodeProviderOutput.key());
+            var targetFieldPath = StringUtils.toNullableTrimmedString(outputMappings.get(nodeProviderOutput.key()));
             if (targetFieldPath == null) {
                 continue;
             }
 
-            var pathParts = targetFieldPath.split("\\.");
+            var outputValue = nodeData.get(nodeProviderOutput.key());
+            try {
+                if (ProcessDataValueUtils.hasWildcardSegment(targetFieldPath)) {
+                    var wildcardBindings = ProcessDataValueUtils
+                            .resolveMatchingProcessDataValues(executionData, targetFieldPath)
+                            .stream()
+                            .map(ProcessDataValueUtils.ResolvedProcessDataValue::wildcardIndices)
+                            .toList();
 
-            if (pathParts.length == 0) {
-                continue;
-            }
-
-            if (pathParts.length == 1) {
-                var outputValue = nodeData.get(nodeProviderOutput.key());
-                updatedProcessData.put(pathParts[0], outputValue);
-                continue;
-            }
-
-            Map<String, Object> targetObject = updatedProcessData;
-
-            for (int i = 0; i < pathParts.length - 1; i++) {
-                var pathPart = pathParts[i];
-
-                if (targetObject.containsKey(pathPart)) {
-                    if (targetObject.get(pathPart) instanceof Map<?, ?> map) {
-                        targetObject = (Map<String, Object>) map;
-                    } else {
-                        throw new IllegalStateException("Der Pfadteil '%s' im Ausgabe-Mapping '%s' verweist auf ein existierendes Feld, das kein Objekt ist."
-                                .formatted(pathPart, targetFieldPath));
+                    for (var wildcardBinding : wildcardBindings) {
+                        ProcessDataValueUtils.writeProcessDataValue(
+                                executionData,
+                                targetFieldPath,
+                                outputValue,
+                                wildcardBinding
+                        );
                     }
                 } else {
-                    var newObject = new HashMap<String, Object>();
-                    targetObject.put(pathPart, newObject);
-                    targetObject = newObject;
+                    ProcessDataValueUtils.writeProcessDataValue(
+                            executionData,
+                            targetFieldPath,
+                            outputValue
+                    );
                 }
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                throw new IllegalStateException(
+                        "Das Ausgabe-Mapping '%s' fuer den Knotenausgang '%s' ist ungueltig: %s"
+                                .formatted(targetFieldPath, nodeProviderOutput.key(), e.getMessage()),
+                        e
+                );
             }
-
-            var targetField = pathParts[pathParts.length - 1];
-
-            var outputValue = nodeData.get(nodeProviderOutput.key());
-
-            targetObject.put(targetField, outputValue);
         }
 
-        return updatedProcessData;
+        return executionData.getProcessData();
     }
 }

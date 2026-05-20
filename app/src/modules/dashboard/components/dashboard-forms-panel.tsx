@@ -1,5 +1,16 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Button, Card, CardContent, Divider, List, ListItem, ListItemButton, Skeleton, Typography} from '@mui/material';
+import {
+    Box,
+    Button,
+    Card,
+    CardContent,
+    Divider,
+    List,
+    ListItem,
+    ListItemButton,
+    Skeleton,
+    Typography,
+} from '@mui/material';
 import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
 import {useApi} from '../../../hooks/use-api';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
@@ -9,22 +20,21 @@ import {format} from 'date-fns';
 import {getFormStatus} from '../../forms/components/form-status-chip-group';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {FormEntity} from '../../forms/entities/form-entity';
-import {FormApiService} from '../../forms/services/form-api-service';
+import {FormTriggerApiService, FormTriggerListItem} from '../../forms/services/form-trigger-api-service';
+import {resolveFormNodeName} from '../../../models/elements/form-layout-element';
 
 const fetchSize = 4;
 
 export function DashboardFormsPanel() {
-    const [forms, setForms] = useState<FormEntity[] | null>(null);
+    const [forms, setForms] = useState<FormTriggerListItem[] | null>(null);
     const [loading, setLoading] = useState(true);
     const api = useApi();
 
     useEffect(() => {
-        withAsyncWrapper<void, Page<FormEntity>>({
+        withAsyncWrapper<void, Page<FormTriggerListItem>>({
             main: () =>
-                new FormApiService()
-                    .list(0, fetchSize, 'updated', 'DESC', {
-                        isDrafted: true,
-                    }),
+                new FormTriggerApiService()
+                    .list(0, fetchSize, 'name', 'DESC'),
             desiredMinRuntime: 600,
         }).then((page) => {
             setForms(page.content);
@@ -110,16 +120,16 @@ export function DashboardFormsPanel() {
                                         </Box>
                                     </Box>
                                 </ListItem>
-                                {i < fetchSize - 1 && <Divider component="li" />}
+                                {i < fetchSize - 1 && <Divider component="li"/>}
                             </React.Fragment>
                         ))
                         : forms?.length
                             ? forms.map((form, index) => (
-                                <React.Fragment key={form.id}>
+                                <React.Fragment key={form.node.id}>
                                     <ListItem disablePadding>
                                         <ListItemButton
                                             component={Link}
-                                            to={`/forms/${form.id}/${form.draftedVersion ?? form.publishedVersion ?? ''}`}
+                                            to={`/form-triggers/${form.node.id}/formLayout/0/`}
                                             sx={{
                                                 py: 2,
                                                 px: 1,
@@ -145,7 +155,7 @@ export function DashboardFormsPanel() {
                                                         variant="subtitle1"
                                                         fontWeight={700}
                                                         noWrap
-                                                        title={form.internalTitle}
+                                                        title={resolveFormNodeName(form.node.configuration.formLayout, form.version)}
                                                         sx={{
                                                             overflow: 'hidden',
                                                             textOverflow: 'ellipsis',
@@ -153,7 +163,7 @@ export function DashboardFormsPanel() {
                                                             display: 'block',
                                                         }}
                                                     >
-                                                        {form.internalTitle}
+                                                        {resolveFormNodeName(form.node.configuration.formLayout, form.version)}
                                                     </Typography>
 
                                                     <Typography
@@ -162,8 +172,7 @@ export function DashboardFormsPanel() {
                                                         fontSize="0.875rem"
                                                         noWrap
                                                     >
-                                                        {renderFormStatus(form)} &bull; Zuletzt bearbeitet am{' '}
-                                                        {format(new Date(form.updated), 'dd.MM.yyyy — HH:mm')} Uhr
+                                                        {/*format(new Date((form.node as any).updated), 'dd.MM.yyyy — HH:mm')*/ '00:00'} Uhr
                                                     </Typography>
                                                 </Box>
 
@@ -175,7 +184,7 @@ export function DashboardFormsPanel() {
                                         </ListItemButton>
                                     </ListItem>
 
-                                    {index < forms.length - 1 && <Divider component="li" />}
+                                    {index < forms.length - 1 && <Divider component="li"/>}
                                 </React.Fragment>
                             ))
                             : (
@@ -219,7 +228,7 @@ export function DashboardFormsPanel() {
                                                         />
                                                     </Box>
                                                 </ListItem>
-                                                {i < fetchSize - 1 && <Divider component="li" />}
+                                                {i < fetchSize - 1 && <Divider component="li"/>}
                                             </React.Fragment>
                                         ))}
                                     </List>
@@ -241,7 +250,8 @@ export function DashboardFormsPanel() {
                                             color="text.secondary"
                                             sx={{maxWidth: 320}}
                                         >
-                                            In den Organisationseinheiten, denen Sie angehören, sind (noch) keine Formulare vorhanden.
+                                            In den Organisationseinheiten, denen Sie angehören, sind (noch) keine
+                                            Formulare vorhanden.
                                         </Typography>
                                     </Box>
                                 </Box>

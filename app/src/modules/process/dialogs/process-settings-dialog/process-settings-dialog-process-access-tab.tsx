@@ -1,15 +1,15 @@
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {ProcessEntity} from '../../entities/process-entity';
-import React, {ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {PermissionEntry} from '../../../permissions/models/permission-provider';
 import {ProcessAccessControlEntity} from '../../entities/process-access-control-entity';
 import {PermissionApiService} from '../../../permissions/permission-api-service';
 import {ProcessAccessControlApiService} from '../../services/process-access-control-api-service';
-import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {
     Autocomplete,
-    Box, Button, Stack,
+    Box, Stack,
     Table,
     TableBody,
     TableCell,
@@ -27,14 +27,22 @@ import {Actions} from '../../../../components/actions/actions';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
+import {deepEquals} from '../../../../utils/equality-utils';
 
 interface ProcessSettingsDialogTabProps {
+    open: boolean;
     process: ProcessEntity;
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
+    onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
 }
 
-interface ProcessAccessControlEntityWithDepartmentOrTeam extends ProcessAccessControlEntity {
+interface ProcessAccessControlDraft extends ProcessAccessControlEntity {
+    clientId: string;
+}
+
+interface ProcessAccessControlDraftWithDepartmentOrTeam extends ProcessAccessControlDraft {
     department?: VDepartmentShadowedEntity;
     team?: TeamEntity;
 }
@@ -57,14 +65,38 @@ const relevantPermissions: string[] = [
     'process_definition.publish.store',
 ];
 
+function createComparableAccessControl(access: ProcessAccessControlEntity | ProcessAccessControlDraft) {
+    return {
+        id: access.id,
+        sourceDepartmentId: access.sourceDepartmentId,
+        sourceTeamId: access.sourceTeamId,
+        targetProcessId: access.targetProcessId,
+        permissions: [...access.permissions].sort(),
+    };
+}
+
+function getAccessDomainKey(access: Pick<ProcessAccessControlEntity, 'sourceDepartmentId' | 'sourceTeamId'>): string {
+    if (access.sourceDepartmentId != null) {
+        return `department-${access.sourceDepartmentId}`;
+    }
+
+    if (access.sourceTeamId != null) {
+        return `team-${access.sourceTeamId}`;
+    }
+
+    return 'unknown';
+}
+
 export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDialogTabProps) {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
 
     const {
+        open,
         process,
         departments,
         teams,
+        onUnsavedChangesChange,
     } = props;
 
     const {
@@ -72,8 +104,35 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
     } = process;
 
     const [permissions, setPermissions] = useState<PermissionEntry[]>([]);
-    const [access, setAccess] = useState<ProcessAccessControlEntity[]>([]);
+    const [persistedAccess, setPersistedAccess] = useState<ProcessAccessControlEntity[]>([]);
+    const [draftAccess, setDraftAccess] = useState<ProcessAccessControlDraft[]>([]);
     const [targetDomainOption, setTargetDomainOption] = useState<AddDomainOption | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const nextClientIdRef = useRef(0);
+
+    const createDraftAccess = useCallback((access: ProcessAccessControlEntity): ProcessAccessControlDraft => {
+        return {
+            ...access,
+            clientId: `server-${access.id}`,
+        };
+    }, []);
+
+    const createNewClientId = useCallback(() => {
+        nextClientIdRef.current += 1;
+        return `new-${nextClientIdRef.current}`;
+    }, []);
+
+    const toAccessEntity = useCallback((access: ProcessAccessControlDraft): ProcessAccessControlEntity => {
+        return {
+            id: access.id,
+            sourceDepartmentId: access.sourceDepartmentId,
+            sourceTeamId: access.sourceTeamId,
+            targetProcessId: access.targetProcessId,
+            permissions: access.permissions,
+            created: access.created,
+            updated: access.updated,
+        };
+    }, []);
 
     useEffect(() => {
         new PermissionApiService()
@@ -90,23 +149,55 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der Berechtigungen für Prozesse'));
             });
-    }, []);
+    }, [dispatch]);
 
-    useEffect(() => {
+    const loadAccess = useCallback(() => {
         new ProcessAccessControlApiService()
             .listAll({
                 targetProcessId: processesId,
             })
             .then(({content}) => {
-                setAccess(content);
+                nextClientIdRef.current = 0;
+                setPersistedAccess(content);
+                setDraftAccess(content.map(createDraftAccess));
+                setTargetDomainOption(null);
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der Berechtigungen für diesen Prozess'));
             });
-    }, [processesId]);
+    }, [createDraftAccess, dispatch, processesId]);
 
-    const resolvedAccessControl: ProcessAccessControlEntityWithDepartmentOrTeam[] = useMemo(() => {
-        return access
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        loadAccess();
+    }, [loadAccess, open]);
+
+    const hasUnsavedChanges = useMemo(() => {
+        const comparablePersistedAccess = persistedAccess
+            .map((access) => createComparableAccessControl(access))
+            .sort((left, right) => getAccessDomainKey(left).localeCompare(getAccessDomainKey(right)));
+        const comparableDraftAccess = draftAccess
+            .map((access) => createComparableAccessControl(access))
+            .sort((left, right) => getAccessDomainKey(left).localeCompare(getAccessDomainKey(right)));
+
+        return !deepEquals(comparablePersistedAccess, comparableDraftAccess);
+    }, [draftAccess, persistedAccess]);
+
+    useEffect(() => {
+        onUnsavedChangesChange?.(hasUnsavedChanges);
+    }, [hasUnsavedChanges, onUnsavedChangesChange]);
+
+    useEffect(() => {
+        return () => {
+            onUnsavedChangesChange?.(false);
+        };
+    }, [onUnsavedChangesChange]);
+
+    const resolvedAccessControl: ProcessAccessControlDraftWithDepartmentOrTeam[] = useMemo(() => {
+        return draftAccess
             .map((accessControl) => {
                 return {
                     ...accessControl,
@@ -114,13 +205,15 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                     team: accessControl.sourceTeamId != null ? teams.find((d) => d.id === accessControl.sourceTeamId) : undefined,
                 };
             });
-    }, [access, departments, teams]);
+    }, [departments, draftAccess, teams]);
 
     const owningDepartment = useMemo(() => {
         return departments.find((d) => d.id === process.departmentId)!;
     }, [departments, process.departmentId]);
 
     const addDomainOptions: AddDomainOption[] = useMemo(() => {
+        const assignedDomainKeys = new Set(draftAccess.map((accessControl) => getAccessDomainKey(accessControl)));
+
         return [
             ...departments.map((department) => ({
                 label: department.name,
@@ -128,40 +221,43 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                 subLabel: getDepartmentPath(department),
                 icon: getDepartmentTypeIcons(department.depth),
                 type: 'department',
+                disabled: department.id === process.departmentId || assignedDomainKeys.has(`department-${department.id}`),
             } as AddDomainOption)),
             ...teams.map((team) => ({
                 label: team.name,
                 value: team.id,
                 icon: ModuleIcons.teams,
                 type: 'team',
+                disabled: assignedDomainKeys.has(`team-${team.id}`),
             } as AddDomainOption)),
         ];
-    }, [departments, teams, access]);
+    }, [departments, draftAccess, process.departmentId, teams]);
 
     const handleAddAccess = () => {
-        if (targetDomainOption == null) {
+        if (targetDomainOption == null || isSaving) {
             return;
         }
 
-        new ProcessAccessControlApiService()
-            .create({
+        setDraftAccess((prev) => [
+            ...prev,
+            {
                 ...ProcessAccessControlApiService.initialize(),
+                clientId: createNewClientId(),
                 sourceDepartmentId: targetDomainOption.type === 'department' ? targetDomainOption.value : null,
                 sourceTeamId: targetDomainOption.type === 'team' ? targetDomainOption.value : null,
                 targetProcessId: processesId,
                 permissions: [],
-            })
-            .then((created) => {
-                setAccess((prev) => [...prev, created]);
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Hinzufügen der Berechtigungen für diesen Prozess'));
-            });
+            },
+        ]);
 
         setTargetDomainOption(null);
     };
 
-    const togglePermissionForAccess = (access: ProcessAccessControlEntity, permission: string) => {
+    const togglePermissionForAccess = (access: ProcessAccessControlDraft, permission: string) => {
+        if (isSaving) {
+            return;
+        }
+
         const updatedPermissions = [
             ...access.permissions,
         ];
@@ -175,21 +271,12 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
         const updatedAccess = {
             ...access,
             permissions: updatedPermissions,
-        }
+        };
 
-        setAccess((prev) => prev.map((a) => a.id === updatedAccess.id ? updatedAccess : a));
-
-        new ProcessAccessControlApiService()
-            .update(access.id, updatedAccess)
-            .then((updated) => {
-                setAccess((prev) => prev.map((a) => a.id === updated.id ? updated : a));
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Aktualisieren der Berechtigungen für diesen Prozess'));
-            });
+        setDraftAccess((prev) => prev.map((a) => a.clientId === updatedAccess.clientId ? updatedAccess : a));
     };
 
-    const getAccessLabel = (access: ProcessAccessControlEntityWithDepartmentOrTeam) => {
+    const getAccessLabel = (access: ProcessAccessControlDraftWithDepartmentOrTeam) => {
         if (access.team != null) {
             return access.team.name;
         }
@@ -201,8 +288,8 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
         return 'diese Domäne';
     };
 
-    const handleDeleteAccess = async (access: ProcessAccessControlEntityWithDepartmentOrTeam) => {
-        if (access.sourceDepartmentId === process.departmentId) {
+    const handleDeleteAccess = async (access: ProcessAccessControlDraftWithDepartmentOrTeam) => {
+        if (access.sourceDepartmentId === process.departmentId || isSaving) {
             return;
         }
 
@@ -220,14 +307,81 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
             return;
         }
 
-        new ProcessAccessControlApiService()
-            .destroy(access.id)
-            .then(() => {
-                setAccess((prev) => prev.filter((a) => a.id !== access.id));
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Entfernen der Berechtigungen für diesen Prozess'));
+        setDraftAccess((prev) => prev.filter((a) => a.clientId !== access.clientId));
+    };
+
+    const handleSave = async () => {
+        if (!hasUnsavedChanges || isSaving) {
+            return;
+        }
+
+        const apiService = new ProcessAccessControlApiService();
+        let nextPersistedAccess = [...persistedAccess];
+        let nextDraftAccess = [...draftAccess];
+
+        setIsSaving(true);
+
+        try {
+            const draftAccessById = new Map(
+                nextDraftAccess
+                    .filter((access) => access.id > 0)
+                    .map((access) => [access.id, access]),
+            );
+            const deletedAccess = nextPersistedAccess.filter((access) => !draftAccessById.has(access.id));
+
+            for (const access of deletedAccess) {
+                await apiService.destroy(access.id);
+                nextPersistedAccess = nextPersistedAccess.filter((currentAccess) => currentAccess.id !== access.id);
+            }
+
+            const persistedAccessById = new Map(nextPersistedAccess.map((access) => [access.id, access]));
+            const updatedAccess = nextDraftAccess.filter((access) => {
+                if (access.id <= 0) {
+                    return false;
+                }
+
+                const persistedAccessEntry = persistedAccessById.get(access.id);
+                return persistedAccessEntry != null && !deepEquals(
+                    createComparableAccessControl(persistedAccessEntry),
+                    createComparableAccessControl(access),
+                );
             });
+
+            for (const access of updatedAccess) {
+                const updated = await apiService.update(access.id, toAccessEntity(access));
+
+                nextPersistedAccess = nextPersistedAccess.map((currentAccess) => currentAccess.id === updated.id ? updated : currentAccess);
+                nextDraftAccess = nextDraftAccess.map((currentAccess) => currentAccess.clientId === access.clientId ? {
+                    ...updated,
+                    clientId: currentAccess.clientId,
+                } : currentAccess);
+            }
+
+            const createdAccess = nextDraftAccess.filter((access) => access.id <= 0);
+
+            for (const access of createdAccess) {
+                const created = await apiService.create(toAccessEntity(access));
+
+                nextPersistedAccess = [
+                    ...nextPersistedAccess,
+                    created,
+                ];
+                nextDraftAccess = nextDraftAccess.map((currentAccess) => currentAccess.clientId === access.clientId ? {
+                    ...created,
+                    clientId: currentAccess.clientId,
+                } : currentAccess);
+            }
+
+            setPersistedAccess(nextPersistedAccess);
+            setDraftAccess(nextDraftAccess);
+            dispatch(showSuccessSnackbar('Die Berechtigungen für diesen Prozess wurden gespeichert.'));
+        } catch (err) {
+            setPersistedAccess(nextPersistedAccess);
+            setDraftAccess(nextDraftAccess);
+            dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Berechtigungen für diesen Prozess'));
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return (
@@ -287,7 +441,7 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                         {
                             resolvedAccessControl
                                 .map((access) => (
-                                    <TableRow key={access.id}>
+                                    <TableRow key={access.clientId}>
                                         <TableCell>
                                             {
                                                 access.team != null &&
@@ -307,6 +461,7 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                                                         <CheckboxFieldComponent
                                                             label=""
                                                             value={access.permissions.includes(permission.permission)}
+                                                            busy={isSaving}
                                                             onChange={() => {
                                                                 togglePermissionForAccess(access, permission.permission);
                                                             }}
@@ -317,6 +472,7 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                                         }
                                         <TableCell align="right">
                                             <Actions
+                                                isBusy={isSaving}
                                                 actions={[
                                                     {
                                                         icon: <Delete/>,
@@ -354,8 +510,9 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                         setTargetDomainOption(value);
                     }}
                     fullWidth={true}
+                    disabled={isSaving}
                     getOptionLabel={(option) => option.label}
-                    isOptionEqualToValue={(option, value) => option.value === value.value}
+                    isOptionEqualToValue={(option, value) => option.type === value.type && option.value === value.value}
                     getOptionDisabled={(option) => option.disabled ?? false}
                     noOptionsText="Keine gültigen Ziel-Domäne verfügbar"
                     renderOption={(props, option) => (
@@ -422,13 +579,25 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
                     )}
                 />
 
-                <Actions actions={[
-                    {
-                        label: 'Hinzufügen',
-                        onClick: handleAddAccess,
-                        icon: <Add/>,
-                    },
-                ]}/>
+                <Actions
+                    isBusy={isSaving}
+                    actions={[
+                        {
+                            label: 'Hinzufügen',
+                            onClick: handleAddAccess,
+                            icon: <Add/>,
+                            disabled: targetDomainOption == null,
+                        },
+                        {
+                            label: 'Speichern',
+                            onClick: () => {
+                                void handleSave();
+                            },
+                            icon: <Save/>,
+                            disabled: !hasUnsavedChanges,
+                        },
+                    ]}
+                />
             </Stack>
         </>
     );

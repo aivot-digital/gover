@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Size;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -100,6 +101,11 @@ public class ProcessInstanceTaskEntity {
     private Map<String, Object> processData;
 
     @Nullable
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = JsonObjectConverter.class)
+    private Map<String, Object> processDataDiff;
+
+    @Nullable
     @Size(max = 36, message = "Die zugewiesene Benutzer-ID darf maximal 36 Zeichen lang sein.")
     private String assignedUserId;
 
@@ -143,6 +149,7 @@ public class ProcessInstanceTaskEntity {
                                      @Nonnull Map<String, Object> runtimeData,
                                      @Nonnull Map<String, Object> nodeData,
                                      @Nonnull Map<String, Object> processData,
+                                     @Nonnull Map<String, Object> processDataDiff,
                                      @Nullable String assignedUserId,
                                      @Nullable Instant deadline,
                                      @Nullable Instant postponedUntil,
@@ -166,11 +173,38 @@ public class ProcessInstanceTaskEntity {
         this.runtimeData = runtimeData;
         this.nodeData = nodeData;
         this.processData = processData;
+        this.processDataDiff = processDataDiff;
         this.assignedUserId = assignedUserId;
         this.deadline = deadline;
         this.postponedUntil = postponedUntil;
         this.retryCount = retryCount;
         this.nextRetryAt = nextRetryAt;
+    }
+
+    // endregion
+
+    // region HashCode & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcessInstanceTaskEntity that = (ProcessInstanceTaskEntity) o;
+        return Objects.equals(id, that.id) && Objects.equals(accessKey, that.accessKey) && Objects.equals(processInstanceId, that.processInstanceId) &&
+                Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) &&
+                Objects.equals(processNodeId, that.processNodeId) && Objects.equals(previousProcessInstanceTaskId, that.previousProcessInstanceTaskId) &&
+                Objects.equals(previousProcessNodeId, that.previousProcessNodeId) && Objects.equals(previousProcessNodePortKey, that.previousProcessNodePortKey) &&
+                status == that.status && Objects.equals(statusOverride, that.statusOverride) && Objects.equals(started, that.started) &&
+                Objects.equals(updated, that.updated) && Objects.equals(finished, that.finished) && Objects.equals(runtime, that.runtime) &&
+                Objects.equals(runtimeData, that.runtimeData) && Objects.equals(nodeData, that.nodeData) &&
+                Objects.equals(processData, that.processData) && Objects.equals(processDataDiff, that.processDataDiff) &&
+                Objects.equals(assignedUserId, that.assignedUserId) && Objects.equals(deadline, that.deadline) &&
+                Objects.equals(postponedUntil, that.postponedUntil) && Objects.equals(retryCount, that.retryCount) &&
+                Objects.equals(nextRetryAt, that.nextRetryAt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, accessKey, processInstanceId, processId, processVersion, processNodeId, previousProcessInstanceTaskId, previousProcessNodeId, previousProcessNodePortKey, status, statusOverride, started, updated, finished, runtime, runtimeData, nodeData, processData, processDataDiff, assignedUserId, deadline, postponedUntil, retryCount, nextRetryAt);
     }
 
     // endregion
@@ -354,6 +388,16 @@ public class ProcessInstanceTaskEntity {
 
     public ProcessInstanceTaskEntity setProcessData(@Nonnull Map<String, Object> processData) {
         this.processData = processData;
+        return this;
+    }
+
+    @Nullable
+    public Map<String, Object> getProcessDataDiff() {
+        return processDataDiff;
+    }
+
+    public ProcessInstanceTaskEntity setProcessDataDiff(@Nullable Map<String, Object> processDataDiff) {
+        this.processDataDiff = processDataDiff;
         return this;
     }
 

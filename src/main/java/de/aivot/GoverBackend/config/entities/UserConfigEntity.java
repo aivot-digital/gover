@@ -26,22 +26,21 @@ public class UserConfigEntity {
     @ColumnDefault("FALSE")
     private Boolean publicConfig;
 
-    @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
+    // region HashCode & Equals
 
-        UserConfigEntity that = (UserConfigEntity) object;
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        UserConfigEntity that = (UserConfigEntity) o;
         return Objects.equals(userId, that.userId) && Objects.equals(key, that.key) && Objects.equals(value, that.value) && Objects.equals(publicConfig, that.publicConfig);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hashCode(userId);
-        result = 31 * result + Objects.hashCode(key);
-        result = 31 * result + Objects.hashCode(value);
-        result = 31 * result + Objects.hashCode(publicConfig);
-        return result;
+        return Objects.hash(userId, key, value, publicConfig);
     }
+
+    // endregion
 
     public String getUserId() {
         return userId;

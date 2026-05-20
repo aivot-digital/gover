@@ -121,6 +121,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
     const [clientSideValidationErrors, setClientSideValidationErrors] = useState<ComputedElementErrors | null>(null);
+    const [maxFileSizeApiError, setMaxFileSizeApiError] = useState<string | null>(null);
 
     const {
         item: originalStorageProvider,
@@ -195,6 +196,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     }, [definitions, storageProviderDefinitionKey, storageProviderDefinitionVersion]);
 
     useEffect(() => {
+        setMaxFileSizeApiError(null);
+    }, [editedStorageProvider?.maxFileSizeInBytes]);
+
+    useEffect(() => {
         if (definition?.providerConfigLayout != null) {
             setStorageProviderSchema({
                 ..._StorageProviderSchema,
@@ -252,6 +257,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             return false;
         }
 
+        setMaxFileSizeApiError(null);
         const validationResult = validate();
 
         if (!validationResult) {
@@ -288,6 +294,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         } catch (err) {
             if (isApiError(err) && isDerivedRuntimeElementData(err.details)) {
                 setClientSideValidationErrors(err.details.elementStates);
+
+                const maxFileSizeError = err.details.elementStates.maxFileSizeInBytes?.error;
+                setMaxFileSizeApiError(typeof maxFileSizeError === 'string' ? maxFileSizeError : null);
             } else {
                 dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
             }
@@ -608,7 +617,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             onChange={(mb) => handleInputChange('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
                             onBlur={(mb) => handleInputBlur('maxFileSizeInBytes')(megabytesToBytes(mb) as any)}
                             disabled={inputsDisabled}
-                            error={errors.maxFileSizeInBytes}
+                            error={errors.maxFileSizeInBytes ?? maxFileSizeApiError ?? undefined}
                             decimalPlaces={2}
                             suffix="MB"
                             hint="Die maximale Dateigröße die pro Datei an diesen Speicheranbieter übertragen werden kann."

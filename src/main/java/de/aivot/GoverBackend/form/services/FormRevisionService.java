@@ -84,7 +84,7 @@ public class FormRevisionService {
 
         var formMap = formJson.toMap();
 
-        var diff = new DiffItem("/", null, formMap);
+        var diff = new DiffItem("", null, formMap);
 
         var formRevision = new FormRevisionEntity();
         formRevision.setFormId((Integer) createdForm.get("id"));

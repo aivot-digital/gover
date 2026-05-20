@@ -119,5 +119,7 @@ COPY --from=build_app /app/build/staff /app/www/staff
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 CMD ["/app/healthcheck.sh"]
 
+EXPOSE 8080
+
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["app"]

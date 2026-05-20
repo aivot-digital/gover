@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.ComputedElementState;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
@@ -12,7 +11,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
 import de.aivot.GoverBackend.secrets.services.SecretService;
@@ -22,7 +21,6 @@ import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
 import de.aivot.GoverBackend.storage.models.*;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
 import de.aivot.GoverBackend.storage.services.KnownExtensionsService;
-import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.minio.*;
@@ -65,7 +63,7 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

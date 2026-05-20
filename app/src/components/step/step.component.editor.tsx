@@ -7,9 +7,8 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 import {IconPickerDialog} from '../../dialogs/icon-picker-dialog/icon-picker-dialog';
 import {SvgIconComponent} from '@mui/icons-material';
 import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
-import {LoadedForm} from '../../slices/app-slice';
 
-export function StepComponentEditor(props: BaseEditorProps<StepElement, LoadedForm>) {
+export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
     const [pickerOpen, setPickerOpen] = useState(false);
 
     const IconComponent: SvgIconComponent =
@@ -29,7 +28,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, LoadedFo
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
+                        lg: 6,
                     }}>
                     <TextFieldComponent
                         value={props.element.title ?? ''}
@@ -68,7 +67,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, LoadedFo
                                     height: 48,
                                 }}
                             >
-                                <IconComponent />
+                                <IconComponent/>
                             </Box>
                         </Tooltip>
                     )}
@@ -108,7 +107,7 @@ export function StepComponentEditor(props: BaseEditorProps<StepElement, LoadedFo
                     onClose={() => setPickerOpen(false)}
                     onSelect={(id) => props.onPatch({icon: id})}
                     selectedIconId={props.element.icon ?? undefined}
-                    title={"Symbol (Icon) für Abschnitt auswählen"}
+                    title={'Symbol (Icon) für Abschnitt auswählen'}
                     showLabels
                     autoSelect
                 />

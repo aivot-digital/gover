@@ -10,7 +10,12 @@ import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-objec
 import Typography from '@mui/material/Typography';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
-import {getLatestTaskForEdge, getTransferredProcessDataForEdge} from './utils/runtime-task-utils';
+import {
+    getLatestTaskForEdge,
+    getTransferredProcessDataDiffForEdge,
+    getTransferredProcessDataForEdge,
+} from './utils/runtime-task-utils';
+import {ExpandableJSONCodeBlock} from '../../../../../../components/expandable-code-block/expandable-json-code-block';
 
 const EDGE_ARROW_LENGTH = 8;
 const EDGE_ARROW_WIDTH = 12;
@@ -45,6 +50,21 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
         return optData;
     }, [optData]);
 
+    const transferredProcessDataDiff = useMemo(() => {
+        if (runtimeData == null) {
+            return null;
+        }
+
+        return getTransferredProcessDataDiffForEdge(
+            runtimeData.tasks,
+            graphEdge.edge.fromNodeId,
+            graphEdge.edge.toNodeId,
+            graphEdge.edge.viaPort,
+        );
+    }, [
+        graphEdge,
+        runtimeData,
+    ]);
     const nextTaskForEdge = useMemo(() => {
         if (runtimeData == null) {
             return null;
@@ -185,8 +205,9 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                                             <Typography variant="h6">
                                                 Die weitergereichte Vorgangsdatenebene
                                             </Typography>
-                                            <ExpandableCodeBlock
-                                                value={JSON.stringify(transferredProcessData, null, 2)}
+                                            <ExpandableJSONCodeBlock
+                                                value={transferredProcessData ?? {}}
+                                                diff={transferredProcessDataDiff ?? {}}
                                             />
                                         </>
                                     ),

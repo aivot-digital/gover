@@ -33,6 +33,7 @@ const defaultExpandedGroups: Record<ElementTypeGroups, boolean> = {
     [ElementTypeGroups.DateTime]: true,
     [ElementTypeGroups.Select]: true,
     [ElementTypeGroups.Group]: true,
+    [ElementTypeGroups.Step]: true,
     [ElementTypeGroups.Other]: true,
 };
 

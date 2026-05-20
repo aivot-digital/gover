@@ -17,30 +17,21 @@ import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {
     addSnackbarMessage,
     removeSnackbarMessage,
-    setSetup,
-    setStatus,
-    ShellStatus,
     SnackbarSeverity,
     SnackbarType,
 } from '../../../../../slices/shell-slice';
-import {isApiError} from '../../../../../models/api-error';
-import {SystemSetupDTO} from '../../../../../modules/system/dtos/system-setup-dto';
-import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import {DepartmentApiService} from '../../../../../modules/departments/services/department-api-service';
 import {DepartmentEntity} from '../../../../../modules/departments/entities/department-entity';
 import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
 import {isStringNullOrEmpty} from '../../../../../utils/string-utils';
 import {SystemRolesApiService} from '../../../../../modules/system/services/system-roles-api-service';
-
-async function fetchSetup(): Promise<SystemSetupDTO> {
-    return new SystemApiService()
-        .fetchSetup();
-}
+import {useConfirm} from '../../../../../providers/confirm-provider';
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
     const api = useApi();
+    const confirm = useConfirm();
 
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
@@ -307,23 +298,17 @@ export function ApplicationSettings() {
 
                     const oldThemeId = config[SystemConfigKeys.system.theme];
 
-                    console.log('theme', {newThemeId, oldThemeId});
-
                     if (newThemeId != null && newThemeId !== oldThemeId) {
-                        // refetch system setup including theme information
-                        fetchSetup()
-                            .then((setup) => {
-                                dispatch(setSetup(setup));
-                            })
-                            .catch((err) => {
-                                if (isApiError(err) && err.status >= 500) {
-                                    dispatch(setStatus(ShellStatus.Offline));
-                                } else if ('status' in err && err.status >= 500) {
-                                    dispatch(setStatus(ShellStatus.Offline));
-                                } else {
-                                    console.error(err);
-                                }
-                            });
+                        confirm({
+                            title: 'Änderungen ausstehend',
+                            children: (
+                                <Typography>
+                                    Die Änderungen am Erscheinungsbild werden erst nach einem "Neu Laden" der Anwendung
+                                    aktiv.
+                                </Typography>
+                            ),
+                            hideCancelButton: true,
+                        });
                     }
 
                     setEditedConfig({});
@@ -365,7 +350,8 @@ export function ApplicationSettings() {
             >
                 Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems.
                 Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
-                Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen Bereichen sichtbar.
+                Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen Bereichen
+                sichtbar.
             </Typography>
             <TextFieldComponent
                 label="Name des Betreibers"
@@ -398,7 +384,9 @@ export function ApplicationSettings() {
                             mb: 1.6,
                         }}
                     >
-                        Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Gover an Ihr Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die Index-Seite der veröffentlichten
+                        Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Gover an Ihr
+                        Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die
+                        Index-Seite der veröffentlichten
                         Formulare).
                     </Typography>
 
@@ -431,7 +419,8 @@ export function ApplicationSettings() {
                     mb: 1.6,
                 }}
             >
-                Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare und/oder Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel (API-Key).
+                Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare und/oder
+                Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel (API-Key).
             </Typography>
             <TextFieldComponent
                 label="Schlüssel für den Gover Store"
@@ -461,7 +450,8 @@ export function ApplicationSettings() {
                     mb: 1.6,
                 }}
             >
-                Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu in Gover synchronisiert oder anderweitig importiert werden.
+                Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu in
+                Gover synchronisiert oder anderweitig importiert werden.
             </Typography>
             <SelectFieldComponent
                 label="Standard-Systemrolle für automatische Benutzerimporte"
@@ -504,8 +494,10 @@ export function ApplicationSettings() {
                     mb: 1.6,
                 }}
             >
-                Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
-                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den zentralen Speicheranbieter verwenden.
+                Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer
+                Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
+                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den
+                zentralen Speicheranbieter verwenden.
             </Typography>
             <SelectFieldComponent
                 label="Zentraler Speicheranbieter für Vorgangsanlagen"
@@ -538,8 +530,10 @@ export function ApplicationSettings() {
                     mb: 1.6,
                 }}
             >
-                Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer Speicheranbieter für ein Asset konfiguriert ist.
-                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den zentralen Speicheranbieter verwenden.
+                Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer Speicheranbieter
+                für ein Asset konfiguriert ist.
+                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den
+                zentralen Speicheranbieter verwenden.
             </Typography>
             <SelectFieldComponent
                 label="Zentraler Speicheranbieter für Assets"
@@ -559,7 +553,6 @@ export function ApplicationSettings() {
             />
 
 
-
             <Typography
                 variant="h6"
                 sx={{
@@ -575,7 +568,8 @@ export function ApplicationSettings() {
                 }}
             >
                 Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
-                angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren und ggf. deaktivieren.
+                angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren und
+                ggf. deaktivieren.
             </Typography>
             <Grid
                 container
@@ -644,7 +638,8 @@ export function ApplicationSettings() {
                 variant="caption"
                 color={'text.secondary'}
             >
-                Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche auswählen, deren Texte Sie verwenden und anzeigen möchten.
+                Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche
+                auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </Typography>
             <CheckboxFieldComponent
                 label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
@@ -673,8 +668,10 @@ export function ApplicationSettings() {
                 }}
             >
                 Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
-                Diese Verlinkung dient der Barrierefreiheit (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
-                und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen Link ersetzen
+                Diese Verlinkung dient der Barrierefreiheit
+                (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
+                und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
+                Link ersetzen
                 (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
             </Typography>
             {
@@ -685,7 +682,10 @@ export function ApplicationSettings() {
                         placeholder="https://bad-musterstadt.de/formulare"
                         hint="Der Link wird (soweit angegeben) anstelle des regulären Links mit dem Text „Weitere Formulare“ am Ende eines jeden Formulars angezeigt."
                         value={editedConfig[SystemConfigKeys.provider.listingPage.customListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.customListingPageLink]}
-                        pattern={{regex: '^(https?://)([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$', message: 'Bitte geben Sie eine gültige URL ein (z.B. https://bad-musterstadt.de/formulare).'}}
+                        pattern={{
+                            regex: '^(https?://)([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$',
+                            message: 'Bitte geben Sie eine gültige URL ein (z.B. https://bad-musterstadt.de/formulare).',
+                        }}
                         onChange={(val) => {
                             setEditedConfig({
                                 ...editedConfig,

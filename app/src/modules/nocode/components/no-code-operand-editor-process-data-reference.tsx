@@ -1,16 +1,16 @@
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
-import DatabaseSearch from '@aivot/mui-material-symbols-400-outlined/dist/database-search/DatabaseSearch';
-import {Box, Grid, Stack} from '@mui/material';
+import {Grid, Stack} from '@mui/material';
 import {
     isNoCodeNodeDataReference,
+    isNoCodeProcessDataReference,
     NoCodeInstanceDataReference,
     NoCodeNodeDataReference,
     NoCodeProcessDataReference,
-    isNoCodeProcessDataReference,
 } from '../../../models/functions/no-code-expression';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {Actions} from '../../../components/actions/actions';
+import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
 
 interface NoCodeOperandEditorProcessDataReferenceProps {
     label: string;
@@ -43,6 +43,19 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
             ? `_.${value.nodeDataKey}.`
             : '$$.';
 
+    const referenceActions = [
+        {
+            icon: <Delete/>,
+            tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
+            onClick: () => onChange(undefined),
+        },
+        {
+            tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
+            icon: <Functions/>,
+            onClick: onAddEnclosingExpression,
+        },
+    ];
+
     return (
         <Grid
             container
@@ -70,31 +83,53 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                     direction="row"
                     alignItems="flex-start"
                 >
-                    <TextFieldComponent
-                        label={`${label ?? ''} — (${sourceLabel})`}
-                        hint={hint}
-                        value={value.path ?? undefined}
-                        onChange={(path) => {
-                            onChange({
-                                ...value,
-                                path: path ?? undefined,
-                            });
-                        }}
-                        startIcon={startIcon}
-                        endAction={isNodeDataReference ? undefined : [
-                            {
-                                icon: <Delete/>,
-                                tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
-                                onClick: () => onChange(undefined),
-                            },
-                            {
-                                tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
-                                icon: <Functions/>,
-                                onClick: onAddEnclosingExpression,
-                            },
-                        ]}
-                        muiPassTroughProps={{margin: 'none'}}
-                    />
+                    {
+                        isProcessDataReference
+                            ? (
+                                <ProcessDataKeyInputComponent
+                                    label={`${label ?? ''} — (${sourceLabel})`}
+                                    hint={hint}
+                                    value={value.path ?? undefined}
+                                    onChange={(path) => {
+                                        onChange({
+                                            ...value,
+                                            path: path ?? undefined,
+                                        });
+                                    }}
+                                />
+                            )
+                            : (
+                                <TextFieldComponent
+                                    label={`${label ?? ''} — (${sourceLabel})`}
+                                    hint={hint}
+                                    value={value.path ?? undefined}
+                                    onChange={(path) => {
+                                        onChange({
+                                            ...value,
+                                            path: path ?? undefined,
+                                        });
+                                    }}
+                                    startIcon={startIcon}
+                                    endAction={isNodeDataReference ? undefined : referenceActions}
+                                    muiPassTroughProps={{margin: 'none'}}
+                                />
+                            )
+                    }
+
+                    {
+                        isProcessDataReference &&
+                        <Actions
+                            size="small"
+                            dense={true}
+                            color="inherit"
+                            actions={referenceActions}
+                            sx={{
+                                mt: 1.5,
+                                ml: 1,
+                                opacity: 0.66,
+                            }}
+                        />
+                    }
 
                     {
                         isNodeDataReference &&
@@ -102,18 +137,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                             size="small"
                             dense={true}
                             color="inherit"
-                            actions={[
-                                {
-                                    icon: <Delete/>,
-                                    tooltip: 'Diesen Vorgangsdaten-Verweis löschen',
-                                    onClick: () => onChange(undefined),
-                                },
-                                {
-                                    tooltip: 'Diesen Verweis mit einem Ausdruck verknüpfen',
-                                    icon: <Functions/>,
-                                    onClick: onAddEnclosingExpression,
-                                },
-                            ]}
+                            actions={referenceActions}
                             sx={{
                                 mt: 1.5,
                                 ml: 1,

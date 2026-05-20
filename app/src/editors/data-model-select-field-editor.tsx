@@ -1,10 +1,9 @@
 import {BaseEditorProps} from './base-editor';
 import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 
-export function DataModelSelectFieldEditor(props: BaseEditorProps<DataModelSelectFieldElement, ElementTreeEntity>) {
+export function DataModelSelectFieldEditor(props: BaseEditorProps<DataModelSelectFieldElement>) {
     const {
         element,
         editable,

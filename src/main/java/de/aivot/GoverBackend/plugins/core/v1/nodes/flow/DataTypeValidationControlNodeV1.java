@@ -1,23 +1,24 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.flow;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ValueFunctionType;
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
@@ -25,6 +26,11 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInv
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -36,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
+public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<DataTypeValidationControlNodeV1.DataTypeValidationControlNodeConfig> {
     public static final String NODE_KEY = "data_type_validation";
 
     private static final String PORT_NAME_VALID = "valid";
@@ -74,7 +80,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -98,50 +104,38 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        ConfigLayoutElement layout;
+        try {
+            layout = ElementPOJOMapper.createFromPOJO(DataTypeValidationControlNodeConfig.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+        }
 
-        var rulesInput = new ReplicatingContainerLayoutElement();
-        rulesInput.setId(RULES_FIELD_ID);
-        rulesInput.setLabel("Validierungsregeln");
-        rulesInput.setHint("Beispiele: person.name, person.address.street, tags.*, items.*.name");
-        rulesInput.setRequired(true);
-        //rulesInput.setMinimumRequiredSets(1);
-        rulesInput.setHeadlineTemplate("Regel #");
-        rulesInput.setAddLabel("Regel hinzufügen");
-        rulesInput.setRemoveLabel("Regel entfernen");
+        layout
+                .findChild(RULE_TYPE_FIELD_ID, SelectInputElement.class)
+                .ifPresent(expectedTypeInput -> {
+                    expectedTypeInput.setValue(new ElementValueFunctions()
+                            .setType(ValueFunctionType.NoCode)
+                            .setNoCode(new NoCodeStaticValue(TYPE_ANY)));
+                    expectedTypeInput.setOptions(List.of(
+                            SelectInputElementOption.of(TYPE_ANY, "Beliebig"),
+                            SelectInputElementOption.of(TYPE_STRING, "Text"),
+                            SelectInputElementOption.of(TYPE_NUMBER, "Zahl"),
+                            SelectInputElementOption.of(TYPE_BOOLEAN, "Ja/Nein"),
+                            SelectInputElementOption.of(TYPE_OBJECT, "Objekt"),
+                            SelectInputElementOption.of(TYPE_ARRAY, "Array"),
+                            SelectInputElementOption.of(TYPE_NULL, "Null")
+                    ));
+                });
 
-        var pathInput = new TextInputElement();
-        pathInput.setId(RULE_PATH_FIELD_ID);
-        pathInput.setLabel("Pfad");
-        pathInput.setPrefix("$.");
-        pathInput.setHint("Dot-Notation mit * für Arrays, z. B. addresses.*.street");
-        pathInput.setRequired(true);
-        pathInput.setWeight(8.0);
-
-        var expectedTypeInput = new SelectInputElement();
-        expectedTypeInput.setId(RULE_TYPE_FIELD_ID);
-        expectedTypeInput.setLabel("Datentyp");
-        expectedTypeInput.setHint("Der Datentyp, den der Wert am Pfad haben muss.");
-        expectedTypeInput.setRequired(true);
-        expectedTypeInput.setWeight(4.0);
-        expectedTypeInput.setValue(new ElementValueFunctions()
-                .setType(ValueFunctionType.NoCode)
-                .setNoCode(new NoCodeStaticValue(TYPE_ANY)));
-        expectedTypeInput.setOptions(List.of(
-                SelectInputElementOption.of(TYPE_ANY, "Beliebig"),
-                SelectInputElementOption.of(TYPE_STRING, "Text"),
-                SelectInputElementOption.of(TYPE_NUMBER, "Zahl"),
-                SelectInputElementOption.of(TYPE_BOOLEAN, "Ja/Nein"),
-                SelectInputElementOption.of(TYPE_OBJECT, "Objekt"),
-                SelectInputElementOption.of(TYPE_ARRAY, "Array"),
-                SelectInputElementOption.of(TYPE_NULL, "Null")
-        ));
-
-        rulesInput.setChildren(List.of(pathInput, expectedTypeInput));
-        layout.addChild(rulesInput);
         return layout;
+    }
+
+    @Nonnull
+    @Override
+    public Class<DataTypeValidationControlNodeConfig> getNodeConfigurationClass() {
+        return DataTypeValidationControlNodeConfig.class;
     }
 
     @Nonnull
@@ -190,7 +184,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
 
     @Nullable
     @Override
-    public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionContextTesting context) throws ResponseException {
+    public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<DataTypeValidationControlNodeConfig> context) throws ResponseException {
         var groupLayout = new GroupLayoutElement();
         groupLayout.setId("layout");
 
@@ -198,7 +192,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
         contentBuilder.append("Beispiel-Payload für die konfigurierten Validierungsregeln:\n\n");
 
         try {
-            var rules = parseRules(context.configuration().getEffectiveValues());
+            var rules = parseRules(context.configuration());
             var examplePayload = createExamplePayloadFromRules(rules);
             var exampleJson = ObjectMapperFactory
                     .getInstance()
@@ -225,14 +219,15 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull AuthoredElementValues configuration, @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull DataTypeValidationControlNodeConfig configuration) throws ResponseException {
         // TODO: validate
         return null;
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var sourceRoot = context.getProcessData().get("$");
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<DataTypeValidationControlNodeConfig> context) throws ProcessNodeExecutionException {
+        var sourceRoot = context.getCurrentProcessExecutionData().get("$");
         if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die Vorgangsdatenwurzel ($) ist kein Objekt."
@@ -240,7 +235,7 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
         }
 
         var sourceRootMap = castStringObjectMap(sourceRootRawMap);
-        var rules = parseRules(context.getConfiguration().getEffectiveValues());
+        var rules = parseRules(context.getConfigurationOfExecutingNode());
 
         var checkedValuesCount = 0;
         var errors = new ArrayList<Map<String, Object>>();
@@ -289,27 +284,36 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private List<ValidationRule> parseRules(@Nonnull EffectiveElementValues configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        ObjectMapper om = ObjectMapperFactory
-                .getInstance();
+    private List<ValidationRule> parseRules(@Nonnull DataTypeValidationControlNodeConfig configuration) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        if (configuration.rules == null) {
+            return List.of();
+        }
 
-        return ObjectMapperFactory
-                .Utils
-                .convertToList(
-                        configuration.getOrDefault(RULES_FIELD_ID, List.of()),
-                        EffectiveElementValues.class
-                )
-                .stream()
-                .map(row -> {
-                    var path = StringUtils
-                            .toNullableTrimmedString(row.get(RULE_PATH_FIELD_ID));
+        var result = new ArrayList<ValidationRule>(configuration.rules.size());
+        for (int i = 0; i < configuration.rules.size(); i++) {
+            var rowIndex = i + 1;
+            var row = configuration.rules.get(i);
 
-                    var expectedType = StringUtils
-                            .toNullableTrimmedString(row.getOrDefault(RULE_TYPE_FIELD_ID, TYPE_ANY));
+            var path = row == null ? null : StringUtils.toNullableTrimmedString(row.path);
+            if (path == null) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Die Pfadangabe in Zeile %d darf nicht leer sein.",
+                        rowIndex
+                );
+            }
 
-                    return new ValidationRule(path, expectedType);
-                })
-                .toList();
+            var expectedType = row == null
+                    ? TYPE_ANY
+                    : StringUtils.toNullableTrimmedString(row.expectedType);
+            if (expectedType == null) {
+                expectedType = TYPE_ANY;
+            }
+
+            validateExpectedType(expectedType, rowIndex);
+            result.add(new ValidationRule(path, expectedType));
+        }
+
+        return result;
     }
 
     @Nonnull
@@ -632,14 +636,6 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
         return result;
     }
 
-    private static String toNullableTrimmedString(Object value) {
-        if (value == null) {
-            return null;
-        }
-        var str = value.toString().trim();
-        return str.isEmpty() ? null : str;
-    }
-
     private record ValidationRule(@Nonnull String path, @Nonnull String expectedType) {
     }
 
@@ -653,5 +649,37 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition {
     }
 
     private record WildcardPathPart() implements PathPart {
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    public static class DataTypeValidationControlNodeConfig {
+        public List<DataTypeValidationRuleConfig> rules;
+    }
+
+    @ReplicatingContainerLayoutElementElementPOJOBinding(id = RULES_FIELD_ID, properties = {
+            @ElementPOJOBindingProperty(key = "label", strValue = "Validierungsregeln"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Beispiele: person.name, person.address.street, tags.*, items.*.name"),
+            @ElementPOJOBindingProperty(key = "required", boolValue = true),
+            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Regel #"),
+            @ElementPOJOBindingProperty(key = "addLabel", strValue = "Regel hinzufügen"),
+            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Regel entfernen")
+    })
+    public static class DataTypeValidationRuleConfig {
+        @InputElementPOJOBinding(id = RULE_PATH_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Pfad"),
+                @ElementPOJOBindingProperty(key = "prefix", strValue = "$."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Dot-Notation mit * für Arrays, z. B. addresses.*.street"),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0)
+        })
+        public String path;
+
+        @InputElementPOJOBinding(id = RULE_TYPE_FIELD_ID, type = ElementType.Select, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Datentyp"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Datentyp, den der Wert am Pfad haben muss."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 4.0)
+        })
+        public String expectedType;
     }
 }

@@ -10,10 +10,7 @@ import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
-import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.GoverBackend.process.services.ProcessInstanceService;
-import de.aivot.GoverBackend.process.services.ProcessNodeService;
-import de.aivot.GoverBackend.process.services.ProcessService;
+import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
@@ -46,18 +43,20 @@ public class WebhookTriggerControllerV1 {
     private final ProcessNodeService processNodeService;
     private final ProcessService processService;
     private final ProcessNodeRepository processNodeRepository;
+    private final ProcessNodeDefinitionService processNodeDefinitionService;
 
     @Autowired
     public WebhookTriggerControllerV1(ProcessInstanceService processInstanceService,
                                       ProcessTestClaimRepository processTestClaimRepository,
                                       ProcessInstanceAttachmentService processInstanceAttachmentService,
-                                      ProcessNodeService processNodeService, ProcessService processService, ProcessNodeRepository processNodeRepository) {
+                                      ProcessNodeService processNodeService, ProcessService processService, ProcessNodeRepository processNodeRepository, ProcessNodeDefinitionService processNodeDefinitionService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processNodeService = processNodeService;
         this.processService = processService;
         this.processNodeRepository = processNodeRepository;
+        this.processNodeDefinitionService = processNodeDefinitionService;
     }
 
 
@@ -71,7 +70,7 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         return handleRequest(request, accessKey, slug, null, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
@@ -91,7 +90,7 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @RequestBody Map<String, Object> payload,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_XML, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
@@ -111,7 +110,7 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @RequestBody Map<String, Object> payload,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
@@ -130,7 +129,7 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) UUID identityId,
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         var payload = new HashMap<String, Object>();
@@ -425,15 +424,14 @@ public class WebhookTriggerControllerV1 {
 
     @Nonnull
     private WebhookTriggerConfigV1 getWebhookConfig(@Nonnull ProcessNodeEntity nodeEntity) throws ResponseException {
-        var derivedConfiguration = processNodeService
-                .deriveConfiguration(nodeEntity, true);
+        var provider = processNodeDefinitionService
+                .getProcessNodeDefinition(nodeEntity)
+                .orElseThrow(() -> ResponseException.internalServerError("Die Definition des Webhook-Trigger-Knotens konnte nicht gefunden werden."));
 
-        try {
-            return ElementPOJOMapper
-                    .mapToPOJO(derivedConfiguration.getEffectiveValues(), WebhookTriggerConfigV1.class);
-        } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(e, "Die Konfiguration des Webhook-Trigger-Knotens ist ungültig.");
-        }
+        var derivedConfiguration = processNodeService
+                .deriveConfiguration(nodeEntity, provider, null, true);
+
+        return (WebhookTriggerConfigV1) derivedConfiguration.configuration();
     }
 
     private static void checkAuthentication(@Nonnull WebhookTriggerConfigV1 config,

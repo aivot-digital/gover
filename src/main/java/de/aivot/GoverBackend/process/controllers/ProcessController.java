@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.process.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
-import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.department.services.DepartmentService;
@@ -31,7 +30,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -231,8 +229,14 @@ public class ProcessController {
         }
 
         for (var node : createdNodes) {
+            var prov = processNodeProviderService
+                    .getProcessNodeDefinition(node)
+                    .orElseThrow(() -> ResponseException
+                            .badRequest("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ ist nicht verfügbar."
+                                    .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
+
             processDefinitionNodeService
-                    .validate(node, true)
+                    .validate(node, prov, true)
                     .ifPresent((ignored) -> {
                         node.setSavedWithErrors(true);
                         try {

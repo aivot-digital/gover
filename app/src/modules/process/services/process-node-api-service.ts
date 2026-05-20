@@ -1,6 +1,7 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {type ProcessNodeEntity} from '../entities/process-node-entity';
 import {type ProcessNodeExport} from '../entities/process-node-export';
+import {type ProcessDataKeyHintResponse} from '../entities/process-data-key-hint-response';
 import {type GroupLayout} from '../../../models/elements/form/layout/group-layout';
 import {generateId} from '../../../utils/id-utils';
 import {ProcessNodeProblems} from '../entities/process-node-problems';
@@ -51,6 +52,10 @@ ProcessDefinitionNodeFilter
 
     public getConfigurationLayout(id: number): Promise<GroupLayout> {
         return this.get(`${this.path}${id}/configuration/`);
+    }
+
+    public getDataKeyHints(id: number): Promise<ProcessDataKeyHintResponse[]> {
+        return this.get(`${this.path}${id}/data-key-hints/`);
     }
 
     public async getTesting(id: number): Promise<GroupLayout | null> {

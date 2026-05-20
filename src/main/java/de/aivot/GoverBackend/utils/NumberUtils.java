@@ -55,4 +55,14 @@ public class NumberUtils {
             }
         }
     }
+
+    @Nonnull
+    public static Optional<Number> asNumber(Object value) {
+        return switch (value) {
+            case Number n -> Optional.of(n);
+            case String s -> Optional.of(new BigDecimal(s));
+            case Boolean b -> Optional.of(b ? 1 : 0);
+            default -> Optional.empty();
+        };
+    }
 }

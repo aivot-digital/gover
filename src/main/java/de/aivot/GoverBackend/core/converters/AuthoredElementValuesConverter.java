@@ -6,14 +6,12 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
 
-import java.util.Map;
-
 @Converter
 public class AuthoredElementValuesConverter implements AttributeConverter<AuthoredElementValues, String> {
     @Override
     public String convertToDatabaseColumn(AuthoredElementValues baseElement) {
         var mapper = ObjectMapperFactory
-                .getInstance();
+                .getNullPreservingInstance();
 
         try {
             return mapper.writeValueAsString(baseElement);
@@ -24,8 +22,8 @@ public class AuthoredElementValuesConverter implements AttributeConverter<Author
 
     @Override
     public AuthoredElementValues convertToEntityAttribute(String s) {
-        var mapper =  ObjectMapperFactory
-                .getInstance();
+        var mapper = ObjectMapperFactory
+                .getNullPreservingInstance();
 
         try {
             return mapper.readValue(s, AuthoredElementValues.class);

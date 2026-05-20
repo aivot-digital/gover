@@ -128,4 +128,9 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
     public void performDelete(@Nonnull ProcessEntity entity) throws ResponseException {
         processDefinitionRepository.delete(entity);
     }
+
+    public Optional<ProcessEntity> retrieveByAccessKey(UUID processAccessKey) throws ResponseException {
+        return processDefinitionRepository
+                .findByAccessKey(processAccessKey);
+    }
 }

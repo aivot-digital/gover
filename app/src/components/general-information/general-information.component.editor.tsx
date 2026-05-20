@@ -1,13 +1,12 @@
 import React from 'react';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
-import {FormGroup, Grid, InputLabel} from '@mui/material';
+import {FormGroup, Grid, InputLabel, Typography} from '@mui/material';
 import {CheckboxTree} from '../checkbox-tree/checkbox-tree';
 import {StringListInput} from '../string-list-input/string-list-input';
 import {type CheckboxTreeOption} from '../checkbox-tree/checkbox-tree-option';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 
@@ -83,7 +82,7 @@ function orderEligiblePersons(value: string[]): string[] {
         .filter((opt) => value.includes(opt));
 }
 
-export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement, ElementTreeEntity>) {
+export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
     return (
         <>
             <Grid
@@ -228,6 +227,43 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 allowEmpty={true}
                 disabled={!props.editable}
             />
+
+            <ElementEditorSectionHeader
+                title="Informationen zum Datenschutz"
+                variant="h5"
+            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        value={props.element.privacyText ?? ''}
+                        label="Text für Datenschutz-Einwilligung in den Allgemeinen Informationen"
+                        multiline
+                        onChange={(val) => {
+                            props.onPatch({
+                                privacyText: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+
+                    <Typography
+                        variant={'caption'}
+                        color={'text.secondary'}
+                    >
+                        Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten,
+                        umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}. Zum
+                        Beispiel wie im Standard-Text: <i>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</i>
+                    </Typography>
+                </Grid>
+            </Grid>
         </>
     );
 }

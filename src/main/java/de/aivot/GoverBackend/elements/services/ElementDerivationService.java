@@ -215,6 +215,9 @@ public class ElementDerivationService {
                         logger
                 );
                 effectiveValue = inputElement.formatValue(effectiveValue);
+                if (effectiveValue instanceof String s) {
+                    effectiveValue = s.trim();
+                }
                 effectiveElementValues.put(currentElement.getId(), effectiveValue);
 
                 var err = deriveError(
@@ -260,7 +263,8 @@ public class ElementDerivationService {
 
                             var om = ObjectMapperFactory.getInstance();
                             var childAuthoredElementValues = om.convertValue(mutableEffectiveChildDataSet, AuthoredElementValues.class);
-                            var childEffectiveElementValues = om.convertValue(mutableEffectiveChildDataSet, EffectiveElementValues.class);
+                            // Row-local effective values must be rebuilt from visible descendants only.
+                            var childEffectiveElementValues = new EffectiveElementValues();
                             var childReplicationIndices = appendReplicationIndex(
                                     replicationIndices,
                                     itemIndex

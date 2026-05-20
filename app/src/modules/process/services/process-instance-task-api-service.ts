@@ -99,6 +99,7 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
             started: new Date().toISOString(),
             updated: new Date().toISOString(),
             processData: {},
+            processDataDiff: {},
             deadline: null,
         };
     }

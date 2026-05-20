@@ -151,6 +151,22 @@ public class SystemConfigService {
     }
 
     @Nonnull
+    public Map<String, Object> getAllConfigsAsMap() throws ResponseException {
+        var publicConfigs = configRepository.findAll();
+
+        Map<String, Object> result = new HashMap<>();
+        for (var entity : publicConfigs) {
+            var def = getDefinition(entity.getKey())
+                    .orElseThrow(() -> ResponseException.internalServerError("Unbekannte Systemkonfiguration \"" + entity.getKey() + "\" gefunden."));
+
+            var value = def.parseValueFromDB(entity.getValue());
+            result.put(entity.getKey(), value);
+        }
+
+        return result;
+    }
+
+    @Nonnull
     public Map<String, Object> getPublicConfigsAsMap() throws ResponseException {
         var publicConfigs = configRepository.findAll(
                 SystemConfigFilter

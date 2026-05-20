@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
@@ -21,6 +22,7 @@ public class RangeInputElementValue implements Serializable {
         this.end = end;
     }
 
+    @JsonIgnore
     public boolean isEmpty() {
         return start == null && end == null;
     }

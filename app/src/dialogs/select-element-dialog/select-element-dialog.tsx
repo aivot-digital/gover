@@ -4,10 +4,14 @@ import {generateComponentPath, generateComponentTitle} from '../../utils/generat
 import {AnyElement} from '../../models/elements/any-element';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {SearchBaseDialog} from '../search-base-dialog/search-base-dialog';
-import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
 import {getElementIcon} from '../../data/element-type/element-icons';
 import {NoCodeDataType, NoCodeDataTypeLabels} from '../../data/no-code-data-type';
 import {elementMatchesDesiredNoCodeDataType} from '../../modules/nocode/data/no-code-data-type-map';
+import {ViewDispatcherComponent} from '../../components/view-dispatcher/view-dispatcher.component';
+import {
+    ViewDispatcherContextProvider,
+    ViewDispatcherMode,
+} from '../../components/view-dispatcher/view-dispatcher.context';
 
 interface SelectElementDialogProps {
     allElements: ElementWithParents[];
@@ -66,25 +70,47 @@ export function SelectElementDialog(props: SelectElementDialogProps) {
                     `Keine Elemente für den Datentyp "${NoCodeDataTypeLabels[desiredType]}" verfügbar.`,
                 getIcon: (option) => {
                     const Icon = getElementIcon(option.$);
-                    return <Icon />;
+                    return <Icon/>;
                 },
                 detailsBuilder: (option) => {
                     return (
-                        <ViewDispatcherComponent
-                            rootElement={option.$}
-                            allElements={[]}
-                            element={option.$}
-                            isBusy={false}
-                            isDeriving={false}
-                            mode="editor"
-                            authoredElementValues={{}}
-                            derivedData={{effectiveValues: {}, elementStates: {}}}
-                            onAuthoredElementValuesChange={() => {
+                        <ViewDispatcherContextProvider
+                            value={{
+                                rootElement: option.$,
+                                allElements: [],
+                                mode: ViewDispatcherMode.Editor,
+                                showInvisibleElements: true,
+                                rootAuthoredElementValues: {},
+                                rootDerivedData: {
+                                    effectiveValues: {},
+                                    elementStates: {},
+                                },
                             }}
-                            onElementBlur={undefined}
-                            disableVisibility={true}
-                            derivationTriggerIdQueue={[]}
-                        />
+                        >
+                            <ViewDispatcherComponent
+                                element={option.$}
+                                isBusy={false}
+                                isDeriving={false}
+                                authoredElementValues={{}}
+                                derivedData={{
+                                    effectiveValues: {},
+                                    elementStates: {},
+                                }}
+                                onAuthoredElementValuesChange={() => {
+                                }}
+                                onElementBlur={undefined}
+                                derivationTriggerIdQueue={[]}
+                                onDerive={() => Promise.resolve({
+                                    effectiveValues: {},
+                                    elementStates: {},
+                                })}
+                                onEvent={() => Promise.resolve()}
+                                onResetErrors={() => {
+
+                                }}
+                                suppressErrors={true}
+                            />
+                        </ViewDispatcherContextProvider>
                     );
                 },
             }]}

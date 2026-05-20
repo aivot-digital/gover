@@ -22,6 +22,9 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
 import de.aivot.GoverBackend.user.entities.UserEntity;
@@ -34,6 +37,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.w3c.dom.Node;
 
 import java.util.List;
 import java.util.Optional;
@@ -89,7 +93,7 @@ public class StaffProcessInstanceTaskViewController {
             description = "Retrieves the view layout for a specific task within a process instance. " +
                     "The layout defines how the task is presented to the user, including form fields and structure."
     )
-    public TaskViewResponse retrieve(
+    public <NodeConfig> TaskViewResponse retrieve(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long procId,
             @Nonnull @PathVariable Long taskId
@@ -98,7 +102,7 @@ public class StaffProcessInstanceTaskViewController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var taskViewData = fetchTaskViewData(
+        TaskViewData<NodeConfig>  taskViewData = fetchTaskViewData(
                 jwt,
                 procId,
                 taskId
@@ -113,14 +117,14 @@ public class StaffProcessInstanceTaskViewController {
                         taskViewData.task().getPreviousProcessNodeId()
                 );
 
-        var context = new ProcessNodeExecutionContextUIStaff(
+        var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
                 taskViewData.node(),
                 taskViewData.instance(),
                 taskViewData.task(),
                 null,
                 user,
-                taskViewData.derivedRuntimeElementData(),
+                taskViewData.nodeConfig(),
                 processData
         );
 
@@ -160,7 +164,7 @@ public class StaffProcessInstanceTaskViewController {
             description = "Retrieves the view layout for a specific task within a process instance. " +
                     "The layout defines how the task is presented to the user, including form fields and structure."
     )
-    public TaskViewResponse update(
+    public <NodeConfig> TaskViewResponse update(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long procId,
             @Nonnull @PathVariable Long taskId,
@@ -168,13 +172,13 @@ public class StaffProcessInstanceTaskViewController {
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_HEADER_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var taskViewData = fetchTaskViewData(
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 jwt,
                 procId,
                 taskId
@@ -189,14 +193,14 @@ public class StaffProcessInstanceTaskViewController {
                         taskViewData.task().getPreviousProcessNodeId()
                 );
 
-        var context = new ProcessNodeExecutionContextUIStaff(
+        var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
                 taskViewData.node(),
                 taskViewData.instance(),
                 taskViewData.task(),
                 null,
                 user,
-                taskViewData.derivedRuntimeElementData(),
+                taskViewData.nodeConfig(),
                 processData
         );
 
@@ -243,9 +247,15 @@ public class StaffProcessInstanceTaskViewController {
 
         Optional<ProcessNodeExecutionResult> res;
         try {
-            res = taskViewData
-                    .provider
-                    .onUpdateFromStaff(context, inputs, cleanEvent);
+            if (cleanEvent == null) {
+                res = taskViewData
+                        .provider
+                        .onAutoSaveFromStaffTaskView(context, inputs);
+            } else {
+                res = taskViewData
+                        .provider
+                        .onEventFromStaffTaskView(context, inputs, cleanEvent);
+            }
         } catch (ResponseException e) {
             throw e;
         } catch (Exception e) {
@@ -297,13 +307,13 @@ public class StaffProcessInstanceTaskViewController {
             description = "Retrieves the view layout for a specific task within a process instance. " +
                     "The layout defines how the task is presented to the user, including form fields and structure."
     )
-    public DerivedRuntimeElementData derive(
+    public <NodeConfig> DerivedRuntimeElementData derive(
             @Nonnull @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long procId,
             @Nonnull @PathVariable Long taskId,
             @Nonnull @RequestBody AuthoredElementValues authoredElementValues
     ) throws ResponseException {
-        var taskViewData = fetchTaskViewData(
+        TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 jwt,
                 procId,
                 taskId
@@ -318,14 +328,14 @@ public class StaffProcessInstanceTaskViewController {
                         taskViewData.task().getPreviousProcessNodeId()
                 );
 
-        var context = new ProcessNodeExecutionContextUIStaff(
+        var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
                 logger,
                 taskViewData.node(),
                 taskViewData.instance(),
                 taskViewData.task(),
                 null,
                 taskViewData.user,
-                taskViewData.derivedRuntimeElementData(),
+                taskViewData.nodeConfig(),
                 incomingProcessExecutionData
         );
 
@@ -343,7 +353,7 @@ public class StaffProcessInstanceTaskViewController {
                 .derive(elementDerivationRequest);
     }
 
-    private TaskViewData fetchTaskViewData(
+    private <NodeConfig> TaskViewData<NodeConfig> fetchTaskViewData(
             @Nonnull Jwt jwt,
             @Nonnull Long procId,
             @Nonnull Long taskId
@@ -376,11 +386,18 @@ public class StaffProcessInstanceTaskViewController {
                 .retrieve(ProcessVersionEntityId.of(node.getProcessId(), node.getProcessVersion()))
                 .orElseThrow(ResponseException::notFound);
 
-        var provider = processNodeProviderService
+        var provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::notFound);
 
-        var configContext = new ProcessNodeDefinitionContextConfig(
+        var cfgRes = processDefinitionNodeService.deriveConfiguration(
+                node,
+                provider,
+                null,
+                true
+        );
+
+        var configContext = new ProcessNodeDefinitionConfigurationLayoutContext(
                 user,
                 process,
                 version,
@@ -395,17 +412,18 @@ public class StaffProcessInstanceTaskViewController {
         var derivedRuntimeData = elementDerivationService
                 .derive(derivationRequest, derivationLogger);
 
-        return new TaskViewData(
+        return new TaskViewData<>(
                 user,
                 instance,
                 task,
                 node,
                 provider,
-                derivedRuntimeData
+                derivedRuntimeData,
+                cfgRes.configuration()
         );
     }
 
-    private record TaskViewData(
+    private record TaskViewData<NodeConfig>(
             @Nonnull
             UserEntity user,
             @Nonnull
@@ -415,9 +433,11 @@ public class StaffProcessInstanceTaskViewController {
             @Nonnull
             ProcessNodeEntity node,
             @Nonnull
-            ProcessNodeDefinition provider,
+            ProcessNodeDefinition<NodeConfig> provider,
             @Nonnull
-            DerivedRuntimeElementData derivedRuntimeElementData
+            DerivedRuntimeElementData derivedRuntimeElementData,
+            @Nonnull
+            NodeConfig nodeConfig
     ) {
 
     }

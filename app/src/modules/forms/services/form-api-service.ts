@@ -22,7 +22,7 @@ import {SubmissionListResponseDTO} from '../../submissions/dtos/submission-list-
 import {ElementType} from '../../../data/element-type/element-type';
 import {FormCostCalculationResponseDTO} from '../dtos/form-cost-calculation-response-dto';
 import {FormCitizenListResponseDTO} from '../dtos/form-citizen-list-response-dto';
-import {RootElement} from '../../../models/elements/root-element';
+import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
 import {isReplicatingContainerLayout} from '../../../models/elements/form/layout/replicating-container-layout';
 
@@ -236,7 +236,7 @@ export class FormApiService extends BaseCrudApiService<FormEntity, FormEntity, F
         return await this.post<AuthoredElementValues, FormCostCalculationResponseDTO>(`/api/public/forms/${slug}/costs/`, customerInput, {query: {version: version}});
     }
 
-    public async submit(id: FormVersionEntityId, rootElement: RootElement, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
+    public async submit(id: FormVersionEntityId, rootElement: FormLayoutElement, userInput: CustomerInput, identityId: string | undefined): Promise<SubmissionListResponseDTO> {
         const data = new FormData();
         data.set('inputs', JSON.stringify(userInput));
 

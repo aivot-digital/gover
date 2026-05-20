@@ -67,7 +67,7 @@ export function _collectErrors(
     if (elementState.error != null) {
         col.push({
             id: element.id,
-            label: generateComponentTitle(element),
+            label: generateComponentTitle(element, true),
             error: elementState.error,
         });
     }

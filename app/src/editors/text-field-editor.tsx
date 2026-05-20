@@ -4,11 +4,10 @@ import {TextFieldComponent} from '../components/text-field/text-field-component'
 import {BaseEditorProps} from './base-editor';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
-import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 
-export function TextFieldEditor(props: BaseEditorProps<TextFieldElement, ElementTreeEntity>) {
+export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
     const {
         element,
         onPatch,

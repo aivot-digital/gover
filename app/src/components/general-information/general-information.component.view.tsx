@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {ReactNode, useEffect, useMemo, useState} from 'react';
 import Box from '@mui/material/Box';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -8,7 +8,7 @@ import {useTheme} from '@mui/material/styles';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
-import {selectLoadedForm, showDialog} from '../../slices/app-slice';
+import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty, stringOrUndefined} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
@@ -16,7 +16,7 @@ import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
@@ -25,10 +25,14 @@ import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {ExpandableList} from '../expandable-list/expandable-list';
-import {IdentityButtonGroup} from '../../modules/identity/components/identity-button-group/identity-button-group';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {MarkdownContent} from '../markdown-content/markdown-content';
+import {isRootElement} from '../../models/elements/form-layout-element';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
+import {Grid} from '@mui/material';
+import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 
 function cleanDocuments(documents: Array<string> | undefined | null) {
     if (documents) {
@@ -40,22 +44,26 @@ function cleanDocuments(documents: Array<string> | undefined | null) {
 
 export function GeneralInformationComponentView(props: BaseViewProps<IntroductionStepElement, boolean>) {
     const dispatch = useAppDispatch();
-    const theme = useTheme();
 
     const {
-        rootElement,
         element,
         value,
         setValue,
         errors,
-        authoredElementValues,
-        derivedData,
-        onAuthoredElementValuesChange,
+        isDeriving,
     } = props;
 
-    const {} = element;
+    const {
+        expectedCosts,
+        supportingDocuments: supportingDocumentsRaw,
+        documentsToAttach: documentsToAttachRaw,
+        eligiblePersons,
+    } = element;
 
-    const application = useAppSelector(selectLoadedForm);
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
+
     const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
@@ -63,218 +71,189 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
     const initialDisplayCount = 4;
 
-    const supportingDocuments = cleanDocuments(element.supportingDocuments);
-    const documentsToAttach = cleanDocuments(element.documentsToAttach);
+    const supportingDocuments = useMemo(() => cleanDocuments(supportingDocumentsRaw), [supportingDocumentsRaw]);
+    const documentsToAttach = useMemo(() => cleanDocuments(documentsToAttachRaw), [documentsToAttachRaw]);
     const preambleText = stringOrUndefined(element.teaserText);
     const initiativeLogoLink = stringOrUndefined(element.initiativeLogoLink);
     const initiativeName = stringOrUndefined(element.initiativeName);
 
     useEffect(() => {
-        if (application != null) {
-            if (application.version.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== application.version.responsibleDepartmentId) {
+        if (isRootElement(rootElement)) {
+            if (rootElement.responsibleDepartmentId != null) {
+                if (responsibleDepartment == null || responsibleDepartment.id !== rootElement.responsibleDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(application.version.responsibleDepartmentId)
+                        .retrievePublic(rootElement.responsibleDepartmentId)
                         .then(setResponsibleDepartment)
                         .catch((err) => {
-                            console.error(err);
-                            dispatch(showErrorSnackbar('Fehler beim Laden der zuständigen Stelle'));
+                            dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der zuständigen Stelle'));
                         });
                 }
             } else {
                 setResponsibleDepartment(undefined);
             }
 
-            if (application.version.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== application.version.managingDepartmentId) {
+            if (rootElement.managingDepartmentId != null) {
+                if (managingDepartment == null || managingDepartment.id !== rootElement.managingDepartmentId) {
                     new DepartmentApiService()
-                        .retrievePublic(application.version.managingDepartmentId)
+                        .retrievePublic(rootElement.managingDepartmentId)
                         .then(setManagingDepartment)
                         .catch((err) => {
-                            console.error(err);
-                            dispatch(showErrorSnackbar('Fehler beim Laden der bewirtschaftenden Stelle'));
+                            dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der bewirtschaftenden Stelle'));
                         });
                 }
             } else {
                 setManagingDepartment(undefined);
             }
         }
-    }, [props.element, application?.version.responsibleDepartmentId, application?.version.managingDepartmentId]);
+    }, [rootElement]);
 
-    const renderEligiblePerson = (person: string, index: number) => (
-        <ListItem
-            disableGutters
-            key={String(index) + person}
-        >
-            <ListItemIcon sx={{minWidth: '34px'}}>
-                <PersonOutlineOutlinedIcon sx={{color: theme.palette.primary.main}} />
-            </ListItemIcon>
-            <ListItemText>{person}</ListItemText>
-        </ListItem>
-    );
+    const pass = useMemo(() => {
+        return isDeriving && hasDerivableAspects(element);
+    }, [isDeriving, element]);
 
-    const renderSupportingDocument = (document: string, index: number) => (
-        <ListItem
-            disableGutters
-            key={String(index) + document}
-        >
-            <ListItemIcon sx={{minWidth: '34px'}}>
-                <DescriptionOutlinedIcon sx={{color: theme.palette.primary.main}} />
-            </ListItemIcon>
-            <ListItemText>{document}</ListItemText>
-        </ListItem>
-    );
+    const sections: ReactNode[] = useMemo(() => {
+        const sections: ReactNode[] = [];
 
-    const renderDocumentToAttach = (document: string, index: number) => (
-        <ListItem
-            disableGutters
-            key={String(index) + document}
-        >
-            <ListItemIcon sx={{minWidth: '34px'}}>
-                <UploadFileOutlinedIcon sx={{color: theme.palette.primary.main}} />
-            </ListItemIcon>
-            <ListItemText>{document}</ListItemText>
-        </ListItem>
-    );
+        if (responsibleDepartment != null) {
+            sections.push(
+                <Box key="responsible">
+                    <Typography
+                        component={'h3'}
+                        variant="h5"
+                    >
+                        Zuständige Stelle
+                    </Typography>
+                    <Typography
+                        component={'pre'}
+                        variant="body2"
+                        sx={{mt: 1}}
+                    >
+                        {[
+                            isStringNotNullOrEmpty(providerName) ? providerName : null,
+                            responsibleDepartment.name,
+                            responsibleDepartment.address,
+                        ].filter(Boolean).join('\n')}
+                    </Typography>
+                </Box>,
+            );
+        }
 
-    const sections: React.ReactNode[] = [];
+        if (managingDepartment != null) {
+            sections.push(
+                <Box key="managing">
+                    <Typography
+                        component={'h3'}
+                        variant="h5"
+                    >
+                        Bewirtschaftende Stelle
+                    </Typography>
+                    <Typography
+                        component={'pre'}
+                        variant="body2"
+                    >
+                        {[
+                            isStringNotNullOrEmpty(providerName) ? providerName : null,
+                            managingDepartment.name,
+                            managingDepartment.address,
+                        ].filter(Boolean).join('\n')}
+                    </Typography>
+                </Box>,
+            );
+        }
 
-    if (responsibleDepartment != null) {
-        sections.push(
-            <Box key="responsible">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                >
-                    Zuständige Stelle
-                </Typography>
-                <Typography
-                    component={'pre'}
-                    variant="body2"
-                    sx={{mt: 1}}
-                >
-                    {[
-                        isStringNotNullOrEmpty(providerName) ? providerName : null,
-                        responsibleDepartment.name,
-                        responsibleDepartment.address,
-                    ].filter(Boolean).join('\n')}
-                </Typography>
-            </Box>,
-        );
-    }
+        if (eligiblePersons != null &&
+            eligiblePersons.length > 0) {
+            sections.push(
+                <ExpandableList
+                    key="eligible"
+                    title="Antragsberechtigte"
+                    items={eligiblePersons}
+                    initialVisible={initialDisplayCount}
+                    singularLabel="Person"
+                    pluralLabel="Personen"
+                    listId="eligible-persons-list"
+                    renderItem={renderEligiblePerson}
+                />,
+            );
+        }
 
-    if (managingDepartment != null) {
-        sections.push(
-            <Box key="managing">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                >
-                    Bewirtschaftende Stelle
-                </Typography>
-                <Typography
-                    component={'pre'}
-                    variant="body2"
-                >
-                    {[
-                        isStringNotNullOrEmpty(providerName) ? providerName : null,
-                        managingDepartment.name,
-                        managingDepartment.address,
-                    ].filter(Boolean).join('\n')}
-                </Typography>
-            </Box>,
-        );
-    }
+        if (supportingDocuments.length > 0) {
+            sections.push(
+                <ExpandableList
+                    key="supporting"
+                    title="Relevante Dokumente"
+                    items={supportingDocuments}
+                    initialVisible={initialDisplayCount}
+                    singularLabel="Dokument"
+                    pluralLabel="Dokumente"
+                    listId="supporting-documents-list"
+                    renderItem={renderSupportingDocument}
+                />,
+            );
+        }
 
-    if (props.element.eligiblePersons != null &&
-        props.element.eligiblePersons.length > 0) {
-        sections.push(
-            <ExpandableList
-                key="eligible"
-                title="Antragsberechtigte"
-                items={props.element.eligiblePersons}
-                initialVisible={initialDisplayCount}
-                singularLabel="Person"
-                pluralLabel="Personen"
-                listId="eligible-persons-list"
-                renderItem={renderEligiblePerson}
-            />,
-        );
-    }
+        if (documentsToAttach.length > 0) {
+            sections.push(
+                <ExpandableList
+                    key="attachments"
+                    title="Einzureichende Dokumente"
+                    items={documentsToAttach}
+                    initialVisible={initialDisplayCount}
+                    singularLabel="Dokument"
+                    pluralLabel="Dokumente"
+                    listId="documents-to-attach-list"
+                    renderItem={renderDocumentToAttach}
+                />,
+            );
+        }
 
-    if (supportingDocuments.length > 0) {
-        sections.push(
-            <ExpandableList
-                key="supporting"
-                title="Relevante Dokumente"
-                items={supportingDocuments}
-                initialVisible={initialDisplayCount}
-                singularLabel="Dokument"
-                pluralLabel="Dokumente"
-                listId="supporting-documents-list"
-                renderItem={renderSupportingDocument}
-            />,
-        );
-    }
+        /* TODO
+        if (application != null &&
+            !isStringNullOrEmpty(application?.version.rootElement.expiring)) {
+            sections.push(
+                <Box key="deadline">
+                    <Typography
+                        component={'h3'}
+                        variant="h5"
+                    >
+                        Antragsfristen
+                    </Typography>
+                    <Typography
+                        component="pre"
+                        variant="body2"
+                        sx={{mt: 1}}
+                    >
+                        {application.version.rootElement.expiring}
+                    </Typography>
+                </Box>,
+            );
+        }
+         */
 
-    if (documentsToAttach.length > 0) {
-        sections.push(
-            <ExpandableList
-                key="attachments"
-                title="Einzureichende Dokumente"
-                items={documentsToAttach}
-                initialVisible={initialDisplayCount}
-                singularLabel="Dokument"
-                pluralLabel="Dokumente"
-                listId="documents-to-attach-list"
-                renderItem={renderDocumentToAttach}
-            />,
-        );
-    }
+        if (expectedCosts != null && !isStringNullOrEmpty(expectedCosts)) {
+            sections.push(
+                <Box key="costs">
+                    <Typography
+                        component={'h3'}
+                        variant="h5"
+                    >
+                        Gebühren dieses Antrages
+                    </Typography>
 
-    if (application != null &&
-        !isStringNullOrEmpty(application?.version.rootElement.expiring)) {
-        sections.push(
-            <Box key="deadline">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                >
-                    Antragsfristen
-                </Typography>
-                <Typography
-                    component="pre"
-                    variant="body2"
-                    sx={{mt: 1}}
-                >
-                    {application.version.rootElement.expiring}
-                </Typography>
-            </Box>,
-        );
-    }
+                    <MarkdownContent
+                        markdown={expectedCosts}
+                        className={'content-without-margin-on-childs'}
+                        sx={{
+                            mt: 1,
+                            typography: 'body2',
+                        }}
+                    />
+                </Box>,
+            );
+        }
 
-    if (props.element.expectedCosts != null &&
-        !isStringNullOrEmpty(props.element.expectedCosts)) {
-        sections.push(
-            <Box key="costs">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                >
-                    Gebühren dieses Antrages
-                </Typography>
-
-                <MarkdownContent
-                    markdown={props.element.expectedCosts}
-                    className={'content-without-margin-on-childs'}
-                    sx={{
-                        mt: 1,
-                        typography: 'body2',
-                    }}
-                />
-            </Box>,
-        );
-    }
+        return sections;
+    }, [responsibleDepartment, managingDepartment, eligiblePersons, supportingDocuments, documentsToAttach, expectedCosts]);
 
     return (
         <>
@@ -288,15 +267,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             }
 
             {
-                (
-                    responsibleDepartment != null ||
-                    managingDepartment != null ||
-                    (props.element.eligiblePersons ?? []).length > 0 ||
-                    (props.element.supportingDocuments ?? []).length > 0 ||
-                    (props.element.documentsToAttach ?? []).length > 0 ||
-                    !isStringNullOrEmpty(application?.version.rootElement.expiring) ||
-                    !isStringNullOrEmpty(props.element.expectedCosts)
-                ) &&
+                sections.length > 0 &&
                 <FadingPaper>
                     <Box
                         sx={{
@@ -304,33 +275,48 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                             columnGap: 7,
                         }}
                     >
-                        {sections.map((section, index) => (
-                            <Box
-                                key={index}
-                                sx={{
-                                    breakInside: 'avoid',
-                                    mb: 3,
-                                    display: 'inline-block',
-                                    width: '100%',
-                                }}
-                            >
-                                {section}
-                            </Box>
-                        ))}
+                        {
+                            sections.map((section, index) => (
+                                <Box
+                                    key={index}
+                                    sx={{
+                                        breakInside: 'avoid',
+                                        mb: 3,
+                                        display: 'inline-block',
+                                        width: '100%',
+                                    }}
+                                >
+                                    {section}
+                                </Box>
+                            ))
+                        }
                     </Box>
                 </FadingPaper>
             }
 
-            <IdentityButtonGroup
-                rootElement={rootElement}
-                isBusy={props.isBusy}
-                isDeriving={props.isDeriving}
-                authoredElementValues={authoredElementValues}
-                derivedData={derivedData}
-                onAuthoredElementValuesChange={ed => onAuthoredElementValuesChange(ed, [])}
-                form={application?.form!}
-                version={application?.version!}
-            />
+            {
+                element.children != null &&
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    {
+                        element
+                            .children
+                            .map((child, index) => (
+                                <ViewDispatcherComponent
+                                    {...props}
+                                    key={index}
+                                    element={child}
+                                    isDeriving={isDeriving || pass}
+                                />
+                            ))
+                    }
+                </Grid>
+            }
 
             <Typography
                 component="h4"
@@ -343,7 +329,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             </Typography>
 
             {
-                application?.version.rootElement.privacyText != null &&
+                element.privacyText != null &&
                 <Box
                     sx={{
                         maxWidth: '600px',
@@ -351,7 +337,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     }}
                 >
                     <FormattedTextWithDialogTags
-                        text={application.version.rootElement.privacyText}
+                        text={element.privacyText}
                     />
                 </Box>
             }
@@ -381,6 +367,42 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         </>
     );
 }
+
+const renderEligiblePerson = (person: string, index: number) => (
+    <ListItem
+        disableGutters
+        key={String(index) + person}
+    >
+        <ListItemIcon sx={{minWidth: '34px'}}>
+            <PersonOutlineOutlinedIcon color="primary"/>
+        </ListItemIcon>
+        <ListItemText>{person}</ListItemText>
+    </ListItem>
+);
+
+const renderSupportingDocument = (document: string, index: number) => (
+    <ListItem
+        disableGutters
+        key={String(index) + document}
+    >
+        <ListItemIcon sx={{minWidth: '34px'}}>
+            <DescriptionOutlinedIcon color="primary"/>
+        </ListItemIcon>
+        <ListItemText>{document}</ListItemText>
+    </ListItem>
+);
+
+const renderDocumentToAttach = (document: string, index: number) => (
+    <ListItem
+        disableGutters
+        key={String(index) + document}
+    >
+        <ListItemIcon sx={{minWidth: '34px'}}>
+            <UploadFileOutlinedIcon color="primary"/>
+        </ListItemIcon>
+        <ListItemText>{document}</ListItemText>
+    </ListItem>
+);
 
 interface FormattedTextWithDialogTagsProps {
     text: string;

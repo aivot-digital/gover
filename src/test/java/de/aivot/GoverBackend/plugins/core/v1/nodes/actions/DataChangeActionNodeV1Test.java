@@ -1,7 +1,11 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
@@ -10,7 +14,9 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.DateTimeInputEl
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
@@ -19,12 +25,13 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskAssigned;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskUpdated;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
@@ -43,11 +50,11 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static de.aivot.GoverBackend.TestData.authored;
-import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataChangeActionNodeV1Test {
@@ -80,14 +87,14 @@ class DataChangeActionNodeV1Test {
                         "meta", Map.of("source", "task")
                 ));
 
-        var result = node.init(new ProcessNodeExecutionContextInit(
+        var result = node.init(new ProcessNodeExecutionInitContext(
                 logger(),
                 processNode(configuration()),
                 processInstance("process-owner"),
                 task(77, Map.of(), Map.of(), Map.of("applicant", Map.of("name", "Ada"))),
                 null,
                 processData,
-                runtime(configuration())
+                nodeConfiguration(configuration())
         ));
 
         var taskAssigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result);
@@ -104,20 +111,25 @@ class DataChangeActionNodeV1Test {
 
     @Test
     void getStaffTaskViewData_LoadsSavedDraftFromRuntimeData() throws Exception {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
+
         var context = new ProcessNodeExecutionContextUIStaff(
                 logger(),
                 processNode(configuration()),
                 processInstance("process-owner"),
                 task(
                         77,
-                        Map.of("draftData", authored("applicantName", "Grace")),
+                        Map.of(
+                                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
+                                authored("applicantName", "Grace")
+                        ),
                         Map.of(),
-                        Map.of("applicant", Map.of("name", "Ada"))
+                        processData
                 ),
                 null,
                 user("staff-1"),
-                runtime(configuration()),
-                null
+                nodeConfiguration(configuration()),
+                currentProcessData(processData)
         );
 
         var layout = node.getStaffTaskView(context);
@@ -134,68 +146,40 @@ class DataChangeActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskView_RendersConfiguredTaskDescription() throws Exception {
-        var context = new ProcessNodeExecutionContextUIStaff(
-                logger(),
-                processNode(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
-                processInstance("process-owner"),
-                task(
-                        77,
-                        Map.of(),
-                        Map.of(),
-                        Map.of("applicant", Map.of("name", "Ada"))
-                ),
-                null,
-                user("staff-1"),
-                runtime(configuration("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>")),
-                null
-        );
+    void onEventFromStaffTaskView_SaveIsRejectedAsUnknownEvent() {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
 
-        var layout = node.getStaffTaskView(context);
-        var description = layout.findChild("data-change-task-view-description-content", RichTextContentElement.class).orElseThrow();
-        var uiHeadline = layout.findChild("data-change-task-view-ui-headline", HeadlineContentElement.class).orElseThrow();
-
-        assertEquals("<p>Bitte prüfen und korrigieren Sie die Personendaten.</p>", description.getContent());
-        assertEquals("Daten zu dieser Aufgabe", uiHeadline.getContent());
-    }
-
-    @Test
-    void onUpdateFromStaff_SaveKeepsTaskRunningAndPersistsDraft() throws Exception {
-        var result = node.onUpdateFromStaff(
-                new ProcessNodeExecutionContextUIStaff(
-                        logger(),
-                        processNode(configuration()),
-                        processInstance("process-owner"),
-                        task(
-                                77,
-                                Map.of(),
-                                Map.of("existing", "node-data"),
-                                Map.of("applicant", Map.of("name", "Ada"))
+        var ex = assertThrows(
+                ResponseException.class,
+                () -> node.onEventFromStaffTaskView(
+                        new ProcessNodeExecutionContextUIStaff(
+                                logger(),
+                                processNode(configuration()),
+                                processInstance("process-owner"),
+                                task(
+                                        77,
+                                        Map.of(),
+                                        Map.of("existing", "node-data"),
+                                        processData
+                                ),
+                                null,
+                                user("staff-1"),
+                                nodeConfiguration(configuration()),
+                                currentProcessData(processData)
                         ),
-                        null,
-                        user("staff-1"),
-                        runtime(configuration()),
-                        null
-                ),
-                authored("applicantName", "Grace"),
-                "save"
+                        authored("applicantName", "Grace"),
+                        "save"
+                )
         );
 
-        assertTrue(result.isPresent());
-
-        var assigned = assertInstanceOf(ProcessNodeExecutionResultTaskAssigned.class, result.get());
-        assertEquals("staff-1", assigned.getAssignedUserId());
-        assertEquals(Map.of("applicant", Map.of("name", "Ada")), assigned.getProcessData());
-        assertEquals(Map.of("existing", "node-data"), assigned.getNodeData());
-
-        var draftData = assigned.getRuntimeData().get("draftData");
-        assertNotNull(draftData);
-        assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
+        assertEquals("Unbekannte Aktion: save", ex.getMessage());
     }
 
     @Test
-    void onUpdateFromStaff_WithoutEventPersistsDraftInRuntimeData() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void onAutoSaveFromStaffTaskView_PersistsDraftInRuntimeData() throws Exception {
+        var processData = Map.<String, Object>of("applicant", Map.of("name", "Ada"));
+
+        var result = node.onAutoSaveFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configuration()),
@@ -204,15 +188,14 @@ class DataChangeActionNodeV1Test {
                                 77,
                                 Map.of("keep", "value"),
                                 Map.of("existing", "node-data"),
-                                Map.of("applicant", Map.of("name", "Ada"))
+                                processData
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configuration()),
-                        null
+                        nodeConfiguration(configuration()),
+                        currentProcessData(processData)
                 ),
-                authored("applicantName", "Grace"),
-                null
+                authored("applicantName", "Grace")
         );
 
         assertTrue(result.isPresent());
@@ -222,31 +205,36 @@ class DataChangeActionNodeV1Test {
         assertEquals(Map.of("existing", "node-data"), updated.getNodeData());
         assertEquals(Map.of("applicant", Map.of("name", "Ada")), updated.getProcessData());
 
-        var draftData = updated.getRuntimeData().get("draftData");
+        var draftData = updated.getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
         assertNotNull(draftData);
         assertEquals("Grace", ((Map<?, ?>) draftData).get("applicantName"));
     }
 
     @Test
-    void onUpdateFromStaff_CompleteMergesProcessDataAndStoresDiff() throws Exception {
-        var result = node.onUpdateFromStaff(
+    void onEventFromStaffTaskView_CompleteMergesProcessDataAndStoresDiff() throws Exception {
+        var processData = Map.<String, Object>of(
+                "applicant", Map.of("name", "Ada", "age", 33),
+                "untouched", "value"
+        );
+
+        var result = node.onEventFromStaffTaskView(
                 new ProcessNodeExecutionContextUIStaff(
                         logger(),
                         processNode(configuration()),
                         processInstance("process-owner"),
                         task(
                                 77,
-                                Map.of("draftData", authored("applicantName", "Draft")),
-                                Map.of(),
                                 Map.of(
-                                        "applicant", Map.of("name", "Ada", "age", 33),
-                                        "untouched", "value"
-                                )
+                                ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
+                                authored("applicantName", "Draft")
+                        ),
+                                Map.of(),
+                                processData
                         ),
                         null,
                         user("staff-1"),
-                        runtime(configuration()),
-                        null
+                        nodeConfiguration(configuration()),
+                        currentProcessData(processData)
                 ),
                 authored("applicantName", "Grace"),
                 "complete"
@@ -273,7 +261,152 @@ class DataChangeActionNodeV1Test {
         @SuppressWarnings("unchecked")
         var diff = (List<DiffItem>) completed.getNodeData().get("diff");
         assertEquals(1, diff.size());
-        assertEquals("/applicant/name", diff.getFirst().field());
+        assertEquals("applicant.name", diff.getFirst().field());
+        assertEquals("Ada", diff.getFirst().oldValue());
+        assertEquals("Grace", diff.getFirst().newValue());
+    }
+
+    @Test
+    void onEventFromStaffTaskView_CompletePatchesArrayItemWithoutReplacingArray() throws Exception {
+        var processData = Map.<String, Object>of(
+                "members", List.of(
+                        Map.of("name", "Ada", "age", 33),
+                        Map.of("name", "Bob", "age", 41)
+                ),
+                "untouched", "value"
+        );
+        var configuration = configuration("members.0.name", null);
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                processData
+                        ),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configuration),
+                        currentProcessData(processData)
+                ),
+                authored("applicantName", "Grace"),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+        assertEquals("value", completed.getProcessData().get("untouched"));
+
+        @SuppressWarnings("unchecked")
+        var members = (List<Map<String, Object>>) completed.getProcessData().get("members");
+        assertEquals(2, members.size());
+        assertEquals("Grace", members.getFirst().get("name"));
+        assertEquals(33, members.getFirst().get("age"));
+        assertEquals(Map.of("name", "Bob", "age", 41), members.get(1));
+
+        @SuppressWarnings("unchecked")
+        var changedData = (Map<String, Object>) completed.getNodeData().get("data");
+        assertEquals(List.of(Map.of("name", "Grace")), changedData.get("members"));
+
+        @SuppressWarnings("unchecked")
+        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
+        assertEquals(1, diff.size());
+        assertEquals("members[0].name", diff.getFirst().field());
+        assertEquals("Ada", diff.getFirst().oldValue());
+        assertEquals("Grace", diff.getFirst().newValue());
+    }
+
+    @Test
+    void onEventFromStaffTaskView_CompletePatchesReplicatingContainerRowsWithoutReplacingSiblingFields() throws Exception {
+        var processData = Map.<String, Object>of(
+                "members", List.of(
+                        Map.of(
+                                "name", "Ada",
+                                "age", 33,
+                                "address", Map.of("street", "Main Street 1")
+                        ),
+                        Map.of(
+                                "name", "Bob",
+                                "age", 41,
+                                "address", Map.of("street", "Side Alley 2")
+                        )
+                ),
+                "untouched", "value"
+        );
+
+        var memberName = new TextInputElement();
+        memberName.setId("memberName");
+        memberName.setLabel("Name");
+        memberName.setDestinationKey("name");
+
+        var members = new ReplicatingContainerLayoutElement();
+        members.setId("membersEditor");
+        members.setDestinationKey("members");
+        members.setChildren(List.<BaseFormElement>of(memberName));
+
+        var configuration = configuration(List.<BaseFormElement>of(members), null);
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                processData
+                        ),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configuration),
+                        currentProcessData(processData)
+                ),
+                authored(
+                        "membersEditor", List.of(
+                                authored("memberName", "Grace"),
+                                authored("memberName", "Bob")
+                        )
+                ),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+        assertEquals("value", completed.getProcessData().get("untouched"));
+
+        @SuppressWarnings("unchecked")
+        var membersData = (List<Map<String, Object>>) completed.getProcessData().get("members");
+        assertEquals(2, membersData.size());
+        assertEquals("Grace", membersData.getFirst().get("name"));
+        assertEquals(33, membersData.getFirst().get("age"));
+        assertEquals(Map.of("street", "Main Street 1"), membersData.getFirst().get("address"));
+        assertEquals(Map.of(
+                "name", "Bob",
+                "age", 41,
+                "address", Map.of("street", "Side Alley 2")
+        ), membersData.get(1));
+
+        @SuppressWarnings("unchecked")
+        var changedData = (Map<String, Object>) completed.getNodeData().get("data");
+        assertEquals(
+                List.of(
+                        Map.of("name", "Grace"),
+                        Map.of("name", "Bob")
+                ),
+                changedData.get("members")
+        );
+
+        @SuppressWarnings("unchecked")
+        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
+        assertEquals(1, diff.size());
+        assertEquals("members[0].name", diff.getFirst().field());
         assertEquals("Ada", diff.getFirst().oldValue());
         assertEquals("Grace", diff.getFirst().newValue());
     }
@@ -325,14 +458,22 @@ class DataChangeActionNodeV1Test {
     }
 
     private static AuthoredElementValues configuration(String taskDescription) {
-        var contentRoot = new GroupLayoutElement();
-        contentRoot.setId("data-change-root");
+        return configuration("applicant.name", taskDescription);
+    }
 
+    private static AuthoredElementValues configuration(String destinationKey, String taskDescription) {
         var valueField = new TextInputElement();
         valueField.setId("applicantName");
         valueField.setLabel("Name");
-        valueField.setDestinationKey("applicant.name");
-        contentRoot.setChildren(List.of(valueField));
+        valueField.setDestinationKey(destinationKey);
+
+        return configuration(List.of(valueField), taskDescription);
+    }
+
+    private static AuthoredElementValues configuration(List<? extends BaseFormElement> children, String taskDescription) {
+        var contentRoot = new GroupLayoutElement();
+        contentRoot.setId("data-change-root");
+        contentRoot.setChildren(new java.util.ArrayList<BaseFormElement>(children));
 
         var configuration = new AuthoredElementValues();
         configuration.put("data_definition", contentRoot);
@@ -393,6 +534,17 @@ class DataChangeActionNodeV1Test {
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(configuration)
                 .setOutputMappings(Map.of());
+    }
+
+    private static DataChangeActionNodeV1.DataChangeActionNodeConfig nodeConfiguration(AuthoredElementValues configuration)
+            throws ElementDataConversionException {
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.putAll(configuration);
+        return ElementPOJOMapper.mapToPOJO(effectiveValues, DataChangeActionNodeV1.DataChangeActionNodeConfig.class);
+    }
+
+    private static ProcessExecutionData currentProcessData(Map<String, Object> processData) {
+        return new ProcessExecutionData().addProcessData(processData);
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {

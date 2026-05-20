@@ -89,38 +89,20 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
     }
 
     @Override
-    protected boolean testIfTechnicalApprovalNeeded() {
-        var superResult = super.testIfTechnicalApprovalNeeded();
+    public void removeInternalInformation() {
+        super.removeInternalInformation();
 
-        if (superResult) {
-            return true;
+        if (this.validation != null) {
+            this.validation = new ElementValidationFunctions()
+                    .setType(this.validation.getType())
+                    .setReferencedIds(this.validation.getReferencedIds());
         }
 
-        if (validation != null) {
-            if (validation.getJavascriptCode() != null && validation.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
-                return true;
-            }
-
-            if (validation.getConditionSet() != null) {
-                return true;
-            }
+        if (this.value != null) {
+            this.value = new ElementValueFunctions()
+                    .setType(this.value.getType())
+                    .setReferencedIds(this.value.getReferencedIds());
         }
-
-        if (value != null) {
-            if (value.getJavascriptCode() != null && value.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (value.getNoCode() != null) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // region Hash & Equals

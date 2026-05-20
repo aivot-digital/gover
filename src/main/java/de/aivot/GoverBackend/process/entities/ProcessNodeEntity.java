@@ -10,6 +10,8 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Objects;
 
@@ -83,6 +85,26 @@ public class ProcessNodeEntity {
     @Nonnull
     private Boolean savedWithErrors = false;
 
+    @Nonnull
+    private Instant created;
+
+    @Nonnull
+    private Instant updated;
+
+    // region Properties
+
+    public String getDisplayName() {
+        if (StringUtils.isNotNullOrEmpty(name)) {
+            return name;
+        }
+
+        // TODO: Get the name of the Process Definition Node based on the getName of the corresponding ProcessNodeDefinition
+
+        return "";
+    }
+
+    // endregion
+
     // region Constructors
 
     public ProcessNodeEntity() {
@@ -116,6 +138,21 @@ public class ProcessNodeEntity {
         this.requirements = requirements;
         this.notes = notes;
         this.savedWithErrors = savedWithErrors;
+    }
+
+    // endregion
+
+    // region Signale
+
+    @PrePersist
+    public void prePersist() {
+        created = Instant.now();
+        updated = Instant.now();
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updated = Instant.now();
     }
 
     // endregion

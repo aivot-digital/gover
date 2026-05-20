@@ -62,3 +62,15 @@ export function pluralize(num: number, singular: string, plural: string): string
     }
     return singular;
 }
+
+export function humanizeMilliseconds(milliseconds: number): string {
+    const totalSeconds = milliseconds / 1000;
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds & 3600) / 60);
+    const seconds = Math.floor(totalSeconds % 60);
+    return `${padNumber(hours, 2)}:${padNumber(minutes, 2)}:${padNumber(seconds, 2)}`;
+}
+
+export function padNumber(num: number, length: number): string {
+    return num.toString().padStart(length, '0');
+}

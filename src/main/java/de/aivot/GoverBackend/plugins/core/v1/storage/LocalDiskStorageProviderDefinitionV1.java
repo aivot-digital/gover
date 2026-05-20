@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.AlertType;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageDocument;
@@ -44,7 +44,7 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

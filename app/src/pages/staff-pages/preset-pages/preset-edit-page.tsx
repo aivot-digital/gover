@@ -4,12 +4,15 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams} from 'react-router-dom';
-import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
-import {ElementTree} from '../../../components/element-tree/element-tree';
+import {
+    removeLoadingSnackbar,
+    showErrorSnackbar,
+    showLoadingSnackbar,
+    showSuccessSnackbar,
+} from '../../../slices/snackbar-slice';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
@@ -47,7 +50,9 @@ import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {collectErrors} from '../../../components/error-alert/error-alert';
-import {RootStructureActionsContextProvider} from '../../../components/root/root-structure-actions-context';
+import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
+import {ElementTree} from '../../../components/element-tree-2/element-tree';
+import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -413,7 +418,7 @@ export function PresetEditPage() {
     }
 
     if (preset == null || presetVersion == null) {
-        return <LoadingPlaceholder />;
+        return <LoadingPlaceholder/>;
     }
 
     const allElements = flattenElements(presetVersion.rootElement);
@@ -457,25 +462,25 @@ export function PresetEditPage() {
                                         icon={ModuleIcons.presets}
                                         actions={[
                                             {
-                                                icon: <NewWindow />,
+                                                icon: <NewWindow/>,
                                                 tooltip: 'Neuen Entwurf anlegen',
                                                 onClick: handleAddNewVersion,
                                             },
                                             {
-                                                icon: <HomeStorage />,
+                                                icon: <HomeStorage/>,
                                                 tooltip: 'Versionen anzeigen',
                                                 onClick: () => {
                                                     setShowPresetVersions(true);
                                                 },
                                             },
                                             {
-                                                icon: <DoneAllOutlinedIcon />,
+                                                icon: <DoneAllOutlinedIcon/>,
                                                 tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
                                                 onClick: handleValidate,
                                                 disabled: isBusy,
                                             },
                                             {
-                                                icon: <Delete color={'error'} />,
+                                                icon: <Delete color={'error'}/>,
                                                 tooltip: 'Version der Vorlage löschen',
                                                 onClick: () => {
                                                     setConfirmDelete(() => handleDelete);
@@ -498,6 +503,8 @@ export function PresetEditPage() {
                                             borderBottomRightRadius: 0,
                                         }}
                                     >
+                                        {
+                                            /* TODO: use ViewDispatcherContext
                                         <ViewDispatcherComponent
                                             rootElement={presetVersion.rootElement}
                                             allElements={allElements}
@@ -511,9 +518,14 @@ export function PresetEditPage() {
                                             onAuthoredElementValuesChange={handleValueChange}
                                             onDerivedDataChange={setDerivedData}
                                             onElementBlur={undefined}
-                                            derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
+                                            derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view }
                                             disableVisibility={false}
+                                            onDerive={() => {
+
+                                            }}
                                         />
+                                        */
+                                        }
                                     </Paper>
                                 </Box>
                             </Allotment.Pane>
@@ -535,12 +547,17 @@ export function PresetEditPage() {
                                     }}
                                 >
                                     <ElementTree
-                                        entity={presetVersion}
-                                        onPatch={handlePatch}
+                                        value={presetVersion.rootElement}
+                                        onChange={(p) => {
+                                            handlePatch({
+                                                ...presetVersion,
+                                                rootElement: p as any,
+                                            });
+                                        }}
                                         editable={presetVersion.status == FormStatus.Drafted}
-                                        scope="preset"
-                                        enabledIdentityProviderInfos={identityProviders}
                                         openRootAddElementSignal={openAddSectionSignal}
+                                        displayContext={ElementDisplayContext.CitizenFacing}
+                                        allowElementIdEditing={false}
                                     />
                                 </Paper>
                             </Allotment.Pane>

@@ -10,6 +10,7 @@ export function ProcessNodeEditorMoreTab() {
     const {
         node,
         setNode,
+        isEditable,
     } = useProcessNodeEditorContext();
 
     return (
@@ -39,6 +40,7 @@ export function ProcessNodeEditorMoreTab() {
                         timeLimitDays: val ?? null,
                     }, false);
                 }}
+                disabled={!isEditable}
             />
 
             <RichTextInputComponent
@@ -54,6 +56,7 @@ export function ProcessNodeEditorMoreTab() {
                 sx={{
                     mt: 2,
                 }}
+                disabled={!isEditable}
             />
 
             <RichTextInputComponent
@@ -69,6 +72,7 @@ export function ProcessNodeEditorMoreTab() {
                 sx={{
                     mt: 2,
                 }}
+                disabled={!isEditable}
             />
         </Box>
     );

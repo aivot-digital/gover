@@ -81,17 +81,24 @@ public class AuditLogEntity {
     @Column(name = "ipaddress")
     private String ipAddress;
 
+    // region HashCode & Equals
+
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         AuditLogEntity that = (AuditLogEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(timestamp, that.timestamp) && Objects.equals(actorType, that.actorType) && Objects.equals(actorId, that.actorId) && Objects.equals(origin, that.origin) && Objects.equals(triggerType, that.triggerType) && Objects.equals(entityType, that.entityType) && Objects.equals(entityRef, that.entityRef) && Objects.equals(entityRefType, that.entityRefType) && Objects.equals(module, that.module) && Objects.equals(message, that.message) && Objects.equals(diff, that.diff) && Objects.equals(metadata, that.metadata) && Objects.equals(ipAddress, that.ipAddress);
+        return Objects.equals(id, that.id) && Objects.equals(timestamp, that.timestamp) && Objects.equals(actorType, that.actorType) && Objects.equals(actorId, that.actorId) &&
+                Objects.equals(origin, that.origin) && Objects.equals(triggerType, that.triggerType) && Objects.equals(entityType, that.entityType) &&
+                Objects.equals(entityRef, that.entityRef) && Objects.equals(entityRefType, that.entityRefType) && Objects.equals(module, that.module) &&
+                Objects.equals(message, that.message) && Objects.equals(diff, that.diff) && Objects.equals(metadata, that.metadata) && Objects.equals(ipAddress, that.ipAddress);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(id, timestamp, actorType, actorId, origin, triggerType, entityType, entityRef, entityRefType, module, message, diff, metadata, ipAddress);
     }
+
+    // endregion
 
     @Nonnull
     public Long getId() {

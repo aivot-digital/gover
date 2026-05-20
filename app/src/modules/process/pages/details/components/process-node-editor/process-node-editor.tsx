@@ -3,7 +3,7 @@ import React, {type ReactNode, useEffect, useMemo, useRef, useState} from 'react
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {ProcessNodeApiService} from '../../../../services/process-node-api-service';
 import {Box, Button, IconButton, Tab, Tabs} from '@mui/material';
-import {alpha, keyframes} from '@mui/material/styles';
+import {keyframes} from '@mui/material/styles';
 import {Link, Outlet, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {useProcessDetailsPageContext} from '../../process-details-page-context';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
@@ -25,8 +25,6 @@ import {getNodeName} from '../process-flow-editor/utils/node-utils';
 import {isApiError} from '../../../../../../models/api-error';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
-import {type ProcessTestClaimEntity} from '../../../../entities/process-test-claim-entity';
-import {ProcessTestClaimApiService} from '../../../../services/process-test-claim-api-service';
 import {ProcessNodeEditorSkeleton} from './process-node-editor-skeleton';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 import {useDelayedVisibility} from '../../../../../../hooks/use-delayed-visibility';
@@ -35,6 +33,11 @@ import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 import {isDerivedRuntimeElementData} from '../../../../../../models/element-data';
 import {shouldSkipProcessNodeEditorChangeBlocker} from './process-node-editor-change-blocker';
+import {flattenElements} from '../../../../../../utils/flatten-elements';
+import {
+    isUiDefinitionInputFieldElement,
+} from '../../../../../../models/elements/form/input/ui-definition-input-field-element';
+import {ProcessDataKeyHintResponse} from '../../../../entities/process-data-key-hint-response';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -56,9 +59,11 @@ export function ProcessNodeEditor(): ReactNode {
     const dispatch = useAppDispatch();
 
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
+    const [processDataKeyHints, setProcessDataKeyHints] = useState<ProcessDataKeyHintResponse[] | null>(null);
 
     const {
         editable,
+        structureEditable,
         onSave,
         onDelete,
         onStartReplaceNode,
@@ -92,6 +97,8 @@ export function ProcessNodeEditor(): ReactNode {
         hasChanged,
         dialog: changeBlockerDialog,
     } = useChangeBlocker({
+        //customTitle: 'Ungespeicherte Konfiguration',
+        //customMessage: 'Die geöffnete Knotenkonfioguration (links) hat ungespeicherte Änderungen',
         original: originalNode,
         edited: editedNode,
         shouldAllowNavigation: ({nextLocation}) => shouldSkipProcessNodeEditorChangeBlocker(nextLocation.state),
@@ -112,10 +119,11 @@ export function ProcessNodeEditor(): ReactNode {
         setShowNodeLoadedFeedback(false);
 
         (async () => {
-            const [node, configurationLayout, problems] = await Promise.all([
+            const [node, configurationLayout, problems, dataKeyHints] = await Promise.all([
                 new ProcessNodeApiService().retrieve(nodeId),
                 new ProcessNodeApiService().getConfigurationLayout(nodeId),
                 new ProcessNodeApiService().validate(nodeId),
+                new ProcessNodeApiService().getDataKeyHints(nodeId),
             ]);
             const nodeProvider = await new ProcessNodeProviderApiService()
                 .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
@@ -125,9 +133,10 @@ export function ProcessNodeEditor(): ReactNode {
                 configurationLayout,
                 nodeProvider,
                 problems,
+                dataKeyHints,
             };
         })()
-            .then(({node, configurationLayout, nodeProvider, problems}) => {
+            .then(({node, configurationLayout, nodeProvider, problems, dataKeyHints}) => {
                 if (isCancelled) {
                     return;
                 }
@@ -136,6 +145,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
                 setProblems(problems);
+                setProcessDataKeyHints(dataKeyHints);
                 if (hasEditorContent) {
                     setShowNodeLoadedFeedback(true);
                 }
@@ -236,14 +246,35 @@ export function ProcessNodeEditor(): ReactNode {
         return 'configuration';
     }, [location]);
 
+    const editorTabContentContainerRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        if (editorTabContentContainerRef.current == null) {
+            return;
+        }
+        editorTabContentContainerRef.current.scrollTo({
+            top: 0,
+            behavior: 'smooth',
+        });
+    }, [location]);
+
     const handleSaveSelected = (): void => {
-        if (!hasChanged || editedNode == null) {
+        if (!editable || !hasChanged || editedNode == null) {
             return;
         }
 
-        onSave(editedNode)
-            .then(() => {
-                setOriginalNode(editedNode);
+        const fieldsToOmit = flattenElements(layout!, false)
+            .filter((e) => isUiDefinitionInputFieldElement(e) && e.openExternalEditor)
+            .map((e) => e.id);
+
+        onSave(editedNode, {
+            query: {
+                omitConfigSave: fieldsToOmit,
+            }
+        })
+            .then((savedNode) => {
+                setOriginalNode(savedNode);
+                setEditedNode(savedNode);
+
                 dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
 
                 return new ProcessNodeApiService()
@@ -271,7 +302,7 @@ export function ProcessNodeEditor(): ReactNode {
     };
 
     const handleDeleteSelected = (): void => {
-        if (originalNode == null || provider == null) {
+        if (!structureEditable || originalNode == null || provider == null) {
             return;
         }
 
@@ -484,6 +515,7 @@ export function ProcessNodeEditor(): ReactNode {
                     </Tabs>
 
                     <Box
+                        ref={editorTabContentContainerRef}
                         sx={{
                             px: 2,
                             py: 1,
@@ -504,8 +536,9 @@ export function ProcessNodeEditor(): ReactNode {
                                     }
                                     setEditedNode(node);
                                 },
-                                isEditable: true,
+                                isEditable: editable,
                                 problems: problems,
+                                processDataKeyHints: processDataKeyHints,
                             }}
                         >
                             <Outlet/>
@@ -528,7 +561,7 @@ export function ProcessNodeEditor(): ReactNode {
                         onClick={handleSaveSelected}
                         variant="contained"
                         startIcon={<Save/>}
-                        disabled={!hasChanged || isNodeLoading}
+                        disabled={!editable || !hasChanged || isNodeLoading}
                     >
                         Konfiguration speichern
                     </Button>
@@ -536,9 +569,9 @@ export function ProcessNodeEditor(): ReactNode {
                     <Button
                         component={Link}
                         to={`/processes/${params.processId}/versions/${params.processVersion}?${searchParams.toString()}`}
-                        color="error"
+                        color={hasChanged ? 'error' : 'primary'}
                     >
-                        Abbrechen
+                        {hasChanged ? 'Abbrechen' : 'Schließen'}
                     </Button>
                 </Box>
             </Box>
@@ -550,9 +583,10 @@ export function ProcessNodeEditor(): ReactNode {
                 onClose={() => {
                     setMenuAnchorEl(null);
                 }}
+                editable={structureEditable}
                 onExportNode={handleExportSelected}
                 onReplaceNode={() => {
-                    if (!editable || originalNode == null) {
+                    if (!structureEditable || originalNode == null) {
                         return;
                     }
 

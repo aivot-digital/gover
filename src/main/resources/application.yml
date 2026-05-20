@@ -111,8 +111,9 @@ spring:
         registration:
           keycloak:
             client-id: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
+            client-secret: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_SECRET:}"
             authorization-grant-type: authorization_code
-            scope: profile,email,roles,groups
+            scope: profile,email
         provider:
           keycloak:
             issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
@@ -126,10 +127,6 @@ spring:
     port: "${GOVER_RABBITMQ_PORT}"
     username: "${GOVER_RABBITMQ_USERNAME}"
     password: "${GOVER_RABBITMQ_PASSWORD}"
-
-# Set cors configuration
-cors:
-  allowed-origins: "${GOVER_FRONTEND_ORIGINS:}"
 
 management:
   endpoints:
@@ -202,6 +199,11 @@ gover:
   sentryServer: "${GOVER_SENTRY_SERVER:}"
   sentryWebApp: "${GOVER_SENTRY_WEB_APP:}"
   environment: "${GOVER_ENVIRONMENT:}"
+  security:
+    csrfTtlSeconds: "${GOVER_CSRF_TTL_SECONDS:86400}"
+  http:
+    connectionTimeoutSeconds: "${GOVER_HTTP_CONNECTION_TIMEOUT_SECONDS:2}"
+    readTimeoutSeconds: "${GOVER_HTTP_READ_TIMEOUT_SECONDS:30}"
   fileExtensions: "${GOVER_FILE_EXTENSIONS}"
   contentTypes: "${GOVER_CONTENT_TYPES}"
   maxSubmissionCopyRetryCount: 3

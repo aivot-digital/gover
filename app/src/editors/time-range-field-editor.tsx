@@ -1,6 +1,5 @@
 import {BaseEditorProps} from './base-editor';
 import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
@@ -17,7 +16,7 @@ const modes: SelectFieldComponentOption[] = [
     },
 ];
 
-export function TimeRangeFieldEditor(props: BaseEditorProps<TimeRangeFieldElement, ElementTreeEntity>) {
+export function TimeRangeFieldEditor(props: BaseEditorProps<TimeRangeFieldElement>) {
     const {
         element,
         editable,

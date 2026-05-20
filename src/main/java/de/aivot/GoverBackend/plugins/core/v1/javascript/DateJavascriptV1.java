@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.plugins.core.v1.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -20,7 +20,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

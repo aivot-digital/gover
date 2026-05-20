@@ -6,10 +6,9 @@ import {NumberFieldComponent} from '../number-field/number-field-component';
 import {MultiCheckboxComponent} from '../multi-checkbox-field/multi-checkbox-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {SystemApiService} from '../../modules/system/system-api-service';
 
-export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, ElementTreeEntity>) {
+export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
     const {
         hasSummaryLayoutParent,
     } = props;

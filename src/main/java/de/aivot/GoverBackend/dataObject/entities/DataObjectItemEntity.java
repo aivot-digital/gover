@@ -51,22 +51,16 @@ public class DataObjectItemEntity {
     // region Equals & Hash
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
-
-        DataObjectItemEntity that = (DataObjectItemEntity) object;
-        return schemaKey.equals(that.schemaKey) && id.equals(that.id) && data.equals(that.data) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(deleted, that.deleted);
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        DataObjectItemEntity that = (DataObjectItemEntity) o;
+        return Objects.equals(schemaKey, that.schemaKey) && Objects.equals(id, that.id) && Objects.equals(data, that.data) && Objects.equals(created, that.created) &&
+                Objects.equals(updated, that.updated) && Objects.equals(deleted, that.deleted);
     }
 
     @Override
     public int hashCode() {
-        int result = schemaKey.hashCode();
-        result = 31 * result + id.hashCode();
-        result = 31 * result + data.hashCode();
-        result = 31 * result + created.hashCode();
-        result = 31 * result + updated.hashCode();
-        result = 31 * result + Objects.hashCode(deleted);
-        return result;
+        return Objects.hash(schemaKey, id, data, created, updated, deleted);
     }
 
     // endregion

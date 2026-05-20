@@ -1,10 +1,8 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
-import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -13,8 +11,8 @@ public class IdentityInputElementItem implements Serializable {
     @Nullable
     private UUID identityProviderKey;
 
-    @Nonnull
-    private Map<String, Object> identityData = new HashMap<>();
+    @Nullable
+    private Map<String, Object> identityAttributes;
 
     // region Constructors
     // Empty constructor
@@ -24,9 +22,9 @@ public class IdentityInputElementItem implements Serializable {
 
     // Full constructor
     public IdentityInputElementItem(@Nullable UUID identityProviderKey,
-                                    @Nonnull Map<String, Object> identityData) {
+                                    @Nullable Map<String, Object> identityAttributes) {
         this.identityProviderKey = identityProviderKey;
-        this.identityData = identityData;
+        this.identityAttributes = identityAttributes;
     }
 
     // endregion
@@ -37,12 +35,12 @@ public class IdentityInputElementItem implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         IdentityInputElementItem that = (IdentityInputElementItem) o;
-        return Objects.equals(identityProviderKey, that.identityProviderKey) && Objects.equals(identityData, that.identityData);
+        return Objects.equals(identityProviderKey, that.identityProviderKey) && Objects.equals(identityAttributes, that.identityAttributes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityProviderKey, identityData);
+        return Objects.hash(identityProviderKey, identityAttributes);
     }
 
     // endregion
@@ -59,13 +57,13 @@ public class IdentityInputElementItem implements Serializable {
         return this;
     }
 
-    @Nonnull
-    public Map<String, Object> getIdentityData() {
-        return identityData;
+    @Nullable
+    public Map<String, Object> getIdentityAttributes() {
+        return identityAttributes;
     }
 
-    public IdentityInputElementItem setIdentityData(@Nonnull Map<String, Object> identityData) {
-        this.identityData = identityData;
+    public IdentityInputElementItem setIdentityAttributes(@Nullable Map<String, Object> identityAttributes) {
+        this.identityAttributes = identityAttributes;
         return this;
     }
 

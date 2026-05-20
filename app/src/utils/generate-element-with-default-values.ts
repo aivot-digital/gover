@@ -5,7 +5,7 @@ import {type SubmitStepElement} from '../models/elements/steps/submit-step-eleme
 import {type AnyElement, AnyElementType} from '../models/elements/any-element';
 import {generateElementIdForType} from './id-utils';
 import {DateFieldComponentModelMode, DateFieldElement} from '../models/elements/form/input/date-field-element';
-import {RootElement} from '../models/elements/root-element';
+import {FormLayoutElement} from '../models/elements/form-layout-element';
 import {BaseElement} from '../models/elements/base-element';
 import {StepElement} from '../models/elements/steps/step-element';
 import {AlertElement} from '../models/elements/form/content/alert-element';
@@ -48,6 +48,8 @@ import {
 } from '../models/elements/form/input/no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
 import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
+import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
+import {IdentityInputFieldElement} from '../models/elements/form/input/identity-input-field-element';
 import {getDefaultElementWeight} from './element-widths';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
@@ -85,7 +87,7 @@ function makeInputBase<T extends ElementType>(t: T, id: string): Omit<BaseInputE
 }
 
 const elementConstructors: {
-    [ElementType.FormLayout]: (id: string) => RootElement;
+    [ElementType.FormLayout]: (id: string) => FormLayoutElement;
     [ElementType.Step]: (id: string) => StepElement;
     [ElementType.Alert]: (id: string) => AlertElement;
     [ElementType.GroupLayout]: (id: string) => GroupLayout;
@@ -115,7 +117,7 @@ const elementConstructors: {
     [ElementType.CodeInput]: (id: string) => CodeInputElement;
     [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
     [ElementType.UiDefinitionInput]: (id: string) => UiDefinitionInputFieldElement;
-    [ElementType.IdentityInput]: (id: string) => void;
+    [ElementType.IdentityInput]: (id: string) => IdentityInputFieldElement;
     [ElementType.TabLayout]: (id: string) => void;
     [ElementType.ChipInput]: (id: string) => ChipInputFieldElement;
     [ElementType.DateTime]: (id: string) => DateTimeFieldElement;
@@ -129,6 +131,7 @@ const elementConstructors: {
     [ElementType.DataObjectSelect]: (id: string) => DataObjectSelectFieldElement;
     [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
     [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
+    [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -142,6 +145,16 @@ const elementConstructors: {
         introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
         summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
         submitStep: generateElementWithDefaultValues(ElementType.SubmitStep) as SubmitStepElement,
+        publicTitle: undefined,
+        managingDepartmentId: undefined,
+        responsibleDepartmentId: undefined,
+        legalSupportDepartmentId: undefined,
+        technicalSupportDepartmentId: undefined,
+        imprintDepartmentId: undefined,
+        privacyDepartmentId: undefined,
+        accessibilityDepartmentId: undefined,
+        themeId: undefined,
+        pdfTemplateKey: undefined,
     }),
     [ElementType.Step]: (id) => ({
         ...makeBase(ElementType.Step, id),
@@ -316,6 +329,8 @@ const elementConstructors: {
         supportingDocuments: undefined,
         documentsToAttach: undefined,
         expectedCosts: undefined,
+        privacyText: undefined,
+        children: [],
     }),
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
@@ -368,8 +383,14 @@ const elementConstructors: {
         label: 'UI-Definition',
         elementType: undefined,
         displayContext: undefined,
+        openExternalEditor: undefined,
     }),
-    [ElementType.IdentityInput]: (id) => ({}),
+    [ElementType.IdentityInput]: (id) => ({
+        ...makeInputBase(ElementType.IdentityInput, id),
+        label: 'Identitätsnachweis',
+        options: [],
+        allowsMail: false,
+    }),
     [ElementType.TabLayout]: (id) => ({}),
     [ElementType.ChipInput]: (id) => ({
         ...makeInputBase(ElementType.ChipInput, id),
@@ -450,6 +471,11 @@ const elementConstructors: {
     [ElementType.SummaryLayout]: (id) => ({
         ...makeFormBase(ElementType.SummaryLayout, id),
         children: [],
+    }),
+    [ElementType.ProcessDataKeyInput]: (id) => ({
+        ...makeInputBase(ElementType.ProcessDataKeyInput, id),
+        label: 'Prozessdaten-Schlüssel',
+        disableWildCards: false,
     }),
 };
 

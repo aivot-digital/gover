@@ -5,8 +5,8 @@ import {CustomerShell} from './customer-shell';
 import {AppProvider} from '../../providers/app-provider';
 import {store} from '../../store.customer';
 import {Provider as StoreProvide} from 'react-redux';
-import {CustomerListPage} from '../../pages/customer-pages/customer-list-page';
 import {CustomerFormPage} from '../../pages/customer-pages/customer-form-page';
+import {CustomerListPage} from '../../pages/customer-pages/customer-list-page';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -15,16 +15,16 @@ const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
 const router = sentryCreateBrowserRouter(
     [
         {
-            element: <CustomerShell />,
-            errorElement: <CustomerShell />,
+            element: <CustomerShell/>,
+            errorElement: <CustomerShell/>,
             children: [
                 {
                     index: true,
-                    element: <CustomerListPage />,
+                    element: <CustomerListPage/>,
                 },
                 {
-                    path: '/:slug/:version?',
-                    element: <CustomerFormPage />,
+                    path: '/:processAccessKey/:formSlug',
+                    element: <CustomerFormPage/>,
                 },
             ],
         },
@@ -38,7 +38,7 @@ export function CustomerShellRouter() {
     return (
         <StoreProvide store={store}>
             <AppProvider>
-                <RouterProvider router={router} />
+                <RouterProvider router={router}/>
             </AppProvider>
         </StoreProvide>
     );

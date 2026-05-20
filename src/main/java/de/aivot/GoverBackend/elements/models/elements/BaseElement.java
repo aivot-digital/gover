@@ -75,6 +75,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = DataObjectSelectInputElement.class, name = ElementType.ID_DataObjectSelect),
         @JsonSubTypes.Type(value = NoCodeInputElement.class, name = ElementType.ID_NoCodeInput),
         @JsonSubTypes.Type(value = SummaryLayoutElement.class, name = ElementType.ID_SummaryLayout),
+        @JsonSubTypes.Type(value = ProcessDataKeyInputElement.class, name = ElementType.ID_ProcessDataKeyInput),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull
@@ -83,9 +84,6 @@ public abstract class BaseElement implements Serializable {
     private String id;
     @Nullable
     private String name;
-
-    @Nullable
-    private TestProtocolSet testProtocolSet;
 
     @Nullable
     private ElementVisibilityFunctions visibility;
@@ -114,65 +112,20 @@ public abstract class BaseElement implements Serializable {
         }
     }
 
-    @JsonIgnore
-    public ElementApprovalStatus getApproval() {
-        if (testProtocolSet == null) {
-            return ElementApprovalStatus.MissingBothApprovals;
+    public void removeInternalInformation() {
+        this.name = "";
+
+        if (this.visibility != null) {
+            this.visibility = new ElementVisibilityFunctions()
+                    .setType(this.visibility.getType())
+                    .setReferencedIds(this.visibility.getReferencedIds());
         }
 
-        var hasGeneralTest = testProtocolSet.getProfessionalTest() != null && StringUtils.isNotNullOrEmpty(testProtocolSet.getProfessionalTest().getUserId());
-
-        if (testIfTechnicalApprovalNeeded()) {
-            var hasTechnicalTest = testProtocolSet.getTechnicalTest() != null && StringUtils.isNotNullOrEmpty(testProtocolSet.getTechnicalTest().getUserId());
-
-            if (hasGeneralTest && hasTechnicalTest) {
-                return ElementApprovalStatus.Approved;
-            }
-
-            if (!hasGeneralTest && !hasTechnicalTest) {
-                return ElementApprovalStatus.MissingBothApprovals;
-            }
-
-            if (!hasGeneralTest) {
-                return ElementApprovalStatus.MissingGeneralApproval;
-            }
-
-            return ElementApprovalStatus.MissingTechnicalApproval;
-        } else {
-            if (hasGeneralTest) {
-                return ElementApprovalStatus.Approved;
-            }
-
-            return ElementApprovalStatus.MissingGeneralApproval;
+        if (this.override != null) {
+            this.override = new ElementOverrideFunctions()
+                    .setType(this.override.getType())
+                    .setReferencedIds(this.override.getReferencedIds());
         }
-    }
-
-    protected boolean testIfTechnicalApprovalNeeded() {
-        if (visibility != null) {
-            if (visibility.getJavascriptCode() != null && visibility.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (visibility.getNoCode() != null) {
-                return true;
-            }
-
-            if (visibility.getConditionSet() != null) {
-                return true;
-            }
-        }
-
-        if (override != null) {
-            if (override.getJavascriptCode() != null && override.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (override.getFieldNoCodeMap() != null) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // region Hash & Equals
@@ -182,7 +135,7 @@ public abstract class BaseElement implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
 
         BaseElement that = (BaseElement) o;
-        return type == that.type && id.equals(that.id) && Objects.equals(name, that.name) && Objects.equals(testProtocolSet, that.testProtocolSet) && Objects.equals(visibility, that.visibility) && Objects.equals(override, that.override) && Objects.equals(metadata, that.metadata);
+        return type == that.type && id.equals(that.id) && Objects.equals(name, that.name) && Objects.equals(visibility, that.visibility) && Objects.equals(override, that.override) && Objects.equals(metadata, that.metadata);
     }
 
     @Override
@@ -190,7 +143,6 @@ public abstract class BaseElement implements Serializable {
         int result = type.hashCode();
         result = 31 * result + id.hashCode();
         result = 31 * result + Objects.hashCode(name);
-        result = 31 * result + Objects.hashCode(testProtocolSet);
         result = 31 * result + Objects.hashCode(visibility);
         result = 31 * result + Objects.hashCode(override);
         result = 31 * result + Objects.hashCode(metadata);
@@ -228,16 +180,6 @@ public abstract class BaseElement implements Serializable {
 
     public BaseElement setName(@Nullable String name) {
         this.name = name;
-        return this;
-    }
-
-    @Nullable
-    public TestProtocolSet getTestProtocolSet() {
-        return testProtocolSet;
-    }
-
-    public BaseElement setTestProtocolSet(@Nullable TestProtocolSet testProtocolSet) {
-        this.testProtocolSet = testProtocolSet;
         return this;
     }
 

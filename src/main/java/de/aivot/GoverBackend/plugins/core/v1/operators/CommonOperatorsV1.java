@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.plugins.core.v1.operators;
 
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeAndOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeNotOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeOrOperator;
@@ -15,6 +15,9 @@ import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeConcatOperator
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexExtractOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeSplitOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserEmailOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserFullNameOperator;
+import de.aivot.GoverBackend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
@@ -23,6 +26,12 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
+    private final UserRepository userRepository;
+
+    public CommonOperatorsV1(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+
     @Override
     public @Nonnull String getComponentKey() {
         return "common";
@@ -37,7 +46,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -109,6 +118,10 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeRegexExtractOperator(),
                 new NoCodeRegexMatchOperator(),
                 new NoCodeSplitOperator(),
+
+                // User
+                new NoCodeUserEmailOperator(userRepository),
+                new NoCodeUserFullNameOperator(userRepository),
         };
     }
 }

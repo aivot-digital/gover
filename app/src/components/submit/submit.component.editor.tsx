@@ -4,10 +4,9 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {StringListInput} from '../string-list-input/string-list-input';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
-import {LoadedForm} from '../../slices/app-slice';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
-export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement, LoadedForm>) {
+export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>) {
     return (
         <>
             <RichTextInputComponent

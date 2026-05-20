@@ -14,7 +14,6 @@ import {LogLevelIcon} from '../log-level-icon/log-level-icon';
 import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDataDebugger} from './tabs/element-data-debugger';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {LogView} from './tabs/log-view';
 import {DerivedDataDebugger} from './tabs/derived-data-debugger';
 
@@ -30,7 +29,11 @@ function TabContent(props: PropsWithChildren<TabContentProps>) {
     }
 
     return (
-        <Box>
+        <Box
+            sx={{
+                pb: 8,
+            }}
+        >
             {
                 props.actions != null &&
                 <Box

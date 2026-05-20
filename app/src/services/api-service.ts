@@ -70,7 +70,7 @@ export class ApiService {
             method: 'POST',
             body: new URLSearchParams({
                 grant_type: 'refresh_token',
-                client_id: AppConfig.oidc.client,
+                client_id: AppConfig.oidc.clientId,
                 refresh_token: authData.refreshToken.token,
             }),
             headers: {

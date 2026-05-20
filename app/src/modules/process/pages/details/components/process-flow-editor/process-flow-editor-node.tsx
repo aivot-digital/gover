@@ -32,6 +32,7 @@ import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import Error from '@aivot/mui-material-symbols-400-outlined/dist/error/Error';
+import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -49,6 +50,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const {
         editable,
         selectedNode,
+        onSelectNode,
         onAddFollowUpNode,
         onConnectNodeToExisting,
         onStartReplaceNode,
@@ -211,6 +213,13 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     ), [outgoingEdges, provider.ports]);
     const menuItems = useMemo<ProcessActionMenuItem[]>(() => {
         const actionItems: ProcessActionMenuItem[] = editable ? [
+            {
+                label: 'Konfigurieren',
+                icon: <Edit/>,
+                onClick: () => {
+                    onSelectNode(node);
+                },
+            },
             ...(availableOutputPorts.length > 0 ? [{
                 label: 'Mit bestehendem Knoten verbinden',
                 icon: <Link/>,
@@ -258,7 +267,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 },
             },
         ];
-    }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onStartReplaceNode]);
+    }, [availableOutputPorts.length, confirm, editable, node, nodeName, onConnectNodeToExisting, onDeleteNode, onSelectNode, onStartCloneNode, onStartReplaceNode]);
 
     const runtimeMenuItems: ProcessActionMenuItem[] = useMemo(() => {
         const items: ProcessActionMenuItem[] = [];

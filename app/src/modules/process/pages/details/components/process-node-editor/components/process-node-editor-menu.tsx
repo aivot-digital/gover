@@ -7,6 +7,7 @@ interface ProcessNodeEditorMenuProps {
     anchorEl: HTMLElement | null;
     onClose: () => void;
 
+    editable: boolean;
     onExportNode: () => void;
     onReplaceNode: () => void;
     onDeleteNode: () => void;
@@ -17,6 +18,7 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
         anchorEl,
         onClose,
 
+        editable,
         onExportNode,
         onReplaceNode,
         onDeleteNode,
@@ -45,6 +47,7 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
                     label: 'Ersetzen',
                     onClick: onReplaceNode,
                     icon: <SwapHoriz/>,
+                    disabled: !editable,
                 },
                 'separator',
                 {
@@ -52,6 +55,7 @@ export function ProcessNodeEditorMenu(props: ProcessNodeEditorMenuProps) {
                     onClick: onDeleteNode,
                     icon: <Delete/>,
                     isDangerous: true,
+                    disabled: !editable,
                 }
             ]}
         />

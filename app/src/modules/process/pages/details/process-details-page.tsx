@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
+import {Box, Button, Chip, Divider, IconButton, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -50,7 +50,7 @@ import {type ProcessInstanceEventEntity} from '../../entities/process-instance-e
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {ProcessInstanceStatus} from '../../enums/process-instance-status';
-import {BaseApiService} from '../../../../services/base-api-service';
+import {BaseApiService, RequestOptions} from '../../../../services/base-api-service';
 import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
@@ -59,6 +59,8 @@ import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@mui/icons-material/Undo';
 import Redo from '@mui/icons-material/Redo';
 import Refresh from '@mui/icons-material/Refresh';
+import ChevronLeft from '@mui/icons-material/ChevronLeft';
+import ChevronRight from '@mui/icons-material/ChevronRight';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
@@ -71,14 +73,17 @@ import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
 import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test-claim-process-instances-dialog';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
-import {showExperimentalFeatures} from '../../../../hooks/use-show-experimental-features';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {generateId} from '../../../../utils/id-utils';
-import {PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY} from './components/process-node-editor/process-node-editor-change-blocker';
+import {
+    PROCESS_NODE_EDITOR_SKIP_CHANGE_BLOCKER_STATE_KEY,
+} from './components/process-node-editor/process-node-editor-change-blocker';
+import {ProcessStatus} from '../../enums/process-status';
+import {useSyncState} from '../../../../hooks/use-sync-state';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -86,6 +91,7 @@ const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
 const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
 const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
+const EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX = 24;
 
 interface RuntimeAttachment {
     key: string;
@@ -277,6 +283,10 @@ export function ProcessDetailsPage(): ReactNode {
     const [showSettingsDialog, setShowSettingsDialog] = useState(false);
     const [processNodeProblems, setProcessNodeProblems] = useState<ProcessNodeProblems[]>([]);
     const [showProcessNodeProblemsForNodes, setShowProcessNodeProblemsForNodes] = useState<Record<number, boolean>>({});
+    const [isEditorPaneCollapsed, setIsEditorPaneCollapsed] = useState(false);
+    const [hideEditorPaneExpandButton, setHideEditorPaneExpandButton] = useState(false);
+    const [editorPaneWidth, setEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
+    const [lastExpandedEditorPaneWidth, setLastExpandedEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -293,11 +303,6 @@ export function ProcessDetailsPage(): ReactNode {
         nodeId: null,
         version: 0,
     });
-
-    const [currentTestClaim, setCurrentTestClaim] = useState<{
-        claim: ProcessTestClaimEntity;
-        user: User | null;
-    } | null>(null);
 
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
@@ -406,6 +411,12 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, [params]);
 
+    const [currentTestClaim, setCurrentTestClaim] = useSyncState<{
+        claim: ProcessTestClaimEntity;
+        user: User | null;
+    } | null>(`process_${processId}_${processVersion}_test_claim`, null);
+
+
     useEffect(() => {
         if (processFlow == null || processVersion == null) {
             setProcessNodeProblems([]);
@@ -489,6 +500,50 @@ export function ProcessDetailsPage(): ReactNode {
 
         return processFlow.nodes.find((node) => node.id === selectedNodeId) ?? null;
     }, [params.nodeId, processFlow]);
+
+    const handleCollapseEditorPane = useCallback((): void => {
+        setLastExpandedEditorPaneWidth((previousWidth) => Math.max(previousWidth, editorPaneWidth, MIN_EDITOR_DRAWER_WIDTH_PX));
+        setEditorPaneWidth(0);
+        setIsEditorPaneCollapsed(true);
+    }, [editorPaneWidth]);
+
+    const handleExpandEditorPane = useCallback((): void => {
+        setEditorPaneWidth((currentWidth) => currentWidth > 0 ? currentWidth : lastExpandedEditorPaneWidth);
+        setIsEditorPaneCollapsed(false);
+    }, [lastExpandedEditorPaneWidth]);
+
+    const handleEditorPaneDragEnd = useCallback((sizes: number[]): void => {
+        const nextEditorPaneWidth = sizes[1] ?? MIN_EDITOR_DRAWER_WIDTH_PX;
+        if (nextEditorPaneWidth <= 0) {
+            return;
+        }
+
+        setHideEditorPaneExpandButton(false);
+        setEditorPaneWidth(nextEditorPaneWidth);
+        setLastExpandedEditorPaneWidth(nextEditorPaneWidth);
+    }, []);
+
+    const handleSelectNode = useCallback((node: ProcessNodeEntity | null): void => {
+        if (processFlow == null) {
+            return;
+        }
+
+        if (node == null) {
+            navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
+            return;
+        }
+
+        handleExpandEditorPane();
+        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
+    }, [handleExpandEditorPane, navigate, processFlow, searchParams]);
+
+    useEffect(() => {
+        if (selectedNode == null) {
+            return;
+        }
+
+        handleExpandEditorPane();
+    }, [handleExpandEditorPane, selectedNode?.id]);
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
@@ -1182,12 +1237,13 @@ export function ProcessDetailsPage(): ReactNode {
         }
     };
 
-    const handleSaveNode = async (node: ProcessNodeEntity): Promise<ProcessNodeEntity> => {
+    const handleSaveNode = async (node: ProcessNodeEntity, options?: RequestOptions): Promise<ProcessNodeEntity> => {
         if (processFlow == null) {
             throw new Error('Process flow is not loaded');
         }
 
-        const updated = await new ProcessNodeApiService().update(node.id, node);
+        const updated = await new ProcessNodeApiService()
+            .update(node.id, node, options);
 
         setProcessFlow({
             ...processFlow,
@@ -1208,7 +1264,8 @@ export function ProcessDetailsPage(): ReactNode {
             children: (
                 <>
                     <Typography>
-                        Sie können den Prozess exportieren, um ihn z. B. in einem anderen System weiterzuverwenden oder zu archivieren.
+                        Sie können den Prozess exportieren, um ihn z. B. in einem anderen System weiterzuverwenden oder
+                        zu archivieren.
                         Der Export erfolgt im offenen .json-Format.
                     </Typography>
 
@@ -1220,8 +1277,10 @@ export function ProcessDetailsPage(): ReactNode {
                         }}
                     >
                         <p>
-                            Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind für die importierende Person nicht sichtbar.
-                            Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und Referenzen auf auslösende Formulare.
+                            Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind
+                            für die importierende Person nicht sichtbar.
+                            Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und
+                            Referenzen auf auslösende Formulare.
                         </p>
                         <p>
                             Bei Bedarf müssen Sie diese Informationen nach einem Import im Zielsystem neu konfigurieren.
@@ -1229,14 +1288,14 @@ export function ProcessDetailsPage(): ReactNode {
                     </AlertComponent>
                 </>
             ),
-            confirmButtonText: 'Prozess als .json-Datei herunterladen'
+            confirmButtonText: 'Prozess als .json-Datei herunterladen',
         })
             .then((confirmed) => {
                 if (!confirmed) {
                     return null;
                 }
                 return new ProcessDefinitionApiService()
-                    .export(processId, processVersion)
+                    .export(processId, processVersion);
             })
             .then((exp) => {
                 if (exp == null) {
@@ -1254,14 +1313,14 @@ export function ProcessDetailsPage(): ReactNode {
             confirm({
                 title: 'Testmodus bereits aktiv',
                 children: (
-                        <Typography>
-                            Der Prozess befindet sich bereits im Testmodus.
-                            Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen Starten können.
-                        </Typography>
+                    <Typography>
+                        Der Prozess befindet sich bereits im Testmodus.
+                        Sie müssen den aktuellen Testmodus beenden, bevor Sie einen neuen Starten können.
+                    </Typography>
                 ),
                 confirmButtonText: 'Ok',
                 hideCancelButton: true,
-            })
+            });
             return;
         }
 
@@ -1283,7 +1342,7 @@ export function ProcessDetailsPage(): ReactNode {
                     <>
                         <Typography>
                             Möchten Sie die Prozessmodellierung testen?
-                            Dabei wird die weitere Bearbeitung des Prozesses gesperrt, bis der Test abgeschlossen ist.
+                            Die Prozessversion kann während des Tests nicht veröffentlicht werden.
                             Sie können den Test jederzeit abbrechen.
                             Alle gestarteten Vorgänge werden dabei beendet und gelöscht.
                         </Typography>
@@ -1296,7 +1355,8 @@ export function ProcessDetailsPage(): ReactNode {
                                 }}
                             >
                                 Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
-                                Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der ungültigen Konfiguration kommen.
+                                Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der
+                                ungültigen Konfiguration kommen.
 
                                 <ul>
                                     {
@@ -1315,7 +1375,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                         }
                                                     </ul>
                                                 </li>
-                                            )
+                                            );
                                         })
                                     }
                                 </ul>
@@ -1346,7 +1406,7 @@ export function ProcessDetailsPage(): ReactNode {
                 user,
             });
 
-            dispatch(showSuccessSnackbar('Der Test wurde gestartet. Der Prozess ist nun für die Bearbeitung gesperrt.'));
+            dispatch(showSuccessSnackbar('Der Test wurde gestartet.'));
         } catch (err) {
             dispatch(showApiErrorSnackbar(err, 'Der Test konnte nicht gestartet werden.'));
         }
@@ -1500,7 +1560,7 @@ export function ProcessDetailsPage(): ReactNode {
             })
             .finally(() => {
                 dispatch(clearLoadingMessage());
-            })
+            });
     }, []);
     const handleImportNode = useCallback(async (context: NodeImportContext): Promise<void> => {
         if (processFlow == null) {
@@ -1796,11 +1856,8 @@ export function ProcessDetailsPage(): ReactNode {
                 ariaLabel: 'Einstellungen',
                 icon: <Settings/>,
                 onClick: () => {
-                    if (showExperimentalFeatures()) {
-                        setShowSettingsDialog(true);
-                    } else {
-                        notImplemented();
-                    }
+                    setShowSettingsDialog(true);
+                    setShowSettingsDialog(true);
                 },
             },
             {
@@ -1883,6 +1940,9 @@ export function ProcessDetailsPage(): ReactNode {
         );
     }
 
+    const isProcessEditable = processFlow.version.status === ProcessStatus.Drafted;
+    const isProcessStructureEditable = isProcessEditable && currentTestClaim == null;
+
     return (
         <PageWrapper
             title="Prozess"
@@ -1893,9 +1953,11 @@ export function ProcessDetailsPage(): ReactNode {
                 sx={{
                     height: '100vh',
                     '--focus-border': (theme) => theme.palette.secondary.main,
+                    position: 'relative',
                 }}
             >
-                <Allotment>
+                <Allotment onDragStart={() => setHideEditorPaneExpandButton(true)}
+                           onDragEnd={handleEditorPaneDragEnd}>
                     <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
                         <Box
                             sx={{
@@ -1931,7 +1993,7 @@ export function ProcessDetailsPage(): ReactNode {
                                     isFlowEditorReady || shouldKeepFlowEditorMounted ?
                                         <ReactFlowProvider>
                                             <ProcessFlowEditor
-                                                editable={currentTestClaim == null}
+                                                editable={isProcessStructureEditable}
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
@@ -2065,13 +2127,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                     ) : undefined
                                                 }
                                                 selectedNode={selectedNode}
-                                                onSelectNode={(node) => {
-                                                    if (node == null) {
-                                                        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}?${searchParams.toString()}`);
-                                                        return;
-                                                    }
-                                                    navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
-                                                }}
+                                                onSelectNode={handleSelectNode}
                                                 onAddFollowUpNode={(fromNodeId, viaPort) => {
                                                     setNewNodeFor({
                                                         fromNodeId,
@@ -2181,6 +2237,7 @@ export function ProcessDetailsPage(): ReactNode {
                     <Allotment.Pane
                         minSize={MIN_EDITOR_DRAWER_WIDTH_PX}
                         preferredSize={MIN_EDITOR_DRAWER_WIDTH_PX}
+                        visible={!isEditorPaneCollapsed}
                     >
                         <Paper
                             sx={{
@@ -2195,7 +2252,8 @@ export function ProcessDetailsPage(): ReactNode {
                         >
                             <ProcessDetailsPageProvider
                                 value={{
-                                    editable: currentTestClaim == null,
+                                    editable: isProcessEditable,
+                                    structureEditable: isProcessStructureEditable,
                                     onSave: handleSaveNode,
                                     onDelete: handleDeleteNode,
                                     onStartReplaceNode: handleOpenReplaceNodeDialog,
@@ -2208,8 +2266,42 @@ export function ProcessDetailsPage(): ReactNode {
                                 <Outlet/>
                             </ProcessDetailsPageProvider>
                         </Paper>
+
+
                     </Allotment.Pane>
                 </Allotment>
+
+                {
+                    /* TODO: Implement this again, when the corresponding user story is worked on.
+                    <IconButton
+                        aria-label={isEditorPaneCollapsed ? 'Editor einblenden' : 'Editor ausblenden'}
+                        onClick={isEditorPaneCollapsed ? handleExpandEditorPane : handleCollapseEditorPane}
+                        sx={{
+                            display: hideEditorPaneExpandButton ? 'none' : undefined,
+                            position: 'absolute',
+                            fontSize: '50%',
+                            top: '50%',
+                            right: isEditorPaneCollapsed
+                                ? 0
+                                : editorPaneWidth,
+                            transform: 'translateY(-50%)',
+                            zIndex: 40,
+                            width: EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX,
+                            height: 56,
+                            borderRadius: '12px 0 0 12px',
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: 'background.paper',
+                            boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.14)',
+                            '&:hover': {
+                                bgcolor: 'background.paper',
+                            },
+                        }}
+                    >
+                        {isEditorPaneCollapsed ? <ChevronLeft/> : <ChevronRight/>}
+                    </IconButton>
+                    */
+                }
             </Box>
 
             <SelectNodeProviderDialog

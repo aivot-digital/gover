@@ -2,7 +2,6 @@ import React, {useState} from 'react';
 import {type ImageElement} from '../../models/elements/form/content/image-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {Alert, AlertTitle, Grid, Typography} from '@mui/material';
 import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
@@ -10,7 +9,7 @@ import ImageSearchOutlinedIcon from '@mui/icons-material/ImageSearchOutlined';
 import {SelectAssetDialog} from '../../dialogs/select-asset-dialog/select-asset-dialog';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 
-export function ImageEditor(props: BaseEditorProps<ImageElement, ElementTreeEntity>) {
+export function ImageEditor(props: BaseEditorProps<ImageElement>) {
     const [showImageSearch, setShowImageSearch] = useState(false);
 
     return (

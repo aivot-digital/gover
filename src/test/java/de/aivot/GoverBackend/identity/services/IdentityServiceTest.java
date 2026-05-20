@@ -11,7 +11,6 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.secrets.entities.SecretEntity;
 import de.aivot.GoverBackend.secrets.services.SecretService;
-import de.aivot.GoverBackend.system.properties.CORSProperties;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.util.UriComponentsBuilder;
@@ -35,7 +34,6 @@ class IdentityServiceTest {
     private IdentityService identityService;
     private HttpService httpService;
     private SecretService secretService;
-    private CORSProperties corsProperties;
 
     @BeforeEach
     void setUp() {
@@ -44,10 +42,8 @@ class IdentityServiceTest {
         identityCacheRepository = mock(IdentityCacheRepository.class);
         httpService = mock(HttpService.class);
         secretService = mock(SecretService.class);
-        corsProperties = mock(CORSProperties.class);
         identityService = new IdentityService(
                 goverConfig,
-                corsProperties,
                 secretService,
                 httpService,
                 identityProviderService,
@@ -190,6 +186,25 @@ class IdentityServiceTest {
                 identityService.handleCallback(providerKey, sessionId, authorizationCode, origin)
         );
         assertEquals("Die Identitätssitzung existiert nicht.", exception.getMessage());
+    }
+
+    @Test
+    void createRedirectURL_ShouldThrowException_WhenOriginDoesNotMatchGoverHostname() throws ResponseException {
+        UUID providerKey = UUID.randomUUID();
+        String origin = "https://example.com";
+
+        IdentityProviderEntity provider = new IdentityProviderEntity();
+        provider.setKey(providerKey);
+        provider.setIsEnabled(true);
+
+        when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
+        when(goverConfig.getGoverHostname()).thenReturn("https://other.example.com");
+
+        ResponseException exception = assertThrows(ResponseException.class, () ->
+                identityService.createRedirectURL(providerKey, origin, null)
+        );
+
+        assertEquals("Der Referer-Header ist ungültig oder nicht erlaubt.", exception.getMessage());
     }
 
     @Test

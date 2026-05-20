@@ -3,10 +3,9 @@ import {type ReplicatingContainerLayout} from '../../models/elements/form/layout
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {NumberFieldComponent} from '../number-field/number-field-component';
-import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout, ElementTreeEntity>) {
+export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingContainerLayout>) {
     const minRequiredError = (
         props.element.minimumRequiredSets != null &&
         props.element.maximumSets != null &&
@@ -22,7 +21,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             <Grid
                 size={{
                     xs: 12,
-                    lg: 6
+                    lg: 6,
                 }}>
                 <TextFieldComponent
                     value={props.element.headlineTemplate ?? ''}
@@ -39,12 +38,12 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             <Grid
                 size={{
                     xs: 12,
-                    lg: 6
-                }} />
+                    lg: 6,
+                }}/>
             <Grid
                 size={{
                     xs: 12,
-                    lg: 6
+                    lg: 6,
                 }}>
                 <TextFieldComponent
                     value={props.element.addLabel ?? ''}
@@ -60,7 +59,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             <Grid
                 size={{
                     xs: 12,
-                    lg: 6
+                    lg: 6,
                 }}>
                 <TextFieldComponent
                     value={props.element.removeLabel ?? ''}
@@ -78,7 +77,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
+                        lg: 6,
                     }}>
                     <NumberFieldComponent
                         value={props.element.minimumRequiredSets ?? 1}
@@ -98,7 +97,7 @@ export function ReplicatingContainerEditor(props: BaseEditorProps<ReplicatingCon
             <Grid
                 size={{
                     xs: 12,
-                    lg: 6
+                    lg: 6,
                 }}>
                 <NumberFieldComponent
                     value={props.element.maximumSets ?? undefined}

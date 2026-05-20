@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.submission.dtos;
 
-import java.util.List;
+import java.util.UUID;
 
 public record SubmissionStatusResponseDTO(
-        List<String> startedProcessAccessKeys
+        UUID startedProcessAccessKey
 ) {
 }

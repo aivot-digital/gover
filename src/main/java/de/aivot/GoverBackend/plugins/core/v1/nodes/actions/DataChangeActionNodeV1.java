@@ -7,13 +7,17 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.*;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
+import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
-import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
+import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -23,12 +27,21 @@ import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.services.DiffService;
@@ -45,27 +58,26 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
-public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
+public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeActionNodeV1.DataChangeActionNodeConfig> {
     public static final String NODE_KEY = "data_change";
 
     private static final String PORT_OUTPUT = "output";
 
-    private static final String EVENT_SAVE = "save";
     private static final String EVENT_COMPLETE = "complete";
 
-    private static final String RUNTIME_DATA_DRAFT_KEY = "draftData";
     private static final String DIFF_ROOT_ID = "__data_change_root__";
     private static final String DIFF_WRAPPER_KEY = "data";
 
     private static final String OUTPUT_DATA = "data";
     private static final String OUTPUT_DIFF = "diff";
+    private static final String OUTPUT_REMARK = "remark";
     private static final String OUTPUT_PROCESSED_BY_USER_ID = "processedByUserId";
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
 
     private static final String TASK_VIEW_ROOT_ID = "data-change-task-view";
-    private static final String TASK_VIEW_DESCRIPTION_HEADLINE_ID = "data-change-task-view-description-headline";
-    private static final String TASK_VIEW_DESCRIPTION_CONTENT_ID = "data-change-task-view-description-content";
     private static final String TASK_VIEW_UI_HEADLINE_ID = "data-change-task-view-ui-headline";
+    private static final String TASK_VIEW_REMARK_SPACER_ID = "data-change-task-view-remark-spacer";
+    private static final String TASK_VIEW_REMARK_FIELD_ID = "dataChangeRemark";
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
@@ -93,7 +105,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -105,19 +117,19 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getName() {
-        return "Daten ändern";
+        return "Datenanpassung";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erlaubt einer Mitarbeiter:in, konfigurierte Vorgangsdaten in einer Gover-UI zu bearbeiten, zwischenzuspeichern und zu übernehmen.";
+        return "Erlaubt einer Mitarbeiter:in, Daten in einer Gover-UI zu ändern, hinzuzufügen oder zu entfernen.";
     }
 
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement layout;
         try {
             layout = ElementPOJOMapper.createFromPOJO(DataChangeActionNodeConfig.class);
@@ -185,6 +197,11 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                         "Die Liste aller Änderungen zwischen den ursprünglichen und den übernommenen Vorgangsdaten."
                 ),
                 new ProcessNodeOutput(
+                        OUTPUT_REMARK,
+                        "Änderungsvermerk",
+                        "Der optionale interne Vermerk zur vorgenommenen Datenanpassung."
+                ),
+                new ProcessNodeOutput(
                         OUTPUT_PROCESSED_BY_USER_ID,
                         "Bearbeitet durch",
                         "Die ID der Mitarbeiter:in, die die Datenänderung übernommen hat."
@@ -198,38 +215,9 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull de.aivot.GoverBackend.process.entities.ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AuthoredElementValues configuration,
-                                                     @Nonnull DerivedRuntimeElementData derivedRuntimeElementData) throws ResponseException {
-        /* TODO: Fix this validation
-        boolean hasErrors = false;
-
-        try {
-            resolveDataDefinition(derivedRuntimeElementData.getEffectiveValues().get(DataChangeActionNodeConfig.DATA_DEFINITION_FIELD_ID));
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            setValidationError(derivedRuntimeElementData, DataChangeActionNodeConfig.DATA_DEFINITION_FIELD_ID, e.getMessage());
-            hasErrors = true;
-        }
-
-        try {
-            resolveAssignmentContext(derivedRuntimeElementData.getEffectiveValues().get(DataChangeActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID));
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            setValidationError(derivedRuntimeElementData, DataChangeActionNodeConfig.ASSIGNMENT_CONTEXT_FIELD_ID, e.getMessage());
-            hasErrors = true;
-        }
-
-        if (hasErrors) {
-            throw ResponseException.badRequest(derivedRuntimeElementData);
-        }
-         */
-
-        return null;
-    }
-
-    @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var config = loadConfiguration(context.getConfiguration().getEffectiveValues());
-        var workingProcessData = extractWorkingProcessData(context.getProcessData());
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<DataChangeActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var config = context.getConfigurationOfExecutingNode();
+        var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(
@@ -238,7 +226,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                         context.getThisProcessInstance().getId(),
                         context.getThisTask().getPreviousProcessNodeId(),
                         context.getThisProcessInstance().getAssignedUserId(),
-                        config.assignmentContext(),
+                        config.assignmentContext,
                         List.of(ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK)
                 )
                 .orElseThrow(() -> new ProcessNodeExecutionExceptionInvalidAssignment(
@@ -254,25 +242,41 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        return buildStaffTaskView(loadConfigurationForUi(context));
+    public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
+        var config = context.getConfigurationOfExecutingNode();
+
+        var layout = new GroupLayoutElement();
+        layout.setId(TASK_VIEW_ROOT_ID);
+
+        var children = new java.util.ArrayList<BaseFormElement>();
+
+        var uiHeadline = new HeadlineContentElement();
+        uiHeadline.setId(TASK_VIEW_UI_HEADLINE_ID);
+        uiHeadline.setContent("Daten zu dieser Aufgabe");
+        children.add(uiHeadline);
+        children.add(cloneDataDefinition(config.dataDefinition));
+
+        var remarkSpacer = new SpacerContentElement();
+        remarkSpacer.setId(TASK_VIEW_REMARK_SPACER_ID);
+        remarkSpacer.setHeight("16");
+        children.add(remarkSpacer);
+
+        var remarkField = new RichTextInputElement();
+        remarkField.setId(TASK_VIEW_REMARK_FIELD_ID);
+        remarkField.setLabel("Änderungsvermerk");
+        remarkField.setHint("Optionaler interner Vermerk zur vorgenommenen Datenanpassung.");
+        remarkField.setRequired(false);
+        remarkField.setWeight(6.0);
+        children.add(remarkField);
+
+        layout.setChildren(children);
+        return layout;
     }
 
     @Nonnull
     @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) {
+    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) {
         return List.of(
-                // new TaskViewEvent(
-                //         "Speichern",
-                //         EVENT_SAVE
-                // ),
-                // new TaskViewEvent(
-                //         "Speichern und abschließen",
-                //         EVENT_COMPLETE,
-                //         "outlined",
-                //         null,
-                //         "right"
-                // ),
                 new TaskViewEvent(
                         "Aufgabe abschließen",
                         EVENT_COMPLETE
@@ -282,34 +286,20 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        var config = loadConfigurationForUi(context);
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context) throws ResponseException {
+        var config = context.getConfigurationOfExecutingNode();
 
-        var initialData = elementDataTransformService
-                .buildEffectiveValues(config.dataDefinition(), context.getThisTask().getProcessData())
+        return elementDataTransformService
+                .buildEffectiveValues(config.dataDefinition, context.getThisTask().getProcessData())
                 .toAuthoredElementValues();
-
-        var draftData = readDraftData(context.getThisTask().getRuntimeData());
-        if (draftData == null || draftData.isEmpty()) {
-            return initialData;
-        }
-
-        var mergedData = new AuthoredElementValues();
-        mergedData.putAll(initialData);
-        mergedData.putAll(draftData);
-        return mergedData;
     }
 
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                  @Nonnull AuthoredElementValues update,
-                                                                  @Nullable String event) throws ResponseException {
-        if (event == null) {
-            return Optional.of(updateRuntimeData(context, update));
-        }
-
-        var config = loadConfigurationForUi(context);
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context,
+                                                                         @Nonnull AuthoredElementValues update,
+                                                                         @Nonnull String event) throws ResponseException {
+        var config = context.getConfigurationOfExecutingNode();
 
         var derivationRequest = new ElementDerivationRequest(
                 config.dataDefinition,
@@ -321,51 +311,31 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                 .derive(derivationRequest, derivationLogger);
 
         return switch (event) {
-            case EVENT_SAVE -> Optional.of(saveDraft(context, update));
-            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues()));
+            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues(), update));
             default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         };
     }
 
     @Nonnull
-    private ProcessNodeExecutionResultTaskAssigned saveDraft(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                             @Nonnull AuthoredElementValues update) {
-        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
-        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
-
-        var result = ProcessNodeExecutionResultTaskAssigned.of(resolveAssignedUserId(context));
-        result.setRuntimeData(runtimeData);
-        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
-        result.setProcessData(context.getThisTask().getProcessData());
-        return result;
-    }
-
-    @Nonnull
-    private ProcessNodeExecutionResultTaskUpdated updateRuntimeData(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                    @Nonnull AuthoredElementValues update) {
-        var runtimeData = new LinkedHashMap<>(context.getThisTask().getRuntimeData());
-        runtimeData.put(RUNTIME_DATA_DRAFT_KEY, copyAuthoredElementValues(update));
-
-        var result = new ProcessNodeExecutionResultTaskUpdated();
-        result.setRuntimeData(runtimeData);
-        result.setNodeData(new LinkedHashMap<>(context.getThisTask().getNodeData()));
-        result.setProcessData(context.getThisTask().getProcessData());
-        return result;
-    }
-
-    @Nonnull
-    private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                 @Nonnull ResolvedConfiguration config,
-                                                                 @Nonnull EffectiveElementValues update) {
-        var payloadUpdate = elementDataTransformService.buildPayload(config.dataDefinition(), update);
+    private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context,
+                                                                 @Nonnull DataChangeActionNodeConfig config,
+                                                                 @Nonnull EffectiveElementValues update,
+                                                                 @Nonnull AuthoredElementValues authoredUpdate) {
+        var payloadUpdate = elementDataTransformService.buildPayload(config.dataDefinition, update);
         var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
-        var updatedProcessData = mergeProcessData(originalProcessData, payloadUpdate);
+        var updatedProcessData = elementDataTransformService.buildPayload(
+                config.dataDefinition,
+                update,
+                ObjectMapperFactory.Utils.convertToMap(originalProcessData)
+        );
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
+        var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);
         nodeData.put(OUTPUT_DIFF, diff);
-        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
+        nodeData.put(OUTPUT_REMARK, remark);
+        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, Instant.now().toString());
 
         var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
@@ -373,122 +343,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         result.setNodeData(nodeData);
         result.setRuntimeData(Map.of());
         return result;
-    }
-
-    @Nonnull
-    private static GroupLayoutElement buildStaffTaskView(@Nonnull ResolvedConfiguration config) {
-        var layout = new GroupLayoutElement();
-        layout.setId(TASK_VIEW_ROOT_ID);
-
-        var children = new java.util.ArrayList<BaseFormElement>();
-
-        if (config.taskDescription() != null && !config.taskDescription().isBlank()) {
-            var descriptionHeadline = new HeadlineContentElement();
-            descriptionHeadline.setId(TASK_VIEW_DESCRIPTION_HEADLINE_ID);
-            descriptionHeadline.setContent("Aufgabenbeschreibung");
-
-            var descriptionContent = new RichTextContentElement();
-            descriptionContent.setId(TASK_VIEW_DESCRIPTION_CONTENT_ID);
-            descriptionContent.setContent(config.taskDescription());
-
-            children.add(descriptionHeadline);
-            children.add(descriptionContent);
-        }
-
-        var uiHeadline = new HeadlineContentElement();
-        uiHeadline.setId(TASK_VIEW_UI_HEADLINE_ID);
-        uiHeadline.setContent("Daten zu dieser Aufgabe");
-        children.add(uiHeadline);
-        children.add(cloneDataDefinition(config.dataDefinition()));
-        layout.setChildren(children);
-        return layout;
-    }
-
-    @Nonnull
-    private ResolvedConfiguration loadConfigurationForUi(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        try {
-            return loadConfiguration(context.getRuntimeElementData().getEffectiveValues());
-        } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-            throw ResponseException.internalServerError(e);
-        }
-    }
-
-    @Nonnull
-    private ResolvedConfiguration loadConfiguration(@Nonnull Map<String, Object> rawConfiguration)
-            throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        DataChangeActionNodeConfig config;
-        try {
-            var configuration = new EffectiveElementValues();
-            configuration.putAll(rawConfiguration);
-            config = ElementPOJOMapper.mapToPOJO(configuration, DataChangeActionNodeConfig.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des Datenänderungs-Knotens ist ungültig: %s",
-                    e.getMessage()
-            );
-        }
-
-        return new ResolvedConfiguration(
-                normalizeTaskDescription(config.taskDescription),
-                resolveDataDefinition(config.dataDefinition),
-                resolveAssignmentContext(config.assignmentContext)
-        );
-    }
-
-    @Nullable
-    private static String normalizeTaskDescription(@Nullable String taskDescription) {
-        if (taskDescription == null || taskDescription.isBlank()) {
-            return null;
-        }
-
-        return taskDescription;
-    }
-
-    @Nonnull
-    private static GroupLayoutElement resolveDataDefinition(@Nullable Object rawDataDefinition)
-            throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (rawDataDefinition == null) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den Datenänderungs-Knoten muss eine Gover-UI definiert sein."
-            );
-        }
-
-        final BaseElement element;
-        try {
-            element = ObjectMapperFactory
-                    .getInstance()
-                    .convertValue(rawDataDefinition, BaseElement.class);
-        } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die konfigurierte Gover-UI ist ungültig: %s",
-                    e.getMessage()
-            );
-        }
-
-        if (!(element instanceof GroupLayoutElement dataDefinition)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die konfigurierte Gover-UI muss mit einer Gruppe beginnen."
-            );
-        }
-
-        return dataDefinition;
-    }
-
-    @Nonnull
-    private static AssignmentContextInputElementValue resolveAssignmentContext(@Nullable Object rawAssignmentContext)
-            throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var assignmentContext = AssignmentContextInputElement._formatValue(rawAssignmentContext);
-        if (assignmentContext == null ||
-                assignmentContext.getDomainAndUserSelection() == null ||
-                assignmentContext.getDomainAndUserSelection().isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Für den Datenänderungs-Knoten muss ein Personenkreis definiert sein."
-            );
-        }
-
-        return assignmentContext;
     }
 
     @Nonnull
@@ -502,31 +356,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         }
 
         return copiedElement;
-    }
-
-    @Nullable
-    private static AuthoredElementValues readDraftData(@Nonnull Map<String, Object> runtimeData) {
-        var rawDraftData = runtimeData.get(RUNTIME_DATA_DRAFT_KEY);
-        if (rawDraftData == null) {
-            return null;
-        }
-
-        return ObjectMapperFactory
-                .getInstance()
-                .convertValue(rawDraftData, AuthoredElementValues.class);
-    }
-
-    @Nonnull
-    private static AuthoredElementValues copyAuthoredElementValues(@Nonnull AuthoredElementValues source) {
-        return ObjectMapperFactory
-                .getInstance()
-                .convertValue(source, AuthoredElementValues.class);
-    }
-
-    @Nonnull
-    private static String resolveAssignedUserId(@Nonnull ProcessNodeExecutionContextUIStaff context) {
-        var assignedUserId = context.getThisTask().getAssignedUserId();
-        return assignedUserId != null ? assignedUserId : context.getUser().getId();
     }
 
     @Nonnull
@@ -551,32 +380,6 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private static Map<String, Object> mergeProcessData(@Nonnull Map<String, Object> originalProcessData,
-                                                        @Nonnull Map<String, Object> payloadUpdate) {
-        var mergedProcessData = ObjectMapperFactory.Utils.convertToMap(originalProcessData);
-        mergeInto(mergedProcessData, payloadUpdate);
-        return mergedProcessData;
-    }
-
-    private static void mergeInto(@Nonnull Map<String, Object> target, @Nonnull Map<String, Object> patch) {
-        for (var entry : patch.entrySet()) {
-            var key = entry.getKey();
-            var patchValue = entry.getValue();
-            var targetValue = target.get(key);
-
-            if (patchValue instanceof Map<?, ?> patchMap && targetValue instanceof Map<?, ?> targetMap) {
-                var targetMapValue = castStringObjectMap(targetMap);
-                mergeInto(targetMapValue, castStringObjectMap(patchMap));
-                target.put(key, targetMapValue);
-            } else if (patchValue instanceof Map<?, ?> patchMap) {
-                target.put(key, castStringObjectMap(patchMap));
-            } else {
-                target.put(key, patchValue);
-            }
-        }
-    }
-
-    @Nonnull
     private static List<DiffItem> createProcessDataDiff(@Nonnull Map<String, Object> originalProcessData,
                                                         @Nonnull Map<String, Object> updatedProcessData) {
         var originalForDiff = Map.<String, Object>of(
@@ -591,11 +394,27 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
         return DiffService
                 .createDiff(new JSONObject(originalForDiff), new JSONObject(updatedForDiff))
                 .stream()
-                .filter(diffItem -> !"/id".equals(diffItem.field()))
+                .filter(diffItem -> !"id".equals(diffItem.field()))
                 .map(diffItem -> {
-                    if (diffItem.field().startsWith("/" + DIFF_WRAPPER_KEY)) {
+                    if (diffItem.field().equals(DIFF_WRAPPER_KEY)) {
+                        return new DiffItem(
+                                "",
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + ".")) {
                         return new DiffItem(
                                 diffItem.field().substring(DIFF_WRAPPER_KEY.length() + 1),
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + "[")) {
+                        return new DiffItem(
+                                diffItem.field().substring(DIFF_WRAPPER_KEY.length()),
                                 diffItem.oldValue(),
                                 diffItem.newValue()
                         );
@@ -606,60 +425,39 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition {
                 .toList();
     }
 
-    @Nonnull
-    private static Map<String, Object> castStringObjectMap(@Nonnull Object rawMap) {
-        var result = new LinkedHashMap<String, Object>();
-        if (rawMap instanceof Map<?, ?> map) {
-            for (var entry : map.entrySet()) {
-                if (entry.getKey() instanceof String key) {
-                    result.put(key, entry.getValue());
-                }
-            }
+    @Nullable
+    private static String normalizeRemark(@Nullable Object rawRemark) {
+        if (rawRemark == null) {
+            return null;
         }
-        return result;
+
+        var remark = rawRemark.toString();
+        return remark.isBlank() ? null : remark;
     }
 
-    private static void setValidationError(@Nonnull DerivedRuntimeElementData derivedRuntimeElementData,
-                                           @Nonnull String fieldId,
-                                           @Nonnull String error) {
-        derivedRuntimeElementData
-                .getElementStates()
-                .computeIfAbsent(fieldId, ignored -> new ComputedElementState())
-                .setError(error);
-    }
-
-    private record ResolvedConfiguration(
-            @Nullable String taskDescription,
-            @Nonnull GroupLayoutElement dataDefinition,
-            @Nonnull AssignmentContextInputElementValue assignmentContext
-    ) {
+    @Nonnull
+    @Override
+    public Class<DataChangeActionNodeConfig> getNodeConfigurationClass() {
+        return DataChangeActionNodeConfig.class;
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class DataChangeActionNodeConfig {
-        public static final String TASK_DESCRIPTION_FIELD_ID = "task_description";
         public static final String DATA_DEFINITION_FIELD_ID = "data_definition";
         public static final String ASSIGNMENT_CONTEXT_FIELD_ID = "assignment_context";
-
-        @InputElementPOJOBinding(id = TASK_DESCRIPTION_FIELD_ID, type = ElementType.RichTextInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Aufgabenbeschreibung"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Hinweis für die später zugewiesene Mitarbeiter:in, was in dieser Aufgabe zu tun ist."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = false)
-        })
-        public String taskDescription;
 
         @InputElementPOJOBinding(id = DATA_DEFINITION_FIELD_ID, type = ElementType.UiDefinitionInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Bearbeitbare Daten"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Gover-UI, mit der die Mitarbeiter:in die Vorgangsdaten bearbeiten kann."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
-        public Object dataDefinition;
+        public GroupLayoutElement dataDefinition;
 
         @InputElementPOJOBinding(id = ASSIGNMENT_CONTEXT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie den Personenkreis, der diese Aufgabe bearbeiten darf."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
-        public Object assignmentContext;
+        public AssignmentContextInputElementValue assignmentContext;
     }
 }

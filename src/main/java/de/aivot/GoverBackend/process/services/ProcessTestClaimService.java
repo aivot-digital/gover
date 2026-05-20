@@ -91,4 +91,8 @@ public class ProcessTestClaimService implements EntityService<ProcessTestClaimEn
 
         repository.delete(entity);
     }
+
+    public Optional<ProcessTestClaimEntity> retrieveByAccessKey(Integer processId, String accessKey) {
+        return repository.findByProcessIdAndAccessKey(processId, accessKey);
+    }
 }

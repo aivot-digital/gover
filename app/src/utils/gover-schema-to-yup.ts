@@ -39,6 +39,12 @@ import {
     createDomainAndUserSelectValueKey,
     normalizeDomainAndUserSelectItem,
 } from '../components/domain-user-select-field/domain-user-select-options';
+import {
+    IdentityInputFieldElement,
+    IdentityInputFieldElementItem,
+} from '../models/elements/form/input/identity-input-field-element';
+import {extractIdentityInputMailValue} from './identity-input-field-utils';
+import {validateEmail} from './validate-email';
 
 
 export function goverSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
@@ -94,7 +100,9 @@ const YupSchemaMap: {
     [ElementType.AssignmentContext]: assignmentContextFieldToYup,
     [ElementType.DataModelSelect]: dynamicSelectFieldToYup,
     [ElementType.DataObjectSelect]: dynamicSelectFieldToYup,
+    [ElementType.ProcessDataKeyInput]: processDataKeyInputFieldToYup,
     [ElementType.NoCodeInput]: noCodeInputFieldToYup,
+    [ElementType.IdentityInput]: identityInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
 };
 
@@ -197,6 +205,65 @@ function dynamicSelectFieldToYup(elem: DataModelSelectFieldElement | DataObjectS
     }
 
     return selectFieldSchema;
+}
+
+function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
+    let processDataKeySchema: StringSchema<string | undefined | null> = yup
+        .string()
+        .trim();
+
+    if (elem.required) {
+        processDataKeySchema = processDataKeySchema
+            .required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
+    } else {
+        processDataKeySchema = processDataKeySchema
+            .nullable();
+    }
+
+    return processDataKeySchema
+        .matches(
+            /^[a-zA-Z0-9.*_]+$/,
+            'Der Prozessdaten-Schlüssel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+        );
+}
+
+function identityInputFieldToYup(elem: IdentityInputFieldElement): Schema {
+    return yup
+        .mixed()
+        .nullable()
+        .test(
+            'identity-input-value',
+            `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+            function (value) {
+                const typedValue = value as IdentityInputFieldElementItem | null | undefined;
+
+                if (typedValue == null) {
+                    return elem.required !== true || this.createError({
+                        message: `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+                    });
+                }
+
+                if (typedValue.identityProviderKey != null) {
+                    return (
+                        typedValue.identityAttributes != null &&
+                        typeof typedValue.identityAttributes === 'object' &&
+                        !Array.isArray(typedValue.identityAttributes)
+                    ) || this.createError({
+                        message: 'Die Identifizierung ist unvollständig.',
+                    }) as any;
+                }
+
+                if (elem.allowsMail !== true) {
+                    return this.createError({
+                        message: `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+                    });
+                }
+
+                return validateEmail(extractIdentityInputMailValue(typedValue)) || this.createError({
+                    message: 'Bitte geben Sie eine gueltige E-Mail-Adresse ein.',
+                });
+            },
+        );
 }
 
 function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: ComputedElementStates): Schema {

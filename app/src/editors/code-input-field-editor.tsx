@@ -1,6 +1,5 @@
 import {Grid} from '@mui/material';
 import {BaseEditorProps} from './base-editor';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {CodeInputElement, CodeInputFieldLanguage} from '../models/elements/form/input/code-input-element';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
 import {SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
@@ -34,7 +33,7 @@ const languageOptions: SelectFieldComponentOption[] = [
     },
 ];
 
-export function CodeInputFieldEditor(props: BaseEditorProps<CodeInputElement, ElementTreeEntity>) {
+export function CodeInputFieldEditor(props: BaseEditorProps<CodeInputElement>) {
     const {
         element,
         editable,

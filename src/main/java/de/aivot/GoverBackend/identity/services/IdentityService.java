@@ -15,7 +15,6 @@ import de.aivot.GoverBackend.identity.models.IdentityAuthTokenData;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.secrets.services.SecretService;
-import de.aivot.GoverBackend.system.properties.CORSProperties;
 import de.aivot.GoverBackend.utils.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +58,6 @@ public class IdentityService {
     private static final String PKCE_METHOD_S256 = "S256";
 
     private final GoverConfig goverConfig;
-    private final CORSProperties corsProperties;
     private final SecretService secretService;
     private final HttpService httpService;
     private final IdentityProviderService identityProviderService;
@@ -67,13 +65,11 @@ public class IdentityService {
 
     @Autowired
     public IdentityService(GoverConfig goverConfig,
-                           CORSProperties corsProperties,
                            SecretService secretService,
                            HttpService httpService,
                            IdentityProviderService identityProviderService,
                            IdentityCacheRepository identityCacheRepository) {
         this.goverConfig = goverConfig;
-        this.corsProperties = corsProperties;
         this.secretService = secretService;
         this.httpService = httpService;
         this.identityProviderService = identityProviderService;
@@ -405,41 +401,22 @@ public class IdentityService {
                     .badRequest("Der Referer-Header ist ungültig.");
         }
 
-        var allowedOrigins = new LinkedList<>(corsProperties.getAllowedOrigins());
-        allowedOrigins.add(goverConfig.getGoverHostname());
-
-        boolean validReferrerOriginFound = false;
-        for (var hostname : allowedOrigins) {
-            // Get the hostname uri
-            URI hostnameURI;
-            try {
-                hostnameURI = new URI(hostname);
-                hostnameURI.toURL();
-            } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
-                logger
-                        .atError()
-                        .setCause(e)
-                        .setMessage("Der Hostname " + hostname + " ist ungültig.")
-                        .log();
-                continue;
-            }
-
-            // Check if the referer is allowed
-            if (!hostnameURI.getScheme().equalsIgnoreCase(refererURI.getScheme())) {
-                continue;
-            }
-            if (!hostnameURI.getHost().equalsIgnoreCase(refererURI.getHost())) {
-                continue;
-            }
-            if (hostnameURI.getPort() != refererURI.getPort()) {
-                continue;
-            }
-
-            validReferrerOriginFound = true;
-            break;
+        URI goverHostnameUri;
+        try {
+            goverHostnameUri = new URI(goverConfig.getGoverHostname());
+            goverHostnameUri.toURL();
+        } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
+            logger
+                    .atError()
+                    .setCause(e)
+                    .setMessage("Der konfigurierte Gover-Hostname ist ungültig.")
+                    .log();
+            throw ResponseException.internalServerError("Der konfigurierte Gover-Hostname ist ungültig.");
         }
 
-        if (!validReferrerOriginFound) {
+        if (!goverHostnameUri.getScheme().equalsIgnoreCase(refererURI.getScheme())
+                || !goverHostnameUri.getHost().equalsIgnoreCase(refererURI.getHost())
+                || goverHostnameUri.getPort() != refererURI.getPort()) {
             throw ResponseException
                     .badRequest("Der Referer-Header ist ungültig oder nicht erlaubt.");
         }

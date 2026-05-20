@@ -13,9 +13,9 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionContextInit;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.GoverBackend.process.models.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -136,36 +135,44 @@ class PdfActionNodeV1Test {
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
     }
 
-    private static ProcessNodeExecutionContextInit context(String html) {
-        return new ProcessNodeExecutionContextInit(
+    private static ProcessNodeExecutionInitContext context(String html) {
+        return new ProcessNodeExecutionInitContext(
                 logger(),
                 processNode(),
                 processInstance(),
                 task(),
                 null,
                 new ProcessExecutionData(),
-                runtime(
-                        PdfActionNodeV1.PdfActionNodeConfig.FILE_NAME_FIELD_ID, "report",
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE,
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_CODE_FIELD_ID, html
-                )
+                codeConfiguration(html)
         );
     }
 
-    private static ProcessNodeExecutionContextInit assetContext(UUID assetKey) {
-        return new ProcessNodeExecutionContextInit(
+    private static ProcessNodeExecutionInitContext assetContext(UUID assetKey) {
+        return new ProcessNodeExecutionInitContext(
                 logger(),
                 processNode(),
                 processInstance(),
                 task(),
                 null,
                 new ProcessExecutionData(),
-                runtime(
-                        PdfActionNodeV1.PdfActionNodeConfig.FILE_NAME_FIELD_ID, "report",
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY,
-                        PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_ASSET_KEY_FIELD_ID, assetKey.toString()
-                )
+                assetConfiguration(assetKey)
         );
+    }
+
+    private static PdfActionNodeV1.PdfActionNodeConfig codeConfiguration(String html) {
+        var configuration = new PdfActionNodeV1.PdfActionNodeConfig();
+        configuration.fileName = "report";
+        configuration.contentHtmlSource = PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE;
+        configuration.contentHtml = html;
+        return configuration;
+    }
+
+    private static PdfActionNodeV1.PdfActionNodeConfig assetConfiguration(UUID assetKey) {
+        var configuration = new PdfActionNodeV1.PdfActionNodeConfig();
+        configuration.fileName = "report";
+        configuration.contentHtmlSource = PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY;
+        configuration.contentHtmlAssetKey = assetKey.toString();
+        return configuration;
     }
 
     private PdfActionNodeV1 createNode(TemplateRenderService templateRenderService) {

@@ -1,13 +1,15 @@
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import {Blocker, useBlocker} from 'react-router-dom';
+import {Blocker, useBeforeUnload, useBlocker} from 'react-router-dom';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
+import {AuthService} from '../services/auth-service';
 
 interface ChangeBlockerProps<T> {
     original: T;
     edited: T;
     customTitle?: string;
     customMessage?: string;
+    customConfirmButtonText?: string;
     useDeepEquals?: boolean;
     isActive?: boolean;
     shouldAllowNavigation?: (navigation: {
@@ -26,6 +28,7 @@ interface ChangeBlockerProps<T> {
 
 const DEFAULT_TITLE = 'Ungespeicherte Änderungen';
 const DEFAULT_MESSAGE = 'Sie haben ungespeicherte Änderungen. Möchten Sie die Seite wirklich verlassen? Dabei gehen alle ungespeicherten Änderungen verloren.';
+const DEFAULT_CONFIRM_BUTTON_TEXT = 'Änderungen verwerfen';
 
 export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
     const {
@@ -33,6 +36,7 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
         edited,
         customTitle = DEFAULT_TITLE,
         customMessage = DEFAULT_MESSAGE,
+        customConfirmButtonText = DEFAULT_CONFIRM_BUTTON_TEXT,
         useDeepEquals = true,
         isActive = true,
         shouldAllowNavigation,
@@ -47,14 +51,27 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
             return !deepEquals(original, edited);
         }
 
-        return shallowEquals(original, edited);
+        return !shallowEquals(original, edited);
     }, [original, edited, useDeepEquals, isActive]);
+
+    useBeforeUnload(useCallback((event: BeforeUnloadEvent) => {
+        if (!hasChanged || !AuthService.isAuthenticated()) {
+            return;
+        }
+
+        event.preventDefault();
+        event.returnValue = '';
+    }, [hasChanged]));
 
     const [pendingBlocker, setPendingBlocker] = useState<Blocker | null>(null);
 
     const [showDialog, setShowDialog] = useState(false);
 
     const blocker = useBlocker(({currentLocation, nextLocation}) => {
+        if (!AuthService.isAuthenticated()) {
+            return false;
+        }
+
         if (shouldAllowNavigation?.({currentLocation, nextLocation}) === true) {
             return false;
         }
@@ -101,6 +118,8 @@ export function useChangeBlocker<T>(props: ChangeBlockerProps<T>) {
                 title={customTitle}
                 onConfirm={handleConfirm}
                 onCancel={handleCancel}
+                confirmButtonText={customConfirmButtonText}
+                confirmButtonColor="error"
             >
                 {customMessage}
             </ConfirmDialog>

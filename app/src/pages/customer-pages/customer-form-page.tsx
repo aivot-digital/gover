@@ -1,182 +1,504 @@
 import {useParams, useSearchParams} from 'react-router-dom';
-import React, {useEffect, useMemo, useState} from 'react';
-import {LoadingPlaceholder} from '../../components/loading-placeholder/loading-placeholder';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box, ThemeProvider, useTheme} from '@mui/material';
-import {createAppTheme} from '../../theming/themes';
-import {ViewDispatcherComponent} from '../../components/view-dispatcher.component';
-import {MetaElement} from '../../components/meta-element/meta-element';
-import {selectLoadedForm, showDialog, updateLoadedForm} from '../../slices/app-slice';
+import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {flattenElements} from '../../utils/flatten-elements';
-import {HelpDialog, HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
-import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
-import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
-import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {Theme} from '../../modules/themes/models/theme';
 import {useApi} from '../../hooks/use-api';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {SnackbarProvider} from '../../providers/snackbar-provider';
 import {selectIdentityId} from '../../slices/identity-slice';
-import {AuthoredElementValues, createDerivedRuntimeElementData, DerivedRuntimeElementData} from '../../models/element-data';
-import {CustomerInputService} from '../../services/customer-input-service';
-import {setErrorMessage} from '../../slices/shell-slice';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+    ElementDerivationResponse,
+} from '../../models/element-data';
+import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../slices/shell-slice';
 import {isApiError} from '../../models/api-error';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
-import {formCitizenDetailsResponseDTO} from '../../modules/forms/dtos/form-citizen-details-response-dto';
-import {stringOrUndefined} from '../../utils/string-utils';
+import {FormLayoutElement} from '../../models/elements/form-layout-element';
+import {BaseApiService} from '../../services/base-api-service';
+import {SnackbarProvider} from 'notistack';
+import {MetaElement} from '../../components/meta-element/meta-element';
+import {setCurrentStep} from '../../slices/stepper-slice';
+import {FormHeaderComponent} from '../../components/form/form-header-component';
+import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
+import {ProcessEntity} from '../../modules/process/entities/process-entity';
+import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {HelpDialog, HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
+import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
+import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
+import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
+import {AnyElement} from '../../models/elements/any-element';
+import {flattenElements, flattenElementsWithParents} from '../../utils/flatten-elements';
+import {RootComponentFooter} from '../../components/form/root-component-footer';
+import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
+import {SUBMIT_EVENT} from '../../components/form/root.component.view';
+import {FileUploadElementItem, isFileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
+import {walkAuthoredElementValues} from '../../utils/element-data-utils';
+import {ElementType} from '../../data/element-type/element-type';
+import {Submitted} from '../../components/submitted/submitted';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
+import {IdentityStateQueryParam} from '../../modules/identity/constants/identity-state-query-param';
+import {IdentityResultState} from '../../modules/identity/enums/identity-result-state';
+import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
+import {extractVisibleFormSteps} from '../../utils/visible-form-steps';
+import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
+import {isIdentityInputFieldElement} from '../../models/elements/form/input/identity-input-field-element';
+import {
+    clampStepIndex,
+    clearPendingIdentityInputAuthContext,
+    getIdentityInputOptionForProvider,
+    isElementNestedInReplicatingContainer,
+    loadPendingIdentityInputAuthContext,
+} from '../../utils/identity-input-field-utils';
+import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
 
-export const DialogSearchParam = 'dialog';
+interface RetrieveResponse {
+    layoutElement: FormLayoutElement;
+    node: ProcessNodeEntity;
+    process: ProcessEntity;
+    version: ProcessVersionEntity;
+}
 
 export function CustomerFormPage() {
     const baseTheme = useTheme();
     const api = useApi();
 
     const [searchParams, setSearchParams] = useSearchParams();
+    const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
     const {
-        slug,
-        version,
-    } = useParams();
+        processAccessKey,
+        formSlug,
+    } = useParams<{
+        processAccessKey: string;
+        formSlug: string;
+    }>();
 
     const dispatch = useAppDispatch();
-    const form = useAppSelector(selectLoadedForm);
+
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const [data, setData] = useState<RetrieveResponse | null>(null);
+    const [allElements, setAllElements] = useState<AnyElement[] | null>(null);
+
+    const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const [derivedDataVersion, setDerivedDataVersion] = useState(0);
+    const [pendingStepRestore, setPendingStepRestore] = useState<{
+        stepId: string | null;
+        stepIndex: number;
+        minimumDerivedDataVersion: number;
+    } | null>(null);
+
+    const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
+    const handledIdentityCallbackRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        if (processAccessKey == null || formSlug == null) {
+            return;
+        }
+
+        new BaseApiService()
+            .get<RetrieveResponse>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/`, {
+                query: {
+                    'test-claim': testClaimKey,
+                },
+            })
+            .then((res) => {
+                setData(res);
+                setAllElements(flattenElements(res.layoutElement, false));
+                setDerivedData(createDerivedRuntimeElementData());
+                setDerivedDataVersion(0);
+            })
+            .catch((err) => {
+                if (isApiError(err)) {
+                    if (err.status === 404) {
+                        dispatch(setErrorMessage({
+                            status: 404,
+                            message: 'Das Formular konnte nicht gefunden werden',
+                        }));
+                    } else if (err.displayableToUser) {
+                        dispatch(setErrorMessage({
+                            status: err.status,
+                            message: err.message,
+                        }));
+                    } else {
+                        dispatch(setErrorMessage({
+                            status: err.status,
+                            message: 'Ein unbekannter Fehler ist aufgetreten',
+                        }));
+                    }
+                }
+            });
+    }, [processAccessKey, formSlug, testClaimKey]);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
     const identityId = useAppSelector(selectIdentityId);
 
-    const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
-    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
-
     const [theme, setTheme] = useState<Theme>();
 
-    const handleSetElementData = (data: AuthoredElementValues, storeData: boolean = true) => {
-        setAuthoredElementValues(data);
+    const {
+        layoutElement,
+        node,
+        process,
+        version,
+    } = data ?? {};
 
-        if (storeData && form != null) {
-            CustomerInputService
-                .storeCustomerInput(form.form.slug, form.version.version, form.version.rootElement, data);
+    useEffect(() => {
+        if (startedProcessAccessKey != null || layoutElement == null) {
+            return;
+        }
+
+        const callbackIdentityId = searchParams.get(IdentityIdQueryParam);
+        if (callbackIdentityId == null || handledIdentityCallbackRef.current === callbackIdentityId) {
+            return;
+        }
+
+        handledIdentityCallbackRef.current = callbackIdentityId;
+
+        const callbackStateRaw = searchParams.get(IdentityStateQueryParam);
+        const callbackState = callbackStateRaw != null ? parseInt(callbackStateRaw, 10) : NaN;
+        const pendingAuthContext = loadPendingIdentityInputAuthContext();
+
+        const cleanupCallbackState = () => {
+            clearPendingIdentityInputAuthContext();
+            clearIdentityCallbackSearchParams(searchParams, setSearchParams);
+        };
+
+        if (pendingAuthContext == null) {
+            cleanupCallbackState();
+            return;
+        }
+
+        if (Number.isNaN(callbackState) || callbackState !== IdentityResultState.Success) {
+            dispatch(showErrorSnackbar('Die Identifizierung konnte nicht abgeschlossen werden.'));
+            cleanupCallbackState();
+            return;
+        }
+
+        let isCancelled = false;
+
+        IdentityProvidersApiService
+            .fetchIdentity(callbackIdentityId)
+            .then((identityData) => {
+                if (isCancelled) {
+                    return;
+                }
+
+                const flattenedElementsWithParents = flattenElementsWithParents(layoutElement, [], false);
+                const sourceEntry = flattenedElementsWithParents
+                    .find(({element}) => element.id === pendingAuthContext.elementId);
+
+                if (sourceEntry == null || !isIdentityInputFieldElement(sourceEntry.element)) {
+                    dispatch(showErrorSnackbar('Das verknüpfte Identitätselement konnte nicht gefunden werden.'));
+                    cleanupCallbackState();
+                    return;
+                }
+
+                const sourceElement = sourceEntry.element;
+                const selectedOption = getIdentityInputOptionForProvider(
+                    sourceElement,
+                    pendingAuthContext.optionIdentityProviderKey ?? identityData.providerKey,
+                );
+
+                let nextAuthoredValues: AuthoredElementValues = {
+                    ...(pendingAuthContext.authoredElementValues ?? {}),
+                    [sourceElement.id]: {
+                        identityProviderKey: identityData.providerKey,
+                        identityAttributes: identityData.attributes,
+                    },
+                };
+
+                nextAuthoredValues = applyIdentityInputAttributeMappings(
+                    flattenedElementsWithParents,
+                    sourceElement.id,
+                    nextAuthoredValues,
+                    selectedOption?.attributeMappings ?? [],
+                    identityData.attributes,
+                );
+
+                setAuthoredElementValues(nextAuthoredValues);
+
+                const nextDerivedDataVersion = derivedDataVersion + 1;
+                handleDerive(nextAuthoredValues, ['ALL'])
+                    .then((nextDerivedData) => {
+                        if (isCancelled) {
+                            return;
+                        }
+
+                        setDerivedData(nextDerivedData);
+                        setDerivedDataVersion((current) => current + 1);
+                        setPendingStepRestore({
+                            stepId: pendingAuthContext.stepId,
+                            stepIndex: pendingAuthContext.stepIndex,
+                            minimumDerivedDataVersion: nextDerivedDataVersion,
+                        });
+
+                        cleanupCallbackState();
+                    })
+                    .catch((error) => {
+                        console.error('Error deriving restored identity data:', error);
+                        if (!isCancelled) {
+                            dispatch(showErrorSnackbar('Die Formulardaten konnten nach der Identifizierung nicht aktualisiert werden.'));
+                            cleanupCallbackState();
+                        }
+                    });
+            })
+            .catch((error) => {
+                console.error('Error restoring identity callback data:', error);
+                if (!isCancelled) {
+                    dispatch(showErrorSnackbar('Die Identifizierungsdaten konnten nicht geladen werden.'));
+                    cleanupCallbackState();
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [
+        authoredElementValues,
+        derivedDataVersion,
+        dispatch,
+        layoutElement,
+        searchParams,
+        setSearchParams,
+        startedProcessAccessKey,
+    ]);
+
+    useEffect(() => {
+        if (layoutElement == null || pendingStepRestore == null || derivedDataVersion < pendingStepRestore.minimumDerivedDataVersion) {
+            return;
+        }
+
+        const visibleSteps = extractVisibleFormSteps(layoutElement.children, derivedData);
+        const restoredStepIndex = pendingStepRestore.stepId == null ?
+            -1 :
+            visibleSteps.findIndex((step) => step.id === pendingStepRestore.stepId);
+
+        dispatch(setCurrentStep(
+            clampStepIndex(
+                restoredStepIndex >= 0 ? restoredStepIndex : pendingStepRestore.stepIndex,
+                visibleSteps.length,
+            ),
+        ));
+        setPendingStepRestore(null);
+    }, [pendingStepRestore, derivedData, derivedDataVersion, dispatch, layoutElement]);
+
+    const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
+        if (event !== SUBMIT_EVENT || layoutElement == null || node == null) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.append('inputs', JSON.stringify(values));
+
+        const files: FileUploadElementItem[] = [];
+        walkAuthoredElementValues(layoutElement, values, (element, value) => {
+            if (element.type === ElementType.FileUpload && Array.isArray(value) && value.length > 0 && isFileUploadElementItem(value[0])) {
+                files.push(...value);
+            }
+        });
+
+        for (const file of files) {
+            const blob = await fetch(file.uri).then((r) => r.blob());
+            formData.append('files', blob, file.name);
+        }
+
+        dispatch(setLoadingMessage({
+            blocking: true,
+            estimatedTime: 1000,
+            message: 'Formular wird abgesendet',
+        }));
+
+        try {
+            const startRes = await new BaseApiService()
+                .postFormData<{
+                    startedProcessAccessKey: string;
+                }>(
+                    `/api/public/forms/v1/${process?.accessKey}/${node.configuration.formSlug}/submit/`,
+                    formData,
+                    {
+                        query: {
+                            'test-claim': testClaimKey,
+                        },
+                    },
+                );
+
+            setStartedProcessAccessKey(startRes.startedProcessAccessKey);
+        } finally {
+            dispatch(clearLoadingMessage());
         }
     };
 
-    useEffect(() => {
-        dispatch(showDialog(metaDialogName ?? undefined));
-    }, [metaDialogName]);
-
-    useEffect(() => {
-        if (slug == null) {
-            return;
-        }
-
-        new FormApiService()
-            .retrieveBySlugAndVersion(slug, version, identityId)
-            .then((application) => {
-                const form = formCitizenDetailsResponseDTO(application);
-                dispatch(updateLoadedForm(form));
+    const handleDerive = (values: AuthoredElementValues, skipErrorsForElements: string[]) => {
+        return new BaseApiService()
+            .post<AuthoredElementValues, ElementDerivationResponse>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/derive/`, values, {
+                query: {
+                    'test-claim': testClaimKey,
+                    skipErrorsFor: skipErrorsForElements,
+                    skipVisibilitiesFor: [],
+                    skipValuesFor: [],
+                    skipOverridesFor: [],
+                },
             })
-            .catch(err => {
-                if (err.status === 404) {
-                    dispatch(setErrorMessage({
-                        status: 404,
-                        message: 'Das angeforderte Formular wurde nicht gefunden.',
-                    }));
-                } else if (isApiError(err) && err.displayableToUser) {
-                    dispatch(setErrorMessage({
-                        status: err.status,
-                        message: err.message,
-                    }));
-                } else {
-                    dispatch(setErrorMessage({
-                        status: 500,
-                        message: 'Beim Laden des Formulars ist ein unbekannter Fehler aufgetreten.',
-                    }));
-                    console.error(err);
-                }
+            .then((res) => {
+                return res.elementData;
             });
-    }, [slug, api, identityId]);
+    };
 
-    useEffect(() => {
-        if (slug == null) {
-            return;
-        }
+    if (layoutElement == null || node == null || process == null || version == null) {
+        return null;
+    }
 
-        new FormApiService()
-            .getFormTheme(slug, version != null ? parseInt(version) : undefined)
-            .then(setTheme)
-            .catch(() => {
-                // Ignore theme loading errors
-            });
-    }, [slug, version]);
+    return (
+        <ThemeProvider theme={baseTheme}>
+            <SnackbarProvider>
+                <MetaElement
+                    faviconUrl={'' /* TODO: new FormApiService().getFormFaviconLink(form.form.slug, form.version.version)*/}
+                    title={layoutElement.tabTitle ?? layoutElement.headline ?? ''}
+                    titlePrefix={provider}
+                />
 
-    const _theme = useMemo(() => {
-        return createAppTheme(theme, baseTheme);
-    }, [theme, baseTheme]);
-
-    if (form == null) {
-        return (
-            <LoadingPlaceholder />
-        );
-    } else {
-        const allElements = flattenElements(form.version.rootElement);
-        const pageTitle = stringOrUndefined(form.version.rootElement.tabTitle) ??
-            stringOrUndefined(form.version.publicTitle) ??
-            stringOrUndefined(form.version.rootElement.headline) ??
-            '';
-
-        return (
-            <ThemeProvider theme={_theme}>
-                <SnackbarProvider>
-                    <MetaElement
-                        faviconUrl={new FormApiService().getFormFaviconLink(form.form.slug, form.version.version)}
-                        title={pageTitle}
-                        titlePrefix={provider}
+                <Box
+                    sx={{
+                        backgroundColor: 'white',
+                    }}
+                    ref={scrollContainerRef}
+                >
+                    <FormHeaderComponent
+                        form={layoutElement}
+                        node={node}
+                        process={process}
+                        version={version}
+                        onDeleteFormData={() => {
+                            dispatch(setCurrentStep(0));
+                            setAuthoredElementValues({});
+                            setDerivedData(createDerivedRuntimeElementData());
+                            setDerivedDataVersion(0);
+                            setPendingStepRestore(null);
+                            setStartedProcessAccessKey(null);
+                        }}
                     />
 
-                    <Box
-                        sx={{
-                            backgroundColor: 'white',
-                        }}
-                    >
-                        <ViewDispatcherComponent
-                            rootElement={form.version.rootElement}
-                            allElements={allElements}
-                            element={form.version.rootElement}
-                            isBusy={false}
-                            isDeriving={false}
-                            mode="viewer"
+                    {
+                        startedProcessAccessKey == null &&
+                        <ElementDerivationContext
+                            element={layoutElement}
                             authoredElementValues={authoredElementValues}
                             derivedData={derivedData}
-                            onAuthoredElementValuesChange={(data) => handleSetElementData(data)}
-                            onDerivedDataChange={setDerivedData}
-                            derivationTriggerIdQueue={[]}
-                            disableVisibility={false}
+                            onDerivedDataChange={(nextDerivedData) => {
+                                setDerivedData(nextDerivedData);
+                                setDerivedDataVersion((current) => current + 1);
+                            }}
+                            onAuthoredElementValuesChange={setAuthoredElementValues}
+                            onEvent={handleSubmitEvent}
+                            onDeriveOverride={handleDerive}
                         />
-                    </Box>
+                    }
+                    {
+                        startedProcessAccessKey != null &&
+                        <Submitted
+                            startedProcessAccessKey={startedProcessAccessKey}
+                            formElement={layoutElement}
+                            node={node}
+                            process={process}
+                            version={version}
+                        />
+                    }
 
-                    <HelpDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === HelpDialogId}
+                    <RootComponentFooter
+                        form={layoutElement}
+                        node={node}
+                        process={process}
+                        version={version}
                     />
+                </Box>
 
-                    <PrivacyDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === PrivacyDialogId}
-                    />
+                <HelpDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === HelpDialogId}
+                    form={layoutElement}
+                />
 
-                    <ImprintDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === ImprintDialogId}
-                    />
+                <PrivacyDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === PrivacyDialogId}
+                    form={layoutElement}
+                />
 
-                    <AccessibilityDialog
-                        onHide={() => dispatch(showDialog(undefined))}
-                        open={metaDialog === AccessibilityDialogId}
-                    />
-                </SnackbarProvider>
-            </ThemeProvider>
-        );
+                <ImprintDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === ImprintDialogId}
+                    form={layoutElement}
+                />
+
+                <AccessibilityDialog
+                    onHide={() => dispatch(showDialog(undefined))}
+                    open={metaDialog === AccessibilityDialogId}
+                    form={layoutElement}
+                />
+            </SnackbarProvider>
+        </ThemeProvider>
+    );
+}
+
+function clearIdentityCallbackSearchParams(
+    searchParams: URLSearchParams,
+    setSearchParams: ReturnType<typeof useSearchParams>[1],
+): void {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete(IdentityIdQueryParam);
+    nextSearchParams.delete(IdentityStateQueryParam);
+
+    setSearchParams(nextSearchParams, {
+        replace: true,
+    });
+}
+
+function applyIdentityInputAttributeMappings(
+    flattenedElementsWithParents: ReturnType<typeof flattenElementsWithParents>,
+    sourceElementId: string,
+    authoredElementValues: AuthoredElementValues,
+    attributeMappings: Array<{
+        fromIdentityProviderAttribute: string | null | undefined;
+        toFormElementWithId: string | null | undefined;
+    }>,
+    identityAttributes: Record<string, string>,
+): AuthoredElementValues {
+    const eligibleTargetIds = new Set(
+        flattenedElementsWithParents
+            .filter(({element, parents}) => (
+                element.id !== sourceElementId &&
+                isAnyInputElement(element) &&
+                !isElementNestedInReplicatingContainer(parents)
+            ))
+            .map(({element}) => element.id),
+    );
+
+    const nextAuthoredElementValues = {
+        ...authoredElementValues,
+    };
+
+    for (const mapping of attributeMappings) {
+        const attributeKey = mapping.fromIdentityProviderAttribute;
+        const targetElementId = mapping.toFormElementWithId;
+        if (attributeKey == null || targetElementId == null || !eligibleTargetIds.has(targetElementId)) {
+            continue;
+        }
+
+        const mappedValue = identityAttributes[attributeKey];
+        if (mappedValue == null) {
+            continue;
+        }
+
+        nextAuthoredElementValues[targetElementId] = mappedValue;
     }
+
+    return nextAuthoredElementValues;
 }

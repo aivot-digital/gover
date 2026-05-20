@@ -25,6 +25,9 @@ import {DataModelSelectFieldElement} from './data-model-select-field-element';
 import {DataObjectSelectFieldElement} from './data-object-select-field-element';
 import {NoCodeInputFieldElement} from './no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from './ui-definition-input-field-element';
+import {ProcessDataKeyInputFieldElement} from './process-data-key-input-field-element';
+import {IdentityInputFieldElement} from './identity-input-field-element';
+import {ElementIsInput} from '../../../../data/element-type/element-is-input';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -51,39 +54,14 @@ export type AnyInputElement = (
     AssignmentContextFieldElement |
     DataModelSelectFieldElement |
     DataObjectSelectFieldElement |
+    ProcessDataKeyInputFieldElement |
     UiDefinitionInputFieldElement |
+    IdentityInputFieldElement |
     NoCodeInputFieldElement |
 
     ReplicatingContainerLayout
     );
 
 export function isAnyInputElement(obj: any): obj is AnyInputElement {
-    return obj != null && 'type' in obj && [
-        ElementType.Checkbox,
-        ElementType.Date,
-        ElementType.MultiCheckbox,
-        ElementType.Number,
-        ElementType.Radio,
-        ElementType.Select,
-        ElementType.Table,
-        ElementType.Text,
-        ElementType.Time,
-        ElementType.FileUpload,
-        ElementType.CodeInput,
-        ElementType.FunctionInput,
-        ElementType.RichTextInput,
-        ElementType.ChipInput,
-        ElementType.DateTime,
-        ElementType.DateRange,
-        ElementType.TimeRange,
-        ElementType.DateTimeRange,
-        ElementType.MapPoint,
-        ElementType.DomainAndUserSelect,
-        ElementType.AssignmentContext,
-        ElementType.DataModelSelect,
-        ElementType.DataObjectSelect,
-        ElementType.UiDefinitionInput,
-        ElementType.NoCodeInput,
-        ElementType.ReplicatingContainer,
-    ].includes(obj.type);
+    return obj != null && 'type' in obj && (ElementIsInput[obj.type as ElementType] ?? false);
 }

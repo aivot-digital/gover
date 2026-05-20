@@ -3,13 +3,16 @@ import {getElementNameForType} from '../data/element-type/element-names';
 import {type AnyElement} from '../models/elements/any-element';
 import {isStringNotNullOrEmpty, stringOrDefault} from './string-utils';
 
+export function generateInternalComponentTitle(component: AnyElement | null | undefined): string {
+    return generateComponentTitle(component, false);
+}
 
-export function generateComponentTitle(component: AnyElement | null | undefined): string {
+export function generateComponentTitle(component: AnyElement | null | undefined, publicFacing: boolean = false): string {
     if (component == null) {
         return '';
     }
 
-    if (component.name != null && isStringNotNullOrEmpty(component.name)) {
+    if (!publicFacing && component.name != null && isStringNotNullOrEmpty(component.name)) {
         return component.name;
     }
 
@@ -53,8 +56,10 @@ export function generateComponentTitle(component: AnyElement | null | undefined)
         case ElementType.AssignmentContext:
         case ElementType.DataModelSelect:
         case ElementType.DataObjectSelect:
+        case ElementType.ProcessDataKeyInput:
         case ElementType.NoCodeInput:
         case ElementType.UiDefinitionInput:
+        case ElementType.IdentityInput:
         case ElementType.RichTextInput:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);

@@ -20,7 +20,7 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentMissingDataException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -64,7 +64,7 @@ public class epay21PaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

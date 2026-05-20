@@ -6,7 +6,7 @@ import {useEffect, useState} from 'react';
 import {VDepartmentShadowedApiService} from '../../../departments/services/v-department-shadowed-api-service';
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showWarningSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessSettingsDialogProcessAccessTab} from './process-settings-dialog-process-access-tab';
 import {TeamEntity} from '../../../teams/entities/team-entity';
 import {TeamsApiService} from '../../../teams/services/teams-api-service';
@@ -30,9 +30,13 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     } = props;
 
     const [currentTab, setCurrentTab] = useState(1);
+    const [hasUnsavedProcessAccessChanges, setHasUnsavedProcessAccessChanges] = useState(false);
+    const [hasUnsavedProcessInstanceAccessPresetChanges, setHasUnsavedProcessInstanceAccessPresetChanges] = useState(false);
     useEffect(() => {
         if (open) {
             setCurrentTab(1);
+            setHasUnsavedProcessAccessChanges(false);
+            setHasUnsavedProcessInstanceAccessPresetChanges(false);
         }
     }, [open]);
 
@@ -82,6 +86,15 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     }}
                     value={currentTab}
                     onChange={(_, newValue) => {
+                        if (currentTab === 1 && newValue !== currentTab && hasUnsavedProcessAccessChanges) {
+                            dispatch(showWarningSnackbar('Bitte speichern Sie zuerst die Änderungen in den Prozessberechtigungen.'));
+                            return;
+                        }
+                        if (currentTab === 2 && newValue !== currentTab && hasUnsavedProcessInstanceAccessPresetChanges) {
+                            dispatch(showWarningSnackbar('Bitte speichern Sie zuerst die Änderungen in den Berechtigungen für neue Vorgänge.'));
+                            return;
+                        }
+
                         setCurrentTab(newValue);
                     }}
                 >
@@ -111,20 +124,24 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     }}
                 >
                     {
-                        currentTab === 1 &&
+                        open && currentTab === 1 &&
                         <ProcessSettingsDialogProcessAccessTab
+                            open={open}
                             process={process}
                             departments={departments}
                             teams={teams}
+                            onUnsavedChangesChange={setHasUnsavedProcessAccessChanges}
                         />
                     }
                     {
-                        currentTab === 2 &&
+                        open && currentTab === 2 &&
                         <ProcessSettingsDialogProcessInstanceAccessPresetTab
+                            open={open}
                             process={process}
                             version={version}
                             departments={departments}
                             teams={teams}
+                            onUnsavedChangesChange={setHasUnsavedProcessInstanceAccessPresetChanges}
                         />
                     }
                 </Box>

@@ -1,4 +1,4 @@
-import {type RootElement} from './root-element';
+import {type FormLayoutElement} from './form-layout-element';
 import {type StepElement} from './steps/step-element';
 import {type IntroductionStepElement} from './steps/introduction-step-element';
 import {type SubmitStepElement} from './steps/submit-step-element';
@@ -38,9 +38,11 @@ import {DataObjectSelectFieldElement} from './form/input/data-object-select-fiel
 import {NoCodeInputFieldElement} from './form/input/no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from './form/input/ui-definition-input-field-element';
 import {SummaryLayoutElement} from './form/layout/summary-layout-element';
+import {ProcessDataKeyInputFieldElement} from './form/input/process-data-key-input-field-element';
+import {IdentityInputFieldElement} from './form/input/identity-input-field-element';
 
 export type AnyElement =
-    RootElement |
+    FormLayoutElement |
 
     StepElement |
     IntroductionStepElement |
@@ -85,6 +87,8 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                 T extends ElementType.AssignmentContext ? AssignmentContextFieldElement :
                                                                                                                                     T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
                                                                                                                                         T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
+                                                                                                                                            T extends ElementType.ProcessDataKeyInput ? ProcessDataKeyInputFieldElement :
                                                                                                                                             T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
+                                                                                                                                                T extends ElementType.IdentityInput ? IdentityInputFieldElement :
                                                                                                                                                 T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
                                                                                                                                                     T extends ElementType.SummaryLayout ? SummaryLayoutElement : never;

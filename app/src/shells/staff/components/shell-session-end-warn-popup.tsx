@@ -21,7 +21,7 @@ export function ShellSessionEndWarnPopup() {
     const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
-        const auth = new AuthService();
+        const auth = AuthService;
 
         const interval = setInterval(() => {
             const expirationTimestampMS = auth.getExpirationTimestamp();
@@ -40,7 +40,7 @@ export function ShellSessionEndWarnPopup() {
     const handleReloadAuth = async () => {
         setIsRefreshing(true);
         try {
-            await new AuthService().refresh();
+            await AuthService.refresh();
         } finally {
             setIsRefreshing(false);
         }
@@ -78,7 +78,7 @@ export function ShellSessionEndWarnPopup() {
                     fontFamily: 'monospace',
                     fontVariantNumeric: 'tabular-nums',
                 }}
-            >{secondsToMinutesAndSeconds(secondsUntilExpiration)}</span>.
+            >{secondsToMinutesAndSeconds(secondsUntilExpiration)}</span>
             </Typography>
             <Tooltip title="Sitzung erneuern und angemeldet bleiben" arrow>
                 <span>

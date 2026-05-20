@@ -19,7 +19,7 @@ import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -79,7 +79,7 @@ public class ePayBLPaymentProviderDefinitionV1 implements PaymentProviderDefinit
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

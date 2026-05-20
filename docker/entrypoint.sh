@@ -8,9 +8,9 @@ echo "Using runtime timezone ${TZ}"
 
 if [ "$1" = "serve" ]; then
   echo "serve" > /app/runtime-mode
-  echo "Waiting for IDP to be available at ${GOVER_HOSTNAME}/idp/realms/staff…"
+  echo "Waiting for IDP to be available at ${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff…"
 
-  until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/idp/realms/staff/"; do
+  until curl --output /dev/null --silent --head --fail "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff/"; do
       sleep 5
   done
 
@@ -22,29 +22,7 @@ if [ "$1" = "serve" ]; then
     -Duser.timezone="${TZ}" \
     org.springframework.boot.loader.launch.PropertiesLauncher
 else
-  cat > /app/app-config.js <<EOF
-window.AppConfig = {
-    oidc: {
-        realm: '$GOVER_KEYCLOAK_OIDC_REALM',
-        client: '$GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID',
-        hostname: '$GOVER_KEYCLOAK_OIDC_HOSTNAME',
-        idp_hint: '$GOVER_KEYCLOAK_OIDC_IDP_HINT',
-    },
-    api: {
-        hostname: '$GOVER_HOSTNAME',
-    },
-    registry: {
-        url: '$GOVER_TEMPLATE_REGISTRY_URL',
-    },
-    sentry: {
-        dsn: '$GOVER_SENTRY_WEB_APP',
-    },
-};
-EOF
-
   echo "app" > /app/runtime-mode
-  cp /app/app-config.js /app/www/app-config.js
-  cp /app/app-config.js /app/www/staff/app-config.js
 
   echo "Waiting for the API to be available at ${GOVER_HOSTNAME}/api/actuator/health…"
   until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/api/actuator/health"; do

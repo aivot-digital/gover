@@ -9,6 +9,7 @@ import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 
 public class ConfigLayoutElement extends BaseElement implements LayoutElement<BaseFormElement> {
     private List<BaseFormElement> children = new LinkedList<>();
@@ -28,5 +29,18 @@ public class ConfigLayoutElement extends BaseElement implements LayoutElement<Ba
     public ConfigLayoutElement setChildren(@Nullable List<BaseFormElement> children) {
         this.children = children;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        ConfigLayoutElement that = (ConfigLayoutElement) o;
+        return Objects.equals(children, that.children);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), children);
     }
 }

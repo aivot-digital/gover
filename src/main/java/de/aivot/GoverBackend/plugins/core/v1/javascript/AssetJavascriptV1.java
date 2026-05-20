@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.asset.entities.AssetEntity;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
@@ -45,7 +45,7 @@ public class AssetJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull

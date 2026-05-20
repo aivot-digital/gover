@@ -20,12 +20,18 @@ import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.*;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
@@ -44,13 +50,12 @@ import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Component;
 
-import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
 
 @Component
-public class EMailActionNodeV1 implements ProcessNodeDefinition {
+public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV1.EMailActionNodeConfig> {
     public static final String NODE_KEY = "mail";
 
     private static final String PORT_NAME = "output";
@@ -96,7 +101,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -120,7 +125,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement layout;
         try {
             layout = ElementPOJOMapper
@@ -234,18 +239,8 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        EMailActionNodeConfig configuration;
-        try {
-            configuration = ElementPOJOMapper
-                    .mapToPOJO(context.getConfiguration().getEffectiveValues(), EMailActionNodeConfig.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des E-Mail-Versand-Knotens ist ungültig: %s",
-                    e.getMessage()
-            );
-        }
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<EMailActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
 
         ProcessNodeExecutionResult result;
         switch (configuration.executionType) {
@@ -263,14 +258,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        result.setProcessData(context.getProcessData());
+        //result.setProcessData(context.getProcessExecutionData().getProcessData());
 
         return result;
     }
 
-    private ProcessNodeExecutionResult initAutomatic(@Nonnull ProcessNodeExecutionContextInit context,
+    private ProcessNodeExecutionResult initAutomatic(@Nonnull ProcessNodeExecutionInitContext<EMailActionNodeConfig> context,
                                                      @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
-        var processData = context.getProcessData();
+        var processData = context.getCurrentProcessExecutionData();
 
         var subject = templateRenderService
                 .interpolate(
@@ -306,10 +301,14 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        return sendMail(subject, interpolatedContentMarkdown, config, context.getProcessData(), context.getThisProcessInstance());
+        return sendMail(subject,
+                interpolatedContentMarkdown,
+                config,
+                context.getCurrentProcessExecutionData(),
+                context.getThisProcessInstance());
     }
 
-    private ProcessNodeExecutionResult initManual(@Nonnull ProcessNodeExecutionContextInit context,
+    private ProcessNodeExecutionResult initManual(@Nonnull ProcessNodeExecutionInitContext<EMailActionNodeConfig> context,
                                                   @Nonnull EMailActionNodeConfig config) throws ProcessNodeExecutionException {
         var assigneeUserId = assignmentContextAssigneeResolverService
                 .resolveAssignee(
@@ -335,7 +334,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
 
     @Nonnull
     @Override
-    public LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public LayoutElement<?> getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
         var root = new GroupLayoutElement();
         root.setId("root");
         root.setChildren(new LinkedList<>());
@@ -355,53 +354,59 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         return root;
     }
 
+    @Nonnull
     @Override
-    public AuthoredElementValues getStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
-        var savedData = context
-                .getThisTask()
-                .getRuntimeData();
+    public AuthoredElementValues createDefaultStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
+        var config = context.getConfigurationOfExecutingNode();
 
-        EMailActionNodeConfig config;
-        try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(context.getRuntimeElementData().getEffectiveValues(), EMailActionNodeConfig.class);
-        } catch (ElementDataConversionException e) {
-            throw ResponseException.internalServerError(
-                    "Die Konfiguration des E-Mail-Versand-Knotens ist ungültig: %s",
-                    e.getMessage()
-            );
+        var taskViewData = new AuthoredElementValues();
+
+        var subject = templateRenderService
+                .interpolate(
+                        context.getCurrentProcessExecutionData(),
+                        config.manualContent.subject
+                );
+        taskViewData.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
+
+        var content = templateRenderService
+                .interpolate(
+                        context.getCurrentProcessExecutionData(),
+                        config.manualContent.content
+                );
+        taskViewData.put(STAFF_TASK_CONTENT_FIELD_ID, content);
+
+        return taskViewData;
+    }
+
+    @Nullable
+    @Override
+    public AuthoredElementValues getAutoSavedStaffTaskViewData(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) {
+        var savedData = ProcessNodeDefinition.super.getAutoSavedStaffTaskViewData(context);
+        if (savedData != null) {
+            return savedData;
         }
 
-        var authoredValues = new AuthoredElementValues();
+        var runtimeData = context.getThisTask().getRuntimeData();
+        var legacySavedData = new AuthoredElementValues();
 
-        var subject = savedData.get(STAFF_TASK_SUBJECT_FIELD_ID);
-        if (subject == null) {
-            subject = templateRenderService
-                    .interpolate(
-                            context.getProcessData(),
-                            config.manualContent.subject
-                    );
+        var subject = runtimeData.get(STAFF_TASK_SUBJECT_FIELD_ID);
+        if (subject != null) {
+            legacySavedData.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
         }
-        authoredValues.put(STAFF_TASK_SUBJECT_FIELD_ID, subject);
 
-        var content = savedData.get(STAFF_TASK_CONTENT_FIELD_ID);
-        if (content == null) {
-            content = templateRenderService
-                    .interpolate(
-                            context.getProcessData(),
-                            config.manualContent.content
-                    );
+        var content = runtimeData.get(STAFF_TASK_CONTENT_FIELD_ID);
+        if (content != null) {
+            legacySavedData.put(STAFF_TASK_CONTENT_FIELD_ID, content);
         }
-        authoredValues.put(STAFF_TASK_CONTENT_FIELD_ID, content);
 
-        return authoredValues;
+        return legacySavedData.isEmpty() ? null : legacySavedData;
     }
 
     private static final String STAFF_TASK_SEND_EVENT = "send";
 
     @Nonnull
     @Override
-    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff context) throws ResponseException {
+    public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context) throws ResponseException {
         return List.of(
                 new TaskViewEvent(
                         "Absenden",
@@ -410,16 +415,11 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
         );
     }
 
+    @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onUpdateFromStaff(@Nonnull ProcessNodeExecutionContextUIStaff context,
-                                                                  @Nonnull AuthoredElementValues update,
-                                                                  @Nullable String event) throws ResponseException, ProcessNodeExecutionException {
-        if (event == null) {
-            var result = new ProcessNodeExecutionResultTaskUpdated()
-                    .setRuntimeData(update);
-            return Optional.of(result);
-        }
-
+    public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<EMailActionNodeConfig> context,
+                                                                         @Nonnull AuthoredElementValues update,
+                                                                         @Nonnull String event) throws ResponseException, ProcessNodeExecutionException {
         if (!event.equals(STAFF_TASK_SEND_EVENT)) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     "Das Event %s wird von diesem Prozesselement nicht unterstützt.",
@@ -427,17 +427,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             );
         }
 
-        EMailActionNodeConfig config;
-        try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(context.getRuntimeElementData().getEffectiveValues(), EMailActionNodeConfig.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des E-Mail-Versand-Knotens ist ungültig: %s",
-                    e.getMessage()
-            );
-        }
+        var config = context.getConfigurationOfExecutingNode();
 
         var derivedRuntimeData = new DerivedRuntimeElementData();
 
@@ -459,7 +449,11 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
             throw ResponseException.badRequest(derivedRuntimeData);
         }
 
-        var res = sendMail(subject, content, config, context.getProcessData(), context.getThisProcessInstance());
+        var res = sendMail(subject,
+                content,
+                config,
+                context.getCurrentProcessExecutionData(),
+                context.getThisProcessInstance());
 
         return Optional.of(res);
     }
@@ -533,7 +527,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
                     );
                 }
 
-                var attachment = attachments.get(0);
+                var attachment = attachments.getFirst();
 
                 try (var attachmentContent = storageService
                         .getDocumentContent(
@@ -589,6 +583,12 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition {
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
         configuration.remove(EMailActionNodeConfigManualContent.ASSIGNMENT_FIELD_ID);
         return configuration;
+    }
+
+    @Nonnull
+    @Override
+    public Class<EMailActionNodeConfig> getNodeConfigurationClass() {
+        return EMailActionNodeConfig.class;
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)

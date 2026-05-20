@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.asset.services.AssetService;
-import de.aivot.GoverBackend.asset.services.VStorageIndexItemWithAssetService;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
@@ -22,7 +21,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -31,6 +30,10 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInv
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.services.PdfService;
@@ -48,7 +51,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Component
-public class PdfActionNodeV1 implements ProcessNodeDefinition {
+public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.PdfActionNodeConfig> {
     public static final String NODE_KEY = "pdf";
 
     private static final String PORT_NAME = "output";
@@ -102,7 +105,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -126,7 +129,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) throws ResponseException {
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement layout;
         try {
             layout = ElementPOJOMapper
@@ -240,21 +243,11 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        PdfActionNodeConfig configuration;
-        try {
-            configuration = ElementPOJOMapper
-                    .mapToPOJO(context.getConfiguration().getEffectiveValues(), PdfActionNodeConfig.class);
-        } catch (ElementDataConversionException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Konfiguration des PDF-Knotens ist ungültig: %s",
-                    e.getMessage()
-            );
-        }
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<PdfActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
 
         var fileName = templateRenderService
-                .interpolate(context.getProcessData(), configuration.fileName);
+                .interpolate(context.getCurrentProcessExecutionData(), configuration.fileName);
         if (StringUtils.isNullOrEmpty(fileName)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Der Dateiname für das PDF wurde nicht angegeben."
@@ -273,7 +266,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
 
         var pdfHtmlSections = splitHtmlSections(contentHtml);
         var interpolatedContentHtml = templateRenderService
-                .interpolate(context.getProcessData(), pdfHtmlSections.contentHtml);
+                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.contentHtml);
 
         if (StringUtils.isNullOrEmpty(interpolatedContentHtml)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -282,9 +275,9 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
         }
 
         var interpolatedHeaderHtml = templateRenderService
-                .interpolate(context.getProcessData(), pdfHtmlSections.headerHtml);
+                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.headerHtml);
         var interpolatedFooterHtml = templateRenderService
-                .interpolate(context.getProcessData(), pdfHtmlSections.footerHtml);
+                .interpolate(context.getCurrentProcessExecutionData(), pdfHtmlSections.footerHtml);
 
         byte[] pdfBytes;
         try {
@@ -339,7 +332,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
     }
 
     @Nonnull
-    private String resolveContentHtml(@Nonnull ProcessNodeExecutionContextInit context,
+    private String resolveContentHtml(@Nonnull ProcessNodeExecutionInitContext<PdfActionNodeConfig> context,
                                       @Nonnull PdfActionNodeConfig configuration) throws ProcessNodeExecutionException {
         var contentSource = configuration.contentHtmlSource;
         if (StringUtils.isNullOrEmpty(contentSource)) {
@@ -348,12 +341,12 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE.equals(contentSource)) {
             return templateRenderService
-                    .interpolate(context.getProcessData(), configuration.contentHtml);
+                    .interpolate(context.getCurrentProcessExecutionData(), configuration.contentHtml);
         }
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(contentSource)) {
             var assetKeyStr = templateRenderService
-                    .interpolate(context.getProcessData(), configuration.contentHtmlAssetKey);
+                    .interpolate(context.getCurrentProcessExecutionData(), configuration.contentHtmlAssetKey);
             if (StringUtils.isNullOrEmpty(assetKeyStr)) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
                         "Der Asset-Schlüssel für die PDF-Vorlage wurde nicht angegeben."
@@ -375,7 +368,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             var assetTemplate = loadAssetContentAsString(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
             // Render the full asset template before splitting the individual HTML documents so shared
             // blocks defined outside a specific <html> section remain available to all use sites.
-            return templateRenderService.interpolate(context.getProcessData(), assetTemplate);
+            return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), assetTemplate);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
@@ -503,6 +496,12 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition {
             this.headerHtml = headerHtml;
             this.footerHtml = footerHtml;
         }
+    }
+
+    @Nonnull
+    @Override
+    public Class<PdfActionNodeConfig> getNodeConfigurationClass() {
+        return PdfActionNodeConfig.class;
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)

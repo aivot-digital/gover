@@ -23,10 +23,9 @@ import {ProcessDefinitionApiService} from '../../services/process-definition-api
 import {NewProcessDialog} from '../../dialogs/new-process-dialog';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
-import {FormStatusChip} from '../../../forms/components/form-status-chip';
-import {FormStatus} from '../../../forms/enums/form-status';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
+import {ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
 
 const availableFilter = [
     {
@@ -175,16 +174,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                     py: 2,
                 }}
             >
-                {params.row.publishedVersion != null && <FormStatusChip
-                    status={FormStatus.Published}
-                    size="small"
-                    variant="soft"
-                />}
-                {params.row.draftedVersion != null && <FormStatusChip
-                    status={FormStatus.Drafted}
-                    size="small"
-                    variant="soft"
-                />}
+                <ProcessStatusChipGroup process={params.row}/>
             </Box>
         ),
     },
@@ -316,7 +306,7 @@ export function ProcessListPage() {
         },
         {
             icon: <Visibility/>,
-            to: `/processes/${item.id}`,
+            to: `/processes/${item.id}/versions/${item.publishedVersion}`,
             tooltip: 'Prozess ansehen',
             visible: item.draftedVersion === null,
         },

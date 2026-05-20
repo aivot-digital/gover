@@ -1,17 +1,16 @@
 import {BaseEditorProps} from './base-editor';
 import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {AlertComponent} from '../components/alert/alert-component';
 
-export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement, ElementTreeEntity>) {
+export function MapPointFieldEditor(props: BaseEditorProps<MapPointFieldElement>) {
     const {
         element,
         onPatch,
         editable,
         scope,
-        hasSummaryLayoutParent
+        hasSummaryLayoutParent,
     } = props;
 
     if (hasSummaryLayoutParent) {

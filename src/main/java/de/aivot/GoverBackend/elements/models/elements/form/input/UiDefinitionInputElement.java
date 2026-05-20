@@ -21,6 +21,9 @@ public class UiDefinitionInputElement extends BaseInputElement<BaseElement> impl
     @Nullable
     private ElementDisplayContext displayContext;
 
+    @Nullable
+    private Boolean openExternalEditor;
+
     public UiDefinitionInputElement() {
         super(ElementType.UiDefinitionInput);
     }
@@ -98,14 +101,13 @@ public class UiDefinitionInputElement extends BaseInputElement<BaseElement> impl
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         UiDefinitionInputElement that = (UiDefinitionInputElement) o;
-        return elementType == that.elementType && displayContext == that.displayContext;
+        return elementType == that.elementType && displayContext == that.displayContext && Objects.equals(openExternalEditor, that.openExternalEditor);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), elementType, displayContext);
+        return Objects.hash(super.hashCode(), elementType, displayContext, openExternalEditor);
     }
-
 
     // endregion
 
@@ -128,6 +130,16 @@ public class UiDefinitionInputElement extends BaseInputElement<BaseElement> impl
 
     public UiDefinitionInputElement setDisplayContext(@Nullable ElementDisplayContext displayContext) {
         this.displayContext = displayContext;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getOpenExternalEditor() {
+        return openExternalEditor;
+    }
+
+    public UiDefinitionInputElement setOpenExternalEditor(@Nullable Boolean openExternalEditor) {
+        this.openExternalEditor = openExternalEditor;
         return this;
     }
 

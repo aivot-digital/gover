@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -13,8 +14,10 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
+import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
@@ -38,6 +41,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -175,7 +179,9 @@ public class ProcessNodeController {
     public ProcessNodeEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
-            @Nonnull @RequestBody @Valid ProcessNodeEntity updateDTO
+            @Nonnull @RequestBody @Valid ProcessNodeEntity updateDTO,
+            @Nullable @RequestParam(required = false) List<String> onlyConfigSave,
+            @Nullable @RequestParam(required = false) List<String> omitConfigSave
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -202,6 +208,22 @@ public class ProcessNodeController {
                 .convertValue(existing, Map.class);
 
         updateDTO.setId(existing.getId());
+
+        if (onlyConfigSave != null) {
+            var conf = new AuthoredElementValues();
+            conf.putAll(existing.getConfiguration());
+            for (String key : onlyConfigSave) {
+                conf.put(key, updateDTO.getConfiguration().get(key));
+            }
+            updateDTO = existing;
+            updateDTO.setConfiguration(conf);
+        }
+
+        if (omitConfigSave != null) {
+            for (var key : omitConfigSave) {
+                updateDTO.getConfiguration().put(key, existing.getConfiguration().get(key));
+            }
+        }
 
         var result = processDefinitionNodeService
                 .update(id, updateDTO);
@@ -413,7 +435,7 @@ public class ProcessNodeController {
                 .retrieve(ProcessVersionEntityId.of(processDefinition.getId(), node.getProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
 
-        var context = new ProcessNodeDefinitionContextConfig(
+        var context = new ProcessNodeDefinitionConfigurationLayoutContext(
                 user,
                 processDefinition,
                 processVersion,
@@ -424,12 +446,12 @@ public class ProcessNodeController {
                 .getConfigurationLayout(context);
     }
 
-    @GetMapping("{id}/testing/")
+    @GetMapping("{id}/data-key-hints/")
     @Operation(
-            summary = "Retrieve Process Definition Node Testing Layout",
-            description = "Retrieve the testing layout of a process definition node by its ID."
+            summary = "Retrieve Process Definition Node Data Key Hints",
+            description = "Retrieve the aggregated process data key hints available before a process definition node is executed."
     )
-    public GroupLayoutElement testing(
+    public List<ProcessDataKeyHintResponse> dataKeyHints(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -441,7 +463,38 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var provider = processNodeProviderService
+        var processDefinition = processDefinitionService
+                .retrieve(node.getProcessId())
+                .orElseThrow(ResponseException::badRequest);
+
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                processDefinition.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
+        return processDefinitionNodeService
+                .getProcessDataKeyHintResponses(node);
+    }
+
+    @GetMapping("{id}/testing/")
+    @Operation(
+            summary = "Retrieve Process Definition Node Testing Layout",
+            description = "Retrieve the testing layout of a process definition node by its ID."
+    )
+    public <NodeConfig> GroupLayoutElement testing(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var node = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        ProcessNodeDefinition<NodeConfig> provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
 
@@ -458,15 +511,15 @@ public class ProcessNodeController {
                 .orElseThrow(ResponseException::badRequest);
 
         var configuration = processDefinitionNodeService
-                .deriveConfiguration(node, false, user);
+                .deriveConfiguration(node, provider, user, false);
 
-        var context = new ProcessNodeDefinitionContextTesting(
+        var context = new ProcessNodeDefinitionTestingLayoutContext<NodeConfig>(
                 user,
                 processDefinition,
                 processVersion,
                 node,
                 testClaim,
-                configuration
+                configuration.configuration()
         );
 
         return provider
@@ -482,8 +535,16 @@ public class ProcessNodeController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var node = processNodeRepository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node)
+                .orElseThrow(ResponseException::badRequest);
+
         var res = processDefinitionNodeService
-                .validate(id, false);
+                .validate(node, provider, false);
 
         if (res.isPresent()) {
             return res.get();

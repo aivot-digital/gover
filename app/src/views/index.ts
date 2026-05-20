@@ -7,7 +7,7 @@ import {AlertView} from './alert-view';
 import {SelectFieldView} from './select-field-view';
 import {ContainerView} from './container-view';
 import {DateFieldView} from './date-field-view';
-import {RootComponentView} from '../components/root/root.component.view';
+import {RootComponentView} from '../components/form/root.component.view';
 import {StepComponentView} from '../components/step/step.component.view';
 import {ImageView} from '../components/image/image-view';
 import {HeadlineComponentView} from '../components/headline/headline.component.view';
@@ -38,6 +38,8 @@ import {DataObjectSelectFieldView} from './data-object-select-field-view';
 import {NoCodeInputFieldView} from './no-code-input-field-view';
 import {UiDefinitionInputFieldView} from './ui-definition-input-field-view';
 import {SummaryLayoutView} from './summary-layout-view';
+import {ProcessDataKeyInputFieldView} from './process-data-key-input-field-view';
+import {IdentityInputFieldView} from './identity-input-field-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -70,7 +72,7 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.CodeInput]: CodeInputView,
     [ElementType.RichTextInput]: RichTextView,
     [ElementType.UiDefinitionInput]: UiDefinitionInputFieldView,
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityInput]: IdentityInputFieldView,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputFieldView,
     [ElementType.DateTime]: DateTimeFieldView,
@@ -84,4 +86,5 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.DataObjectSelect]: DataObjectSelectFieldView,
     [ElementType.NoCodeInput]: NoCodeInputFieldView,
     [ElementType.SummaryLayout]: SummaryLayoutView,
+    [ElementType.ProcessDataKeyInput]: ProcessDataKeyInputFieldView,
 };

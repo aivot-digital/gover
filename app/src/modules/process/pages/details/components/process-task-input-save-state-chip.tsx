@@ -9,6 +9,7 @@ export enum ProcessTaskInputSaveState {
     Saved,
     Waiting,
     Saving,
+    RetryQueued,
     Failed,
 }
 
@@ -110,6 +111,26 @@ export function ProcessTaskInputSaveStateChip(props: ProcessTaskInputSaveStateCh
             };
         }
 
+        if (state === ProcessTaskInputSaveState.RetryQueued) {
+            return {
+                label: 'Warten auf Verbindung',
+                tooltip: relativeLastSavedAt == null
+                    ? 'Ihre Eingaben werden erneut zwischengespeichert, sobald die Verbindung wiederhergestellt ist.'
+                    : `Ihre Eingaben werden erneut zwischengespeichert, sobald die Verbindung wiederhergestellt ist. Letzte erfolgreiche Zwischenspeicherung ${relativeLastSavedAt}.`,
+                icon: (
+                    <Box
+                        component="span"
+                        sx={{
+                            ...iconSlotSx,
+                            color: (theme) => theme.palette.warning.main,
+                        }}
+                    >
+                        <CloudAlert fontSize="small"/>
+                    </Box>
+                ),
+            };
+        }
+
         if (state === ProcessTaskInputSaveState.Failed) {
             return {
                 label: 'Zwischenspeichern fehlgeschlagen',
@@ -172,7 +193,13 @@ export function ProcessTaskInputSaveStateChip(props: ProcessTaskInputSaveStateCh
                         py: 0.5,
                     },
                 }}
-                color={state === ProcessTaskInputSaveState.Failed ? 'error' : undefined}
+                color={
+                    state === ProcessTaskInputSaveState.Failed
+                        ? 'error'
+                        : state === ProcessTaskInputSaveState.RetryQueued
+                            ? 'warning'
+                            : undefined
+                }
                 label={
                     <Box
                         component="span"

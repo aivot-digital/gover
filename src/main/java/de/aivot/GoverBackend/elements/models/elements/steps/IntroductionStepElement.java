@@ -8,9 +8,11 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Objects;
 
-public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean> {
+public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean>, LayoutElement<BaseFormElement> {
     @Nullable
     private String initiativeName;
     @Nullable
@@ -29,6 +31,10 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     private Collection<String> documentsToAttach;
     @Nullable
     private String expectedCosts;
+    @Nullable
+    private String privacyText;
+    @Nonnull
+    private List<BaseFormElement> children = new LinkedList<>();
 
     public IntroductionStepElement() {
         super(ElementType.IntroductionStep);
@@ -81,24 +87,18 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         IntroductionStepElement that = (IntroductionStepElement) o;
-        return Objects.equals(initiativeName, that.initiativeName) && Objects.equals(initiativeLogoLink, that.initiativeLogoLink) && Objects.equals(initiativeLink, that.initiativeLink) && Objects.equals(teaserText, that.teaserText) && Objects.equals(organization, that.organization) && Objects.equals(eligiblePersons, that.eligiblePersons) && Objects.equals(supportingDocuments, that.supportingDocuments) && Objects.equals(documentsToAttach, that.documentsToAttach) && Objects.equals(expectedCosts, that.expectedCosts);
+        return Objects.equals(initiativeName, that.initiativeName) && Objects.equals(initiativeLogoLink, that.initiativeLogoLink) &&
+                Objects.equals(initiativeLink, that.initiativeLink) && Objects.equals(teaserText, that.teaserText) &&
+                Objects.equals(organization, that.organization) && Objects.equals(eligiblePersons, that.eligiblePersons) &&
+                Objects.equals(supportingDocuments, that.supportingDocuments) && Objects.equals(documentsToAttach, that.documentsToAttach) &&
+                Objects.equals(expectedCosts, that.expectedCosts) && Objects.equals(privacyText, that.privacyText) &&
+                Objects.equals(children, that.children);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(initiativeName);
-        result = 31 * result + Objects.hashCode(initiativeLogoLink);
-        result = 31 * result + Objects.hashCode(initiativeLink);
-        result = 31 * result + Objects.hashCode(teaserText);
-        result = 31 * result + Objects.hashCode(organization);
-        result = 31 * result + Objects.hashCode(eligiblePersons);
-        result = 31 * result + Objects.hashCode(supportingDocuments);
-        result = 31 * result + Objects.hashCode(documentsToAttach);
-        result = 31 * result + Objects.hashCode(expectedCosts);
-        return result;
+        return Objects.hash(super.hashCode(), initiativeName, initiativeLogoLink, initiativeLink, teaserText, organization, eligiblePersons, supportingDocuments, documentsToAttach, expectedCosts, privacyText, children);
     }
 
     // endregion
@@ -192,6 +192,29 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
 
     public IntroductionStepElement setExpectedCosts(@Nullable String expectedCosts) {
         this.expectedCosts = expectedCosts;
+        return this;
+    }
+
+    @Nullable
+    public String getPrivacyText() {
+        return privacyText;
+    }
+
+    public IntroductionStepElement setPrivacyText(@Nullable String privacyText) {
+        this.privacyText = privacyText;
+        return this;
+    }
+
+    @Override
+    @Nonnull
+    public List<BaseFormElement> getChildren() {
+        return children;
+    }
+
+    @Override
+    @Nonnull
+    public IntroductionStepElement setChildren(List<BaseFormElement> children) {
+        this.children = children;
         return this;
     }
 

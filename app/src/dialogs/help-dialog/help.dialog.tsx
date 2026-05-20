@@ -2,9 +2,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Gr
 import {BoxLink} from '../../components/box-link/box-link';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {useSelector} from 'react-redux';
 import {type HelpDialogProps} from './help-dialog-props';
-import {selectLoadedForm} from '../../slices/app-slice';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
@@ -13,7 +11,7 @@ import {DepartmentApiService} from '../../modules/departments/services/departmen
 export const HelpDialogId = 'help';
 
 export function HelpDialog(props: HelpDialogProps) {
-    const application = useSelector(selectLoadedForm);
+    const application = props.form;
     const [technicalDepartment, setTechnicalDepartment] = useState<VDepartmentShadowedEntity>();
     const [specialDepartment, setSpecialDepartment] = useState<VDepartmentShadowedEntity>();
 
@@ -21,20 +19,20 @@ export function HelpDialog(props: HelpDialogProps) {
         const ac = new AbortController();
 
         if (
-            application?.version.technicalSupportDepartmentId != null &&
-            (technicalDepartment == null || technicalDepartment.id !== application.version.technicalSupportDepartmentId)
+            application?.technicalSupportDepartmentId != null &&
+            (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.version.technicalSupportDepartmentId)
+                .retrievePublic(application.technicalSupportDepartmentId)
                 .then(setTechnicalDepartment);
         }
 
         if (
-            application?.version.legalSupportDepartmentId != null &&
-            (specialDepartment == null || specialDepartment.id !== application.version.legalSupportDepartmentId)
+            application.legalSupportDepartmentId != null &&
+            (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.version.legalSupportDepartmentId)
+                .retrievePublic(application.legalSupportDepartmentId)
                 .then(setSpecialDepartment);
         }
 
@@ -51,10 +49,16 @@ export function HelpDialog(props: HelpDialogProps) {
                     </Typography>
                     <ul>
                         <li>Füllen Sie alle mit Stern (*) gekennzeichneten Pflichtfelder aus.</li>
-                        <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, zum Navigieren durch die Schritte und um Ihre Eingaben zu prüfen.</li>
+                        <li>Nutzen Sie die Schaltflächen <b>„Weiter“</b> und <b>„Zum vorherigen Abschnitt“</b>, zum
+                            Navigieren durch die Schritte und um Ihre Eingaben zu prüfen.
+                        </li>
                         <li>Klicken Sie abschließend auf <b>„Verbindlich einreichen“</b>.</li>
-                        <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen Sie erneut, das Formular abzusenden.</li>
-                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die zuständige Behörde weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte durch, indem Sie den im Formular angezeigten
+                        <li>Falls Fehler vorliegen, werden diese rot markiert. Bitte korrigieren Sie sie und versuchen
+                            Sie erneut, das Formular abzusenden.
+                        </li>
+                        <li>Nach erfolgreicher Übermittlung werden Ihre Angaben direkt an die zuständige Behörde
+                            weitergeleitet. Sollte eine Online-Bezahlung notwendig sein, so führen Sie diese bitte
+                            durch, indem Sie den im Formular angezeigten
                             Anweisungen folgen.
                         </li>
                         <li>Auf der Bestätigungsseite erhalten Sie ggf. weitere Hinweise zum weiteren Ablauf.</li>
@@ -67,7 +71,9 @@ export function HelpDialog(props: HelpDialogProps) {
             answer: (
                 <>
                     <Typography>
-                        Das Formular unterstützt Zeichen aus dem <b>Unicode-Zeichensatz</b>, die in der <b>UTF-8-Kodierung</b> gespeichert und übertragen werden. Sie können folgende Zeichen verwenden:
+                        Das Formular unterstützt Zeichen aus dem <b>Unicode-Zeichensatz</b>, die in
+                        der <b>UTF-8-Kodierung</b> gespeichert und übertragen werden. Sie können folgende Zeichen
+                        verwenden:
                     </Typography>
                     <ul>
                         <li>
@@ -85,7 +91,8 @@ export function HelpDialog(props: HelpDialogProps) {
                     </ul>
                     <Typography>
                         Andere Sonderzeichen, Steuerzeichen oder nicht-druckbare Zeichen sind nicht erlaubt.
-                        Darüber hinaus besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag weiter eingeschränkt sind. Bitte beachten Sie entsprechende Hinweise im Formular.
+                        Darüber hinaus besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag weiter
+                        eingeschränkt sind. Bitte beachten Sie entsprechende Hinweise im Formular.
                     </Typography>
                 </>
             ),
@@ -118,7 +125,8 @@ export function HelpDialog(props: HelpDialogProps) {
                         </li>
                     </ul>
                     <Typography>
-                        Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag variieren. Bitte beachten Sie die Hinweise im Formular.
+                        Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag variieren. Bitte
+                        beachten Sie die Hinweise im Formular.
                     </Typography>
                 </>
             ),
@@ -128,10 +136,13 @@ export function HelpDialog(props: HelpDialogProps) {
             answer: (
                 <>
                     <Typography>
-                        Sie benötigen zum Ausfüllen eines Formulars grundsätzlich keine zusätzliche Software abseits ihres Web-Browsers.
+                        Sie benötigen zum Ausfüllen eines Formulars grundsätzlich keine zusätzliche Software abseits
+                        ihres Web-Browsers.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Wenn Sie optional ein PDF-Dokument herunterladen und ansehen möchten, so benötigen Sie möglicherweise eine spezielle Software. Eine bekannte Lösung ist der PDF Reader der Firma Adobe (
+                        Wenn Sie optional ein PDF-Dokument herunterladen und ansehen möchten, so benötigen Sie
+                        möglicherweise eine spezielle Software. Eine bekannte Lösung ist der PDF Reader der Firma Adobe
+                        (
                         <a
                             rel="noreferrer"
                             href={'https://get.adobe.com/de/reader/'}
@@ -155,7 +166,8 @@ export function HelpDialog(props: HelpDialogProps) {
             question: 'Wer ist für meinen Antrag zuständig?',
             answer: (
                 <Typography>
-                    Die Bearbeitung erfolgt durch die im Formular genannten zuständigen Parteien. Die Online-Plattform dient nur der digitalen Übermittlung der Antragsdaten.
+                    Die Bearbeitung erfolgt durch die im Formular genannten zuständigen Parteien. Die Online-Plattform
+                    dient nur der digitalen Übermittlung der Antragsdaten.
                 </Typography>
             ),
         },
@@ -163,7 +175,8 @@ export function HelpDialog(props: HelpDialogProps) {
             question: 'Werden meine Daten sicher übertragen?',
             answer: (
                 <Typography>
-                    Ihre Daten werden über eine <b>verschlüsselte HTTPS- bzw. TLS-Verbindung</b> übertragen und sind somit auf dem Transportweg vor unbefugtem Zugriff geschützt.
+                    Ihre Daten werden über eine <b>verschlüsselte HTTPS- bzw. TLS-Verbindung</b> übertragen und sind
+                    somit auf dem Transportweg vor unbefugtem Zugriff geschützt.
                 </Typography>
             ),
         },
@@ -172,17 +185,27 @@ export function HelpDialog(props: HelpDialogProps) {
             answer: (
                 <>
                     <Typography>
-                        Ihre Eingaben werden automatisch im <b>lokalen Speicher (Local Storage)</b> Ihres Browsers zwischengespeichert. Wenn Sie das Formular erneut aufrufen, können Sie entscheiden, ob Sie Ihre Eingaben fortsetzen oder
+                        Ihre Eingaben werden automatisch im <b>lokalen Speicher (Local Storage)</b> Ihres Browsers
+                        zwischengespeichert. Wenn Sie das Formular erneut aufrufen, können Sie entscheiden, ob Sie Ihre
+                        Eingaben fortsetzen oder
                         einen neuen Antrag beginnen möchten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         <b>Wichtige Hinweise:</b>
                     </Typography>
                     <ul>
-                        <li>Die Zwischenspeicherung erfolgt lokal auf Ihrem Endgerät. Eine Kopie auf einem Server existiert nicht.</li>
-                        <li>Wenn Sie Ihren Browser-Cache leeren oder den Inkognito-Modus nutzen, gehen die gespeicherten Daten verloren.</li>
-                        <li>Wie lange die Daten in Ihrem Browser gespeichert bleiben, hängt von vielen Faktoren wie den spezifischen Benutzer-Einstellungen ab. Wir haben hierauf keinen Einfluss.</li>
-                        <li>Falls Sie ein öffentliches oder gemeinsam genutztes Gerät verwenden, löschen Sie Ihre Daten am besten nach der Nutzung, um Missbrauch zu vermeiden.</li>
+                        <li>Die Zwischenspeicherung erfolgt lokal auf Ihrem Endgerät. Eine Kopie auf einem Server
+                            existiert nicht.
+                        </li>
+                        <li>Wenn Sie Ihren Browser-Cache leeren oder den Inkognito-Modus nutzen, gehen die gespeicherten
+                            Daten verloren.
+                        </li>
+                        <li>Wie lange die Daten in Ihrem Browser gespeichert bleiben, hängt von vielen Faktoren wie den
+                            spezifischen Benutzer-Einstellungen ab. Wir haben hierauf keinen Einfluss.
+                        </li>
+                        <li>Falls Sie ein öffentliches oder gemeinsam genutztes Gerät verwenden, löschen Sie Ihre Daten
+                            am besten nach der Nutzung, um Missbrauch zu vermeiden.
+                        </li>
                     </ul>
                 </>
             ),
@@ -192,7 +215,9 @@ export function HelpDialog(props: HelpDialogProps) {
             answer: (
                 <>
                     <Typography>
-                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald Ihr Antrag übermittelt wurde. Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Antrag genannten Ansprechpartner, welche Ihnen
+                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald Ihr Antrag übermittelt wurde.
+                        Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Antrag genannten
+                        Ansprechpartner, welche Ihnen
                         möglicherweise weiterhelfen können.
                     </Typography>
                 </>
@@ -232,7 +257,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             }}
                         >
                             <BoxLink
-                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.version.publicTitle}`}
+                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.publicTitle}`}
                                 text={'Fachlicher Support:\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
                             />
                         </Grid>
@@ -243,7 +268,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             }}
                         >
                             <BoxLink
-                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.version.publicTitle}`}
+                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.publicTitle}`}
                                 text={'Technischer Support:\nUnterstützung bei technischen Problemen und Fehlern'}
                             />
                         </Grid>
@@ -267,7 +292,7 @@ export function HelpDialog(props: HelpDialogProps) {
                     <AccordionGroup>
                         {FAQs.map((faq, index) => (
                             <Accordion key={index}>
-                                <AccordionSummary expandIcon={<ExpandMoreOutlinedIcon />}>
+                                <AccordionSummary expandIcon={<ExpandMoreOutlinedIcon/>}>
                                     <Typography>{faq.question}</Typography>
                                 </AccordionSummary>
                                 <AccordionDetails>{faq.answer}</AccordionDetails>
@@ -277,7 +302,7 @@ export function HelpDialog(props: HelpDialogProps) {
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
-                <Box />
+                <Box/>
                 <Button
                     onClick={props.onHide}
                 >

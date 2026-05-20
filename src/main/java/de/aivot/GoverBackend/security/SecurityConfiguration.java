@@ -1,6 +1,9 @@
 package de.aivot.GoverBackend.security;
 
-import de.aivot.GoverBackend.system.properties.CORSProperties;
+import de.aivot.GoverBackend.system.controllers.AuthController;
+import jakarta.annotation.Nonnull;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,47 +11,55 @@ import org.springframework.core.convert.converter.Converter;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.BearerTokenResolver;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import org.springframework.security.web.csrf.CsrfFilter;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
-    private final CORSProperties corsProperties;
+    private final RedisCsrfTokenRepository csrfTokenRepository;
+    private final CsrfResponseHeaderFilter csrfResponseHeaderFilter;
 
     @Autowired
-    public SecurityConfiguration(CORSProperties corsProperties) {
-        this.corsProperties = corsProperties;
+    public SecurityConfiguration(
+            RedisCsrfTokenRepository csrfTokenRepository,
+            CsrfResponseHeaderFilter csrfResponseHeaderFilter
+    ) {
+        this.csrfTokenRepository = csrfTokenRepository;
+        this.csrfResponseHeaderFilter = csrfResponseHeaderFilter;
     }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(AbstractHttpConfigurer::disable)
-
-                .cors(Customizer.withDefaults())
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(csrfTokenRepository)
+                        .ignoringRequestMatchers("/api/public/**", "/api/actuator/**")
+                )
 
                 .authorizeHttpRequests(
                         requests -> requests
                                 .requestMatchers("/api/public/**").permitAll()
                                 .requestMatchers("/api/actuator/health").permitAll()
+                                .requestMatchers("/api/auth/login").permitAll()
+                                .requestMatchers("/api/auth/refresh").permitAll()
+                                .requestMatchers("/api/auth/logout").permitAll()
+                                .requestMatchers("/api/auth/oidc-callback").permitAll()
                                 .anyRequest().authenticated()
                 )
 
-                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()));
+                .oauth2ResourceServer(resourceServer -> resourceServer.jwt(Customizer.withDefaults()))
+
+                .addFilterAfter(csrfResponseHeaderFilter, CsrfFilter.class);
 
         return http.build();
     }
@@ -56,6 +67,7 @@ public class SecurityConfiguration {
     @Bean
     public JwtAuthenticationConverter jwtAuthenticationConverterForKeycloak() {
         Converter<Jwt, Collection<GrantedAuthority>> jwtGrantedAuthoritiesConverter = jwt -> {
+            // All of this is deprecated since 20.04.2026
             Map<String, Collection<String>> realmAccess = jwt.getClaim("realm_access");
             Collection<String> roles = realmAccess.get("roles");
             return roles.stream()
@@ -70,22 +82,26 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    CorsConfigurationSource corsConfigurationSource() {
-        var source = new UrlBasedCorsConfigurationSource();
+    public BearerTokenResolver bearerTokenResolver(@Nonnull JwtDecoder decoder) {
+        return new BearerResolver(AuthController.ACCESS_COOKIE_NAME, decoder);
+    }
 
-        if (corsProperties.isEnabled()) {
-            var configuration = new CorsConfiguration();
+    private record BearerResolver(@Nonnull String cookieName,
+                                  @Nonnull JwtDecoder decoder) implements BearerTokenResolver {
+        @Override
+        public String resolve(HttpServletRequest request) {
+            Cookie[] cookies = request.getCookies();
 
-            for (String origin : corsProperties.getAllowedOrigins()) {
-                configuration.addAllowedOrigin(origin);
+            if (cookies == null) {
+                return null;
             }
 
-            configuration.setAllowedMethods(Arrays.asList(CORSProperties.DEFAULT_ALLOWED_METHODS));
-            configuration.setAllowedHeaders(List.of("*"));
-
-            source.registerCorsConfiguration("/**", configuration);
+            return Arrays
+                    .stream(cookies)
+                    .filter(cookie -> cookie.getName().equals(cookieName))
+                    .map(Cookie::getValue)
+                    .findFirst()
+                    .orElse(null);
         }
-
-        return source;
     }
 }

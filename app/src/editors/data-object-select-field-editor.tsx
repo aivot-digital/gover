@@ -1,11 +1,10 @@
 import {BaseEditorProps} from './base-editor';
 import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {DataModelSelectFieldComponent} from '../components/data-model-select-field/data-model-select-field-component';
 
-export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSelectFieldElement, ElementTreeEntity>) {
+export function DataObjectSelectFieldEditor(props: BaseEditorProps<DataObjectSelectFieldElement>) {
     const {
         element,
         editable,

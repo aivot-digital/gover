@@ -1,6 +1,5 @@
 import {BaseEditorProps} from './base-editor';
 import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import React from 'react';
 import {Grid} from '@mui/material';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
@@ -22,7 +21,7 @@ const modes: SelectFieldComponentOption[] = [
     },
 ];
 
-export function DateRangeFieldEditor(props: BaseEditorProps<DateRangeFieldElement, ElementTreeEntity>) {
+export function DateRangeFieldEditor(props: BaseEditorProps<DateRangeFieldElement>) {
     const {
         element,
         onPatch,
