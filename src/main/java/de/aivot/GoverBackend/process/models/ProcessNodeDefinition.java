@@ -142,11 +142,13 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      *
      * @param processNodeEntity The current node.
      * @param configuration The configuration of the current node.
-     * @param previousDataKeys The list of all process data keys from previous nodes. Use this to build the complete list of process data keys by adding the keys from this node to the list of previous data keys.
+     * @param previousDataKeyHints The list of all process data keys from previous nodes. Use this to build the complete list of process data keys by adding the keys from this node to the list of previous data keys.
      * @return The list of all process node keys this node passes onto the next node.
      */
-    default List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull NodeConfig configuration, @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
-        return previousDataKeys;
+    default List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                                  @Nonnull NodeConfig configuration,
+                                                                  @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
+        return previousDataKeyHints;
     }
 
     /**

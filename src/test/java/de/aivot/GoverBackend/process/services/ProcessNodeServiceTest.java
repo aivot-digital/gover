@@ -291,8 +291,8 @@ class ProcessNodeServiceTest {
         @Override
         public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
                                                                      @Nonnull TestNodeConfig configuration,
-                                                                     @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
-            var hints = new java.util.ArrayList<>(previousDataKeys);
+                                                                     @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
+            var hints = new java.util.ArrayList<>(previousDataKeyHints);
             hints.add(new ProcessDataKeyHint(processNodeEntity.getDataKey(), ProcessDataKeyHintType.ProcessData));
             return hints;
         }

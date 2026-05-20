@@ -1,23 +1,18 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.ComputedElementState;
-import de.aivot.GoverBackend.elements.models.ComputedElementStates;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
-import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -116,7 +111,7 @@ class CounterActionNodeV1Test {
         assertEquals(6L, result.getNodeData().get("value"));
         assertEquals(4L, result.getNodeData().get("previousValue"));
         assertEquals(2L, result.getNodeData().get("increment"));
-        assertEquals("runtimeData", result.getNodeData().get("storageMode"));
+        assertEquals("nodeData", result.getNodeData().get("storageMode"));
     }
 
     @Test
@@ -140,7 +135,7 @@ class CounterActionNodeV1Test {
         assertEquals(1L, result.getNodeData().get("value"));
         assertEquals(0L, result.getNodeData().get("previousValue"));
         assertEquals(1L, result.getNodeData().get("increment"));
-        assertEquals("runtimeData", result.getNodeData().get("storageMode"));
+        assertEquals("nodeData", result.getNodeData().get("storageMode"));
         assertNotNull(result.getProcessData());
         assertFalse(result.getProcessData().isEmpty());
         assertEquals("value", result.getProcessData().get("other"));
@@ -191,11 +186,11 @@ class CounterActionNodeV1Test {
                 .setOutputMappings(Map.of());
     }
 
-    private static CounterActionNodeV1.CounterConfiguration nodeConfiguration(AuthoredElementValues configuration)
+    private static CounterActionNodeV1.CounterActionNodeV1Configuration nodeConfiguration(AuthoredElementValues configuration)
             throws ElementDataConversionException {
         var effectiveValues = new EffectiveElementValues();
         effectiveValues.putAll(configuration);
-        return ElementPOJOMapper.mapToPOJO(effectiveValues, CounterActionNodeV1.CounterConfiguration.class);
+        return ElementPOJOMapper.mapToPOJO(effectiveValues, CounterActionNodeV1.CounterActionNodeV1Configuration.class);
     }
 
     private static DerivedRuntimeElementData validationRuntime(AuthoredElementValues configuration) {
@@ -230,7 +225,7 @@ class CounterActionNodeV1Test {
     }
 
     private static ProcessInstanceTaskEntity previousIterationTask(Map<String, Object> runtimeData) {
-        return task(PREVIOUS_TASK_ID, runtimeData, Map.of(), Map.of("other", "value"));
+        return task(PREVIOUS_TASK_ID, Map.of(), runtimeData, Map.of("other", "value"));
     }
 
     private static ProcessInstanceTaskEntity task(Long taskId,

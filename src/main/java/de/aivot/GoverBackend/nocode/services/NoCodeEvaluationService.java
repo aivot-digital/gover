@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
+import de.aivot.GoverBackend.process.models.ProcessDataValueUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,12 +13,9 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * This service evaluates no code expressions.
@@ -26,7 +24,6 @@ import java.util.regex.Pattern;
 @Service
 public class NoCodeEvaluationService {
     private static final Logger logger = LoggerFactory.getLogger(NoCodeEvaluationService.class);
-    private static final Pattern PATH_TOKEN_PATTERN = Pattern.compile("([^.\\[\\]]+)|\\[(\\d+)]");
 
     private final Map<String, NoCodeOperator> noCodeOperatorProviders;
 
@@ -88,6 +85,16 @@ public class NoCodeEvaluationService {
             @Nonnull DerivedRuntimeElementData elementData,
             @Nonnull ProcessExecutionData processDataContext
     ) {
+        return evaluate(operand, elementData, processDataContext, null);
+    }
+
+    @Nonnull
+    public NoCodeResult evaluate(
+            @Nullable NoCodeOperand operand,
+            @Nonnull DerivedRuntimeElementData elementData,
+            @Nonnull ProcessExecutionData processDataContext,
+            @Nullable List<Integer> wildcardIndices
+    ) {
         if (operand == null) {
             return new NoCodeResult(null);
         }
@@ -110,25 +117,36 @@ public class NoCodeEvaluationService {
 
             // Process data references resolve based on the injected process context map
             case NoCodeProcessDataReference processDataReference -> {
-                var sourceData = processDataContext.get(ProcessExecutionData.PROCESS_DATA_KEY);
-                var value = resolvePath(sourceData, processDataReference.getPath());
+                var value = ProcessDataValueUtils.resolveProcessDataValue(
+                        processDataContext,
+                        processDataReference.getPath(),
+                        resolveWildcardIndices(processDataReference.getPath(), wildcardIndices, false)
+                );
                 yield new NoCodeResult(value);
             }
 
             case NoCodeInstanceDataReference instanceDataReference -> {
                 var sourceData = processDataContext.get(ProcessExecutionData.PROCESS_METADATA_KEY);
-                var value = resolvePath(sourceData, instanceDataReference.getPath());
+                var value = ProcessDataValueUtils.resolveDestinationKeyValue(
+                        sourceData,
+                        instanceDataReference.getPath(),
+                        resolveWildcardIndices(instanceDataReference.getPath(), wildcardIndices, false)
+                );
                 yield new NoCodeResult(value);
             }
 
             case NoCodeNodeDataReference nodeDataReference -> {
                 var sourceData = resolveNodeData(nodeDataReference, processDataContext);
-                var value = resolvePath(sourceData, nodeDataReference.getPath());
+                var value = ProcessDataValueUtils.resolveDestinationKeyValue(
+                        sourceData,
+                        nodeDataReference.getPath(),
+                        resolveWildcardIndices(nodeDataReference.getPath(), wildcardIndices, true)
+                );
                 yield new NoCodeResult(value);
             }
 
             // Expressions resolve by evaluating them
-            case NoCodeExpression expression -> evaluateNoCodeExpression(expression, elementData, processDataContext);
+            case NoCodeExpression expression -> evaluateNoCodeExpression(expression, elementData, processDataContext, wildcardIndices);
 
             // Unknown operands are not supported
             default -> throw new IllegalStateException("Unexpected value: " + operand);
@@ -139,7 +157,8 @@ public class NoCodeEvaluationService {
     private NoCodeResult evaluateNoCodeExpression(
             @Nonnull NoCodeExpression expression,
             @Nonnull DerivedRuntimeElementData elementData,
-            @Nonnull ProcessExecutionData processDataContext
+            @Nonnull ProcessExecutionData processDataContext,
+            @Nullable List<Integer> wildcardIndices
     ) {
         var operands = expression.getOperands();
         if (operands == null) {
@@ -148,7 +167,7 @@ public class NoCodeEvaluationService {
 
         var operandValues = operands
                 .stream()
-                .map(op -> evaluate(op, elementData, processDataContext))
+                .map(op -> evaluate(op, elementData, processDataContext, wildcardIndices))
                 .map(NoCodeResult::getValue)
                 .toArray();
 
@@ -183,59 +202,25 @@ public class NoCodeEvaluationService {
     }
 
     @Nullable
-    private Object resolvePath(@Nullable Object root, @Nullable String path) {
-        if (root == null) {
+    private static List<Integer> resolveWildcardIndices(@Nullable String path,
+                                                        @Nullable List<Integer> wildcardIndices,
+                                                        boolean allowArrayRoot) {
+        var wildcardCount = ProcessDataValueUtils.countWildcardSegments(path, allowArrayRoot);
+        if (wildcardCount == 0) {
             return null;
         }
 
-        if (path == null || path.isBlank()) {
-            return root;
+        if (wildcardIndices == null) {
+            throw new IllegalArgumentException("Wildcard destination keys require explicit indices.");
         }
 
-        var tokens = tokenizePath(path);
-        var current = root;
-        for (var token : tokens) {
-            if (current == null) {
-                return null;
-            }
-
-            if (token.index != null) {
-                if (current instanceof List<?> list) {
-                    if (token.index < 0 || token.index >= list.size()) {
-                        return null;
-                    }
-                    current = list.get(token.index);
-                } else {
-                    return null;
-                }
-            } else if (token.key != null) {
-                if (current instanceof Map<?, ?> map) {
-                    current = map.get(token.key);
-                } else {
-                    return null;
-                }
-            }
+        if (wildcardIndices.size() < wildcardCount) {
+            throw new IllegalArgumentException(
+                    "Wildcard destination key requires " + wildcardCount + " bound index values, but only " +
+                            wildcardIndices.size() + " are available."
+            );
         }
 
-        return current;
-    }
-
-    @Nonnull
-    private List<PathToken> tokenizePath(@Nonnull String path) {
-        var matcher = PATH_TOKEN_PATTERN.matcher(path);
-        var tokens = new ArrayList<PathToken>();
-        while (matcher.find()) {
-            var key = matcher.group(1);
-            var index = matcher.group(2);
-            if (key != null) {
-                tokens.add(new PathToken(key, null));
-            } else if (index != null) {
-                tokens.add(new PathToken(null, Integer.parseInt(index)));
-            }
-        }
-        return tokens;
-    }
-
-    private record PathToken(@Nullable String key, @Nullable Integer index) {
+        return List.copyOf(wildcardIndices.subList(0, wildcardCount));
     }
 }

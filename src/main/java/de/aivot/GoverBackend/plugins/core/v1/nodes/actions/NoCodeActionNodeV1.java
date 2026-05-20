@@ -29,7 +29,9 @@ import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecution
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.utils.StringUtils;
+import de.aivot.GoverBackend.utils.MapUtils;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -159,19 +161,19 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLES,
                         "Variablen",
-                        "Die berechneten Variablen als Objekt mit Variablennamen als Schlüssel."
+                        "Die berechneten Variablen als Liste aufgelöster Zielpfade."
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_VARIABLE_COUNT,
                         "Anzahl Variablen",
-                        "Die Anzahl der erfolgreich berechneten Variablen."
+                        "Die Anzahl der tatsächlich geschriebenen Zielwerte."
                 )
         );
     }
 
     @Override
-    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull NoCodeActionNodeConfiguration configuration, @Nonnull List<ProcessDataKeyHint> previousDataKeys) {
-        var hints = new ArrayList<>(previousDataKeys);
+    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull NoCodeActionNodeConfiguration configuration, @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
+        var hints = new ArrayList<>(previousDataKeyHints);
         var knownHints = new LinkedHashSet<>(hints);
 
         if (configuration.variables == null) {
@@ -189,7 +191,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             }
 
             try {
-                var normalizedPath = formatPath(parsePath(variableName, i + 1, "Variablenname"));
+                var normalizedPath = normalizeDestinationKey(variableName, i + 1, "Variablenname");
                 var hint = new ProcessDataKeyHint(normalizedPath, ProcessDataKeyHintType.ProcessData);
                 if (knownHints.add(hint)) {
                     hints.add(hint);
@@ -215,56 +217,55 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<NoCodeActionNodeConfiguration> context) throws ProcessNodeExecutionException {
         var sourceRoot = context.getCurrentProcessExecutionData().get("$");
-        if (!(sourceRoot instanceof Map<?, ?> sourceRootRawMap)) {
+        if (!(sourceRoot instanceof Map<?, ?>)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                     "Die Vorgangsdatenwurzel ($) ist kein Objekt."
             );
         }
 
-        var outputRoot = deepCopyMap(castStringObjectMap(sourceRootRawMap));
+        var workingExecutionData = ProcessExecutionData.of(MapUtils.deepCopy(context.getCurrentProcessExecutionData()));
         var variableDefinitions = parseVariableDefinitions(context.getConfigurationOfExecutingNode());
-        var variableValues = new LinkedHashMap<String, Object>();
+        var variableValues = new ArrayList<Map<String, Object>>();
 
         for (int i = 0; i < variableDefinitions.size(); i++) {
             var definition = variableDefinitions.get(i);
             var rowIndex = i + 1;
 
-            var targetPath = parsePath(definition.name(), rowIndex, "Variablenname");
-            var processDataContext = new ProcessExecutionData();
-            processDataContext.putAll(context.getCurrentProcessExecutionData());
-            processDataContext.put("$", outputRoot);
+            var targetPath = normalizeDestinationKey(definition.name(), rowIndex, "Variablenname");
+            var rowEvaluationData = ProcessExecutionData.of(MapUtils.deepCopy(workingExecutionData));
+            var wildcardBindings = resolveTargetWildcardBindings(rowEvaluationData, targetPath);
 
-            final Object evaluatedValue;
-            try {
-                evaluatedValue = noCodeEvaluationService
-                        .evaluate(
-                                definition.noCode(),
-                                createEvaluationContext(definition),
-                                processDataContext
-                        )
-                        .getValue();
-            } catch (RuntimeException e) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        e,
-                        "Der No-Code-Ausdruck in Zeile %d konnte nicht ausgewertet werden: %s",
+            for (var wildcardBinding : wildcardBindings) {
+                var evaluatedValue = evaluateVariableValue(
+                        definition,
                         rowIndex,
-                        e.getMessage()
+                        rowEvaluationData,
+                        wildcardBinding
                 );
+                var castedValue = castToTargetType(
+                        evaluatedValue,
+                        definition.targetType(),
+                        rowIndex
+                );
+                var resolvedPath = wildcardBinding.isEmpty()
+                        ? targetPath
+                        : ProcessDataValueUtils.materializeDestinationKey(targetPath, wildcardBinding);
+
+                writeProcessDataValue(workingExecutionData, targetPath, castedValue, wildcardBinding, rowIndex);
+                variableValues.add(createVariableValueEntry(
+                        rowIndex,
+                        definition,
+                        targetPath,
+                        resolvedPath,
+                        wildcardBinding,
+                        castedValue
+                ));
             }
-
-            var castedValue = castToTargetType(
-                    evaluatedValue,
-                    definition.targetType(),
-                    rowIndex
-            );
-
-            variableValues.put(definition.name(), castedValue);
-            writePath(outputRoot, targetPath, castedValue, rowIndex);
         }
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setProcessData(outputRoot)
+                .setProcessData(workingExecutionData.getProcessData())
                 .setNodeData(Map.of(
                         OUTPUT_NAME_VARIABLES, variableValues,
                         OUTPUT_NAME_VARIABLE_COUNT, variableValues.size()
@@ -282,6 +283,11 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             var variableName = row == null
                     ? null
                     : StringUtils.toNullableTrimmedString(row.name);
+            if (variableName == null) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "In der Zeile ist kein gültiger Variablenname angegeben."
+                );
+            }
 
             var targetType = row == null
                     ? TARGET_TYPE_ANY
@@ -289,6 +295,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             if (targetType == null) {
                 targetType = TARGET_TYPE_ANY;
             }
+            validateTargetType(targetType, result.size() + 1);
 
             var expressionOperand = row != null && row.expression != null
                     ? row.expression.getNoCode()
@@ -317,6 +324,185 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         effectiveValues.put(VARIABLE_TARGET_TYPE_FIELD_ID, definition.targetType());
         effectiveValues.put(VARIABLE_EXPRESSION_FIELD_ID, new NoCodeInputElementItem(definition.noCode()));
         return new DerivedRuntimeElementData().setEffectiveValues(effectiveValues);
+    }
+
+    @Nonnull
+    private List<List<Integer>> resolveTargetWildcardBindings(@Nonnull ProcessExecutionData processDataContext,
+                                                              @Nonnull String targetPath) {
+        if (!ProcessDataValueUtils.hasWildcardSegment(targetPath)) {
+            return List.of(List.of());
+        }
+
+        return ProcessDataValueUtils.resolveMatchingProcessDataValues(processDataContext, targetPath)
+                .stream()
+                .map(ProcessDataValueUtils.ResolvedProcessDataValue::wildcardIndices)
+                .toList();
+    }
+
+    @Nullable
+    private Object evaluateVariableValue(@Nonnull VariableDefinition definition,
+                                         int rowIndex,
+                                         @Nonnull ProcessExecutionData processDataContext,
+                                         @Nonnull List<Integer> wildcardBinding) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        try {
+            return noCodeEvaluationService
+                    .evaluate(
+                            definition.noCode(),
+                            createEvaluationContext(definition),
+                            processDataContext,
+                            wildcardBinding
+                    )
+                    .getValue();
+        } catch (RuntimeException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Der No-Code-Ausdruck in Zeile %d konnte nicht ausgewertet werden: %s",
+                    rowIndex,
+                    e.getMessage()
+            );
+        }
+    }
+
+    @Nonnull
+    private static Map<String, Object> createVariableValueEntry(int rowIndex,
+                                                                @Nonnull VariableDefinition definition,
+                                                                @Nonnull String configuredPath,
+                                                                @Nonnull String resolvedPath,
+                                                                @Nonnull List<Integer> wildcardIndices,
+                                                                @Nullable Object value) {
+        var entry = new LinkedHashMap<String, Object>();
+        entry.put("rowIndex", rowIndex);
+        entry.put("configuredPath", configuredPath);
+        entry.put("resolvedPath", resolvedPath);
+        entry.put("wildcardIndices", List.copyOf(wildcardIndices));
+        entry.put("targetType", definition.targetType());
+        entry.put("value", value);
+        return entry;
+    }
+
+    @Nonnull
+    private static String normalizeDestinationKey(@Nullable String rawPath,
+                                                  int rowIndex,
+                                                  @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var normalizedPath = StringUtils.toNullableTrimmedString(rawPath);
+        if (normalizedPath == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die Pfadangabe %s in Zeile %d darf nicht leer sein.",
+                    StringUtils.quote(fieldLabel),
+                    rowIndex
+            );
+        }
+
+        if (normalizedPath.startsWith("$.")) {
+            normalizedPath = normalizedPath.substring(2).trim();
+        } else if (normalizedPath.startsWith("$")) {
+            throw invalidPathException(
+                    rawPath,
+                    rowIndex,
+                    fieldLabel,
+                    "Pfade müssen relativ zur Vorgangsdatenwurzel angegeben werden. Ein führendes $. ist optional, andere $-Präfixe sind nicht erlaubt."
+            );
+        }
+
+        if ("_".equals(normalizedPath) || normalizedPath.startsWith("_.")) {
+            throw invalidPathException(
+                    rawPath,
+                    rowIndex,
+                    fieldLabel,
+                    "Pfade dürfen nur auf Vorgangsdaten ($) zeigen."
+            );
+        }
+
+        try {
+            ProcessDataValueUtils.validateDestinationKey(normalizedPath);
+            validateNumericArraySegments(normalizedPath, rowIndex, fieldLabel);
+        } catch (IllegalArgumentException e) {
+            throw invalidPathException(
+                    rawPath,
+                    rowIndex,
+                    fieldLabel,
+                    describePathValidationError(normalizedPath, e)
+            );
+        }
+
+        return normalizedPath;
+    }
+
+    private static void validateNumericArraySegments(@Nonnull String destinationKey,
+                                                     int rowIndex,
+                                                     @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        for (var segment : splitDestinationKeySegments(destinationKey)) {
+            if ("*".equals(segment) || !segment.chars().allMatch(Character::isDigit)) {
+                continue;
+            }
+
+            try {
+                Integer.parseInt(segment);
+            } catch (NumberFormatException e) {
+                throw invalidPathException(
+                        destinationKey,
+                        rowIndex,
+                        fieldLabel,
+                        "Array-Indizes müssen gültige 32-Bit-Ganzzahlen sein."
+                );
+            }
+        }
+    }
+
+    @Nonnull
+    private static String describePathValidationError(@Nonnull String path,
+                                                      @Nonnull IllegalArgumentException exception) {
+        if (path.contains("[*]")) {
+            return "Array-Wildcards müssen als eigenes Segment '*' angegeben werden; [*] ist nicht erlaubt.";
+        }
+        if (path.contains("[") || path.contains("]")) {
+            return "Array-Indizes müssen als numerische Segmente angegeben werden, z. B. items.0.name. Die Klammer-Schreibweise ist nicht erlaubt.";
+        }
+        return exception.getMessage() != null
+                ? exception.getMessage()
+                : "Der Pfad ist ungültig.";
+    }
+
+    @Nonnull
+    private static ProcessNodeExecutionExceptionInvalidConfiguration invalidPathException(@Nullable String path,
+                                                                                          int rowIndex,
+                                                                                          @Nonnull String fieldLabel,
+                                                                                          @Nonnull String detail) {
+        return new ProcessNodeExecutionExceptionInvalidConfiguration(
+                "Ungültiger Pfad in %s (Zeile %d): %s. Pfad: %s",
+                StringUtils.quote(fieldLabel),
+                rowIndex,
+                detail,
+                StringUtils.quote(path)
+        );
+    }
+
+    private static void writeProcessDataValue(@Nonnull ProcessExecutionData processExecutionData,
+                                              @Nonnull String destinationKey,
+                                              @Nullable Object value,
+                                              @Nonnull List<Integer> wildcardIndices,
+                                              int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        try {
+            if (wildcardIndices.isEmpty()) {
+                ProcessDataValueUtils.writeProcessDataValue(processExecutionData, destinationKey, value);
+            } else {
+                ProcessDataValueUtils.writeProcessDataValue(processExecutionData, destinationKey, value, wildcardIndices);
+            }
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    e,
+                    "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: %s",
+                    rowIndex,
+                    e.getMessage()
+            );
+        }
+    }
+
+    @Nonnull
+    private static List<String> splitDestinationKeySegments(@Nonnull String destinationKey) {
+        return Arrays.stream(destinationKey.split("\\.", -1))
+                .map(String::trim)
+                .toList();
     }
 
     private static void validateTargetType(@Nonnull String targetType,
@@ -492,300 +678,11 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         );
     }
 
-    @Nonnull
-    private static List<PathPart> parsePath(@Nonnull String path,
-                                            int rowIndex,
-                                            @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var trimmedPath = path.trim();
-        if (trimmedPath.isEmpty()) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Pfadangabe %s in Zeile %d darf nicht leer sein.",
-                    StringUtils.quote(fieldLabel),
-                    rowIndex
-            );
-        }
-
-        var result = new ArrayList<PathPart>();
-        var token = new StringBuilder();
-
-        for (int i = 0; i < trimmedPath.length(); i++) {
-            char c = trimmedPath.charAt(i);
-
-            if (c == '.') {
-                flushObjectToken(token, result, trimmedPath, rowIndex, fieldLabel);
-                continue;
-            }
-
-            if (c == '[') {
-                flushObjectToken(token, result, trimmedPath, rowIndex, fieldLabel);
-
-                int closingBracket = trimmedPath.indexOf(']', i);
-                if (closingBracket < 0) {
-                    throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Schließende ] fehlt.");
-                }
-
-                var indexStr = trimmedPath.substring(i + 1, closingBracket).trim();
-                if (indexStr.isEmpty()) {
-                    throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Array-Index fehlt.");
-                }
-
-                int index;
-                try {
-                    index = Integer.parseInt(indexStr);
-                } catch (NumberFormatException e) {
-                    throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Array-Index ist keine Zahl.");
-                }
-
-                if (index < 0) {
-                    throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Array-Index darf nicht negativ sein.");
-                }
-
-                result.add(new ArrayPathPart(index));
-                i = closingBracket;
-                continue;
-            }
-
-            if (c == ']') {
-                throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Unerwartete ] gefunden.");
-            }
-
-            token.append(c);
-        }
-
-        flushObjectToken(token, result, trimmedPath, rowIndex, fieldLabel);
-
-        if (result.isEmpty()) {
-            throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Pfad enthält keine Segmente.");
-        }
-
-        if (result.getFirst() instanceof ArrayPathPart) {
-            throw invalidPathException(trimmedPath, rowIndex, fieldLabel, "Pfad muss mit einem Objektsegment beginnen.");
-        }
-
-        return result;
-    }
-
-    private static void flushObjectToken(@Nonnull StringBuilder token,
-                                         @Nonnull List<PathPart> target,
-                                         @Nonnull String path,
-                                         int rowIndex,
-                                         @Nonnull String fieldLabel) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (token.isEmpty()) {
-            return;
-        }
-
-        var key = token.toString().trim();
-        token.setLength(0);
-
-        if (key.isEmpty()) {
-            throw invalidPathException(path, rowIndex, fieldLabel, "Leeres Objektsegment ist nicht erlaubt.");
-        }
-
-        target.add(new ObjectPathPart(key));
-    }
-
-    @Nonnull
-    private static ProcessNodeExecutionExceptionInvalidConfiguration invalidPathException(@Nonnull String path,
-                                                                                          int rowIndex,
-                                                                                          @Nonnull String fieldLabel,
-                                                                                          @Nonnull String detail) {
-        return new ProcessNodeExecutionExceptionInvalidConfiguration(
-                "Ungültiger Pfad in %s (Zeile %d): %s. Pfad: %s",
-                StringUtils.quote(fieldLabel),
-                rowIndex,
-                detail,
-                StringUtils.quote(path)
-        );
-    }
-
-    @Nonnull
-    private static String formatPath(@Nonnull List<PathPart> path) {
-        var builder = new StringBuilder();
-
-        for (var pathPart : path) {
-            if (pathPart instanceof ObjectPathPart objectPathPart) {
-                if (builder.length() > 0) {
-                    builder.append('.');
-                }
-                builder.append(objectPathPart.key());
-                continue;
-            }
-
-            var arrayPathPart = (ArrayPathPart) pathPart;
-            builder.append('[').append(arrayPathPart.index()).append(']');
-        }
-
-        return builder.toString();
-    }
-
-    private static void writePath(@Nonnull Map<String, Object> targetRoot,
-                                  @Nonnull List<PathPart> path,
-                                  Object value,
-                                  int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        Object current = targetRoot;
-
-        for (int i = 0; i < path.size() - 1; i++) {
-            var currentPart = path.get(i);
-            var nextPart = path.get(i + 1);
-
-            if (currentPart instanceof ObjectPathPart objectPathPart) {
-                if (!(current instanceof Map<?, ?> currentMapRaw)) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: Erwartet wurde ein Objektsegment.",
-                            rowIndex
-                    );
-                }
-
-                @SuppressWarnings("unchecked")
-                var currentMap = (Map<String, Object>) currentMapRaw;
-                var existing = currentMap.get(objectPathPart.key());
-
-                if (existing == null) {
-                    var created = createContainerFor(nextPart);
-                    currentMap.put(objectPathPart.key(), created);
-                    current = created;
-                } else {
-                    current = ensureCompatibleContainer(existing, nextPart, rowIndex);
-                }
-                continue;
-            }
-
-            var arrayPathPart = (ArrayPathPart) currentPart;
-            if (!(current instanceof List<?> currentListRaw)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: Erwartet wurde ein Arraysegment.",
-                        rowIndex
-                );
-            }
-
-            @SuppressWarnings("unchecked")
-            var currentList = (List<Object>) currentListRaw;
-            ensureListSize(currentList, arrayPathPart.index());
-
-            var existing = currentList.get(arrayPathPart.index());
-            if (existing == null) {
-                var created = createContainerFor(nextPart);
-                currentList.set(arrayPathPart.index(), created);
-                current = created;
-            } else {
-                current = ensureCompatibleContainer(existing, nextPart, rowIndex);
-            }
-        }
-
-        var lastPart = path.get(path.size() - 1);
-        if (lastPart instanceof ObjectPathPart objectPathPart) {
-            if (!(current instanceof Map<?, ?> currentMapRaw)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: Das Ziel ist kein Objekt.",
-                        rowIndex
-                );
-            }
-
-            @SuppressWarnings("unchecked")
-            var currentMap = (Map<String, Object>) currentMapRaw;
-            currentMap.put(objectPathPart.key(), value);
-            return;
-        }
-
-        var arrayPathPart = (ArrayPathPart) lastPart;
-        if (!(current instanceof List<?> currentListRaw)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: Das Ziel ist kein Array.",
-                    rowIndex
-            );
-        }
-
-        @SuppressWarnings("unchecked")
-        var currentList = (List<Object>) currentListRaw;
-        ensureListSize(currentList, arrayPathPart.index());
-        currentList.set(arrayPathPart.index(), value);
-    }
-
-    @Nonnull
-    private static Object createContainerFor(@Nonnull PathPart nextPart) {
-        return nextPart instanceof ArrayPathPart
-                ? new ArrayList<>()
-                : new HashMap<String, Object>();
-    }
-
-    @Nonnull
-    private static Object ensureCompatibleContainer(Object existing,
-                                                    @Nonnull PathPart nextPart,
-                                                    int rowIndex) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        if (nextPart instanceof ArrayPathPart && !(existing instanceof List<?>)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: Erwartet wurde ein Array, aber ein anderes Format ist bereits vorhanden.",
-                    rowIndex
-            );
-        }
-        if (nextPart instanceof ObjectPathPart && !(existing instanceof Map<?, ?>)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Konflikt beim Schreiben des No-Code-Ergebnisses in Zeile %d: Erwartet wurde ein Objekt, aber ein anderes Format ist bereits vorhanden.",
-                    rowIndex
-            );
-        }
-        return existing;
-    }
-
-    private static void ensureListSize(@Nonnull List<Object> list, int index) {
-        while (list.size() <= index) {
-            list.add(null);
-        }
-    }
-
-    @Nonnull
-    private static Map<String, Object> deepCopyMap(@Nonnull Map<String, Object> source) {
-        var copy = new HashMap<String, Object>();
-        for (var entry : source.entrySet()) {
-            copy.put(entry.getKey(), deepCopyValue(entry.getValue()));
-        }
-        return copy;
-    }
-
-    @Nonnull
-    private static List<Object> deepCopyList(@Nonnull List<?> source) {
-        var copy = new ArrayList<Object>(source.size());
-        for (var item : source) {
-            copy.add(deepCopyValue(item));
-        }
-        return copy;
-    }
-
-    private static Object deepCopyValue(Object value) {
-        if (value instanceof Map<?, ?> mapValue) {
-            return deepCopyMap(castStringObjectMap(mapValue));
-        }
-        if (value instanceof List<?> listValue) {
-            return deepCopyList(listValue);
-        }
-        return value;
-    }
-
-    @Nonnull
-    private static Map<String, Object> castStringObjectMap(@Nonnull Map<?, ?> map) {
-        var result = new HashMap<String, Object>();
-        for (var entry : map.entrySet()) {
-            if (entry.getKey() instanceof String key) {
-                result.put(key, entry.getValue());
-            }
-        }
-        return result;
-    }
-
     private record VariableDefinition(
             @Nonnull String name,
             @Nonnull String targetType,
             @Nonnull NoCodeOperand noCode
     ) {
-    }
-
-    private sealed interface PathPart permits ObjectPathPart, ArrayPathPart {
-    }
-
-    private record ObjectPathPart(@Nonnull String key) implements PathPart {
-    }
-
-    private record ArrayPathPart(int index) implements PathPart {
     }
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
@@ -804,7 +701,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     public static class NoCodeActionNodeVariableConfiguration {
         @InputElementPOJOBinding(id = VARIABLE_NAME_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Variablenname"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Name wird als Schlüssel in den Vorgangsdaten gespeichert."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Name wird als Zielpfad in den Vorgangsdaten gespeichert. Pfade verwenden Destination-Key-Syntax mit Punktnotation, numerischen Array-Segmenten und dem Wildcard-Segment *, z. B. person.name, items.0.name oder personen.*.alterNeu. Klammer-Schreibweisen wie [0] oder [*] sind nicht erlaubt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0)
         })

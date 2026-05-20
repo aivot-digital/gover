@@ -25,7 +25,7 @@ class ProcessDataKeyInputElementTest {
 
         var exception = assertThrows(ValidationException.class, () -> element.validate("applicant-name"));
 
-        assertEquals("Der Prozessdaten-Schluessel darf nur Buchstaben, Zahlen, Punkte, Unterstriche und Sternchen enthalten.", exception.getMessage());
+        assertEquals("Der Prozessdaten-Schlüssel darf nur Buchstaben (A-Z), Zahlen, Punkte, Unterstriche und Sternchen enthalten.", exception.getMessage());
     }
 
     @Test
