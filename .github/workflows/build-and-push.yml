@@ -28,17 +28,18 @@ env:
 jobs:
   testBackend:
     name: Test backend
-    if: github.event.pull_request.draft == false
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up JDK
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 21
           distribution: temurin
@@ -49,7 +50,9 @@ jobs:
 
   prepareBuildVars:
     name: Prepare release candidate build variables
-    if: github.event.pull_request.draft == false
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     runs-on: ubuntu-24.04
     outputs:
       build_date: ${{ steps.build_date.outputs.value }}
@@ -66,18 +69,26 @@ jobs:
         run: |
           if ${{ github.event_name == 'pull_request' }}; then
             if [[ "${{ github.event.pull_request.base.ref }}" == "main" || "${{ github.event.pull_request.base.ref }}" == "next" ]]; then
-              SOURCE_BRANCH=${{ github.event.pull_request.head.ref }}
-              echo "value=${SOURCE_BRANCH##*/}-beta-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+              SOURCE_BRANCH="${{ github.event.pull_request.head.ref }}"
+              BUILD_VERSION="${SOURCE_BRANCH##*/}-beta-${PR_NUMBER}"
             else
-              TARGET_BRANCH=${{ github.event.pull_request.base.ref }}
-              echo "value=${TARGET_BRANCH##*/}-alpha-${PR_NUMBER}" >> "$GITHUB_OUTPUT"
+              TARGET_BRANCH="${{ github.event.pull_request.base.ref }}"
+              BUILD_VERSION="${TARGET_BRANCH##*/}-alpha-${PR_NUMBER}"
             fi
           else
             if ${{ github.base_ref == 'next' }}; then
-              echo "value=${GITHUB_RUN_NUMBER#n}" >> "$GITHUB_OUTPUT"
+              BUILD_VERSION="${GITHUB_RUN_NUMBER#n}"
             else
-              echo "value=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+              BUILD_VERSION="${GITHUB_REF_NAME#v}"
             fi
+          fi
+
+          SEMVER_PATTERN='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if [[ "$BUILD_VERSION" =~ $SEMVER_PATTERN ]]; then
+            echo "value=$BUILD_VERSION" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Invalid build version::Computed build version '$BUILD_VERSION' is not valid SemVer. Falling back to 0.0.0."
+            echo "value=0.0.0" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Determine package name and set image name
@@ -92,26 +103,31 @@ jobs:
 
   generateSbom:
     name: Generate SBOMs and verify license compliance
-    if: github.event.pull_request.draft == false
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
     runs-on: ubuntu-24.04
     needs:
       - testBackend
       - prepareBuildVars
+    permissions:
+      contents: read
+      issues: write
     env:
       BUILD_VERSION: ${{ needs.prepareBuildVars.outputs.build_version }}
       BUILD_DATE: ${{ needs.prepareBuildVars.outputs.build_date }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Java and Node.js
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: 21
           distribution: temurin
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Prepare sbom output directory
         run: mkdir -p app/public/sbom/partials
@@ -192,7 +208,10 @@ jobs:
           python3 .github/scripts/check_licenses.py || true
 
       - name: Post or update license compliance comment
-        uses: actions/github-script@v7
+        if: >
+          github.event_name == 'pull_request' &&
+          github.event.pull_request.head.repo.full_name == github.repository
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
@@ -226,14 +245,18 @@ jobs:
             }
 
       - name: Upload SBOM bundle as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sbom-bundle
           path: app/public/sbom/
 
   buildArm64Image:
-    name: Build and push ARM64 image
-    if: github.event.pull_request.draft == false
+    name: Build ARM64 image and push preview/release when allowed
+    if: >
+      needs.prepareBuildVars.outputs.build_version != '0.0.0' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+      )
     runs-on: ubuntu-24.04-arm
     needs:
       - testBackend
@@ -248,12 +271,22 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
       PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
       IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
+      CAN_PUSH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Explain why image push is disabled
+        if: env.CAN_PUSH_IMAGE != 'true'
+        env:
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "::notice title=Image push skipped::Building the image for validation only. The pull request comes from '$HEAD_REPOSITORY', not '$BASE_REPOSITORY', so this run does not log in to GHCR or push packages."
 
       - name: Log in to the container registry
-        uses: docker/login-action@v3
+        if: env.CAN_PUSH_IMAGE == 'true'
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -261,27 +294,27 @@ jobs:
 
       - name: Extract metadata (tags, labels) for docker
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Download SBOM bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: sbom-bundle
           path: app/public/sbom/
 
-      - name: Build and push image
-        uses: docker/build-push-action@v5
+      - name: Build image and push when allowed
+        uses: docker/build-push-action@v7
         with:
           context: .
-          push: true
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-arm64
           labels: ${{ steps.meta.outputs.labels }}
           provenance: false # Disable provenance to avoid unknown/unknown
@@ -292,8 +325,12 @@ jobs:
             BUILD_DATE=${{ env.BUILD_DATE }}
 
   buildAmd64Image:
-    name: Build and push AMD64 image
-    if: github.event.pull_request.draft == false
+    name: Build AMD64 image and push preview/release when allowed
+    if: >
+      needs.prepareBuildVars.outputs.build_version != '0.0.0' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'pull_request' && github.event.pull_request.draft == false)
+      )
     needs:
       - testBackend
       - prepareBuildVars
@@ -308,12 +345,22 @@ jobs:
       BUILD_NUMBER: ${{ github.run_number }}
       PACKAGE_NAME: ${{ needs.prepareBuildVars.outputs.package_name }}
       IMAGE_NAME: ${{ needs.prepareBuildVars.outputs.image_name }}
+      CAN_PUSH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Explain why image push is disabled
+        if: env.CAN_PUSH_IMAGE != 'true'
+        env:
+          HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+          BASE_REPOSITORY: ${{ github.repository }}
+        run: |
+          echo "::notice title=Image push skipped::Building the image for validation only. The pull request comes from '$HEAD_REPOSITORY', not '$BASE_REPOSITORY', so this run does not log in to GHCR or push packages."
 
       - name: Log in to the container registry
-        uses: docker/login-action@v3
+        if: env.CAN_PUSH_IMAGE == 'true'
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -321,27 +368,27 @@ jobs:
 
       - name: Extract metadata (tags, labels) for docker
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@v6
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
+        uses: docker/setup-qemu-action@v4
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Download SBOM bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: sbom-bundle
           path: app/public/sbom/
 
-      - name: Build and push image
-        uses: docker/build-push-action@v5
+      - name: Build image and push when allowed
+        uses: docker/build-push-action@v7
         with:
           context: .
-          push: true
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-amd64
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}
@@ -355,7 +402,13 @@ jobs:
 
   mergeImages:
     name: Merge ARM64 and AMD64 images and push to registry
-    if: github.event.pull_request.draft == false
+    if: >
+      needs.prepareBuildVars.outputs.build_version != '0.0.0' &&
+      (github.event_name == 'push' ||
+       (github.event_name == 'pull_request' &&
+        github.event.pull_request.draft == false &&
+        github.event.pull_request.head.repo.full_name == github.repository)
+      )
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -370,13 +423,13 @@ jobs:
       - buildAmd64Image
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@v4
 
       - name: Log in to the container registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@v4
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
