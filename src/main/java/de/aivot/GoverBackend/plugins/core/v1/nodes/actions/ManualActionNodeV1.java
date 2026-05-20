@@ -485,7 +485,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         nodeData.put(OUTPUT_DATA, payloadUpdate);
         nodeData.put(OUTPUT_DIFF, diff);
         nodeData.put(OUTPUT_REMARK, remark);
-        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getUser().getId());
+        nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, Instant.now().toString());
 
         var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
