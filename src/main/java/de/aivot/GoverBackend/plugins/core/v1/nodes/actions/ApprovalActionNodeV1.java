@@ -152,7 +152,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         layout
                 .findChild(DATA_CONTENT_FIELD_ID, UiDefinitionInputElement.class)
                 .ifPresent(dataContentField -> {
-                    dataContentField.setElementType(ElementType.SummaryLayout);
+                    dataContentField.setElementType(ElementType.GroupLayout);
                     dataContentField.setVisibility(buildModeVisibility(MODE_DATA));
                     dataContentField.setDisplayContext(ElementDisplayContext.StaffFacing);
                 });
