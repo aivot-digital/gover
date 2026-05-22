@@ -43,6 +43,7 @@ import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionC
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -82,10 +83,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
+    private final TemplateRenderService templateRenderService;
 
-    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService, ElementDataTransformService elementDataTransformService) {
+    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService, ElementDataTransformService elementDataTransformService, TemplateRenderService templateRenderService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
+        this.templateRenderService = templateRenderService;
     }
 
     @Nonnull
@@ -225,7 +228,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<ApprovalConfiguration> context) throws ProcessNodeExecutionException {
         var config = context.getConfigurationOfExecutingNode();
-        var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(
@@ -243,8 +245,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 ));
 
         return ProcessNodeExecutionResultTaskAssigned
-                .of(assigneeUserId)
-                .setProcessData(workingProcessData);
+                .of(assigneeUserId);
     }
 
     @Nonnull
@@ -263,7 +264,9 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
         var criteriaContent = new RichTextContentElement();
         criteriaContent.setId("approval-criteria-content");
-        criteriaContent.setContent(config.criteria);
+        var renderedCriteria = templateRenderService
+                .interpolate(context.getCurrentProcessExecutionData(), config.criteria);
+        criteriaContent.setContent(renderedCriteria);
         children.add(criteriaContent);
 
         var contentHeadline = new HeadlineContentElement();
@@ -376,27 +379,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 .setProcessData(context.getThisTask().getProcessData()); // Copy the process data for the next step
 
         return Optional.of(result);
-    }
-
-    @Nonnull
-    private static Map<String, Object> extractWorkingProcessData(@Nonnull Map<String, Object> processData)
-            throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var rawWorkingProcessData = processData.get("$");
-
-        if (!(rawWorkingProcessData instanceof Map<?, ?> rawWorkingProcessDataMap)) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die Vorgangsdatenwurzel ($) ist kein Objekt."
-            );
-        }
-
-        var workingProcessData = new HashMap<String, Object>();
-        for (var entry : rawWorkingProcessDataMap.entrySet()) {
-            if (entry.getKey() instanceof String key) {
-                workingProcessData.put(key, entry.getValue());
-            }
-        }
-
-        return workingProcessData;
     }
 
     @Nonnull
