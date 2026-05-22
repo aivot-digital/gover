@@ -24,7 +24,9 @@ import java.util.List;
 
 @Component
 public class ProcessTaskMailService {
-    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
+    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter
+            .ofPattern("dd.MM.yyyy HH:mm")
+            .withZone(ApplicationTimeZone.getZoneId());
 
     private final MailService mailService;
     private final ProcessService processService;
@@ -64,9 +66,9 @@ public class ProcessTaskMailService {
                 .filter(value -> value != null && !value.isBlank())
                 .toList();
 
-        String startedLabel = DATE_TIME_FORMATTER.withZone(ApplicationTimeZone.getZoneId()).format(processInstanceTask.getStarted());
+        String startedLabel = DATE_TIME_FORMATTER.format(processInstanceTask.getStarted());
         String deadlineLabel = processInstanceTask.getDeadline() != null
-                ? DATE_TIME_FORMATTER.withZone(ApplicationTimeZone.getZoneId()).format(processInstanceTask.getDeadline())
+                ? DATE_TIME_FORMATTER.format(processInstanceTask.getDeadline())
                 : null;
 
         var mailData = new HashMap<String, Object>();

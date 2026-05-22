@@ -39,7 +39,6 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.*;
 
 import de.aivot.GoverBackend.utils.IsoTimestampUtils;
@@ -617,7 +616,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             return date.toString();
         }
         if (value instanceof Instant instant) {
-            return instant.atZone(zoneId()).toLocalDate().toString();
+            return instant.atZone(ApplicationTimeZone.getZoneId()).toLocalDate().toString();
         }
         if (value instanceof LocalDateTime dateTime) {
             return dateTime.toLocalDate().toString();
@@ -635,8 +634,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             } catch (Exception ignored) {
                 try {
                     return IsoTimestampUtils
-                            .parseIsoTimestamp(trimmed, zoneId())
-                            .atZone(zoneId())
+                            .parseIsoTimestamp(trimmed, ApplicationTimeZone.getZoneId())
+                            .atZone(ApplicationTimeZone.getZoneId())
                             .toLocalDate()
                             .toString();
                 } catch (Exception ignored2) {
@@ -662,10 +661,10 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             return instant.toString();
         }
         if (value instanceof LocalDateTime dateTime) {
-            return dateTime.atZone(zoneId()).toInstant().toString();
+            return dateTime.atZone(ApplicationTimeZone.getZoneId()).toInstant().toString();
         }
         if (value instanceof LocalDate date) {
-            return date.atStartOfDay(zoneId()).toInstant().toString();
+            return date.atStartOfDay(ApplicationTimeZone.getZoneId()).toInstant().toString();
         }
         if (value instanceof String s) {
             var trimmed = s.trim();
@@ -676,10 +675,10 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             }
 
             try {
-                return IsoTimestampUtils.parseIsoTimestamp(trimmed, zoneId()).toString();
+                return IsoTimestampUtils.parseIsoTimestamp(trimmed, ApplicationTimeZone.getZoneId()).toString();
             } catch (Exception ignored) {
                 try {
-                    return LocalDate.parse(trimmed).atStartOfDay(zoneId()).toInstant().toString();
+                    return LocalDate.parse(trimmed).atStartOfDay(ApplicationTimeZone.getZoneId()).toInstant().toString();
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
@@ -693,11 +692,6 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 "Der Typ %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
-    }
-
-    @Nonnull
-    private static ZoneId zoneId() {
-        return ApplicationTimeZone.getZoneId();
     }
 
     private record VariableDefinition(

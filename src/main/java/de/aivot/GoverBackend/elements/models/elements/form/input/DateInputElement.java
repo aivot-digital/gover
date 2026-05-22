@@ -23,11 +23,6 @@ import java.util.regex.Pattern;
 public class DateInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
     private static final Logger logger = LoggerFactory.getLogger(DateInputElement.class);
 
-    @Nonnull
-    public static ZoneId getZoneId() {
-        return ApplicationTimeZone.getZoneId();
-    }
-
     @Nullable
     private String placeholder;
 
@@ -73,7 +68,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                             .format(
                                     DateTimeFormatter
                                             .ofPattern(displayPattern)
-                                            .withZone(getZoneId())
+                                            .withZone(ApplicationTimeZone.getZoneId())
                             );
         }
 
@@ -114,7 +109,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
             return false;
         }
 
-        ZonedDateTime today = ZonedDateTime.now(getZoneId());
+        ZonedDateTime today = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
 
         switch (operator) {
             case YearsInPast -> {
@@ -302,9 +297,9 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
         private final int yearRes;
 
         public DateCompareResult(ZonedDateTime d1, ZonedDateTime d2) {
-            dayRes = Integer.compare(d1.withZoneSameInstant(getZoneId()).getDayOfMonth(), d2.withZoneSameInstant(getZoneId()).getDayOfMonth());
-            monthRes = Integer.compare(d1.withZoneSameInstant(getZoneId()).getMonthValue(), d2.withZoneSameInstant(getZoneId()).getMonthValue());
-            yearRes = Integer.compare(d1.withZoneSameInstant(getZoneId()).getYear(), d2.withZoneSameInstant(getZoneId()).getYear());
+            dayRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getDayOfMonth(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getDayOfMonth());
+            monthRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getMonthValue(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getMonthValue());
+            yearRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getYear(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getYear());
         }
 
         public boolean dayLt() {
@@ -345,8 +340,8 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
     }
 
     private boolean isSameDay(ZonedDateTime d1, ZonedDateTime d2) {
-        var d1Local = d1.withZoneSameInstant(getZoneId());
-        var d2Local = d2.withZoneSameInstant(getZoneId());
+        var d1Local = d1.withZoneSameInstant(ApplicationTimeZone.getZoneId());
+        var d2Local = d2.withZoneSameInstant(ApplicationTimeZone.getZoneId());
 
         return (
                 d1Local.getYear() == d2Local.getYear() &&
@@ -360,22 +355,22 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
         return switch (value) {
             case null -> null;
             case ZonedDateTime zValue -> zValue;
-            case LocalDate ldValue -> ldValue.atStartOfDay(getZoneId());
-            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(getZoneId()), lValue, getZoneId());
-            case Instant iValue -> iValue.atZone(getZoneId());
+            case LocalDate ldValue -> ldValue.atStartOfDay(ApplicationTimeZone.getZoneId());
+            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(ApplicationTimeZone.getZoneId()), lValue, ApplicationTimeZone.getZoneId());
+            case Instant iValue -> iValue.atZone(ApplicationTimeZone.getZoneId());
             case String sValue -> {
                 try {
                     // UI date pickers submit UTC ISO strings. Convert them back into the office
                     // timezone only for display and local rule evaluation.
-                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, getZoneId()).atZone(getZoneId());
+                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, ApplicationTimeZone.getZoneId()).atZone(ApplicationTimeZone.getZoneId());
                 } catch (DateTimeException ex) {
                     try {
                         var ld = LocalDate.parse(sValue);
-                        yield ld.atStartOfDay(getZoneId());
+                        yield ld.atStartOfDay(ApplicationTimeZone.getZoneId());
                     } catch (DateTimeException ex1) {
                         try {
                             var ld2 = LocalDate.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-                            yield ld2.atStartOfDay(getZoneId());
+                            yield ld2.atStartOfDay(ApplicationTimeZone.getZoneId());
                         } catch (DateTimeException ex2) {
                             String preparedValue = null;
 
@@ -395,7 +390,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                                 try {
                                     yield LocalDate
                                             .parse(preparedValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-                                            .atStartOfDay(getZoneId());
+                                            .atStartOfDay(ApplicationTimeZone.getZoneId());
                                 } catch (DateTimeParseException ex3) {
                                     yield null;
                                 }
