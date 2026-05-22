@@ -27,8 +27,8 @@ with recursive deputy_hierarchy as (
            ud.deputy_user_id   as deputy_user_id,
            1                   as depth
     from user_deputies ud
-    where (ud.until_timestamp is null or ud.until_timestamp > (now() at time zone '${gover_timezone}'))
-      and ud.from_timestamp < (now() at time zone '${gover_timezone}')
+    where (ud.until_timestamp is null or ud.until_timestamp > localtimestamp)
+      and ud.from_timestamp < localtimestamp
 
     union all
 
@@ -38,8 +38,8 @@ with recursive deputy_hierarchy as (
            dh.depth + 1      as depth
     from user_deputies ud
              inner join deputy_hierarchy dh on ud.original_user_id = dh.deputy_user_id
-    where (ud.until_timestamp is null or ud.until_timestamp > (now() at time zone '${gover_timezone}'))
-      and ud.from_timestamp < (now() at time zone '${gover_timezone}'))
+    where (ud.until_timestamp is null or ud.until_timestamp > localtimestamp)
+      and ud.from_timestamp < localtimestamp)
 select distinct dh.deputy_user_id,
                 dh.original_user_id,
                 dh.depth

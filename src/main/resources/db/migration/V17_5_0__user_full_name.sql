@@ -13,8 +13,7 @@ select udep.id                                                                  
        udep.from_timestamp                                                                            as from_timestamp,
        udep.until_timestamp                                                                           as until_timestamp,
        udep.until_timestamp is null or
-       (udep.from_timestamp < (now() at time zone '${gover_timezone}') and
-        udep.until_timestamp > (now() at time zone '${gover_timezone}'))                              as active,
+       (udep.from_timestamp < localtimestamp and udep.until_timestamp > localtimestamp)                as active,
 
        ou.id                                                                                          as original_user_id,
        ou.email                                                                                       as original_user_email,
