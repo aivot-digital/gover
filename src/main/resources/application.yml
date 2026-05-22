@@ -87,10 +87,6 @@ spring:
     baselineOnMigrate: ${GOVER_DB_BASELINE_ON_MIGRATE:false}
     # Add the option to allow flyway to repair the migration checksums
     repairOnMigrate: ${GOVER_DB_REPAIR_ON_MIGRATE:false}
-    placeholders:
-      # Keep SQL-local business time handling aligned with the configured app timezone.
-      gover_timezone: ${gover.timezone}
-
   # Set the properties for the mail server
   mail:
     host: ${GOVER_SMTP_HOST}
