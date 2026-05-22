@@ -349,7 +349,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             size={{
                                 xs: 12,
                                 lg: 6,
-                                xl: 3,
+                                xl: 6,
                             }}
                         >
                             <ProcessDataKeyInputComponent
