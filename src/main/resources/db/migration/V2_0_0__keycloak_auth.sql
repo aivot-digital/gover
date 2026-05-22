@@ -4,7 +4,7 @@ CREATE TABLE assets
 (
     key         uuid PRIMARY KEY,
     filename    VARCHAR(255) NOT NULL,
-    created     timestamptz  NOT NULL,
+    created     TIMESTAMP    NOT NULL,
     uploader_id VARCHAR(64) NOT NULL
 );
 

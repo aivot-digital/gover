@@ -5,8 +5,8 @@ CREATE TABLE system_configs
     key           VARCHAR(64) PRIMARY KEY,
     value         VARCHAR(96) NOT NULL,
     public_config BOOLEAN     NOT NULL DEFAULT false,
-    created       timestamptz NOT NULL,
-    updated       timestamptz NOT NULL
+    created       TIMESTAMP   NOT NULL,
+    updated       TIMESTAMP   NOT NULL
 );
 
 CREATE TABLE users
@@ -17,8 +17,8 @@ CREATE TABLE users
     password VARCHAR(60)  NOT NULL,
     active   BOOLEAN      NOT NULL DEFAULT TRUE,
     admin    BOOLEAN      NOT NULL DEFAULT FALSE,
-    created  timestamptz  NOT NULL,
-    updated  timestamptz  NOT NULL
+    created  TIMESTAMP    NOT NULL,
+    updated  TIMESTAMP    NOT NULL
 );
 
 CREATE TABLE departments
@@ -31,8 +31,8 @@ CREATE TABLE departments
     accessibility             TEXT         NOT NULL,
     technical_support_address VARCHAR(255) NOT NULL,
     special_support_address   VARCHAR(255) NOT NULL,
-    created                   timestamptz  NOT NULL,
-    updated                   timestamptz  NOT NULL
+    created                   TIMESTAMP    NOT NULL,
+    updated                   TIMESTAMP    NOT NULL
 );
 
 CREATE TABLE department_memberships
@@ -50,8 +50,8 @@ CREATE TABLE provider_links
     id      SERIAL PRIMARY KEY,
     text    VARCHAR(128) NOT NULL,
     link    VARCHAR(128) NOT NULL,
-    created timestamptz  NOT NULL,
-    updated timestamptz  NOT NULL
+    created TIMESTAMP    NOT NULL,
+    updated TIMESTAMP    NOT NULL
 );
 
 CREATE TABLE destinations
@@ -59,8 +59,8 @@ CREATE TABLE destinations
     id                        SERIAL PRIMARY KEY,
     name                      VARCHAR(96)  NOT NULL,
     type                      INTEGER      NOT NULL,
-    created                   timestamptz  NOT NULL,
-    updated                   timestamptz  NOT NULL,
+    created                   TIMESTAMP    NOT NULL,
+    updated                   TIMESTAMP    NOT NULL,
 
     mail_to                   VARCHAR(255) NULL,
     mailCC                    VARCHAR(255) NULL,
@@ -77,8 +77,8 @@ CREATE TABLE presets
     id      SERIAL PRIMARY KEY,
     root    jsonb     NOT NULL DEFAULT '{}',
 
-    created timestamptz NOT NULL,
-    updated timestamptz NOT NULL
+    created TIMESTAMP NOT NULL,
+    updated TIMESTAMP NOT NULL
 );
 
 CREATE TABLE applications
@@ -107,8 +107,8 @@ CREATE TABLE applications
     customer_access_hours           INTEGER      NULL,
     submission_deletion_weeks       INTEGER      NULL,
 
-    created                         timestamptz  NOT NULL,
-    updated                         timestamptz  NOT NULL,
+    created                         TIMESTAMP    NOT NULL,
+    updated                         TIMESTAMP    NOT NULL,
 
     UNIQUE (slug, version)
 );
@@ -117,9 +117,9 @@ CREATE TABLE submissions
 (
     id                  VARCHAR(36) PRIMARY KEY,
     application_id      INTEGER     NOT NULL REFERENCES applications ON DELETE CASCADE,
-    created             timestamptz NOT NULL,
+    created             TIMESTAMP   NOT NULL,
     assignee_id         INTEGER     NULL REFERENCES users,
-    archived            timestamptz NULL,
+    archived            TIMESTAMP   NULL,
     file_number         VARCHAR(96) NULL,
     destination_id      INTEGER     NULL REFERENCES destinations (id) ON DELETE SET NULL,
     customer_input      jsonb       NOT NULL DEFAULT '{}',
