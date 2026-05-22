@@ -30,7 +30,7 @@ import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
@@ -195,8 +195,8 @@ class ProcessNodeServiceTest {
                 .setInternalTitle("Process")
                 .setAccessKey(UUID.randomUUID())
                 .setVersionCount(1)
-                .setCreated(LocalDateTime.now())
-                .setUpdated(LocalDateTime.now());
+                .setCreated(Instant.now())
+                .setUpdated(Instant.now());
     }
 
     private ProcessVersionEntity createProcessVersion() {
@@ -205,8 +205,8 @@ class ProcessNodeServiceTest {
                 .setProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessVersionStatus.Drafted)
                 .setPublicTitle("Draft")
-                .setCreated(LocalDateTime.now())
-                .setUpdated(LocalDateTime.now());
+                .setCreated(Instant.now())
+                .setUpdated(Instant.now());
     }
 
     private ProcessNodeEntity createNode(int id, String dataKey) {

@@ -8,16 +8,16 @@ import org.thymeleaf.expression.IExpressionObjectFactory;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.Locale;
 import java.util.Set;
 
-public class NumberFormatDialect extends AbstractDialect implements IExpressionObjectDialect {
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 
+public class NumberFormatDialect extends AbstractDialect implements IExpressionObjectDialect {
     public NumberFormatDialect() {
         super("numberformat");
     }
@@ -41,8 +41,15 @@ public class NumberFormatDialect extends AbstractDialect implements IExpressionO
     }
 
     public String formatISOTimestamp(String timestamp, String format) {
-        var dateTime = LocalDateTime.parse(timestamp, DateTimeFormatter.ISO_DATE_TIME);
-        return dateTime.format(DateTimeFormatter.ofPattern(format));
+        try {
+            var displayZone = ApplicationTimeZone.getZoneId();
+            var instant = IsoTimestampUtils.parseIsoTimestamp(timestamp, displayZone);
+            return instant
+                    .atZone(displayZone)
+                    .format(DateTimeFormatter.ofPattern(format));
+        } catch (DateTimeParseException ex) {
+            return timestamp;
+        }
     }
 
     @Override

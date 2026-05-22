@@ -126,7 +126,7 @@ public class DestinationDataFormatter {
     private void createMetadata() {
         insertValue("metadata.submission_id", submission.getId());
         insertValue("metadata.is_test_submission", submission.getIsTestSubmission());
-        insertValue("metadata.submitted", submission.getCreated().format(DateTimeFormatter.ISO_DATE_TIME));
+        insertValue("metadata.submitted", submission.getCreated().toString());
         insertValue("metadata.user_rating", submission.getReviewScore());
     }
 

@@ -19,7 +19,7 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -109,7 +109,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         // Copy static fields
         entity.setId(existingDepartment.getId());
         entity.setCreated(existingDepartment.getCreated());
-        entity.setUpdated(LocalDateTime.now());
+        entity.setUpdated(Instant.now());
         entity.setDepth(existingDepartment.getDepth());
         validateParentHierarchy(id, entity.getParentDepartmentId());
 

@@ -9,7 +9,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,7 +26,7 @@ public class ProcessChangeEntity {
 
     @Nonnull
     @NotNull(message = "Der Zeitstempel darf nicht null sein.")
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     @Nonnull
     @NotNull(message = "Die Benutzer-ID darf nicht null sein.")
@@ -68,7 +68,7 @@ public class ProcessChangeEntity {
 
     // Full constructor
     public ProcessChangeEntity(@Nonnull Long id,
-                               @Nonnull LocalDateTime timestamp,
+                               @Nonnull Instant timestamp,
                                @Nonnull String userId,
                                @Nonnull Integer processId,
                                @Nullable Integer processVersion,
@@ -120,11 +120,11 @@ public class ProcessChangeEntity {
     }
 
     @Nonnull
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public ProcessChangeEntity setTimestamp(@Nonnull LocalDateTime timestamp) {
+    public ProcessChangeEntity setTimestamp(@Nonnull Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }

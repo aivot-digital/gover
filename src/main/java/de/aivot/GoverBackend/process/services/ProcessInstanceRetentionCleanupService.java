@@ -14,7 +14,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @Service
@@ -46,7 +46,7 @@ public class ProcessInstanceRetentionCleanupService {
         cleanDueProcessInstances("startup");
     }
 
-    @Scheduled(cron = "0 0 10 * * *", zone = "Europe/Berlin")
+    @Scheduled(cron = "0 0 10 * * *", zone = "${gover.timezone}")
     public void cleanDueProcessInstancesNightly() {
         cleanDueProcessInstances("daily-schedule");
     }
@@ -58,7 +58,7 @@ public class ProcessInstanceRetentionCleanupService {
         }
 
         try {
-            var now = LocalDateTime.now();
+            var now = Instant.now();
             var dueProcessInstanceCount = processInstanceRepository
                     .countByStatusAndKeepUntilLessThanEqual(
                             ProcessInstanceStatus.Completed,

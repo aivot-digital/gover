@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.providerLink.entities;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "provider_links")
@@ -24,20 +24,20 @@ public class ProviderLink {
     private String link;
 
     @NotNull
-    private LocalDateTime created;
+    private Instant created;
 
     @NotNull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // region Getters & Setters
@@ -66,19 +66,19 @@ public class ProviderLink {
         this.link = link;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public void setCreated(LocalDateTime created) {
+    public void setCreated(Instant created) {
         this.created = created;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public void setUpdated(LocalDateTime updated) {
+    public void setUpdated(Instant updated) {
         this.updated = updated;
     }
 

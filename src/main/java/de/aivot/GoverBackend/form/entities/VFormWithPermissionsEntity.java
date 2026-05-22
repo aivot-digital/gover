@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.form.entities;
 
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "v_forms_with_permissions")
@@ -13,8 +13,8 @@ public class VFormWithPermissionsEntity {
     private String slug;
     private String internalTitle;
     private Integer developingDepartmentId;
-    private LocalDateTime created;
-    private LocalDateTime updated;
+    private Instant created;
+    private Instant updated;
     @Column(columnDefinition = "int2")
     private Integer publishedVersion;
     @Column(columnDefinition = "int2")
@@ -39,8 +39,8 @@ public class VFormWithPermissionsEntity {
                                       String slug,
                                       String internalTitle,
                                       Integer developingDepartmentId,
-                                      LocalDateTime created,
-                                      LocalDateTime updated,
+                                      Instant created,
+                                      Instant updated,
                                       Integer publishedVersion,
                                       Integer draftedVersion,
                                       Integer versionCount,
@@ -119,20 +119,20 @@ public class VFormWithPermissionsEntity {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public VFormWithPermissionsEntity setCreated(LocalDateTime created) {
+    public VFormWithPermissionsEntity setCreated(Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public VFormWithPermissionsEntity setUpdated(LocalDateTime updated) {
+    public VFormWithPermissionsEntity setUpdated(Instant updated) {
         this.updated = updated;
         return this;
     }

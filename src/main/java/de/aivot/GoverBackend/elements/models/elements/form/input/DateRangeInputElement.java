@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.enums.DateType;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -71,7 +72,7 @@ public class DateRangeInputElement extends BaseInputElement<RangeInputElementVal
 
         var formatter = DateTimeFormatter
                 .ofPattern(pattern)
-                .withZone(DateInputElement.zoneId);
+                .withZone(ApplicationTimeZone.getZoneId());
 
         var start = value.getStart() == null ? "Keine Angabe" : value.getStart().format(formatter);
         var end = value.getEnd() == null ? "Keine Angabe" : value.getEnd().format(formatter);

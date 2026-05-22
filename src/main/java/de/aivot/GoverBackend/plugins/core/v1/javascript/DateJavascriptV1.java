@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.plugins.core.v1.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
@@ -69,10 +70,10 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
 
     private static final DateTimeFormatter isoDateDateFormatter = DateTimeFormatter
             .ofPattern("yyyy-MM-dd")
-            .withZone(ZoneId.systemDefault());
+            .withZone(ApplicationTimeZone.getZoneId());
     private static final DateTimeFormatter germanDateFormatter = DateTimeFormatter
             .ofPattern("dd.MM.yyyy")
-            .withZone(ZoneId.systemDefault());
+            .withZone(ApplicationTimeZone.getZoneId());
     private static final DateTimeFormatter[] availableDateFormatters = new DateTimeFormatter[]{
             DateTimeFormatter.ISO_DATE_TIME,
             isoDateDateFormatter,
@@ -83,7 +84,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     public ZonedDateTime createDate() {
         return LocalDate
                 .now()
-                .atStartOfDay(ZoneId.systemDefault());
+                .atStartOfDay(ApplicationTimeZone.getZoneId());
     }
 
     @HostAccess.Export
@@ -111,7 +112,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
                 long epochMilli = number.longValue();
                 yield ZonedDateTime.ofInstant(
                         Instant.ofEpochSecond(epochMilli),
-                        ZoneId.systemDefault()
+                        ApplicationTimeZone.getZoneId()
                 );
             }
             case String dateString -> {
@@ -119,7 +120,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
                     try {
                         yield LocalDate
                                 .parse(dateString, formatter)
-                                .atStartOfDay(ZoneId.systemDefault());
+                                .atStartOfDay(ApplicationTimeZone.getZoneId());
                     } catch (Exception e) {
                         // Try next format
                     }
@@ -342,7 +343,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         try {
             var formatter = DateTimeFormatter
                     .ofPattern(format)
-                    .withZone(ZoneId.systemDefault());
+                    .withZone(ApplicationTimeZone.getZoneId());
             return formatter.format(date);
         } catch (Exception e) {
             return null;

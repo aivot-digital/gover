@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.form.entities.FormEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import jakarta.annotation.Nonnull;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record FormExportDTO(
         @Nonnull
@@ -14,7 +14,7 @@ public record FormExportDTO(
         @Nonnull
         Build build,
         @Nonnull
-        LocalDateTime timestamp
+        Instant timestamp
 ) {
     public record Build(
             @Nonnull

@@ -15,6 +15,7 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,8 +24,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -87,7 +87,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 id = String.valueOf(_id);
             }
             default -> {
-                var now = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+                var now = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
 
                 var startMatcher = ID_GEN_INC_START_PATTERN.matcher(schema.getIdGen());
                 var endMatcher = ID_GEN_INC_END_PATTERN.matcher(schema.getIdGen());
@@ -161,7 +161,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
     @Override
     public void performDelete(@Nonnull DataObjectItemEntity entity) throws ResponseException {
-        entity.setDeleted(LocalDateTime.now());
+        entity.setDeleted(Instant.now());
         dataObjectItemRepository.save(entity);
     }
 

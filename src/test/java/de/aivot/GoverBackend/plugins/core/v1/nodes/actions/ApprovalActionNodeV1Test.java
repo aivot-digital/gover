@@ -34,7 +34,6 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -273,7 +272,7 @@ class ApprovalActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -304,7 +303,7 @@ class ApprovalActionNodeV1Test {
             Map<String, Object> nodeData,
             Map<String, Object> processData
     ) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)

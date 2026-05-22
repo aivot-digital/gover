@@ -5,7 +5,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.UUID;
 
 @Entity
@@ -33,10 +33,10 @@ public class PresetEntity {
     private Integer versionCount;
 
     @Nullable
-    private LocalDateTime created;
+    private Instant created;
 
     @Nullable
-    private LocalDateTime updated;
+    private Instant updated;
 
     // region Constructors
 
@@ -50,8 +50,8 @@ public class PresetEntity {
                         @Nullable Integer publishedVersion,
                         @Nullable Integer draftedVersion,
                         @Nonnull Integer versionCount,
-                        @Nullable LocalDateTime created,
-                        @Nullable LocalDateTime updated) {
+                        @Nullable Instant created,
+                        @Nullable Instant updated) {
         this.key = key;
         this.title = title;
         this.publishedVersion = publishedVersion;
@@ -67,13 +67,13 @@ public class PresetEntity {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -121,21 +121,21 @@ public class PresetEntity {
     }
 
     @Nullable
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public PresetEntity setCreated(@Nullable LocalDateTime created) {
+    public PresetEntity setCreated(@Nullable Instant created) {
         this.created = created;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public PresetEntity setUpdated(@Nullable LocalDateTime updated) {
+    public PresetEntity setUpdated(@Nullable Instant updated) {
         this.updated = updated;
         return this;
     }

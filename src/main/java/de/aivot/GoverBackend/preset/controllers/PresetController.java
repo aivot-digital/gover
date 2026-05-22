@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -153,7 +153,7 @@ public class PresetController {
                 .orElseThrow(ResponseException::notFound);
 
         preset.setTitle(updatedPresetEntity.getTitle());
-        preset.setUpdated(LocalDateTime.now());
+        preset.setUpdated(Instant.now());
 
         var savePreset = presetRepository.save(preset);
 

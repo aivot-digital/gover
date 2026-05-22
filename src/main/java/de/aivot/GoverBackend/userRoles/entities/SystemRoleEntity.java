@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -40,23 +40,23 @@ public class SystemRoleEntity {
 
     @Nonnull
     @Column(nullable = false)
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
     @Column(nullable = false)
-    private LocalDateTime updated;
+    private Instant updated;
 
     // region Signales
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -104,21 +104,21 @@ public class SystemRoleEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public SystemRoleEntity setCreated(@Nonnull LocalDateTime created) {
+    public SystemRoleEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public SystemRoleEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public SystemRoleEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

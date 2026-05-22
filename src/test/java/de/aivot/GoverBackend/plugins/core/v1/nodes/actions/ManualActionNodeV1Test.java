@@ -7,6 +7,8 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
+import de.aivot.GoverBackend.elements.models.elements.form.input.DateInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.DateTimeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
@@ -40,13 +42,14 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
 import static de.aivot.GoverBackend.TestData.authored;
+import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -328,6 +331,50 @@ class ManualActionNodeV1Test {
     }
 
     @Test
+    void onEventFromStaffTaskView_CompleteDoesNotCreateSpuriousDiffForEquivalentTemporalValues() throws Exception {
+        var processData = Map.<String, Object>of(
+                "date", "2026-05-09T00:00:00+02:00",
+                "datetime", "2021-02-07T12:15:00+01:00"
+        );
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configurationWithTemporalFields()),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                processData
+                        ),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configurationWithTemporalFields()),
+                        currentProcessData(processData)
+                ),
+                authored(
+                        "dateField", "2026-05-08T22:00:00.000Z",
+                        "dateTimeField", "2021-02-07T11:15:00.000Z"
+                ),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+
+        @SuppressWarnings("unchecked")
+        var changedData = (Map<String, Object>) completed.getNodeData().get("data");
+        assertEquals("2026-05-09T00:00:00+02:00", changedData.get("date"));
+        assertEquals("2021-02-07T12:15:00+01:00", changedData.get("datetime"));
+
+        @SuppressWarnings("unchecked")
+        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
+        assertEquals(List.of(), diff);
+    }
+
+    @Test
     void onEventFromStaffTaskView_WithoutUiDefinitionCompletesWithoutDataChanges() throws Exception {
         var processData = Map.<String, Object>of("status", "open");
 
@@ -372,6 +419,29 @@ class ManualActionNodeV1Test {
 
         return authored(
                 "task_description", "<p>Bitte führen Sie die Prüfung vor Ort durch.</p>",
+                "ui_definition", contentRoot,
+                "assignment_context", assignmentContext()
+        );
+    }
+
+    private static AuthoredElementValues configurationWithTemporalFields() {
+        var contentRoot = new GroupLayoutElement();
+        contentRoot.setId("manual-action-root");
+
+        var dateField = new DateInputElement();
+        dateField.setId("dateField");
+        dateField.setLabel("Datum");
+        dateField.setDestinationKey("date");
+
+        var dateTimeField = new DateTimeInputElement();
+        dateTimeField.setId("dateTimeField");
+        dateTimeField.setLabel("Datum und Uhrzeit");
+        dateTimeField.setDestinationKey("datetime");
+
+        contentRoot.setChildren(List.of(dateField, dateTimeField));
+
+        return authored(
+                "task_description", "<p>Bitte prüfen Sie die Zeitwerte.</p>",
                 "ui_definition", contentRoot,
                 "assignment_context", assignmentContext()
         );
@@ -425,7 +495,7 @@ class ManualActionNodeV1Test {
     }
 
     private static ProcessInstanceEntity processInstance(String assignedUserId) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceEntity()
                 .setId(PROCESS_INSTANCE_ID)
@@ -448,7 +518,7 @@ class ManualActionNodeV1Test {
             Map<String, Object> nodeData,
             Map<String, Object> processData
     ) {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
 
         return new ProcessInstanceTaskEntity()
                 .setId(TASK_ID)

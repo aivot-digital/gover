@@ -10,13 +10,17 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 
 /**
  * Represents an operator in the NoCode language.
@@ -191,6 +195,9 @@ public abstract class NoCodeOperator {
             case ZonedDateTime zReferenceObject -> {
                 return castToDateTime(objectToCast);
             }
+            case Instant iReferenceObject -> {
+                return castToDateTime(objectToCast);
+            }
             case LocalDateTime lReferenceObject -> {
                 return castToDateTime(objectToCast);
             }
@@ -253,6 +260,7 @@ public abstract class NoCodeOperator {
             }
             case List<?> lValue -> BigDecimal.valueOf(lValue.size());
             case Map<?, ?> mValue -> BigDecimal.valueOf(mValue.size());
+            case Instant iValue -> BigDecimal.valueOf(iValue.getEpochSecond());
             case LocalDateTime ldtValue -> BigDecimal.valueOf(ldtValue.toEpochSecond(ZoneOffset.UTC));
             case ZonedDateTime zdtValue -> BigDecimal.valueOf(zdtValue.toEpochSecond());
             default -> BigDecimal.ZERO;
@@ -289,15 +297,16 @@ public abstract class NoCodeOperator {
                     yield "";
                 }
             }
+            case Instant iValue -> iValue.toString();
             case LocalDateTime ldtValue -> ldtValue.format(DateTimeFormatter.ISO_DATE_TIME);
-            case ZonedDateTime zdtValue -> zdtValue.format(DateTimeFormatter.ISO_DATE_TIME);
+            case ZonedDateTime zdtValue -> zdtValue.toInstant().toString();
             default -> "";
         };
     }
 
     private boolean isDateTimeString(String sValue) {
         try {
-            ZonedDateTime.parse(sValue);
+            IsoTimestampUtils.parseIsoTimestamp(sValue, ZoneOffset.UTC);
             return true;
         } catch (Exception e) {
             return false;
@@ -310,17 +319,36 @@ public abstract class NoCodeOperator {
             return ZonedDateTime.now();
         }
 
+        var parsedValue = tryCastToDateTime(value);
+        return parsedValue != null ? parsedValue : ZonedDateTime.now();
+    }
+
+    @Nonnull
+    protected ZonedDateTime requireDateTime(@Nullable Object value,
+                                            @Nonnull String invalidValueMessage) throws NoCodeException {
+        var parsedValue = tryCastToDateTime(value);
+        if (parsedValue == null) {
+            throw new NoCodeException(invalidValueMessage);
+        }
+
+        return parsedValue;
+    }
+
+    @Nullable
+    private ZonedDateTime tryCastToDateTime(@Nullable Object value) {
         return switch (value) {
+            case null -> null;
+            case Instant iValue -> iValue.atZone(ZoneOffset.UTC);
             case LocalDateTime ldtValue -> ZonedDateTime.of(ldtValue, ZoneOffset.UTC);
             case ZonedDateTime zdtValue -> zdtValue;
             case String sValue -> {
                 try {
-                    yield ZonedDateTime.parse(sValue);
-                } catch (Exception e) {
-                    yield ZonedDateTime.now();
+                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, ZoneOffset.UTC).atZone(ZoneOffset.UTC);
+                } catch (DateTimeParseException ignored) {
+                    yield null;
                 }
             }
-            default -> ZonedDateTime.now();
+            default -> null;
         };
     }
 

@@ -7,7 +7,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -34,16 +34,16 @@ public class PresetVersionEntity {
     private FormStatus status;
 
     @Nullable
-    private LocalDateTime created;
+    private Instant created;
 
     @Nullable
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime published;
+    private Instant published;
 
     @Nullable
-    private LocalDateTime revoked;
+    private Instant revoked;
 
     public PresetVersionEntity() {}
 
@@ -51,10 +51,10 @@ public class PresetVersionEntity {
                                @Nonnull Integer version,
                                @Nonnull GroupLayoutElement rootElement,
                                @Nonnull FormStatus status,
-                               @Nullable LocalDateTime created,
-                               @Nullable LocalDateTime updated,
-                               @Nullable LocalDateTime published,
-                               @Nullable LocalDateTime revoked) {
+                               @Nullable Instant created,
+                               @Nullable Instant updated,
+                               @Nullable Instant published,
+                               @Nullable Instant revoked) {
         this.presetKey = presetKey;
         this.version = version;
         this.rootElement = rootElement;
@@ -67,13 +67,13 @@ public class PresetVersionEntity {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // Equals & HashCode
@@ -144,41 +144,41 @@ public class PresetVersionEntity {
     }
 
     @Nullable
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public PresetVersionEntity setCreated(@Nullable LocalDateTime created) {
+    public PresetVersionEntity setCreated(@Nullable Instant created) {
         this.created = created;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public PresetVersionEntity setUpdated(@Nullable LocalDateTime updated) {
+    public PresetVersionEntity setUpdated(@Nullable Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getPublished() {
+    public Instant getPublished() {
         return published;
     }
 
-    public PresetVersionEntity setPublished(@Nullable LocalDateTime published) {
+    public PresetVersionEntity setPublished(@Nullable Instant published) {
         this.published = published;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getRevoked() {
+    public Instant getRevoked() {
         return revoked;
     }
 
-    public PresetVersionEntity setRevoked(@Nullable LocalDateTime revoked) {
+    public PresetVersionEntity setRevoked(@Nullable Instant revoked) {
         this.revoked = revoked;
         return this;
     }

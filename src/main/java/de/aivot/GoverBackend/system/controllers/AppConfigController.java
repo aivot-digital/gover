@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.system.dtos.SystemSetupDTO;
 import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletResponse;
@@ -70,6 +71,7 @@ public class AppConfigController {
     private static final String API_HOSTNAME_CONFIG_KEY = "apiHostname";
     private static final String REGISTRY_HOSTNAME_CONFIG_KEY = "registryHostname";
     private static final String SENTRY_DSN = "sentryDsn";
+    private static final String APPLICATION_TIMEZONE_CONFIG_KEY = "applicationTimeZone";
 
     private static final String OIDC_KEY = "oidc";
     private static final String OIDC_REALM_KEY = "realm";
@@ -114,6 +116,7 @@ public class AppConfigController {
         appConfig.put(API_HOSTNAME_CONFIG_KEY, goverConfig.getGoverHostname());
         appConfig.put(REGISTRY_HOSTNAME_CONFIG_KEY, goverConfig.getRegistryHostname());
         appConfig.put(SENTRY_DSN, goverConfig.getSentryWebApp());
+        appConfig.put(APPLICATION_TIMEZONE_CONFIG_KEY, ApplicationTimeZone.getZoneIdValue());
 
         var oidc = new HashMap<String, String>();
         oidc.put(OIDC_HOSTNAME_KEY, oidcIssuerURI);

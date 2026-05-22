@@ -25,7 +25,7 @@ import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +49,8 @@ class ProcessWorkerTest {
                 null,
                 List.of(),
                 Map.of(),
-                LocalDateTime.now(),
-                LocalDateTime.now(),
+                Instant.now(),
+                Instant.now(),
                 null,
                 null,
                 Map.of(),

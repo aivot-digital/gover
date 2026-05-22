@@ -1,6 +1,10 @@
 #!/bin/sh
 
+export GOVER_TIMEZONE="${GOVER_TIMEZONE:-Europe/Berlin}"
+export TZ="${GOVER_TIMEZONE}"
+
 echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
+echo "Using runtime timezone ${TZ}"
 
 if [ "$1" = "serve" ]; then
   echo "serve" > /app/runtime-mode
@@ -15,6 +19,7 @@ if [ "$1" = "serve" ]; then
   java \
     -cp /app/gover.jar \
     -Dloader.path=/app/plugins/ \
+    -Duser.timezone="${TZ}" \
     org.springframework.boot.loader.launch.PropertiesLauncher
 else
   echo "app" > /app/runtime-mode

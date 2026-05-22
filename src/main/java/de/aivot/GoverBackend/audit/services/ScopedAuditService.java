@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 
 public class ScopedAuditService {
@@ -35,7 +35,7 @@ public class ScopedAuditService {
     public void addAuditEntry(@Nonnull AuditLogPayload payload) {
         var request = getCurrentRequest();
 
-        var timestamp = payload.getTimestamp() != null ? payload.getTimestamp() : LocalDateTime.now();
+        var timestamp = payload.getTimestamp() != null ? payload.getTimestamp() : Instant.now();
         var actorId = trimToNull(payload.getActorId());
         var actorType = firstNonBlank(payload.getActorType(), actorId != null ? AuditLogPayload.ACTOR_TYPE_USER : AuditLogPayload.ACTOR_TYPE_SYSTEM);
 

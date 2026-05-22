@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -35,10 +35,10 @@ public class DataObjectSchemaEntity {
     private GroupLayoutElement schema;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Nonnull
     @Column(columnDefinition = "varchar(64)[]")
@@ -46,13 +46,13 @@ public class DataObjectSchemaEntity {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // region Equals & Hash
@@ -126,21 +126,21 @@ public class DataObjectSchemaEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public DataObjectSchemaEntity setCreated(@Nonnull LocalDateTime created) {
+    public DataObjectSchemaEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public DataObjectSchemaEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public DataObjectSchemaEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

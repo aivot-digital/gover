@@ -8,9 +8,9 @@ import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameterOption;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nullable;
 
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 
@@ -83,7 +83,9 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var date = castToDateTime(args[0]);
+        // Date-specific operators should fail explicitly for invalid inputs instead of silently
+        // falling back to a synthetic "now" value from the generic runtime casting helpers.
+        var date = requireDateTime(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
         var formatPattern = castToString(args[1]).trim();
 
         if (formatPattern.isEmpty()) {
@@ -94,7 +96,7 @@ public class NoCodeFormatDateOperator extends NoCodeOperator {
         try {
             formatter = DateTimeFormatter
                     .ofPattern(formatPattern, Locale.GERMAN)
-                    .withZone(ZoneId.systemDefault());
+                    .withZone(ApplicationTimeZone.getZoneId());
         } catch (Exception e) {
             throw new NoCodeException("Ungültiges Datumsformat: " + formatPattern);
         }

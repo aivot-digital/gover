@@ -22,7 +22,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -133,9 +132,9 @@ class ProcessInstanceTaskControllerTest {
                 .setPreviousProcessNodeId(33)
                 .setPreviousProcessNodePortKey("approved")
                 .setStatus(status)
-                .setStarted(LocalDateTime.now().minusMinutes(5))
-                .setUpdated(LocalDateTime.now().minusMinutes(1))
-                .setFinished(LocalDateTime.now())
+                .setStarted(Instant.now().minusSeconds(5 * 60L))
+                .setUpdated(Instant.now().minusSeconds(60))
+                .setFinished(Instant.now())
                 .setRuntimeData(Map.of())
                 .setNodeData(Map.of())
                 .setProcessData(Map.of());

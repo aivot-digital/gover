@@ -9,8 +9,8 @@ create table process_access_controls
 
     permissions          varchar(64)[] not null default '{}',
 
-    created              timestamp     not null default current_timestamp,
-    updated              timestamp     not null default current_timestamp,
+    created              timestamptz   not null default current_timestamp,
+    updated              timestamptz   not null default current_timestamp,
 
     -- ensure that either source_team_id or source_department_id is set, but not both
     check ( (source_team_id is null) <> (source_department_id is null) ),
@@ -31,8 +31,8 @@ create table process_instance_access_control_presets
 
     permissions            varchar(64)[] not null default '{}',
 
-    created                timestamp     not null default current_timestamp,
-    updated                timestamp     not null default current_timestamp,
+    created                timestamptz   not null default current_timestamp,
+    updated                timestamptz   not null default current_timestamp,
 
     -- ensure that either source_team_id or source_department_id is set, but not both
     check ( (source_team_id is null) <> (source_department_id is null) ),
@@ -55,8 +55,8 @@ create table process_instance_access_controls
 
     permissions                varchar(64)[] not null default '{}',
 
-    created                    timestamp     not null default current_timestamp,
-    updated                    timestamp     not null default current_timestamp,
+    created                    timestamptz   not null default current_timestamp,
+    updated                    timestamptz   not null default current_timestamp,
 
     -- ensure that either source_team_id or source_department_id is set, but not both
     check ( (source_team_id is null) <> (source_department_id is null) ),

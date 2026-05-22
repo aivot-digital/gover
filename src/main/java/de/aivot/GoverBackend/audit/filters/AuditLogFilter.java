@@ -7,7 +7,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -26,8 +26,8 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
     private String module;
     private List<String> modules;
     private String ipAddress;
-    private LocalDateTime timestampFrom;
-    private LocalDateTime timestampTo;
+    private Instant timestampFrom;
+    private Instant timestampTo;
 
     public static AuditLogFilter create() {
         return new AuditLogFilter();
@@ -205,21 +205,21 @@ public class AuditLogFilter implements Filter<AuditLogEntity> {
     }
 
     @Nullable
-    public LocalDateTime getTimestampFrom() {
+    public Instant getTimestampFrom() {
         return timestampFrom;
     }
 
-    public AuditLogFilter setTimestampFrom(@Nullable LocalDateTime timestampFrom) {
+    public AuditLogFilter setTimestampFrom(@Nullable Instant timestampFrom) {
         this.timestampFrom = timestampFrom;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getTimestampTo() {
+    public Instant getTimestampTo() {
         return timestampTo;
     }
 
-    public AuditLogFilter setTimestampTo(@Nullable LocalDateTime timestampTo) {
+    public AuditLogFilter setTimestampTo(@Nullable Instant timestampTo) {
         this.timestampTo = timestampTo;
         return this;
     }

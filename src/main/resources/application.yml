@@ -55,6 +55,11 @@ spring:
           isolation: TRANSACTION_REPEATABLE_READ
           pool_size: ${spring.datasource.hikari.maximum-pool-size}
 
+  jackson:
+    serialization:
+      # Keep Instants on the HTTP API as ISO-8601 strings instead of numeric timestamps.
+      write-dates-as-timestamps: false
+
   data:
     rest:
       # Set the default base path for the backend application
@@ -82,7 +87,6 @@ spring:
     baselineOnMigrate: ${GOVER_DB_BASELINE_ON_MIGRATE:false}
     # Add the option to allow flyway to repair the migration checksums
     repairOnMigrate: ${GOVER_DB_REPAIR_ON_MIGRATE:false}
-
   # Set the properties for the mail server
   mail:
     host: ${GOVER_SMTP_HOST}
@@ -185,6 +189,7 @@ captcha:
 # Set basic properties for the gover business case
 gover:
   goverHostname: "${GOVER_HOSTNAME}"
+  timezone: "${GOVER_TIMEZONE:Europe/Berlin}"
   fromMail: "${GOVER_FROM_MAIL}"
   reportMail: "${GOVER_REPORT_MAIL}"
   sentryServer: "${GOVER_SENTRY_SERVER:}"

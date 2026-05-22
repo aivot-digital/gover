@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -449,7 +449,7 @@ public class KeyCloakApiService {
     }
 
     private String accessKeyBuffer;
-    private LocalDateTime accessKeyBufferExpiry;
+    private Instant accessKeyBufferExpiry;
 
     /**
      * Retrieve the access token for the backend from the keycloak server
@@ -460,7 +460,7 @@ public class KeyCloakApiService {
      * @throws HttpConnectionException if the request is interrupted
      */
     private String getAccessToken() throws URISyntaxException, IOException, HttpConnectionException {
-        if (accessKeyBuffer != null && accessKeyBufferExpiry != null && LocalDateTime.now().isBefore(accessKeyBufferExpiry)) {
+        if (accessKeyBuffer != null && accessKeyBufferExpiry != null && Instant.now().isBefore(accessKeyBufferExpiry)) {
             return accessKeyBuffer;
         }
 
@@ -487,7 +487,7 @@ public class KeyCloakApiService {
         var jobject = new JSONObject(res.body());
 
         var expirySeconds = jobject.getInt("expires_in");
-        accessKeyBufferExpiry = LocalDateTime.now().plusSeconds(expirySeconds - 60); // Refresh the token 60 seconds before it expires
+        accessKeyBufferExpiry = Instant.now().plusSeconds(expirySeconds - 60); // Refresh the token 60 seconds before it expires
         accessKeyBuffer = jobject.getString("access_token");
         return accessKeyBuffer;
     }

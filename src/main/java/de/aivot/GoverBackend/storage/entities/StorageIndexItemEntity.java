@@ -11,7 +11,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -69,10 +69,10 @@ public class StorageIndexItemEntity {
     private StorageItemMetadata metadata;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     // region Constructors
 
@@ -88,8 +88,8 @@ public class StorageIndexItemEntity {
                                   @Nonnull String mimeType,
                                   @Nonnull Boolean missing,
                                   @Nonnull StorageItemMetadata metadata,
-                                  @Nonnull LocalDateTime created,
-                                  @Nonnull LocalDateTime updated) {
+                                  @Nonnull Instant created,
+                                  @Nonnull Instant updated) {
         this.storageProviderId = storageProviderId;
         this.storageProviderType = storageProviderType;
         this.pathFromRoot = pathFromRoot;
@@ -109,14 +109,14 @@ public class StorageIndexItemEntity {
 
     @PrePersist
     protected void onCreate() {
-        var now = LocalDateTime.now();
+        var now = Instant.now();
         created = now;
         updated = now;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -220,21 +220,21 @@ public class StorageIndexItemEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public StorageIndexItemEntity setCreated(@Nonnull LocalDateTime created) {
+    public StorageIndexItemEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public StorageIndexItemEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public StorageIndexItemEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

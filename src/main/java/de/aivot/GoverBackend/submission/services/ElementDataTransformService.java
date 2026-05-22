@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.submission.services;
 
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
@@ -434,12 +435,27 @@ public class ElementDataTransformService {
             return;
         }
 
+        // Destination payloads must stay JSON-compatible so downstream merge/diff logic does not
+        // accidentally compare raw Java time objects against already serialized strings.
+        var normalizedValue = normalizePayloadValue(value);
+
         writePayloadValue(
                 payload,
                 substituteWildcardSegments(segments, replicationIndices),
                 0,
-                value
+                normalizedValue
         );
+    }
+
+    @Nullable
+    private Object normalizePayloadValue(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        return ObjectMapperFactory
+                .getInstance()
+                .convertValue(value, Object.class);
     }
 
     /**

@@ -98,4 +98,3 @@ public class ProcessInstanceFilter extends EntityFilter<ProcessInstanceEntity> {
         return this;
     }
 }
-

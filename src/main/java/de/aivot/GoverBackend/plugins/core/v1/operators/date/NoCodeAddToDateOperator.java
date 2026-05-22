@@ -96,7 +96,7 @@ public class NoCodeAddToDateOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        var date = castToDateTime(args[0]);
+        var date = requireDateTime(args[0], "Ungültiger Datumswert: " + castToString(args[0]));
         var amount = castToNumber(args[1]).intValue();
         var unit = castToString(args[2]).trim().toLowerCase(Locale.ROOT);
 

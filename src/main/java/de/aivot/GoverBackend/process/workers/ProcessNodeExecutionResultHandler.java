@@ -28,7 +28,7 @@ import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -409,7 +409,7 @@ public class ProcessNodeExecutionResultHandler {
         ));
 
         processInstanceTask.setStatus(ProcessTaskStatus.Completed);
-        processInstanceTask.setFinished(LocalDateTime.now());
+        processInstanceTask.setFinished(Instant.now());
 
         if (taskCompleted.getTaskStatusOverride() != null) {
             processInstanceTask.setStatusOverride(taskCompleted.getTaskStatusOverride());
@@ -485,7 +485,7 @@ public class ProcessNodeExecutionResultHandler {
                                         @Nonnull ProcessInstanceTaskEntity processInstanceTask,
                                         @Nullable ProcessInstanceTaskEntity previousTask,
                                         @Nonnull ProcessNodeExecutionResultInstanceCompleted instanceCompleted) {
-        var completionTime = LocalDateTime.now();
+        var completionTime = Instant.now();
 
         var newRuntimeData = instanceCompleted.getRuntimeData();
         if (newRuntimeData == null) {

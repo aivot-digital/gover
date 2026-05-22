@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
@@ -43,10 +43,10 @@ public class ProcessTestConfigEntity {
     private Map<String, Object> configs;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     // region Constructors
 
@@ -63,8 +63,8 @@ public class ProcessTestConfigEntity {
                                    @Nonnull Integer processId,
                                    @Nonnull Integer processVersion,
                                    @Nonnull Map<String, Object> configs,
-                                   @Nonnull LocalDateTime created,
-                                   @Nonnull LocalDateTime updated) {
+                                   @Nonnull Instant created,
+                                   @Nonnull Instant updated) {
         this.id = id;
         this.name = name;
         this.processId = processId;
@@ -79,13 +79,13 @@ public class ProcessTestConfigEntity {
     // region Signals
     @PrePersist
     public void onCreate() {
-        this.created = LocalDateTime.now();
-        this.updated = LocalDateTime.now();
+        this.created = Instant.now();
+        this.updated = Instant.now();
     }
 
     @PreUpdate
     public void onUpdate() {
-        this.updated = LocalDateTime.now();
+        this.updated = Instant.now();
     }
     // endregion
 
@@ -158,21 +158,21 @@ public class ProcessTestConfigEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public ProcessTestConfigEntity setCreated(@Nonnull LocalDateTime created) {
+    public ProcessTestConfigEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public ProcessTestConfigEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public ProcessTestConfigEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

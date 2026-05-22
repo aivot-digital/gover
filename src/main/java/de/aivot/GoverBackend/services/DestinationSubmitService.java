@@ -46,7 +46,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 /**
@@ -131,13 +131,13 @@ public class DestinationSubmitService {
 
         // Update submission with destination response
 
-        submission.setDestinationTimestamp(LocalDateTime.now());
+        submission.setDestinationTimestamp(Instant.now());
         submission.setDestinationSuccess(response.ok());
 
         if (submission.getDestinationSuccess()) {
             submission.setDestinationResult(response.message());
             submission.setFileNumber(response.fileNumber());
-            submission.setArchived(LocalDateTime.now());
+            submission.setArchived(Instant.now());
             submission.setStatus(SubmissionStatus.Archived);
 
             if (response.attachments() != null) {
