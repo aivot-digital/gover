@@ -26,6 +26,7 @@ declare var AppConfig: {
     logoUrl: string;
     apiHostname: string;
     registryHostname: string;
+    applicationTimeZone: string;
     sentryDsn: string;
     oidc: {
         hostname: string;
