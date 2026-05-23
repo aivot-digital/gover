@@ -68,4 +68,5 @@ export const evaluators: {
     [ElementType.NoCodeInput]: NoCodeInputEvaluator,
     [ElementType.SummaryLayout]: null,
     [ElementType.ProcessDataKeyInput]: TextEvaluator,
+    [ElementType.ProcessAttachmentDisplay]: null,
 };

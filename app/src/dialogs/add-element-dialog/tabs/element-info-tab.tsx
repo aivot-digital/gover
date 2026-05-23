@@ -1331,6 +1331,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             />
         </Box>
     ),
+    [ElementType.ProcessAttachmentDisplay]: null,
 };
 
 export function ElementInfoTab({

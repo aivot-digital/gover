@@ -80,4 +80,5 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.NoCodeInput]: NoCodeInputSummary,
     [ElementType.SummaryLayout]: SummaryLayoutSummary,
     [ElementType.ProcessDataKeyInput]: TextFieldSummary,
+    [ElementType.ProcessAttachmentDisplay]: null,
 };

@@ -48,4 +48,5 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColType | null> =
     [ElementType.NoCodeInput]: null,
     [ElementType.SummaryLayout]: null,
     [ElementType.ProcessDataKeyInput]: 'string',
+    [ElementType.ProcessAttachmentDisplay]: null,
 };

@@ -83,6 +83,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.NoCodeInput]: FunctionsOutlinedIcon,
     [ElementType.SummaryLayout]: Segment,
     [ElementType.ProcessDataKeyInput]: DataObject,
+    [ElementType.ProcessAttachmentDisplay]: DataObject,
 };
 
 export function getElementIcon(element: AnyElement): typeof SvgIcon {

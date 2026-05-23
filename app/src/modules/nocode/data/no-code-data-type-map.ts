@@ -47,6 +47,7 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.NoCodeInput]: NoCodeDataType.Runtime,
     [ElementType.SummaryLayout]: NoCodeDataType.Runtime,
     [ElementType.ProcessDataKeyInput]: NoCodeDataType.String,
+    [ElementType.ProcessAttachmentDisplay]: NoCodeDataType.Runtime,
 }
 
 export function matchesDesiredNoCodeDataType(

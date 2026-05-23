@@ -84,6 +84,7 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.NoCodeInput]: 'nc',
     [ElementType.SummaryLayout]: 'sy',
     [ElementType.ProcessDataKeyInput]: 'pk',
+    [ElementType.ProcessAttachmentDisplay]: 'pa',
 };
 
 export function generateElementIdForType(type: ElementType): string {

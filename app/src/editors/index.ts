@@ -169,4 +169,5 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.SummaryLayout]: null,
     [ElementType.ProcessDataKeyInput]: null,
+    [ElementType.ProcessAttachmentDisplay]: null,
 };

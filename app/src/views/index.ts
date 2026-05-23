@@ -87,4 +87,5 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.NoCodeInput]: NoCodeInputFieldView,
     [ElementType.SummaryLayout]: SummaryLayoutView,
     [ElementType.ProcessDataKeyInput]: ProcessDataKeyInputFieldView,
+    [ElementType.ProcessAttachmentDisplay]: null,
 };

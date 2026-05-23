@@ -62,6 +62,7 @@ public enum ElementType implements Identifiable<Integer> {
     NoCodeInput(42),
     SummaryLayout(43),
     ProcessDataKeyInput(44),
+    ProcessAttachmentDisplay(45),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -109,6 +110,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_NoCodeInput = "42";
     public static final String ID_SummaryLayout = "43";
     public static final String ID_ProcessDataKeyInput = "44";
+    public static final String ID_ProcessAttachmentDisplay = "45";
 
     private final Integer key;
 
@@ -183,6 +185,8 @@ public enum ElementType implements Identifiable<Integer> {
             case NoCodeInput -> new NoCodeInputElement();
             case SummaryLayout -> new SummaryLayoutElement();
             case ProcessDataKeyInput -> new ProcessDataKeyInputElement();
+            case ProcessAttachmentDisplay ->
+                    throw new ElementDataConversionException("Element type ProcessAttachmentDisplay is not yet implemented.");
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

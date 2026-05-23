@@ -47,6 +47,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.NoCodeInput]: 'No-Code-Eingabe',
     [ElementType.SummaryLayout]: 'Zusammenfassung',
     [ElementType.ProcessDataKeyInput]: 'Prozessdaten-Schlüssel',
+    [ElementType.ProcessAttachmentDisplay]: 'Anlage zum Vorgang',
 };
 
 export function getElementName(element: AnyElement): string {

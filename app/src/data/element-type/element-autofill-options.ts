@@ -86,6 +86,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.NoCodeInput]: [],
     [ElementType.SummaryLayout]: [],
     [ElementType.ProcessDataKeyInput]: [],
+    [ElementType.ProcessAttachmentDisplay]: [],
 };
 
 export const getAutofillOptionsForElementType = (elementType: ElementType) => {

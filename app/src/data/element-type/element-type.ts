@@ -44,4 +44,5 @@ export enum ElementType {
     NoCodeInput = 42,
     SummaryLayout = 43,
     ProcessDataKeyInput = 44,
+    ProcessAttachmentDisplay = 45,
 }

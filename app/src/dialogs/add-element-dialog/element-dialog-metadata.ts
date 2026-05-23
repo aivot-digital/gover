@@ -69,6 +69,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.IdentityInput]: ElementTypeGroups.Input,
     [ElementType.TabLayout]: null,
     [ElementType.SummaryLayout]: ElementTypeGroups.Display,
+    [ElementType.ProcessAttachmentDisplay]: ElementTypeGroups.Information,
 };
 
 export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
