@@ -11,7 +11,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -44,7 +44,7 @@ public class UserSyncService {
 
     @Scheduled(fixedDelay = delayInMS)
     public void syncUsers() {
-        var startedAt = LocalDateTime.now();
+        var startedAt = Instant.now();
         var syncedUsers = new ArrayList<Map<String, Object>>();
 
         var totalUsersFromIdp = 0;
@@ -179,7 +179,7 @@ public class UserSyncService {
             if (failureMessage != null || !syncedUsers.isEmpty()) {
                 var metadata = new LinkedHashMap<String, Object>();
                 metadata.put("startedAt", startedAt);
-                metadata.put("finishedAt", LocalDateTime.now());
+                metadata.put("finishedAt", Instant.now());
                 metadata.put("success", success);
                 metadata.put("totalUsersFromIdp", totalUsersFromIdp);
                 metadata.put("importedOrUpdatedCount", importedOrUpdatedCount);

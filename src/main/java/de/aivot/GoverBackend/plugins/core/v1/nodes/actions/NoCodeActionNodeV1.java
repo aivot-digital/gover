@@ -28,6 +28,7 @@ import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecution
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.utils.MapUtils;
 import jakarta.annotation.Nonnull;
@@ -35,9 +36,12 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
+
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 
 @Component
 public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNodeV1.NoCodeActionNodeConfiguration> {
@@ -611,6 +615,9 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         if (value instanceof LocalDate date) {
             return date.toString();
         }
+        if (value instanceof Instant instant) {
+            return instant.atZone(ApplicationTimeZone.getZoneId()).toLocalDate().toString();
+        }
         if (value instanceof LocalDateTime dateTime) {
             return dateTime.toLocalDate().toString();
         }
@@ -626,7 +633,11 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 return LocalDate.parse(trimmed).toString();
             } catch (Exception ignored) {
                 try {
-                    return LocalDateTime.parse(trimmed).toLocalDate().toString();
+                    return IsoTimestampUtils
+                            .parseIsoTimestamp(trimmed, ApplicationTimeZone.getZoneId())
+                            .atZone(ApplicationTimeZone.getZoneId())
+                            .toLocalDate()
+                            .toString();
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum umgewandelt werden.",
@@ -644,11 +655,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     @Nonnull
     private static String castToDateTime(Object value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        // Normalize runtime datetime outputs to UTC ISO-8601 while interpreting local
+        // date/date-time inputs in the configured business timezone.
+        if (value instanceof Instant instant) {
+            return instant.toString();
+        }
         if (value instanceof LocalDateTime dateTime) {
-            return dateTime.toString();
+            return dateTime.atZone(ApplicationTimeZone.getZoneId()).toInstant().toString();
         }
         if (value instanceof LocalDate date) {
-            return date.atStartOfDay().toString();
+            return date.atStartOfDay(ApplicationTimeZone.getZoneId()).toInstant().toString();
         }
         if (value instanceof String s) {
             var trimmed = s.trim();
@@ -659,15 +675,15 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             }
 
             try {
-                return LocalDateTime.parse(trimmed).toString();
+                return IsoTimestampUtils.parseIsoTimestamp(trimmed, ApplicationTimeZone.getZoneId()).toString();
             } catch (Exception ignored) {
                 try {
-                    return LocalDate.parse(trimmed).atStartOfDay().toString();
+                    return LocalDate.parse(trimmed).atStartOfDay(ApplicationTimeZone.getZoneId()).toInstant().toString();
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
                             StringUtils.quote(s)
-                    );
+                        );
                 }
             }
         }

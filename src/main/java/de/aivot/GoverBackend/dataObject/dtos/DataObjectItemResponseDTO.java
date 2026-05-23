@@ -6,7 +6,7 @@ import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record DataObjectItemResponseDTO(
         @Nonnull
@@ -16,9 +16,9 @@ public record DataObjectItemResponseDTO(
         @Nonnull
         AuthoredElementValues data,
         @Nonnull
-        LocalDateTime created,
+        Instant created,
         @Nonnull
-        LocalDateTime updated
+        Instant updated
 ) {
     public static DataObjectItemResponseDTO fromEntity(DataObjectItemEntity entity, DataObjectSchemaEntity schema) {
         var elementData = ObjectMapperFactory

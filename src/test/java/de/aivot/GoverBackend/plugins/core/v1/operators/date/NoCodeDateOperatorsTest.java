@@ -40,6 +40,7 @@ class NoCodeDateOperatorsTest {
         assertEquals(LocalDate.of(2026, 3, 6), plusDays.toLocalDate());
         assertEquals(LocalDate.of(2026, 3, 15), plusWeeks.toLocalDate());
         assertThrows(NoCodeException.class, () -> operator.evaluate(data, baseDate, 1, "invalid"));
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, "invalid-date", 1, "tage"));
     }
 
     @Test
@@ -54,6 +55,7 @@ class NoCodeDateOperatorsTest {
         assertEquals(LocalDate.of(2026, 3, 5), minusDays.toLocalDate());
         assertEquals(LocalDate.of(2026, 2, 10), minusMonths.toLocalDate());
         assertThrows(NoCodeException.class, () -> operator.evaluate(data, baseDate, 1, "invalid"));
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, "invalid-date", 1, "tage"));
     }
 
     @Test
@@ -80,5 +82,13 @@ class NoCodeDateOperatorsTest {
         assertEquals(LocalDate.of(2026, 8, 15), result.toLocalDate());
         assertThrows(NoCodeException.class, () -> operator.evaluate(data, 31, 2, 2026));
         assertTrue(result.getHour() == 0 && result.getMinute() == 0);
+    }
+
+    @Test
+    void formatDateShouldThrowNoCodeExceptionOnInvalidDateInput() {
+        var operator = new NoCodeFormatDateOperator();
+        var data = runtime();
+
+        assertThrows(NoCodeException.class, () -> operator.evaluate(data, "invalid-date", "dd.MM.yyyy"));
     }
 }

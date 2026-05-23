@@ -4,7 +4,7 @@ create table process_changes
     -- The unique ID of this change
     id              bigserial    not null,
     -- The timestamp of this change
-    timestamp       timestamp    not null default now(),
+    timestamp       timestamptz  not null default now(),
     -- The user who made this change
     user_id         varchar(36)  not null,
 

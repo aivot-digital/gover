@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.form.entities.projections;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public interface FormEditorProjection {
     Integer getFormId();
@@ -9,5 +9,5 @@ public interface FormEditorProjection {
 
     String getFullName();
 
-    LocalDateTime getTimestamp();
+    Instant getTimestamp();
 }

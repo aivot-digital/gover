@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.audit.models;
 
 import org.junit.jupiter.api.Test;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -35,7 +35,7 @@ class AuditLogPayloadTest {
 
     @Test
     void withDiffShouldReturnNullForEqualStates() {
-        var timestamp = LocalDateTime.of(2026, 3, 24, 8, 30);
+        var timestamp = Instant.parse("2026-03-24T08:30:00Z");
         var state = Map.<String, Object>of(
                 "name", "Alpha",
                 "count", 3,
@@ -227,11 +227,11 @@ class AuditLogPayloadTest {
 
     @Test
     void toMapShouldSupportJavaTimeFields() {
-        var timestamp = LocalDateTime.of(2026, 3, 24, 10, 15);
+        var timestamp = Instant.parse("2026-03-24T10:15:00Z");
 
         var result = AuditLogPayload.toMap(new EntityWithTimestamp(timestamp));
 
-        assertEquals(Map.of("timestamp", "2026-03-24T10:15:00"), result);
+        assertEquals(Map.of("timestamp", "2026-03-24T10:15:00Z"), result);
     }
 
     private record NestedSettings(String mode, List<Object> items) {
@@ -240,6 +240,6 @@ class AuditLogPayloadTest {
     private record ArrayAndIterableSettings(String[] channels, Iterable<Map<String, Object>> entries) {
     }
 
-    private record EntityWithTimestamp(LocalDateTime timestamp) {
+    private record EntityWithTimestamp(Instant timestamp) {
     }
 }

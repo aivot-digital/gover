@@ -7,6 +7,7 @@ import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -68,6 +69,18 @@ class JavascriptEngineTest {
                     .registerGlobalObject("test", new FormLayoutElement())
                     .evaluateCode(new JavascriptCode().setCode("test.headline;"));
             assertTrue(res.isNull());
+        } catch (Exception e) {
+            fail(e);
+        }
+    }
+
+    @Test
+    void registerGlobalObject_ConvertsInstantToIsoString() {
+        try (var service = new JavascriptEngine(List.of())) {
+            var res = service
+                    .registerGlobalObject("test", Map.of("timestamp", Instant.parse("2026-04-14T08:30:00Z")))
+                    .evaluateCode(new JavascriptCode().setCode("test.timestamp;"));
+            assertEquals("2026-04-14T08:30:00Z", res.asString());
         } catch (Exception e) {
             fail(e);
         }

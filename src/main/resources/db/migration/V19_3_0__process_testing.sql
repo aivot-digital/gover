@@ -7,8 +7,8 @@ create table process_test_configs
     process_id      int          not null,
     process_version int          not null,
     configs         jsonb        not null,
-    created         timestamp    not null default now(),
-    updated         timestamp    not null default now(),
+    created         timestamptz  not null default now(),
+    updated         timestamptz  not null default now(),
     foreign key (process_id, process_version) references process_versions (process_id, process_version) on delete cascade
 );
 
@@ -21,7 +21,7 @@ create table process_test_claims
     process_test_config_id int         null,
     process_id             int         not null,
     process_version        int         not null,
-    created                timestamp   not null default now(),
+    created                timestamptz not null default now(),
     owning_user_id         varchar(36) not null,
     foreign key (process_test_config_id) references process_test_configs (id) on delete cascade,
     foreign key (owning_user_id) references users (id) on delete restrict,

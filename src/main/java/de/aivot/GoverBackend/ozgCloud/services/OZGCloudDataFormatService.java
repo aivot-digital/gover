@@ -15,6 +15,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContaine
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.enums.TableColumnDataType;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudFormDataItem;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 
 import java.time.format.DateTimeFormatter;
@@ -24,6 +25,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class OZGCloudDataFormatService {
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter
+            .ofPattern("yyyy-MM-dd")
+            .withZone(ApplicationTimeZone.getZoneId());
+
     @Nonnull
     public List<OZGCloudFormDataItem> buildFormData(
             @Nonnull BaseElement currentElement,
@@ -362,12 +367,7 @@ public class OZGCloudDataFormatService {
         }
 
 
-        var displayValue = date
-                .format(
-                        DateTimeFormatter
-                                .ofPattern("yyyy-MM-dd")
-                                .withZone(DateInputElement.zoneId)
-                );
+        var displayValue = date.format(DATE_FORMATTER);
 
 
         return new OZGCloudFormDataItem(

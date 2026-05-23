@@ -228,6 +228,7 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             `- oidcRealm: ${AppConfig.oidc.realm}`,
             `- oidcClient: ${AppConfig.oidc.clientId}`,
             `- registryHostname: ${AppConfig.registryHostname}`,
+            `- applicationTimeZone: ${AppConfig.applicationTimeZone}`,
             `- sentryDsnConfigured: ${toDebugBooleanString(AppConfig.sentryDsn.length > 0)}`,
             `- page: ${window.location.origin}${window.location.pathname}`,
             '',

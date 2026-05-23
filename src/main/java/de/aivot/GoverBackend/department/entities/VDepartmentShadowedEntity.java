@@ -4,7 +4,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -19,8 +19,8 @@ public class VDepartmentShadowedEntity {
     private String commonAccessibility;
     private String technicalSupportAddress;
     private String specialSupportAddress;
-    private LocalDateTime created;
-    private LocalDateTime updated;
+    private Instant created;
+    private Instant updated;
     private String departmentMail;
     private Integer themeId;
     private String technicalSupportPhone;
@@ -105,20 +105,20 @@ public class VDepartmentShadowedEntity {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public VDepartmentShadowedEntity setCreated(LocalDateTime created) {
+    public VDepartmentShadowedEntity setCreated(Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public VDepartmentShadowedEntity setUpdated(LocalDateTime updated) {
+    public VDepartmentShadowedEntity setUpdated(Instant updated) {
         this.updated = updated;
         return this;
     }

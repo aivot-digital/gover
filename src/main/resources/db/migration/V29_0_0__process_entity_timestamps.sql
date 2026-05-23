@@ -1,6 +1,6 @@
 alter table process_nodes
-    add column created  timestamp with time zone not null default now(),
-    add column updated timestamp with time zone not null default now();
+    add column created timestamptz not null default now(),
+    add column updated timestamptz not null default now();
 
 create or replace function update_parent_process_entities_timestamps() returns trigger as
 $$

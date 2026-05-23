@@ -253,8 +253,8 @@ public class DataObjectJavascriptV1 implements JavascriptFunctionProvider {
     private static Map<String, Object> getItemData(@Nonnull DataObjectItemEntity entity) {
         var data = entity.getData();
         data.put("$id", entity.getId());
-        data.put("$created", entity.getCreated().format(DateTimeFormatter.ISO_DATE_TIME));
-        data.put("$updated", entity.getUpdated().format(DateTimeFormatter.ISO_DATE_TIME));
+        data.put("$created", entity.getCreated().toString());
+        data.put("$updated", entity.getUpdated().toString());
         return data;
     }
 }

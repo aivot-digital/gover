@@ -20,5 +20,5 @@ alter table users
 -- and add created and updated timestamp columns
 alter table department_memberships
     drop column role,
-    add column created timestamp not null default current_timestamp,
-    add column updated timestamp not null default current_timestamp;
+    add column created timestamptz not null default current_timestamp,
+    add column updated timestamptz not null default current_timestamp;

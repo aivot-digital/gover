@@ -12,7 +12,8 @@ create view v_user_deputy_with_details as
 select udep.id                                                                                        as id,
        udep.from_timestamp                                                                            as from_timestamp,
        udep.until_timestamp                                                                           as until_timestamp,
-       udep.until_timestamp is null or (udep.from_timestamp < now() and udep.until_timestamp > now()) as active,
+       udep.until_timestamp is null or
+       (udep.from_timestamp < localtimestamp and udep.until_timestamp > localtimestamp)                as active,
 
        ou.id                                                                                          as original_user_id,
        ou.email                                                                                       as original_user_email,

@@ -5,8 +5,8 @@ create table system_roles
     name        varchar(64)   not null unique,
     description text          null,
     permissions varchar(64)[] not null default '{}',
-    created     timestamp     not null default current_timestamp,
-    updated     timestamp     not null default current_timestamp,
+    created     timestamptz   not null default current_timestamp,
+    updated     timestamptz   not null default current_timestamp,
     unique (name)
 );
 

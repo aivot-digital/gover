@@ -5,10 +5,6 @@ import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.NumberInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
@@ -16,23 +12,20 @@ import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultInstanceCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
-import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-import java.util.HashMap;
+import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
 
 @Component
 public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTerminationNodeV1.DefaultTerminationNodeV1Config> {
@@ -112,7 +105,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
                                     SelectInputElementOption.of(RETENTION_UNIT_MONTHS, "Monate"),
                                     SelectInputElementOption.of(RETENTION_UNIT_YEARS, "Jahre")
                             ));
-                        });
+                });
 
         return layout;
     }
@@ -124,7 +117,8 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         var retentionTimeValue = configuration.retentionValue.longValue();
         var retentionTimeUnit = configuration.retentionUnit;
 
-        var retentionTime = LocalDateTime.now();
+        // Apply retention periods in local business time before storing the resulting absolute instant.
+        var retentionTime = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
         switch (retentionTimeUnit) {
             case RETENTION_UNIT_DAYS -> retentionTime = retentionTime.plusDays(retentionTimeValue);
             case RETENTION_UNIT_WEEKS -> retentionTime = retentionTime.plusWeeks(retentionTimeValue);
@@ -133,7 +127,7 @@ public class DefaultTerminationNodeV1 implements ProcessNodeDefinition<DefaultTe
         }
 
         return new ProcessNodeExecutionResultInstanceCompleted()
-                .setRetentionDate(retentionTime);
+                .setRetentionDate(retentionTime.toInstant());
     }
 
     @Nonnull

@@ -48,7 +48,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -466,7 +466,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         nodeData.put(OUTPUT_DATA, payloadUpdate);
         nodeData.put(OUTPUT_REMARK, remark);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
-        nodeData.put(OUTPUT_PROCESSED_AT, LocalDateTime.now().toString());
+        nodeData.put(OUTPUT_PROCESSED_AT, Instant.now());
 
         var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
         result.setProcessData(updatedProcessData);

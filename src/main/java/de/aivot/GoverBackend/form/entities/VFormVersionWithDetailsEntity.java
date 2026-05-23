@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,10 +61,10 @@ public class VFormVersionWithDetailsEntity implements Cloneable {
     @Column(columnDefinition = "jsonb")
     @Convert(converter = RootElementConverter.class)
     private FormLayoutElement rootElement;
-    private LocalDateTime created;
-    private LocalDateTime updated;
-    private LocalDateTime published;
-    private LocalDateTime revoked;
+    private Instant created;
+    private Instant updated;
+    private Instant published;
+    private Instant revoked;
     private String publicTitle;
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
@@ -103,10 +103,10 @@ public class VFormVersionWithDetailsEntity implements Cloneable {
                                          Integer customerAccessHours,
                                          Integer submissionRetentionWeeks,
                                          FormLayoutElement rootElement,
-                                         LocalDateTime created,
-                                         LocalDateTime updated,
-                                         LocalDateTime published,
-                                         LocalDateTime revoked,
+                                         Instant created,
+                                         Instant updated,
+                                         Instant published,
+                                         Instant revoked,
                                          String publicTitle,
                                          Integer managingDepartmentId,
                                          Integer responsibleDepartmentId) {
@@ -469,38 +469,38 @@ public class VFormVersionWithDetailsEntity implements Cloneable {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public VFormVersionWithDetailsEntity setCreated(LocalDateTime created) {
+    public VFormVersionWithDetailsEntity setCreated(Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public VFormVersionWithDetailsEntity setUpdated(LocalDateTime updated) {
+    public VFormVersionWithDetailsEntity setUpdated(Instant updated) {
         this.updated = updated;
         return this;
     }
 
-    public LocalDateTime getPublished() {
+    public Instant getPublished() {
         return published;
     }
 
-    public VFormVersionWithDetailsEntity setPublished(LocalDateTime published) {
+    public VFormVersionWithDetailsEntity setPublished(Instant published) {
         this.published = published;
         return this;
     }
 
-    public LocalDateTime getRevoked() {
+    public Instant getRevoked() {
         return revoked;
     }
 
-    public VFormVersionWithDetailsEntity setRevoked(LocalDateTime revoked) {
+    public VFormVersionWithDetailsEntity setRevoked(Instant revoked) {
         this.revoked = revoked;
         return this;
     }

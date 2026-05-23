@@ -22,8 +22,8 @@ create table processes
     published_version int         null,
 
     -- Timestamps for creation and last update
-    created           timestamp   not null default now(),
-    updated           timestamp   not null default now(),
+    created           timestamptz not null default now(),
+    updated           timestamptz not null default now(),
 
     -- Define the primary key
     primary key (id),
@@ -50,10 +50,10 @@ create table process_versions
     public_title    varchar(192) not null,
 
     -- Timestamps for creation and last update
-    created         timestamp    not null default now(),
-    updated         timestamp    not null default now(),
-    published       timestamp    null,
-    revoked         timestamp    null,
+    created         timestamptz  not null default now(),
+    updated         timestamptz  not null default now(),
+    published       timestamptz  null,
+    revoked         timestamptz  null,
 
     -- Define the composite primary key
     primary key (process_id, process_version),

@@ -43,7 +43,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -448,8 +448,8 @@ public class FormController {
                 .setDraftedVersion(null)
                 .setPublishedVersion(null)
                 .setVersionCount(0)
-                .setCreated(LocalDateTime.now())
-                .setUpdated(LocalDateTime.now());
+                .setCreated(Instant.now())
+                .setUpdated(Instant.now());
 
         FormVersionEntity version;
         if (versionNumber != null) {
@@ -477,8 +477,8 @@ public class FormController {
                 .setIdentityProviders(List.of())
                 .setIdentityVerificationRequired(false)
                 .setStatus(FormStatus.Drafted)
-                .setCreated(LocalDateTime.now())
-                .setUpdated(LocalDateTime.now())
+                .setCreated(Instant.now())
+                .setUpdated(Instant.now())
                 .setPublished(null)
                 .setRevoked(null);
 
@@ -495,7 +495,7 @@ public class FormController {
                         buildProperties.getBuildNumber(),
                         buildProperties.getBuildTimestamp()
                 ),
-                LocalDateTime.now()
+                Instant.now()
         );
     }
 }

@@ -17,7 +17,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -102,25 +102,25 @@ public class StorageProviderEntity {
     private List<StorageProviderMetadataAttribute> metadataAttributes;
 
     @Nullable
-    private LocalDateTime lastSync;
+    private Instant lastSync;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     // region Signals
 
     @PrePersist
     protected void onCreate() {
-        created = LocalDateTime.now();
+        created = Instant.now();
         updated = created;
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -144,9 +144,9 @@ public class StorageProviderEntity {
                                  @Nonnull Long maxFileSizeInBytes,
                                  @Nonnull Boolean systemProvider,
                                  @Nonnull List<StorageProviderMetadataAttribute> metadataAttributes,
-                                 @Nullable LocalDateTime lastSync,
-                                 @Nonnull LocalDateTime created,
-                                 @Nonnull LocalDateTime updated) {
+                                 @Nullable Instant lastSync,
+                                 @Nonnull Instant created,
+                                 @Nonnull Instant updated) {
         this.id = id;
         this.storageProviderDefinitionKey = storageProviderDefinitionKey;
         this.storageProviderDefinitionVersion = storageProviderDefinitionVersion;
@@ -332,31 +332,31 @@ public class StorageProviderEntity {
     }
 
     @Nullable
-    public LocalDateTime getLastSync() {
+    public Instant getLastSync() {
         return lastSync;
     }
 
-    public StorageProviderEntity setLastSync(@Nullable LocalDateTime lastSync) {
+    public StorageProviderEntity setLastSync(@Nullable Instant lastSync) {
         this.lastSync = lastSync;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public StorageProviderEntity setCreated(@Nonnull LocalDateTime created) {
+    public StorageProviderEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public StorageProviderEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public StorageProviderEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

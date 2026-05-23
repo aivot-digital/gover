@@ -16,7 +16,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 
 /**
@@ -49,7 +50,7 @@ public class CleanupService {
 
     @Scheduled(
             cron = "0 0 * * * *",
-            zone = "Europe/Paris"
+            zone = "${gover.timezone}"
     )
     public void cleanSubmissions() {
         var archivedSubmissionSpec = SubmissionFilter
@@ -91,8 +92,8 @@ public class CleanupService {
                     deletionWeeks = 4;
                 }
 
-                var expirationDate = submission.getArchived().plusWeeks(deletionWeeks);
-                if (expirationDate.isBefore(LocalDateTime.now())) {
+                var expirationDate = submission.getArchived().plus(Duration.ofDays(deletionWeeks * 7L));
+                if (expirationDate.isBefore(Instant.now())) {
                     submissionStorageService
                             .deleteSubmission(submission);
                     submissionService

@@ -36,13 +36,13 @@ create table process_instances
     identities              jsonb         not null default '{}',
 
     -- The timestamp when this process instance was started
-    started                 timestamp     not null default now(),
+    started                 timestamptz   not null default now(),
 
     -- The timestamp when this process instance was last updated
-    updated                 timestamp     not null default now(),
+    updated                 timestamptz   not null default now(),
 
     -- The timestamp when this process instance was finished either by completion, failure or abortion
-    finished                timestamp     null,
+    finished                timestamptz   null,
 
     -- The total runtime of this process instance
     runtime                 interval generated always as (finished - started) stored,
@@ -53,7 +53,7 @@ create table process_instances
     initial_node_id         int           not null,
 
     -- Keep until timestamp
-    keep_until              timestamp     null,
+    keep_until              timestamptz   null,
 
     primary key (id),
     unique (access_key),
@@ -91,11 +91,11 @@ create table process_instance_tasks
     status_override                   varchar(96) null,
 
     -- The timestamp when this task was started
-    started                           timestamp   not null default now(),
+    started                           timestamptz not null default now(),
     -- The timestamp when this task was last updated
-    updated                           timestamp   not null default now(),
+    updated                           timestamptz not null default now(),
     -- The timestamp when this task was finished either by completion, failure or abortion
-    finished                          timestamp   null,
+    finished                          timestamptz null,
     -- The total runtime of this task
     runtime                           interval    null generated always as (finished - started) stored,
 
@@ -112,15 +112,15 @@ create table process_instance_tasks
     assigned_user_id                  varchar(36) null,
 
     -- The deadline for this task, if any, determined by the time limit of the node
-    deadline                          timestamp   null,
+    deadline                          timestamptz null,
 
     -- The postponed until timestamp for this task, if any
-    postponed_until                   timestamp   null,
+    postponed_until                   timestamptz null,
 
     -- The number of retries already attempted for this task
     retry_count                       int         null     default 0,
     -- The next retry timestamp for this task, if any
-    next_retry_at                     timestamp   null,
+    next_retry_at                     timestamptz null,
 
     primary key (id),
     unique (process_instance_id, access_key),
@@ -162,7 +162,7 @@ create table process_instance_events
     details                  jsonb       not null default '{}',
 
     -- The timestamp of this event
-    timestamp                timestamp   not null default now(),
+    timestamp                timestamptz not null default now(),
 
     -- The user who triggered this event, if any
     triggering_user_id       varchar(36) null,

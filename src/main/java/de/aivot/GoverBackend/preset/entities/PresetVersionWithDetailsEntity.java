@@ -8,7 +8,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -55,16 +55,16 @@ public class PresetVersionWithDetailsEntity {
     private FormStatus status;
 
     @Nullable
-    private LocalDateTime created;
+    private Instant created;
 
     @Nullable
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime published;
+    private Instant published;
 
     @Nullable
-    private LocalDateTime revoked;
+    private Instant revoked;
 
     // Equals & HashCode
 
@@ -180,41 +180,41 @@ public class PresetVersionWithDetailsEntity {
     }
 
     @Nullable
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public PresetVersionWithDetailsEntity setCreated(@Nullable LocalDateTime created) {
+    public PresetVersionWithDetailsEntity setCreated(@Nullable Instant created) {
         this.created = created;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public PresetVersionWithDetailsEntity setUpdated(@Nullable LocalDateTime updated) {
+    public PresetVersionWithDetailsEntity setUpdated(@Nullable Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getPublished() {
+    public Instant getPublished() {
         return published;
     }
 
-    public PresetVersionWithDetailsEntity setPublished(@Nullable LocalDateTime published) {
+    public PresetVersionWithDetailsEntity setPublished(@Nullable Instant published) {
         this.published = published;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getRevoked() {
+    public Instant getRevoked() {
         return revoked;
     }
 
-    public PresetVersionWithDetailsEntity setRevoked(@Nullable LocalDateTime revoked) {
+    public PresetVersionWithDetailsEntity setRevoked(@Nullable Instant revoked) {
         this.revoked = revoked;
         return this;
     }

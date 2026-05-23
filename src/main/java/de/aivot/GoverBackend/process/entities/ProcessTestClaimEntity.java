@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "process_test_claims")
@@ -41,7 +41,7 @@ public class ProcessTestClaimEntity {
     private Integer processVersion;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     /**
      * Must be filled from the server
@@ -61,7 +61,7 @@ public class ProcessTestClaimEntity {
                                   @Nullable Integer processTestConfigId,
                                   @Nonnull Integer processId,
                                   @Nonnull Integer processVersion,
-                                  @Nonnull LocalDateTime created,
+                                  @Nonnull Instant created,
                                   @Nonnull String owningUserId) {
         this.id = id;
         this.accessKey = accessKey;
@@ -76,7 +76,7 @@ public class ProcessTestClaimEntity {
     // region Signals
     @PrePersist
     public void onCreate() {
-        this.created = LocalDateTime.now();
+        this.created = Instant.now();
     }
     // endregion
 
@@ -122,11 +122,11 @@ public class ProcessTestClaimEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public ProcessTestClaimEntity setCreated(@Nonnull LocalDateTime created) {
+    public ProcessTestClaimEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }

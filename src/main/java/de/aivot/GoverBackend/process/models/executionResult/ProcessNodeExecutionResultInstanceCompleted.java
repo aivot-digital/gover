@@ -2,18 +2,18 @@ package de.aivot.GoverBackend.process.models.executionResult;
 
 import jakarta.annotation.Nullable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class ProcessNodeExecutionResultInstanceCompleted extends ProcessNodeExecutionResult {
     @Nullable
-    private LocalDateTime retentionDate;
+    private Instant retentionDate;
 
     @Nullable
-    public LocalDateTime getRetentionDate() {
+    public Instant getRetentionDate() {
         return retentionDate;
     }
 
-    public ProcessNodeExecutionResultInstanceCompleted setRetentionDate(@Nullable LocalDateTime retentionDate) {
+    public ProcessNodeExecutionResultInstanceCompleted setRetentionDate(@Nullable Instant retentionDate) {
         this.retentionDate = retentionDate;
         return this;
     }

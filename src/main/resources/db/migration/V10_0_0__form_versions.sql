@@ -34,10 +34,10 @@ create table form_versions
     customer_access_hours           smallint     null     default 4,
     submission_retention_weeks      smallint     null     default 4,
     root_element                    jsonb        not null,
-    created                         timestamp    not null default now(),
-    updated                         timestamp    not null default now(),
-    published                       timestamp    null,
-    revoked                         timestamp    null,
+    created                         timestamptz  not null default now(),
+    updated                         timestamptz  not null default now(),
+    published                       timestamptz  null,
+    revoked                         timestamptz  null,
     primary key (form_id, version)
 );
 

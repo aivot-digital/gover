@@ -9,7 +9,7 @@ import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -123,7 +123,7 @@ public class ProcessNodeExecutionLogger {
                     title,
                     message,
                     details,
-                    LocalDateTime.now(),
+                    Instant.now(),
                     userId
             ));
         } catch (Exception e) {

@@ -7,6 +7,8 @@ import de.aivot.GoverBackend.enums.DateType;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.RequiredValidationException;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -20,7 +22,6 @@ import java.util.regex.Pattern;
 
 public class DateInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
     private static final Logger logger = LoggerFactory.getLogger(DateInputElement.class);
-    public final static ZoneId zoneId = ZoneId.of("Europe/Berlin");
 
     @Nullable
     private String placeholder;
@@ -64,11 +65,11 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
             }
 
             displayValue = value
-                    .format(
-                            DateTimeFormatter
-                                    .ofPattern(displayPattern)
-                                    .withZone(zoneId)
-                    );
+                            .format(
+                                    DateTimeFormatter
+                                            .ofPattern(displayPattern)
+                                            .withZone(ApplicationTimeZone.getZoneId())
+                            );
         }
 
         return displayValue;
@@ -90,16 +91,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
             return true;
         }
 
-        ZonedDateTime dValA;
-        switch (referencedValue) {
-            case ZonedDateTime zValue -> dValA = zValue;
-            case LocalDateTime lValue -> dValA = lValue.atZone(zoneId);
-            case LocalDate ldValue -> dValA = ZonedDateTime.of(ldValue, LocalTime.now(), zoneId);
-            case LocalTime lValue -> dValA = ZonedDateTime.of(LocalDate.now(), lValue, zoneId);
-            case Instant iValue -> dValA = iValue.atZone(zoneId);
-            case String sValue -> dValA = _formatValue(sValue);
-            default -> dValA = null;
-        }
+        ZonedDateTime dValA = _formatValue(referencedValue);
 
         if (dValA == null) {
             logger.warn("Could not parse date from string: " + referencedValue.toString());
@@ -117,7 +109,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
             return false;
         }
 
-        ZonedDateTime today = ZonedDateTime.now(zoneId);
+        ZonedDateTime today = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
 
         switch (operator) {
             case YearsInPast -> {
@@ -305,9 +297,9 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
         private final int yearRes;
 
         public DateCompareResult(ZonedDateTime d1, ZonedDateTime d2) {
-            dayRes = Integer.compare(d1.withZoneSameInstant(zoneId).getDayOfMonth(), d2.withZoneSameInstant(zoneId).getDayOfMonth());
-            monthRes = Integer.compare(d1.withZoneSameInstant(zoneId).getMonthValue(), d2.withZoneSameInstant(zoneId).getMonthValue());
-            yearRes = Integer.compare(d1.withZoneSameInstant(zoneId).getYear(), d2.withZoneSameInstant(zoneId).getYear());
+            dayRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getDayOfMonth(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getDayOfMonth());
+            monthRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getMonthValue(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getMonthValue());
+            yearRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getYear(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getYear());
         }
 
         public boolean dayLt() {
@@ -348,8 +340,8 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
     }
 
     private boolean isSameDay(ZonedDateTime d1, ZonedDateTime d2) {
-        var d1Local = d1.withZoneSameInstant(zoneId);
-        var d2Local = d2.withZoneSameInstant(zoneId);
+        var d1Local = d1.withZoneSameInstant(ApplicationTimeZone.getZoneId());
+        var d2Local = d2.withZoneSameInstant(ApplicationTimeZone.getZoneId());
 
         return (
                 d1Local.getYear() == d2Local.getYear() &&
@@ -363,39 +355,42 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
         return switch (value) {
             case null -> null;
             case ZonedDateTime zValue -> zValue;
-            case LocalDateTime lValue -> lValue.atZone(zoneId);
-            case LocalDate ldValue -> ZonedDateTime.of(ldValue, LocalTime.now(), zoneId);
-            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(), lValue, zoneId);
-            case Instant iValue -> iValue.atZone(zoneId);
+            case LocalDate ldValue -> ldValue.atStartOfDay(ApplicationTimeZone.getZoneId());
+            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(ApplicationTimeZone.getZoneId()), lValue, ApplicationTimeZone.getZoneId());
+            case Instant iValue -> iValue.atZone(ApplicationTimeZone.getZoneId());
             case String sValue -> {
                 try {
-                    yield ZonedDateTime.parse(sValue);
+                    // UI date pickers submit UTC ISO strings. Convert them back into the office
+                    // timezone only for display and local rule evaluation.
+                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, ApplicationTimeZone.getZoneId()).atZone(ApplicationTimeZone.getZoneId());
                 } catch (DateTimeException ex) {
                     try {
                         var ld = LocalDate.parse(sValue);
-                        yield ZonedDateTime.of(ld, ZonedDateTime.now().toLocalTime(), zoneId);
+                        yield ld.atStartOfDay(ApplicationTimeZone.getZoneId());
                     } catch (DateTimeException ex1) {
                         try {
                             var ld2 = LocalDate.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-                            yield ZonedDateTime.of(ld2, ZonedDateTime.now().toLocalTime(), zoneId);
+                            yield ld2.atStartOfDay(ApplicationTimeZone.getZoneId());
                         } catch (DateTimeException ex2) {
                             String preparedValue = null;
 
                             if (dayPattern.matcher(sValue).matches()) {
                                 preparedValue = sValue;
                             } else if (dayAnyMonthAnyYearPattern.matcher(sValue).matches()) {
-                                preparedValue = value + "01.2000";
+                                preparedValue = sValue + "01.2000";
                             } else if (monthPattern.matcher(sValue).matches()) {
-                                preparedValue = "01." + value;
+                                preparedValue = "01." + sValue;
                             } else if (monthAnyYearPattern.matcher(sValue).matches()) {
-                                preparedValue = value + "2000";
+                                preparedValue = sValue + "2000";
                             } else if (yearPattern.matcher(sValue).matches()) {
-                                preparedValue = "01.01." + value;
+                                preparedValue = "01.01." + sValue;
                             }
 
                             if (preparedValue != null) {
                                 try {
-                                    yield ZonedDateTime.parse(preparedValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+                                    yield LocalDate
+                                            .parse(preparedValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"))
+                                            .atStartOfDay(ApplicationTimeZone.getZoneId());
                                 } catch (DateTimeParseException ex3) {
                                     yield null;
                                 }

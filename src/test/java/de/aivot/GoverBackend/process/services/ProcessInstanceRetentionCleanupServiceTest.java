@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 
 import java.lang.reflect.Proxy;
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -130,13 +130,13 @@ class ProcessInstanceRetentionCleanupServiceTest {
                 null,
                 List.of(),
                 Map.of(),
-                LocalDateTime.now().minusDays(3),
-                LocalDateTime.now().minusDays(1),
-                LocalDateTime.now().minusDays(1),
+                Instant.now().minus(Duration.ofDays(3)),
+                Instant.now().minus(Duration.ofDays(1)),
+                Instant.now().minus(Duration.ofDays(1)),
                 Duration.ofHours(1),
                 Map.of(),
                 1,
-                LocalDateTime.now().minusDays(2),
+                Instant.now().minus(Duration.ofDays(2)),
                 null
         );
     }

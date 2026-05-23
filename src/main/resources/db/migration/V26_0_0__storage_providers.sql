@@ -14,9 +14,9 @@ create table storage_providers
     system_provider                     boolean      not null default false,
     test_provider                       boolean      not null default false,
     metadata_attributes                 jsonb        not null default '[]'::jsonb,
-    last_sync                           timestamp    null,
-    created                             timestamp    not null default now(),
-    updated                             timestamp    not null default now()
+    last_sync                           timestamptz  null,
+    created                             timestamptz  not null default now(),
+    updated                             timestamptz  not null default now()
 );
 
 create table storage_index_items
@@ -30,7 +30,7 @@ create table storage_index_items
     size_in_bytes         bigint       not null default 0,
     missing               boolean      not null default false,
     metadata              jsonb        not null,
-    created               timestamp    not null default now(),
-    updated               timestamp    not null default now(),
+    created               timestamptz  not null default now(),
+    updated               timestamptz  not null default now(),
     primary key (storage_provider_id, path_from_root)
 );

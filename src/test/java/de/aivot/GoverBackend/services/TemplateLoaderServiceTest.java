@@ -2,7 +2,6 @@ package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.ChipInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.DateInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DateTimeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DateRangeInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DateTimeRangeInputElement;
@@ -23,6 +22,7 @@ import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.MarkdownDialect;
 import de.aivot.GoverBackend.services.pdf.PdfElement;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.templatemode.TemplateMode;
 
@@ -242,16 +242,16 @@ class TemplateLoaderServiceTest {
         dateTimeRangeElement.setMode(TimeType.Minute);
 
         var dateRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 0, 0, 0, 0, DateInputElement.zoneId),
-                ZonedDateTime.of(2025, 1, 5, 0, 0, 0, 0, DateInputElement.zoneId)
+                ZonedDateTime.of(2025, 1, 2, 0, 0, 0, 0, ApplicationTimeZone.getZoneId()),
+                ZonedDateTime.of(2025, 1, 5, 0, 0, 0, 0, ApplicationTimeZone.getZoneId())
         );
         var timeRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, DateInputElement.zoneId),
-                ZonedDateTime.of(2025, 1, 2, 11, 45, 15, 0, DateInputElement.zoneId)
+                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, ApplicationTimeZone.getZoneId()),
+                ZonedDateTime.of(2025, 1, 2, 11, 45, 15, 0, ApplicationTimeZone.getZoneId())
         );
         var dateTimeRangeValue = new RangeInputElementValue(
-                ZonedDateTime.of(2025, 1, 2, 9, 15, 0, 0, DateInputElement.zoneId),
-                ZonedDateTime.of(2025, 1, 5, 17, 0, 0, 0, DateInputElement.zoneId)
+                ZonedDateTime.of(2025, 1, 2, 9, 15, 0, 0, ApplicationTimeZone.getZoneId()),
+                ZonedDateTime.of(2025, 1, 5, 17, 0, 0, 0, ApplicationTimeZone.getZoneId())
         );
 
         var form = new VFormVersionWithDetailsEntity()
@@ -315,7 +315,7 @@ class TemplateLoaderServiceTest {
                                 List.of(
                                         new PdfElement(
                                                 dateTimeElement,
-                                                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, DateInputElement.zoneId),
+                                                ZonedDateTime.of(2025, 1, 2, 9, 15, 30, 0, ApplicationTimeZone.getZoneId()),
                                                 null
                                         ),
                                         new PdfElement(chipInputElement, List.of("Alpha", "Beta"), null),

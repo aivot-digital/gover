@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.form.services;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
 import de.aivot.GoverBackend.form.entities.*;
 import de.aivot.GoverBackend.form.repositories.FormRevisionRepository;
@@ -19,7 +20,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.math.BigInteger;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -89,7 +90,7 @@ public class FormRevisionService {
         formRevision.setFormId((Integer) createdForm.get("id"));
         formRevision.setFormVersion((Integer) createdForm.get("version"));
         formRevision.setUserId(user.getId());
-        formRevision.setTimestamp(LocalDateTime.now());
+        formRevision.setTimestamp(Instant.now());
         formRevision.setDiff(List.of(diff));
 
         formRevisionRepository.save(formRevision);
@@ -119,7 +120,7 @@ public class FormRevisionService {
         formRevision.setFormId((Integer) existingForm.get("id"));
         formRevision.setFormVersion((Integer) existingForm.get("version"));
         formRevision.setUserId(user.getId());
-        formRevision.setTimestamp(LocalDateTime.now());
+        formRevision.setTimestamp(Instant.now());
         formRevision.setDiff(changes);
 
         formRevisionRepository.save(formRevision);
@@ -150,11 +151,11 @@ public class FormRevisionService {
             }
         }
 
-        // Remove these fields to prevent jackson from crashing because of LocalDateTime
+        // Let JPA regenerate lifecycle timestamps after the rollback instead of reusing stale values.
         formObj.remove("updated");
         formObj.remove("created");
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory.getInstance().copy();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         var rolledBackFormVersionWithDetails = objectMapper.convertValue(formObj.toMap(), VFormVersionWithDetailsEntity.class);
 
