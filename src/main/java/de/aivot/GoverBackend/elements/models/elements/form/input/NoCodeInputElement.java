@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.form.input;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
@@ -10,6 +11,7 @@ import de.aivot.GoverBackend.exceptions.ValidationException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.Map;
 import java.util.Objects;
 
 public class NoCodeInputElement extends BaseInputElement<NoCodeInputElementItem> implements PrintableElement<NoCodeInputElementItem> {
@@ -48,6 +50,20 @@ public class NoCodeInputElement extends BaseInputElement<NoCodeInputElementItem>
     public void performValidation(@Nullable NoCodeInputElementItem value) throws ValidationException {
         if (Boolean.TRUE.equals(getRequired()) && !isFilled(value)) {
             throw new RequiredValidationException(this);
+        }
+
+        if (value != null) {
+            var noCode = value.getNoCode();
+            if (noCode != null) {
+                var noCodeError = noCode.validate();
+                if (!noCodeError.isValid()) {
+                    throw new ValidationException(
+                            this,
+                            "Der No-Code-Ausdruck ist ungültig.",
+                            noCodeError
+                    );
+                }
+            }
         }
     }
 

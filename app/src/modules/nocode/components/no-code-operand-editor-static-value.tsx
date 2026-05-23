@@ -4,7 +4,7 @@ import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/F
 import {Autocomplete, Box, InputAdornment, TextField, createFilterOptions} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {renderIconButton} from '../../../components/text-field/text-field-component';
-import {NoCodeStaticValue} from '../../../models/functions/no-code-expression';
+import {NoCodeOperandError, NoCodeStaticValue} from '../../../models/functions/no-code-expression';
 import {NoCodeParameterOption} from '../../../models/dtos/no-code-operator-details-dto';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
@@ -12,6 +12,7 @@ import {useMemo} from 'react';
 import {SelectFieldComponentOption} from '../../../components/select-field/select-field-component-option';
 import {DateFieldComponent} from '../../../components/date-field/date-field-component';
 import {DateFieldComponentModelMode} from '../../../models/elements/form/input/date-field-element';
+import Typography from '@mui/material/Typography';
 
 interface NoCodeOperandEditorStaticValueProps {
     label: string;
@@ -21,6 +22,7 @@ interface NoCodeOperandEditorStaticValueProps {
     options?: NoCodeParameterOption[];
     desiredType: NoCodeDataType;
     onAddEnclosingExpression: () => void;
+    operandError?: NoCodeOperandError;
 }
 
 export const BOOL_DEFAULT_OPTIONS: NoCodeParameterOption[] = [
@@ -36,6 +38,7 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
     const {
         options: originalOptions,
         desiredType,
+        operandError,
     } = props;
 
     const suggestionOptions: SelectFieldComponentOption[] | undefined = useMemo(() => {
@@ -51,24 +54,88 @@ export function NoCodeOperandEditorStaticValue(props: NoCodeOperandEditorStaticV
 
     if (suggestionOptions != null) {
         return (
-            <SuggestedStaticValue {...props} options={suggestionOptions} />
+            <>
+                <SuggestedStaticValue {...props} options={suggestionOptions}/>
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
         );
     }
 
     if (desiredType === NoCodeDataType.Boolean) {
         return (
-            <SelectStaticValue {...props} options={BOOL_DEFAULT_OPTIONS} />
+            <>
+                <SelectStaticValue {...props} options={BOOL_DEFAULT_OPTIONS}/>
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
         );
     }
 
     if (desiredType === NoCodeDataType.Date) {
         return (
-            <DateStaticValue {...props} />
+            <>
+                <DateStaticValue {...props} />
+
+                {
+                    operandError != null &&
+                    operandError.error != null &&
+                    <Typography
+                        color="error"
+                        variant="caption"
+                        sx={{
+                            mt: 1,
+                        }}
+                    >
+                        {operandError.error}
+                    </Typography>
+                }
+            </>
         );
     }
 
     return (
-        <TextStaticValue {...props} />
+        <>
+            <TextStaticValue {...props} />
+
+            {
+                operandError != null &&
+                operandError.error != null &&
+                <Typography
+                    color="error"
+                    variant="caption"
+                    sx={{
+                        mt: 1,
+                    }}
+                >
+                    {operandError.error}
+                </Typography>
+            }
+        </>
     );
 }
 
@@ -86,7 +153,7 @@ function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: st
 function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
     return [
         {
-            icon: <Delete />,
+            icon: <Delete/>,
             tooltip: 'Diesen festen Wert löschen',
             onClick: () => {
                 props.onChange(undefined);
@@ -94,7 +161,7 @@ function getStaticValueActions(props: NoCodeOperandEditorStaticValueProps) {
         },
         {
             tooltip: 'Diesen festen Wert mit einem Ausdruck verknüpfen',
-            icon: <Functions />,
+            icon: <Functions/>,
             onClick: props.onAddEnclosingExpression,
         },
     ];
@@ -109,7 +176,7 @@ function TextStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             onChange={(val) => {
                 updateStaticValue(props, val);
             }}
-            startIcon={<Article />}
+            startIcon={<Article/>}
             endAction={getStaticValueActions(props)}
             muiPassTroughProps={{
                 margin: 'none',
@@ -195,7 +262,7 @@ function SuggestedStaticValue(props: NoCodeOperandEditorStaticValueProps & { opt
                         startAdornment: (
                             <>
                                 <InputAdornment position="start">
-                                    <Article />
+                                    <Article/>
                                 </InputAdornment>
                                 {params.InputProps.startAdornment}
                             </>
@@ -227,7 +294,7 @@ function SelectStaticValue(props: NoCodeOperandEditorStaticValueProps & { option
             onChange={(val) => {
                 updateStaticValue(props, val);
             }}
-            startIcon={<Article />}
+            startIcon={<Article/>}
             endAction={getStaticValueActions(props)}
             muiPassTroughProps={{
                 margin: 'none',
@@ -247,7 +314,7 @@ function DateStaticValue(props: NoCodeOperandEditorStaticValueProps) {
             onChange={(val) => {
                 updateStaticValue(props, val);
             }}
-            startIcon={<Article />}
+            startIcon={<Article/>}
             endAction={getStaticValueActions(props)}
             muiPassTroughProps={{
                 margin: 'none',

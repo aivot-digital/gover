@@ -8,7 +8,13 @@ import {flattenElementsWithParents} from '../../../../utils/flatten-elements';
 import {ElementType} from '../../../../data/element-type/element-type';
 import {Alert, AlertTitle, Box, CircularProgress, Typography} from '@mui/material';
 import {isAnyInputElement} from '../../../../models/elements/form/input/any-input-element';
-import {isNoCodeExpression, isNoCodeReference, NoCodeExpression, NoCodeOperand} from '../../../../models/functions/no-code-expression';
+import {
+    isNoCodeExpression,
+    isNoCodeReference,
+    NoCodeExpression,
+    NoCodeOperand,
+    NoCodeOperandError,
+} from '../../../../models/functions/no-code-expression';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
 import {Collapse} from '../../../collapse/collapse';
 import {AuthoredElementValues, createDerivedRuntimeElementData} from '../../../../models/element-data';
@@ -35,6 +41,7 @@ interface NoCodeEditorWrapperProps {
     error?: string;
     label?: string;
     contextType?: NoCodeOperandEditorContextType;
+    operandError?: NoCodeOperandError;
 }
 
 const old_editor = localStorage.getItem('old_editor') != null;
@@ -49,6 +56,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
         label,
         desiredReturnType,
         contextType = 'FORM',
+        operandError,
     } = props;
     const useNewEditor = !old_editor || contextType === 'PROCESS';
 
@@ -204,6 +212,7 @@ export function NoCodeEditorWrapper(props: NoCodeEditorWrapperProps) {
                                 allOperators={operators}
                                 allElements={allElements}
                                 contextType={contextType}
+                                operandError={operandError}
                             />
                         </Box>
                     }

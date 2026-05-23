@@ -13,6 +13,7 @@ export interface BaseViewProps<M extends AnyElement, V> {
     onBlur: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
 
     errors?: string[] | null | undefined;
+    errorDetails?: Record<string, any> | null | undefined;
 
     authoredElementValues: AuthoredElementValues;
     onAuthoredElementValuesChange: (data: AuthoredElementValues, triggeringElementIds: string[]) => void;

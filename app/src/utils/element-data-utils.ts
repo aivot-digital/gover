@@ -62,6 +62,15 @@ export function resolveErrors(element: AnyElement, derivedData: DerivedRuntimeEl
     return [error];
 }
 
+export function resolveErrorDetails(element: AnyElement, derivedData: DerivedRuntimeElementData): any | undefined | null {
+    const errorDetails = resolveElementState(element, derivedData)?.errorDetails;
+    if (errorDetails == null) {
+        return undefined;
+    }
+
+    return errorDetails;
+}
+
 export function resolveVisibility(element: AnyElement, derivedData: DerivedRuntimeElementData): boolean {
     return resolveElementState(element, derivedData)?.visible ?? true;
 }

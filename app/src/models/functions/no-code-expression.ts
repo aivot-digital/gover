@@ -66,3 +66,10 @@ export interface ValidationExpressionWrapper {
     noCode: NoCodeOperand | null | undefined;
     message: string | null | undefined;
 }
+
+export interface NoCodeOperandError {
+    operand: NoCodeOperand | null;
+    error: string | null;
+    subErrors: NoCodeOperandError[] | null;
+    isValid: boolean;
+}

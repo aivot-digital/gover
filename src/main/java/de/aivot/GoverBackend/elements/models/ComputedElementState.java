@@ -7,6 +7,7 @@ import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class ComputedElementState implements Serializable {
@@ -15,6 +16,9 @@ public class ComputedElementState implements Serializable {
 
     @Nullable
     private String error = null;
+
+    @Nullable
+    private Object errorDetails = null;
 
     @Nullable
     private BaseElement override = null;
@@ -46,13 +50,16 @@ public class ComputedElementState implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         ComputedElementState that = (ComputedElementState) o;
-        return Objects.equals(visible, that.visible) && Objects.equals(error, that.error) && Objects.equals(override, that.override) && Objects.equals(destinationPath, that.destinationPath) && valueSource == that.valueSource && Objects.equals(subStates, that.subStates);
+        return Objects.equals(visible, that.visible) && Objects.equals(error, that.error) && Objects.equals(errorDetails, that.errorDetails) &&
+                Objects.equals(override, that.override) && Objects.equals(destinationPath, that.destinationPath) && valueSource == that.valueSource &&
+                Objects.equals(subStates, that.subStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visible, error, override, destinationPath, valueSource, subStates);
+        return Objects.hash(visible, error, errorDetails, override, destinationPath, valueSource, subStates);
     }
+
 
     // endregion
 
@@ -115,6 +122,16 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setSubStates(@Nullable List<ComputedElementStates> subStates) {
         this.subStates = subStates;
+        return this;
+    }
+
+    @Nullable
+    public Object getErrorDetails() {
+        return errorDetails;
+    }
+
+    public ComputedElementState setErrorDetails(@Nullable Object errorDetails) {
+        this.errorDetails = errorDetails;
         return this;
     }
 

@@ -233,7 +233,11 @@ public class ElementDerivationService {
                         elementState,
                         logger
                 );
-                elementState.setError(err);
+
+                if (err != null) {
+                    elementState.setError(err.error);
+                    elementState.setErrorDetails(err.errorDetails);
+                }
             }
 
             if (actualElement instanceof ReplicatingContainerLayoutElement replicatingContainer) {
@@ -800,7 +804,7 @@ public class ElementDerivationService {
      * should not enter the expensive dynamic validation path.
      */
     @Nullable
-    private String deriveError(
+    private ErrorResult deriveError(
             @Nonnull JavascriptEngine javascriptEngine,
             @Nonnull BaseElement rootElement,
             @Nonnull InputElement<?> inputElement,
@@ -826,7 +830,7 @@ public class ElementDerivationService {
         try {
             inputElement.validate(effectiveValue);
         } catch (ValidationException e) {
-            return e.getMessage();
+            return ErrorResult.of(e);
         }
 
         var validation = inputElement
@@ -861,7 +865,7 @@ public class ElementDerivationService {
 
             var str = res.asString();
             if (StringUtils.isNotNullOrEmpty(str)) {
-                return str;
+                return ErrorResult.of(str);
             }
             return null;
         }
@@ -878,7 +882,7 @@ public class ElementDerivationService {
                 var res = noCodeEvaluationService
                         .evaluate(validationExpression.getNoCode(), accumulator, patchedProcessExecutionData);
                 if (!res.getValueAsBoolean()) {
-                    return validationExpression.getMessage();
+                    return ErrorResult.of(validationExpression.getMessage());
                 }
             }
         }
@@ -886,16 +890,40 @@ public class ElementDerivationService {
         if (validation.getConditionSet() != null && rootElement instanceof LayoutElement<?> elementWithChildren) {
             var accumulator = createRuntimeAccumulator(computedElementStates, effectiveElementValues);
 
-            return validation
+            var r = validation
                     .getConditionSet()
                     .evaluate(
                             elementWithChildren,
                             accumulator,
                             baseElement
                     );
+            if (StringUtils.isNotNullOrEmpty(r)) {
+                return ErrorResult.of(r);
+            }
         }
 
         return null;
+    }
+
+    private record ErrorResult(
+            @Nonnull
+            String error,
+            @Nullable
+            Object errorDetails
+    ) {
+        public static ErrorResult of(String e) {
+            return new ErrorResult(
+                    e,
+                    null
+            );
+        }
+
+        public static ErrorResult of(ValidationException e) {
+            return new ErrorResult(
+                    e.getMessage(),
+                    e.getErrorDetails()
+            );
+        }
     }
 
     /**

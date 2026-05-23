@@ -13,6 +13,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableElementContextMenu, setComponentTree} from '../../slices/admin-settings-slice';
 import {ElementErrorBoundary} from '../element-error-boundary/element-error-boundary';
 import {
+    resolveErrorDetails,
     resolveErrors,
     resolveOverride,
     resolveValueForResolvedOverride,
@@ -27,7 +28,7 @@ import {useElementTreeInlineEditorContext} from '../element-tree-2/components/el
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 
-type Props<T extends AnyElement> = Omit<BaseViewProps<T, any>, 'value' | 'setValue' | 'onBlur' | 'errors'>
+type Props<T extends AnyElement> = Omit<BaseViewProps<T, any>, 'value' | 'setValue' | 'onBlur' | 'errors' | 'errorDetails'>
 
 export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
     const disableElementContextMenu = useAppSelector(selectDisableElementContextMenu);
@@ -66,6 +67,10 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
 
     const resolvedErrors: string[] | undefined | null = useMemo(() => {
         return resolveErrors(element, derivedData);
+    }, [element, derivedData]);
+
+    const resolvedErrorDetails: string[] | undefined | null = useMemo(() => {
+        return resolveErrorDetails(element, derivedData);
     }, [element, derivedData]);
 
     const effectiveRootAuthoredElementValues = useMemo(() => {
@@ -160,6 +165,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                     setValue={handleSetValue}
                     onBlur={handleOnBlur}
                     errors={suppressErrors ? undefined : resolvedErrors}
+                    errorDetails={suppressErrors ? undefined : resolvedErrorDetails}
                 />
             </ElementErrorBoundary>
         </Grid>

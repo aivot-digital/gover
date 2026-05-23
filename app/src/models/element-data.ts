@@ -10,6 +10,7 @@ export type ComputedElementValueSource = 'Authored' | 'Derived';
 export interface ComputedElementState {
     visible?: boolean | null;
     error?: string | null;
+    errorDetails?: Record<string, any> | null;
     override?: AnyElement | null;
     destinationPath?: string | null;
     valueSource?: ComputedElementValueSource | null;
@@ -18,7 +19,7 @@ export interface ComputedElementState {
 
 export type ComputedElementStates = Partial<Record<string, ComputedElementState>>;
 
-export type ComputedElementError = Pick<ComputedElementState, 'error' | 'subStates'>;
+export type ComputedElementError = Pick<ComputedElementState, 'error' | 'errorDetails' | 'subStates'>;
 
 export type ComputedElementErrors = Partial<Record<string, ComputedElementError>>;
 
@@ -109,6 +110,10 @@ export function applyComputedErrors(computedErrors: ComputedElementErrors, compu
 
         if (Object.prototype.hasOwnProperty.call(computedError, 'error')) {
             nextState.error = computedError.error ?? null;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(computedError, 'errorDetails')) {
+            nextState.errorDetails = computedError.errorDetails ?? null;
         }
 
         if (Object.prototype.hasOwnProperty.call(computedError, 'subStates')) {

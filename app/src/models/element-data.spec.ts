@@ -5,12 +5,24 @@ describe('applyComputedErrors', () => {
         const computedErrors: ComputedElementErrors = {
             field: {
                 error: 'New error',
+                errorDetails: {
+                    operand: {
+                        type: 'NoCodeStaticValue',
+                        value: '',
+                    },
+                    error: 'New operand error',
+                    subErrors: null,
+                    isValid: false,
+                },
             },
         };
         const existingStates: ComputedElementStates = {
             field: {
                 visible: false,
                 error: 'Old error',
+                errorDetails: {
+                    error: 'Old operand error',
+                },
                 valueSource: 'Derived',
                 subStates: null,
             },
@@ -20,6 +32,15 @@ describe('applyComputedErrors', () => {
             field: {
                 visible: false,
                 error: 'New error',
+                errorDetails: {
+                    operand: {
+                        type: 'NoCodeStaticValue',
+                        value: '',
+                    },
+                    error: 'New operand error',
+                    subErrors: null,
+                    isValid: false,
+                },
                 valueSource: 'Derived',
                 subStates: null,
             },
@@ -34,10 +55,36 @@ describe('applyComputedErrors', () => {
         const existingStates: ComputedElementStates = {
             field: {
                 error: 'Existing error',
+                errorDetails: {
+                    error: 'Existing operand error',
+                },
             },
         };
 
         expect(applyComputedErrors(computedErrors, existingStates)).toEqual(existingStates);
+    });
+
+    it('should clear error details when computed errors explicitly provide null details', () => {
+        const computedErrors: ComputedElementErrors = {
+            field: {
+                errorDetails: null,
+            },
+        };
+        const existingStates: ComputedElementStates = {
+            field: {
+                error: 'Existing error',
+                errorDetails: {
+                    error: 'Existing operand error',
+                },
+            },
+        };
+
+        expect(applyComputedErrors(computedErrors, existingStates)).toEqual({
+            field: {
+                error: 'Existing error',
+                errorDetails: null,
+            },
+        });
     });
 
     it('should apply nested errors recursively to sub states', () => {
@@ -48,6 +95,9 @@ describe('applyComputedErrors', () => {
                     {
                         child: {
                             error: 'Updated nested error',
+                            errorDetails: {
+                                error: 'Updated nested operand error',
+                            },
                         },
                     },
                     {
@@ -66,6 +116,9 @@ describe('applyComputedErrors', () => {
                         child: {
                             visible: true,
                             error: 'Old nested error',
+                            errorDetails: {
+                                error: 'Old nested operand error',
+                            },
                             valueSource: 'Authored',
                         },
                     },
@@ -86,6 +139,9 @@ describe('applyComputedErrors', () => {
                         child: {
                             visible: true,
                             error: 'Updated nested error',
+                            errorDetails: {
+                                error: 'Updated nested operand error',
+                            },
                             valueSource: 'Authored',
                         },
                     },

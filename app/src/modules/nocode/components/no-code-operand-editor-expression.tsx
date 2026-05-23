@@ -12,7 +12,7 @@ import {
     NoCodeExpression,
     NoCodeOperand,
     NoCodeProcessDataReference,
-    NoCodeReference,
+    NoCodeReference, NoCodeOperandError,
 } from '../../../models/functions/no-code-expression';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {ElementWithParents} from '../../../utils/flatten-elements';
@@ -38,6 +38,7 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {ElementType} from '../../../data/element-type/element-type';
 import {BOOL_DEFAULT_OPTIONS} from './no-code-operand-editor-static-value';
 import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
+import {Stack} from '@mui/material';
 
 interface NoCodeOperandEditorExpressionProps {
     allElements: ElementWithParents[];
@@ -48,6 +49,7 @@ interface NoCodeOperandEditorExpressionProps {
     onChange: (value: NoCodeOperand | undefined) => void;
     contextType?: NoCodeOperandEditorContextType;
     onAddEnclosingExpression: () => void;
+    operandError?: NoCodeOperandError;
 }
 
 interface ResolvedParameter {
@@ -129,6 +131,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
         onChange,
         contextType = 'BOTH',
         onAddEnclosingExpression,
+        operandError,
     } = props;
 
     const [showOperatorSwitcher, setShowOperatorSwitcher] = useState(false);
@@ -304,6 +307,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                 allOperators={allOperators}
                                 allElements={allElements}
                                 contextType={contextType}
+                                operandError={operandError?.subErrors?.[0] ?? undefined}
                             />
                         </Box>
                     </Box>
@@ -375,19 +379,38 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                             </Typography>
                         </Box>
 
-                        {
-                            operator.abstractDescription != null &&
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                    mt: 1,
-                                    flex: 1,
-                                }}
-                            >
-                                {operator.abstractDescription}
-                            </Typography>
-                        }
+                        <Stack
+                            direction="column"
+                            sx={{
+                                mt: 1,
+                                flex: 1,
+                            }}
+                        >
+                            {
+                                operator.abstractDescription != null &&
+                                <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                >
+                                    {operator.abstractDescription}
+                                </Typography>
+                            }
+
+                            {
+                                operandError != null &&
+                                operandError.error != null &&
+                                <Typography
+                                    color="error"
+                                    variant="caption"
+                                    sx={{
+                                        mt: 1,
+                                    }}
+                                >
+                                    {operandError.error}
+                                </Typography>
+                            }
+                        </Stack>
+
 
                         <Actions
                             dense={true}
@@ -478,6 +501,12 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                                     allOperators={allOperators}
                                     allElements={allElements}
                                     contextType={contextType}
+                                    operandError={
+                                        operandError != null &&
+                                        operandError.subErrors != null
+                                            ? operandError.subErrors[index + 1]
+                                            : undefined
+                                    }
                                 />
                             </Box>
                         </Box>

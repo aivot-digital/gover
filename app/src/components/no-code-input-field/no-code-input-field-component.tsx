@@ -7,7 +7,7 @@ import {AnyElement} from '../../models/elements/any-element';
 import {ElementType} from '../../data/element-type/element-type';
 import {NoCodeOperandEditorContextType} from '../../modules/nocode/components/no-code-operand-editor';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import {NoCodeOperand} from '../../models/functions/no-code-expression';
+import {NoCodeOperand, NoCodeOperandError} from '../../models/functions/no-code-expression';
 import {useApi} from '../../hooks/use-api';
 import {NoCodeApiService} from '../../services/no-code-api-service';
 import {NoCodeOperatorDetailsDTO} from '../../models/dtos/no-code-operator-details-dto';
@@ -23,6 +23,7 @@ interface NoCodeInputFieldComponentProps {
     label: string;
     hint?: string | null;
     error?: string | null;
+    errorDetails?: Record<string, any> | null;
     required?: boolean | null;
     disabled?: boolean;
     value?: NoCodeInputFieldElementItem | null;
@@ -39,6 +40,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
         label,
         hint,
         error,
+        errorDetails,
         required,
         disabled,
         value,
@@ -194,6 +196,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                                         label={displayLabel}
                                         hint={hint ?? undefined}
                                         contextType={contextType}
+                                        operandError={errorDetails as NoCodeOperandError ?? undefined}
                                     />
                                 </Box>
                             </DialogContent>
@@ -240,6 +243,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                         hint={hint ?? undefined}
                         error={error ?? undefined}
                         contextType={contextType}
+                        operandError={errorDetails as NoCodeOperandError ?? undefined}
                     />
                 )
             }

@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.nocode.models;
 
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import de.aivot.GoverBackend.utils.StringUtils;
 
@@ -25,6 +26,12 @@ public class NoCodeStaticValue extends NoCodeOperand {
 
     public static NoCodeStaticValue of(@Nullable Object value) {
         return new NoCodeStaticValue(value);
+    }
+
+    @Nonnull
+    @Override
+    public NoCodeOperandError validate() {
+        return NoCodeOperandError.NO_ERROR(this);
     }
 
     // region Hash & Equals

@@ -6,7 +6,7 @@ import {
     isNoCodeReference,
     isNoCodeStaticValue,
     NoCodeExpression,
-    NoCodeOperand,
+    NoCodeOperand, NoCodeOperandError,
 } from '../../../models/functions/no-code-expression';
 import {NoCodeOperatorDetailsDTO, NoCodeParameter} from '../../../models/dtos/no-code-operator-details-dto';
 import {ElementWithParents} from '../../../utils/flatten-elements';
@@ -28,6 +28,7 @@ interface NoCodeOperandEditorProps {
     allOperators: NoCodeOperatorDetailsDTO[];
     allElements: ElementWithParents[];
     contextType?: NoCodeOperandEditorContextType;
+    operandError?: NoCodeOperandError;
 }
 
 
@@ -39,6 +40,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
         allElements,
         parameter,
         contextType = 'BOTH',
+        operandError,
     } = props;
 
     const [showEnclosingOperatorPicker, setShowEnclosingOperatorPicker] = useState(false);
@@ -68,6 +70,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                         setShowEnclosingOperatorPicker(true);
                     }}
                     options={parameter.options}
+                    operandError={operandError}
                 />
             }
 
@@ -83,6 +86,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}
+                    operandError={operandError}
                 />
             }
 
@@ -96,6 +100,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}
+                    operandError={operandError}
                 />
             }
 
@@ -111,6 +116,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}
+                    operandError={operandError}
                 />
             }
 

@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.nocode.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.nocode.services.NoCodeOperatorProviderService;
+import de.aivot.GoverBackend.utils.SpringContext;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -8,14 +10,14 @@ import jakarta.annotation.Nullable;
 import java.util.*;
 
 /**
- * Represents an expression in the NoCode language.
- * An expression consists of an operator and a list of operands.
+ * Represents an expression in the NoCode language. An expression consists of an operator and a list of operands.
  */
 public class NoCodeExpression extends NoCodeOperand {
     public static final String TYPE_ID = "NoCodeExpression";
 
     @Nullable
     private String operatorIdentifier;
+
     @Nullable
     private List<NoCodeOperand> operands;
 
@@ -64,6 +66,53 @@ public class NoCodeExpression extends NoCodeOperand {
         }
 
         return referencedIds;
+    }
+
+    @Override
+    @Nonnull
+    public NoCodeOperandError validate() {
+        var subErrors = new LinkedList<NoCodeOperandError>();
+
+        int parameterCount = 0;
+        if (operands != null) {
+            for (NoCodeOperand operand : operands) {
+                if (operand != null) {
+                    parameterCount++;
+
+                    subErrors.add(operand.validate());
+                } else {
+                    subErrors.add(new NoCodeOperandError(null, "Ein Leerer Operator ist nicht erlaubt.", List.of()));
+                }
+            }
+        }
+
+        String thisError = null;
+        if (StringUtils.isNullOrEmpty(operatorIdentifier)) {
+            thisError = "Ein Leerer Operator ist nicht erlaubt.";
+        }
+
+        var op = SpringContext
+                .getBean(NoCodeOperatorProviderService.class)
+                .getNoCodeOperator(operatorIdentifier)
+                .orElse(null);
+
+        if (op == null) {
+            thisError = "Der angegebene Operator existiert nicht.";
+        } else {
+            var parameterCountMatched = false;
+            for (var sig : op.getSignatures()) {
+                if (sig.parameters().length == parameterCount) {
+                    parameterCountMatched = true;
+                    break;
+                }
+            }
+
+            if (!parameterCountMatched) {
+                thisError = "Alle Parameter des Ausdrucks müssen konfiguriert sein.";
+            }
+        }
+
+        return new NoCodeOperandError(this, thisError, subErrors);
     }
 
     // region Hash & Equals

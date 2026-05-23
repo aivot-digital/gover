@@ -7,6 +7,7 @@ import jakarta.annotation.Nonnull;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents an operand in the NoCode language.
@@ -41,6 +42,9 @@ public abstract class NoCodeOperand implements Serializable {
         NoCodeOperand that = (NoCodeOperand) o;
         return Objects.equals(type, that.type);
     }
+
+    @Nonnull
+    public abstract NoCodeOperandError validate();
 
     @Override
     public int hashCode() {

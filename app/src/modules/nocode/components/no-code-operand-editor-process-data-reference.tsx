@@ -5,12 +5,13 @@ import {
     isNoCodeNodeDataReference,
     isNoCodeProcessDataReference,
     NoCodeInstanceDataReference,
-    NoCodeNodeDataReference,
+    NoCodeNodeDataReference, NoCodeOperandError,
     NoCodeProcessDataReference,
 } from '../../../models/functions/no-code-expression';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {Actions} from '../../../components/actions/actions';
 import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
+import Typography from '@mui/material/Typography';
 
 interface NoCodeOperandEditorProcessDataReferenceProps {
     label: string;
@@ -18,6 +19,7 @@ interface NoCodeOperandEditorProcessDataReferenceProps {
     value: NoCodeProcessDataReference | NoCodeInstanceDataReference | NoCodeNodeDataReference;
     onChange: (value: NoCodeProcessDataReference | NoCodeInstanceDataReference | NoCodeNodeDataReference | undefined) => void;
     onAddEnclosingExpression: () => void;
+    operandError?: NoCodeOperandError;
 }
 
 export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEditorProcessDataReferenceProps) {
@@ -27,6 +29,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
         value,
         onChange,
         onAddEnclosingExpression,
+        operandError,
     } = props;
 
     const isProcessDataReference = isNoCodeProcessDataReference(value);
@@ -74,6 +77,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                         })}
                         muiPassTroughProps={{margin: 'none'}}
                         startIcon="_."
+                        error={operandError?.error ?? undefined}
                     />
                 </Grid>
             }
@@ -96,6 +100,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                                             path: path ?? undefined,
                                         });
                                     }}
+                                    error={operandError?.error ?? undefined}
                                 />
                             )
                             : (
@@ -112,6 +117,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                                     startIcon={startIcon}
                                     endAction={isNodeDataReference ? undefined : referenceActions}
                                     muiPassTroughProps={{margin: 'none'}}
+                                    error={operandError?.error ?? undefined}
                                 />
                             )
                     }
