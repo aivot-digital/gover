@@ -919,6 +919,8 @@ export function FormNodeEditorPage() {
             <AddElementDialog
                 show={showRootAddElementDialog}
                 parentType={formLayout.type}
+                parentElement={formLayout}
+                allParents={[formLayout]}
                 onAddElement={(e) => {
                     if (isAnyElementWithChildren(formLayout)) {
                         handlePatch({

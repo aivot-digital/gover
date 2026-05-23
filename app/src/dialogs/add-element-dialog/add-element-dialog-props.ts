@@ -7,6 +7,7 @@ export interface AddElementDialogProps {
     show: boolean;
     parentType: ElementType;
     parentElement?: AnyElement;
+    allParents: AnyElement[];
     onAddElement: (element: AnyElement) => void;
     onClose: () => void;
     title?: string;

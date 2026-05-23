@@ -349,6 +349,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                 show={showAddElementDialog}
                 parentType={parents[parents.length - 1].type}
                 parentElement={parents[parents.length - 1]}
+                allParents={parents}
                 title={addElementDialogTitle}
                 onAddElement={(ele) => {
                     const updatedValue = [...value, ele];

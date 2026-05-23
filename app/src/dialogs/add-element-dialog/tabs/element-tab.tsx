@@ -45,17 +45,18 @@ interface ElementOption {
 }
 
 export function ElementTab({
-    parentType,
-    parentElement,
-    onAddElement,
-    primaryActionLabel,
-    primaryActionIcon,
-    showElementInfo,
-    highlightedElement,
-    limitElementTypes,
-    recentElementTypes = [],
-    displayContext,
-}: BaseTabProps & {
+                               parentType,
+                               parentElement,
+                               allParents,
+                               onAddElement,
+                               primaryActionLabel,
+                               primaryActionIcon,
+                               showElementInfo,
+                               highlightedElement,
+                               limitElementTypes,
+                               recentElementTypes = [],
+                               displayContext,
+                           }: BaseTabProps & {
     showElementInfo: (type: ElementType) => void;
     highlightedElement?: ElementType;
     limitElementTypes?: ElementType[];
@@ -66,7 +67,24 @@ export function ElementTab({
     const [expandedGroups, setExpandedGroups] = useState<Record<ElementTypeGroups, boolean>>(defaultExpandedGroups);
 
     const options = useMemo<ElementOption[]>(() => {
-        const childOptions = ElementChildOptions[displayContext][parentType] ?? [];
+        let childOptionSet: Set<ElementType> | null = null;
+
+        if (allParents.length > 1) {
+            for (const par of allParents.slice(1)) {
+                const allowedChildOptionOfThisParent = ElementChildOptions[displayContext][par.type] ?? [];
+                const allowedChildOptionOfThisParentSet = new Set(allowedChildOptionOfThisParent);
+
+                if (childOptionSet == null) {
+                    childOptionSet = allowedChildOptionOfThisParentSet;
+                } else {
+                    childOptionSet = childOptionSet.intersection(allowedChildOptionOfThisParentSet);
+                }
+            }
+        } else {
+            childOptionSet = new Set(ElementChildOptions[displayContext][parentType] ?? []);
+        }
+
+        const childOptions = childOptionSet != null ? Array.from(childOptionSet) : [];
 
         return childOptions
             .filter((type) => limitElementTypes == null || limitElementTypes.includes(type))
@@ -147,7 +165,8 @@ export function ElementTab({
                     primaryActionIcon={primaryActionIcon}
                     titleAdornment={
                         showGroupLabel ?
-                            <Chip size="small" label={elementTypeGroupLabels[option.group]}/> :
+                            <Chip size="small"
+                                  label={elementTypeGroupLabels[option.group]}/> :
                             undefined
                     }
                     onAdd={() => {

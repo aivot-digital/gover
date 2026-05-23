@@ -105,6 +105,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                     <ElementTab
                         parentType={props.parentType}
                         parentElement={props.parentElement}
+                        allParents={props.allParents}
                         onAddElement={handleAddElement}
                         primaryActionLabel={renderPrimaryActionLabel}
                         primaryActionIcon={renderPrimaryActionIcon}
@@ -118,6 +119,8 @@ export function AddElementDialog(props: AddElementDialogProps) {
                     currentTab === 1 &&
                     <PresetTab
                         parentType={props.parentType}
+                        parentElement={props.parentElement}
+                        allParents={props.allParents}
                         onAddElement={handleAddElement}
                         primaryActionLabel={renderPrimaryActionLabel}
                         primaryActionIcon={renderPrimaryActionIcon}
@@ -129,6 +132,8 @@ export function AddElementDialog(props: AddElementDialogProps) {
                     currentTab === 2 &&
                     <StoreTab
                         parentType={props.parentType}
+                        parentElement={props.parentElement}
+                        allParents={props.allParents}
                         onAddElement={handleAddElement}
                         primaryActionLabel={renderPrimaryActionLabel}
                         primaryActionIcon={renderPrimaryActionIcon}
