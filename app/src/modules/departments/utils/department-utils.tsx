@@ -3,6 +3,7 @@ import FiberManualRecord from '@aivot/mui-material-symbols-400-outlined/dist/fib
 import Graph6 from '@aivot/mui-material-symbols-400-outlined/dist/graph-6/Graph6';
 import Spoke from '@aivot/mui-material-symbols-400-outlined/dist/spoke/Spoke';
 import {decimalNumberToRomanNumeral} from '../../../utils/number-utils';
+import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {VDepartmentShadowedEntity} from '../entities/v-department-shadowed-entity';
 
 export function getDepartmentTypeLabel(depth: number): string {
@@ -49,4 +50,12 @@ export function getDepartmentPath(org: VDepartmentShadowedEntity): string {
         return org.name;
     }
     return org.parentNames.join(' › ') + ' › ' + org.name;
+}
+
+export function getDepartmentDisplayAddress(org?: VDepartmentShadowedEntity | null): string | undefined {
+    if (org == null || !isStringNotNullOrEmpty(org.address)) {
+        return undefined;
+    }
+
+    return org.address ?? undefined;
 }
