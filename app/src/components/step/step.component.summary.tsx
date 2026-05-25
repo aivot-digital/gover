@@ -6,12 +6,12 @@ import Tooltip from '@mui/material/Tooltip';
 import React, {useMemo} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {setCurrentStep} from '../../slices/stepper-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
 import {getStepIcon} from '../../data/step-icons';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
-import {extractVisibleFormSteps} from '../../utils/visible-form-steps';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {resolveSummaryStepIndex} from '../../utils/resolve-summary-step-index';
 
 export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) {
     const {
@@ -27,23 +27,22 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
     } = model;
 
     const dispatch = useAppDispatch();
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
     const stepIndex = useMemo(() => {
-        /*
-        if (application == null) {
-            return -1;
-        }
+        return resolveSummaryStepIndex(rootElement, derivedData, model.id);
+    }, [derivedData, model.id, rootElement]);
 
-        const visibleSteps = extractVisibleFormSteps(application.version.rootElement.children, derivedData);
-        return visibleSteps.findIndex(step => step.id === model.id);
-         */
-        return -1;
-    }, [derivedData, model.id]);
+    const canNavigateToStep = (allowStepNavigation == null || allowStepNavigation === true) && stepIndex !== -1;
 
     const handleNavigateToStep = () => {
-        if (stepIndex !== -1) {
-            dispatch(setCurrentStep(stepIndex));
+        if (stepIndex === -1) {
+            return;
         }
+
+        dispatch(setCurrentStep(stepIndex));
     };
 
     const Icon = getStepIcon(model);
@@ -74,7 +73,7 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
                     }
                 </Typography>
                 {
-                    (allowStepNavigation == null || allowStepNavigation === true) &&
+                    canNavigateToStep &&
                     <Tooltip
                         title="Diesen Abschnitt bearbeiten"
                         arrow
