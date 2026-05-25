@@ -326,7 +326,7 @@ export function ApplicationSettings() {
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Die Liste der Fachbereiche konnte nicht geladen werden'));
+                dispatch(showErrorSnackbar('Die Liste der Organisationen konnte nicht geladen werden'));
             });
     }, []);
 
@@ -638,8 +638,8 @@ export function ApplicationSettings() {
                 variant="caption"
                 color={'text.secondary'}
             >
-                Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche
-                auswählen, deren Texte Sie verwenden und anzeigen möchten.
+                Rechtstexte werden auf Ebene der Organisation hinterlegt und verwaltet. Sie können hier die
+                Organisationen auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </Typography>
             <CheckboxFieldComponent
                 label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"

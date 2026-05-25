@@ -74,7 +74,7 @@ export function ProcessInstanceTaskListPage() {
             content: (
                 <>
                     <Typography>
-                        Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für
+                        Eine Organisation ist eine zentrale Verwaltungseinheit in Gover und essenziell für
                         den
                         Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und
                         Kontaktdaten
@@ -83,9 +83,9 @@ export function ProcessInstanceTaskListPage() {
                         können.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle
+                        Jeder Organisation sind Mitarbeiter:innen mit einer spezifischen Rolle
                         zugeordnet,
-                        die deren Berechtigungen innerhalb des Fachbereichs definiert.
+                        die deren Berechtigungen innerhalb der Organisation definiert.
                     </Typography>
                 </>
             ),

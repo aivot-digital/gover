@@ -38,7 +38,7 @@ public class ListingPageAccesibilitySystemConfigDefinition implements SystemConf
     @Nonnull
     @Override
     public String getDescription() {
-        return "Der für die Barrierefreiheit zuständige Fachbereich.";
+        return "Die für die Barrierefreiheit zuständige Organisation.";
     }
 
     @Nonnull

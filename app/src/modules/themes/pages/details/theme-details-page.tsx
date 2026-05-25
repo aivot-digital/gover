@@ -28,7 +28,7 @@ export function ThemeDetailsPage() {
                             <>
                                 <Typography>
                                     Ein Erscheinungsbild legt Farben, Logo und Favicon für die Benutzeroberfläche von Gover fest. Erscheinungsbilder können global oder für einzelne Formulare verwendet werden.
-                                    So können Sie z. B. für verschiedene Fachbereiche oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
+                                    So können Sie z. B. für verschiedene Organisationen oder Abteilungen unterschiedliche Erscheinungsbilder anlegen und nutzen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Ein Erscheinungsbild besteht aus einem Namen, Farben sowie optional einem Logo und Favicon. Bei der Auswahl der Farben sollte die Barrierefreiheit berücksichtigt werden.
@@ -49,7 +49,7 @@ export function ThemeDetailsPage() {
                     },
                     {
                         path: '/themes/:id/departments',
-                        label: 'Fachbereiche',
+                        label: 'Organisationen',
                         isDisabled: (item) => !item?.id,
                     },
                 ]}

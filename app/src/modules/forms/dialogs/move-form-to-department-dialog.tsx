@@ -53,7 +53,7 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
                 setDepartments(content);
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Liste der Fachbereiche konnte nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Organisationen konnte nicht geladen werden.'));
             });
     }, []);
 
@@ -63,7 +63,7 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
         }
 
         if (targetDepartmentId == null) {
-            dispatch(showErrorSnackbar('Bitte wählen Sie einen Fachbereich aus, an den das Formular übertragen werden soll.'));
+            dispatch(showErrorSnackbar('Bitte wählen Sie eine Organisation aus, an die das Formular übertragen werden soll.'));
             return;
         }
 
@@ -101,7 +101,7 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
             <DialogTitleWithClose
                 onClose={onClose}
             >
-                Formular an Fachbereich übertragen
+                Formular an Organisation übertragen
             </DialogTitleWithClose>
 
             {
@@ -145,18 +145,18 @@ export function MoveFormToDepartmentDialog(props: MoveFormToDepartmentDialogProp
                         variant="body1"
                         gutterBottom={true}
                     >
-                        Bitte wählen Sie den Fachbereich aus, an den das Formular <strong>{form.internalTitle}</strong> übertragen werden soll.
+                        Bitte wählen Sie die Organisation aus, an die das Formular <strong>{form.internalTitle}</strong> übertragen werden soll.
                     </Typography>
 
                     <Typography
                         variant="body2"
                         gutterBottom={true}
                     >
-                        Bitte beachten Sie, dass Sie möglicherweise nicht mehr auf das Formular zugreifen können, wenn Sie es an einen anderen Fachbereich übertragen.
+                        Bitte beachten Sie, dass Sie möglicherweise nicht mehr auf das Formular zugreifen können, wenn Sie es an eine andere Organisation übertragen.
                     </Typography>
 
                     <SelectFieldComponent
-                        label="Fachbereich"
+                        label="Organisation"
                         value={targetDepartmentId?.toString() ?? undefined}
                         onChange={(val) => {
                             const valNumber = val != null ? parseInt(val.toString(), 10) : null;

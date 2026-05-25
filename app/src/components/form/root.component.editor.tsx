@@ -632,7 +632,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 title="Kontakte"
                 variant="h5"
             >
-                Kontaktinformationen werden auf Organisationseinheits-Ebene hinterlegt und verwaltet. Sie können hier
+                Kontaktinformationen werden auf Ebene der Organisationseinheit hinterlegt und verwaltet. Sie können hier
                 die Organisationseinheiten auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen
                 möchten.
             </ElementEditorSectionHeader>
