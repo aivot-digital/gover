@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Grid, Skeleton} from '@mui/material';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {type FormLayoutElement} from '../../models/elements/form-layout-element';
@@ -18,9 +18,21 @@ import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
 import {downloadQrCode} from '../../utils/download-qrcode';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {withDelay} from '../../utils/with-delay';
-import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
+import {type VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {VDepartmentShadowedApiService} from '../../modules/departments/services/v-department-shadowed-api-service';
+import {DepartmentSelectField} from '../../modules/departments/components/department-select-field';
+import {SelectDepartmentDialog} from '../../modules/departments/dialogs/select-department-dialog';
+
+type DepartmentDialogTarget =
+    'responsible' |
+    'managing' |
+    'imprint' |
+    'privacy' |
+    'accessibility' |
+    'legalSupport' |
+    'technicalSupport';
 
 export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
     const dispatch = useAppDispatch();
@@ -31,8 +43,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
         onPatch,
     } = props;
 
-    const [departments, setDepartments] = useState<SelectFieldComponentOption[] | null>(null);
+    const [departments, setDepartments] = useState<VDepartmentShadowedEntity[] | null>(null);
     const [themes, setThemes] = useState<SelectFieldComponentOption[] | null>(null);
+    const [activeDepartmentDialog, setActiveDepartmentDialog] = useState<DepartmentDialogTarget | null>(null);
 
     const handleDownloadQrCode = async (link: string, filename: string) => {
         try {
@@ -45,17 +58,17 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
 
     useEffect(() => {
         withDelay(
-            new DepartmentApiService().listAll(),
+            new VDepartmentShadowedApiService().listAllOrdered([
+                'parentNames',
+                'name',
+            ], 'ASC'),
             600,
         )
-            .then((deps) => deps.content.map((department) => ({
-                value: department.id.toString(),
-                label: department.name,
-            })))
+            .then((deps) => deps.content)
             .then(setDepartments)
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der Fachbereiche!'));
+                dispatch(showErrorSnackbar('Fehler beim Laden der Organisationseinheiten!'));
             });
 
         withDelay(new ThemesApiService(api)
@@ -70,6 +83,88 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 dispatch(showErrorSnackbar('Fehler beim Laden der Erscheinungsbilder!'));
             });
     }, [api, dispatch]);
+
+    const departmentsById = useMemo(() => {
+        return new Map((departments ?? []).map((department) => [
+            department.id,
+            department,
+        ]));
+    }, [departments]);
+
+    const getDepartmentById = (departmentId: number | null | undefined) => {
+        return departmentId != null ? departmentsById.get(departmentId) : undefined;
+    };
+
+    const responsibleDepartment = getDepartmentById(form.responsibleDepartmentId);
+    const managingDepartment = getDepartmentById(form.managingDepartmentId);
+    const imprintDepartment = getDepartmentById(form.imprintDepartmentId);
+    const privacyDepartment = getDepartmentById(form.privacyDepartmentId);
+    const accessibilityDepartment = getDepartmentById(form.accessibilityDepartmentId);
+    const legalSupportDepartment = getDepartmentById(form.legalSupportDepartmentId);
+    const technicalSupportDepartment = getDepartmentById(form.technicalSupportDepartmentId);
+
+    const handleSelectDepartment = (departmentId: number) => {
+        switch (activeDepartmentDialog) {
+            case 'responsible':
+                onPatch({
+                    responsibleDepartmentId: departmentId,
+                });
+                return;
+            case 'managing':
+                onPatch({
+                    managingDepartmentId: departmentId,
+                });
+                return;
+            case 'imprint':
+                onPatch({
+                    imprintDepartmentId: departmentId,
+                });
+                return;
+            case 'privacy':
+                onPatch({
+                    privacyDepartmentId: departmentId,
+                });
+                return;
+            case 'accessibility':
+                onPatch({
+                    accessibilityDepartmentId: departmentId,
+                });
+                return;
+            case 'legalSupport':
+                onPatch({
+                    legalSupportDepartmentId: departmentId,
+                });
+                return;
+            case 'technicalSupport':
+                onPatch({
+                    technicalSupportDepartmentId: departmentId,
+                });
+                return;
+            default:
+                return;
+        }
+    };
+
+    const getActiveDepartmentId = (): number | null | undefined => {
+        switch (activeDepartmentDialog) {
+            case 'responsible':
+                return form.responsibleDepartmentId;
+            case 'managing':
+                return form.managingDepartmentId;
+            case 'imprint':
+                return form.imprintDepartmentId;
+            case 'privacy':
+                return form.privacyDepartmentId;
+            case 'accessibility':
+                return form.accessibilityDepartmentId;
+            case 'legalSupport':
+                return form.legalSupportDepartmentId;
+            case 'technicalSupport':
+                return form.technicalSupportDepartmentId;
+            default:
+                return null;
+        }
+    };
 
     const generalLink = ''; //TODO: createCustomerPath(`${props.entity?.form.slug ?? ''}`);
     const versionedLink = ''; //TODO: createCustomerPath(`${props.entity?.form.slug ?? ''}/${form.version ?? ''}`);
@@ -205,13 +300,11 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Für dieses Formular zuständige Fachbereiche"
+                title="Angabe von zuständigen Organisationseinheiten"
                 variant="h5"
             >
-                Hinterlegen Sie die für dieses Formular zuständigen Fachbereiche. Der Zuständige Fachbereich hat die
-                inhaltliche Hoheit über das Formular, während der Bewirtschaftende Fachbereich die eingegangenen Anträge
-                bearbeitet (falls
-                abweichend).
+                Geben Sie hier an, welche Organisationseinheiten für die Bearbeitung der im Formular abgefragten Daten
+                zuständig sind.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -220,27 +313,29 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4,
+                        lg: 6,
                     }}
                 >
                     {
                         departments == null &&
                         <Skeleton
                             width="100%"
-                            height={80}
+                            height={88}
                         />
                     }
                     {
                         departments != null &&
-                        <SelectFieldComponent
-                            label="Zuständiger Fachbereich"
-                            value={form.responsibleDepartmentId?.toString() ?? undefined}
-                            onChange={(val) => {
+                        <DepartmentSelectField
+                            label="Zuständige Organisationseinheit"
+                            value={responsibleDepartment}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('responsible');
+                            }}
+                            onClear={() => {
                                 onPatch({
-                                    responsibleDepartmentId: val != null ? parseInt(val) : null,
+                                    responsibleDepartmentId: null,
                                 });
                             }}
-                            options={departments}
                             disabled={!props.editable}
                         />
                     }
@@ -248,27 +343,29 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4,
+                        lg: 6,
                     }}
                 >
                     {
                         departments == null &&
                         <Skeleton
                             width="100%"
-                            height={80}
+                            height={88}
                         />
                     }
                     {
                         departments != null &&
-                        <SelectFieldComponent
-                            label="Bewirtschaftender Fachbereich"
-                            value={form.managingDepartmentId?.toString() ?? undefined}
-                            onChange={(val) => {
+                        <DepartmentSelectField
+                            label="Bewirtschaftende Organisationseinheit"
+                            value={managingDepartment}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('managing');
+                            }}
+                            onClear={() => {
                                 onPatch({
-                                    managingDepartmentId: val != null ? parseInt(val) : null,
+                                    managingDepartmentId: null,
                                 });
                             }}
-                            options={departments}
                             disabled={!props.editable}
                         />
                     }
@@ -278,17 +375,19 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 title="Rechtliche Angaben"
                 variant="h5"
             >
-                Rechtstexte werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die Fachbereiche
-                auswählen, deren Texte Sie verwenden und anzeigen möchten.
+                Rechtstexte werden auf Organisationseinheits-Ebene hinterlegt und verwaltet. Sie können hier die
+                Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </ElementEditorSectionHeader>
             <Grid
                 container
                 columnSpacing={4}
+                rowSpacing={4}
             >
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4,
+                        lg: 6,
+                        xl: 4,
                     }}
                 >
                     {
@@ -300,15 +399,17 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }
                     {
                         departments != null &&
-                        <SelectFieldComponent
+                        <DepartmentSelectField
                             label="Text für das Impressum"
-                            value={form.imprintDepartmentId?.toString() ?? undefined}
-                            onChange={(val) => {
+                            value={imprintDepartment}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('imprint');
+                            }}
+                            onClear={() => {
                                 onPatch({
-                                    imprintDepartmentId: val != null ? parseInt(val) : null,
+                                    imprintDepartmentId: null,
                                 });
                             }}
-                            options={departments}
                             disabled={!props.editable}
                         />
                     }
@@ -316,7 +417,8 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4,
+                        lg: 6,
+                        xl: 4,
                     }}
                 >
                     {
@@ -328,15 +430,17 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }
                     {
                         departments != null &&
-                        <SelectFieldComponent
+                        <DepartmentSelectField
                             label="Text für die Datenschutzerklärung"
-                            value={form.privacyDepartmentId?.toString() ?? undefined}
-                            onChange={(val) => {
+                            value={privacyDepartment}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('privacy');
+                            }}
+                            onClear={() => {
                                 onPatch({
-                                    privacyDepartmentId: val != null ? parseInt(val) : null,
+                                    privacyDepartmentId: null,
                                 });
                             }}
-                            options={departments}
                             disabled={!props.editable}
                         />
                     }
@@ -344,7 +448,8 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 4,
+                        lg: 6,
+                        xl: 4,
                     }}
                 >
                     {
@@ -356,15 +461,17 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }
                     {
                         departments != null &&
-                        <SelectFieldComponent
+                        <DepartmentSelectField
                             label="Text für die Erklärung der Barrierefreiheit"
-                            value={form.accessibilityDepartmentId?.toString() ?? undefined}
-                            onChange={(val) => {
+                            value={accessibilityDepartment}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('accessibility');
+                            }}
+                            onClear={() => {
                                 onPatch({
-                                    accessibilityDepartmentId: val != null ? parseInt(val) : null,
+                                    accessibilityDepartmentId: null,
                                 });
                             }}
-                            options={departments}
                             disabled={!props.editable}
                         />
                     }
@@ -426,9 +533,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
 
                                         <ol>
                                             <li>Das Erscheinungsbild des Formulars</li>
-                                            <li>Das Erscheinungsbild des zuständigen Fachbereichs</li>
-                                            <li>Das Erscheinungsbild des bewirtschaftenden Fachbereichs</li>
-                                            <li>Das Erscheinungsbild des entwickelnden Fachbereichs</li>
+                                            <li>Das Erscheinungsbild der zuständigen Organisationseinheit</li>
+                                            <li>Das Erscheinungsbild der bewirtschaftenden Organisationseinheit</li>
+                                            <li>Das Erscheinungsbild der entwickelnden Organisationseinheit</li>
                                             <li>Das globale Erscheinungsbild der Gover-Instanz</li>
                                         </ol>
                                     </p>
@@ -525,8 +632,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 title="Kontakte"
                 variant="h5"
             >
-                Kontaktinformationen werden auf Fachbereichs-Ebene hinterlegt und verwaltet. Sie können hier die
-                Fachbereiche auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen möchten.
+                Kontaktinformationen werden auf Organisationseinheits-Ebene hinterlegt und verwaltet. Sie können hier
+                die Organisationseinheiten auswählen, deren Kontakt Sie für dieses Formular verwenden und anzeigen
+                möchten.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -546,15 +654,17 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 }
                     {
                         departments != null &&
-                        <SelectFieldComponent
+                        <DepartmentSelectField
                             label="Fachlicher Support"
-                            value={form.legalSupportDepartmentId?.toString() ?? undefined}
-                            onChange={(val) => {
+                            value={legalSupportDepartment}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('legalSupport');
+                            }}
+                            onClear={() => {
                                 onPatch({
-                                    legalSupportDepartmentId: val != null ? parseInt(val) : null,
+                                    legalSupportDepartmentId: null,
                                 });
                             }}
-                            options={departments}
                             disabled={!props.editable}
                         />
                     }
@@ -574,20 +684,32 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }
                     {
                         departments != null &&
-                        <SelectFieldComponent
+                        <DepartmentSelectField
                             label="Technischer Support"
-                            value={form.technicalSupportDepartmentId?.toString() ?? undefined}
-                            onChange={(val) => {
+                            value={technicalSupportDepartment}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('technicalSupport');
+                            }}
+                            onClear={() => {
                                 onPatch({
-                                    technicalSupportDepartmentId: val != null ? parseInt(val) : null,
+                                    technicalSupportDepartmentId: null,
                                 });
                             }}
-                            options={departments}
                             disabled={!props.editable}
                         />
                     }
                 </Grid>
             </Grid>
+            <SelectDepartmentDialog
+                open={activeDepartmentDialog != null}
+                onClose={() => {
+                    setActiveDepartmentDialog(null);
+                }}
+                onSelect={(department) => {
+                    handleSelectDepartment(department.id);
+                }}
+                selectedDepartmentId={getActiveDepartmentId()}
+            />
             <ElementEditorSectionHeader
                 title="Hinweise zur Offline-Einreichung"
                 variant="h5"

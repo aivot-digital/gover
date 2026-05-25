@@ -4,19 +4,15 @@ import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import Typography from '@mui/material/Typography';
-import {useTheme} from '@mui/material/styles';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {Preamble} from '../preamble/preamble';
 import {showDialog} from '../../slices/app-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty, stringOrUndefined} from '../../utils/string-utils';
+import {isStringNullOrEmpty, stringOrUndefined} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import {selectSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
@@ -33,6 +29,7 @@ import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.conte
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 import {Grid} from '@mui/material';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
+import {getDepartmentDisplayAddress} from '../../modules/departments/utils/department-utils';
 
 function cleanDocuments(documents: Array<string> | undefined | null) {
     if (documents) {
@@ -63,8 +60,6 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const {
         rootElement,
     } = useViewDispatcherContext();
-
-    const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
     const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
@@ -113,8 +108,10 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
 
     const sections: ReactNode[] = useMemo(() => {
         const sections: ReactNode[] = [];
+        const responsibleDepartmentAddress = getDepartmentDisplayAddress(responsibleDepartment);
+        const managingDepartmentAddress = getDepartmentDisplayAddress(managingDepartment);
 
-        if (responsibleDepartment != null) {
+        if (responsibleDepartmentAddress != null) {
             sections.push(
                 <Box key="responsible">
                     <Typography
@@ -126,19 +123,14 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                     <Typography
                         component={'pre'}
                         variant="body2"
-                        sx={{mt: 1}}
                     >
-                        {[
-                            isStringNotNullOrEmpty(providerName) ? providerName : null,
-                            responsibleDepartment.name,
-                            responsibleDepartment.address,
-                        ].filter(Boolean).join('\n')}
+                        {responsibleDepartmentAddress}
                     </Typography>
                 </Box>,
             );
         }
 
-        if (managingDepartment != null) {
+        if (managingDepartmentAddress != null) {
             sections.push(
                 <Box key="managing">
                     <Typography
@@ -151,11 +143,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         component={'pre'}
                         variant="body2"
                     >
-                        {[
-                            isStringNotNullOrEmpty(providerName) ? providerName : null,
-                            managingDepartment.name,
-                            managingDepartment.address,
-                        ].filter(Boolean).join('\n')}
+                        {managingDepartmentAddress}
                     </Typography>
                 </Box>,
             );

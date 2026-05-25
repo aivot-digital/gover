@@ -3,12 +3,9 @@ import {type SubmitStepElement} from '../../models/elements/steps/submit-step-el
 import {Preamble} from '../preamble/preamble';
 import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, useTheme} from '@mui/material';
 import {FadingPaper} from '../fading-paper/fading-paper';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
+import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
-import {selectSystemConfigValue} from '../../slices/system-config-slice';
-import {SystemConfigKeys} from '../../data/system-config-keys';
 import {AlertComponent} from '../alert/alert-component';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
@@ -21,6 +18,7 @@ import {ElementType} from '../../data/element-type/element-type';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 import {isRootElement} from '../../models/elements/form-layout-element';
+import {getDepartmentDisplayAddress} from '../../modules/departments/utils/department-utils';
 
 export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): React.ReactNode | null {
     const {
@@ -37,8 +35,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
     const theme = useTheme();
 
     const initialDisplayCount = 4;
-
-    const providerName = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
 
     const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
     const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
@@ -102,8 +98,10 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
     );
 
     const sections: React.ReactNode[] = [];
+    const responsibleDepartmentAddress = getDepartmentDisplayAddress(responsibleDepartment);
+    const managingDepartmentAddress = getDepartmentDisplayAddress(managingDepartment);
 
-    if (responsibleDepartment != null) {
+    if (responsibleDepartmentAddress != null) {
         sections.push(
             <Box key="responsible">
                 <Typography
@@ -118,17 +116,13 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                     variant="body2"
                     sx={{mt: 1}}
                 >
-                    {[
-                        isStringNotNullOrEmpty(providerName) ? providerName : null,
-                        responsibleDepartment.name,
-                        responsibleDepartment.address,
-                    ].filter(Boolean).join('\n')}
+                    {responsibleDepartmentAddress}
                 </Typography>
             </Box>,
         );
     }
 
-    if (managingDepartment != null) {
+    if (managingDepartmentAddress != null) {
         sections.push(
             <Box key="managing">
                 <Typography
@@ -143,11 +137,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                     variant="body2"
                     sx={{mt: 1}}
                 >
-                    {[
-                        isStringNotNullOrEmpty(providerName) ? providerName : null,
-                        managingDepartment.name,
-                        managingDepartment.address,
-                    ].filter(Boolean).join('\n')}
+                    {managingDepartmentAddress}
                 </Typography>
             </Box>,
         );
@@ -207,12 +197,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
             }
 
             {
-                (
-                    (responsibleDepartment != null) ||
-                    (managingDepartment != null) ||
-                    !isStringNullOrEmpty(props.element.textProcessingTime) ||
-                    ((props.element.documentsToReceive != null) && props.element.documentsToReceive.length > 0)
-                ) &&
+                sections.length > 0 &&
                 <FadingPaper>
                     <Box
                         sx={{
