@@ -5,6 +5,7 @@ import {IdentityProviderDetailsPageIndex} from './pages/details/identity-provide
 import {IdentityProviderDetailsPageTest} from './pages/details/identity-provider-details-page-test';
 import {IdentityProviderDetailsPageForms} from './pages/details/identity-provider-details-page-forms';
 import {IdentityProviderDetailsPageSetup} from './pages/details/identity-provider-details-page-setup';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const identityRoutes: RouteObject[] = [
     {
@@ -14,6 +15,7 @@ export const identityRoutes: RouteObject[] = [
     {
         path: '/identity-providers/:key',
         element: <IdentityProviderDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

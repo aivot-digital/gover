@@ -25,6 +25,7 @@ import {
 import {
     ProcessNodeEditorPlaceholder
 } from './pages/details/components/process-node-editor/process-node-editor-placeholder';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const processRoutes: RouteObject[] = [
     {
@@ -42,6 +43,7 @@ export const processRoutes: RouteObject[] = [
             {
                 path: 'nodes/:nodeId',
                 element: <ProcessNodeEditor/>,
+                handle: duplicatePageWarningRouteHandle,
                 children: [
                     {
                         index: true,
@@ -82,6 +84,7 @@ export const processRoutes: RouteObject[] = [
     {
         path: '/tasks/:instanceId/:taskId',
         element: <ProcessTaskViewPage/>,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

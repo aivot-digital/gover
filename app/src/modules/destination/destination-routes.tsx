@@ -4,6 +4,7 @@ import {DestinationListPage} from './pages/list/destination-list-page';
 import {DestinationDetailsPage} from './pages/details/destination-details-page';
 import {DestinationDetailsPageIndex} from './pages/details/destination-details-page-index';
 import {DestinationDetailsPageForms} from './pages/details/destination-details-page-forms';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const destinationRoutes: RouteObject[] = [
     {
@@ -13,6 +14,7 @@ export const destinationRoutes: RouteObject[] = [
     {
         path: '/destinations/:id',
         element: <DestinationDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

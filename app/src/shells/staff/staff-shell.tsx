@@ -40,6 +40,7 @@ import {UsersApiService} from '../../modules/users/users-api-service';
 import {PermissionApiService} from '../../modules/permissions/permission-api-service';
 import {PermissionSet} from '../../modules/permissions/models/permission-set';
 import {AlphaVersionNoticeDialog} from '../../dialogs/alpha-version-notice-dialog/alpha-version-notice-dialog';
+import {DuplicatePageWarning} from '../../components/duplicate-page-warning/duplicate-page-warning';
 
 export function StaffShell(): ReactNode {
     const routerError = useRouteError();
@@ -176,6 +177,7 @@ export function StaffShell(): ReactNode {
                     <ShellSessionExpiredDialog/>
                     <ShellResolutionOverlay/>
                     <AlphaVersionNoticeDialog/>
+                    <DuplicatePageWarning/>
                 </>
             }
         </>

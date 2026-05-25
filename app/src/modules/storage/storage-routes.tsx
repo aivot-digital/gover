@@ -5,6 +5,7 @@ import {StorageProviderDetailsPage} from './pages/details/storage-provider-detai
 import {StorageProviderDetailsPageIndex} from './pages/details/storage-provider-details-page-index';
 import {StorageProviderDetailsPageExplore} from './pages/details/storage-provider-details-page-explore';
 import {StorageProviderDetailsPageTest} from './pages/details/storage-provider-details-page-test';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const storageRoutes: RouteObject[] = [
     {
@@ -14,6 +15,7 @@ export const storageRoutes: RouteObject[] = [
     {
         path: '/storage-providers/:id',
         element: <StorageProviderDetailsPage/>,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

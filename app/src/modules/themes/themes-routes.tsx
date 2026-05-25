@@ -4,6 +4,7 @@ import {ThemeDetailsPage} from './pages/details/theme-details-page';
 import {ThemeDetailsPageIndex} from './pages/details/theme-details-page-index';
 import {ThemeDetailsPageForms} from './pages/details/theme-details-page-forms';
 import {ThemeDetailsPageDepartments} from './pages/details/theme-details-page-departments';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const themesRoutes: RouteObject[] = [
     {
@@ -13,6 +14,7 @@ export const themesRoutes: RouteObject[] = [
     {
         path: '/themes/:id',
         element: <ThemeDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

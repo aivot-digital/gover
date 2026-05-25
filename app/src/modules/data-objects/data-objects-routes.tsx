@@ -7,6 +7,7 @@ import {DataObjectItemListPage} from './pages/list/data-object-item-list-page';
 import {DataObjectItemDetailsPage} from './pages/details/data-object-item-details-page';
 import {DataObjectItemDetailsPageIndex} from './pages/details/data-object-item-details-page-index';
 import {DataObjectListPage} from './pages/list/data-object-list-page';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const dataObjectsRoutes: RouteObject[] = [
     {
@@ -20,6 +21,7 @@ export const dataObjectsRoutes: RouteObject[] = [
     {
         path: '/data-models/:key',
         element: <DataObjectSchemaDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,
@@ -34,6 +36,7 @@ export const dataObjectsRoutes: RouteObject[] = [
     {
         path: '/data-objects/:schemaKey/:id',
         element: <DataObjectItemDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

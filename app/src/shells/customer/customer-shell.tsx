@@ -19,6 +19,7 @@ import {ShellLoader} from './components/shell-loader';
 import {ShellOffline} from './components/shell-offline';
 import {API_EVENT_UNREACHABLE} from '../../services/base-api-service';
 import {StaffShellError} from '../staff/staff-shell-error';
+import {DuplicatePageWarning} from '../../components/duplicate-page-warning/duplicate-page-warning';
 
 export function CustomerShell() {
     const routerError = useRouteError();
@@ -113,6 +114,7 @@ export function CustomerShell() {
                             }
                         </Box>
                     </Box>
+                    <DuplicatePageWarning/>
                 </>
             }
         </>

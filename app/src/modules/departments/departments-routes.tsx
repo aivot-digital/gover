@@ -5,6 +5,7 @@ import React from 'react';
 import {DepartmentsListPage} from './pages/list/departments-list-page';
 import {DepartmentsDetailsPageMembers} from './pages/details/departments-details-page-members';
 import {DepartmentsDetailsPageForms} from './pages/details/departments-details-page-forms';
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const departmentsRoutes: RouteObject[] = [
     {
@@ -14,6 +15,7 @@ export const departmentsRoutes: RouteObject[] = [
     {
         path: '/departments/:id',
         element: <DepartmentsDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,
