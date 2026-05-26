@@ -144,7 +144,7 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                 onClone={(originalElement) => {
                     const updatedValue = [...value];
                     const clonedElement = cloneElement(originalElement);
-                    updatedValue.splice(index, 0, clonedElement);
+                    updatedValue.splice(index + 1, 0, clonedElement);
                     onChange(updatedValue);
                     setTimeout(() => {
                         navigateToElementEditor(clonedElement.id);

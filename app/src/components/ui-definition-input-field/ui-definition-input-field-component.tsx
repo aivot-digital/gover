@@ -231,7 +231,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     const updatedChildren = [
                         ...currentElement.children,
                     ];
-                    updatedChildren.splice(clonedChildIndex, 0, clone);
+                    updatedChildren.splice(clonedChildIndex + 1, 0, clone);
                     dispatch(showSuccessSnackbar(`${generateComponentTitle(element)} wurde erfolgreich dupliziert.`));
                     return {
                         ...currentElement,
