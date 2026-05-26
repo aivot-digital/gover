@@ -12,44 +12,50 @@ import {
     Typography,
 } from '@mui/material';
 import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
-import {useApi} from '../../../hooks/use-api';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {Page} from '../../../models/dtos/page';
 import {Link} from 'react-router-dom';
-import {format} from 'date-fns';
-import {getFormStatus} from '../../forms/components/form-status-chip-group';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
-import {FormEntity} from '../../forms/entities/form-entity';
 import {FormTriggerApiService, FormTriggerListItem} from '../../forms/services/form-trigger-api-service';
-import {resolveFormNodeName} from '../../../models/elements/form-layout-element';
 
 const fetchSize = 4;
+
+function formatUpdatedAt(value: string): string {
+    if (value.trim().length === 0) {
+        return 'Unbekannt';
+    }
+
+    const normalized = value.replace(/(\.\d{3})\d+/, '$1');
+    const date = new Date(normalized);
+
+    if (Number.isNaN(date.getTime())) {
+        return 'Unbekannt';
+    }
+
+    return `${new Intl.DateTimeFormat('de-DE', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    }).format(date)} Uhr`;
+}
 
 export function DashboardFormsPanel() {
     const [forms, setForms] = useState<FormTriggerListItem[] | null>(null);
     const [loading, setLoading] = useState(true);
-    const api = useApi();
 
     useEffect(() => {
         withAsyncWrapper<void, Page<FormTriggerListItem>>({
             main: () =>
                 new FormTriggerApiService()
-                    .list(0, fetchSize, 'name', 'DESC'),
+                    .list(0, fetchSize, 'updated', 'DESC'),
             desiredMinRuntime: 600,
         }).then((page) => {
             setForms(page.content);
             setLoading(false);
         });
     }, []);
-
-    const renderFormStatus = (form: FormEntity): string => {
-        const {isDrafted, isPublished, isRevoked} = getFormStatus(form);
-
-        if (isPublished) return 'Veröffentlicht';
-        if (isDrafted) return 'Entwurf';
-        if (isRevoked) return 'Zurückgezogen';
-        return 'Unbekannter Status';
-    };
 
     return (
         <Card sx={{height: '100%', borderRadius: 2, position: 'relative', overflow: 'hidden'}}>
@@ -124,69 +130,73 @@ export function DashboardFormsPanel() {
                             </React.Fragment>
                         ))
                         : forms?.length
-                            ? forms.map((form, index) => (
-                                <React.Fragment key={form.node.id}>
-                                    <ListItem disablePadding>
-                                        <ListItemButton
-                                            component={Link}
-                                            to={`/form-triggers/${form.node.id}/formLayout/0/`}
-                                            sx={{
-                                                py: 2,
-                                                px: 1,
-                                                borderRadius: 1,
-                                                '&:hover': {bgcolor: 'action.hover'},
-                                                '&.Mui-focusVisible': {
-                                                    outline: '2px solid',
-                                                    outlineColor: 'primary.main',
-                                                },
-                                            }}
-                                        >
-                                            <Box
+                            ? forms.map((form, index) => {
+                                const formName = form.node.name ?? 'Formulareingang';
+
+                                return (
+                                    <React.Fragment key={form.node.id}>
+                                        <ListItem disablePadding>
+                                            <ListItemButton
+                                                component={Link}
+                                                to={`/form-triggers/${form.node.id}/formLayout/0/`}
                                                 sx={{
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'space-between',
-                                                    width: '100%',
-                                                    gap: 2,
+                                                    py: 2,
+                                                    px: 1,
+                                                    borderRadius: 1,
+                                                    '&:hover': {bgcolor: 'action.hover'},
+                                                    '&.Mui-focusVisible': {
+                                                        outline: '2px solid',
+                                                        outlineColor: 'primary.main',
+                                                    },
                                                 }}
                                             >
-                                                <Box sx={{flex: 1, minWidth: 0}}>
-                                                    <Typography
-                                                        variant="subtitle1"
-                                                        fontWeight={700}
-                                                        noWrap
-                                                        title={resolveFormNodeName(form.node.configuration.formLayout, form.version)}
-                                                        sx={{
-                                                            overflow: 'hidden',
-                                                            textOverflow: 'ellipsis',
-                                                            whiteSpace: 'nowrap',
-                                                            display: 'block',
-                                                        }}
-                                                    >
-                                                        {resolveFormNodeName(form.node.configuration.formLayout, form.version)}
-                                                    </Typography>
+                                                <Box
+                                                    sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'space-between',
+                                                        width: '100%',
+                                                        gap: 2,
+                                                    }}
+                                                >
+                                                    <Box sx={{flex: 1, minWidth: 0}}>
+                                                        <Typography
+                                                            variant="subtitle1"
+                                                            fontWeight={700}
+                                                            noWrap
+                                                            title={formName}
+                                                            sx={{
+                                                                overflow: 'hidden',
+                                                                textOverflow: 'ellipsis',
+                                                                whiteSpace: 'nowrap',
+                                                                display: 'block',
+                                                            }}
+                                                        >
+                                                            {formName}
+                                                        </Typography>
 
-                                                    <Typography
-                                                        variant="body2"
-                                                        color="text.secondary"
-                                                        fontSize="0.875rem"
-                                                        noWrap
-                                                    >
-                                                        {/*format(new Date((form.node as any).updated), 'dd.MM.yyyy — HH:mm')*/ '00:00'} Uhr
-                                                    </Typography>
+                                                        <Typography
+                                                            variant="body2"
+                                                            color="text.secondary"
+                                                            fontSize="0.875rem"
+                                                            noWrap
+                                                        >
+                                                            {formatUpdatedAt(form.node.updated)}
+                                                        </Typography>
+                                                    </Box>
+
+                                                    <ChevronRight
+                                                        aria-hidden
+                                                        sx={{fontSize: '3rem', color: 'rgba(0,0,0,.2)'}}
+                                                    />
                                                 </Box>
+                                            </ListItemButton>
+                                        </ListItem>
 
-                                                <ChevronRight
-                                                    aria-hidden
-                                                    sx={{fontSize: '3rem', color: 'rgba(0,0,0,.2)'}}
-                                                />
-                                            </Box>
-                                        </ListItemButton>
-                                    </ListItem>
-
-                                    {index < forms.length - 1 && <Divider component="li"/>}
-                                </React.Fragment>
-                            ))
+                                        {index < forms.length - 1 && <Divider component="li"/>}
+                                    </React.Fragment>
+                                );
+                            })
                             : (
                                 <Box sx={{position: 'relative'}}>
                                     <List disablePadding>

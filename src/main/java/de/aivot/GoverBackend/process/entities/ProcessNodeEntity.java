@@ -163,13 +163,20 @@ public class ProcessNodeEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         ProcessNodeEntity that = (ProcessNodeEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(dataKey, that.dataKey) && Objects.equals(processNodeDefinitionKey, that.processNodeDefinitionKey) && Objects.equals(processNodeDefinitionVersion, that.processNodeDefinitionVersion) && Objects.equals(configuration, that.configuration) && Objects.equals(outputMappings, that.outputMappings) && Objects.equals(timeLimitDays, that.timeLimitDays) && Objects.equals(requirements, that.requirements) && Objects.equals(notes, that.notes) && Objects.equals(savedWithErrors, that.savedWithErrors);
+        return Objects.equals(id, that.id) && Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) &&
+                Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(dataKey, that.dataKey) &&
+                Objects.equals(processNodeDefinitionKey, that.processNodeDefinitionKey) &&
+                Objects.equals(processNodeDefinitionVersion, that.processNodeDefinitionVersion) && Objects.equals(configuration, that.configuration) &&
+                Objects.equals(outputMappings, that.outputMappings) && Objects.equals(timeLimitDays, that.timeLimitDays) &&
+                Objects.equals(requirements, that.requirements) && Objects.equals(notes, that.notes) &&
+                Objects.equals(savedWithErrors, that.savedWithErrors) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, timeLimitDays, requirements, notes, savedWithErrors);
+        return Objects.hash(id, processId, processVersion, name, description, dataKey, processNodeDefinitionKey, processNodeDefinitionVersion, configuration, outputMappings, timeLimitDays, requirements, notes, savedWithErrors, created, updated);
     }
+
 
     // endregion
 
@@ -326,6 +333,25 @@ public class ProcessNodeEntity {
         return this;
     }
 
+    @Nonnull
+    public Instant getCreated() {
+        return created;
+    }
+
+    public ProcessNodeEntity setCreated(@Nonnull Instant created) {
+        this.created = created;
+        return this;
+    }
+
+    @Nonnull
+    public Instant getUpdated() {
+        return updated;
+    }
+
+    public ProcessNodeEntity setUpdated(@Nonnull Instant updated) {
+        this.updated = updated;
+        return this;
+    }
 
     // endregion
 }

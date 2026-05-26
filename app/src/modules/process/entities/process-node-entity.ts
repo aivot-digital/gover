@@ -15,4 +15,6 @@ export interface ProcessNodeEntity {
     requirements: string | null;
     notes: string | null;
     savedWithErrors: boolean;
+    created: string;
+    updated: string;
 }

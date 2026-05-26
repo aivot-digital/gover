@@ -21,7 +21,7 @@ export interface FormTriggerFilter {
 }
 
 export type FormTriggerSortField =
-    keyof Pick<ProcessNodeEntity, 'id' | 'name' | 'processId' | 'processVersion' | 'dataKey' | 'savedWithErrors'>;
+    keyof Pick<ProcessNodeEntity, 'id' | 'name' | 'processId' | 'processVersion' | 'dataKey' | 'savedWithErrors' | 'updated'>;
 
 export interface FormTriggerConfiguration extends AuthoredElementValues {
     formSlug?: string;
