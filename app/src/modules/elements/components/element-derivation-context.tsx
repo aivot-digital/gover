@@ -26,6 +26,7 @@ import {
     ViewDispatcherMode,
 } from '../../../components/view-dispatcher/view-dispatcher.context';
 import {deepEquals} from '../../../utils/equality-utils';
+import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -238,9 +239,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ...derivationTriggerIdQueue,
             ...relevantIds,
         ]);
-        setMode('deriving');
-        await derive(effectiveNewData, []);
-        setMode('idle');
+        await deriveWithMinimumVisibleDuration(effectiveNewData, []);
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];
             for (const id of relevantIds) {
@@ -298,6 +297,19 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             effectiveValues: {},
             elementStates: {},
         };
+    };
+
+    const deriveWithMinimumVisibleDuration = (
+        authoredElementValues: AuthoredElementValues,
+        skipErrorsForElements: string[],
+    ): Promise<DerivedRuntimeElementData> => {
+        return withAsyncWrapper<undefined, DerivedRuntimeElementData>({
+            desiredMinRuntime: 600,
+            runtimeCallback: (isRunning) => {
+                setMode(isRunning ? 'deriving' : 'idle');
+            },
+            main: () => derive(authoredElementValues, skipErrorsForElements),
+        });
     };
 
     // Derive all data if the disable visibilities flag is reset
