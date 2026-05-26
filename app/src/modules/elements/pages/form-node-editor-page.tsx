@@ -107,6 +107,10 @@ import {BaseTheme} from '../../../theming/base-theme';
 
 export const DialogSearchParam = 'dialog';
 
+function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
+    return JSON.parse(JSON.stringify(element)) as T;
+}
+
 export function FormNodeEditorPage() {
     const {
         nodeId = '',
@@ -147,24 +151,24 @@ export function FormNodeEditorPage() {
 
     useEffect(() => {
         const nodeIdInt = parseInt(nodeId);
-        if (node == null || node.id != nodeIdInt) {
-            dispatch(setCurrentStep(0));
-            new ProcessNodeApiService()
-                .retrieve(nodeIdInt)
-                .then((node) => {
-                    let uiElement = node.configuration[fieldKey];
-                    if (uiElement == null) {
-                        uiElement = generateElementWithDefaultValues(parseInt(elementType) as ElementType);
-                    }
+        dispatch(setCurrentStep(0));
+        new ProcessNodeApiService()
+            .retrieve(nodeIdInt)
+            .then((node) => {
+                let uiElement = node.configuration[fieldKey];
+                if (uiElement == null) {
+                    uiElement = generateElementWithDefaultValues(parseInt(elementType) as ElementType);
+                }
 
-                    setNode(node);
-                    setFormLayout(uiElement);
-                })
-                .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Die UI-Definition konnte nicht geladen werden.'));
-                });
-        }
-    }, [nodeId]);
+                setPastLoadedForm([]);
+                setFutureLoadedForm([]);
+                setNode(node);
+                setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die UI-Definition konnte nicht geladen werden.'));
+            });
+    }, [dispatch, elementType, fieldKey, nodeId]);
 
     useEffect(() => {
         if (node == null) {
@@ -258,10 +262,10 @@ export function FormNodeEditorPage() {
         hideComponentTree,
     } = useAppSelector((state: RootState) => state.adminSettings);
 
-    const [pastLoadedForm, setPastLoadedForm] = useState<AnyElement[]>([]);
+    const [pastLoadedForm, setPastLoadedForm] = useState<FormLayoutElement[]>([]);
     const hasPastLoadedForm = useMemo(() => pastLoadedForm.length > 0, [pastLoadedForm]);
 
-    const [futureLoadedForm, setFutureLoadedForm] = useState<AnyElement[]>([]);
+    const [futureLoadedForm, setFutureLoadedForm] = useState<FormLayoutElement[]>([]);
     const hasFutureLoadedForm = useMemo(() => futureLoadedForm.length > 0, [futureLoadedForm]);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
@@ -289,11 +293,31 @@ export function FormNodeEditorPage() {
     }, [metaDialogName]);
 
     const handleUndo = () => {
-        // TODO: Implement with local stack
+        if (formLayout == null || pastLoadedForm.length === 0) {
+            return;
+        }
+
+        const previousForm = pastLoadedForm[pastLoadedForm.length - 1];
+        setPastLoadedForm((currentPastLoadedForm) => currentPastLoadedForm.slice(0, -1));
+        setFutureLoadedForm((currentFutureLoadedForm) => [
+            ...currentFutureLoadedForm,
+            cloneFormLayoutSnapshot(formLayout),
+        ]);
+        setFormLayout(cloneFormLayoutSnapshot(previousForm));
     };
 
     const handleRedo = () => {
-        // TODO: Implement with local stack
+        if (formLayout == null || futureLoadedForm.length === 0) {
+            return;
+        }
+
+        const nextForm = futureLoadedForm[futureLoadedForm.length - 1];
+        setFutureLoadedForm((currentFutureLoadedForm) => currentFutureLoadedForm.slice(0, -1));
+        setPastLoadedForm((currentPastLoadedForm) => [
+            ...currentPastLoadedForm,
+            cloneFormLayoutSnapshot(formLayout),
+        ]);
+        setFormLayout(cloneFormLayoutSnapshot(nextForm));
     };
 
     const handleSave = () => {
@@ -378,13 +402,13 @@ export function FormNodeEditorPage() {
 
     const handlePatch = (element: FormLayoutElement) => {
         if (formLayout != null) {
-            setPastLoadedForm([
-                ...pastLoadedForm,
-                formLayout,
+            setPastLoadedForm((currentPastLoadedForm) => [
+                ...currentPastLoadedForm,
+                cloneFormLayoutSnapshot(formLayout),
             ]);
         }
         setFutureLoadedForm([]);
-        setFormLayout(element);
+        setFormLayout(cloneFormLayoutSnapshot(element));
     };
 
     const handleCloneElement = (element: AnyElement) => {
