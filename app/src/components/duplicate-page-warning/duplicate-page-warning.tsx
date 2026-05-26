@@ -1,5 +1,5 @@
 import {useEffect} from 'react';
-import {useMatches} from 'react-router-dom';
+import {useLocation, useMatches} from 'react-router-dom';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useDuplicatePageWarning} from '../../hooks/use-duplicate-page-warning';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../slices/shell-slice';
@@ -9,9 +9,13 @@ const DUPLICATE_PAGE_WARNING_SNACKBAR_KEY = 'duplicate-page-warning';
 
 export function DuplicatePageWarning() {
     const dispatch = useAppDispatch();
+    const location = useLocation();
     const matches = useMatches();
-    const enabled = matches.some(match => hasDuplicatePageWarningRouteHandle(match.handle));
-    const hasDuplicatePageOpen = useDuplicatePageWarning(enabled);
+    const duplicatePageWarningMatch = [...matches]
+        .reverse()
+        .find(match => hasDuplicatePageWarningRouteHandle(match.handle));
+    const pageKey = duplicatePageWarningMatch == null ? null : duplicatePageWarningMatch.pathname + location.search;
+    const hasDuplicatePageOpen = useDuplicatePageWarning(pageKey);
 
     useEffect(() => {
         if (hasDuplicatePageOpen) {
