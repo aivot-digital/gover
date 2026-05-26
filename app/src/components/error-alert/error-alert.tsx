@@ -30,6 +30,16 @@ interface CollectedError {
     error: string;
 }
 
+function resolveCollectedErrorLabel(element: AnyElement, errorDetails: Record<string, any> | null | undefined): string {
+    const customLabel = errorDetails?.label;
+
+    if (typeof customLabel === 'string' && customLabel.length > 0) {
+        return customLabel;
+    }
+
+    return generateComponentTitle(element, true);
+}
+
 export function collectErrors(
     element: AnyElement,
     authoredElementValues: AuthoredElementValues,
@@ -67,7 +77,7 @@ export function _collectErrors(
     if (elementState.error != null) {
         col.push({
             id: element.id,
-            label: generateComponentTitle(element, true),
+            label: resolveCollectedErrorLabel(element, elementState.errorDetails),
             error: elementState.error,
         });
     }
