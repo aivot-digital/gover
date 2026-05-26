@@ -80,6 +80,8 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
         return null;
     }
 
+    const actionColor = action.color ?? color;
+
     // Determine the component to render, either a button or a link
     const isHashLink = 'to' in action && action.to.startsWith('#');
     const component = 'onClick' in action ? 'button' : ('to' in action ? (isHashLink ? 'a' : Link) : 'a');
@@ -100,7 +102,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
         element = (
             <Button
                 size={size}
-                color={color}
+                color={actionColor}
                 sx={{
                     m: 0,
                     ...(activeStyle != null ? activeStyle : {}),
@@ -124,7 +126,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
         element = (
             <IconButton
                 size={size}
-                color={color}
+                color={actionColor}
                 sx={{
                     m: 0,
                     ...(activeStyle != null ? activeStyle : {}),
