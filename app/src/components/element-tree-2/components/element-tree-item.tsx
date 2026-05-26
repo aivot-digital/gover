@@ -2,7 +2,7 @@ import {AnyElement} from '../../../models/elements/any-element';
 import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Typography} from '@mui/material';
 import {ELEMENT_TREE_DND_ITEM_TYPE, useElementTreeContext} from '../element-tree-context';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {getElementIconForType} from '../../../data/element-type/element-icons';
+import {getElementIcon} from '../../../data/element-type/element-icons';
 import {AnyElementWithChildren, isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
 import {ElementTreeChildList} from './element-tree-child-list';
 import {useDrag} from 'react-dnd';
@@ -79,8 +79,8 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     } = useElementEditorNavigation();
 
     const Icon = useMemo(() => {
-        return getElementIconForType(type);
-    }, [type]);
+        return getElementIcon(value);
+    }, [value]);
 
     const title = useMemo(() => {
         return generateComponentTitle(value);

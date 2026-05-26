@@ -36,6 +36,7 @@ import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '@mui/icons-material';
 import Dashboard2 from '@aivot/mui-material-symbols-400-outlined/dist/dashboard-2/Dashboard2';
 import Segment from '@aivot/mui-material-symbols-400-outlined/dist/segment/Segment';
+import {getStepIcon} from '../step-icons';
 
 const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Alert]: ErrorOutlineOutlinedIcon,
@@ -89,6 +90,15 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
 export function getElementIcon(element: AnyElement): typeof SvgIcon {
     if (element.type === ElementType.GroupLayout && element.storeLink != null) {
         return ExtensionOutlinedIcon;
+    }
+
+    switch (element.type) {
+        case ElementType.Step:
+        case ElementType.IntroductionStep:
+        case ElementType.SummaryStep:
+        case ElementType.SubmitStep:
+        case ElementType.SubmittedStep:
+            return getStepIcon(element);
     }
 
     return getElementIconForType(element.type);
