@@ -24,12 +24,14 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
@@ -43,9 +45,11 @@ import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionI
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
+import de.aivot.GoverBackend.services.DiffService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -60,8 +64,11 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     private static final String PORT_OUTPUT = "output";
     private static final String EVENT_COMPLETE = "complete";
+    private static final String DIFF_ROOT_ID = "__manual_action_root__";
+    private static final String DIFF_WRAPPER_KEY = "data";
 
     private static final String OUTPUT_DATA = "data";
+    private static final String OUTPUT_DIFF = "diff";
     private static final String OUTPUT_REMARK = "remark";
     private static final String OUTPUT_PROCESSED_BY_USER_ID = "processedByUserId";
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
@@ -198,6 +205,11 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                         "Die über die optionale Gover-UI bestätigten oder erfassten Daten im Payload-Format."
                 ),
                 new ProcessNodeOutput(
+                        OUTPUT_DIFF,
+                        "Änderungen",
+                        "Die Liste aller Änderungen zwischen den ursprünglichen und den übernommenen Vorgangsdaten."
+                ),
+                new ProcessNodeOutput(
                         OUTPUT_REMARK,
                         "Vermerk",
                         "Der optionale interne Vermerk zur bestätigten manuellen Aktion."
@@ -224,6 +236,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<ManualActionNodeConfig> context) throws ProcessNodeExecutionException {
         var config = loadConfiguration(context.getConfigurationOfExecutingNode());
+        var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(
@@ -242,6 +255,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
         return ProcessNodeExecutionResultTaskAssigned
                 .of(assigneeUserId)
+                .setProcessData(workingProcessData)
                 .setRuntimeData(Map.of());
     }
 
@@ -459,11 +473,19 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 ? elementDataTransformService.buildPayload(config.uiDefinition(), effectiveUiUpdate)
                 : Map.<String, Object>of();
         var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
-        var updatedProcessData = mergeProcessData(originalProcessData, payloadUpdate);
+        var updatedProcessData = config.uiDefinition() != null
+                ? elementDataTransformService.buildPayload(
+                config.uiDefinition(),
+                effectiveUiUpdate,
+                ObjectMapperFactory.Utils.convertToMap(originalProcessData)
+        )
+                : ObjectMapperFactory.Utils.convertToMap(originalProcessData);
+        var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
         var remark = normalizeRemark(update.get(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);
+        nodeData.put(OUTPUT_DIFF, diff);
         nodeData.put(OUTPUT_REMARK, remark);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, Instant.now());
@@ -486,43 +508,55 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     }
 
     @Nonnull
-    private static Map<String, Object> mergeProcessData(@Nonnull Map<String, Object> originalProcessData,
-                                                        @Nonnull Map<String, Object> payloadUpdate) {
-        var mergedProcessData = ObjectMapperFactory.Utils.convertToMap(originalProcessData);
-        mergeInto(mergedProcessData, payloadUpdate);
-        return mergedProcessData;
+    private static Map<String, Object> extractWorkingProcessData(@Nonnull ProcessExecutionData processData)
+            throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        return new LinkedHashMap<>(processData.getProcessData());
     }
-
-    private static void mergeInto(@Nonnull Map<String, Object> target, @Nonnull Map<String, Object> patch) {
-        for (var entry : patch.entrySet()) {
-            var key = entry.getKey();
-            var patchValue = entry.getValue();
-            var targetValue = target.get(key);
-
-            if (patchValue instanceof Map<?, ?> patchMap && targetValue instanceof Map<?, ?> targetMap) {
-                var targetMapValue = castStringObjectMap(targetMap);
-                mergeInto(targetMapValue, castStringObjectMap(patchMap));
-                target.put(key, targetMapValue);
-            } else if (patchValue instanceof Map<?, ?> patchMap) {
-                target.put(key, castStringObjectMap(patchMap));
-            } else {
-                target.put(key, patchValue);
-            }
-        }
-    }
-
 
     @Nonnull
-    private static Map<String, Object> castStringObjectMap(@Nonnull Object rawMap) {
-        var result = new LinkedHashMap<String, Object>();
-        if (rawMap instanceof Map<?, ?> map) {
-            for (var entry : map.entrySet()) {
-                if (entry.getKey() instanceof String key) {
-                    result.put(key, entry.getValue());
-                }
-            }
-        }
-        return result;
+    private static List<DiffItem> createProcessDataDiff(@Nonnull Map<String, Object> originalProcessData,
+                                                        @Nonnull Map<String, Object> updatedProcessData) {
+        var originalForDiff = Map.<String, Object>of(
+                "id", DIFF_ROOT_ID,
+                DIFF_WRAPPER_KEY, originalProcessData
+        );
+        var updatedForDiff = Map.<String, Object>of(
+                "id", DIFF_ROOT_ID,
+                DIFF_WRAPPER_KEY, updatedProcessData
+        );
+
+        return DiffService
+                .createDiff(new JSONObject(originalForDiff), new JSONObject(updatedForDiff))
+                .stream()
+                .filter(diffItem -> !"id".equals(diffItem.field()))
+                .map(diffItem -> {
+                    if (diffItem.field().equals(DIFF_WRAPPER_KEY)) {
+                        return new DiffItem(
+                                "",
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + ".")) {
+                        return new DiffItem(
+                                diffItem.field().substring(DIFF_WRAPPER_KEY.length() + 1),
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + "[")) {
+                        return new DiffItem(
+                                diffItem.field().substring(DIFF_WRAPPER_KEY.length()),
+                                diffItem.oldValue(),
+                                diffItem.newValue()
+                        );
+                    }
+
+                    return diffItem;
+                })
+                .toList();
     }
 
     private record ResolvedConfiguration(

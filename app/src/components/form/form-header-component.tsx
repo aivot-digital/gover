@@ -24,6 +24,7 @@ interface FormHeaderComponentProps {
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
+    logoUrl: string;
     onDeleteFormData: () => void;
 }
 
@@ -33,6 +34,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
         node,
         process,
         version,
+        logoUrl,
         onDeleteFormData,
     } = props;
 
@@ -86,7 +88,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                             <Logo
                                 key={'logo-' + (form.themeId ?? 'default')}
                                 updated={version.updated}
-                                src={`/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/`}
+                                src={logoUrl}
                                 width={200}
                                 height={100}
                                 onStatusChange={setLogoStatus}
@@ -213,5 +215,4 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
         </Box>
     );
 }
-
 

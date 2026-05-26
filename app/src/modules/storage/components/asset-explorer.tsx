@@ -87,6 +87,10 @@ function isDirectory(item: StorageIndexItem): boolean {
     return item.pathFromRoot.endsWith('/');
 }
 
+function isNonPublicAsset(item: StorageIndexItem): boolean {
+    return !isDirectory(item) && item.assetIsPrivate === true;
+}
+
 function formatDateTime(dateString: string): string {
     if (dateString.trim().length === 0) {
         return 'Unbekannt';
@@ -371,7 +375,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                 }
 
                 setSearchResults(undefined);
-                dispatch(showApiErrorSnackbar(err, 'Bei der Assetsuche ist ein Fehler aufgetreten.'));
+                dispatch(showApiErrorSnackbar(err, 'Bei der Suche ist ein Fehler aufgetreten.'));
             });
 
         return () => {
@@ -413,6 +417,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
             renderCell: (params: GridRenderCellParams<StorageIndexItem, string>) => {
                 const item = params.row;
                 const itemIsDirectory = isDirectory(item);
+                const itemIsNonPublicAsset = isNonPublicAsset(item);
 
                 return (
                     <Stack
@@ -451,6 +456,14 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                                 label="Fehlend"
                                 size="small"
                                 color="warning"
+                                variant="outlined"
+                            />
+                        )}
+
+                        {itemIsNonPublicAsset && (
+                            <Chip
+                                label="Nicht öffentlich"
+                                size="small"
                                 variant="outlined"
                             />
                         )}
@@ -729,6 +742,12 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
         },
         '& .MuiDataGrid-row': {
             cursor: 'pointer',
+        },
+        '& .asset-explorer-row--non-public .MuiDataGrid-cell': {
+            opacity: 0.7,
+        },
+        '& .asset-explorer-row--non-public .MuiChip-root': {
+            opacity: 1,
         },
         '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
             borderBottom: '1px solid',
@@ -1031,6 +1050,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                                     },
                                 },
                             }}
+                            getRowClassName={(params) => isNonPublicAsset(params.row) ? 'asset-explorer-row--non-public' : ''}
                             onRowClick={(params) => {
                                 const item = params.row;
 

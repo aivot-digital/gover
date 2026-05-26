@@ -61,7 +61,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
                             Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen
-                            Fachbereich als Quelle für die Informationen zur Barrierefreiheit aus.
+                            Organisation als Quelle für die Informationen zur Barrierefreiheit aus.
                         </Alert>
                     </DialogContent>
             }

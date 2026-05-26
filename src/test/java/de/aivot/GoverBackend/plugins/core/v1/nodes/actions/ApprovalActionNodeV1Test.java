@@ -27,6 +27,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRep
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.repositories.VPotentialProcessInstanceAccessRepository;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
+import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,7 +62,11 @@ class ApprovalActionNodeV1Test {
     @BeforeEach
     void setUp() {
         assigneeResolverService = new TestAssignmentContextAssigneeResolverService();
-        node = new ApprovalActionNodeV1(assigneeResolverService, new ElementDataTransformService());
+        node = new ApprovalActionNodeV1(
+                assigneeResolverService,
+                new ElementDataTransformService(),
+                new PassthroughTemplateRenderService()
+        );
     }
 
     @Test
@@ -382,6 +387,17 @@ class ApprovalActionNodeV1Test {
             this.assignmentContext = assignmentContext;
             this.requiredPermissions = requiredPermissions;
             return result;
+        }
+    }
+
+    private static class PassthroughTemplateRenderService extends TemplateRenderService {
+        private PassthroughTemplateRenderService() {
+            super(null);
+        }
+
+        @Override
+        public String interpolate(ProcessExecutionData foldedProcessData, String template) {
+            return template;
         }
     }
 

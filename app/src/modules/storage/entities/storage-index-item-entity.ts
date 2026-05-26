@@ -12,6 +12,9 @@ export interface StorageIndexItem {
     metadata: Record<string, unknown>;
     created: string;
     updated: string;
+    assetKey?: string;
+    assetUploaderId?: string;
+    assetIsPrivate?: boolean;
 }
 
 export interface VStorageIndexItemWithAssetEntity extends StorageIndexItem{

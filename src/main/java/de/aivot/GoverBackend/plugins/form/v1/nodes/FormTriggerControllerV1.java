@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.av.services.AVService;
 import de.aivot.GoverBackend.captcha.services.CaptchaReplayGuard;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.department.services.VDepartmentShadowedService;
 import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.elements.dtos.ElementDerivationResponse;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
@@ -20,12 +21,7 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
-import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.form.enums.FormStatus;
-import de.aivot.GoverBackend.form.filters.VFormVersionWithDetailsFilter;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
-import de.aivot.GoverBackend.form.services.FormVersionService;
-import de.aivot.GoverBackend.form.services.VFormVersionWithDetailsService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
@@ -46,8 +42,10 @@ import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.submission.dtos.SubmissionStatusResponseDTO;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
+import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.dtos.ThemeResponseDTO;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
+import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -70,6 +68,7 @@ import java.util.*;
 @RequestMapping("/api/public/forms/v1/{processAccessKey}/{formSlug}/")
 public class FormTriggerControllerV1 {
     public static final String TEST_CLAIM_QUERY_PARAM = "test-claim";
+    public static final String VERSION_QUERY_PARAM = "version";
 
     private final GoverConfig goverConfig;
     private final FormPaymentService paymentService;
@@ -79,8 +78,9 @@ public class FormTriggerControllerV1 {
     private final IdentityCacheRepository identityCacheRepository;
     private final ElementDerivationService elementDerivationService;
     private final AssetService assetService;
-    private final FormVersionService formVersionService;
-    private final VFormVersionWithDetailsService vFormVersionWithDetailsService;
+    private final ThemeService themeService;
+    private final VDepartmentShadowedService vDepartmentShadowedService;
+    private final SystemService systemService;
     private final UserService userService;
     private final ProcessService processService;
     private final ProcessNodeService processNodeService;
@@ -106,8 +106,9 @@ public class FormTriggerControllerV1 {
                                    IdentityCacheRepository identityCacheRepository,
                                    ElementDerivationService elementDerivationService,
                                    AssetService assetService,
-                                   FormVersionService formVersionService,
-                                   VFormVersionWithDetailsService vFormVersionWithDetailsService,
+                                   ThemeService themeService,
+                                   VDepartmentShadowedService vDepartmentShadowedService,
+                                   SystemService systemService,
                                    UserService userService,
                                    ProcessService processService,
                                    ProcessNodeService processNodeService,
@@ -122,8 +123,9 @@ public class FormTriggerControllerV1 {
         this.identityCacheRepository = identityCacheRepository;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
-        this.formVersionService = formVersionService;
-        this.vFormVersionWithDetailsService = vFormVersionWithDetailsService;
+        this.themeService = themeService;
+        this.vDepartmentShadowedService = vDepartmentShadowedService;
+        this.systemService = systemService;
         this.userService = userService;
         this.processService = processService;
         this.processNodeService = processNodeService;
@@ -150,7 +152,7 @@ public class FormTriggerControllerV1 {
         var execUser = getExecUser(jwt);
 
         var process = getProcessEntity(processAccessKey);
-        var processVersion = getProcessVersionEntity(testClaimAccessKey, process);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process);
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
@@ -265,7 +267,7 @@ public class FormTriggerControllerV1 {
                                             @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
         var execUser = getExecUser(jwt);
         var process = getProcessEntity(processAccessKey);
-        var processVersion = getProcessVersionEntity(testClaimAccessKey, process);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process);
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
@@ -300,7 +302,7 @@ public class FormTriggerControllerV1 {
                                               @Nullable @RequestParam(value = "files", required = false) MultipartFile[] files) throws ResponseException {
         var execUser = getExecUser(jwt);
         var process = getProcessEntity(processAccessKey);
-        var processVersion = getProcessVersionEntity(testClaimAccessKey, process);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process);
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
@@ -479,11 +481,13 @@ public class FormTriggerControllerV1 {
                     "Includes information such as colors, fonts, logos, and other visual elements that define the form's appearance."
     )
     public ThemeResponseDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                     @Nonnull @PathVariable String slug,
-                                     @Nullable @RequestParam(value = "version", required = false) Integer version
+                                     @Nonnull @PathVariable UUID processAccessKey,
+                                     @Nonnull @PathVariable String formSlug,
+                                     @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+                                     @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion
     ) throws ResponseException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
-        var theme = getFormTheme(formVersion);
+        var context = resolveFormTriggerContext(jwt, processAccessKey, formSlug, testClaimAccessKey, processVersion);
+        var theme = getFormTheme(context.formLayout());
         return ThemeResponseDTO.fromEntity(theme);
     }
 
@@ -494,12 +498,14 @@ public class FormTriggerControllerV1 {
                     "If the form does not have a custom logo, a default logo URL will be provided."
     )
     public void getLogo(@Nullable @AuthenticationPrincipal Jwt jwt,
-                        @Nonnull @PathVariable String slug,
-                        @Nullable @RequestParam(value = "version", required = false) Integer version,
+                        @Nonnull @PathVariable UUID processAccessKey,
+                        @Nonnull @PathVariable String formSlug,
+                        @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+                        @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
                         @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
-        var logoKey = getFormLogoKey(formVersion);
+        var context = resolveFormTriggerContext(jwt, processAccessKey, formSlug, testClaimAccessKey, processVersion);
+        var logoKey = getFormLogoKey(context.formLayout());
 
         String redirectUrl;
         if (logoKey == null) {
@@ -518,12 +524,14 @@ public class FormTriggerControllerV1 {
                     "If the form does not have a custom favicon, a default favicon URL will be provided."
     )
     public void getFavicon(@Nullable @AuthenticationPrincipal Jwt jwt,
-                           @Nonnull @PathVariable String slug,
-                           @Nullable @RequestParam(value = "version", required = false) Integer version,
+                           @Nonnull @PathVariable UUID processAccessKey,
+                           @Nonnull @PathVariable String formSlug,
+                           @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+                           @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
                            @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var formVersion = getFormVersionWithDetailsEntity(slug, version, jwt, true);
-        var faviconKey = getFormFaviconKey(formVersion);
+        var context = resolveFormTriggerContext(jwt, processAccessKey, formSlug, testClaimAccessKey, processVersion);
+        var faviconKey = getFormFaviconKey(context.formLayout());
 
         String redirectUrl;
         if (faviconKey == null) {
@@ -567,48 +575,69 @@ public class FormTriggerControllerV1 {
 
     }
 
-    private VFormVersionWithDetailsEntity getFormVersionWithDetailsEntity(@Nonnull String slug,
-                                                                          @Nullable Integer version,
-                                                                          @Nullable @AuthenticationPrincipal Jwt jwt,
-                                                                          @Nonnull Boolean acceptUnauthenticated) throws ResponseException {
-        var user = getExecUser(jwt);
+    @Nonnull
+    private ResolvedFormTriggerContext resolveFormTriggerContext(@Nullable Jwt jwt,
+                                                                 @Nonnull UUID processAccessKey,
+                                                                 @Nonnull String formSlug,
+                                                                 @Nullable String testClaimAccessKey,
+                                                                 @Nullable Integer processVersion) throws ResponseException {
+        var execUser = getExecUser(jwt);
+        var process = getProcessEntity(processAccessKey);
+        var processVersionEntity = getProcessVersionEntity(testClaimAccessKey, processVersion, process);
+        var node = getProcessNodeEntity(formSlug, process, processVersionEntity);
+        var provider = getProvider(node);
+        var config = getConfigurationDetails(node, provider, execUser);
+        var formLayout = config.configuration().formLayout;
 
-        VFormVersionWithDetailsEntity formVersion;
-        if (user == null && !acceptUnauthenticated) {
-            formVersion = vFormVersionWithDetailsService
-                    .retrieve(VFormVersionWithDetailsFilter
-                            .create()
-                            .setSlug(slug)
-                            .setStatus(FormStatus.Published))
-                    .orElseThrow(ResponseException::notFound);
-        } else {
-            if (version != null) {
-                formVersion = vFormVersionWithDetailsService
-                        .findBySlugAndVersion(slug, version)
-                        .orElseThrow(ResponseException::notFound);
-            } else {
-                formVersion = vFormVersionWithDetailsService
-                        .retrieve(VFormVersionWithDetailsFilter
-                                .create()
-                                .setSlug(slug)
-                                .setStatus(FormStatus.Published))
-                        .orElseThrow(ResponseException::notFound);
-            }
+        if (formLayout == null) {
+            throw ResponseException.internalServerError("Die Konfiguration des Formulareingangs enthält kein Formular.");
         }
-        return formVersion;
+
+        return new ResolvedFormTriggerContext(process, processVersionEntity, node, formLayout);
     }
 
     @Nonnull
-    private ThemeEntity getFormTheme(VFormVersionWithDetailsEntity formVersion) throws ResponseException {
-        return formVersionService
-                .getFormThemesInOrderOfImportance(formVersion.getFormId(), formVersion.getVersion())
-                .getFirst();
+    private ThemeEntity getFormTheme(@Nonnull FormLayoutElement formLayout) {
+        return getFormThemesInOrderOfImportance(formLayout).get(0);
+    }
+
+    @Nonnull
+    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
+        var themes = new ArrayList<ThemeEntity>();
+
+        if (formLayout.getThemeId() != null) {
+            themeService
+                    .retrieve(formLayout.getThemeId())
+                    .ifPresent(themes::add);
+        }
+
+        addDepartmentTheme(themes, formLayout.getResponsibleDepartmentId());
+        addDepartmentTheme(themes, formLayout.getManagingDepartmentId());
+        themes.add(systemService.retrieveDefaultTheme());
+
+        return themes;
+    }
+
+    private void addDepartmentTheme(@Nonnull List<ThemeEntity> themes,
+                                    @Nullable Integer departmentId) {
+        if (departmentId == null) {
+            return;
+        }
+
+        vDepartmentShadowedService
+                .retrieve(departmentId)
+                .ifPresent(department -> {
+                    if (department.getThemeId() != null) {
+                        themeService
+                                .retrieve(department.getThemeId())
+                                .ifPresent(themes::add);
+                    }
+                });
     }
 
     @Nullable
-    private UUID getFormLogoKey(VFormVersionWithDetailsEntity formVersion) throws ResponseException {
-        var themes = formVersionService
-                .getFormThemesInOrderOfImportance(formVersion.getFormId(), formVersion.getVersion());
+    private UUID getFormLogoKey(@Nonnull FormLayoutElement formLayout) {
+        var themes = getFormThemesInOrderOfImportance(formLayout);
 
         for (var theme : themes) {
             if (theme.getLogoKey() != null) {
@@ -620,9 +649,8 @@ public class FormTriggerControllerV1 {
     }
 
     @Nullable
-    private UUID getFormFaviconKey(VFormVersionWithDetailsEntity formVersion) throws ResponseException {
-        var themes = formVersionService
-                .getFormThemesInOrderOfImportance(formVersion.getFormId(), formVersion.getVersion());
+    private UUID getFormFaviconKey(@Nonnull FormLayoutElement formLayout) {
+        var themes = getFormThemesInOrderOfImportance(formLayout);
 
         for (var theme : themes) {
             if (theme.getFaviconKey() != null) {
@@ -657,11 +685,17 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private ProcessVersionEntity getProcessVersionEntity(@Nullable String testClaimAccessKey, ProcessEntity process) throws ResponseException {
+    private ProcessVersionEntity getProcessVersionEntity(@Nullable String testClaimAccessKey,
+                                                         @Nullable Integer processVersion,
+                                                         ProcessEntity process) throws ResponseException {
         var processVersionFilter = ProcessVersionFilter
                 .create()
                 .setProcessId(process.getId());
-        if (testClaimAccessKey != null) {
+
+        if (processVersion != null) {
+            processVersionFilter
+                    .setProcessVersion(processVersion);
+        } else if (testClaimAccessKey != null) {
             var testClaim = processTestClaimService
                     .retrieveByAccessKey(process.getId(), testClaimAccessKey)
                     .orElseThrow(ResponseException::notFound);
@@ -688,5 +722,13 @@ public class FormTriggerControllerV1 {
         return userService
                 .fromJWT(jwt)
                 .orElse(null);
+    }
+
+    private record ResolvedFormTriggerContext(
+            @Nonnull ProcessEntity process,
+            @Nonnull ProcessVersionEntity processVersion,
+            @Nonnull ProcessNodeEntity node,
+            @Nonnull FormLayoutElement formLayout
+    ) {
     }
 }

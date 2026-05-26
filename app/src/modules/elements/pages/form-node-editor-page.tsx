@@ -100,8 +100,16 @@ import {downloadQrCode} from '../../../utils/download-qrcode';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
+import type {Theme as AppTheme} from '../../themes/models/theme';
+import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
+import {createAppTheme} from '../../../theming/themes';
+import {BaseTheme} from '../../../theming/base-theme';
 
 export const DialogSearchParam = 'dialog';
+
+function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
+    return JSON.parse(JSON.stringify(element)) as T;
+}
 
 export function FormNodeEditorPage() {
     const {
@@ -118,7 +126,7 @@ export function FormNodeEditorPage() {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
 
-    const _theme = useTheme();
+    const outerTheme = useTheme();
 
     const [showRootAddElementDialog, setShowRootAddElementDialog] = useState(false);
 
@@ -128,6 +136,8 @@ export function FormNodeEditorPage() {
     const [process, setProcess] = useState<ProcessEntity | null>(null);
     const [processVersion, setProcessVersion] = useState<ProcessVersionEntity | null>(null);
     const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
+    const testClaimRef = useRef<ProcessTestClaimEntity | null>(null);
+    const [formTheme, setFormTheme] = useState<AppTheme>();
 
     const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
 
@@ -141,29 +151,31 @@ export function FormNodeEditorPage() {
 
     useEffect(() => {
         const nodeIdInt = parseInt(nodeId);
-        if (node == null || node.id != nodeIdInt) {
-            dispatch(setCurrentStep(0));
-            new ProcessNodeApiService()
-                .retrieve(nodeIdInt)
-                .then((node) => {
-                    let uiElement = node.configuration[fieldKey];
-                    if (uiElement == null) {
-                        uiElement = generateElementWithDefaultValues(parseInt(elementType) as ElementType);
-                    }
+        dispatch(setCurrentStep(0));
+        new ProcessNodeApiService()
+            .retrieve(nodeIdInt)
+            .then((node) => {
+                let uiElement = node.configuration[fieldKey];
+                if (uiElement == null) {
+                    uiElement = generateElementWithDefaultValues(parseInt(elementType) as ElementType);
+                }
 
-                    setNode(node);
-                    setFormLayout(uiElement);
-                })
-                .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Die UI-Definition konnte nicht geladen werden.'));
-                });
-        }
-    }, [nodeId]);
+                setPastLoadedForm([]);
+                setFutureLoadedForm([]);
+                setNode(node);
+                setFormLayout(cloneFormLayoutSnapshot(uiElement as FormLayoutElement));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die UI-Definition konnte nicht geladen werden.'));
+            });
+    }, [dispatch, elementType, fieldKey, nodeId]);
 
     useEffect(() => {
         if (node == null) {
             setProcess(null);
             setProcessVersion(null);
+            setTestClaim(null);
+            testClaimRef.current = null;
             return;
         }
 
@@ -186,9 +198,44 @@ export function FormNodeEditorPage() {
                 setProcessVersion(version);
                 if (testClaims.content.length > 0) {
                     setTestClaim(testClaims.content[0]);
+                    testClaimRef.current = testClaims.content[0];
+                } else {
+                    setTestClaim(null);
+                    testClaimRef.current = null;
                 }
             });
     }, [node]);
+
+    useEffect(() => {
+        if (process == null || processVersion == null || node?.configuration.formSlug == null) {
+            setFormTheme(undefined);
+            return;
+        }
+
+        let isCancelled = false;
+
+        new FormTriggerApiService()
+            .getFormTheme(
+                process.accessKey,
+                node.configuration.formSlug,
+                processVersion.processVersion,
+            )
+            .then((theme) => {
+                if (!isCancelled) {
+                    setFormTheme(theme);
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading form preview theme:', error);
+                if (!isCancelled) {
+                    setFormTheme(undefined);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [node, process, processVersion]);
 
     const [searchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -215,10 +262,10 @@ export function FormNodeEditorPage() {
         hideComponentTree,
     } = useAppSelector((state: RootState) => state.adminSettings);
 
-    const [pastLoadedForm, setPastLoadedForm] = useState<AnyElement[]>([]);
+    const [pastLoadedForm, setPastLoadedForm] = useState<FormLayoutElement[]>([]);
     const hasPastLoadedForm = useMemo(() => pastLoadedForm.length > 0, [pastLoadedForm]);
 
-    const [futureLoadedForm, setFutureLoadedForm] = useState<AnyElement[]>([]);
+    const [futureLoadedForm, setFutureLoadedForm] = useState<FormLayoutElement[]>([]);
     const hasFutureLoadedForm = useMemo(() => futureLoadedForm.length > 0, [futureLoadedForm]);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
@@ -226,6 +273,13 @@ export function FormNodeEditorPage() {
     const notImplemented = useNotImplemented();
 
     const isEditable = processVersion?.status === ProcessStatus.Drafted;
+    const previewTheme = useMemo(() => {
+        if (formTheme == null) {
+            return outerTheme;
+        }
+
+        return createAppTheme(formTheme, BaseTheme);
+    }, [formTheme, outerTheme]);
 
     const {
         ref: containerRef,
@@ -239,11 +293,31 @@ export function FormNodeEditorPage() {
     }, [metaDialogName]);
 
     const handleUndo = () => {
-        // TODO: Implement with local stack
+        if (formLayout == null || pastLoadedForm.length === 0) {
+            return;
+        }
+
+        const previousForm = pastLoadedForm[pastLoadedForm.length - 1];
+        setPastLoadedForm((currentPastLoadedForm) => currentPastLoadedForm.slice(0, -1));
+        setFutureLoadedForm((currentFutureLoadedForm) => [
+            ...currentFutureLoadedForm,
+            cloneFormLayoutSnapshot(formLayout),
+        ]);
+        setFormLayout(cloneFormLayoutSnapshot(previousForm));
     };
 
     const handleRedo = () => {
-        // TODO: Implement with local stack
+        if (formLayout == null || futureLoadedForm.length === 0) {
+            return;
+        }
+
+        const nextForm = futureLoadedForm[futureLoadedForm.length - 1];
+        setFutureLoadedForm((currentFutureLoadedForm) => currentFutureLoadedForm.slice(0, -1));
+        setPastLoadedForm((currentPastLoadedForm) => [
+            ...currentPastLoadedForm,
+            cloneFormLayoutSnapshot(formLayout),
+        ]);
+        setFormLayout(cloneFormLayoutSnapshot(nextForm));
     };
 
     const handleSave = () => {
@@ -328,13 +402,13 @@ export function FormNodeEditorPage() {
 
     const handlePatch = (element: FormLayoutElement) => {
         if (formLayout != null) {
-            setPastLoadedForm([
-                ...pastLoadedForm,
-                formLayout,
+            setPastLoadedForm((currentPastLoadedForm) => [
+                ...currentPastLoadedForm,
+                cloneFormLayoutSnapshot(formLayout),
             ]);
         }
         setFutureLoadedForm([]);
-        setFormLayout(element);
+        setFormLayout(cloneFormLayoutSnapshot(element));
     };
 
     const handleCloneElement = (element: AnyElement) => {
@@ -565,68 +639,82 @@ export function FormNodeEditorPage() {
         return;
     }
 
+    const formAssetQueryParams = new URLSearchParams({
+        version: processVersion.processVersion.toString(),
+    });
+    if (testClaim != null) {
+        formAssetQueryParams.set('test-claim', testClaim.accessKey);
+    }
+
+    const formLogoUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
+
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
-        if (event !== SUBMIT_EVENT) {
+        if (event !== PRE_SUBMIT_EVENT && event !== SUBMIT_EVENT) {
             return;
         }
 
-        if (hasChanged) {
-            const saveNow = await confirm({
-                title: 'Ungespeicherte Änderungen',
-                children: (
-                    <Typography>
-                        Sie haben aktuell ungespeicherte Änderungen.
-                        Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt werden.
-                        Sie können die Änderungen jetzt speichern.
-                    </Typography>
-                ),
-                confirmButtonText: 'Jetzt speichern',
-            });
+        if (event === PRE_SUBMIT_EVENT) {
+            if (hasChanged) {
+                const saveNow = await confirm({
+                    title: 'Ungespeicherte Änderungen',
+                    children: (
+                        <Typography>
+                            Sie haben aktuell ungespeicherte Änderungen.
+                            Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt werden.
+                            Sie können die Änderungen jetzt speichern.
+                        </Typography>
+                    ),
+                    confirmButtonText: 'Jetzt speichern',
+                });
 
-            if (!saveNow) {
-                dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da ungespeicherte Änderungen vorhanden sind.'));
-                return;
+                if (!saveNow) {
+                    dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da ungespeicherte Änderungen vorhanden sind.'));
+                    return false;
+                }
+
+                await handleSave();
             }
 
-            await handleSave();
-        }
+            const testClaimApi = new ProcessTestClaimApiService();
 
-        const testClaimApi = new ProcessTestClaimApiService();
-
-        let testClaim = await testClaimApi
-            .listAll({
-                processId: node.processId,
-                processVersion: node.processVersion,
-            })
-            .then(response => {
-                return response.content.length > 0 ? response.content[0] : null;
-            });
-
-        if (testClaim == null) {
-            const createTestClaim = await confirm({
-                title: 'Nicht im Test-Modus',
-                children: (
-                    <Typography>
-                        Der Prozess, für den Sie das Formular absenden möchten, befindet sich <strong>nicht</strong> im
-                        Testmodus.
-                        Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
-                    </Typography>
-                ),
-                confirmButtonText: 'Testmodus starten',
-            });
-
-            if (!createTestClaim) {
-                dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da Prozess nicht im Testmodus ist.'));
-                return;
-            }
-
-            testClaim = await testClaimApi
-                .create({
-                    ...testClaimApi.initialize(),
+            let testClaim = await testClaimApi
+                .listAll({
                     processId: node.processId,
                     processVersion: node.processVersion,
+                })
+                .then(response => {
+                    return response.content.length > 0 ? response.content[0] : null;
                 });
-            setTestClaim(testClaim);
+
+            if (testClaim == null) {
+                const createTestClaim = await confirm({
+                    title: 'Nicht im Test-Modus',
+                    children: (
+                        <Typography>
+                            Der Prozess, für den Sie das Formular absenden möchten, befindet sich <strong>nicht</strong> im
+                            Testmodus.
+                            Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
+                        </Typography>
+                    ),
+                    confirmButtonText: 'Testmodus starten',
+                });
+
+                if (!createTestClaim) {
+                    dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da Prozess nicht im Testmodus ist.'));
+                    return false;
+                }
+
+                testClaim = await testClaimApi
+                    .create({
+                        ...testClaimApi.initialize(),
+                        processId: node.processId,
+                        processVersion: node.processVersion,
+                    });
+                setTestClaim(testClaim);
+                testClaimRef.current = testClaim;
+            }
+
+            return true;
         }
 
         const formData = new FormData();
@@ -659,7 +747,7 @@ export function FormNodeEditorPage() {
                     formData,
                     {
                         query: {
-                            'test-claim': testClaim.accessKey,
+                            'test-claim': testClaimRef.current?.accessKey,
                         },
                     },
                 );
@@ -724,12 +812,13 @@ export function FormNodeEditorPage() {
                                         }}
                                         ref={scrollContainerRef}
                                     >
-                                        <ThemeProvider theme={_theme}>
+                                        <ThemeProvider theme={previewTheme}>
                                             <FormHeaderComponent
                                                 form={formLayout}
                                                 node={node}
                                                 process={process}
                                                 version={processVersion}
+                                                logoUrl={formLogoUrl}
                                                 onDeleteFormData={() => {
                                                     dispatch(setCurrentStep(0));
                                                     setAuthoredElementValues({});
@@ -776,6 +865,7 @@ export function FormNodeEditorPage() {
                                                 node={node}
                                                 process={process}
                                                 version={processVersion}
+                                                logoUrl={formLogoUrl}
                                             />
 
                                             <HelpDialog

@@ -7,6 +7,7 @@ import type {QueryParams} from '../../../services/base-api-service';
 import type {ProcessEntity} from '../../process/entities/process-entity';
 import type {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
+import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
 
 export interface FormTriggerFilter {
@@ -20,7 +21,7 @@ export interface FormTriggerFilter {
 }
 
 export type FormTriggerSortField =
-    keyof Pick<ProcessNodeEntity, 'id' | 'name' | 'processId' | 'processVersion' | 'dataKey' | 'savedWithErrors'>;
+    keyof Pick<ProcessNodeEntity, 'id' | 'name' | 'processId' | 'processVersion' | 'dataKey' | 'savedWithErrors' | 'updated'>;
 
 export interface FormTriggerConfiguration extends AuthoredElementValues {
     formSlug?: string;
@@ -74,6 +75,21 @@ export class FormTriggerApiService extends BaseApiService {
 
     public async getIdentityProviders(): Promise<FormTriggerIdentityDetailsDTO[]> {
         return await this.get<FormTriggerIdentityDetailsDTO[]>(`/api/public/identity/providers/`, {
+            skipAuthCheck: true,
+        });
+    }
+
+    public async getFormTheme(
+        processAccessKey: string,
+        formSlug: string,
+        version?: number,
+        testClaimAccessKey?: string,
+    ): Promise<Theme> {
+        return await this.get<Theme>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/theme/`, {
+            query: {
+                version,
+                'test-claim': testClaimAccessKey,
+            },
             skipAuthCheck: true,
         });
     }

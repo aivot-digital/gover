@@ -31,6 +31,7 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
@@ -228,6 +229,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<ApprovalConfiguration> context) throws ProcessNodeExecutionException {
         var config = context.getConfigurationOfExecutingNode();
+        var workingProcessData = extractWorkingProcessData(context.getCurrentProcessExecutionData());
 
         var assigneeUserId = assigneeResolverService
                 .resolveAssignee(
@@ -245,7 +247,9 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 ));
 
         return ProcessNodeExecutionResultTaskAssigned
-                .of(assigneeUserId);
+                .of(assigneeUserId)
+                .setProcessData(workingProcessData)
+                .setRuntimeData(Map.of());
     }
 
     @Nonnull
@@ -390,6 +394,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                         new NoCodeStaticValue(expectedMode)
                 ))
                 .recalculateReferencedIds();
+    }
+
+    @Nonnull
+    private static Map<String, Object> extractWorkingProcessData(@Nonnull ProcessExecutionData processData)
+            throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        return new LinkedHashMap<>(processData.getProcessData());
     }
 
     @Nonnull

@@ -12,7 +12,7 @@ import {DepartmentApiService} from '../../../departments/services/department-api
 const columns: GridColDef<DepartmentEntity>[] = [
     {
         field: 'name',
-        headerName: 'Name des Fachbereichs',
+        headerName: 'Name der Organisation',
         flex: 1,
         renderCell: (params) => (
             <CellLink
@@ -40,11 +40,11 @@ export function ThemeDetailsPageDepartments() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Fachbereiche mit diesem Erscheinungsbild
+                Organisationen mit diesem Erscheinungsbild
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Eine Liste aller Fachbereiche, die dieses Erscheinungsbild verwenden.
+                Eine Liste aller Organisationen, die dieses Erscheinungsbild verwenden.
             </Typography>
 
             <GenericList<DepartmentEntity>
@@ -68,8 +68,8 @@ export function ThemeDetailsPageDepartments() {
                         );
                 }}
                 getRowIdentifier={(item) => item.id.toString()}
-                searchLabel="Fachbereich suchen"
-                searchPlaceholder="Name des Fachbereichs eingeben…"
+                searchLabel="Organisation suchen"
+                searchPlaceholder="Name der Organisation eingeben…"
                 defaultSortField="name"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Formulare vorhanden"
@@ -78,7 +78,7 @@ export function ThemeDetailsPageDepartments() {
                 rowActions={(item) => [{
                     icon: <EditOutlined />,
                     to: `/departments/${item.id}`,
-                    tooltip: 'Fachbereich anzeigen',
+                    tooltip: 'Organisation anzeigen',
                 }]}
                 preSearchElements={[]}
             />

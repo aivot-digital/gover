@@ -31,6 +31,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -49,13 +50,14 @@ public class IdentityService {
     private static final Logger logger = LoggerFactory.getLogger(IdentityService.class);
 
     public static final String DEFAULT_RESPONSE_TYPE = "code";
-    public static final String DEFAULT_LOGIN_VALUE = "true";
     public static final String GRANT_TYPE_AUTHORIZATION_CODE = "authorization_code";
     public static final String CONTENT_TYPE_HEADER_KEY = "Content-Type";
     public static final String AUTHORIZATION_HEADER_KEY = "Authorization";
 
     private static final int PKCE_CODE_VERIFIER_LENGTH = 48;
+    private static final int STATE_NONCE_NUM_BYTES = 32;
     private static final String PKCE_METHOD_S256 = "S256";
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     private final GoverConfig goverConfig;
     private final SecretService secretService;
@@ -80,8 +82,9 @@ public class IdentityService {
      * Constructs a redirect URL for an identity provider's authorization endpoint.
      *
      * <p>This method builds a URL that redirects the user to the identity provider's authorization
-     * endpoint with the necessary query parameters, including client ID, response type, login flag,
-     * redirect URI, and scopes. It also validates the referer and combines default and additional scopes.</p>
+     * endpoint with the necessary query parameters, including client ID, response type,
+     * redirect URI, scopes, and a generated state nonce. It also validates the referer,
+     * stores the resolved origin in the identity cache, and combines default and additional scopes.</p>
      *
      * @param providerKey      The key of the identity provider. Can be <code>null</code>.
      * @param origin           The referer of the request, typically from the "Referer" header. Can be <code>null</code>.
@@ -97,6 +100,8 @@ public class IdentityService {
             @Nullable List<String> additionalScopes
     ) throws ResponseException {
         var provider = getIdentityProviderEntity(providerKey);
+        var resolvedOrigin = resolveOrigin(origin);
+        var stateNonce = generateStateNonce();
 
         // Create a new cache entity
         var identity = new IdentityCacheEntity(
@@ -104,10 +109,11 @@ public class IdentityService {
                 null,
                 provider.getKey().toString(),
                 provider.getMetadataIdentifier(),
+                resolvedOrigin.toString(),
+                stateNonce,
                 null
         );
 
-        var resolvedReferer = resolveOrigin(origin);
         var combinedScopes = getCombinedScopes(provider, additionalScopes);
 
         var resolvedAuthorizationUri = resolveRelativeOrAbsoluteURL(provider.getAuthorizationEndpoint());
@@ -121,10 +127,9 @@ public class IdentityService {
                 .uri(resolvedAuthorizationUri)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_CLIENT_ID, provider.getClientId())
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_RESPONSE_TYPE, DEFAULT_RESPONSE_TYPE)
-                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_LOGIN, DEFAULT_LOGIN_VALUE)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_REDIRECT_URI, callbackUri)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_SCOPE, combinedScopes)
-                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_STATE, resolvedReferer.toString());
+                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_STATE, stateNonce);
 
         // Add any additional parameters specified in the provider entity
         provider
@@ -195,19 +200,16 @@ public class IdentityService {
             @Nullable UUID providerKey,
             @Nonnull UUID identitySessionId,
             @Nullable String authorizationCode,
-            @Nonnull String origin
+            @Nonnull String state
     ) throws ResponseException {
+        var identity = getValidatedIdentitySession(identitySessionId, state);
+
         if (authorizationCode == null) {
             throw ResponseException
                     .badRequest("Es wurde kein Autorisierungscode übergeben.");
         }
 
         var provider = getIdentityProviderEntity(providerKey);
-        var identity = identityCacheRepository
-                .findById(identitySessionId)
-                .orElseThrow(() -> ResponseException
-                        .badRequest("Die Identitätssitzung existiert nicht.")
-                );
 
         var authToken = fetchAuthToken(
                 provider,
@@ -231,7 +233,7 @@ public class IdentityService {
                 .save(identity);
 
         return UriComponentsBuilder
-                .fromUriString(origin)
+                .fromUriString(getStoredOrigin(identity))
                 .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.Success.getKey())
                 .queryParam(IdentityQueryParameterConstants.RESULT_IDENTITY_ID, identity.getSessionId())
                 .build()
@@ -241,28 +243,32 @@ public class IdentityService {
     /**
      * Constructs a URL to redirect the user to an error page.
      *
-     * <p>This method validates the provided origin against the application's configured hostname
-     * and builds a URL with query parameters to describe the error. The query parameters include:</p>
+     * <p>This method validates the callback session state and builds a URL with query parameters
+     * to describe the error. The query parameters include:</p>
      * <ul>
      *   <li><code>error</code>: The error code or message.</li>
      *   <li><code>error_description</code>: A detailed description of the error (optional).</li>
      *   <li><code>state</code>: A state code indicating the type of error, defaulting to "UnknownError".</li>
      * </ul>
      *
-     * @param origin           The origin of the request, typically from the "Origin" header. Can be <code>null</code>.
+     * @param identitySessionId The identity session identifier from the callback path.
+     * @param state             The OIDC state nonce returned by the identity provider.
      * @param error            The error code or message. Must not be <code>null</code>.
      * @param errorDescription A detailed description of the error. Can be <code>null</code>.
      * @return A string representing the constructed error redirect URL.
-     * @throws ResponseException If the origin is invalid or does not match the application's hostname.
+     * @throws ResponseException If the identity session is invalid, the state nonce does not match,
+     *                           or the cached origin is missing.
      */
     public String createErrorRedirectURL(
-            @Nullable String origin,
+            @Nonnull UUID identitySessionId,
+            @Nonnull String state,
             @Nonnull String error,
             @Nullable String errorDescription
     ) throws ResponseException {
-        var resolvedOrigin = resolveOrigin(origin);
+        var identity = getValidatedIdentitySession(identitySessionId, state);
+
         return UriComponentsBuilder
-                .fromUri(resolvedOrigin)
+                .fromUriString(getStoredOrigin(identity))
                 .queryParam(IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, error)
                 .queryParam(IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, errorDescription)
                 .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.UnknownError.getKey())
@@ -422,6 +428,65 @@ public class IdentityService {
         }
 
         return refererURI;
+    }
+
+    @Nonnull
+    private IdentityCacheEntity getValidatedIdentitySession(
+            @Nonnull UUID identitySessionId,
+            @Nullable String state
+    ) throws ResponseException {
+        var identity = identityCacheRepository
+                .findById(identitySessionId)
+                .orElseThrow(() -> ResponseException
+                        .badRequest("Die Identitätssitzung existiert nicht.")
+                );
+
+        var storedStateNonce = getStoredStateNonce(identity);
+        if (!Objects.equals(storedStateNonce, state)) {
+            throw ResponseException
+                    .badRequest("Der state-Parameter ist ungültig.");
+        }
+
+        getStoredOrigin(identity);
+
+        return identity;
+    }
+
+    @Nonnull
+    private String getStoredStateNonce(@Nonnull IdentityCacheEntity identity) throws ResponseException {
+        if (StringUtils.isNullOrEmpty(identity.getStateNonce())) {
+            throw ResponseException
+                    .internalServerError(
+                            "Für die Identitätssitzung %s wurde kein state-Nonce gespeichert.",
+                            identity.getSessionId()
+                    );
+        }
+
+        return identity.getStateNonce();
+    }
+
+    @Nonnull
+    private String getStoredOrigin(@Nonnull IdentityCacheEntity identity) throws ResponseException {
+        if (StringUtils.isNullOrEmpty(identity.getOrigin())) {
+            throw ResponseException
+                    .internalServerError(
+                            "Für die Identitätssitzung %s wurde keine Ursprungs-URL gespeichert.",
+                            identity.getSessionId()
+                    );
+        }
+
+        try {
+            var origin = new URI(identity.getOrigin());
+            origin.toURL();
+            return origin.toString();
+        } catch (URISyntaxException | MalformedURLException | IllegalArgumentException e) {
+            throw ResponseException
+                    .internalServerError(
+                            e,
+                            "Die gespeicherte Ursprungs-URL der Identitätssitzung %s ist ungültig.",
+                            identity.getSessionId()
+                    );
+        }
     }
 
     /**
@@ -689,6 +754,13 @@ public class IdentityService {
 
         return Optional
                 .of(decryptedSecret);
+    }
+
+    @Nonnull
+    private static String generateStateNonce() {
+        var bytes = new byte[STATE_NONCE_NUM_BYTES];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
     private String createCallbackUri(@Nonnull IdentityProviderEntity provider, @Nonnull IdentityCacheEntity cacheEntity) {

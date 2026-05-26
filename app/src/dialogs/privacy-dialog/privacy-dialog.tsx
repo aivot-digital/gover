@@ -60,7 +60,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
                             Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen
-                            Fachbereich als Quelle für den Rechtstext der Datenschutzerklärung aus.
+                            Organisation als Quelle für den Rechtstext der Datenschutzerklärung aus.
                         </Alert>
                     </DialogContent>
             }

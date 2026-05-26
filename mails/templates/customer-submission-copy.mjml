@@ -23,7 +23,7 @@
                         <br/>
                         <b th:text="${base.providerName}">Beispielkommune</b>
                         <br/>
-                        <b th:text="${department.name}">Beispiel-Fachbereich</b>
+                        <b th:text="${department.name}">Beispiel-Organisation</b>
                     </p>
                 </mj-text>
             </mj-column>

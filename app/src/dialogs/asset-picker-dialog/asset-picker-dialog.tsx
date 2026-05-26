@@ -1,4 +1,4 @@
-import React, {type PropsWithChildren, useCallback, useEffect, useMemo, useState} from 'react';
+import React, {type PropsWithChildren, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     Alert,
     Box,
@@ -14,16 +14,15 @@ import {Link} from 'react-router-dom';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {useApi} from '../../hooks/use-api';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {type StorageIndexItem} from '../../modules/storage/entities/storage-index-item-entity';
 import {StorageProvidersApiService} from '../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../modules/storage/enums/storage-provider-type';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
+import {type Asset} from '../../modules/assets/models/asset';
 import {type StorageProviderEntity} from '../../modules/storage/entities/storage-provider-entity';
 import {AssetExplorer} from '../../modules/storage/components/asset-explorer';
-
-const ASSET_KEY_METADATA_KEY = '__assetPickerAssetKey';
-const ASSET_PRIVATE_METADATA_KEY = '__assetPickerIsPrivate';
+import {useConfirm} from '../../providers/confirm-provider';
 
 export interface AssetPickerDialogProps {
     title: string;
@@ -47,9 +46,13 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
     const api = useApi();
     const dispatch = useAppDispatch();
+    const confirm = useConfirm();
     const [providers, setProviders] = useState<StorageProviderEntity[]>([]);
     const [isLoadingProviders, setIsLoadingProviders] = useState(false);
     const [selectedProviderId, setSelectedProviderId] = useState<number>();
+    const [isProcessingSelection, setIsProcessingSelection] = useState(false);
+    const [selectionProcessingMessage, setSelectionProcessingMessage] = useState<string>();
+    const isProcessingSelectionRef = useRef(false);
 
     useEffect(() => {
         if (!show) {
@@ -88,7 +91,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
                 setProviders([]);
                 setSelectedProviderId(undefined);
-                dispatch(showApiErrorSnackbar(err, 'Die Liste der Asset-Speicheranbieter konnte nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden.'));
             })
             .finally(() => {
                 if (isActive) {
@@ -101,6 +104,16 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         };
     }, [dispatch, show]);
 
+    useEffect(() => {
+        if (show) {
+            return;
+        }
+
+        setIsProcessingSelection(false);
+        setSelectionProcessingMessage(undefined);
+        isProcessingSelectionRef.current = false;
+    }, [show]);
+
     const normalizedMimeTypes = useMemo(() => {
         if (mimeType == null) {
             return [];
@@ -112,54 +125,156 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             .filter((entry) => entry.length > 0);
     }, [mimeType]);
 
-    const handleSelectFile = useCallback(async (item: StorageIndexItem) => {
-        if (item.directory) {
+    const handleDialogClose = useCallback(() => {
+        if (isProcessingSelection) {
             return;
         }
 
-        const rawAssetKey = item.metadata?.[ASSET_KEY_METADATA_KEY];
-        const itemIsPrivate = item.metadata?.[ASSET_PRIVATE_METADATA_KEY] === true;
-        const assetKey = typeof rawAssetKey === 'string'
-            ? rawAssetKey
-            : '';
+        onCancel();
+    }, [isProcessingSelection, onCancel]);
 
-        if (mode === 'public' && itemIsPrivate) {
-            dispatch(showErrorSnackbar('Es können nur öffentlich erreichbare Assets ausgewählt werden.'));
-            return;
-        }
+    const startSelectionProcessing = useCallback((message: string) => {
+        isProcessingSelectionRef.current = true;
+        setSelectionProcessingMessage(message);
+        setIsProcessingSelection(true);
+    }, []);
 
-        if (assetKey.length > 0) {
-            onSelectAsset(assetKey, item.pathFromRoot, item.storageProviderId);
-            return;
-        }
+    const stopSelectionProcessing = useCallback(() => {
+        isProcessingSelectionRef.current = false;
+        setIsProcessingSelection(false);
+        setSelectionProcessingMessage(undefined);
+    }, []);
 
+    const loadAssetForSelection = useCallback(async (item: StorageIndexItem): Promise<Asset | null> => {
         try {
             const asset = await new AssetsApiService(api).retrieveInStorageProvider(item.pathFromRoot, item.storageProviderId);
             if (asset.key.trim().length === 0) {
-                dispatch(showErrorSnackbar('Die ausgewählte Datei ist keinem Asset zugeordnet und kann nicht ausgewählt werden.'));
-                return;
+                dispatch(showErrorSnackbar('Die ausgewählte Datei ist keiner Datei zugeordnet und kann nicht ausgewählt werden.'));
+                return null;
             }
 
-            if (mode === 'public' && asset.isPrivate) {
-                dispatch(showErrorSnackbar('Es können nur öffentlich erreichbare Assets ausgewählt werden.'));
-                return;
-            }
-
-            onSelectAsset(asset.key, asset.storagePathFromRoot, asset.storageProviderId);
+            return asset;
         } catch (err) {
-            dispatch(showApiErrorSnackbar(err, 'Die ausgewählte Datei konnte nicht als Asset geladen werden.'));
+            dispatch(showApiErrorSnackbar(err, 'Die ausgewählte Datei konnte nicht geladen werden.'));
+            return null;
         }
-    }, [api, dispatch, mode, onSelectAsset]);
+    }, [api, dispatch]);
+
+    const handleSelectFile = useCallback(async (item: StorageIndexItem) => {
+        if (item.directory || isProcessingSelectionRef.current) {
+            return;
+        }
+
+        const itemAssetKey = typeof item.assetKey === 'string'
+            ? item.assetKey.trim()
+            : '';
+        let assetKey = itemAssetKey;
+        let assetIsPrivate = typeof item.assetIsPrivate === 'boolean'
+            ? item.assetIsPrivate
+            : undefined;
+        let resolvedAsset: Asset | null = null;
+
+        try {
+            startSelectionProcessing('Datei wird geprüft…');
+
+            if (assetKey.length === 0 || (mode === 'public' && assetIsPrivate == null)) {
+                resolvedAsset = await loadAssetForSelection(item);
+                if (resolvedAsset == null) {
+                    return;
+                }
+
+                assetKey = resolvedAsset.key.trim();
+                assetIsPrivate = resolvedAsset.isPrivate;
+            }
+
+            if (assetKey.length === 0) {
+                dispatch(showErrorSnackbar('Die ausgewählte Datei ist nicht zugeordnet und kann nicht ausgewählt werden.'));
+                return;
+            }
+
+            if (mode === 'public' && assetIsPrivate === true) {
+                stopSelectionProcessing();
+
+                const confirmed = await confirm({
+                    title: 'Datei öffentlich schalten?',
+                    confirmButtonText: 'Öffentlich schalten und auswählen',
+                    width: 'md',
+                    children: (
+                        <Stack spacing={2}>
+                            <Typography variant="body2">
+                                Die ausgewählte Datei ist aktuell nicht öffentlich erreichbar.
+                            </Typography>
+                            <Typography variant="body2">
+                                Wenn Sie fortfahren, wird der öffentliche Zugriff ohne Authentifizierung aktiviert und
+                                die Datei danach direkt ausgewählt.
+                            </Typography>
+                            <Alert severity="warning">
+                                Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen, und niemals für
+                                sicherheitsrelevante Dateien wie Zertifikate.
+                            </Alert>
+                        </Stack>
+                    ),
+                });
+
+                if (!confirmed) {
+                    return;
+                }
+
+                startSelectionProcessing('Datei wird veröffentlicht…');
+
+                const assetToPublish = resolvedAsset ?? await loadAssetForSelection(item);
+                if (assetToPublish == null) {
+                    return;
+                }
+
+                try {
+                    const updatedAsset = await new AssetsApiService(api).updateInStorageProvider(
+                        assetToPublish.storagePathFromRoot,
+                        {
+                            ...assetToPublish,
+                            isPrivate: false,
+                        },
+                        assetToPublish.storageProviderId,
+                    );
+
+                    dispatch(showSuccessSnackbar('Die Datei wurde veröffentlicht und ausgewählt.'));
+                    onSelectAsset(updatedAsset.key, updatedAsset.storagePathFromRoot, updatedAsset.storageProviderId);
+                    return;
+                } catch (err) {
+                    dispatch(showApiErrorSnackbar(err, 'Die Datei konnte nicht veröffentlicht werden.'));
+                    return;
+                }
+            }
+
+            if (resolvedAsset != null) {
+                onSelectAsset(resolvedAsset.key, resolvedAsset.storagePathFromRoot, resolvedAsset.storageProviderId);
+                return;
+            }
+
+            onSelectAsset(assetKey, item.pathFromRoot, item.storageProviderId);
+        } finally {
+            stopSelectionProcessing();
+        }
+    }, [
+        api,
+        confirm,
+        dispatch,
+        loadAssetForSelection,
+        mode,
+        onSelectAsset,
+        startSelectionProcessing,
+        stopSelectionProcessing,
+    ]);
 
     return (
         <Dialog
             fullWidth
             maxWidth="lg"
             open={show}
-            onClose={onCancel}
+            onClose={handleDialogClose}
         >
-            <DialogTitleWithClose onClose={onCancel}>
-                {title} ({mimeType}) {mode === 'public' && `(nur öffentlich)`}
+            <DialogTitleWithClose onClose={handleDialogClose}>
+                {title} ({mimeType}) {mode === 'public' && `(nur öffentlich auswählbar)`}
             </DialogTitleWithClose>
 
             <DialogContent tabIndex={0}
@@ -174,6 +289,13 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                 )}
 
                 <Stack spacing={2}>
+                    {mode === 'public' && (
+                        <Alert severity="info">
+                            Nicht öffentliche Dateien werden angezeigt und grau markiert. Wenn Sie eine solche Datei
+                            auswählen, können Sie es direkt hier öffentlich schalten.
+                        </Alert>
+                    )}
+
                     <TextField
                         select={true}
                         size="small"
@@ -183,7 +305,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                             const nextProviderId = Number.parseInt(event.target.value, 10);
                             setSelectedProviderId(Number.isNaN(nextProviderId) ? undefined : nextProviderId);
                         }}
-                        disabled={isLoadingProviders || providers.length === 0}
+                        disabled={isLoadingProviders || providers.length === 0 || isProcessingSelection}
                     >
                         {providers.map((provider) => (
                             <MenuItem key={provider.id}
@@ -210,12 +332,12 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
                     {!isLoadingProviders && providers.length === 0 && (
                         <Alert severity="info">
-                            Es sind keine Asset-Speicheranbieter konfiguriert. Gehen Sie zu{' '}
+                            Es sind keine Speicheranbieter konfiguriert. Gehen Sie zu{' '}
                             <Link to="/storage-providers"
                                   style={{color: 'inherit'}}>
                                 Speicheranbieter
                             </Link>
-                            {' '}und richten Sie einen Asset-Speicheranbieter ein.
+                            {' '}und richten Sie einen Speicheranbieter ein.
                         </Alert>
                     )}
 
@@ -226,14 +348,38 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     )}
 
                     {!isLoadingProviders && selectedProviderId != null && (
-                        <AssetExplorer
-                            providerId={selectedProviderId}
-                            onFileSelect={handleSelectFile}
-                            filterMimeTypes={normalizedMimeTypes}
-                            filterOnlyPublic={mode === 'public'}
-                            showTopNavigationBar={true}
-                            minGridHeight={460}
-                        />
+                        <Box sx={{position: 'relative'}}>
+                            <AssetExplorer
+                                providerId={selectedProviderId}
+                                onFileSelect={handleSelectFile}
+                                filterMimeTypes={normalizedMimeTypes}
+                                showTopNavigationBar={true}
+                                minGridHeight={460}
+                            />
+
+                            {isProcessingSelection && (
+                                <Stack
+                                    spacing={1.5}
+                                    alignItems="center"
+                                    justifyContent="center"
+                                    sx={{
+                                        position: 'absolute',
+                                        inset: 0,
+                                        zIndex: 1,
+                                        bgcolor: 'rgba(255, 255, 255, 0.5)',
+                                        pointerEvents: 'all',
+                                    }}
+                                >
+                                    <CircularProgress size={20}/>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                    >
+                                        {selectionProcessingMessage ?? 'Bitte warten…'}
+                                    </Typography>
+                                </Stack>
+                            )}
+                        </Box>
                     )}
                 </Stack>
             </DialogContent>

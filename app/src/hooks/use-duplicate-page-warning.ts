@@ -1,5 +1,4 @@
-import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import {useLocation} from 'react-router-dom';
+import {useCallback, useEffect, useRef, useState} from 'react';
 
 const CHANNEL_NAME = 'duplicate_page_warning';
 const HEARTBEAT_INTERVAL_MS = 3000;
@@ -14,10 +13,8 @@ interface DuplicatePageMessage {
     timestamp: number;
 }
 
-export function useDuplicatePageWarning(enabled: boolean = true): boolean {
-    const location = useLocation();
-    const pageKey = useMemo(() => location.pathname + location.search, [location.pathname, location.search]);
-
+export function useDuplicatePageWarning(pageKey: string | null): boolean {
+    const enabled = pageKey != null;
     const tabIdRef = useRef<string>(createTabId());
     const duplicateTabIdsRef = useRef<Map<string, number>>(new Map());
     const [hasDuplicatePageOpen, setHasDuplicatePageOpen] = useState(false);
@@ -30,7 +27,7 @@ export function useDuplicatePageWarning(enabled: boolean = true): boolean {
         duplicateTabIdsRef.current.clear();
         syncDuplicateState();
 
-        if (!enabled) {
+        if (!enabled || pageKey == null) {
             return;
         }
 

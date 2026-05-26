@@ -162,7 +162,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Fachbereich'));
+                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zur Organisation'));
                 }
             })
             .finally(() => {

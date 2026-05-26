@@ -1,5 +1,5 @@
 import {SelectAssetDialog} from '../../../dialogs/select-asset-dialog/select-asset-dialog';
-import {useMemo, useState} from 'react';
+import {useEffect, useState} from 'react';
 import {Box, Fab, Stack, Typography} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
@@ -36,15 +36,17 @@ export function ImageSelector(props: ImageSelectorProps) {
     } = props;
 
     const [showSelectAssetDialog, setShowSelectAssetDialog] = useState(false);
+    const [imageStatus, setImageStatus] = useState<'idle' | 'loading' | 'loaded' | 'failed'>(
+        value == null ? 'idle' : 'loading',
+    );
 
-    const link = useMemo(() => {
-        if (value == null) {
-            return null;
-        }
+    const link = value == null
+        ? null
+        : AssetsApiService.useAssetLink(value);
 
-        return AssetsApiService
-            .useAssetLink(value);
-    }, [value]);
+    useEffect(() => {
+        setImageStatus(link == null ? 'idle' : 'loading');
+    }, [link]);
 
     return (
         <Box sx={{width: '100%'}}>
@@ -61,14 +63,34 @@ export function ImageSelector(props: ImageSelectorProps) {
                     aspectRatio: 'aspectRatio' in size ? size.aspectRatio : undefined,
                     border: (theme) => `1px solid ${error != null ? theme.palette.error.main : '#aaa'}`,
                     backgroundColor: '#f0f0f0',
-                    backgroundImage: link != null ? `url(${link})` : undefined,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
                     borderRadius: '0.5rem',
+                    overflow: 'hidden',
                 }}
             >
                 {
-                    link == null &&
+                    link != null &&
+                    <img
+                        key={link}
+                        src={link}
+                        alt=""
+                        onLoad={() => {
+                            setImageStatus('loaded');
+                        }}
+                        onError={() => {
+                            setImageStatus('failed');
+                        }}
+                        style={{
+                            position: 'absolute',
+                            inset: 0,
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                            display: 'block',
+                        }}
+                    />
+                }
+                {
+                    (link == null || imageStatus === 'failed') &&
                     <Typography
                         variant="body2"
                         color="text.secondary"
@@ -82,7 +104,7 @@ export function ImageSelector(props: ImageSelectorProps) {
                             px: 2,
                         }}
                     >
-                        Kein Bild ausgewählt
+                        {link == null ? 'Kein Bild ausgewählt' : 'Bild konnte nicht geladen werden'}
                     </Typography>
                 }
                 {
@@ -92,6 +114,7 @@ export function ImageSelector(props: ImageSelectorProps) {
                             position: 'absolute',
                             bottom: '0.5rem',
                             right: '0.5rem',
+                            zIndex: 1,
                         }}
                         direction="row"
                         spacing={1}

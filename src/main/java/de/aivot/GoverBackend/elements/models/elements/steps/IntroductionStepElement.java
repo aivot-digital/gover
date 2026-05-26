@@ -10,9 +10,12 @@ import jakarta.annotation.Nullable;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean>, LayoutElement<BaseFormElement> {
+    private static final String PRIVACY_CONSENT_LABEL = "Datenschutzrechtliche Einwilligung";
+
     @Nullable
     private String initiativeName;
     @Nullable
@@ -43,7 +46,11 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     @Override
     public void performValidation(Boolean value) throws ValidationException {
         if (!Boolean.TRUE.equals(value)) {
-            throw new ValidationException(this, "Bitte akzeptieren Sie die Hinweise zum Datenschutz.");
+            throw new ValidationException(
+                    this,
+                    "Bitte akzeptieren Sie die Hinweise zum Datenschutz.",
+                    Map.of("label", PRIVACY_CONSENT_LABEL)
+            );
         }
     }
 

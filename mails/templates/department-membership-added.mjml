@@ -3,7 +3,7 @@
         <mj-include path="../partials/head.mjml" />
 
         <mj-preview>
-            Information zur Aufnahme in einen Fachbereich
+            Information zur Aufnahme in eine Organisation
         </mj-preview>
     </mj-head>
     <mj-body>
@@ -15,9 +15,9 @@
                     <p>
                         Hallo,
                         <br/>
-                        Sie wurden in Gover einem Fachbereich zugeordnet.
+                        Sie wurden in Gover einer Organisation zugeordnet.
                         <br/>
-                        Fachbereich: <b th:text="${department.name}">Beispiel-Fachbereich</b>
+                        Organisation: <b th:text="${department.name}">Beispiel-Organisation</b>
                         <br/>
                         Zugeordnet durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
                     </p>

@@ -60,7 +60,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
                             Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen
-                            Fachbereich als Quelle für den Rechtstext des Impressums aus.
+                            Organisation als Quelle für den Rechtstext des Impressums aus.
                         </Alert>
                     </DialogContent>
             }

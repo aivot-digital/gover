@@ -31,6 +31,7 @@ interface RootComponentFooterProps {
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
+    logoUrl: string;
 }
 
 export function RootComponentFooter(props: RootComponentFooterProps) {
@@ -39,6 +40,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
         node,
         process,
         version,
+        logoUrl,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -74,7 +76,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                     <Logo
                         key={'logo-' + (form.themeId ?? 'default')}
                         updated={version.updated}
-                        src={`/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/`}
+                        src={logoUrl}
                         width={200}
                         height={100}
                     />
