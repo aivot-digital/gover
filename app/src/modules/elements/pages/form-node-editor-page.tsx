@@ -100,6 +100,10 @@ import {downloadQrCode} from '../../../utils/download-qrcode';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
+import type {Theme as AppTheme} from '../../themes/models/theme';
+import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
+import {createAppTheme} from '../../../theming/themes';
+import {BaseTheme} from '../../../theming/base-theme';
 
 export const DialogSearchParam = 'dialog';
 
@@ -118,7 +122,7 @@ export function FormNodeEditorPage() {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
 
-    const _theme = useTheme();
+    const outerTheme = useTheme();
 
     const [showRootAddElementDialog, setShowRootAddElementDialog] = useState(false);
 
@@ -128,6 +132,8 @@ export function FormNodeEditorPage() {
     const [process, setProcess] = useState<ProcessEntity | null>(null);
     const [processVersion, setProcessVersion] = useState<ProcessVersionEntity | null>(null);
     const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
+    const testClaimRef = useRef<ProcessTestClaimEntity | null>(null);
+    const [formTheme, setFormTheme] = useState<AppTheme>();
 
     const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
 
@@ -164,6 +170,8 @@ export function FormNodeEditorPage() {
         if (node == null) {
             setProcess(null);
             setProcessVersion(null);
+            setTestClaim(null);
+            testClaimRef.current = null;
             return;
         }
 
@@ -186,9 +194,44 @@ export function FormNodeEditorPage() {
                 setProcessVersion(version);
                 if (testClaims.content.length > 0) {
                     setTestClaim(testClaims.content[0]);
+                    testClaimRef.current = testClaims.content[0];
+                } else {
+                    setTestClaim(null);
+                    testClaimRef.current = null;
                 }
             });
     }, [node]);
+
+    useEffect(() => {
+        if (process == null || processVersion == null || node?.configuration.formSlug == null) {
+            setFormTheme(undefined);
+            return;
+        }
+
+        let isCancelled = false;
+
+        new FormTriggerApiService()
+            .getFormTheme(
+                process.accessKey,
+                node.configuration.formSlug,
+                processVersion.processVersion,
+            )
+            .then((theme) => {
+                if (!isCancelled) {
+                    setFormTheme(theme);
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading form preview theme:', error);
+                if (!isCancelled) {
+                    setFormTheme(undefined);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [node, process, processVersion]);
 
     const [searchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -226,6 +269,13 @@ export function FormNodeEditorPage() {
     const notImplemented = useNotImplemented();
 
     const isEditable = processVersion?.status === ProcessStatus.Drafted;
+    const previewTheme = useMemo(() => {
+        if (formTheme == null) {
+            return outerTheme;
+        }
+
+        return createAppTheme(formTheme, BaseTheme);
+    }, [formTheme, outerTheme]);
 
     const {
         ref: containerRef,
@@ -565,68 +615,82 @@ export function FormNodeEditorPage() {
         return;
     }
 
+    const formAssetQueryParams = new URLSearchParams({
+        version: processVersion.processVersion.toString(),
+    });
+    if (testClaim != null) {
+        formAssetQueryParams.set('test-claim', testClaim.accessKey);
+    }
+
+    const formLogoUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
+
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
-        if (event !== SUBMIT_EVENT) {
+        if (event !== PRE_SUBMIT_EVENT && event !== SUBMIT_EVENT) {
             return;
         }
 
-        if (hasChanged) {
-            const saveNow = await confirm({
-                title: 'Ungespeicherte Änderungen',
-                children: (
-                    <Typography>
-                        Sie haben aktuell ungespeicherte Änderungen.
-                        Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt werden.
-                        Sie können die Änderungen jetzt speichern.
-                    </Typography>
-                ),
-                confirmButtonText: 'Jetzt speichern',
-            });
+        if (event === PRE_SUBMIT_EVENT) {
+            if (hasChanged) {
+                const saveNow = await confirm({
+                    title: 'Ungespeicherte Änderungen',
+                    children: (
+                        <Typography>
+                            Sie haben aktuell ungespeicherte Änderungen.
+                            Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt werden.
+                            Sie können die Änderungen jetzt speichern.
+                        </Typography>
+                    ),
+                    confirmButtonText: 'Jetzt speichern',
+                });
 
-            if (!saveNow) {
-                dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da ungespeicherte Änderungen vorhanden sind.'));
-                return;
+                if (!saveNow) {
+                    dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da ungespeicherte Änderungen vorhanden sind.'));
+                    return false;
+                }
+
+                await handleSave();
             }
 
-            await handleSave();
-        }
+            const testClaimApi = new ProcessTestClaimApiService();
 
-        const testClaimApi = new ProcessTestClaimApiService();
-
-        let testClaim = await testClaimApi
-            .listAll({
-                processId: node.processId,
-                processVersion: node.processVersion,
-            })
-            .then(response => {
-                return response.content.length > 0 ? response.content[0] : null;
-            });
-
-        if (testClaim == null) {
-            const createTestClaim = await confirm({
-                title: 'Nicht im Test-Modus',
-                children: (
-                    <Typography>
-                        Der Prozess, für den Sie das Formular absenden möchten, befindet sich <strong>nicht</strong> im
-                        Testmodus.
-                        Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
-                    </Typography>
-                ),
-                confirmButtonText: 'Testmodus starten',
-            });
-
-            if (!createTestClaim) {
-                dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da Prozess nicht im Testmodus ist.'));
-                return;
-            }
-
-            testClaim = await testClaimApi
-                .create({
-                    ...testClaimApi.initialize(),
+            let testClaim = await testClaimApi
+                .listAll({
                     processId: node.processId,
                     processVersion: node.processVersion,
+                })
+                .then(response => {
+                    return response.content.length > 0 ? response.content[0] : null;
                 });
-            setTestClaim(testClaim);
+
+            if (testClaim == null) {
+                const createTestClaim = await confirm({
+                    title: 'Nicht im Test-Modus',
+                    children: (
+                        <Typography>
+                            Der Prozess, für den Sie das Formular absenden möchten, befindet sich <strong>nicht</strong> im
+                            Testmodus.
+                            Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
+                        </Typography>
+                    ),
+                    confirmButtonText: 'Testmodus starten',
+                });
+
+                if (!createTestClaim) {
+                    dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da Prozess nicht im Testmodus ist.'));
+                    return false;
+                }
+
+                testClaim = await testClaimApi
+                    .create({
+                        ...testClaimApi.initialize(),
+                        processId: node.processId,
+                        processVersion: node.processVersion,
+                    });
+                setTestClaim(testClaim);
+                testClaimRef.current = testClaim;
+            }
+
+            return true;
         }
 
         const formData = new FormData();
@@ -659,7 +723,7 @@ export function FormNodeEditorPage() {
                     formData,
                     {
                         query: {
-                            'test-claim': testClaim.accessKey,
+                            'test-claim': testClaimRef.current?.accessKey,
                         },
                     },
                 );
@@ -724,12 +788,13 @@ export function FormNodeEditorPage() {
                                         }}
                                         ref={scrollContainerRef}
                                     >
-                                        <ThemeProvider theme={_theme}>
+                                        <ThemeProvider theme={previewTheme}>
                                             <FormHeaderComponent
                                                 form={formLayout}
                                                 node={node}
                                                 process={process}
                                                 version={processVersion}
+                                                logoUrl={formLogoUrl}
                                                 onDeleteFormData={() => {
                                                     dispatch(setCurrentStep(0));
                                                     setAuthoredElementValues({});
@@ -776,6 +841,7 @@ export function FormNodeEditorPage() {
                                                 node={node}
                                                 process={process}
                                                 version={processVersion}
+                                                logoUrl={formLogoUrl}
                                             />
 
                                             <HelpDialog

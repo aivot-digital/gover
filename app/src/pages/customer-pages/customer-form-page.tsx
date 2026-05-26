@@ -5,7 +5,6 @@ import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {Theme} from '../../modules/themes/models/theme';
-import {useApi} from '../../hooks/use-api';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {selectIdentityId} from '../../slices/identity-slice';
@@ -55,6 +54,9 @@ import {
     loadPendingIdentityInputAuthContext,
 } from '../../utils/identity-input-field-utils';
 import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
+import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
+import {createAppTheme} from '../../theming/themes';
+import {BaseTheme} from '../../theming/base-theme';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -65,7 +67,6 @@ interface RetrieveResponse {
 
 export function CustomerFormPage() {
     const baseTheme = useTheme();
-    const api = useApi();
 
     const [searchParams, setSearchParams] = useSearchParams();
     const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
@@ -149,6 +150,45 @@ export function CustomerFormPage() {
         process,
         version,
     } = data ?? {};
+
+    useEffect(() => {
+        if (process == null || node == null || version == null || node.configuration.formSlug == null) {
+            setTheme(undefined);
+            return;
+        }
+
+        let isCancelled = false;
+
+        new FormTriggerApiService()
+            .getFormTheme(
+                process.accessKey,
+                node.configuration.formSlug,
+                version.processVersion,
+            )
+            .then((res) => {
+                if (!isCancelled) {
+                    setTheme(res);
+                }
+            })
+            .catch((error) => {
+                console.error('Error loading form theme:', error);
+                if (!isCancelled) {
+                    setTheme(undefined);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [node, process, version]);
+
+    const resolvedTheme = useMemo(() => {
+        if (theme == null) {
+            return baseTheme;
+        }
+
+        return createAppTheme(theme, BaseTheme);
+    }, [baseTheme, theme]);
 
     useEffect(() => {
         if (startedProcessAccessKey != null || layoutElement == null) {
@@ -356,11 +396,22 @@ export function CustomerFormPage() {
         return null;
     }
 
+    const formAssetQueryParams = new URLSearchParams({
+        version: version.processVersion.toString(),
+    });
+    if (testClaimKey != null) {
+        formAssetQueryParams.set('test-claim', testClaimKey);
+    }
+
+    const formAssetQuery = formAssetQueryParams.toString();
+    const formLogoUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/?${formAssetQuery}`;
+    const formFaviconUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/favicon/?${formAssetQuery}`;
+
     return (
-        <ThemeProvider theme={baseTheme}>
+        <ThemeProvider theme={resolvedTheme}>
             <SnackbarProvider>
                 <MetaElement
-                    faviconUrl={'' /* TODO: new FormApiService().getFormFaviconLink(form.form.slug, form.version.version)*/}
+                    faviconUrl={formFaviconUrl}
                     title={layoutElement.tabTitle ?? layoutElement.headline ?? ''}
                     titlePrefix={provider}
                 />
@@ -376,6 +427,7 @@ export function CustomerFormPage() {
                         node={node}
                         process={process}
                         version={version}
+                        logoUrl={formLogoUrl}
                         onDeleteFormData={() => {
                             dispatch(setCurrentStep(0));
                             setAuthoredElementValues({});
@@ -417,6 +469,7 @@ export function CustomerFormPage() {
                         node={node}
                         process={process}
                         version={version}
+                        logoUrl={formLogoUrl}
                     />
                 </Box>
 
