@@ -121,7 +121,7 @@ public class IdentityService {
                 .uri(resolvedAuthorizationUri)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_CLIENT_ID, provider.getClientId())
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_RESPONSE_TYPE, DEFAULT_RESPONSE_TYPE)
-                .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_LOGIN, DEFAULT_LOGIN_VALUE)
+                // Remove, for it is unused .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_LOGIN, DEFAULT_LOGIN_VALUE)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_REDIRECT_URI, callbackUri)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_SCOPE, combinedScopes)
                 .queryParam(IdentityQueryParameterConstants.AUTH_ENDPOINT_STATE, resolvedReferer.toString());
