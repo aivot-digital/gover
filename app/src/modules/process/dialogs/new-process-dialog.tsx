@@ -43,7 +43,7 @@ import {ProcessDefinitionApiService} from '../services/process-definition-api-se
 import AddBox from '@aivot/mui-material-symbols-400-outlined/dist/add-box/AddBox';
 import {ProcessStatus} from '../enums/process-status';
 import {ProcessTemplatesService, type TemplateRegistryProcessItem} from '../services/process-templates-service';
-import GridGuides from '@aivot/mui-material-symbols-400-outlined/dist/grid-guides/GridGuides';
+import Flowsheet from '@aivot/mui-material-symbols-400-outlined/dist/flowsheet/Flowsheet';
 import {useNavigate} from 'react-router-dom';
 import {SHOW_ERRORS_ROUTER_STATE} from '../pages/details/process-details-page';
 import {AlertComponent} from '../../../components/alert/alert-component';
@@ -468,7 +468,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                         templates.map((preset) => (
                                             <ProcessTemplateCard
                                                 key={preset.path}
-                                                Icon={GridGuides}
+                                                Icon={Flowsheet}
                                                 title={preset.name}
                                                 description={preset.description}
                                                 category="template"
@@ -865,7 +865,7 @@ function getStartPointIcon(type: StartPointType | undefined): ReactNode {
         case 'import':
             return <UploadFile sx={{fontSize: 20, color: 'text.secondary'}}/>;
         case 'template':
-            return <GridGuides sx={{fontSize: 20, color: 'text.secondary'}}/>;
+            return <Flowsheet sx={{fontSize: 20, color: 'text.secondary'}}/>;
         default:
             return undefined;
     }
