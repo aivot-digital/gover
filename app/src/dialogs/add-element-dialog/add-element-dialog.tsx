@@ -44,7 +44,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
             tabs={[
                 {label: 'Elemente', value: 0},
                 {label: 'Vorlagen', value: 1, hidden: props.hidePresets === true, disabled: true},
-                {label: 'Gover Marktplatz', value: 2, hidden: props.hideGoverStore === true},
+                {label: 'Gover Marktplatz', value: 2, hidden: props.hideGoverStore === true, disabled: true},
             ]}
             activeTab={currentTab}
             onTabChange={(value) => {
