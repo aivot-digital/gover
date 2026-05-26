@@ -113,7 +113,8 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 target={target}
                 rel={rel}
                 aria-label={action.ariaLabel}
-                endIcon={action.icon}
+                startIcon={action.iconPosition === 'start' ? action.icon : undefined}
+                endIcon={action.iconPosition === 'start' ? undefined : action.icon}
                 disabled={shouldDisable}
             >
                 {action.label}

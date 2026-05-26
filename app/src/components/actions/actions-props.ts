@@ -11,6 +11,7 @@ interface ActionBase {
     disabledTooltip?: string;
     ariaLabel?: string;
     icon: ReactNode;
+    iconPosition?: 'start' | 'end';
     disabled?: boolean;
     visible?: boolean;
     variant?: 'text' | 'outlined' | 'contained';
