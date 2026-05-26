@@ -20,6 +20,7 @@ import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-c
 import {ElementType} from '../../../data/element-type/element-type';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {ElementsApiService} from '../../../modules/elements/elements-api-service';
+import {isSectionElementType} from '../../../models/elements/steps/step-element';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -129,6 +130,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const componentTitle = useMemo(() => generateComponentTitle(value), [value]);
     const typeName = useMemo(() => getElementNameForType(value.type), [value.type]);
     const showTypeSuffix = useMemo(() => componentTitle.trim() !== typeName.trim(), [componentTitle, typeName]);
+    const treeItemLabel = useMemo(() => isSectionElementType(value.type) ? 'Abschnitt' : 'Element', [value.type]);
 
     const drawerTheme = useMemo(() => {
         if (parentModalZIndex == null) {
@@ -409,11 +411,13 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             onClick={() => {
                                 showConfirm({
                                     theme: drawerTheme,
-                                    title: 'Element löschen',
+                                    title: `${treeItemLabel} löschen`,
                                     confirmButtonText: 'Löschen',
                                     children: (
                                         <Typography>
-                                            Soll das Element wirklich gelöscht werden?
+                                            {treeItemLabel === 'Abschnitt'
+                                                ? 'Soll der Abschnitt wirklich gelöscht werden?'
+                                                : 'Soll das Element wirklich gelöscht werden?'}
                                         </Typography>
                                     ),
                                 }).then((confirmed) => {
