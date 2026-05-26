@@ -1,4 +1,4 @@
-import {Box, Breadcrumbs, Button, Divider, Drawer, Tab, Tabs, Typography} from '@mui/material';
+import {Box, Breadcrumbs, Drawer, Tab, Tabs, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {createTheme, ThemeProvider, useTheme} from '@mui/material/styles';
 import {AnyElement} from '../../../models/elements/any-element';
@@ -21,6 +21,7 @@ import {ElementType} from '../../../data/element-type/element-type';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {ElementsApiService} from '../../../modules/elements/elements-api-service';
 import {isSectionElementType} from '../../../models/elements/steps/step-element';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;
@@ -381,6 +382,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             actions={[
                                 {
                                     icon: <Save/>,
+                                    iconPosition: 'start',
                                     label: 'Speichern',
                                     onClick: handleSave,
                                     disabled: isBusy || updatedElement == null,
@@ -393,43 +395,50 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     onClick: handleClose,
                                     disabled: isBusy,
                                 },
+                            ]}
+                        />
+
+                        <Actions
+                            sx={{
+                                ml: 'auto',
+                            }}
+                            actions={[
                                 {
                                     icon: <ContentCopy/>,
-                                    tooltip: 'Duplizieren',
+                                    iconPosition: 'start',
+                                    label: 'Duplizieren',
                                     onClick: handleClone,
                                     visible: editable,
                                     disabled: isBusy,
                                 },
+                                {
+                                    icon: <Delete/>,
+                                    iconPosition: 'start',
+                                    label: 'Löschen',
+                                    onClick: () => {
+                                        showConfirm({
+                                            theme: drawerTheme,
+                                            title: `${treeItemLabel} löschen`,
+                                            confirmButtonText: 'Löschen',
+                                            children: (
+                                                <Typography>
+                                                    {treeItemLabel === 'Abschnitt'
+                                                        ? 'Soll der Abschnitt wirklich gelöscht werden?'
+                                                        : 'Soll das Element wirklich gelöscht werden?'}
+                                                </Typography>
+                                            ),
+                                        }).then((confirmed) => {
+                                            if (confirmed) {
+                                                onDelete();
+                                            }
+                                        });
+                                    },
+                                    disabled: isBusy || !editable,
+                                    variant: 'outlined',
+                                    color: 'error',
+                                },
                             ]}
                         />
-
-                        <Button
-                            color="error"
-                            sx={{
-                                ml: 'auto',
-                            }}
-                            onClick={() => {
-                                showConfirm({
-                                    theme: drawerTheme,
-                                    title: `${treeItemLabel} löschen`,
-                                    confirmButtonText: 'Löschen',
-                                    children: (
-                                        <Typography>
-                                            {treeItemLabel === 'Abschnitt'
-                                                ? 'Soll der Abschnitt wirklich gelöscht werden?'
-                                                : 'Soll das Element wirklich gelöscht werden?'}
-                                        </Typography>
-                                    ),
-                                }).then((confirmed) => {
-                                    if (confirmed) {
-                                        onDelete();
-                                    }
-                                });
-                            }}
-                            disabled={isBusy || !editable}
-                        >
-                            Löschen
-                        </Button>
                     </Box>
                 </Box>
             </Drawer>
