@@ -75,7 +75,7 @@ public class IdentityController {
     public void callback(
             @Nonnull @PathVariable UUID providerKey,
             @Nonnull @PathVariable UUID identitySessionId,
-            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_STATE) String origin,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_STATE) String state,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_AUTHORIZATION_CODE, required = false) String authorizationCode,
@@ -84,7 +84,8 @@ public class IdentityController {
         if (error != null) {
             var redirectUrl = identityService
                     .createErrorRedirectURL(
-                            origin,
+                            identitySessionId,
+                            state,
                             error,
                             errorDescription
                     );
@@ -97,7 +98,7 @@ public class IdentityController {
                         providerKey,
                         identitySessionId,
                         authorizationCode,
-                        origin
+                        state
                 );
 
         var cookie = new Cookie(IDENTITY_COOKIE_NAME, identitySessionId.toString());

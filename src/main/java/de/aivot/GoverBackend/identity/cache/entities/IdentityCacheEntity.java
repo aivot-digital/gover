@@ -21,6 +21,10 @@ public class IdentityCacheEntity implements Serializable {
     private String providerKey = "";
     @Nonnull
     private String metadataIdentifier = "";
+    @Nonnull
+    private String origin = "";
+    @Nonnull
+    private String stateNonce = "";
     @Nullable
     private Map<String, String> identityData;
 
@@ -32,11 +36,15 @@ public class IdentityCacheEntity implements Serializable {
                                @Nullable String codeVerifier,
                                @Nonnull String providerKey,
                                @Nonnull String metadataIdentifier,
+                               @Nonnull String origin,
+                               @Nonnull String stateNonce,
                                @Nullable Map<String, String> identityData) {
         this.sessionId = sessionId;
         this.codeVerifier = codeVerifier;
         this.providerKey = providerKey;
         this.metadataIdentifier = metadataIdentifier;
+        this.origin = origin;
+        this.stateNonce = stateNonce;
         this.identityData = identityData;
     }
 
@@ -49,7 +57,13 @@ public class IdentityCacheEntity implements Serializable {
         if (o == null || getClass() != o.getClass()) return false;
 
         IdentityCacheEntity that = (IdentityCacheEntity) o;
-        return sessionId.equals(that.sessionId) && Objects.equals(codeVerifier, that.codeVerifier) && providerKey.equals(that.providerKey) && metadataIdentifier.equals(that.metadataIdentifier) && Objects.equals(identityData, that.identityData);
+        return sessionId.equals(that.sessionId)
+                && Objects.equals(codeVerifier, that.codeVerifier)
+                && providerKey.equals(that.providerKey)
+                && metadataIdentifier.equals(that.metadataIdentifier)
+                && origin.equals(that.origin)
+                && stateNonce.equals(that.stateNonce)
+                && Objects.equals(identityData, that.identityData);
     }
 
     @Override
@@ -58,6 +72,8 @@ public class IdentityCacheEntity implements Serializable {
         result = 31 * result + Objects.hashCode(codeVerifier);
         result = 31 * result + providerKey.hashCode();
         result = 31 * result + metadataIdentifier.hashCode();
+        result = 31 * result + origin.hashCode();
+        result = 31 * result + stateNonce.hashCode();
         result = 31 * result + Objects.hashCode(identityData);
         return result;
     }
@@ -104,6 +120,26 @@ public class IdentityCacheEntity implements Serializable {
 
     public IdentityCacheEntity setMetadataIdentifier(@Nonnull String metadataIdentifier) {
         this.metadataIdentifier = metadataIdentifier;
+        return this;
+    }
+
+    @Nonnull
+    public String getOrigin() {
+        return origin;
+    }
+
+    public IdentityCacheEntity setOrigin(@Nonnull String origin) {
+        this.origin = origin;
+        return this;
+    }
+
+    @Nonnull
+    public String getStateNonce() {
+        return stateNonce;
+    }
+
+    public IdentityCacheEntity setStateNonce(@Nonnull String stateNonce) {
+        this.stateNonce = stateNonce;
         return this;
     }
 
