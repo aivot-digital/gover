@@ -71,6 +71,13 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const preambleText = stringOrUndefined(element.teaserText);
     const initiativeLogoLink = stringOrUndefined(element.initiativeLogoLink);
     const initiativeName = stringOrUndefined(element.initiativeName);
+    const expiring = useMemo(() => {
+        if (!isRootElement(rootElement)) {
+            return undefined;
+        }
+
+        return stringOrUndefined(rootElement.expiring);
+    }, [rootElement]);
 
     useEffect(() => {
         if (isRootElement(rootElement)) {
@@ -195,9 +202,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             );
         }
 
-        /* TODO
-        if (application != null &&
-            !isStringNullOrEmpty(application?.version.rootElement.expiring)) {
+        if (expiring != null) {
             sections.push(
                 <Box key="deadline">
                     <Typography
@@ -211,12 +216,11 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         variant="body2"
                         sx={{mt: 1}}
                     >
-                        {application.version.rootElement.expiring}
+                        {expiring}
                     </Typography>
                 </Box>,
             );
         }
-         */
 
         if (expectedCosts != null && !isStringNullOrEmpty(expectedCosts)) {
             sections.push(
@@ -241,7 +245,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         }
 
         return sections;
-    }, [responsibleDepartment, managingDepartment, eligiblePersons, supportingDocuments, documentsToAttach, expectedCosts]);
+    }, [responsibleDepartment, managingDepartment, eligiblePersons, supportingDocuments, documentsToAttach, expiring, expectedCosts]);
 
     return (
         <>
