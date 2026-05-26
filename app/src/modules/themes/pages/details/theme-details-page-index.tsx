@@ -280,6 +280,7 @@ export function ThemeDetailsPageIndex() {
                 <AlertComponent
                     color="info"
                     title="Dies ist das aktive Erscheinungsbild der Gover-Instanz"
+                    sx={{my: 4}}
                 >
                     <Box sx={{maxWidth: 860}}>
                         Bitte beachten Sie, dass sich Änderungen an diesem Erscheinungsbild auf die ganze Gover-Instanz
