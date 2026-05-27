@@ -37,6 +37,9 @@ interface SubmittedProps {
     version: ProcessVersionEntity;
 }
 
+const submittedConfettiColors = ['#fcaa67', '#b0413e'];
+const handledConfettiAccessKeys = new Set<string>();
+
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
     const dispatch = useAppDispatch();
 
@@ -58,6 +61,7 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 export function Submitted(props: SubmittedProps) {
     const {
         formElement,
+        startedProcessAccessKey,
     } = props;
 
     const theme = useTheme();
@@ -68,24 +72,25 @@ export function Submitted(props: SubmittedProps) {
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
-    const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
+    const [confettiPlayKey, setConfettiPlayKey] = useState<number | null>(null);
 
     useEffect(() => {
-        if (confettiDisabled) {
-            setShouldRenderConfetti(false);
+        const trimmedAccessKey = startedProcessAccessKey.trim();
+
+        if (trimmedAccessKey.length === 0 || handledConfettiAccessKeys.has(trimmedAccessKey)) {
+            setConfettiPlayKey(null);
             return;
         }
 
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
-        const handleChange = () => {
-            setShouldRenderConfetti(mediaQuery.matches);
-        };
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, [confettiDisabled]);
+        handledConfettiAccessKeys.add(trimmedAccessKey);
+
+        if (confettiDisabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            setConfettiPlayKey(null);
+            return;
+        }
+
+        setConfettiPlayKey((currentValue) => (currentValue ?? 0) + 1);
+    }, [confettiDisabled, startedProcessAccessKey]);
 
     useEffect(() => {
         if (
@@ -498,8 +503,8 @@ export function Submitted(props: SubmittedProps) {
                 />
             </Box>
             <CanvasConfettiOverlay
-                playKey={!confettiDisabled && shouldRenderConfetti ? 1 : null}
-                colors={['#fcaa67', '#b0413e']}
+                playKey={confettiPlayKey}
+                colors={submittedConfettiColors}
             />
 
             <InfoDialog
