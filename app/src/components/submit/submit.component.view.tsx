@@ -107,7 +107,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Zuständige Stelle
                 </Typography>
@@ -128,7 +127,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Bewirtschaftende Stelle
                 </Typography>
@@ -149,7 +147,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                 <Typography
                     component={'h3'}
                     variant="h5"
-                    color="primary"
                 >
                     Geschätzte Bearbeitungszeit
                 </Typography>
@@ -232,7 +229,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                     <Typography
                         component={'h3'}
                         variant="h5"
-                        color="primary"
                     >
                         Gebührenübersicht
                     </Typography>
