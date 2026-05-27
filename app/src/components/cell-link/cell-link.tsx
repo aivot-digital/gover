@@ -21,7 +21,6 @@ export function CellLink({ to, title, children }: CellLinkProps) {
                 height: "100%",
                 display: "flex",
                 alignItems: "center",
-                minWidth: 0,
                 position: "relative",
 
                 "&:hover .cell-link-text": {
@@ -31,21 +30,13 @@ export function CellLink({ to, title, children }: CellLinkProps) {
                 }
             }}
         >
-            <Box
-                component={'span'}
-                sx={{
-                    display: "block",
-                    flex: 1,
-                    minWidth: 0,
-                }}
-            >
+            <Box component={'span'}>
                 <Box
                     component={'span'}
                     className="cell-link-text"
                     sx={{
                         position: "relative",
-                        display: "block",
-                        maxWidth: "100%",
+                        display: "inline",
                         whiteSpace: 'nowrap',
                         overflow: "hidden",
                         textOverflow: "ellipsis",
