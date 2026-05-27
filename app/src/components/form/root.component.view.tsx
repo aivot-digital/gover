@@ -28,6 +28,7 @@ import {useViewDispatcherContext, ViewDispatcherMode} from '../view-dispatcher/v
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 
 export const SUBMIT_EVENT = 'submit';
+export const PRE_SUBMIT_EVENT = 'pre-submit';
 
 function extractCurrentStep(currentStep: number, allVisibleSteps: VisibleFormStepElement[]) {
     if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
