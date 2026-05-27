@@ -335,7 +335,7 @@ const elementConstructors: {
     }),
     [ElementType.SubmitStep]: (id) => ({
         ...makeFormBase(ElementType.SubmitStep, id),
-        textPreSubmit: 'Sie können Ihre Angaben nun verbindlich an die zuständige/bewirtschaftende Stelle übermitteln. Bitte prüfen Sie vor dem Absenden noch einmal alle Inhalte sorgfältig.',
+        textPreSubmit: 'Sie können Ihre Angaben nun verbindlich an die zuständige/bewirtschaftende Stelle übermitteln. Bitte stellen Sie sicher, dass Sie Ihre getätigten Angaben sorgfältig geprüft haben.',
         textPostSubmit: 'Ihre Angaben wurden erfolgreich übermittelt. Die zuständige/bewirtschaftende Stelle kann diese nun bearbeiten. Sofern weitere Schritte erforderlich sind, erhalten Sie dazu gesonderte Hinweise.',
         textProcessingTime: undefined,
         documentsToReceive: undefined,
