@@ -29,6 +29,9 @@ import {SystemRolesApiService} from '../../../../../modules/system/services/syst
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {DepartmentSelectField} from '../../../../../modules/departments/components/department-select-field';
 import {SelectDepartmentDialog} from '../../../../../modules/departments/dialogs/select-department-dialog';
+import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
+import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
+import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
 
 type ListingPageDepartmentDialog = 'imprint' | 'privacy' | 'accessibility';
 
@@ -377,19 +380,32 @@ export function ApplicationSettings() {
                 Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen Bereichen
                 sichtbar.
             </Typography>
-            <TextFieldComponent
-                label="Name des Betreibers"
-                placeholder="Bad Musterstadt"
-                value={editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name]}
-                onChange={(val) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.provider.name]: val ?? '',
-                    });
-                }}
-                required
-                disabled={!hasAccess}
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        label="Name des Betreibers"
+                        placeholder="Bad Musterstadt"
+                        value={editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name]}
+                        onChange={(val) => {
+                            setEditedConfig({
+                                ...editedConfig,
+                                [SystemConfigKeys.provider.name]: val ?? '',
+                            });
+                        }}
+                        required
+                        disabled={!hasAccess}
+                        startIcon={<Label/>}
+                    />
+                </Grid>
+            </Grid>
             {
                 themes.length > 0 &&
                 <>
@@ -414,18 +430,31 @@ export function ApplicationSettings() {
                         Formulare).
                     </Typography>
 
-                    <SelectFieldComponent
-                        label="Erscheinungsbild"
-                        options={themes}
-                        value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.system.theme]: val ?? '',
-                            });
-                        }}
-                        disabled={!hasAccess}
-                    />
+                    <Grid
+                        container
+                        columnSpacing={4}
+                    >
+                        <Grid
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
+                        >
+                            <SelectFieldComponent
+                                label="Erscheinungsbild"
+                                options={themes}
+                                value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
+                                onChange={(val) => {
+                                    setEditedConfig({
+                                        ...editedConfig,
+                                        [SystemConfigKeys.system.theme]: val ?? '',
+                                    });
+                                }}
+                                disabled={!hasAccess}
+                                startIcon={ModuleIcons.themes}
+                            />
+                        </Grid>
+                    </Grid>
                 </>
             }
 
@@ -446,19 +475,32 @@ export function ApplicationSettings() {
                 Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare und/oder
                 Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel (API-Key).
             </Typography>
-            <TextFieldComponent
-                label="Schlüssel für den Gover Store"
-                placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
-                hint="Geben Sie hier Ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Gover Store veröffentlichen wollen."
-                value={editedConfig[SystemConfigKeys.gover.storeKey] ?? config[SystemConfigKeys.gover.storeKey]}
-                onChange={(val) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.gover.storeKey]: val ?? '',
-                    });
-                }}
-                disabled={!hasAccess}
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        label="Schlüssel für den Gover Store"
+                        placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
+                        hint="Geben Sie hier Ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Gover Store veröffentlichen wollen."
+                        value={editedConfig[SystemConfigKeys.gover.storeKey] ?? config[SystemConfigKeys.gover.storeKey]}
+                        onChange={(val) => {
+                            setEditedConfig({
+                                ...editedConfig,
+                                [SystemConfigKeys.gover.storeKey]: val ?? '',
+                            });
+                        }}
+                        disabled={!hasAccess}
+                        startIcon={ModuleIcons.secrets}
+                    />
+                </Grid>
+            </Grid>
 
             <Typography
                 variant="subtitle1"
@@ -477,32 +519,45 @@ export function ApplicationSettings() {
                 Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu in
                 Gover synchronisiert oder anderweitig importiert werden.
             </Typography>
-            <SelectFieldComponent
-                label="Standard-Systemrolle für automatische Benutzerimporte"
-                hint={
-                    hasSystemRolesLoadingError
-                        ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                        : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
-                }
-                value={defaultSystemRoleValue}
-                onChange={(val) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.users.defaultSystemRole]: val ?? '',
-                    });
-                }}
-                required
-                error={defaultSystemRoleError}
-                disabled={!hasAccess || isLoadingSystemRoles}
-                options={systemRoleOptions}
-                emptyStatePlaceholder={
-                    isLoadingSystemRoles
-                        ? 'Systemrollen werden geladen…'
-                        : hasSystemRolesLoadingError
-                            ? 'Systemrollen konnten nicht geladen werden'
-                            : 'Keine Systemrollen vorhanden'
-                }
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <SelectFieldComponent
+                        label="Standard-Systemrolle für automatische Benutzerimporte"
+                        hint={
+                            hasSystemRolesLoadingError
+                                ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
+                                : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
+                        }
+                        value={defaultSystemRoleValue}
+                        onChange={(val) => {
+                            setEditedConfig({
+                                ...editedConfig,
+                                [SystemConfigKeys.users.defaultSystemRole]: val ?? '',
+                            });
+                        }}
+                        required
+                        error={defaultSystemRoleError}
+                        disabled={!hasAccess || isLoadingSystemRoles}
+                        options={systemRoleOptions}
+                        emptyStatePlaceholder={
+                            isLoadingSystemRoles
+                                ? 'Systemrollen werden geladen…'
+                                : hasSystemRolesLoadingError
+                                    ? 'Systemrollen konnten nicht geladen werden'
+                                    : 'Keine Systemrollen vorhanden'
+                        }
+                        startIcon={<SupervisedUserCircle/>}
+                    />
+                </Grid>
+            </Grid>
 
             <Typography
                 variant="subtitle1"
@@ -523,22 +578,35 @@ export function ApplicationSettings() {
                 Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den
                 zentralen Speicheranbieter verwenden.
             </Typography>
-            <SelectFieldComponent
-                label="Zentraler Speicheranbieter für Vorgangsanlagen"
-                hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
-                value={attachmentStorageProviderValue}
-                onChange={(val) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
-                    });
-                }}
-                required
-                error={attachmentStorageProviderError}
-                disabled={!hasAccess}
-                options={attStorageProviders}
-                emptyStatePlaceholder="Keine Speicheranbieter für Vorgangsanlagen vorhanden"
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <SelectFieldComponent
+                        label="Zentraler Speicheranbieter für Vorgangsanlagen"
+                        hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
+                        value={attachmentStorageProviderValue}
+                        onChange={(val) => {
+                            setEditedConfig({
+                                ...editedConfig,
+                                [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
+                            });
+                        }}
+                        required
+                        error={attachmentStorageProviderError}
+                        disabled={!hasAccess}
+                        options={attStorageProviders}
+                        emptyStatePlaceholder="Keine Speicheranbieter für Vorgangsanlagen vorhanden"
+                        startIcon={ModuleIcons.storage}
+                    />
+                </Grid>
+            </Grid>
 
             <Typography
                 variant="subtitle1"
@@ -559,22 +627,35 @@ export function ApplicationSettings() {
                 Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den
                 zentralen Speicheranbieter verwenden.
             </Typography>
-            <SelectFieldComponent
-                label="Zentraler Speicheranbieter für Assets"
-                hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
-                value={assetStorageProviderValue}
-                onChange={(val) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.storage.assets.default_storage_provider]: val ?? '',
-                    });
-                }}
-                required
-                error={assetStorageProviderError}
-                disabled={!hasAccess}
-                options={assetStorageProviders}
-                emptyStatePlaceholder="Keine Speicheranbieter für Assets vorhanden"
-            />
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <SelectFieldComponent
+                        label="Zentraler Speicheranbieter für Assets"
+                        hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
+                        value={assetStorageProviderValue}
+                        onChange={(val) => {
+                            setEditedConfig({
+                                ...editedConfig,
+                                [SystemConfigKeys.storage.assets.default_storage_provider]: val ?? '',
+                            });
+                        }}
+                        required
+                        error={assetStorageProviderError}
+                        disabled={!hasAccess}
+                        options={assetStorageProviders}
+                        emptyStatePlaceholder="Keine Speicheranbieter für Assets vorhanden"
+                        startIcon={ModuleIcons.storage}
+                    />
+                </Grid>
+            </Grid>
 
 
             <Typography
@@ -714,6 +795,7 @@ export function ApplicationSettings() {
                             });
                         }}
                         disabled={!hasAccess}
+                        startIcon={ModuleIcons.providerLinks}
                     />
                 </Box>
             }
