@@ -309,7 +309,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
          */
         @InputElementPOJOBinding(id = VARIABLE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdaten, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselements aus den Elementdaten verwendet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optionaler Pfad innerhalb der Vorgangsdaten, z. B. schleife.zähler. Wenn leer, wird der letzte Zählerstand dieses Prozesselementes aus den Elementdaten verwendet."),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 9.0),
                 @ElementPOJOBindingProperty(key = "disableWildCards", boolValue = true),
         })
