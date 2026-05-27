@@ -408,13 +408,14 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     iconPosition: 'start',
                                     label: 'Duplizieren',
                                     onClick: handleClone,
-                                    visible: editable,
+                                    visible: editable && !isRoot,
                                     disabled: isBusy,
                                 },
                                 {
                                     icon: <Delete/>,
                                     iconPosition: 'start',
                                     label: 'Löschen',
+                                    visible: !isRoot,
                                     onClick: () => {
                                         showConfirm({
                                             theme: drawerTheme,
