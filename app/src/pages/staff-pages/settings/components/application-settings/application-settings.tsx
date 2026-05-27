@@ -20,13 +20,23 @@ import {
     SnackbarSeverity,
     SnackbarType,
 } from '../../../../../slices/shell-slice';
-import {DepartmentApiService} from '../../../../../modules/departments/services/department-api-service';
-import {DepartmentEntity} from '../../../../../modules/departments/entities/department-entity';
+import {VDepartmentShadowedApiService} from '../../../../../modules/departments/services/v-department-shadowed-api-service';
+import {type VDepartmentShadowedEntity} from '../../../../../modules/departments/entities/v-department-shadowed-entity';
 import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
 import {isStringNullOrEmpty} from '../../../../../utils/string-utils';
 import {SystemRolesApiService} from '../../../../../modules/system/services/system-roles-api-service';
 import {useConfirm} from '../../../../../providers/confirm-provider';
+import {DepartmentSelectField} from '../../../../../modules/departments/components/department-select-field';
+import {SelectDepartmentDialog} from '../../../../../modules/departments/dialogs/select-department-dialog';
+
+type ListingPageDepartmentDialog = 'imprint' | 'privacy' | 'accessibility';
+
+const ListingPageDepartmentConfigKeys: Record<ListingPageDepartmentDialog, string> = {
+    imprint: SystemConfigKeys.provider.listingPage.imprintDepartmentId,
+    privacy: SystemConfigKeys.provider.listingPage.privacyDepartmentId,
+    accessibility: SystemConfigKeys.provider.listingPage.accessibilityDepartmentId,
+};
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
@@ -57,7 +67,8 @@ export function ApplicationSettings() {
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
 
-    const [departments, setDepartments] = useState<DepartmentEntity[]>([]);
+    const [departments, setDepartments] = useState<VDepartmentShadowedEntity[]>([]);
+    const [activeDepartmentDialog, setActiveDepartmentDialog] = useState<ListingPageDepartmentDialog | null>(null);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
     const [systemRoleOptions, setSystemRoleOptions] = useState<SelectFieldComponentOption[]>([]);
     const [isLoadingSystemRoles, setIsLoadingSystemRoles] = useState(true);
@@ -75,6 +86,19 @@ export function ApplicationSettings() {
     const defaultSystemRoleValue = editedConfig[SystemConfigKeys.users.defaultSystemRole] ?? configuredDefaultSystemRole;
     const assetStorageProviderValue = editedConfig[SystemConfigKeys.storage.assets.default_storage_provider] ?? configuredAssetStorageProvider;
     const attachmentStorageProviderValue = editedConfig[SystemConfigKeys.storage.attachments.default_storage_provider] ?? configuredAttachmentStorageProvider;
+    const getConfiguredDepartment = (key: string): VDepartmentShadowedEntity | null => {
+        const configuredId = editedConfig[key] ?? config[key];
+        const departmentId = configuredId != null && configuredId.length > 0 ? Number(configuredId) : undefined;
+        return departmentId != null && Number.isFinite(departmentId)
+            ? departments.find((department) => department.id === departmentId) ?? null
+            : null;
+    };
+    const handleChangeListingPageDepartment = (key: string, departmentId: number | null): void => {
+        setEditedConfig({
+            ...editedConfig,
+            [key]: departmentId?.toString() ?? '',
+        });
+    };
     const defaultSystemRoleError =
         !isLoadingSystemRoles
             ? systemRoleOptions.length === 0
@@ -321,7 +345,7 @@ export function ApplicationSettings() {
     };
 
     useEffect(() => {
-        new DepartmentApiService()
+        new VDepartmentShadowedApiService()
             .listAll()
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
@@ -330,13 +354,13 @@ export function ApplicationSettings() {
             });
     }, []);
 
-    const departmentOptions = departments.map((department) => ({
-        value: department.id.toString(),
-        label: department.name,
-    }));
+    const activeDepartmentDialogConfigKey = activeDepartmentDialog != null
+        ? ListingPageDepartmentConfigKeys[activeDepartmentDialog]
+        : undefined;
 
     return (
-        <form onSubmit={handleSubmit}>
+        <>
+            <form onSubmit={handleSubmit}>
             <Typography
                 variant="subtitle1"
             >
@@ -581,16 +605,15 @@ export function ApplicationSettings() {
                         lg: 4,
                     }}
                 >
-                    <SelectFieldComponent
+                    <DepartmentSelectField
                         label="Text für das Impressum"
-                        value={editedConfig[SystemConfigKeys.provider.listingPage.imprintDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.imprintDepartmentId]}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.provider.listingPage.imprintDepartmentId]: val ?? '',
-                            });
+                        value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId)}
+                        onOpenDialog={() => {
+                            setActiveDepartmentDialog('imprint');
                         }}
-                        options={departmentOptions}
+                        onClear={() => {
+                            handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, null);
+                        }}
                         disabled={!hasAccess}
                     />
 
@@ -601,16 +624,15 @@ export function ApplicationSettings() {
                         lg: 4,
                     }}
                 >
-                    <SelectFieldComponent
+                    <DepartmentSelectField
                         label="Text für die Datenschutzerklärung"
-                        value={editedConfig[SystemConfigKeys.provider.listingPage.privacyDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.privacyDepartmentId]}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.provider.listingPage.privacyDepartmentId]: val ?? '',
-                            });
+                        value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId)}
+                        onOpenDialog={() => {
+                            setActiveDepartmentDialog('privacy');
                         }}
-                        options={departmentOptions}
+                        onClear={() => {
+                            handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, null);
+                        }}
                         disabled={!hasAccess}
                     />
                 </Grid>
@@ -620,16 +642,15 @@ export function ApplicationSettings() {
                         lg: 4,
                     }}
                 >
-                    <SelectFieldComponent
+                    <DepartmentSelectField
                         label="Text für die Erklärung der Barrierefreiheit"
-                        value={editedConfig[SystemConfigKeys.provider.listingPage.accessibilityDepartmentId] ?? config[SystemConfigKeys.provider.listingPage.accessibilityDepartmentId]}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.provider.listingPage.accessibilityDepartmentId]: val ?? '',
-                            });
+                        value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId)}
+                        onOpenDialog={() => {
+                            setActiveDepartmentDialog('accessibility');
                         }}
-                        options={departmentOptions}
+                        onClear={() => {
+                            handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, null);
+                        }}
                         disabled={!hasAccess}
                     />
                 </Grid>
@@ -741,6 +762,26 @@ export function ApplicationSettings() {
                     Zurücksetzen
                 </Button>
             </Box>
-        </form>
+            </form>
+
+            <SelectDepartmentDialog
+                open={activeDepartmentDialog != null}
+                onClose={() => {
+                    setActiveDepartmentDialog(null);
+                }}
+                onSelect={(department) => {
+                    if (activeDepartmentDialogConfigKey != null) {
+                        handleChangeListingPageDepartment(activeDepartmentDialogConfigKey, department.id);
+                    }
+
+                    setActiveDepartmentDialog(null);
+                }}
+                selectedDepartmentId={
+                    activeDepartmentDialogConfigKey != null
+                        ? getConfiguredDepartment(activeDepartmentDialogConfigKey)?.id
+                        : undefined
+                }
+            />
+        </>
     );
 }
