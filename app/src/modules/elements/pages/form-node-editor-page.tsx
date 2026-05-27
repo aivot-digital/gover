@@ -87,7 +87,7 @@ import {FormHeaderComponent} from '../../../components/form/form-header-componen
 import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
 import {RootComponentFooter} from '../../../components/form/root-component-footer';
-import {SUBMIT_EVENT} from '../../../components/form/root.component.view';
+import {PRE_SUBMIT_EVENT, SUBMIT_EVENT} from '../../../components/form/root.component.view';
 import {BaseApiService} from '../../../services/base-api-service';
 import {ProcessTestClaimApiService} from '../../process/services/process-test-claim-api-service';
 import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
