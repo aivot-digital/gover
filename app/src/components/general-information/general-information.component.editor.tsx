@@ -9,6 +9,7 @@ import {TextFieldComponent} from '../text-field/text-field-component';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
+import {AssetSelector} from '../../modules/assets/components/asset-selector';
 
 const eligibleEntities: CheckboxTreeOption[] = [
     {
@@ -82,18 +83,42 @@ function orderEligiblePersons(value: string[]): string[] {
         .filter((opt) => value.includes(opt));
 }
 
+function getLogoAssetSelectorValue(value: string | null | undefined): string | null {
+    const trimmedValue = value?.trim();
+
+    if (trimmedValue == null || trimmedValue.length === 0) {
+        return null;
+    }
+
+    const publicAssetPathMatch = trimmedValue.match(/\/api\/public\/assets\/([^/?#]+)/);
+    if (publicAssetPathMatch?.[1] != null) {
+        return decodeURIComponent(publicAssetPathMatch[1]);
+    }
+
+    if (/^(https?:\/\/|data:|blob:|\/)/i.test(trimmedValue)) {
+        return null;
+    }
+
+    return trimmedValue;
+}
+
 export function GeneralInformationComponentEditor(props: BaseEditorProps<IntroductionStepElement>) {
+    const logoAssetSelectorValue = getLogoAssetSelectorValue(props.element.initiativeLogoLink);
+
     return (
         <>
             <Grid
                 container
                 columnSpacing={4}
+                rowSpacing={2}
+                sx={{mt: 2}}
             >
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }}>
+                        lg: 6,
+                    }}
+                >
                     <RichTextInputComponent
                         value={props.element.teaserText ?? ''}
                         label="Kurzbeschreibung"
@@ -109,42 +134,44 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
-                    }} />
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6
-                    }}>
-                    <TextFieldComponent
-                        value={props.element.initiativeLogoLink ?? ''}
-                        label="Die Kurzbeschreibung ergänzendes Logo (z.B. für Projekt, Programm o.Ä.)"
-                        onChange={(val) => {
-                            props.onPatch({
-                                initiativeLogoLink: val,
-                            });
-                        }}
-                        hint="Link (URL) zu einer Grafik-Datei mit transparentem oder weißem Hintergrund. Dieses Logo wird nur angezeigt, wenn Sie auch eine Kurzbeschreibung und einen Alternativtext angegeben haben."
-                        disabled={!props.editable}
-                    />
-                </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6
-                    }}>
-                    <TextFieldComponent
-                        value={props.element.initiativeName ?? ''}
-                        label="Alternativtext (Alt-Text) für das ergänzende Logo"
-                        onChange={(val) => {
-                            props.onPatch({
-                                initiativeName: val,
-                            });
-                        }}
-                        hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
-                        error={isStringNullOrEmpty(props.element.initiativeName) && isStringNotNullOrEmpty(props.element.initiativeLogoLink) ? 'Im Sinne der Barrierefreiheit müssen Sie immer einen Alternativtext für das Logo angeben.' : undefined}
-                        disabled={!props.editable}
-                    />
+                        lg: 6,
+                    }}
+                >
+                    <Grid
+                        container
+                        rowSpacing={2}
+                    >
+                        <Grid size={12} sx={{pt: 2}}>
+                            <AssetSelector
+                                value={logoAssetSelectorValue}
+                                label="Ergänzendes Logo zur Kurzbeschreibung (z.B. für Projekt, Programm o.Ä.)"
+                                selectLabel="Ergänzendes Logo auswählen"
+                                onChange={(val) => {
+                                    props.onPatch({
+                                        initiativeLogoLink: val ?? undefined,
+                                    });
+                                }}
+                                hint="Optionales öffentliches Bild, das neben der Kurzbeschreibung angezeigt wird. Dieses Logo wird nur angezeigt, wenn Sie auch eine Kurzbeschreibung und einen Alternativtext angegeben haben."
+                                disabled={!props.editable}
+                                mimetype="image"
+                                onlyPublic
+                                placeholder="Kein Logo ausgewählt"
+                            />
+
+                            <TextFieldComponent
+                                value={props.element.initiativeName ?? ''}
+                                label="Alternativtext für das ergänzende Logo"
+                                onChange={(val) => {
+                                    props.onPatch({
+                                        initiativeName: val,
+                                    });
+                                }}
+                                hint="Der Alternativtext beschreibt den Bildinhalt für Nutzer mit Sehbehinderungen und sorgt so für Barrierefreiheit. Bitte kurz und aussagekräftig formulieren."
+                                error={isStringNullOrEmpty(props.element.initiativeName) && isStringNotNullOrEmpty(props.element.initiativeLogoLink) ? 'Bitte geben Sie einen Alternativtext für das ausgewählte Logo an.' : undefined}
+                                disabled={!props.editable}
+                            />
+                        </Grid>
+                    </Grid>
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
