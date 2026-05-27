@@ -1,18 +1,16 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {Box, Stack} from '@mui/material';
+import {Box} from '@mui/material';
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectMemberships, selectUser} from '../../../../slices/user-slice';
+import {selectMemberships} from '../../../../slices/user-slice';
 import {AddFormDialog} from '../../dialogs/add-form-dialog';
 import {downloadFormExportFile} from '../../../../utils/download-utils';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {FormVersionsDialog} from '../../dialogs/form-versions-dialog';
-import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
-import {GridColDef} from '@mui/x-data-grid';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 import {useNavigate} from 'react-router-dom';
 import {FormsListPageHelp} from '../../components/forms-list-page-help';
@@ -20,12 +18,15 @@ import {useConfirm} from '../../../../providers/confirm-provider';
 import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
-import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
+import {
+    GenericListColDef,
+    GenericListPropsFetchOptions,
+    ListControlRef,
+} from '../../../../components/generic-list/generic-list-props';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {
     FormResourceAccessControlDialog,
 } from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
-import {DepartmentApiService} from '../../../departments/services/department-api-service';
 import {FormEntity} from '../../entities/form-entity';
 import {FormApiService} from '../../services/form-api-service';
 import {FormVersionEntity} from '../../entities/form-version-entity';
@@ -42,58 +43,63 @@ import {Action} from '../../../../components/actions/actions-props';
 import {ProcessStatus} from '../../../process/enums/process-status';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
-const columns: GridColDef<FormTriggerListItem>[] = [
+const columns: GenericListColDef<FormTriggerListItem>[] = [
     {
-        field: 'icon',
-        headerName: '',
-        renderCell: () => (
-            <CellContentWrapper
-                sx={{
-                    alignItems: 'start',
-                    py: 2,
-                }}
-            >
-                <DescriptionOutlinedIcon/>
-            </CellContentWrapper>),
-        disableColumnMenu: true,
-        width: 24,
-        sortable: false,
-    },
-    {
-        field: 'node.name',
-        headerName: 'Formulareingang',
-        flex: 1,
+        field: 'name',
+        headerName: 'Name des Prozesselementes',
+        flex: 1.4,
         valueGetter: (_, row) => {
             return row.node.name ?? 'Formulareingang';
         },
         renderCell: (params) => (
-            <CellLink to={`/form-triggers/${params.row.node.id}/formLayout/0`}>
+            <CellLink
+                to={`/form-triggers/${params.row.node.id}/formLayout/0`}
+                title="Formulareingang bearbeiten"
+            >
                 {params.row.node.name ?? 'Formulareingang'}
             </CellLink>
         ),
     },
     {
-        field: 'process.internalTitle',
+        field: 'processId',
         headerName: 'Prozess',
-        flex: 1,
+        flex: 1.4,
+        sortable: false,
         valueGetter: (_, row) => {
             return row.process.internalTitle;
         },
         renderCell: (params) => (
-            <Stack direction="row"
-                   alignItems="center"
-                   height="100%">
-                <CellLink to={`/processes/${params.row.process.id}/versions/${params.row.version.processVersion}`}>
-                    {params.row.process.internalTitle} (Version {params.row.version.processVersion})
-                </CellLink>
-
-                <ProcessStatusChip
+            <CellLink
+                to={`/processes/${params.row.process.id}/versions/${params.row.version.processVersion}`}
+                title="Prozess ansehen"
+            >
+                {params.row.process.internalTitle}
+                <Box
+                    component="span"
                     sx={{
-                        ml: 1,
+                        color: 'text.secondary',
+                        ml: 0.5,
                     }}
-                    status={params.row.version.status}
-                />
-            </Stack>
+                >
+                    (Version {params.row.version.processVersion})
+                </Box>
+            </CellLink>
+        ),
+    },
+    {
+        field: 'status',
+        headerName: 'Status',
+        flex: 0.75,
+        sortable: false,
+        valueGetter: (_, row) => {
+            return row.version.status;
+        },
+        renderCell: (params) => (
+            <ProcessStatusChip
+                status={params.row.version.status}
+                size="small"
+                variant="soft"
+            />
         ),
     },
 ];
@@ -103,7 +109,6 @@ export function FormsListPage() {
     const navigate = useNavigate();
     const showConfirm = useConfirm();
 
-    const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
 
     const listControlRef = useRef<ListControlRef>(null);
@@ -230,34 +235,14 @@ export function FormsListPage() {
         },
     }), []);
 
-    const fetch = useCallback(async (options: any) => {
-        const deps = (await new DepartmentApiService().listAll()).content;
-
-        const formsPage = await new FormTriggerApiService()
+    const fetch = useCallback(async (options: GenericListPropsFetchOptions<FormTriggerListItem>) => {
+        return await new FormTriggerApiService()
             .list(options.page, options.size, options.sort as any, options.order, {
                 name: options.search,
             });
-
-        return formsPage;
-        /*
-                const formIds = formsPage.content.map(form => form.id);
-
-                const editorsList = await new FormApiService()
-                    .listEditorsForForms(formIds);
-
-                const extendedFormsPage: Page<FormListEntry> = {
-                    ...formsPage,
-                    content: formsPage.content.map(form => ({
-                        ...form,
-                        developingDepartmentName: deps.find(dep => dep.id === form.developingDepartmentId)?.name,
-                        lastEditorName: editorsList.find(editor => editor.formId === form.id)?.fullName,
-                    })),
-                };
-
-                return extendedFormsPage;
-
-         */
     }, []);
+
+    const columnIcon = useMemo(() => <DescriptionOutlinedIcon/>, []);
 
     const noDataPlaceholder = useMemo(() => (
         <Box
@@ -325,16 +310,16 @@ export function FormsListPage() {
             >
                 <GenericListPage<FormTriggerListItem>
                     controlRef={listControlRef}
-                    dynamicRowHeight={true}
                     defaultFilter="all"
                     header={header}
-                    searchLabel="Formulareingang suchen"
-                    searchPlaceholder="Titel des Formulareingangs eingeben…"
+                    searchLabel="Prozesselemente vom Typ „Formulareingang“ suchen"
+                    searchPlaceholder="Titel des Prozesselementes eingeben…"
                     fetch={fetch}
+                    columnIcon={columnIcon}
                     columnDefinitions={columns}
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
-                    noSearchResultsPlaceholder="Keine Formulareingänge gefunden"
+                    noSearchResultsPlaceholder="Keine Prozesselemente gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}
                     defaultSortField={'id' as any}
