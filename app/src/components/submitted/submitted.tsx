@@ -12,6 +12,7 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
+import CheckCircleTwoToneIcon from '@mui/icons-material/CheckCircleTwoTone';
 import {Rating} from '../rating/rating';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
@@ -163,6 +164,38 @@ export function Submitted(props: SubmittedProps) {
                 },
             }}
         >
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    mb: 4,
+                }}
+            >
+                <Typography
+                    component="h2"
+                    sx={{
+                        fontFamily: theme.typography.h2.fontFamily,
+                        fontWeight: 500,
+                        fontSize: '1.3125rem',
+                        lineHeight: 1.2,
+                        color: 'text.primary',
+                        pt: '4px',
+                        m: 0,
+                    }}
+                >
+                    Angaben erfolgreich übermittelt
+                </Typography>
+                <CheckCircleTwoToneIcon
+                    sx={{
+                        color: theme.palette.primary.main,
+                        flexShrink: 0,
+                        mt: -0.75,
+                        ml: 0.75,
+                        transform: 'translateY(5px)',
+                    }}
+                />
+            </Box>
+
             {
                 status != null &&
                 status.paymentProviderName != null &&
