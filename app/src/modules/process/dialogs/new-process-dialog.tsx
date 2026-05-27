@@ -25,11 +25,7 @@ import {type ProcessExport} from '../entities/process-export';
 import {
     VDepartmentMembershipWithDetailsService,
 } from '../../departments/services/v-department-membership-with-details-service';
-import {
-    SelectFieldComponent,
-    type SelectFieldComponentOption,
-} from '../../../components/select-field-2/select-field-component';
-import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../departments/utils/department-utils';
+import {getDepartmentPath, getDepartmentTypeIcons} from '../../departments/utils/department-utils';
 import {showApiErrorSnackbar, showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectUser} from '../../../slices/user-slice';
@@ -50,6 +46,9 @@ import {AlertComponent} from '../../../components/alert/alert-component';
 import {StatusTable} from '../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../components/status-table/status-table-props';
 import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
+import {DepartmentSelectField} from '../../departments/components/department-select-field';
+import {type VDepartmentShadowedEntityWithChildren} from '../../departments/entities/v-department-shadowed-entity';
+import {DepartmentBrowser} from '../../departments/components/department-browser';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -74,11 +73,12 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
     const user = useAppSelector(selectUser);
 
-    const [availableDepartments, setAvailableDepartments] = useState<Array<SelectFieldComponentOption<number>>>([]);
+    const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntityWithChildren[]>();
     const [nameOverride, setNameOverride] = useState<string | null>(null);
     const [departmentOverride, setDepartmentOverride] = useState<number | null>(null);
     const [nameError, setNameError] = useState<string | undefined>();
     const [departmentError, setDepartmentError] = useState<string | undefined>();
+    const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -89,8 +89,11 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const [selectedStartPoint, setSelectedStartPoint] = useState<SelectedStartPoint | null>(null);
 
     const selectedDepartment = useMemo(() => (
-        availableDepartments.find((department) => department.value === departmentOverride) ?? null
+        availableDepartments?.find((department) => department.id === departmentOverride) ?? null
     ), [availableDepartments, departmentOverride]);
+    const selectedDepartmentPath = selectedDepartment != null && (selectedDepartment.parentNames?.length ?? 0) > 0 ?
+        getDepartmentPath(selectedDepartment) :
+        undefined;
 
     const hasProcessConfigurationErrors = nameError != null || departmentError != null;
 
@@ -115,15 +118,15 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         },
         {
             label: 'Organisationseinheit',
-            icon: <SummaryIcon>{selectedDepartment?.icon}</SummaryIcon>,
+            icon: <SummaryIcon>{selectedDepartment != null ? getDepartmentTypeIcons(selectedDepartment.depth) : undefined}</SummaryIcon>,
             children: (
                 <Box>
                     <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
-                        {selectedDepartment?.label ?? 'Nicht ausgewählt'}
+                        {selectedDepartment?.name ?? 'Nicht ausgewählt'}
                         {
-                            selectedDepartment?.subLabel != null &&
+                            selectedDepartmentPath != null &&
                             <Typography component="span" color="text.secondary" sx={{ml: 0.5}}>
-                                ({selectedDepartment.subLabel})
+                                ({selectedDepartmentPath})
                             </Typography>
                         }
                     </Typography>
@@ -140,7 +143,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 </Typography>
             ),
         },
-    ], [nameOverride, selectedDepartment, selectedStartPoint]);
+    ], [nameOverride, selectedDepartment, selectedDepartmentPath, selectedStartPoint]);
 
     useEffect(() => {
         if (user == null) {
@@ -148,21 +151,28 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             return;
         }
 
+        setAvailableDepartments(undefined);
+
         new VDepartmentMembershipWithDetailsService()
             .listAll({
                 userId: user.id,
             })
             .then(({content}) => {
-                const options: Array<SelectFieldComponentOption<number>> = content
+                const departments: VDepartmentShadowedEntityWithChildren[] = content
                     .map((membership) => ({
-                        value: membership.departmentId,
-                        label: membership.departmentName,
-                        icon: getDepartmentTypeIcons(membership.departmentDepth),
-                        subLabel: getDepartmentTypeLabel(membership.departmentDepth),
+                        id: membership.departmentId,
+                        name: membership.departmentName,
+                        address: membership.departmentAddress,
+                        depth: membership.departmentDepth,
+                        parentNames: membership.departmentParentNames,
+                        created: '',
+                        updated: '',
+                        children: [],
                     }));
-                setAvailableDepartments(options);
+                setAvailableDepartments(departments);
             })
             .catch((err) => {
+                setAvailableDepartments([]);
                 dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheiten konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
             });
     }, [dispatch, user]);
@@ -229,6 +239,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         setDepartmentOverride(null);
         setNameError(undefined);
         setDepartmentError(undefined);
+        setShowDepartmentDialog(false);
     };
 
     const handleClose = (): void => {
@@ -318,92 +329,93 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     };
 
     return (
-        <Dialog
-            open={open}
-            onClose={handleClose}
-            fullWidth
-            maxWidth="md"
-            TransitionProps={{
-                onExited: resetDialogState,
-            }}
-        >
-            <DialogTitleWithClose onClose={handleClose}>
-                Neuen Prozess anlegen
-            </DialogTitleWithClose>
-
-            <DialogContent
-                sx={{
-                    minHeight: 'min(620px, 74vh)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    p: 0,
+        <>
+            <Dialog
+                open={open}
+                onClose={handleClose}
+                fullWidth
+                maxWidth="md"
+                TransitionProps={{
+                    onExited: resetDialogState,
                 }}
             >
-                <Box
+                <DialogTitleWithClose onClose={handleClose}>
+                    Neuen Prozess anlegen
+                </DialogTitleWithClose>
+
+                <DialogContent
                     sx={{
-                        px: 3,
-                        py: 1.75,
-                        borderTop: '1px solid',
-                        borderBottom: '1px solid',
-                        borderColor: 'divider',
-                        bgcolor: 'rgba(15, 23, 42, 0.025)',
+                        minHeight: 'min(620px, 74vh)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        p: 0,
                     }}
                 >
-                    <Stepper
-                        orientation="horizontal"
-                        activeStep={activeStep}
+                    <Box
                         sx={{
-                            '& .MuiStepConnector-root': {
-                                display: 'block',
-                                mx: 1.5,
-                            },
-                            '& .MuiStepConnector-line': {
-                                borderColor: 'divider',
-                            },
-                            '& .MuiStepLabel-root': {
-                                p: 0,
-                            },
-                            '& .MuiStepLabel-iconContainer': {
-                                p: 0,
-                            },
-                            '& .MuiStepLabel-label': {
-                                mt: 0,
-                                ml: 1,
-                                pt: 0,
-                                fontSize: '0.95rem',
-                                fontWeight: 500,
-                                color: 'text.secondary',
-                            },
-                            '& .MuiStepLabel-label.Mui-active': {
-                                color: 'primary.main',
-                                fontWeight: 700,
-                            },
-                            '& .MuiStepLabel-label.Mui-completed': {
-                                color: 'primary.main',
-                                fontWeight: 500,
-                            },
-                            '& .MuiStepIcon-root': {
-                                fontSize: 30,
-                            },
+                            px: 3,
+                            py: 1.75,
+                            borderTop: '1px solid',
+                            borderBottom: '1px solid',
+                            borderColor: 'divider',
+                            bgcolor: 'rgba(15, 23, 42, 0.025)',
                         }}
                     >
-                        <Step completed={activeStep > 0 && selectedTemplateData != null}>
-                            <StepLabel StepIconComponent={OutlinedStepIcon}>
-                                Startpunkt
-                            </StepLabel>
-                        </Step>
-                        <Step completed={activeStep > 1}>
-                            <StepLabel StepIconComponent={OutlinedStepIcon}>
-                                Angaben
-                            </StepLabel>
-                        </Step>
-                        <Step>
-                            <StepLabel StepIconComponent={OutlinedStepIcon}>
-                                Prüfen
-                            </StepLabel>
-                        </Step>
-                    </Stepper>
-                </Box>
+                        <Stepper
+                            orientation="horizontal"
+                            activeStep={activeStep}
+                            sx={{
+                                '& .MuiStepConnector-root': {
+                                    display: 'block',
+                                    mx: 1.5,
+                                },
+                                '& .MuiStepConnector-line': {
+                                    borderColor: 'divider',
+                                },
+                                '& .MuiStepLabel-root': {
+                                    p: 0,
+                                },
+                                '& .MuiStepLabel-iconContainer': {
+                                    p: 0,
+                                },
+                                '& .MuiStepLabel-label': {
+                                    mt: 0,
+                                    ml: 1,
+                                    pt: 0,
+                                    fontSize: '0.95rem',
+                                    fontWeight: 500,
+                                    color: 'text.secondary',
+                                },
+                                '& .MuiStepLabel-label.Mui-active': {
+                                    color: 'primary.main',
+                                    fontWeight: 700,
+                                },
+                                '& .MuiStepLabel-label.Mui-completed': {
+                                    color: 'primary.main',
+                                    fontWeight: 500,
+                                },
+                                '& .MuiStepIcon-root': {
+                                    fontSize: 30,
+                                },
+                            }}
+                        >
+                            <Step completed={activeStep > 0 && selectedTemplateData != null}>
+                                <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                    Startpunkt
+                                </StepLabel>
+                            </Step>
+                            <Step completed={activeStep > 1}>
+                                <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                    Angaben
+                                </StepLabel>
+                            </Step>
+                            <Step>
+                                <StepLabel StepIconComponent={OutlinedStepIcon}>
+                                    Prüfen
+                                </StepLabel>
+                            </Step>
+                        </Stepper>
+                    </Box>
 
                 <Box
                     sx={{
@@ -525,16 +537,19 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     maxCharacters={96}
                                 />
 
-                                <SelectFieldComponent
+                                <DepartmentSelectField
                                     label="Verwaltende Organisationseinheit"
-                                    value={departmentOverride}
-                                    onChange={(newValue) => {
-                                        setDepartmentOverride(newValue ?? null);
+                                    value={selectedDepartment}
+                                    onOpenDialog={() => {
+                                        setShowDepartmentDialog(true);
                                     }}
-                                    options={availableDepartments}
-                                    required={true}
+                                    onClear={() => {
+                                        setDepartmentOverride(null);
+                                        setDepartmentError(undefined);
+                                    }}
                                     disabled={isLoading}
                                     error={departmentError}
+                                    required={true}
                                     hint="Die ausgewählte Einheit wird als verantwortlich für diesen Prozess festgelegt und kann z. B. Berechtigungen verwalten."
                                 />
                             </Box>
@@ -632,6 +647,85 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                         </Box>
                     }
                 </Box>
+                </DialogContent>
+            </Dialog>
+
+            <DepartmentSelectionDialog
+                open={showDepartmentDialog}
+                departments={availableDepartments}
+                selectedDepartmentId={departmentOverride}
+                onClose={() => {
+                    setShowDepartmentDialog(false);
+                }}
+                onSelect={(department) => {
+                    setDepartmentOverride(department.id);
+                    setDepartmentError(undefined);
+                    setShowDepartmentDialog(false);
+                }}
+            />
+        </>
+    );
+}
+
+interface DepartmentSelectionDialogProps {
+    open: boolean;
+    departments?: VDepartmentShadowedEntityWithChildren[];
+    selectedDepartmentId: number | null;
+    onClose: () => void;
+    onSelect: (department: VDepartmentShadowedEntityWithChildren) => void;
+}
+
+function DepartmentSelectionDialog(props: DepartmentSelectionDialogProps): ReactNode {
+    const {
+        open,
+        departments,
+        selectedDepartmentId,
+        onClose,
+        onSelect,
+    } = props;
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            fullWidth
+            maxWidth="lg"
+        >
+            <DialogTitleWithClose onClose={onClose}>
+                Organisationseinheit auswählen
+            </DialogTitleWithClose>
+
+            <DialogContent
+                sx={{
+                    p: 2,
+                    height: 'min(74vh, 820px)',
+                    overflowY: 'auto',
+                }}
+            >
+                <DepartmentBrowser
+                    departments={departments}
+                    selectedDepartmentId={selectedDepartmentId}
+                    searchLabel="Organisationseinheit suchen"
+                    searchPlaceholder="Name, Adresse oder Typ suchen…"
+                    emptyState={(
+                        <AlertComponent
+                            color="info"
+                            sx={{my: 1}}
+                        >
+                            Es sind keine Organisationseinheiten verfügbar.
+                        </AlertComponent>
+                    )}
+                    getActions={(department) => [
+                        {
+                            label: 'Auswählen',
+                            icon: <Check />,
+                            variant: 'contained',
+                            onClick: () => {
+                                onSelect(department);
+                            },
+                        },
+                    ]}
+                />
             </DialogContent>
         </Dialog>
     );
