@@ -63,7 +63,6 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
             label={label}
             value={fieldValue}
             placeholder={placeholder}
-            disabled={disabled}
             error={error != null}
             helperText={error ?? hint}
             required={required}
