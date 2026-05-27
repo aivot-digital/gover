@@ -78,9 +78,7 @@ export function DepartmentSelectField(props: DepartmentSelectFieldProps): React.
             FormHelperTextProps={{
                 title: error ?? hint,
                 sx: {
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
+                    whiteSpace: 'normal',
                 },
             }}
             inputProps={{

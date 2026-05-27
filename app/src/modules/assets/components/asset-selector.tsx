@@ -156,9 +156,7 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
                 FormHelperTextProps={{
                     title: error ?? hint,
                     sx: {
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
+                        whiteSpace: 'normal',
                     },
                 }}
                 inputProps={{
