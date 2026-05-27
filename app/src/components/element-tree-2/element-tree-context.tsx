@@ -30,6 +30,7 @@ export interface ElementTreeContextType {
     activeSearchResultPath?: string[];
     highlightedElementId?: string | null;
     highlightedElementSignal?: number;
+    onHoveredElementIdChange?: (elementId: string | null) => void;
     allElements: ElementWithParents[];
     displayContext: ElementDisplayContext;
     allowElementIdEditing: boolean;

@@ -27,6 +27,8 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useElementTreeInlineEditorContext} from '../element-tree-2/components/element-tree-inline-editor-context';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {getPreviewHighlightStyles} from './preview-highlight-styles';
+import {isSectionElementType} from '../../models/elements/steps/step-element';
 
 type Props<T extends AnyElement> = Omit<BaseViewProps<T, any>, 'value' | 'setValue' | 'onBlur' | 'errors' | 'errorDetails'>
 
@@ -50,6 +52,7 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         rootAuthoredElementValues,
         rootDerivedData,
         showInvisibleElements,
+        highlightedElementId,
     } = useViewDispatcherContext();
 
     const {
@@ -129,6 +132,9 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         );
     }, [baseIsBusy, baseIsDeriving, element]);
 
+    const isHighlightedInPreview = highlightedElementId === elementId &&
+        !isSectionElementType(element.type);
+
     if (!isVisible) {
         return null;
     }
@@ -142,12 +148,13 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
             id={elementId}
             data-initial-id={elementId /* TODO: Remove here and where referenced */}
             data-resolved-id={elementId /* TODO: Remove here and where referenced */}
-            sx={{
+            sx={(theme) => ({
                 position: 'relative',
                 '&:hover > .editor-element-context-menu, &:hover > .editor-element-context-menu-cutout': {
                     display: mode === ViewDispatcherMode.Editor && !disableElementContextMenu ? 'block' : 'none',
                 },
-            }}
+                ...getPreviewHighlightStyles(theme, isHighlightedInPreview),
+            })}
             size={{
                 xs: 12,
                 md: ('weight' in element && element.weight != null) ? element.weight : 12,

@@ -81,6 +81,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [inputData, setInputData] = useState<AuthoredElementValues>({});
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
+    const [hoveredTreeElementId, setHoveredTreeElementId] = useState<string | null>(null);
     const [openRootAddElementSignal, setOpenRootAddElementSignal] = useState(0);
 
     const {
@@ -142,6 +143,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
             setDraftValue(null);
             setInitialDraftValue(null);
             setInputData({});
+            setHoveredTreeElementId(null);
         }, 300);
     };
 
@@ -428,6 +430,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                                     element={effectiveValue}
                                                     authoredElementValues={inputData}
                                                     onAuthoredElementValuesChange={setInputData}
+                                                    highlightedElementId={hoveredTreeElementId}
                                                 />
                                         }
                                     </ElementTreeInlineEditorContextProvider>
@@ -447,6 +450,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     allowElementIdEditing={false}
                                     highlightElementId={highlightElementId}
                                     highlightElementSignal={highlightElementSignal}
+                                    onHoveredElementIdChange={setHoveredTreeElementId}
                                     openRootAddElementSignal={openRootAddElementSignal}
                                 />
                             </Allotment.Pane>

@@ -32,6 +32,7 @@ export interface ElementTreeProps<T extends AnyElement> {
     allowElementIdEditing: boolean;
     highlightElementId?: string | null;
     highlightElementSignal?: number;
+    onHoveredElementIdChange?: (elementId: string | null) => void;
     openRootAddElementSignal?: number;
 }
 
@@ -51,6 +52,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         allowElementIdEditing,
         highlightElementId,
         highlightElementSignal,
+        onHoveredElementIdChange,
         openRootAddElementSignal,
     } = props;
 
@@ -266,6 +268,12 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         ]);
     }, [allElements, handleExpandAndScrollToPath, highlightElementId, highlightElementSignal]);
 
+    useEffect(() => {
+        return () => {
+            onHoveredElementIdChange?.(null);
+        };
+    }, [onHoveredElementIdChange]);
+
     return (
         <Box
             sx={{
@@ -467,6 +475,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 activeSearchResultPath: activeSearchResult?.path,
                                 highlightedElementId: highlightElementId,
                                 highlightedElementSignal: highlightElementSignal,
+                                onHoveredElementIdChange: onHoveredElementIdChange,
                                 allElements: allElements,
                                 displayContext: displayContext,
                                 allowElementIdEditing: allowElementIdEditing,

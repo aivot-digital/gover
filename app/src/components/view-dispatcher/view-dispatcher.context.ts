@@ -17,6 +17,7 @@ export interface ViewDispatcherContextType {
 
     rootAuthoredElementValues: AuthoredElementValues;
     rootDerivedData: DerivedRuntimeElementData;
+    highlightedElementId?: string | null;
 }
 
 export const ViewDispatcherContext = createContext<ViewDispatcherContextType | null>(null);

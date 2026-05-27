@@ -249,6 +249,7 @@ export function FormNodeEditorPage() {
     const showDeveloperTools = useAppSelector(selectDevToolsTab);
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
+    const [hoveredTreeElementId, setHoveredTreeElementId] = useState<string | null>(null);
     const [openAddSectionSignal, setOpenAddSectionSignal] = useState(0);
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
@@ -846,6 +847,7 @@ export function FormNodeEditorPage() {
                                                         mode={ViewDispatcherMode.Editor}
                                                         disableValidation={disableValidation}
                                                         disableVisibilities={disableVisibility}
+                                                        highlightedElementId={hoveredTreeElementId}
                                                     />
                                                 </ElementTreeInlineEditorContextProvider>
                                             }
@@ -921,6 +923,7 @@ export function FormNodeEditorPage() {
                                                 allowElementIdEditing={false}
                                                 highlightElementId={highlightElementId}
                                                 highlightElementSignal={highlightElementSignal}
+                                                onHoveredElementIdChange={setHoveredTreeElementId}
                                                 openRootAddElementSignal={openAddSectionSignal}
                                             />
                                         </Paper>

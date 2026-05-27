@@ -44,6 +44,7 @@ interface ElementDerivationContextProps {
     mode?: ViewDispatcherMode;
     disableValidation?: boolean;
     disableVisibilities?: boolean;
+    highlightedElementId?: string | null;
 }
 
 interface ElementDerivationContextType {
@@ -106,6 +107,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         mode: renderMode = ViewDispatcherMode.Viewer,
         disableValidation,
         disableVisibilities,
+        highlightedElementId,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -331,6 +333,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     rootAuthoredElementValues: authoredElementValues,
                     rootDerivedData: derivedData,
                     showInvisibleElements: disableVisibilities && renderMode === ViewDispatcherMode.Editor,
+                    highlightedElementId: highlightedElementId,
                 }}
             >
                 <ViewDispatcherComponent

@@ -21,6 +21,8 @@ import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import {type CustomStepProps} from './custom-step-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableAutoScrollForSteps} from '../../slices/admin-settings-slice';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {getPreviewHighlightStyles} from '../view-dispatcher/preview-highlight-styles';
 
 export function CustomStep(props: CustomStepProps & StepProps) {
     const {
@@ -43,7 +45,11 @@ export function CustomStep(props: CustomStepProps & StepProps) {
 
     const theme = useTheme();
     const disableAutoScroll = useAppSelector(selectDisableAutoScrollForSteps);
+    const {
+        highlightedElementId,
+    } = useViewDispatcherContext();
     const isIntroductionStep = step.type === ElementType.IntroductionStep;
+    const isHighlightedInPreview = highlightedElementId === step.id;
 
     const ref = useRef<HTMLDivElement>(null);
     const headingRef = useRef<HTMLDivElement>(null);
@@ -102,6 +108,10 @@ export function CustomStep(props: CustomStepProps & StepProps) {
         <Step
             {...passTroughProps}
             ref={ref}
+            sx={[
+                (theme) => getPreviewHighlightStyles(theme, isHighlightedInPreview),
+                ...(Array.isArray(passTroughProps.sx) ? passTroughProps.sx : [passTroughProps.sx]),
+            ]}
         >
             <StepLabel
                 StepIconComponent={(props) => (

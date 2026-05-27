@@ -68,6 +68,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         activeSearchResultPath,
         highlightedElementId,
         highlightedElementSignal,
+        onHoveredElementIdChange,
         allElements,
     } = useElementTreeContext();
 
@@ -185,6 +186,12 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             window.cancelAnimationFrame(frameId);
         };
     }, [highlightedElementId, highlightedElementSignal, path, scrollToElement, valueId]);
+
+    useEffect(() => {
+        return () => {
+            onHoveredElementIdChange?.(null);
+        };
+    }, [onHoveredElementIdChange]);
 
     const icons: Action[] = useMemo(() => {
         const leadingIcons: Action[] = getIcons(root, value, allElements, navigateToElementEditor);
@@ -340,6 +347,18 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                     navigateToElementEditor(value.id);
                 }}
                 onContextMenu={handleContextMenuOpen}
+                onMouseEnter={() => {
+                    onHoveredElementIdChange?.(valueId);
+                }}
+                onMouseLeave={() => {
+                    onHoveredElementIdChange?.(null);
+                }}
+                onMouseDown={() => {
+                    onHoveredElementIdChange?.(null);
+                }}
+                onMouseUp={() => {
+                    onHoveredElementIdChange?.(valueId);
+                }}
             >
                 <Box
                     sx={{
