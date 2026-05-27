@@ -164,7 +164,23 @@ class _AuthService {
             return null;
         }
 
-        return redirectTarget;
+        const redirectUrl = new URL(redirectTarget, window.location.origin);
+        const currentUrl = new URL(window.location.href);
+        const patchedKeys = new Set<string>();
+
+        currentUrl.searchParams.forEach((_, key) => {
+            if (patchedKeys.has(key) || redirectUrl.searchParams.has(key)) {
+                return;
+            }
+
+            patchedKeys.add(key);
+            currentUrl.searchParams.getAll(key).forEach((value) => {
+                redirectUrl.searchParams.append(key, value);
+            });
+        });
+
+        const query = redirectUrl.searchParams.toString();
+        return `${redirectUrl.pathname}${query.length > 0 ? `?${query}` : ''}${redirectUrl.hash}`;
     }
 }
 
