@@ -97,6 +97,7 @@ import {setCurrentStep} from '../../../slices/stepper-slice';
 import {createCustomerPath} from '../../../utils/url-path-utils';
 import {ProcessTestClaimEntity} from '../../process/entities/process-test-claim-entity';
 import {downloadQrCode} from '../../../utils/download-qrcode';
+import {downloadBlobFile} from '../../../utils/download-utils';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
@@ -383,22 +384,32 @@ export function FormNodeEditorPage() {
         }
     };
 
-    const handleDownloadPdfFile = () => {
-        notImplemented();
+    const handleDownloadPdfFile = async () => {
+        if (node == null) {
+            return;
+        }
 
-        // dispatch(showLoadingOverlay('Vordruck wird generiert'));
-        /* TODO: api
-            .getBlob(`forms/${loadedForm.form.id}/${loadedForm.version.version}/print/`)
-            .then((blob) => {
-                downloadBlobFile(`vordruck - ${loadedForm.form.slug} - ${loadedForm.version.version}.pdf`, blob);
-                dispatch(hideLoadingOverlayWithTimeout(1000));
-            })
-            .catch((error) => {
-                console.error(error);
-                dispatch(hideLoadingOverlay());
-                dispatch(showErrorSnackbar('Fehler beim Generieren des Vordrucks'));
-            });
-         */
+        const formSlug = typeof node.configuration.formSlug === 'string' && node.configuration.formSlug.length > 0
+            ? node.configuration.formSlug
+            : `form-trigger-${node.id}`;
+
+        dispatch(setLoadingMessage({
+            blocking: false,
+            estimatedTime: 1500,
+            message: 'Vordruck wird generiert',
+        }));
+
+        try {
+            const blob = await new FormTriggerApiService()
+                .downloadPrintablePdf(node.id);
+
+            downloadBlobFile(`${formSlug}-${node.processVersion}.pdf`, blob);
+        } catch (err) {
+            console.error(err);
+            dispatch(showApiErrorSnackbar(err, 'Fehler beim Generieren des Vordrucks'));
+        } finally {
+            dispatch(clearLoadingMessage());
+        }
     };
 
     const handlePatch = (element: FormLayoutElement) => {

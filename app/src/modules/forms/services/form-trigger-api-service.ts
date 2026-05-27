@@ -94,6 +94,10 @@ export class FormTriggerApiService extends BaseApiService {
         });
     }
 
+    public async downloadPrintablePdf(nodeId: number): Promise<Blob> {
+        return await this.getBlob(`/api/forms/v1/${nodeId}/print-pdf/`);
+    }
+
     private buildListQuery(
         page: number,
         limit: number,

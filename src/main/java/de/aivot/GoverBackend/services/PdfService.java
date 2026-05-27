@@ -7,6 +7,7 @@ import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.services.HttpService;
+import de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
@@ -28,6 +29,7 @@ import de.aivot.GoverBackend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.GoverBackend.payment.services.PaymentProviderDefinitionsService;
 import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.pdf.models.FormPdfContext;
+import de.aivot.GoverBackend.pdf.models.PrintableFormPdfData;
 import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
@@ -126,6 +128,31 @@ public class PdfService {
         return generatePdf(form, dto, FormPdfScope.Blank);
     }
 
+    public byte[] generatePrintableForm(@Nonnull PrintableFormPdfData form,
+                                        @Nonnull ThemeEntity theme,
+                                        @Nonnull VDepartmentShadowedEntity department) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var rootElement = form.getRootElement();
+        if (rootElement == null) {
+            throw new IllegalArgumentException("Printable form root element cannot be null.");
+        }
+
+        var allElements = ElementFlattenUtils.flattenElements(rootElement);
+
+        var dto = new HashMap<String, Object>();
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                rootElement,
+                null,
+                true
+        ));
+        dto.put("form", form);
+        dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
+        dto.put("base", createBaseContext(theme, FormPdfScope.Blank));
+        dto.put("department", department);
+        dto.put("theme", theme);
+
+        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
+    }
+
     public byte[] generateCustomerSummary(VFormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
         var derivedRuntimeElementData = elementDerivationService
@@ -209,11 +236,11 @@ public class PdfService {
         );
         dto.put("theme", formTheme);
 
-        return generateGotenbergPdf(form, dto);
+        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
     }
 
-    private byte[] generateGotenbergPdf(VFormVersionWithDetailsEntity form, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
-        String template = loadContentTemplate(form, dto);
+    private byte[] generateGotenbergPdf(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+        String template = loadContentTemplate(pdfTemplateKey, dto);
         String headerTemplate = loadTemplate("pp_form_header.html", dto);
         String footerTemplate = loadTemplate("pp_form_footer.html", dto);
 
@@ -294,12 +321,10 @@ public class PdfService {
         return response.body();
     }
 
-    private String loadContentTemplate(VFormVersionWithDetailsEntity form, Map<String, Object> dto) {
-        var template = form.getPdfTemplateKey();
-
-        if (template != null) {
+    private String loadContentTemplate(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) {
+        if (pdfTemplateKey != null) {
             try {
-                var res = loadTemplate(form.getPdfTemplateKey().toString(), dto);
+                var res = loadTemplate(pdfTemplateKey.toString(), dto);
                 if (StringUtils.isNotNullOrEmpty(res)) {
                     return res;
                 }

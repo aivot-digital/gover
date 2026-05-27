@@ -6,116 +6,6 @@ export enum ElementDisplayContext {
     DataObjectSchema = 'DataObjectSchema',
 }
 
-const CitizenFacingBaseElements: ElementType[] = [
-    // Content
-    ElementType.Image,
-    ElementType.Headline,
-    ElementType.RichText,
-    ElementType.Alert,
-    ElementType.Spacer,
-
-    // Inputs
-    ElementType.Text,
-    ElementType.Checkbox,
-    ElementType.Date,
-    ElementType.Number,
-    ElementType.Radio,
-    ElementType.Select,
-    ElementType.MultiCheckbox,
-    ElementType.Table,
-    ElementType.Time,
-    ElementType.DateTime,
-    ElementType.DateRange,
-    ElementType.TimeRange,
-    ElementType.DateTimeRange,
-    ElementType.MapPoint,
-    ElementType.FileUpload,
-    ElementType.ChipInput,
-    ElementType.IdentityInput,
-
-    // Layouts
-    ElementType.ReplicatingContainer,
-    ElementType.GroupLayout,
-    ElementType.SummaryLayout,
-];
-
-const StaffFacingBaseElements: ElementType[] = [
-    // Content
-    ElementType.Image,
-    ElementType.Headline,
-    ElementType.RichText,
-    ElementType.Alert,
-    ElementType.Spacer,
-
-    // Inputs
-    ElementType.Text,
-    ElementType.Checkbox,
-    ElementType.Date,
-    ElementType.Number,
-    ElementType.Radio,
-    ElementType.Select,
-    ElementType.MultiCheckbox,
-    ElementType.Table,
-    ElementType.Time,
-    ElementType.DateTime,
-    ElementType.DateRange,
-    ElementType.TimeRange,
-    ElementType.DateTimeRange,
-    ElementType.MapPoint,
-    // TODO: Find a way to handle file uploads with ElementType.FileUpload,
-    ElementType.ChipInput,
-    ElementType.DataModelSelect,
-    ElementType.DataObjectSelect,
-    ElementType.RichTextInput,
-
-    // Layouts
-    ElementType.ReplicatingContainer,
-    ElementType.GroupLayout,
-    ElementType.SummaryLayout,
-];
-
-// Summaries can only contain inputs
-const CitizenFacingSummaryChildElements: ElementType[] = [
-    ElementType.Text,
-    ElementType.Checkbox,
-    ElementType.Date,
-    ElementType.Number,
-    ElementType.Radio,
-    ElementType.Select,
-    ElementType.MultiCheckbox,
-    ElementType.Table,
-    ElementType.Time,
-    ElementType.DateTime,
-    ElementType.DateRange,
-    ElementType.TimeRange,
-    ElementType.DateTimeRange,
-    ElementType.MapPoint,
-    ElementType.FileUpload,
-    ElementType.ChipInput,
-];
-
-const StaffFacingSummaryChildElements: ElementType[] = [
-    ElementType.Text,
-    ElementType.Checkbox,
-    ElementType.Date,
-    ElementType.Number,
-    ElementType.Radio,
-    ElementType.Select,
-    ElementType.MultiCheckbox,
-    ElementType.Table,
-    ElementType.Time,
-    ElementType.DateTime,
-    ElementType.DateRange,
-    ElementType.TimeRange,
-    ElementType.DateTimeRange,
-    ElementType.MapPoint,
-    ElementType.FileUpload,
-    ElementType.ChipInput,
-    ElementType.DataModelSelect,
-    ElementType.DataObjectSelect,
-    ElementType.RichTextInput,
-];
-
 export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<ElementType, ElementType[]>>> = {
     [ElementDisplayContext.CitizenFacing]: {
         [ElementType.FormLayout]: [
@@ -142,7 +32,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.Time,
             ElementType.Image,
             ElementType.FileUpload,
-            ElementType.IdentityInput,
             ElementType.ChipInput,
             ElementType.DateTime,
             ElementType.DateRange,
@@ -169,7 +58,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.Time,
             ElementType.Image,
             ElementType.FileUpload,
-            ElementType.IdentityInput,
             ElementType.ChipInput,
             ElementType.DateTime,
             ElementType.DateRange,
@@ -196,7 +84,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.Time,
             ElementType.Image,
             ElementType.FileUpload,
-            ElementType.IdentityInput,
             ElementType.ChipInput,
             ElementType.DateTime,
             ElementType.DateRange,
@@ -245,7 +132,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.Text,
             ElementType.Time,
             ElementType.FileUpload,
-            ElementType.IdentityInput,
             ElementType.ChipInput,
             ElementType.DateTime,
             ElementType.DateRange,
