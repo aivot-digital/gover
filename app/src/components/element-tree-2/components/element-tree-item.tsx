@@ -31,6 +31,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {isSectionElementType} from '../../../models/elements/steps/step-element';
+import {createTheme, useTheme} from '@mui/material/styles';
 
 interface ElementTreeItemProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -44,6 +45,7 @@ interface ElementTreeItemProps<T extends AnyElement> {
 export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProps<T>) {
     const showConfirm = useConfirm();
     const dispatch = useAppDispatch();
+    const theme = useTheme();
     const menuPaperRef = useRef<HTMLDivElement | null>(null);
 
     const {
@@ -63,6 +65,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     const {
         root,
         editable,
+        parentModalZIndex,
         scrollToElement,
         expandCommand,
         activeSearchResultPath,
@@ -87,6 +90,28 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         return generateComponentTitle(value);
     }, [value]);
 
+    const confirmTheme = useMemo(() => {
+        if (parentModalZIndex == null) {
+            return theme;
+        }
+
+        // Keep confirm dialogs above nested editor drawers and parent dialogs.
+        const drawerZIndex = Math.max(theme.zIndex.drawer, parentModalZIndex + 10);
+        const modalZIndex = Math.max(theme.zIndex.modal, drawerZIndex + 10);
+
+        if (drawerZIndex === theme.zIndex.drawer && modalZIndex === theme.zIndex.modal) {
+            return theme;
+        }
+
+        return createTheme(theme, {
+            zIndex: {
+                ...theme.zIndex,
+                drawer: drawerZIndex,
+                modal: modalZIndex,
+            },
+        });
+    }, [parentModalZIndex, theme]);
+
     const parentPath = useMemo(() => {
         return parents.map((element) => element.id);
     }, [parents]);
@@ -101,6 +126,13 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     const path = useMemo(() => {
         return pathParts.join('.');
     }, [pathParts]);
+
+    const referencingElements = useMemo(() => {
+        return findReferencesToElement(value, allElements);
+    }, [allElements, value]);
+    const referencingElementLabels = useMemo(() => {
+        return referencingElements.map(({element}) => formatElementReferenceLabel(element));
+    }, [referencingElements]);
 
     const [{isDragging}, drag] = useDrag(() => ({
         type: ELEMENT_TREE_DND_ITEM_TYPE,
@@ -194,7 +226,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     }, [onHoveredElementIdChange]);
 
     const icons: Action[] = useMemo(() => {
-        const leadingIcons: Action[] = getIcons(root, value, allElements, navigateToElementEditor);
+        const leadingIcons: Action[] = getIcons(root, value, referencingElementLabels, navigateToElementEditor);
         const trailingIcons: Action[] = isAnyElementWithChildren(value) ? [
             {
                 icon: (
@@ -221,7 +253,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             ...(leadingIcons.length > 0 && trailingIcons.length > 0 ? ['separator'] : []) as Action[],
             ...trailingIcons,
         ];
-    }, [allElements, isCollapsed, navigateToElementEditor, root, value]);
+    }, [isCollapsed, navigateToElementEditor, referencingElementLabels, root, value]);
 
     const backgroundColor = isActiveSearchResult ?
         'action.focus' :
@@ -264,14 +296,55 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         handleContextMenuClose();
     };
 
-    const handleDeleteElement = async () => {
+    const handleDeleteElement = async (options?: { closeEditor?: boolean }) => {
         handleContextMenuClose();
 
         if (!editable) {
             return;
         }
 
+        if (referencingElementLabels.length > 0) {
+            await showConfirm({
+                theme: confirmTheme,
+                title: `${treeItemLabel} kann nicht gelöscht werden`,
+                confirmButtonText: 'Schließen',
+                hideCancelButton: true,
+                children: (
+                    <Box>
+                        <Typography>
+                            {treeItemLabel === 'Abschnitt'
+                                ? 'Der Abschnitt kann nicht gelöscht werden, da seine ID noch referenziert wird.'
+                                : 'Das Element kann nicht gelöscht werden, da seine ID noch referenziert wird.'}
+                        </Typography>
+
+                        <Box
+                            component="ul"
+                            sx={{
+                                mt: 1.5,
+                                mb: 0,
+                                pl: 2.5,
+                            }}
+                        >
+                            {referencingElementLabels.map((label) => (
+                                <Box
+                                    key={label}
+                                    component="li"
+                                    sx={{mb: 0.5}}
+                                >
+                                    <Typography component="span">
+                                        {label}
+                                    </Typography>
+                                </Box>
+                            ))}
+                        </Box>
+                    </Box>
+                ),
+            });
+            return;
+        }
+
         const confirmed = await showConfirm({
+            theme: confirmTheme,
             title: `${treeItemLabel} löschen`,
             confirmButtonText: 'Löschen',
             children: (
@@ -284,6 +357,9 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         });
 
         if (confirmed) {
+            if (options?.closeEditor) {
+                closeElementEditor();
+            }
             onDelete(value);
         }
     };
@@ -442,7 +518,9 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                 <Divider/>
 
                 <MenuItem
-                    onClick={handleDeleteElement}
+                    onClick={() => {
+                        void handleDeleteElement();
+                    }}
                     disabled={!editable}
                 >
                     <ListItemIcon>
@@ -488,8 +566,9 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
                 }}
                 onCancel={closeElementEditor}
                 onDelete={() => {
-                    closeElementEditor();
-                    onDelete(value);
+                    void handleDeleteElement({
+                        closeEditor: true,
+                    });
                 }}
                 onClone={() => {
                     onClone(value);
@@ -507,7 +586,7 @@ function checkIfChildExists(element: AnyElementWithChildren, childId: string): b
     return element.children.some(child => child.id === childId || (isAnyElementWithChildren(child) && checkIfChildExists(child, childId)));
 }
 
-function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElements: ElementWithParents[], navigateToElementEditor: (elementId: string, tab?: (string | null)) => void): Action[] {
+function getIcons<T extends AnyElement>(root: AnyElement, element: T, referencingElementLabels: string[], navigateToElementEditor: (elementId: string, tab?: (string | null)) => void): Action[] {
     const actions: Action[] = [];
     const createNavigateToTabHandler = (tab?: string | null) => (event: React.MouseEvent) => {
         event.stopPropagation();
@@ -532,23 +611,10 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElement
         });
     }
 
-    const referencesToThisElement = allElements
-        .map(({element}) => ({
-            element: element,
-            targets: [
-                ...element.visibility?.referencedIds ?? [],
-                ...element.override?.referencedIds ?? [],
-                ...(element as AnyInputElement).value?.referencedIds ?? [],
-                ...(element as AnyInputElement).validation?.referencedIds ?? [],
-            ],
-        }))
-        .filter(ref => ref.targets.includes(element.id))
-        .map(({element}) => generateComponentTitle(element))
-        .join(', ');
-    if (referencesToThisElement.length > 0) {
+    if (referencingElementLabels.length > 0) {
         actions.push({
             icon: <OfflineBoltOutlinedIcon/>,
-            tooltip: 'Von Element(en) referenziert: ' + referencesToThisElement,
+            tooltip: 'Von Element(en) referenziert: ' + referencingElementLabels.join(', '),
             onClick: () => {
 
             },
@@ -609,4 +675,37 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, allElement
      */
 
     return actions;
+}
+
+function findReferencesToElement(targetElement: AnyElement, allElements: ElementWithParents[]): ElementWithParents[] {
+    return allElements.filter((entry) => {
+        if (entry.element.id === targetElement.id) {
+            return false;
+        }
+
+        if (entry.parents.some((parent) => parent.id === targetElement.id)) {
+            return false;
+        }
+
+        return getReferencedElementIds(entry.element).includes(targetElement.id);
+    });
+}
+
+function getReferencedElementIds(element: AnyElement): string[] {
+    return [
+        ...(element.visibility?.referencedIds ?? []),
+        ...(element.override?.referencedIds ?? []),
+        ...(isAnyInputElement(element) ? (element.value?.referencedIds ?? []) : []),
+        ...(isAnyInputElement(element) ? (element.validation?.referencedIds ?? []) : []),
+    ];
+}
+
+function formatElementReferenceLabel(element: AnyElement): string {
+    const title = generateComponentTitle(element);
+
+    if (title === element.id) {
+        return title;
+    }
+
+    return `${title} (${element.id})`;
 }

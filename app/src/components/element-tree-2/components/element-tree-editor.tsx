@@ -20,7 +20,6 @@ import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-c
 import {ElementType} from '../../../data/element-type/element-type';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {ElementsApiService} from '../../../modules/elements/elements-api-service';
-import {isSectionElementType} from '../../../models/elements/steps/step-element';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
@@ -131,7 +130,6 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
     const componentTitle = useMemo(() => generateComponentTitle(value), [value]);
     const typeName = useMemo(() => getElementNameForType(value.type), [value.type]);
     const showTypeSuffix = useMemo(() => componentTitle.trim() !== typeName.trim(), [componentTitle, typeName]);
-    const treeItemLabel = useMemo(() => isSectionElementType(value.type) ? 'Abschnitt' : 'Element', [value.type]);
 
     const drawerTheme = useMemo(() => {
         if (parentModalZIndex == null) {
@@ -416,24 +414,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                                     iconPosition: 'start',
                                     label: 'Löschen',
                                     visible: !isRoot,
-                                    onClick: () => {
-                                        showConfirm({
-                                            theme: drawerTheme,
-                                            title: `${treeItemLabel} löschen`,
-                                            confirmButtonText: 'Löschen',
-                                            children: (
-                                                <Typography>
-                                                    {treeItemLabel === 'Abschnitt'
-                                                        ? 'Soll der Abschnitt wirklich gelöscht werden?'
-                                                        : 'Soll das Element wirklich gelöscht werden?'}
-                                                </Typography>
-                                            ),
-                                        }).then((confirmed) => {
-                                            if (confirmed) {
-                                                onDelete();
-                                            }
-                                        });
-                                    },
+                                    onClick: onDelete,
                                     disabled: isBusy || !editable,
                                     variant: 'outlined',
                                     color: 'error',
