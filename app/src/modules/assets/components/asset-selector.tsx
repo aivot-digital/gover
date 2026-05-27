@@ -1,6 +1,6 @@
 import {SelectAssetDialog} from '../../../dialogs/select-asset-dialog/select-asset-dialog';
 import {useEffect, useMemo, useState} from 'react';
-import {Box, Button, CircularProgress, Fab, Stack, Typography} from '@mui/material';
+import {Box, CircularProgress, Stack, Typography} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {AssetsApiService} from '../assets-api-service';
@@ -8,7 +8,7 @@ import {Actions} from '../../../components/actions/actions';
 import {VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
-import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
+import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 
 interface AssetSelectorProps {
     label: string;
@@ -42,23 +42,69 @@ export function AssetSelector(props: AssetSelectorProps) {
     const dispatch = useAppDispatch();
     const [showSelectAssetDialog, setShowSelectAssetDialog] = useState(false);
     const [asset, setAsset] = useState<VStorageIndexItemWithAssetEntity>();
+    const [storageProviderName, setStorageProviderName] = useState<string>();
 
     useEffect(() => {
+        let active = true;
+
         setAsset(undefined);
+        setStorageProviderName(undefined);
 
         if (value == null) {
-            return;
+            return () => {
+                active = false;
+            };
         }
 
-        new AssetsApiService()
+        void new AssetsApiService()
             .retrieveByKey(value)
             .then((res) => {
+                if (!active) {
+                    return;
+                }
+
                 setAsset(res);
+
+                return new StorageProvidersApiService()
+                    .retrieve(res.storageProviderId)
+                    .then((provider) => {
+                        if (!active) {
+                            return;
+                        }
+
+                        setStorageProviderName(provider.name);
+                    })
+                    .catch((err) => {
+                        if (!active) {
+                            return;
+                        }
+
+                        dispatch(showApiErrorSnackbar(err, 'Speicheranbieter konnte nicht geladen werden'));
+                    });
             })
             .catch((err) => {
+                if (!active) {
+                    return;
+                }
+
                 dispatch(showApiErrorSnackbar(err, 'Asset konnte nicht geladen werden'));
             });
-    }, [value]);
+
+        return () => {
+            active = false;
+        };
+    }, [dispatch, value]);
+
+    const selectedAssetPath = useMemo(() => {
+        if (asset == null) {
+            return undefined;
+        }
+
+        const providerLabel = storageProviderName?.trim().length
+            ? storageProviderName
+            : `Speicheranbieter ${asset.storageProviderId}`;
+        return `${providerLabel}${asset.pathFromRoot}`;
+    }, [asset, storageProviderName]);
 
     return (
         <Box sx={{width: '100%'}}>
@@ -100,7 +146,7 @@ export function AssetSelector(props: AssetSelectorProps) {
                 {
                     value != null &&
                     asset != null &&
-                    asset.pathFromRoot
+                    selectedAssetPath
                 }
 
                 <Actions
