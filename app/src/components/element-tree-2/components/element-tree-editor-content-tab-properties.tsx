@@ -51,6 +51,29 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
         return parents.some(p => p.type === ElementType.SummaryLayout);
     }, [parents]);
 
+    const replicatingParents = useMemo(() => {
+        return parents.filter((p) => p.type === ElementType.ReplicatingContainer);
+    }, [parents]);
+
+    const replicatingParentDestinationKeyError = useMemo(() => {
+        if (!replicatingParents.some((p) => isStringNullOrEmpty(p.destinationKey))) {
+            return undefined;
+        }
+
+        return 'Mindestens ein übergeordnetes Strukturiertes Listeneingabe-Element hat noch keinen Datenschlüssel.';
+    }, [replicatingParents]);
+
+    const replicatingParentDestinationKeyPrefix = useMemo(() => {
+        if (replicatingParents.length === 0 || replicatingParentDestinationKeyError !== undefined) {
+            return undefined;
+        }
+
+        return replicatingParents
+            .map((p) => p.destinationKey)
+            .filter((key): key is string => !isStringNullOrEmpty(key))
+            .join('.') + '.*.';
+    }, [replicatingParentDestinationKeyError, replicatingParents]);
+
     const tabDescription = useMemo(() => {
         return getTabDescription(type);
     }, [type]);
@@ -363,6 +386,9 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 }}
                                 hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
                                 disabled={!editable}
+                                disableWildCards={true}
+                                prefix={replicatingParentDestinationKeyPrefix}
+                                error={replicatingParentDestinationKeyError}
                             />
                         </Grid>
                     </Grid>
