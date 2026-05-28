@@ -63,6 +63,7 @@ interface ProcessDataKeyInputComponentProps {
     disabled?: boolean;
     busy?: boolean;
     disableWildCards?: boolean;
+    prefix?: string;
 }
 
 export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponentProps) {
@@ -77,6 +78,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         required,
         error,
         disableWildCards = false,
+        prefix,
     } = props;
 
     const opec = useOptionalProcessNodeEditorContext();
@@ -107,7 +109,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
             hint={hint}
             disabled={disabled}
             busy={busy}
-            startIcon="$."
+            startIcon={`$.${prefix ?? ''}`}
             debounce={1000}
             pattern={processDataKeyPattern}
             suggestions={suggestions}
