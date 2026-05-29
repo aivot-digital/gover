@@ -65,6 +65,7 @@ export function ProcessNodeEditorOutputsTab() {
                             }, false);
                         }}
                         disabled={!isEditable}
+                        disableWildCards={true}
                     />
                 ))
             }
