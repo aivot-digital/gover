@@ -82,7 +82,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
         busy,
         required,
         error,
-        disableWildCards = false,
+        disableWildCards = true,
         prefix,
     } = props;
 
