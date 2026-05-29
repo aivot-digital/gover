@@ -14,6 +14,8 @@ public class SearchItemEntity {
 
     private String originTable;
 
+    private String originTableSubset;
+
     public String getId() {
         return id;
     }
@@ -38,6 +40,15 @@ public class SearchItemEntity {
 
     public SearchItemEntity setOriginTable(String originTable) {
         this.originTable = originTable;
+        return this;
+    }
+
+    public String getOriginTableSubset() {
+        return originTableSubset;
+    }
+
+    public SearchItemEntity setOriginTableSubset(String originTableSubset) {
+        this.originTableSubset = originTableSubset;
         return this;
     }
 }

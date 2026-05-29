@@ -2,16 +2,20 @@ CREATE VIEW v_search_items AS
 
 -- Assets
 SELECT text 'assets'                                                  AS origin_table,
+       null                                                           AS origin_table_subset,
        filename                                                       AS label,
        storage_provider_id::varchar || ',' || path_from_root::varchar AS id,
        to_tsvector('german', filename)                                AS searchable_element,
        filename                                                       AS search_text
-FROM v_storage_index_items_with_assets WHERE directory = false AND missing = false
+FROM v_storage_index_items_with_assets
+WHERE directory = false
+  AND missing = false
 
 UNION ALL
 
 -- Data Object Items
 SELECT text 'data_object_items'                                 AS origin_table,
+       null                                                     AS origin_table_subset,
        id                                                       AS label,
        schema_key || ',' || id                                  AS id,
        to_tsvector('german', id) || to_tsvector('german', data) AS searchable_element,
@@ -22,6 +26,7 @@ UNION ALL
 
 -- Data Object Schemas
 SELECT text 'data_object_schemas'  AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        key::varchar                AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -32,6 +37,7 @@ UNION ALL
 
 -- Departments
 SELECT text 'departments'          AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        id::varchar                 AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -42,6 +48,7 @@ UNION ALL
 
 -- Teams
 SELECT text 'teams'                AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        id::varchar                 AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -50,18 +57,23 @@ FROM teams
 
 UNION ALL
 
--- Forms
-SELECT text 'forms'                                     AS origin_table,
-       internal_title || ' (Version ' || version || ')' AS label,
-       id::varchar || ',' || version::varchar           AS id,
-       to_tsvector('german', internal_title)            AS searchable_element,
-       internal_title                                   AS search_text
-FROM form_version_with_details
+-- Process Nodes
+SELECT text 'process_nodes'                                         AS origin_table,
+       process_node_definition_key::varchar                         AS origin_table_subset,
+       coalesce(name, data_key, '')                                 AS label,
+       id::varchar                                                  AS id,
+       to_tsvector('german', coalesce(name, '')) ||
+       to_tsvector('german', coalesce(description, ''))             AS searchable_element,
+       trim(coalesce(name, '') || ' ' || coalesce(description, '')) AS search_text
+FROM process_nodes
+WHERE coalesce(name, '') <> ''
+   OR coalesce(description, '') <> ''
 
 UNION ALL
 
 -- Identity Providers
 SELECT text 'identity_providers'   AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        key::varchar                AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -72,6 +84,7 @@ UNION ALL
 
 -- Payment Providers
 SELECT text 'payment_providers'    AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        key::varchar                AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -82,6 +95,7 @@ UNION ALL
 
 -- Storage Providers
 SELECT text 'storage_providers'    AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        id::varchar                 AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -92,6 +106,7 @@ UNION ALL
 
 -- Presets
 SELECT text 'presets'                          AS origin_table,
+       null                                    AS origin_table_subset,
        title || ' (Version ' || version || ')' AS label,
        preset_key || ',' || version::varchar   AS id,
        to_tsvector('german', title)            AS searchable_element,
@@ -102,6 +117,7 @@ UNION ALL
 
 -- Provider Links
 SELECT text 'provider_links'       AS origin_table,
+       null                        AS origin_table_subset,
        text                        AS label,
        id::varchar                 AS id,
        to_tsvector('german', text) AS searchable_element,
@@ -112,6 +128,7 @@ UNION ALL
 
 -- Secrets
 SELECT text 'secrets'              AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        key::varchar                AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -122,6 +139,7 @@ UNION ALL
 
 -- Themes
 SELECT text 'themes'               AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        id::varchar                 AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -132,6 +150,7 @@ UNION ALL
 
 -- Domain Roles
 SELECT text 'domain_roles'         AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        id::varchar                 AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -142,6 +161,7 @@ UNION ALL
 
 -- System Roles
 SELECT text 'system_roles'         AS origin_table,
+       null                        AS origin_table_subset,
        name                        AS label,
        id::varchar                 AS id,
        to_tsvector('german', name) AS searchable_element,
@@ -152,6 +172,7 @@ UNION ALL
 
 -- Process Versions
 SELECT text 'processes'                                              AS origin_table,
+       null                                                          AS origin_table_subset,
        p.internal_title || ' (Version ' || pv.process_version || ')' AS label,
        p.id::varchar || ',' || pv.process_version                    AS id,
        to_tsvector('german', p.internal_title)                       AS searchable_element,
@@ -162,10 +183,16 @@ FROM process_versions pv
 UNION ALL
 
 -- Process Instances
-SELECT text 'process_instances'                                                         AS origin_table,
-       pi.id::varchar || ' (' || array_to_string(pi.assigned_file_numbers, ', ') || ')' AS label,
-       pi.id::varchar                                                                   AS id,
-       to_tsvector('german', pi.id::varchar) ||
-       to_tsvector('german', array_to_string(pi.assigned_file_numbers, ', '))           AS searchable_element,
-       pi.id::varchar || ' ' || array_to_string(pi.assigned_file_numbers, ', ')         AS search_text
+SELECT text 'process_instances'                                     AS origin_table,
+       null                                                         AS origin_table_subset,
+       pi.case_number::varchar || (case
+                                       when pi.assigned_file_numbers = '{}' then ''
+                                       else (' (' || array_to_string(pi.assigned_file_numbers, ', ') || ')')
+           end)                                                     AS label,
+       pi.id::varchar                                               AS id,
+       to_tsvector('german', pi.case_number::varchar) ||
+       to_tsvector('german',
+                   array_to_string(pi.assigned_file_numbers, ', ')) AS searchable_element,
+       pi.case_number::varchar || ' ' ||
+       array_to_string(pi.assigned_file_numbers, ', ')              AS search_text
 FROM process_instances pi;

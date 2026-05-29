@@ -23,6 +23,7 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.StorageProviders]: 'Speicheranbieter',
     [ServerEntityType.Processes]: 'Prozess',
     [ServerEntityType.ProcessInstances]: 'Vorgang',
+    [ServerEntityType.ProcessNodes]: 'Formular',
 };
 
 export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
@@ -46,4 +47,5 @@ export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
     [ServerEntityType.StorageProviders]: ModuleIcons.storage,
     [ServerEntityType.Processes]: ModuleIcons.processes,
     [ServerEntityType.ProcessInstances]: ModuleIcons.submissions,
+    [ServerEntityType.ProcessNodes]: ModuleIcons.forms,
 };

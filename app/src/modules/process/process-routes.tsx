@@ -23,9 +23,12 @@ import {
     ProcessNodeEditorTestingTab,
 } from './pages/details/components/process-node-editor/tabs/process-node-editor-testing-tab';
 import {
-    ProcessNodeEditorPlaceholder
+    ProcessNodeEditorPlaceholder,
 } from './pages/details/components/process-node-editor/process-node-editor-placeholder';
-import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
+import {
+    duplicatePageWarningRouteHandle,
+} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
+import {ProcessInstanceDetailsPage} from './pages/details/process-instance-details-page';
 
 export const processRoutes: RouteObject[] = [
     {
@@ -72,6 +75,10 @@ export const processRoutes: RouteObject[] = [
     {
         path: '/process-instances',
         element: <ProcessInstanceListPage/>,
+    },
+    {
+        path: '/process-instances/:id',
+        element: <ProcessInstanceDetailsPage/>,
     },
     {
         path: '/processes/:processId/versions/:processVersion/instances/:instanceId/tasks',

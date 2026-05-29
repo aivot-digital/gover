@@ -17,12 +17,15 @@ public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEnt
                         FROM
                             v_search_items
                         WHERE
+                            (origin_table <> 'process_nodes' OR origin_table_subset in :process_node_origin_table_subset) AND
                             word_similarity(search_text, :search) > 0.1
                         ORDER BY
                             sim DESC;
                     """, nativeQuery = true
     )
-    Page<SearchItemEntity> search(@Param("search") String search, Pageable pageable);
+    Page<SearchItemEntity> search(@Param("search") String search,
+                                  @Param("process_node_origin_table_subset") String[] allowedProcessNodeOriginTableSubset,
+                                  Pageable pageable);
 
     @Query(
             value = """
@@ -32,6 +35,7 @@ public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEnt
                         FROM
                             v_search_items
                         WHERE
+                            (origin_table <> 'process_nodes' OR origin_table_subset in :process_node_origin_table_subset) AND
                             word_similarity(search_text, :search) > 0.1 AND
                             origin_table = :originTable
                         ORDER BY
@@ -40,5 +44,6 @@ public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEnt
     )
     Page<SearchItemEntity> search(@Param("search") String search,
                                   @Param("originTable") String originTable,
+                                  @Param("process_node_origin_table_subset") String[] allowedProcessNodeOriginTableSubset,
                                   Pageable pageable);
 }

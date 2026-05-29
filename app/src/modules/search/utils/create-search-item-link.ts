@@ -1,9 +1,10 @@
 import {AssetsApiService} from '../../assets/assets-api-service';
 import {SearchItemResponseDto} from '../dtos/search-item-response-dto';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export function createSearchItemLink(searchItem: SearchItemResponseDto): string {
     const id = searchItem.id;
-    const originTable = searchItem.originTable as string;
+    const originTable = searchItem.originTable as ServerEntityType;
     const separatorIndex = id.indexOf(',');
     const idHead = separatorIndex >= 0 ? id.slice(0, separatorIndex) : id;
     const idTail = separatorIndex >= 0 ? id.slice(separatorIndex + 1) : undefined;
@@ -57,7 +58,9 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
         case 'processes':
             return idTail != null ? `/processes/${idHead}/versions/${idTail}` : '/processes';
         case 'process_instances':
-            return `/process-instances?search=${encodeURIComponent(id)}`;
+            return `/process-instances/${id}`;
+        case 'process_nodes':
+            return `/form-triggers/${id}/formLayout/0`;
         default:
             return '/not-found';
     }

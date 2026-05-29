@@ -18,5 +18,6 @@ export enum ServerEntityType {
     Teams = 'teams',
     DomainRoles = 'domain_roles',
     Processes = 'processes',
-    ProcessInstances = 'process_instances'
+    ProcessInstances = 'process_instances',
+    ProcessNodes = 'process_nodes',
 }

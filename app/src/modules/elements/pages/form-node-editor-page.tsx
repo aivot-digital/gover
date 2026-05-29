@@ -105,6 +105,8 @@ import type {Theme as AppTheme} from '../../themes/models/theme';
 import {FormTriggerApiService} from '../../forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
+import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
+import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export const DialogSearchParam = 'dialog';
 
@@ -149,6 +151,17 @@ export function FormNodeEditorPage() {
         original: node?.configuration[fieldKey],
         edited: formLayout,
     });
+
+    useEffect(() => {
+        if (node == null) {
+            return;
+        }
+        dispatch(addEntityHistoryItem({
+            link: location.pathname,
+            title: node.name ?? 'Formular',
+            type: ServerEntityType.ProcessNodes,
+        }));
+    }, [node]);
 
     useEffect(() => {
         const nodeIdInt = parseInt(nodeId);

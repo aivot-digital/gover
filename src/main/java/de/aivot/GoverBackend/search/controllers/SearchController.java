@@ -2,6 +2,10 @@ package de.aivot.GoverBackend.search.controllers;
 
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.plugin.models.PluginComponent;
+import de.aivot.GoverBackend.plugin.services.PluginUtils;
+import de.aivot.GoverBackend.plugins.form.FormPlugin;
+import de.aivot.GoverBackend.plugins.form.v1.nodes.FormTriggerNodeV1;
 import de.aivot.GoverBackend.search.entities.SearchItemEntity;
 import de.aivot.GoverBackend.search.repositories.SearchEntityRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -31,8 +35,11 @@ import org.springframework.web.bind.annotation.RestController;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SearchController {
-
     private final SearchEntityRepository searchEntityRepository;
+
+    private static final String[] allowedProcessNodeDefinitionKeys = {
+            PluginUtils.combineComponentKey(FormPlugin.PLUGIN_KEY, FormTriggerNodeV1.NODE_KEY),
+    };
 
     public SearchController(SearchEntityRepository searchEntityRepository) {
         this.searchEntityRepository = searchEntityRepository;
@@ -51,10 +58,10 @@ public class SearchController {
     ) throws ResponseException {
         if (StringUtils.isNotNullOrEmpty(originTable)) {
             return searchEntityRepository
-                    .search(search, originTable, pageable);
+                    .search(search, originTable, allowedProcessNodeDefinitionKeys, pageable);
         }
 
         return searchEntityRepository
-                .search(search, pageable);
+                .search(search, allowedProcessNodeDefinitionKeys, pageable);
     }
 }
