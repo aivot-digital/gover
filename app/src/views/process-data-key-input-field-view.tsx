@@ -14,7 +14,7 @@ const processDataKeyPatternWithWildcard = {
 };
 
 const processDataKeyPattern = {
-    regex: '^[a-zA-Z0-9.\\*_]+$',
+    regex: '^[a-zA-Z0-9._]+$',
     message: 'Der Datenschlüssel darf nur Buchstaben (a-z und A-Z), Zahlen, Punkte und Unterstriche enthalten.',
 };
 
@@ -87,7 +87,6 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
     } = props;
 
     const opec = useOptionalProcessNodeEditorContext();
-
 
     const suggestions = useMemo(() => {
         if (opec == null || opec.processDataKeyHints == null) {
