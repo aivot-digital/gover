@@ -199,7 +199,7 @@ gover:
     csrfTtlSeconds: "${GOVER_CSRF_TTL_SECONDS:86400}"
   http:
     connectionTimeoutSeconds: "${GOVER_HTTP_CONNECTION_TIMEOUT_SECONDS:2}"
-    readTimeoutSeconds: "${GOVER_HTTP_READ_TIMEOUT_SECONDS:30}"
+    readTimeoutSeconds: "${GOVER_HTTP_READ_TIMEOUT_SECONDS:60}"
   fileExtensions: "${GOVER_FILE_EXTENSIONS}"
   contentTypes: "${GOVER_CONTENT_TYPES}"
   maxSubmissionCopyRetryCount: 3
