@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.xdf.v2.controllers;
 
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -29,7 +30,7 @@ public class XdfTransformController {
     }
 
     @PostMapping(value = "transform/", consumes = MediaType.APPLICATION_XML_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
-    public VFormVersionWithDetailsEntity transform(
+    public FormLayoutElement transform(
             @Nonnull @RequestBody @Valid XdfStammdatenschema0102 request
     ) throws ResponseException {
         return xdfTransformService

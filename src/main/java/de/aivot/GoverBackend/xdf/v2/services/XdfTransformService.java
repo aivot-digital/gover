@@ -46,7 +46,7 @@ public class XdfTransformService {
     }
 
     @Nullable
-    public VFormVersionWithDetailsEntity transformToGover(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
+    public FormLayoutElement transformToGover(@Nonnull XdfStammdatenschema0102 xdfStammdatenschema0102) {
         var sd = xdfStammdatenschema0102
                 .getStammdatenschema();
 
@@ -59,8 +59,8 @@ public class XdfTransformService {
         return stammdatenschemaToRootElement(idCounter, sd);
     }
 
-    private VFormVersionWithDetailsEntity stammdatenschemaToRootElement(@Nonnull XdfIdCounter idCounter,
-                                                                       @Nullable XdfStammdatenschema stammdatenschema) {
+    private FormLayoutElement stammdatenschemaToRootElement(@Nonnull XdfIdCounter idCounter,
+                                                            @Nullable XdfStammdatenschema stammdatenschema) {
         if (stammdatenschema == null) {
             return null;
         }
@@ -107,46 +107,11 @@ public class XdfTransformService {
         }
 
         var root = new FormLayoutElement()
+                .setPublicTitle(publicTitle)
                 .setChildren(steps);
         root.setId("root");
 
-        return new VFormVersionWithDetailsEntity(
-                null,
-                slug,
-                internalTitle,
-                null,
-                null,
-                1,
-                1,
-                null,
-                1,
-                FormStatus.Drafted,
-                FormType.Public,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                List.of(),
-                List.of(),
-                false,
-                4,
-                4,
-                root,
-                null,
-                null,
-                null,
-                null,
-                publicTitle,
-                null,
-                null
-        );
+        return root;
     }
 
     @Nonnull
