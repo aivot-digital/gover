@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProcessNodeDefinitionTest {
     @Test
-    void getStaffTaskViewData_DefaultMergesSavedDataOntoInitialData() throws Exception {
+    void getStaffTaskViewData_DefaultReturnsSavedSnapshotWhenPresent() throws Exception {
         ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
@@ -92,6 +92,7 @@ class ProcessNodeDefinitionTest {
                 Map.of(
                         ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
                         Map.of(
+                                "defaultField", "initial",
                                 "sharedField", "saved",
                                 "savedField", "saved"
                         )
@@ -108,7 +109,7 @@ class ProcessNodeDefinitionTest {
     }
 
     @Test
-    void getStaffTaskViewData_DefaultTreatsSavedNullAsExplicitDeletion() throws Exception {
+    void getStaffTaskViewData_DefaultPreservesSavedNullValues() throws Exception {
         ProcessNodeDefinition<AuthoredElementValues> definition = new ProcessNodeDefinition<>() {
             @Override
             public String getParentPluginKey() {
