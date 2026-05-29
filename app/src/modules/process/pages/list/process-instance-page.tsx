@@ -215,7 +215,7 @@ export function ProcessInstanceListPage(): ReactNode {
             ),
         },
         {
-            field: 'accessKey',
+            field: 'caseNumber',
             headerName: 'Schlüssel',
             flex: 1,
             renderCell: (params) => (

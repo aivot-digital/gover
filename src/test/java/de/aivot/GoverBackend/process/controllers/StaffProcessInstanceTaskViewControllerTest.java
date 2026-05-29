@@ -29,6 +29,7 @@ import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecution
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
+import de.aivot.GoverBackend.process.services.CaseNumberGeneratorService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceTaskService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
@@ -55,6 +56,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class StaffProcessInstanceTaskViewControllerTest {
     @Test
@@ -90,6 +92,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 1,
                 ProcessVersionStatus.Published,
                 "Test Process",
+                null,
                 now,
                 now,
                 now,
@@ -98,6 +101,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         var instance = new ProcessInstanceEntity(
                 42L,
+                null,
                 UUID.randomUUID(),
                 process.getId(),
                 version.getProcessVersion(),
@@ -203,7 +207,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceEntity instance;
 
         private TestProcessInstanceService(ProcessInstanceEntity instance) {
-            super(null, null, null);
+            super(null, null, null, null, mock(CaseNumberGeneratorService.class));
             this.instance = instance;
         }
 
@@ -374,7 +378,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessVersionEntity version;
 
         private TestProcessVersionService(ProcessVersionEntity version) {
-            super(null, null, null);
+            super(null, null, null, mock(CaseNumberGeneratorService.class));
             this.version = version;
         }
 

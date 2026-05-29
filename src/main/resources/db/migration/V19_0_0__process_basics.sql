@@ -36,24 +36,28 @@ create table processes
 create table process_versions
 (
     -- The parent definition ID
-    process_id      int          not null,
+    process_id           int          not null,
     -- The version of this process definition
-    process_version int          not null default 0,
+    process_version      int          not null default 0,
     -- The status of this process definition.
     -- Options are:
     --   0 - Drafted
     --   1 - Published
     --   2 - Revoked
-    status          smallint     not null default 0,
+    status               smallint     not null default 0,
 
     -- The public title of this process definition version
-    public_title    varchar(192) not null,
+    public_title         varchar(192) not null,
+
+    -- Case number template for this process definition version.
+    -- This is used to generate the case number for process instances of this process definition version.
+    case_number_template varchar(96)  null,
 
     -- Timestamps for creation and last update
-    created         timestamptz  not null default now(),
-    updated         timestamptz  not null default now(),
-    published       timestamptz  null,
-    revoked         timestamptz  null,
+    created              timestamptz  not null default now(),
+    updated              timestamptz  not null default now(),
+    published            timestamptz  null,
+    revoked              timestamptz  null,
 
     -- Define the composite primary key
     primary key (process_id, process_version),

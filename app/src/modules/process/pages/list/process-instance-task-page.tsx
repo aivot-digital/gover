@@ -212,7 +212,7 @@ export function ProcessInstanceTaskListPage() {
     const rowActions = useCallback((item: ProcessInstanceTaskEntityWithNodeAndProvider) => [
         {
             icon: <FactCheck/>,
-            to: `/tasks/${instance?.accessKey}/${item.accessKey}`,
+            to: `/tasks/${instance?.id}/${item.id}`,
             tooltip: 'Aufgabenansicht öffnen',
         },
         {

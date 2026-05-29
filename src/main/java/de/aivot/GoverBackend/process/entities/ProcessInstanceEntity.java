@@ -29,6 +29,10 @@ public class ProcessInstanceEntity {
     private Long id;
 
     @Nonnull
+    @NotNull(message = "Das Aktenzeichen darf nicht null sein.")
+    private String caseNumber;
+
+    @Nonnull
     @NotNull(message = "Der Zugriffsschlüssel darf nicht null sein.")
     private UUID accessKey;
 
@@ -107,6 +111,7 @@ public class ProcessInstanceEntity {
     }
 
     public ProcessInstanceEntity(@Nonnull Long id,
+                                 @Nonnull String caseNumber,
                                  @Nonnull UUID accessKey,
                                  @Nonnull Integer processId,
                                  @Nonnull Integer initialProcessVersion,
@@ -124,6 +129,7 @@ public class ProcessInstanceEntity {
                                  @Nullable Instant keepUntil,
                                  @Nullable Integer createdForTestClaimId) {
         this.id = id;
+        this.caseNumber = caseNumber;
         this.accessKey = accessKey;
         this.processId = processId;
         this.initialProcessVersion = initialProcessVersion;
@@ -141,7 +147,6 @@ public class ProcessInstanceEntity {
         this.keepUntil = keepUntil;
         this.createdForTestClaimId = createdForTestClaimId;
     }
-
     // endregion
 
     // region Hashcode and Equals
@@ -149,14 +154,22 @@ public class ProcessInstanceEntity {
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        ProcessInstanceEntity instance = (ProcessInstanceEntity) o;
-        return Objects.equals(id, instance.id) && Objects.equals(accessKey, instance.accessKey) && Objects.equals(processId, instance.processId) && Objects.equals(initialProcessVersion, instance.initialProcessVersion) && status == instance.status && Objects.equals(statusOverride, instance.statusOverride) && Objects.equals(assignedUserId, instance.assignedUserId) && Objects.equals(assignedFileNumbers, instance.assignedFileNumbers) && Objects.equals(identities, instance.identities) && Objects.equals(started, instance.started) && Objects.equals(updated, instance.updated) && Objects.equals(finished, instance.finished) && Objects.equals(runtime, instance.runtime) && Objects.equals(initialPayload, instance.initialPayload) && Objects.equals(initialNodeId, instance.initialNodeId) && Objects.equals(keepUntil, instance.keepUntil) && Objects.equals(createdForTestClaimId, instance.createdForTestClaimId);
+        ProcessInstanceEntity that = (ProcessInstanceEntity) o;
+        return Objects.equals(id, that.id) && Objects.equals(caseNumber, that.caseNumber) && Objects.equals(accessKey, that.accessKey) &&
+                Objects.equals(processId, that.processId) && Objects.equals(initialProcessVersion, that.initialProcessVersion) && status == that.status &&
+                Objects.equals(statusOverride, that.statusOverride) && Objects.equals(assignedUserId, that.assignedUserId) &&
+                Objects.equals(assignedFileNumbers, that.assignedFileNumbers) && Objects.equals(identities, that.identities) &&
+                Objects.equals(started, that.started) && Objects.equals(updated, that.updated) && Objects.equals(finished, that.finished) &&
+                Objects.equals(runtime, that.runtime) && Objects.equals(initialPayload, that.initialPayload) &&
+                Objects.equals(initialNodeId, that.initialNodeId) && Objects.equals(keepUntil, that.keepUntil) &&
+                Objects.equals(createdForTestClaimId, that.createdForTestClaimId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, accessKey, processId, initialProcessVersion, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, keepUntil, createdForTestClaimId);
+        return Objects.hash(id, caseNumber, accessKey, processId, initialProcessVersion, status, statusOverride, assignedUserId, assignedFileNumbers, identities, started, updated, finished, runtime, initialPayload, initialNodeId, keepUntil, createdForTestClaimId);
     }
+
 
     // endregion
 
@@ -169,6 +182,16 @@ public class ProcessInstanceEntity {
 
     public ProcessInstanceEntity setId(@Nonnull Long id) {
         this.id = id;
+        return this;
+    }
+
+    @Nonnull
+    public String getCaseNumber() {
+        return caseNumber;
+    }
+
+    public ProcessInstanceEntity setCaseNumber(@Nonnull String caseNumber) {
+        this.caseNumber = caseNumber;
         return this;
     }
 

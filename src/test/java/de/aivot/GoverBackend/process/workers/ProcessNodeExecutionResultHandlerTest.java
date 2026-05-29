@@ -254,6 +254,7 @@ class ProcessNodeExecutionResultHandlerTest {
     private static ProcessInstanceEntity processInstance() {
         return new ProcessInstanceEntity(
                 42L,
+                null,
                 UUID.randomUUID(),
                 7,
                 1,

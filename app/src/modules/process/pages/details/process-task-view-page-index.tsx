@@ -121,7 +121,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
             {
                 label: 'Vorgangskennung',
                 icon: <Inbox />,
-                children: renderLinkedValue(item.instance?.accessKey ?? 'Nicht hinterlegt', processPath),
+                children: renderLinkedValue(item.instance?.caseNumber ?? 'Nicht hinterlegt', processPath),
             },
             {
                 label: 'Aktenzeichen',

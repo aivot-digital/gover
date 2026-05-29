@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
 
 class ProcessInstanceRetentionCleanupServiceTest {
     @Test
@@ -122,6 +123,7 @@ class ProcessInstanceRetentionCleanupServiceTest {
     private static ProcessInstanceEntity createProcessInstance(Long id) {
         return new ProcessInstanceEntity(
                 id,
+                null,
                 UUID.randomUUID(),
                 1,
                 1,
@@ -145,7 +147,7 @@ class ProcessInstanceRetentionCleanupServiceTest {
         private final List<ProcessInstanceEntity> deletedProcessInstances = new ArrayList<>();
 
         private TestProcessInstanceService() {
-            super(null, null, null);
+            super(null, null, null, null, mock(CaseNumberGeneratorService.class));
         }
 
         @Override

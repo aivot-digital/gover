@@ -29,6 +29,7 @@ export class ProcessInstanceApiService extends BaseCrudApiService<
 
     initialize(): ProcessInstanceEntity {
         return {
+            caseNumber: '',
             assignedUserId: null,
             createdForTestClaimId: null,
             keepUntil: null,

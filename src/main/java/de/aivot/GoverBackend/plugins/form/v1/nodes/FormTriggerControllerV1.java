@@ -400,6 +400,7 @@ public class FormTriggerControllerV1 {
         var instance = new ProcessInstanceEntity(
                 null,
                 null,
+                null,
                 nodeEntity.getProcessId(),
                 nodeEntity.getProcessVersion(),
                 ProcessInstanceStatus.Paused, // Start paused to prevent the ProcessStarter from picking it up before we have added the attachments and initial payload

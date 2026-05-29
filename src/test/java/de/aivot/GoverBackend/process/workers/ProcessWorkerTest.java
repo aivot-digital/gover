@@ -41,6 +41,7 @@ class ProcessWorkerTest {
     void listen_MarksProcessInstanceFailed_WhenInitThrowsRuntimeException() {
         var processInstance = new ProcessInstanceEntity(
                 42L,
+                null,
                 UUID.randomUUID(),
                 7,
                 1,

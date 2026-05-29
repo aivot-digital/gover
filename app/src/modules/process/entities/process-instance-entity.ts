@@ -2,6 +2,7 @@ import {type ProcessInstanceStatus} from '../enums/process-instance-status';
 
 export interface ProcessInstanceEntity {
     id: number;
+    caseNumber: string;
     accessKey: string; // UUID as string
     processId: number;
     initialProcessVersion: number;

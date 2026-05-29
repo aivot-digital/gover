@@ -25,6 +25,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceTaskService;
+import de.aivot.GoverBackend.process.services.CaseNumberGeneratorService;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
@@ -43,6 +44,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 class CitizenProcessInstanceTaskViewControllerTest {
     @Test
@@ -53,6 +55,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         var instance = new ProcessInstanceEntity(
                 42L,
+                null,
                 procAccess,
                 7,
                 1,
@@ -149,6 +152,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
 
         var instance = new ProcessInstanceEntity(
                 42L,
+                null,
                 procAccess,
                 7,
                 1,
@@ -241,7 +245,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceEntity instance;
 
         private TestProcessInstanceService(ProcessInstanceEntity instance) {
-            super(null, null, null);
+            super(null, null, null, null, mock(CaseNumberGeneratorService.class));
             this.instance = instance;
         }
 

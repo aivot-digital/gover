@@ -666,13 +666,30 @@ export function FormNodeEditorPage() {
         }
 
         if (event === PRE_SUBMIT_EVENT) {
+            if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
+                await confirm({
+                    title: 'Keine Formular-URL vergeben',
+                    children: (
+                        <Typography>
+                            Sie haben für dieses Formular keine Formular-URL konfiguriert.
+                            Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
+                            Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
+                        </Typography>
+                    ),
+                    confirmButtonText: 'Ok',
+                    hideCancelButton: true,
+                });
+                return;
+            }
+
             if (hasChanged) {
                 const saveNow = await confirm({
                     title: 'Ungespeicherte Änderungen',
                     children: (
                         <Typography>
                             Sie haben aktuell ungespeicherte Änderungen.
-                            Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt werden.
+                            Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt
+                            werden.
                             Sie können die Änderungen jetzt speichern.
                         </Typography>
                     ),
@@ -703,7 +720,8 @@ export function FormNodeEditorPage() {
                     title: 'Nicht im Test-Modus',
                     children: (
                         <Typography>
-                            Der Prozess, für den Sie das Formular absenden möchten, befindet sich <strong>nicht</strong> im
+                            Der Prozess, für den Sie das Formular absenden möchten, befindet
+                            sich <strong>nicht</strong> im
                             Testmodus.
                             Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
                         </Typography>

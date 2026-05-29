@@ -27,18 +27,24 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     private final ProcessVersionRepository processDefinitionVersionRepository;
     private final ProcessNodeService processNodeService;
     private final ProcessNodeDefinitionService processNodeDefinitionService;
+    private final CaseNumberGeneratorService caseNumberGeneratorService;
 
     @Autowired
     public ProcessVersionService(ProcessVersionRepository processDefinitionVersionRepository,
-                                 ProcessNodeService processNodeService, ProcessNodeDefinitionService processNodeDefinitionService) {
+                                 ProcessNodeService processNodeService,
+                                 ProcessNodeDefinitionService processNodeDefinitionService,
+                                 CaseNumberGeneratorService caseNumberGeneratorService) {
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
         this.processNodeService = processNodeService;
         this.processNodeDefinitionService = processNodeDefinitionService;
+        this.caseNumberGeneratorService = caseNumberGeneratorService;
     }
 
     @Nonnull
     @Override
     public ProcessVersionEntity create(@Nonnull ProcessVersionEntity entity) throws ResponseException {
+        caseNumberGeneratorService.validateCaseNumberTemplate(entity.getCaseNumberTemplate());
+
         // Fetch the latest version number for the given process definition
         Integer latestVersionNumber = processDefinitionVersionRepository
                 .maxVersionForProcessDefinition(entity.getProcessId())
@@ -86,8 +92,10 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
     public ProcessVersionEntity performUpdate(@Nonnull ProcessVersionEntityId id,
                                               @Nonnull ProcessVersionEntity entity,
                                               @Nonnull ProcessVersionEntity existingEntity) throws ResponseException {
+        caseNumberGeneratorService.validateCaseNumberTemplate(entity.getCaseNumberTemplate());
         existingEntity.setStatus(entity.getStatus());
         existingEntity.setPublicTitle(entity.getPublicTitle());
+        existingEntity.setCaseNumberTemplate(entity.getCaseNumberTemplate());
         return processDefinitionVersionRepository.save(existingEntity);
     }
 
@@ -119,4 +127,3 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
                 .validate(node, provider, true);
     }
 }
-

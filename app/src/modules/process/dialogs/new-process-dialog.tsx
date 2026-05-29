@@ -988,6 +988,7 @@ const EmptyProcess: ProcessExport = {
         processVersion: 0,
         status: ProcessStatus.Drafted,
         publicTitle: 'Neuer Prozess',
+        caseNumberTemplate: null,
         crated: '',
         updated: '',
         published: null,

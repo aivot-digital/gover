@@ -35,6 +35,9 @@ public class ProcessVersionEntity {
     @Length(min=3, max = 96, message = "Der öffentliche Title der Prozessdefinition-Version muss zwischen 3 und 96 Zeichen lang sein.")
     private String publicTitle;
 
+    @Nullable
+    private String caseNumberTemplate;
+
     @Nonnull
     private Instant created;
 
@@ -58,6 +61,7 @@ public class ProcessVersionEntity {
                                 @Nonnull Integer processVersion,
                                 @Nonnull ProcessVersionStatus status,
                                 @Nonnull String publicTitle,
+                                @Nonnull String caseNumberTemplate,
                                 @Nonnull Instant created,
                                 @Nonnull Instant updated,
                                 @Nullable Instant published,
@@ -66,6 +70,7 @@ public class ProcessVersionEntity {
         this.processVersion = processVersion;
         this.status = status;
         this.publicTitle = publicTitle;
+        this.caseNumberTemplate = caseNumberTemplate;
         this.created = created;
         this.updated = updated;
         this.published = published;
@@ -168,6 +173,16 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setPublicTitle(@Nonnull String publicTitle) {
         this.publicTitle = publicTitle;
+        return this;
+    }
+
+    @Nullable
+    public String getCaseNumberTemplate() {
+        return caseNumberTemplate;
+    }
+
+    public ProcessVersionEntity setCaseNumberTemplate(@Nullable String caseNumberTemplate) {
+        this.caseNumberTemplate = caseNumberTemplate;
         return this;
     }
 
