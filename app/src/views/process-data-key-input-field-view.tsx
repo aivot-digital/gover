@@ -8,9 +8,14 @@ import {
 } from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
 import {isStringNullOrEmpty} from '../utils/string-utils';
 
-const processDataKeyPattern = {
+const processDataKeyPatternWithWildcard = {
     regex: '^[a-zA-Z0-9.\\*_]+$',
     message: 'Der Datenschlüssel darf nur Buchstaben (a-z und A-Z), Zahlen, Punkte, Unterstriche und Sternchen enthalten.',
+};
+
+const processDataKeyPattern = {
+    regex: '^[a-zA-Z0-9.\\*_]+$',
+    message: 'Der Datenschlüssel darf nur Buchstaben (a-z und A-Z), Zahlen, Punkte und Unterstriche enthalten.',
 };
 
 export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKeyInputFieldElement, string>) {
@@ -111,7 +116,7 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
             busy={busy}
             startIcon={`$.${prefix ?? ''}`}
             debounce={1000}
-            pattern={processDataKeyPattern}
+            pattern={disableWildCards ? processDataKeyPattern : processDataKeyPatternWithWildcard}
             suggestions={suggestions}
         />
     );
