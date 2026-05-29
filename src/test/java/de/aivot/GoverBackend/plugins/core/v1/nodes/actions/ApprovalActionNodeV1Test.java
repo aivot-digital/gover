@@ -154,7 +154,7 @@ class ApprovalActionNodeV1Test {
     }
 
     @Test
-    void getStaffTaskViewData_LoadsSavedRemarkFromRuntimeData() throws Exception {
+    void getStaffTaskViewData_LoadsSavedDraftSnapshotFromRuntimeData() throws Exception {
         var processData = Map.<String, Object>of("approvalValue", "Freizugebender Inhalt");
 
         var context = new ProcessNodeExecutionContextUIStaff(
@@ -165,7 +165,10 @@ class ApprovalActionNodeV1Test {
                         77,
                         Map.of(
                                 ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
-                                authored("approvalRemark", "<p>Schon geprüft</p>")
+                                authored(
+                                        "approvalValue", "Freizugebender Inhalt",
+                                        "approvalRemark", "<p>Schon geprüft</p>"
+                                )
                         ),
                         Map.of(),
                         processData
