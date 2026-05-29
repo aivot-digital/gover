@@ -340,7 +340,7 @@ export function ProcessNodeEditor(): ReactNode {
         new ProcessNodeApiService()
             .export(originalNode.id)
             .then((exp) => {
-                downloadObjectFile(`${getNodeName(originalNode, provider)}.json`, exp);
+                downloadObjectFile(`${getNodeName(originalNode, provider)}.node.gover.json`, exp);
             })
             .catch((error) => {
                 dispatch(showApiErrorSnackbar(error, 'Das Prozesselement konnte nicht exportiert werden.'));

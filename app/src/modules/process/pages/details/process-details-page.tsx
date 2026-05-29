@@ -1301,7 +1301,7 @@ export function ProcessDetailsPage(): ReactNode {
                 if (exp == null) {
                     return null;
                 }
-                downloadObjectFile(`${exp.process.internalTitle} - ${exp.version.processVersion}.json`, exp);
+                downloadObjectFile(`${exp.process.internalTitle}.process.gover.json`, exp);
             })
             .catch((error) => {
                 dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));

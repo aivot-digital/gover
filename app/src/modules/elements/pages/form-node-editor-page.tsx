@@ -109,6 +109,7 @@ import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {XdfApiService} from '../../xdf/v1/xdf-api-service';
 import Code from '@aivot/mui-material-symbols-400-outlined/dist/code/Code';
+import {getNodeName} from '../../process/pages/details/components/process-flow-editor/utils/node-utils';
 
 export const DialogSearchParam = 'dialog';
 
@@ -1040,7 +1041,7 @@ export function FormNodeEditorPage() {
                                 }}
                             >
                                 <DeveloperTools
-                                    dataLabel={'Formular-Daten'}
+                                    dataLabel={node.name ?? ''}
                                     rootElement={formLayout!}
                                     elementData={authoredElementValues}
                                     onElementDataChange={(elementData) => {

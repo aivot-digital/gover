@@ -35,7 +35,7 @@ export function ElementDataDebugger(props: ElementDataDebuggerProps) {
     const handleExport = (): void => {
         const cleanedElementData = cleanAuthoredElementValues(rootElement, elementData);
 
-        const filename = `${dataLabel} ${format(new Date(), 'dd-MM-yyyy')}.json`;
+        const filename = `${dataLabel}.forminput.gover.json`;
         downloadObjectFile(filename, cleanedElementData);
     };
 
