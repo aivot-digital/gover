@@ -710,7 +710,7 @@ export function FormNodeEditorPage() {
                 });
 
                 if (!saveNow) {
-                    dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da ungespeicherte Änderungen vorhanden sind.'));
+                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
                     return false;
                 }
 
@@ -743,7 +743,7 @@ export function FormNodeEditorPage() {
                 });
 
                 if (!createTestClaim) {
-                    dispatch(showWarningSnackbar('Formularabsendung abgebrochen, da Prozess nicht im Testmodus ist.'));
+                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
                     return false;
                 }
 
