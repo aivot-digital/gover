@@ -254,10 +254,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
             return initialData;
         }
 
-        var mergedData = new AuthoredElementValues();
-        mergedData.putAll(initialData);
-        mergedData.putAll(savedData);
-        return mergedData;
+        return savedData;
     }
 
     /**
