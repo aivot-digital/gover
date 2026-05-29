@@ -97,7 +97,7 @@ import {setCurrentStep} from '../../../slices/stepper-slice';
 import {createCustomerPath} from '../../../utils/url-path-utils';
 import {ProcessTestClaimEntity} from '../../process/entities/process-test-claim-entity';
 import {downloadQrCode} from '../../../utils/download-qrcode';
-import {downloadBlobFile} from '../../../utils/download-utils';
+import {downloadBlobFile, uploadTextFile} from '../../../utils/download-utils';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {ViewDispatcherMode} from '../../../components/view-dispatcher/view-dispatcher.context';
 import {ProcessStatus} from '../../process/enums/process-status';
@@ -107,6 +107,8 @@ import {createAppTheme} from '../../../theming/themes';
 import {BaseTheme} from '../../../theming/base-theme';
 import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
+import {XdfApiService} from '../../xdf/v1/xdf-api-service';
+import Code from '@aivot/mui-material-symbols-400-outlined/dist/code/Code';
 
 export const DialogSearchParam = 'dialog';
 
@@ -370,6 +372,50 @@ export function FormNodeEditorPage() {
 
     const publicFormLink = createCustomerPath(`/${process?.accessKey}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
 
+    const handleImportFromXDF = async () => {
+        try {
+            const conf = await confirm({
+                title: 'Import from XDF',
+                children: (
+                    <>
+                        <Typography>
+                            Sie können ein XDatenfeld-Schema importieren.
+                        </Typography>
+                        <Typography>
+                            Beim Import werden alle bestehenden Felder dieses Formulars vollständig überschrieben.
+                            Möchten Sie den Vorgang wirklich fortsetzen?
+                        </Typography>
+                    </>
+                ),
+                confirmButtonText: 'Ja, mit dem Import fortfahren',
+            });
+
+            if (!conf) {
+                return;
+            }
+
+            const xmlContent = await uploadTextFile('text/xml');
+
+            if (xmlContent == null) {
+                return;
+            }
+
+            dispatch(setLoadingMessage({
+                blocking: true,
+                estimatedTime: 1000,
+                message: 'Import from XDF',
+            }));
+
+            const transformed = await new XdfApiService().xdfTransform(xmlContent);
+
+            setFormLayout(transformed);
+
+            dispatch(clearLoadingMessage());
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Beim Importieren des XDatenfeld-Schemas ist ein Fehler aufgetreten.'));
+        }
+    };
+
     const handleOpenPreview = () => {
         window.open(publicFormLink, '_blank', 'noopener,noreferrer');
     };
@@ -522,6 +568,12 @@ export function FormNodeEditorPage() {
     };
 
     const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
+        {
+            label: 'XDatenfeld-Schema importieren',
+            icon: <Code/>,
+            onClick: handleImportFromXDF,
+        },
+        'separator',
         {
             label: 'Vorschau in neuem Tab öffnen',
             icon: <Preview/>,
