@@ -719,7 +719,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 @ElementPOJOBindingProperty(key = "label", strValue = "Variablenname"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Dieser Name wird als Zielpfad in den Vorgangsdaten gespeichert. Pfade verwenden Destination-Key-Syntax mit Punktnotation, numerischen Array-Segmenten und dem Wildcard-Segment *, z. B. person.name, items.0.name oder personen.*.alterNeu. Klammer-Schreibweisen wie [0] oder [*] sind nicht erlaubt."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
-                @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0)
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 8.0),
+                @ElementPOJOBindingProperty(key = "disableWildCards", boolValue = true)
         })
         public String name;
 
