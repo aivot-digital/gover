@@ -21,7 +21,7 @@ export interface BaseViewProps<M extends AnyElement, V> {
 
     derivedData: DerivedRuntimeElementData;
     onDerive: (data: AuthoredElementValues, triggeringElementIds: string[], skipErrorsForElements?: string[]) => Promise<DerivedRuntimeElementData>;
-    onEvent: (data: AuthoredElementValues, event: string) => Promise<void>;
+    onEvent: (data: AuthoredElementValues, event: string) => Promise<boolean | void>;
     onResetErrors: () => void;
     suppressErrors: boolean;
 

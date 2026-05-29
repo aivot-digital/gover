@@ -40,7 +40,7 @@ interface ElementDerivationContextProps {
     onDerivationFinished?: (derivedElementData: DerivedRuntimeElementData) => void;
     suppressErrors?: boolean;
     onDeriveOverride?: (aev: AuthoredElementValues, skipErrorsForElements: string[]) => Promise<DerivedRuntimeElementData>;
-    onEvent?: (values: AuthoredElementValues, event: string) => void;
+    onEvent?: (values: AuthoredElementValues, event: string) => Promise<boolean | void>;
     mode?: ViewDispatcherMode;
     disableValidation?: boolean;
     disableVisibilities?: boolean;

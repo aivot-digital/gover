@@ -89,6 +89,13 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
             return;
         }
 
+        if (currentStep === (totalStepCount - 1) && mode === ViewDispatcherMode.Editor) {
+            const shouldContinue = await onEvent(authoredElementValues, PRE_SUBMIT_EVENT);
+            if (shouldContinue === false) {
+                return;
+            }
+        }
+
         setIsBusyNavigating(true);
 
         // Check if the current step is valid
