@@ -1,13 +1,16 @@
 package de.aivot.GoverBackend.plugins.form.v1.nodes;
 
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
@@ -16,6 +19,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.form.FormPlugin;
+import de.aivot.GoverBackend.plugins.form.v1.services.FormLayoutCleanerService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
@@ -224,6 +228,18 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 FormTriggerConfigV1.FORM_SLUG,
                 "Die Formular-URL wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
         );
+    }
+
+    @Nonnull
+    @Override
+    public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        var rawLayout = configuration.get(FormTriggerConfigV1.FORM_LAYOUT);
+        var layout = ObjectMapperFactory
+                .getInstance()
+                .convertValue(rawLayout, FormLayoutElement.class);
+        var cleanedLayout = FormLayoutCleanerService.clean(layout);
+        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, cleanedLayout);
+        return configuration;
     }
 
     @Override
