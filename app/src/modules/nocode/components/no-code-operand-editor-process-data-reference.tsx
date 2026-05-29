@@ -100,6 +100,7 @@ export function NoCodeOperandEditorProcessDataReference(props: NoCodeOperandEdit
                                             path: path ?? undefined,
                                         });
                                     }}
+                                    disableWildCards={true}
                                     error={operandError?.error ?? undefined}
                                 />
                             )
