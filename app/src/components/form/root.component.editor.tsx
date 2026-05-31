@@ -386,8 +386,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6,
-                        xl: 4,
+                        lg: 4,
                     }}
                 >
                     {
@@ -417,8 +416,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6,
-                        xl: 4,
+                        lg: 4,
                     }}
                 >
                     {
@@ -448,8 +446,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6,
-                        xl: 4,
+                        lg: 4,
                     }}
                 >
                     {
@@ -517,6 +514,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                 }}
                                 options={themes}
                                 disabled={!props.editable}
+                                hint={'Bitte speichern Sie das Formular nach Änderungen, damit das Erscheinungsbild in der Vorschau angewendet wird.'}
                             />
                         }
                         <Hint
