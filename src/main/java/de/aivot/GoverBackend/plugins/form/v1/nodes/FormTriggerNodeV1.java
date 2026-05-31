@@ -37,6 +37,7 @@ import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -206,28 +207,62 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Override
     public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                                      @Nonnull FormTriggerConfigV1 configuration) throws ResponseException {
+        var errors = new LinkedHashMap<String, String>();
         var formSlug = configuration.formSlug;
 
-        if (StringUtils.isNullOrEmpty(formSlug)) {
-            return null;
+        if (StringUtils.isNotNullOrEmpty(formSlug)) {
+            var duplicateNodeFilter = ProcessNodeFilter
+                    .create()
+                    .setNotId(processNodeEntity.getId())
+                    .setProcessId(processNodeEntity.getProcessId())
+                    .setProcessVersion(processNodeEntity.getProcessVersion())
+                    .setProcessNodeDefinitionKey(processNodeEntity.getProcessNodeDefinitionKey())
+                    .addConfigEquals(FormTriggerConfigV1.FORM_SLUG, formSlug);
+
+            if (processNodeRepository.exists(duplicateNodeFilter.build())) {
+                errors.put(
+                        FormTriggerConfigV1.FORM_SLUG,
+                        "Die Formular-URL wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
+                );
+            }
         }
 
-        var duplicateNodeFilter = ProcessNodeFilter
-                .create()
-                .setNotId(processNodeEntity.getId())
-                .setProcessId(processNodeEntity.getProcessId())
-                .setProcessVersion(processNodeEntity.getProcessVersion())
-                .setProcessNodeDefinitionKey(processNodeEntity.getProcessNodeDefinitionKey())
-                .addConfigEquals(FormTriggerConfigV1.FORM_SLUG, formSlug);
-
-        if (!processNodeRepository.exists(duplicateNodeFilter.build())) {
-            return null;
+        var layoutErrors = validateLegacyPublishChecklistFields(configuration.formLayout);
+        if (!layoutErrors.isEmpty()) {
+            errors.put(FormTriggerConfigV1.FORM_LAYOUT, String.join("\n", layoutErrors));
         }
 
-        return Map.of(
-                FormTriggerConfigV1.FORM_SLUG,
-                "Die Formular-URL wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
-        );
+        return errors.isEmpty() ? null : errors;
+    }
+
+    @Nonnull
+    private List<String> validateLegacyPublishChecklistFields(@Nullable FormLayoutElement formLayout) {
+        if (formLayout == null) {
+            return List.of();
+        }
+
+        var errors = new LinkedList<String>();
+
+        if (StringUtils.isNullOrEmpty(formLayout.getPublicTitle())) {
+            errors.add("Der öffentliche Titel muss hinterlegt sein.");
+        }
+        if (formLayout.getLegalSupportDepartmentId() == null) {
+            errors.add("Der fachliche Support muss eingerichtet sein.");
+        }
+        if (formLayout.getTechnicalSupportDepartmentId() == null) {
+            errors.add("Der technische Support muss eingerichtet sein.");
+        }
+        if (formLayout.getImprintDepartmentId() == null) {
+            errors.add("Das Impressum muss eingerichtet sein.");
+        }
+        if (formLayout.getPrivacyDepartmentId() == null) {
+            errors.add("Die Datenschutzerklärung muss eingerichtet sein.");
+        }
+        if (formLayout.getAccessibilityDepartmentId() == null) {
+            errors.add("Die Barrierefreiheitserklärung muss eingerichtet sein.");
+        }
+
+        return errors;
     }
 
     @Nonnull
