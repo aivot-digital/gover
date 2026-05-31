@@ -313,6 +313,7 @@ const elementConstructors: {
         pattern: undefined,
         suggestions: undefined,
         prefix: undefined,
+        copyable: false,
     }),
     [ElementType.Time]: (id) => ({
         ...makeInputBase(ElementType.Time, id),

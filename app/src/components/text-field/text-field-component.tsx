@@ -3,6 +3,7 @@ import {Box, IconButton, InputAdornment, ListItemText, MenuItem, TextField, Typo
 import {type TextFieldComponentProps} from './text-field-component-props';
 import Tooltip from '@mui/material/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
+import {CopyToClipboardButton} from '../copy-to-clipboard-button/copy-to-clipboard-button';
 
 // Utility function for number-to-word conversion
 function getCharacterCount(count: number): string {
@@ -41,6 +42,75 @@ function cleanValue(originalValue: string | undefined, flag: 'keepTrailingWhites
     }
 
     return cleanedValue;
+}
+
+function renderStartAdornment(startIcon: React.ReactNode | undefined, existingStartAdornment: React.ReactNode): React.ReactNode {
+    if (startIcon == null) {
+        return existingStartAdornment;
+    }
+
+    const prefixAdornment = (
+        <InputAdornment
+            position="start"
+            sx={{
+                whiteSpace: 'nowrap',
+                '> p': {
+                    whiteSpace: 'nowrap',
+                },
+            }}
+        >
+            {startIcon}
+        </InputAdornment>
+    );
+
+    if (existingStartAdornment == null) {
+        return prefixAdornment;
+    }
+
+    return (
+        <>
+            {prefixAdornment}
+            {existingStartAdornment}
+        </>
+    );
+}
+
+function renderEndAdornment(
+    endAction: TextFieldComponentProps['endAction'],
+    copyButton: React.ReactNode,
+    existingEndAdornment: React.ReactNode,
+): React.ReactNode {
+    const customAdornmentChildren = [
+        ...(Array.isArray(endAction)
+            ? endAction.map((action, index) => renderIconButton(action, index))
+            : endAction != null
+                ? [renderIconButton(endAction)]
+                : []),
+        copyButton,
+    ].filter((child): child is React.ReactNode => child != null);
+
+    const customAdornment = customAdornmentChildren.length > 0 ? (
+        <InputAdornment position="end">
+            <Box sx={{display: 'flex', alignItems: 'center', gap: .5}}>
+                {customAdornmentChildren}
+            </Box>
+        </InputAdornment>
+    ) : undefined;
+
+    if (customAdornment == null) {
+        return existingEndAdornment;
+    }
+
+    if (existingEndAdornment == null) {
+        return customAdornment;
+    }
+
+    return (
+        <>
+            {customAdornment}
+            {existingEndAdornment}
+        </>
+    );
 }
 
 export function AutocompleteTextField(props: TextFieldComponentProps & {
@@ -209,6 +279,16 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         props.softLimitCharacters && isSoftLimitExceeded,
     );
     const hasHelperTextContent = Boolean(helperMessage || showMaxCharacters || showMinCharacters || showSoftLimitWarning);
+    const existingStartAdornment = props.muiPassTroughProps?.InputProps?.startAdornment;
+    const existingEndAdornment = props.muiPassTroughProps?.InputProps?.endAdornment;
+    const copyButton = props.copyable ? (
+        <CopyToClipboardButton
+            text={inputValue}
+            ariaLabel={props.label ? `${props.label} kopieren` : 'Kopieren'}
+            disabled={inputValue.length === 0}
+            size="small"
+        />
+    ) : undefined;
 
 
     return (
@@ -287,26 +367,8 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             }}
             InputProps={{
                 ...(props.muiPassTroughProps?.InputProps),
-                startAdornment: props.startIcon && (
-                    <InputAdornment
-                        position="start"
-                        sx={{
-                            whiteSpace: 'nowrap',
-                            '> p': {
-                                whiteSpace: 'nowrap',
-                            },
-                        }}
-                    >
-                        {props.startIcon}
-                    </InputAdornment>
-                ),
-                endAdornment: props.endAction && (
-                    <InputAdornment position="end">
-                        {Array.isArray(props.endAction)
-                            ? props.endAction.map(renderIconButton)
-                            : renderIconButton(props.endAction)}
-                    </InputAdornment>
-                ),
+                startAdornment: renderStartAdornment(props.startIcon, existingStartAdornment),
+                endAdornment: renderEndAdornment(props.endAction, copyButton, existingEndAdornment),
                 readOnly: props.busy,
             }}
             InputLabelProps={{
