@@ -38,7 +38,7 @@ public class ListingPagePrivacySystemConfigDefinition implements SystemConfigDef
     @Nonnull
     @Override
     public String getDescription() {
-        return "Die für den Datenschutz zuständige Organisation.";
+        return "Die für den Datenschutz zuständige Organisationseinheit.";
     }
 
     @Nonnull

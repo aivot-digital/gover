@@ -81,10 +81,10 @@ public class DepartmentMembershipMailService {
                 .getDepartmentTheme(department);
 
         var title = switch (template) {
-            case DepartmentMembershipAdded -> "Ihre Mitgliedschaft in der Organisation \"" + department.getName() + "\"";
-            case DepartmentMembershipRemoved -> "Ihre Mitgliedschaft in der Organisation \"" + department.getName() + "\" wurde beendet";
-            case DepartmentMembershipRoleChanged -> "Ihre Rolle in der Organisation \"" + department.getName() + "\" hat sich geändert";
-            default -> "Benachrichtigung zu Ihrer Mitgliedschaft in der Organisation \"" + department.getName() + "\"";
+            case DepartmentMembershipAdded -> "Ihre Mitgliedschaft in der Organisationseinheit \"" + department.getName() + "\"";
+            case DepartmentMembershipRemoved -> "Ihre Mitgliedschaft in der Organisationseinheit \"" + department.getName() + "\" wurde beendet";
+            case DepartmentMembershipRoleChanged -> "Ihre Rolle in der Organisationseinheit \"" + department.getName() + "\" hat sich geändert";
+            default -> "Benachrichtigung zu Ihrer Mitgliedschaft in der Organisationseinheit \"" + department.getName() + "\"";
         };
 
         var context = new HashMap<String, Object>();

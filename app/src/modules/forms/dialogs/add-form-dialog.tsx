@@ -29,8 +29,8 @@ const formSchema: ObjectSchema<FormSchema> = yup.object({
     developingDepartmentId: yup
         .number()
         .integer()
-        .moreThan(0, 'Bitte wählen Sie eine Organisation aus')
-        .required('Bitte wählen Sie eine Organisation aus'),
+        .moreThan(0, 'Bitte wählen Sie eine Organisationseinheit aus')
+        .required('Bitte wählen Sie eine Organisationseinheit aus'),
     internalTitle: yup
         .string()
         .trim()
@@ -130,7 +130,7 @@ export function AddFormDialog(props: AddFormDialogProps) {
                 setAvailableDepartments(options);
             })
             .catch(err => {
-                dispatch(showApiErrorSnackbar(err, 'Die Organisationen konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
+                dispatch(showApiErrorSnackbar(err, 'Die Organisationseinheiten konnten nicht geladen werden. Bitte versuchen Sie es erneut.'));
             });
     }, [user]);
 
@@ -265,16 +265,16 @@ export function AddFormDialog(props: AddFormDialogProps) {
                     </Alert>
                 }
                 <Typography>
-                    Wählen Sie die Organisation aus, für die Sie das Formular anlegen möchten.
-                    Achten Sie darauf, dass <u>ausschließlich</u> Mitarbeiter:innen dieser Organisation das Formular
+                    Wählen Sie die Organisationseinheit aus, für die Sie das Formular anlegen möchten.
+                    Achten Sie darauf, dass <u>ausschließlich</u> Mitarbeiter:innen dieser Organisationseinheit das Formular
                     einsehen und ändern können.
                 </Typography>
                 <Typography
                     sx={{my: 2}}
                 >
-                    Sie haben im Nachgang die Möglichkeit eine bewirtschaftende oder zuständige Organisation
+                    Sie haben im Nachgang die Möglichkeit eine bewirtschaftende oder zuständige Organisationseinheit
                     auszuwählen.
-                    Mitarbeiter:innen dieser Organisationen können die eingegangenen Anträge einsehen, aber das Formular
+                    Mitarbeiter:innen dieser Organisationseinheit können die eingegangenen Anträge einsehen, aber das Formular
                     nicht abändern.
                 </Typography>
 

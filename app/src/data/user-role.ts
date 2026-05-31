@@ -5,7 +5,7 @@ export enum UserRole {
 }
 
 export const UserRoleLabels: Record<UserRole, string> = {
-    [UserRole.Admin]: 'Organisations-Administrator:in',
+    [UserRole.Admin]: 'Administrator:in der Organisationseinheit',
     [UserRole.Publisher]: 'Veröffentlicher:in',
     [UserRole.Editor]: 'Bearbeiter:in',
 };

@@ -61,7 +61,7 @@ public class ThemeService implements EntityService<ThemeEntity, Integer> {
                 .build();
 
         if (departmentRepository.exists(depSpec)) {
-            throw ResponseException.conflict("Das Erscheinungsbild wird noch von einer oder mehreren Organisationen verwendet.");
+            throw ResponseException.conflict("Das Erscheinungsbild wird noch von einer oder mehreren Organisationseinheiten verwendet.");
         }
 
         themeRepository.delete(entity);

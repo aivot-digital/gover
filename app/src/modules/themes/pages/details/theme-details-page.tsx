@@ -49,7 +49,7 @@ export function ThemeDetailsPage() {
                     },
                     {
                         path: '/themes/:id/departments',
-                        label: 'Organisationen',
+                        label: 'Organisationseinheiten',
                         isDisabled: (item) => !item?.id,
                     },
                 ]}

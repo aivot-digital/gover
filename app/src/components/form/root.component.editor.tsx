@@ -300,7 +300,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Angabe von zuständigen Organisationseinheiten"
+                title="Zuständige Organisationseinheiten"
                 variant="h5"
             >
                 Geben Sie hier an, welche Organisationseinheiten für die Bearbeitung der im Formular abgefragten Daten

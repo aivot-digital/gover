@@ -38,7 +38,7 @@ public class ListingPageImprintSystemConfigDefinition implements SystemConfigDef
     @Nonnull
     @Override
     public String getDescription() {
-        return "Die für das Impressum zuständige Organisation.";
+        return "Die für das Impressum zuständige Organisationseinheit.";
     }
 
     @Nonnull

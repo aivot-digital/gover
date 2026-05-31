@@ -170,7 +170,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
                 .build();
 
         if (formRepository.exists(specDevDepartment)) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Die Organisation kann nicht gelöscht werden, da noch Formulare zugewiesen sind.");
+            throw new ResponseException(HttpStatus.CONFLICT, "Die Organisationseinheit kann nicht gelöscht werden, da noch Formulare zugewiesen sind.");
         }
 
         departmentRepository

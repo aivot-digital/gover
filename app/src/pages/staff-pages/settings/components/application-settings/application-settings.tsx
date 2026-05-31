@@ -353,7 +353,7 @@ export function ApplicationSettings() {
             .then(deps => setDepartments(deps.content))
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Die Liste der Organisationen konnte nicht geladen werden'));
+                dispatch(showErrorSnackbar('Die Liste der Organisationseinheiten konnte nicht geladen werden'));
             });
     }, []);
 

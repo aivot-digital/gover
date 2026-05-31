@@ -12,12 +12,12 @@ import {DepartmentApiService} from '../../../departments/services/department-api
 const columns: GridColDef<DepartmentEntity>[] = [
     {
         field: 'name',
-        headerName: 'Name der Organisation',
+        headerName: 'Name der Organisationseinheit',
         flex: 1,
         renderCell: (params) => (
             <CellLink
                 to={`/departments/${params.id}`}
-                title="Department anzeigen"
+                title="Organisationseinheit anzeigen"
             >
                 {String(params.value)}
             </CellLink>
@@ -40,11 +40,11 @@ export function ThemeDetailsPageDepartments() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Organisationen mit diesem Erscheinungsbild
+                Organisationseinheiten mit diesem Erscheinungsbild
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Eine Liste aller Organisationen, die dieses Erscheinungsbild verwenden.
+                Eine Liste aller Organisationseinheiten, die dieses Erscheinungsbild verwenden.
             </Typography>
 
             <GenericList<DepartmentEntity>
@@ -68,8 +68,8 @@ export function ThemeDetailsPageDepartments() {
                         );
                 }}
                 getRowIdentifier={(item) => item.id.toString()}
-                searchLabel="Organisation suchen"
-                searchPlaceholder="Name der Organisation eingeben…"
+                searchLabel="Organisationseinheit suchen"
+                searchPlaceholder="Name der Organisationseinheit eingeben…"
                 defaultSortField="name"
                 rowMenuItems={[]}
                 noDataPlaceholder="Keine Formulare vorhanden"
@@ -78,7 +78,7 @@ export function ThemeDetailsPageDepartments() {
                 rowActions={(item) => [{
                     icon: <EditOutlined />,
                     to: `/departments/${item.id}`,
-                    tooltip: 'Organisation anzeigen',
+                    tooltip: 'Organisationseinheiten anzeigen',
                 }]}
                 preSearchElements={[]}
             />

@@ -1,7 +1,7 @@
 Hallo,
 
-Ihre Rolle in einer Organisation in Gover wurde geändert.
-Organisation: [(${department.name})]
+Ihre Rolle in einer Organisationseinheit in Gover wurde geändert.
+Organisationseinheit: [(${department.name})]
 Neue Rolle: [(${newRole.getLabel})]
 Bisherige Rolle: [(${oldRole.getLabel})]
 Änderung durch: [(${admin.getFullName()})]

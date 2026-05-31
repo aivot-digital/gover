@@ -130,7 +130,7 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                     <MoveItem />
                 </ListItemIcon>
                 <ListItemText>
-                    Formular an Organisation übertragen
+                    Formular an Organisationseinheit übertragen
                 </ListItemText>
             </MenuItem>
 

@@ -4,7 +4,7 @@ import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.Assets]: 'Datei / Medieninhalt',
-    [ServerEntityType.Departments]: 'Organisation',
+    [ServerEntityType.Departments]: 'Organisationseinheiten',
     [ServerEntityType.DataObjectItems]: 'Datenobjekt',
     [ServerEntityType.DataObjectSchemas]: 'Datenmodell',
     [ServerEntityType.Destinations]: 'Schnittstelle',

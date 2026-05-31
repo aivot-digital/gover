@@ -143,7 +143,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
                         setter.accept(updatedDepartmentId);
                         return true;
                     } else {
-                        throw ResponseException.badRequest("Die Organisation mit der ID " + updatedDepartmentId + " existiert nicht");
+                        throw ResponseException.badRequest("Die Organisationseinheit mit der ID " + updatedDepartmentId + " existiert nicht");
                     }
                 }
             }
@@ -151,7 +151,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
 
         var notNull = checkDepartment.apply(FormEntity::getDevelopingDepartmentId, updated::setDevelopingDepartmentId);
         if (!notNull) {
-            throw ResponseException.badRequest("Die entwickelnde Organisation ist erforderlich");
+            throw ResponseException.badRequest("Die entwickelnde Organisationseinheit ist erforderlich");
         }
 
         if (prev == null) {

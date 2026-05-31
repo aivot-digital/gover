@@ -11,13 +11,13 @@
             <strong><span th:text="${ base.providerName }">Name der Kommune</span></strong>
             <br />
 
-            <!-- Der Name der zuständigen Organisation wird aus dem Organisationsobjekt abgeleitet -->
-            <span th:text="${ department.name }">Name der zuständigen Organisation</span>
+            <!-- Der Name der zuständigen Organisationseinheit wird aus dem Objekt der Organisationseinheit abgeleitet -->
+            <span th:text="${ department.name }">Name der zuständigen Organisationseinheit</span>
             <br />
 
-            <!-- Die Adresse der zuständigen Organisation wird aus dem Organisationsobjekt abgeleitet.
+            <!-- Die Adresse der zuständigen Organisationseinheit wird aus dem Objekt der Organisationseinheit abgeleitet.
             Über white-space: pre-line werden vorhandene Zeilenumbrüche direkt als Umbrüche dargestellt -->
-            <span th:text="${ department.address }" style="white-space: pre-line;">Adresse der Organisation</span>
+            <span th:text="${ department.address }" style="white-space: pre-line;">Adresse der Organisationseinheit</span>
         </p>
     </div>
 

@@ -3,7 +3,7 @@
         <mj-include path="../partials/head.mjml" />
 
         <mj-preview>
-            Information zur Aufnahme in eine Organisation
+            Information zur Aufnahme in eine Organisationseinheit
         </mj-preview>
     </mj-head>
     <mj-body>
@@ -15,9 +15,9 @@
                     <p>
                         Hallo,
                         <br/>
-                        Sie wurden in Gover einer Organisation zugeordnet.
+                        Sie wurden in Gover einer Organisationseinheit zugeordnet.
                         <br/>
-                        Organisation: <b th:text="${department.name}">Beispiel-Organisation</b>
+                        Organisationseinheit: <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
                         <br/>
                         Zugeordnet durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
                     </p>

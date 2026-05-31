@@ -38,7 +38,7 @@ public class ListingPageAccesibilitySystemConfigDefinition implements SystemConf
     @Nonnull
     @Override
     public String getDescription() {
-        return "Die für die Barrierefreiheit zuständige Organisation.";
+        return "Die für die Barrierefreiheit zuständige Organisationseinheit.";
     }
 
     @Nonnull
