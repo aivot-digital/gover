@@ -375,7 +375,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 title="Rechtliche Angaben"
                 variant="h5"
             >
-                Rechtstexte werden auf Organisationseinheits-Ebene hinterlegt und verwaltet. Sie können hier die
+                Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Sie können hier die
                 Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
             </ElementEditorSectionHeader>
             <Grid
