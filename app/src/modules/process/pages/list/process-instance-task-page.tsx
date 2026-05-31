@@ -69,23 +69,19 @@ export function ProcessInstanceTaskListPage() {
             },
         ],
         helpDialog: {
-            title: 'Hilfe zu Teams',
+            title: 'Hilfe zu Aufgaben',
             tooltip: 'Hilfe anzeigen',
             content: (
                 <>
                     <Typography>
-                        Eine Organisation ist eine zentrale Verwaltungseinheit in Gover und essenziell für
-                        den
-                        Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und
-                        Kontaktdaten
-                        sowie rechtliche Informationen (z.
-                        B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden
-                        können.
+                        Auf dieser Seite erhalten Sie einen Überblick über eine Aufgaben dieses Vorgangs.
+                        Sie sehen den aktuellen Status, Start- und Endzeitpunkt sowie das zugehörige
+                        Prozesselement.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Jeder Organisation sind Mitarbeiter:innen mit einer spezifischen Rolle
-                        zugeordnet,
-                        die deren Berechtigungen innerhalb der Organisation definiert.
+                        Über die Aktionen können Sie die Aufgabenansicht öffnen, die weitergegebenen
+                        Vorgangs- und Elementdaten einsehen oder fehlgeschlagene Aufgaben erneut starten.
+                        Die Vorgangsereignisse öffnen Sie über die Aktion „Events“.
                     </Typography>
                 </>
             ),
