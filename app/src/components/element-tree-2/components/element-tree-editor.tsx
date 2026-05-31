@@ -379,9 +379,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         <Actions
                             actions={[
                                 {
-                                    icon: <Save/>,
-                                    iconPosition: 'start',
-                                    label: 'Speichern',
+                                    label: 'Übernehmen',
                                     onClick: handleSave,
                                     disabled: isBusy || updatedElement == null,
                                     visible: editable,
