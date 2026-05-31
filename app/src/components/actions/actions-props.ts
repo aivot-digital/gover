@@ -10,7 +10,7 @@ interface ActionBase {
     tooltip?: string;
     disabledTooltip?: string;
     ariaLabel?: string;
-    icon: ReactNode;
+    icon?: ReactNode;
     iconPosition?: 'start' | 'end';
     disabled?: boolean;
     visible?: boolean;
