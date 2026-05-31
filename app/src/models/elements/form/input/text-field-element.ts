@@ -12,5 +12,6 @@ export interface TextFieldElement extends BaseInputElement<ElementType.Text> {
         message: string;
     } | null | undefined;
     prefix: string | null | undefined;
+    copyable: boolean | null | undefined;
     suggestions: string[] | null | undefined;
 }

@@ -23,6 +23,7 @@ export interface TextFieldComponentProps {
     onChange: (val: string | undefined) => void;
     onBlur?: (val: string | undefined) => void;
     endAction?: EndAction | Array<EndAction>;
+    copyable?: boolean;
     startIcon?: ReactNode;
     pattern?: {
         regex: string;

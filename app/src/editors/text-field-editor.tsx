@@ -120,6 +120,24 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                         hint={'Ermöglicht die Eingabe mehrzeiliger Texte statt einer einzelnen Zeile.'}
                     />
                 </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
+                >
+                    <CheckboxFieldComponent
+                        label="Kopieren ermöglichen"
+                        value={element.copyable ?? false}
+                        onChange={(checked) => {
+                            onPatch({
+                                copyable: checked,
+                            });
+                        }}
+                        disabled={!editable}
+                        hint={'Blendet am Ende des Eingabefelds eine Schaltfläche zum Kopieren des aktuellen Werts ein.'}
+                    />
+                </Grid>
             </Grid>
         </>
     );

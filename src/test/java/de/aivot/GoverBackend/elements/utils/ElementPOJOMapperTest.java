@@ -52,9 +52,11 @@ class ElementPOJOMapperTest {
     void createFromPOJO() throws ElementDataConversionException {
         var layout = ElementPOJOMapper
                 .createFromPOJO(ExampleBindingClass.class);
+        var textField = layout.findChild("text_field", TextInputElement.class).orElse(null);
 
         assertNotNull(layout);
-        assertNotNull(layout.findChild("text_field", TextInputElement.class).orElse(null));
+        assertNotNull(textField);
+        assertEquals(Boolean.TRUE, textField.getCopyable());
         assertNotNull(layout.findChild("switch_field", CheckboxInputElement.class).orElse(null));
         assertNotNull(layout.findChild("replicating_container", ReplicatingContainerLayoutElement.class).orElse(null));
         assertNotNull(layout.findChild("replicating_container", ReplicatingContainerLayoutElement.class).get().findChild("text_field"));
@@ -66,6 +68,7 @@ class ElementPOJOMapperTest {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Example Text Field"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 255),
+                @ElementPOJOBindingProperty(key = "copyable", boolValue = true),
         })
         private String exampleField;
 
