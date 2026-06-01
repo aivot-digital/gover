@@ -55,6 +55,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         supportingDocuments: supportingDocumentsRaw,
         documentsToAttach: documentsToAttachRaw,
         eligiblePersons,
+        expiring: expiringRaw,
     } = element;
 
     const {
@@ -71,13 +72,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const preambleText = stringOrUndefined(element.teaserText);
     const initiativeLogoLink = stringOrUndefined(element.initiativeLogoLink);
     const initiativeName = stringOrUndefined(element.initiativeName);
-    const expiring = useMemo(() => {
-        if (!isRootElement(rootElement)) {
-            return undefined;
-        }
-
-        return stringOrUndefined(rootElement.expiring);
-    }, [rootElement]);
+    const expiring = stringOrUndefined(expiringRaw);
 
     useEffect(() => {
         if (isRootElement(rootElement)) {
@@ -209,7 +204,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
                         component={'h3'}
                         variant="h5"
                     >
-                        Antragsfristen
+                        Fristen
                     </Typography>
                     <Typography
                         component="pre"

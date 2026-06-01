@@ -13,8 +13,6 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
     tabTitle: string | null | undefined;
     children: AnyElement[] | null | undefined;
 
-    expiring: string | null | undefined;
-
     offlineSubmissionText: string | null | undefined;
     offlineSignatureNeeded: boolean | null | undefined;
 

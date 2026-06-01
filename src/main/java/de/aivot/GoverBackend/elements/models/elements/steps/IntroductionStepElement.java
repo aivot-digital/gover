@@ -33,6 +33,8 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
     @Nullable
     private Collection<String> documentsToAttach;
     @Nullable
+    private String expiring;
+    @Nullable
     private String expectedCosts;
     @Nullable
     private String privacyText;
@@ -99,13 +101,13 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
                 Objects.equals(initiativeLink, that.initiativeLink) && Objects.equals(teaserText, that.teaserText) &&
                 Objects.equals(organization, that.organization) && Objects.equals(eligiblePersons, that.eligiblePersons) &&
                 Objects.equals(supportingDocuments, that.supportingDocuments) && Objects.equals(documentsToAttach, that.documentsToAttach) &&
-                Objects.equals(expectedCosts, that.expectedCosts) && Objects.equals(privacyText, that.privacyText) &&
+                Objects.equals(expiring, that.expiring) && Objects.equals(expectedCosts, that.expectedCosts) && Objects.equals(privacyText, that.privacyText) &&
                 Objects.equals(children, that.children);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), initiativeName, initiativeLogoLink, initiativeLink, teaserText, organization, eligiblePersons, supportingDocuments, documentsToAttach, expectedCosts, privacyText, children);
+        return Objects.hash(super.hashCode(), initiativeName, initiativeLogoLink, initiativeLink, teaserText, organization, eligiblePersons, supportingDocuments, documentsToAttach, expiring, expectedCosts, privacyText, children);
     }
 
     // endregion
@@ -189,6 +191,16 @@ public class IntroductionStepElement extends BaseStepElement implements InputEle
 
     public IntroductionStepElement setDocumentsToAttach(@Nullable Collection<String> documentsToAttach) {
         this.documentsToAttach = documentsToAttach;
+        return this;
+    }
+
+    @Nullable
+    public String getExpiring() {
+        return expiring;
+    }
+
+    public IntroductionStepElement setExpiring(@Nullable String expiring) {
+        this.expiring = expiring;
         return this;
     }
 

@@ -223,6 +223,35 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
+                title="Fristen"
+                variant="h5"
+            >
+                Geben Sie die für dieses Formular gültigen Fristen an (soweit vorhanden), welche ausfüllenden Personen im Formular angezeigt werden.
+            </ElementEditorSectionHeader>
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <TextFieldComponent
+                        label="Fristen des Formulars"
+                        multiline
+                        value={props.element.expiring ?? ''}
+                        onChange={(val) => {
+                            props.onPatch({
+                                expiring: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
+            <ElementEditorSectionHeader
                 title="Dokumente des Antrages"
                 variant={"h5"}
             />

@@ -597,36 +597,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
-                title="Fristen"
-                variant="h5"
-            >
-                Geben Sie die für diesen Antrag gültigen Fristen ein, welche den Antragstellenden im Formular angezeigt
-                werden.
-            </ElementEditorSectionHeader>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <TextFieldComponent
-                        label="Antragsfristen"
-                        multiline
-                        value={props.element.expiring}
-                        onChange={(val) => {
-                            props.onPatch({
-                                expiring: val,
-                            });
-                        }}
-                        disabled={!props.editable}
-                    />
-                </Grid>
-            </Grid>
-            <ElementEditorSectionHeader
                 title="Kontakte"
                 variant="h5"
             >

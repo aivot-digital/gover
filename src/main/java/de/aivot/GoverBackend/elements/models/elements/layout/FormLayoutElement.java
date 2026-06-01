@@ -20,8 +20,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
     private String tabTitle;
     private List<BaseStepElement> children = new LinkedList<>();
 
-    private String expiring;
-
     private String offlineSubmissionText;
     private Boolean offlineSignatureNeeded;
 
@@ -48,7 +46,7 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         FormLayoutElement that = (FormLayoutElement) o;
-        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) && Objects.equals(expiring, that.expiring) &&
+        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) &&
                 Objects.equals(offlineSubmissionText, that.offlineSubmissionText) && Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded) &&
                 Objects.equals(publicTitle, that.publicTitle) && Objects.equals(managingDepartmentId, that.managingDepartmentId) &&
                 Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) &&
@@ -59,7 +57,7 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), tabTitle, children, expiring, offlineSubmissionText, offlineSignatureNeeded, publicTitle, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, themeId, pdfTemplateKey);
+        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, themeId, pdfTemplateKey);
     }
 
     @JsonIgnore
@@ -97,15 +95,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
             children = new LinkedList<>();
         }
         this.children = children;
-        return this;
-    }
-
-    public String getExpiring() {
-        return expiring;
-    }
-
-    public FormLayoutElement setExpiring(String expiring) {
-        this.expiring = expiring;
         return this;
     }
 
