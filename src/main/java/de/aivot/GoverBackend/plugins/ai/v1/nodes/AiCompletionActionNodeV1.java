@@ -10,13 +10,16 @@ import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.enums.OverrideFunctionType;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugins.ai.AiPlugin;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -73,6 +76,9 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private static final int DEFAULT_MAX_TOKENS = 1000;
     private static final int DEFAULT_N = 1;
     private static final boolean DEFAULT_STREAM = false;
+
+    private static final String apiModelsPathSuffix = "/models";
+    private static final String apiChatCompletionsPathSuffix = "/chat/completions";
 
     private final HttpService httpService;
     private final TemplateRenderService templateRenderService;
@@ -152,6 +158,53 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                         .stream()
                         .map(secret -> SelectInputElementOption.of(secret.getKey().toString(), secret.getName()))
                         .toList()));
+
+        var modelSelectOverride = new ElementOverrideFunctions();
+        modelSelectOverride.setType(OverrideFunctionType.Javascript);
+        modelSelectOverride.setJavascriptCode(JavascriptCode.of("""
+                (function() {
+                    const endpointUrl = ctx.effectiveValues.%s;
+                    if (endpointUrl == null) {
+                        return element;
+                    }
+                
+                    const secretKey = ctx.effectiveValues.%s;
+                    if (secretKey == null) {
+                        return element;
+                    }
+
+                    const apiToken = _secrets_v1.get(secretKey);
+
+                    const fullUrl = endpointUrl + '%s';
+
+                    const response = _http_v1.get(fullUrl, {
+                        Authorization: 'Bearer ' + apiToken,
+                    });
+
+                    availableModels = JSON.parse(response.body);
+
+                    const options = availableModels.data.map(d => ({
+                        label: d.id,
+                        value: d.id,
+                    }));
+
+                    return {
+                        ...element,
+                        options: options,
+                    };
+                })()
+                """,
+                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
+                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID,
+                apiModelsPathSuffix
+        ));
+        modelSelectOverride.setReferencedIds(List.of(
+                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
+                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID
+        ));
+
+        layout.findChild(AiCompletionActionNodeConfig.MODEL_FIELD_ID, SelectInputElement.class)
+                .ifPresent(field -> field.setOverride(modelSelectOverride));
 
         return layout;
     }
@@ -321,7 +374,9 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         }
 
         try {
-            var uri = UriComponentsBuilder.fromUriString(normalizedUrl)
+            var uri = UriComponentsBuilder
+                    .fromUriString(normalizedUrl)
+                    .path(apiChatCompletionsPathSuffix)
                     .build(true)
                     .toUri();
 
@@ -521,9 +576,8 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         /**
          * Identifier of the AI model that should generate the completion.
          */
-        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Modellname"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Z. B. mistralai/Mistral-Nemo-Instruct-2407."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
