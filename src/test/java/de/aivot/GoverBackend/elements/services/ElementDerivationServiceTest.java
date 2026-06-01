@@ -7,8 +7,10 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.ElementOverrideFunctions;
+import de.aivot.GoverBackend.elements.models.elements.ElementValidationFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementValueFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.GoverBackend.elements.models.elements.ValidationNoCodeWrapper;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
@@ -86,6 +88,32 @@ class ElementDerivationServiceTest {
         assertEquals(
                 EffectiveValueSource.Derived,
                 result.getElementStates().get("derived").getValueSource()
+        );
+    }
+
+    @Test
+    void shouldSkipValidationErrorsForTechnicalFieldsButKeepEffectiveValues() {
+        var technicalField = new TextInputElement();
+        technicalField.setId("technical");
+        technicalField.setTechnical(true);
+        technicalField.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("derived value")));
+        technicalField.setValidation(new ElementValidationFunctions().setNoCodeList(List.of(
+                new ValidationNoCodeWrapper()
+                        .setNoCode(NoCodeStaticValue.of(false))
+                        .setMessage("Technical validation should be skipped.")
+        )));
+
+        var result = derive(
+                createRoot(List.of(technicalField)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("derived value", result.getEffectiveValues().get("technical"));
+        assertNull(result.getElementStates().get("technical").getError());
+        assertEquals(
+                EffectiveValueSource.Derived,
+                result.getElementStates().get("technical").getValueSource()
         );
     }
 

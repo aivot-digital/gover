@@ -821,6 +821,11 @@ public class ElementDerivationService {
             return null;
         }
 
+        if (inputElement instanceof BaseInputElement<?> baseInputElement &&
+            Boolean.TRUE.equals(baseInputElement.getTechnical())) {
+            return null; // No error if the input is a technical field because it is not visible to users.
+        }
+
         var baseElement = (BaseElement) inputElement;
 
         if (effectiveValue == null && !Boolean.TRUE.equals(inputElement.getRequired())) {
