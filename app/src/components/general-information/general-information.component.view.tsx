@@ -331,7 +331,7 @@ function FormattedTextWithDialogTags(props: FormattedTextWithDialogTagsProps) {
         const tag = meta.toLowerCase();
         const pattern = new RegExp(`\\{${tag}\\}([\\s\\S]*?)\\{\\/${tag}\\}`, 'gi');
 
-        formattedText = formattedText.replace(pattern, '[$1](dialog:' + tag + ')');
+        formattedText = formattedText.replace(pattern, '[$1](#dialog:' + tag + ')');
     }
 
     return (
@@ -344,9 +344,9 @@ function FormattedTextWithDialogTags(props: FormattedTextWithDialogTagsProps) {
                 },
             }}
             components={{
-                a: ({href, children, ...anchorProps}) => {
-                    if (href?.startsWith('dialog:')) {
-                        const dialog = href.replace('dialog:', '');
+                a: ({href, children, node: _node, ...anchorProps}) => {
+                    if (href?.startsWith('#dialog:')) {
+                        const dialog = href.replace('#dialog:', '');
 
                         return (
                             <a
