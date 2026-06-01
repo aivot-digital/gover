@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.plugins.ai.v1.nodes;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
 import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
@@ -29,6 +30,8 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
@@ -55,30 +58,46 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
- * Executes a prompt against the AI Completions API and exposes the response as node outputs.
+ * Sends the full process execution data to an AI model and replaces the process data root with the returned JSON object.
  */
 @Component
-public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiCompletionActionNodeV1.AiCompletionActionNodeConfig> {
-    public static final String NODE_KEY = "ai_completion";
+public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefinition<AiProcessDataTransformationActionNodeV1.AiProcessDataTransformationActionNodeConfig> {
+    public static final String NODE_KEY = "ai_process_data_transformation";
 
     private static final String SUCCESS_PORT = "success";
 
     private static final String OUTPUT_PROMPT = "prompt";
-    private static final String OUTPUT_COMPLETION = "completion";
     private static final String OUTPUT_FINISH_REASON = "finishReason";
     private static final String OUTPUT_RESPONSE_MODEL = "responseModel";
     private static final String OUTPUT_USAGE = "usage";
+    private static final String OUTPUT_TOP_LEVEL_KEYS = "topLevelKeys";
 
     private static final double DEFAULT_TEMPERATURE = 0.01d;
     private static final double DEFAULT_TOP_P = 0.9d;
     private static final int DEFAULT_N = 1;
     private static final boolean DEFAULT_STREAM = false;
 
-    private static final String apiModelsPathSuffix = "/models";
-    private static final String apiChatCompletionsPathSuffix = "/chat/completions";
+    private static final String API_MODELS_PATH_SUFFIX = "/models";
+    private static final String API_CHAT_COMPLETIONS_PATH_SUFFIX = "/chat/completions";
+
+    private static final Pattern JSON_CODE_FENCE_PATTERN = Pattern.compile("^```(?:json)?\\s*(.*?)\\s*```$", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+
+    private static final String SYSTEM_PROMPT = """
+            You transform Gover process data.
+            You will receive a rendered task prompt and the full ProcessExecutionData JSON with the roots "$", "$$", and "_".
+            Return exactly one valid JSON object that will become the new value of "$".
+            Rules:
+            - The top-level value must be a JSON object.
+            - Return JSON only.
+            - Do not use markdown code fences.
+            - Do not add explanations or comments.
+            - Do not wrap the result inside "$", "$$", "_" or any other envelope.
+            - If no change is required, return the unchanged "$" object.
+            """;
 
     private final HttpService httpService;
     private final TemplateRenderService templateRenderService;
@@ -86,11 +105,11 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     private final SecretService secretService;
     private final AiPluginProperties aiPluginProperties;
 
-    public AiCompletionActionNodeV1(HttpService httpService,
-                                    TemplateRenderService templateRenderService,
-                                    SecretRepository secretRepository,
-                                    SecretService secretService,
-                                    AiPluginProperties aiPluginProperties) {
+    public AiProcessDataTransformationActionNodeV1(HttpService httpService,
+                                                   TemplateRenderService templateRenderService,
+                                                   SecretRepository secretRepository,
+                                                   SecretService secretService,
+                                                   AiPluginProperties aiPluginProperties) {
         this.httpService = httpService;
         this.templateRenderService = templateRenderService;
         this.secretRepository = secretRepository;
@@ -125,19 +144,19 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     @Override
     public String getName() {
-        return "KI-Anfrage";
+        return "Vorgangsdaten mit KI transformieren";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Sendet ein Prompt an die Completions-API einer KI und stellt die Antwort als Knotenausgänge bereit.";
+        return "Sendet die vollständigen Laufzeitdaten eines Vorgangs an eine KI und ersetzt die Vorgangsdaten durch das zurückgegebene JSON-Objekt.";
     }
 
     @Nonnull
     @Override
-    public Class<AiCompletionActionNodeConfig> getNodeConfigurationClass() {
-        return AiCompletionActionNodeConfig.class;
+    public Class<AiProcessDataTransformationActionNodeConfig> getNodeConfigurationClass() {
+        return AiProcessDataTransformationActionNodeConfig.class;
     }
 
     @Nonnull
@@ -146,7 +165,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
         ConfigLayoutElement layout;
         try {
-            layout = ElementPOJOMapper.createFromPOJO(AiCompletionActionNodeConfig.class);
+            layout = ElementPOJOMapper.createFromPOJO(AiProcessDataTransformationActionNodeConfig.class);
         } catch (ElementDataConversionException e) {
             throw ResponseException.internalServerError(
                     e,
@@ -155,7 +174,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
             );
         }
 
-        layout.findChild(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, SelectInputElement.class)
+        layout.findChild(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, SelectInputElement.class)
                 .ifPresent(field -> field.setOptions(secretRepository
                         .findAll()
                         .stream()
@@ -170,7 +189,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                     if (endpointUrl == null) {
                         return element;
                     }
-                
+
                     const secretKey = ctx.effectiveValues.%s;
                     if (secretKey == null) {
                         return element;
@@ -184,8 +203,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                         Authorization: 'Bearer ' + apiToken,
                     });
 
-                    availableModels = JSON.parse(response.body);
-
+                    const availableModels = JSON.parse(response.body);
                     const options = availableModels.data.map(d => ({
                         label: d.id,
                         value: d.id,
@@ -197,16 +215,16 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                     };
                 })()
                 """,
-                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID,
-                apiModelsPathSuffix
+                AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID,
+                AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID,
+                API_MODELS_PATH_SUFFIX
         ));
         modelSelectOverride.setReferencedIds(List.of(
-                AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID,
-                AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID
+                AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID,
+                AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID
         ));
 
-        layout.findChild(AiCompletionActionNodeConfig.MODEL_FIELD_ID, SelectInputElement.class)
+        layout.findChild(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, SelectInputElement.class)
                 .ifPresent(field -> field.setOverride(modelSelectOverride));
 
         return layout;
@@ -219,7 +237,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                 new ProcessNodePort(
                         SUCCESS_PORT,
                         "Weiter",
-                        "Der Prozess wird hier fortgesetzt, nachdem die KI-Antwort erfolgreich abgerufen wurde."
+                        "Der Prozess wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
                 )
         );
     }
@@ -228,54 +246,62 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der Anfragetext für das KI-Modell."),
-                new ProcessNodeOutput(OUTPUT_COMPLETION, "Completion", "Die erste erzeugte Completion als Text."),
+                new ProcessNodeOutput(OUTPUT_PROMPT, "Eingabe", "Der gerenderte Anfragetext für das KI-Modell."),
                 new ProcessNodeOutput(OUTPUT_FINISH_REASON, "Finish Reason", "Der Abschlussgrund der ersten Choice."),
                 new ProcessNodeOutput(OUTPUT_RESPONSE_MODEL, "Antwort-Modell", "Das Modell, das die Antwort erzeugt hat."),
-                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort.")
+                new ProcessNodeOutput(OUTPUT_USAGE, "Nutzung", "Die Token-Nutzungsinformationen der API-Antwort."),
+                new ProcessNodeOutput(OUTPUT_TOP_LEVEL_KEYS, "Top-Level-Schlüssel", "Die obersten Schlüssel des neu erzeugten Prozessdatenobjekts.")
         );
+    }
+
+    @Nonnull
+    @Override
+    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                                 @Nonnull AiProcessDataTransformationActionNodeConfig configuration,
+                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
+        return List.of();
     }
 
     @Nullable
     @Override
     public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AiCompletionActionNodeConfig configuration) throws ResponseException {
+                                                     @Nonnull AiProcessDataTransformationActionNodeConfig configuration) throws ResponseException {
         var errors = new LinkedHashMap<String, String>();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, "Die Endpoint-URL muss angegeben werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, "Die Endpoint-URL muss angegeben werden.");
         } else {
             try {
                 parseEndpointUri(configuration.endpointUrl);
             } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, e.getMessage());
+                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, e.getMessage());
             }
         }
 
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das Secret für den API-Schlüssel muss ausgewählt werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das Secret für den API-Schlüssel muss ausgewählt werden.");
         } else {
             try {
                 var secretId = UUID.fromString(configuration.apiKeySecret.trim());
                 if (secretService.retrieve(secretId).isEmpty()) {
-                    errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden.");
+                    errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden.");
                 }
             } catch (IllegalArgumentException e) {
-                errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel ist ungültig.");
+                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel ist ungültig.");
             }
         }
 
         if (StringUtils.isNullOrEmpty(configuration.model)) {
-            errors.put(AiCompletionActionNodeConfig.MODEL_FIELD_ID, "Das Modell muss angegeben werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, "Das Modell muss angegeben werden.");
         }
 
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, "Das Prompt muss angegeben werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, "Das Prompt muss angegeben werden.");
         } else {
             var diagnostics = templateRenderService.validateInterpolationSyntax(configuration.prompt);
             if (!diagnostics.isEmpty()) {
                 errors.put(
-                        AiCompletionActionNodeConfig.PROMPT_FIELD_ID,
+                        AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID,
                         diagnostics.stream()
                                 .map(diagnostic -> "Zeile %d: %s".formatted(diagnostic.lineNumber(), diagnostic.message()))
                                 .collect(Collectors.joining("\n"))
@@ -289,12 +315,12 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
-        configuration.remove(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID);
+        configuration.remove(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID);
         return configuration;
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AiCompletionActionNodeConfig> context) throws ProcessNodeExecutionException {
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AiProcessDataTransformationActionNodeConfig> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
@@ -313,14 +339,14 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         var endpointUri = parseEndpointUri(configuration.endpointUrl);
         var apiKey = resolveApiKey(configuration.apiKeySecret);
         var renderedPrompt = renderPrompt(context, configuration.prompt);
-
         if (StringUtils.isNullOrEmpty(renderedPrompt)) {
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Das Prompt ist nach dem Rendern leer. Bitte überprüfen Sie die Vorlage und die Vorgangsdaten."
             );
         }
 
-        var requestBodyJson = serializeRequestBody(createRequestBody(configuration.model, renderedPrompt));
+        var serializedExecutionData = serializeExecutionData(context.getCurrentProcessExecutionData());
+        var requestBodyJson = serializeRequestBody(createRequestBody(configuration.model, renderedPrompt, serializedExecutionData));
         var headers = HttpServiceHeaders.create()
                 .withContentType(HttpServiceHeaders.APPLICATION_JSON)
                 .withAccept(HttpServiceHeaders.APPLICATION_JSON)
@@ -347,7 +373,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
             );
         }
 
-        AiCompletionResponse completionResponse;
+        ChatCompletionResponse completionResponse;
         try {
             completionResponse = parseResponse(rawBody);
         } catch (Exception e) {
@@ -363,9 +389,11 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
             throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Texte.");
         }
 
-        var nodeData = createNodeData(renderedPrompt, completionTexts, completionResponse);
+        var transformedProcessData = parseTransformedProcessData(completionTexts.getFirst());
+        var nodeData = createNodeData(renderedPrompt, transformedProcessData, completionResponse);
 
         return ProcessNodeExecutionResultTaskCompleted.of(SUCCESS_PORT)
+                .setProcessData(transformedProcessData)
                 .setNodeData(nodeData);
     }
 
@@ -379,7 +407,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         try {
             var uri = UriComponentsBuilder
                     .fromUriString(normalizedUrl)
-                    .path(apiChatCompletionsPathSuffix)
+                    .path(API_CHAT_COMPLETIONS_PATH_SUFFIX)
                     .build(true)
                     .toUri();
 
@@ -435,7 +463,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     }
 
     @Nonnull
-    private String renderPrompt(@Nonnull ProcessNodeExecutionInitContext<AiCompletionActionNodeConfig> context,
+    private String renderPrompt(@Nonnull ProcessNodeExecutionInitContext<AiProcessDataTransformationActionNodeConfig> context,
                                 @Nonnull String promptTemplate) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         try {
             return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), promptTemplate);
@@ -449,20 +477,54 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     }
 
     @Nonnull
+    private String serializeExecutionData(@Nonnull ProcessExecutionData processExecutionData) throws ProcessNodeExecutionExceptionUnknown {
+        try {
+            return ObjectMapperFactory
+                    .getNullPreservingInstance()
+                    .writeValueAsString(processExecutionData);
+        } catch (Exception e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die Vorgangsdaten konnten nicht für den KI-Aufruf serialisiert werden: %s",
+                    e.getMessage()
+            );
+        }
+    }
+
+    @Nonnull
     private Map<String, Object> createRequestBody(@Nonnull String model,
-                                                  @Nonnull String renderedPrompt) {
+                                                  @Nonnull String renderedPrompt,
+                                                  @Nonnull String serializedExecutionData) {
         var body = new LinkedHashMap<String, Object>();
         body.put("model", model.trim());
-        body.put("messages", List.of(Map.of(
-                "role", "user",
-                "content", renderedPrompt
-        )));
+        body.put("messages", List.of(
+                Map.of(
+                        "role", "system",
+                        "content", SYSTEM_PROMPT
+                ),
+                Map.of(
+                        "role", "user",
+                        "content", createUserMessage(renderedPrompt, serializedExecutionData)
+                )
+        ));
         body.put("temperature", DEFAULT_TEMPERATURE);
         body.put("top_p", DEFAULT_TOP_P);
         body.put("n", DEFAULT_N);
         body.put("stream", DEFAULT_STREAM);
-        body.put("max_tokens", aiPluginProperties.getCompletionMaxTokens());
+        body.put("max_tokens", aiPluginProperties.getProcessDataTransformationMaxTokens());
         return body;
+    }
+
+    @Nonnull
+    private String createUserMessage(@Nonnull String renderedPrompt,
+                                     @Nonnull String serializedExecutionData) {
+        return """
+                Rendered prompt:
+                %s
+
+                Current ProcessExecutionData JSON:
+                %s
+                """.formatted(renderedPrompt, serializedExecutionData);
     }
 
     @Nonnull
@@ -479,13 +541,58 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     }
 
     @Nonnull
-    private AiCompletionResponse parseResponse(@Nullable String rawBody) throws Exception {
+    private ChatCompletionResponse parseResponse(@Nullable String rawBody) throws Exception {
         if (StringUtils.isNullOrEmpty(rawBody)) {
             throw new IllegalArgumentException("Die API-Antwort ist leer.");
         }
         return ObjectMapperFactory
                 .getInstance()
-                .readValue(rawBody, AiCompletionResponse.class);
+                .readValue(rawBody, ChatCompletionResponse.class);
+    }
+
+    @Nonnull
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> parseTransformedProcessData(@Nonnull String completionText) throws ProcessNodeExecutionExceptionUnknown {
+        var normalizedCompletion = StringUtils.toNullableTrimmedString(completionText);
+        if (normalizedCompletion == null) {
+            throw new ProcessNodeExecutionExceptionUnknown("Die Antwort der KI enthält keinen Texte.");
+        }
+
+        var jsonPayload = unwrapJsonCodeFence(normalizedCompletion);
+        try {
+            JsonNode parsedNode = ObjectMapperFactory
+                    .getNullPreservingInstance()
+                    .readTree(jsonPayload);
+
+            if (parsedNode == null || !parsedNode.isObject()) {
+                throw new IllegalArgumentException("Die KI-Antwort muss ein JSON-Objekt sein.");
+            }
+
+            return ObjectMapperFactory
+                    .getNullPreservingInstance()
+                    .convertValue(parsedNode, Map.class);
+        } catch (IllegalArgumentException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die KI-Antwort enthält kein gültiges JSON-Objekt. Antwort: %s",
+                    StringUtils.quote(truncateForError(completionText))
+            );
+        } catch (Exception e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die KI-Antwort enthält kein gültiges JSON-Objekt. Antwort: %s",
+                    StringUtils.quote(truncateForError(completionText))
+            );
+        }
+    }
+
+    @Nonnull
+    private String unwrapJsonCodeFence(@Nonnull String completionText) {
+        var matcher = JSON_CODE_FENCE_PATTERN.matcher(completionText.trim());
+        if (matcher.matches()) {
+            return matcher.group(1).trim();
+        }
+        return completionText.trim();
     }
 
     @Nullable
@@ -506,23 +613,23 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     @Nonnull
     private Map<String, Object> createNodeData(@Nonnull String renderedPrompt,
-                                               @Nonnull List<String> completionTexts,
-                                               @Nonnull AiCompletionResponse response) {
+                                               @Nonnull Map<String, Object> transformedProcessData,
+                                               @Nonnull ChatCompletionResponse response) {
         var nodeData = new LinkedHashMap<String, Object>();
         var usage = response.usage != null
                 ? ObjectMapperFactory.getInstance().convertValue(response.usage, Map.class)
                 : null;
 
         nodeData.put(OUTPUT_PROMPT, renderedPrompt);
-        nodeData.put(OUTPUT_COMPLETION, completionTexts.getFirst());
         nodeData.put(OUTPUT_FINISH_REASON, response.choices != null && !response.choices.isEmpty() ? response.choices.get(0).finishReason : null);
         nodeData.put(OUTPUT_RESPONSE_MODEL, response.model);
         nodeData.put(OUTPUT_USAGE, usage);
+        nodeData.put(OUTPUT_TOP_LEVEL_KEYS, List.copyOf(transformedProcessData.keySet()));
         return nodeData;
     }
 
     @Nonnull
-    private List<String> extractCompletionTexts(@Nullable List<AiCompletionChoice> choices) {
+    private List<String> extractCompletionTexts(@Nullable List<ChatCompletionChoice> choices) {
         if (choices == null) {
             return List.of();
         }
@@ -545,10 +652,10 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     }
 
     /**
-     * Configuration of the AI completion node.
-     */
+        * Configuration of the AI process data transformation node.
+        */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
-    public static class AiCompletionActionNodeConfig {
+    public static class AiProcessDataTransformationActionNodeConfig {
         public static final String ENDPOINT_URL_FIELD_ID = "endpointUrl";
         public static final String API_KEY_SECRET_FIELD_ID = "apiKeySecret";
         public static final String MODEL_FIELD_ID = "model";
@@ -577,7 +684,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         public String apiKeySecret;
 
         /**
-         * Identifier of the AI model that should generate the completion.
+         * Identifier of the AI model that should generate the process data transformation.
          */
         @InputElementPOJOBinding(id = MODEL_FIELD_ID, type = ElementType.Select, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Modellname"),
@@ -587,7 +694,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         public String model;
 
         /**
-         * Template-based prompt text that is rendered against the current process data before the API request is sent.
+         * Template-based prompt text that is rendered against the current process execution data before the API request is sent.
          */
         @InputElementPOJOBinding(id = PROMPT_FIELD_ID, type = ElementType.RichTextInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Prompt"),
@@ -598,28 +705,28 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class AiCompletionResponse {
+    private static class ChatCompletionResponse {
         public String id;
-        public List<AiCompletionChoice> choices;
+        public List<ChatCompletionChoice> choices;
         public Long created;
         public String object;
         public String model;
-        public AiCompletionUsage usage;
+        public ChatCompletionUsage usage;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class AiCompletionChoice {
+    private static class ChatCompletionChoice {
         @Nullable
         @JsonProperty("finish_reason")
         public String finishReason;
         @Nullable
         public Integer index;
         @Nullable
-        public AiCompletionMessage message;
+        public ChatCompletionMessage message;
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class AiCompletionMessage {
+    private static class ChatCompletionMessage {
         @Nullable
         public String role;
         @Nullable
@@ -627,7 +734,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class AiCompletionUsage {
+    private static class ChatCompletionUsage {
         @Nullable
         @JsonProperty("prompt_tokens")
         public Integer promptTokens;
