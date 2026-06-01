@@ -97,6 +97,20 @@ public class FormTriggerListControllerV1 {
                     );
 
                     return builder.exists(subquery);
+                })
+                .addAdditionalSpecification((root, query, builder) -> {
+                    var showOnFormIndexPage = builder.function(
+                            "jsonb_extract_path_text",
+                            String.class,
+                            root.get("configuration"),
+                            builder.literal(FormTriggerConfigV1.FORM_LAYOUT),
+                            builder.literal("showOnFormIndexPage")
+                    );
+
+                    return builder.or(
+                            builder.isNull(showOnFormIndexPage),
+                            builder.equal(showOnFormIndexPage, "true")
+                    );
                 });
 
         var nodes = processNodeService

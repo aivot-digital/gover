@@ -77,6 +77,7 @@ describe('resolveSummaryStepIndex', () => {
             offlineSubmissionText: null,
             offlineSignatureNeeded: null,
             publicTitle: null,
+            showOnFormIndexPage: null,
             managingDepartmentId: null,
             responsibleDepartmentId: null,
             legalSupportDepartmentId: null,

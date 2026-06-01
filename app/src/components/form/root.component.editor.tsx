@@ -227,6 +227,29 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         lg: 6,
                     }}
                 >
+                    <CheckboxFieldComponent
+                        label="Auf Formular-Index-Seite anzeigen"
+                        hint="Wenn diese Option aktiviert ist, wird das veröffentlichte Formular auf der öffentlichen Formular-Index-Seite gelistet. Wenn sie deaktiviert ist, bleibt das Formular weiterhin über direkte Links erreichbar."
+                        value={form.showOnFormIndexPage !== false}
+                        onChange={(val) => {
+                            onPatch({
+                                showOnFormIndexPage: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Allgemeiner Link des Formulars"
                         disabled

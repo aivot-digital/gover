@@ -17,6 +17,7 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
     offlineSignatureNeeded: boolean | null | undefined;
 
     publicTitle: string | null | undefined;
+    showOnFormIndexPage: boolean | null | undefined;
 
     managingDepartmentId: number | null | undefined;
     responsibleDepartmentId: number | null | undefined;

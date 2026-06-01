@@ -146,6 +146,7 @@ const elementConstructors: {
         summaryStep: generateElementWithDefaultValues(ElementType.SummaryStep) as SummaryStepElement,
         submitStep: generateElementWithDefaultValues(ElementType.SubmitStep) as SubmitStepElement,
         publicTitle: undefined,
+        showOnFormIndexPage: true,
         managingDepartmentId: undefined,
         responsibleDepartmentId: undefined,
         legalSupportDepartmentId: undefined,
