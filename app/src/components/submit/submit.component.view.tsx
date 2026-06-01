@@ -11,14 +11,12 @@ import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {AltchaWidget} from '../altcha/altcha-widget';
-import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
-import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {ElementType} from '../../data/element-type/element-type';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 import {isRootElement} from '../../models/elements/form-layout-element';
-import {getDepartmentDisplayAddress} from '../../modules/departments/utils/department-utils';
+import {useFormDepartmentAddressSections} from '../form-department-addresses/form-department-addresses';
 
 export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>): React.ReactNode | null {
     const {
@@ -36,10 +34,9 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
 
     const initialDisplayCount = 4;
 
-    const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
-    const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
-
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
+    const formElement = isRootElement(rootElement) ? rootElement : null;
+    const departmentSections = useFormDepartmentAddressSections(formElement);
 
     useEffect(() => {
         setValue(undefined);
@@ -59,32 +56,6 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
     }, [form]);
      */
 
-    useEffect(() => {
-        if (!isRootElement(rootElement)) {
-            return;
-        }
-
-            if (rootElement.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== rootElement.responsibleDepartmentId) {
-                    new DepartmentApiService()
-                        .retrievePublic(rootElement.responsibleDepartmentId)
-                        .then(setResponsibleDepartment);
-                }
-            } else {
-                setResponsibleDepartment(undefined);
-            }
-
-            if (rootElement.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== rootElement.managingDepartmentId) {
-                    new DepartmentApiService()
-                        .retrievePublic(rootElement.managingDepartmentId)
-                        .then(setManagingDepartment);
-                }
-            } else {
-                setManagingDepartment(undefined);
-            }
-    }, [rootElement]);
-
     const renderDocumentToReceive = (doc: string, index: number) => (
         <ListItem
             disableGutters
@@ -97,49 +68,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
         </ListItem>
     );
 
-    const sections: React.ReactNode[] = [];
-    const responsibleDepartmentAddress = getDepartmentDisplayAddress(responsibleDepartment);
-    const managingDepartmentAddress = getDepartmentDisplayAddress(managingDepartment);
-
-    if (responsibleDepartmentAddress != null) {
-        sections.push(
-            <Box key="responsible">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                >
-                    Zuständige Stelle
-                </Typography>
-                <Typography
-                    component={'pre'}
-                    variant="body2"
-                    sx={{mt: 1}}
-                >
-                    {responsibleDepartmentAddress}
-                </Typography>
-            </Box>,
-        );
-    }
-
-    if (managingDepartmentAddress != null) {
-        sections.push(
-            <Box key="managing">
-                <Typography
-                    component={'h3'}
-                    variant="h5"
-                >
-                    Bewirtschaftende Stelle
-                </Typography>
-                <Typography
-                    component={'pre'}
-                    variant="body2"
-                    sx={{mt: 1}}
-                >
-                    {managingDepartmentAddress}
-                </Typography>
-            </Box>,
-        );
-    }
+    const sections: React.ReactNode[] = [...departmentSections];
 
     if (props.element.textProcessingTime) {
         sections.push(

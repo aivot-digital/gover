@@ -28,6 +28,7 @@ import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {FormDepartmentAddresses} from '../form-department-addresses/form-department-addresses';
 
 interface SubmittedProps {
     startedProcessAccessKey: string;
@@ -334,6 +335,10 @@ export function Submitted(props: SubmittedProps) {
                     logoAlt={(formElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
+            <FormDepartmentAddresses
+                formElement={formElement}
+                variant="grid"
+            />
             {
                 status != null &&
                 !status.accessExpired &&

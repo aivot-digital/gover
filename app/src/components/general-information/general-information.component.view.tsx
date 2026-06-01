@@ -1,4 +1,4 @@
-import React, {ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useMemo} from 'react';
 import Box from '@mui/material/Box';
 import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
@@ -12,7 +12,6 @@ import {isStringNullOrEmpty, stringOrUndefined} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
@@ -21,15 +20,13 @@ import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {ExpandableList} from '../expandable-list/expandable-list';
-import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
-import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {MarkdownContent} from '../markdown-content/markdown-content';
 import {isRootElement} from '../../models/elements/form-layout-element';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 import {Grid} from '@mui/material';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
-import {getDepartmentDisplayAddress} from '../../modules/departments/utils/department-utils';
+import {useFormDepartmentAddressSections} from '../form-department-addresses/form-department-addresses';
 
 function cleanDocuments(documents: Array<string> | undefined | null) {
     if (documents) {
@@ -62,8 +59,8 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         rootElement,
     } = useViewDispatcherContext();
 
-    const [responsibleDepartment, setResponsibleDepartment] = useState<VDepartmentShadowedEntity>();
-    const [managingDepartment, setManagingDepartment] = useState<VDepartmentShadowedEntity>();
+    const formElement = isRootElement(rootElement) ? rootElement : null;
+    const departmentSections = useFormDepartmentAddressSections(formElement);
 
     const initialDisplayCount = 4;
 
@@ -74,82 +71,12 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
     const initiativeName = stringOrUndefined(element.initiativeName);
     const expiring = stringOrUndefined(expiringRaw);
 
-    useEffect(() => {
-        if (isRootElement(rootElement)) {
-            if (rootElement.responsibleDepartmentId != null) {
-                if (responsibleDepartment == null || responsibleDepartment.id !== rootElement.responsibleDepartmentId) {
-                    new DepartmentApiService()
-                        .retrievePublic(rootElement.responsibleDepartmentId)
-                        .then(setResponsibleDepartment)
-                        .catch((err) => {
-                            dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der zuständigen Stelle'));
-                        });
-                }
-            } else {
-                setResponsibleDepartment(undefined);
-            }
-
-            if (rootElement.managingDepartmentId != null) {
-                if (managingDepartment == null || managingDepartment.id !== rootElement.managingDepartmentId) {
-                    new DepartmentApiService()
-                        .retrievePublic(rootElement.managingDepartmentId)
-                        .then(setManagingDepartment)
-                        .catch((err) => {
-                            dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der bewirtschaftenden Stelle'));
-                        });
-                }
-            } else {
-                setManagingDepartment(undefined);
-            }
-        }
-    }, [rootElement]);
-
     const pass = useMemo(() => {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
     const sections: ReactNode[] = useMemo(() => {
-        const sections: ReactNode[] = [];
-        const responsibleDepartmentAddress = getDepartmentDisplayAddress(responsibleDepartment);
-        const managingDepartmentAddress = getDepartmentDisplayAddress(managingDepartment);
-
-        if (responsibleDepartmentAddress != null) {
-            sections.push(
-                <Box key="responsible">
-                    <Typography
-                        component={'h3'}
-                        variant="h5"
-                    >
-                        Zuständige Stelle
-                    </Typography>
-                    <Typography
-                        component={'pre'}
-                        variant="body2"
-                    >
-                        {responsibleDepartmentAddress}
-                    </Typography>
-                </Box>,
-            );
-        }
-
-        if (managingDepartmentAddress != null) {
-            sections.push(
-                <Box key="managing">
-                    <Typography
-                        component={'h3'}
-                        variant="h5"
-                    >
-                        Bewirtschaftende Stelle
-                    </Typography>
-                    <Typography
-                        component={'pre'}
-                        variant="body2"
-                    >
-                        {managingDepartmentAddress}
-                    </Typography>
-                </Box>,
-            );
-        }
+        const sections: ReactNode[] = [...departmentSections];
 
         if (eligiblePersons != null &&
             eligiblePersons.length > 0) {
@@ -240,7 +167,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
         }
 
         return sections;
-    }, [responsibleDepartment, managingDepartment, eligiblePersons, supportingDocuments, documentsToAttach, expiring, expectedCosts]);
+    }, [departmentSections, eligiblePersons, supportingDocuments, documentsToAttach, expiring, expectedCosts]);
 
     return (
         <>
