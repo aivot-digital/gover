@@ -13,6 +13,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableElementContextMenu, setComponentTree} from '../../slices/admin-settings-slice';
 import {ElementErrorBoundary} from '../element-error-boundary/element-error-boundary';
 import {
+    resolveDisabled,
     resolveErrorDetails,
     resolveErrors,
     resolveOverride,
@@ -67,6 +68,10 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         return resolveValueForResolvedOverride(element, authoredElementValues, derivedData);
     }, [element, authoredElementValues, derivedData]);
     const authoredValue = authoredElementValues[elementId];
+
+    const disabled: boolean = useMemo(() => {
+        return resolveDisabled(element, derivedData);
+    }, [element, derivedData]);
 
     const resolvedErrors: string[] | undefined | null = useMemo(() => {
         return resolveErrors(element, derivedData);
@@ -173,6 +178,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                     onBlur={handleOnBlur}
                     errors={suppressErrors ? undefined : resolvedErrors}
                     errorDetails={suppressErrors ? undefined : resolvedErrorDetails}
+                    isBusy={isBusy || disabled}
+                    isDeriving={baseIsDeriving}
                 />
             </ElementErrorBoundary>
         </Grid>

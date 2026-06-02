@@ -116,7 +116,7 @@ export function PresetEditPage() {
 
     // Fetch all available identity providers
     useEffect(() => {
-        new IdentityProvidersApiService(api)
+        new IdentityProvidersApiService()
             .listAll()
             .then(res => setIdentityProviders(res.content.map(idp => ({
                 key: idp.key,

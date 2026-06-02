@@ -11,7 +11,7 @@ import {generateElementWithDefaultValues} from '../../utils/generate-element-wit
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {Allotment} from 'allotment';
 import {AuthoredElementValues} from '../../models/element-data';
-import {ElementDisplayContext} from '../../data/element-type/element-child-options';
+import {ElementChildOptions, ElementDisplayContext} from '../../data/element-type/element-child-options';
 import {Hint} from '../hint/hint';
 import {humanizeNumberCapitalized} from '../../utils/humanization-utils';
 import {ElementTreeInlineEditorContextProvider} from '../element-tree-2/components/element-tree-inline-editor-context';
@@ -23,7 +23,6 @@ import {useConfirm} from '../../providers/confirm-provider';
 import {cloneElement} from '../../utils/clone-element';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {ElementChildOptions} from '../../data/element-type/element-child-options';
 import {isRootElement} from '../../models/elements/form-layout-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 import {deepEquals} from '../../utils/equality-utils';
@@ -287,7 +286,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     sx={{
                         ml: 'auto',
                     }}
-                    disabled={disabled}
+                    disabled={openOverride ? undefined : disabled}
                     onClick={openDialog}
                 >
                     {

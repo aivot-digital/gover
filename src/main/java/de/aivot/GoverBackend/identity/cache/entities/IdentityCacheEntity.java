@@ -4,6 +4,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.redis.core.RedisHash;
+import org.springframework.data.redis.core.index.Indexed;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -14,11 +15,16 @@ import java.util.UUID;
 public class IdentityCacheEntity implements Serializable {
     @Id
     @Nonnull
-    private UUID sessionId;
+    private String id;
+    @Nonnull
+    @Indexed
+    private String sessionId = "";
     @Nullable
     private String codeVerifier;
     @Nonnull
-    private String providerKey = "";
+    private UUID providerKey = UUID.randomUUID();
+    @Nonnull
+    private String identityId = "";
     @Nonnull
     private String metadataIdentifier = "";
     @Nonnull
@@ -32,16 +38,20 @@ public class IdentityCacheEntity implements Serializable {
     public IdentityCacheEntity() {
     }
 
-    public IdentityCacheEntity(@Nonnull UUID sessionId,
+    public IdentityCacheEntity(@Nonnull String id,
+                               @Nonnull String sessionId,
                                @Nullable String codeVerifier,
-                               @Nonnull String providerKey,
+                               @Nonnull UUID providerKey,
+                               @Nonnull String identityId,
                                @Nonnull String metadataIdentifier,
                                @Nonnull String origin,
                                @Nonnull String stateNonce,
                                @Nullable Map<String, String> identityData) {
+        this.id = id;
         this.sessionId = sessionId;
         this.codeVerifier = codeVerifier;
         this.providerKey = providerKey;
+        this.identityId = identityId;
         this.metadataIdentifier = metadataIdentifier;
         this.origin = origin;
         this.stateNonce = stateNonce;
@@ -55,40 +65,38 @@ public class IdentityCacheEntity implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-
         IdentityCacheEntity that = (IdentityCacheEntity) o;
-        return sessionId.equals(that.sessionId)
-                && Objects.equals(codeVerifier, that.codeVerifier)
-                && providerKey.equals(that.providerKey)
-                && metadataIdentifier.equals(that.metadataIdentifier)
-                && origin.equals(that.origin)
-                && stateNonce.equals(that.stateNonce)
-                && Objects.equals(identityData, that.identityData);
+        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) && Objects.equals(codeVerifier, that.codeVerifier) &&
+                Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) &&
+                Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(origin, that.origin) &&
+                Objects.equals(stateNonce, that.stateNonce) && Objects.equals(identityData, that.identityData);
     }
 
     @Override
     public int hashCode() {
-        int result = sessionId.hashCode();
-        result = 31 * result + Objects.hashCode(codeVerifier);
-        result = 31 * result + providerKey.hashCode();
-        result = 31 * result + metadataIdentifier.hashCode();
-        result = 31 * result + origin.hashCode();
-        result = 31 * result + stateNonce.hashCode();
-        result = 31 * result + Objects.hashCode(identityData);
-        return result;
+        return Objects.hash(id, sessionId, codeVerifier, providerKey, identityId, metadataIdentifier, origin, stateNonce, identityData);
     }
-
 
     // endregion
 
     // region Getters and Setters
 
     @Nonnull
-    public UUID getSessionId() {
+    public String getId() {
+        return id;
+    }
+
+    public IdentityCacheEntity setId(@Nonnull String id) {
+        this.id = id;
+        return this;
+    }
+
+    @Nonnull
+    public String getSessionId() {
         return sessionId;
     }
 
-    public IdentityCacheEntity setSessionId(@Nonnull UUID sessionId) {
+    public IdentityCacheEntity setSessionId(@Nonnull String sessionId) {
         this.sessionId = sessionId;
         return this;
     }
@@ -104,12 +112,22 @@ public class IdentityCacheEntity implements Serializable {
     }
 
     @Nonnull
-    public String getProviderKey() {
+    public UUID getProviderKey() {
         return providerKey;
     }
 
-    public IdentityCacheEntity setProviderKey(@Nonnull String providerKey) {
+    public IdentityCacheEntity setProviderKey(@Nonnull UUID providerKey) {
         this.providerKey = providerKey;
+        return this;
+    }
+
+    @Nonnull
+    public String getIdentityId() {
+        return identityId;
+    }
+
+    public IdentityCacheEntity setIdentityId(@Nonnull String identityId) {
+        this.identityId = identityId;
         return this;
     }
 
@@ -152,6 +170,7 @@ public class IdentityCacheEntity implements Serializable {
         this.identityData = identityData;
         return this;
     }
+
 
     // endregion
 }

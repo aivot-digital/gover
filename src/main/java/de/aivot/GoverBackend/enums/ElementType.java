@@ -6,8 +6,8 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.*;
-import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.lib.models.Identifiable;
@@ -47,7 +47,7 @@ public enum ElementType implements Identifiable<Integer> {
     CodeInput(27),
     RichTextInput(28),
     UiDefinitionInput(29),
-    IdentityInput(30),
+    IdentityConfig(30),
     TabLayout(31),
     ChipInput(32),
     DateTime(33),
@@ -170,7 +170,7 @@ public enum ElementType implements Identifiable<Integer> {
             case CodeInput -> new CodeInputElement();
             case RichTextInput -> new RichTextInputElement();
             case UiDefinitionInput -> new UiDefinitionInputElement();
-            case IdentityInput -> new IdentityInputElement();
+            case IdentityConfig -> new IdentityConfigElement();
             case TabLayout -> new TabLayoutElement();
             case ChipInput -> new ChipInputElement();
             case DateTime -> new DateTimeInputElement();

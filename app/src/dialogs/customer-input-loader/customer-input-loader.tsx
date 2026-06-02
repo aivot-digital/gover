@@ -13,26 +13,19 @@ import SettingsBackupRestoreOutlinedIcon from '@mui/icons-material/SettingsBacku
 import {useSearchParams} from 'react-router-dom';
 import RestorePageIcon from '@mui/icons-material/RestorePage';
 import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
-import {IdentityStateQueryParam} from '../../modules/identity/constants/identity-state-query-param';
 import {type AuthoredElementValues, hasAuthoredElementValuesSomeInput} from '../../models/element-data';
-import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
 import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {canPrefillElement} from '../prefill-form-dialog/prefill-form-dialog';
 import {flattenElements} from '../../utils/flatten-elements';
-import {IdentityResultState} from '../../modules/identity/enums/identity-result-state';
 import {IdentityData} from '../../modules/identity/models/identity-data';
-import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
-import {Page} from '../../models/dtos/page';
 import {prefillIdentityData} from '../../utils/prefill-elements';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
-import {ElementType} from '../../data/element-type/element-type';
-import {Api, useApi} from '../../hooks/use-api';
+import {useApi} from '../../hooks/use-api';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
 
 interface LoadUserInputDialogProps {
     form: FormEntity;
@@ -70,11 +63,12 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
     useEffect(() => {
         initializeLocalStorageData(form, version, setLocalStorageData);
         initializeUrlPrefillData(form, version, setUrlPrefillData, searchParams);
-        initializeIdentityData(api, form, version, setIdentityData, searchParams)
+       /* initializeIdentityData(api, form, version, setIdentityData, searchParams)
             .catch((err) => {
                 console.error('Error initializing identity data:', err);
                 setIdentityData('Fehler beim Laden der Authentifizierungsdaten. Bitte versuchen Sie es erneut.');
             });
+        */
     }, [form]);
 
     const dialogState: 'waiting' | 'load' | 'identity' | 'none' = useMemo(() => {
@@ -376,6 +370,7 @@ function initializeUrlPrefillData(
     setUrlPrefillData(cleanedPrefillData);
 }
 
+/*
 async function initializeIdentityData(
     api: Api,
     form: FormEntity,
@@ -434,3 +429,4 @@ async function initializeIdentityData(
         provider: provider,
     });
 }
+*/

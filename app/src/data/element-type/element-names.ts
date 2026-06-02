@@ -32,7 +32,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.CodeInput]: 'Codeeingabe',
     [ElementType.RichTextInput]: 'Markdown-Eingabe',
     [ElementType.UiDefinitionInput]: 'UI-Definition-Editor',
-    [ElementType.IdentityInput]: 'Identitätseingabe',
+    [ElementType.IdentityConfigElement]: 'Identitätseingabe',
     [ElementType.TabLayout]: 'Tabs',
     [ElementType.ChipInput]: 'Tag-Liste (Schlagwörter)',
     [ElementType.DateTime]: 'Datum und Uhrzeit',

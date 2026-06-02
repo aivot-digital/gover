@@ -53,7 +53,7 @@ export const evaluators: {
     [ElementType.CodeInput]: null,
     [ElementType.RichTextInput]: TextEvaluator,
     [ElementType.UiDefinitionInput]: UiDefinitionInputEvaluator,
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputEvaluator,
     [ElementType.DateTime]: DateTimeEvaluator,

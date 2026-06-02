@@ -2,6 +2,7 @@ import {
     AuthoredElementValues,
     ComputedElementState,
     ComputedElementStates,
+    ComputedElementValueSource,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     EffectiveElementValues,
@@ -46,11 +47,20 @@ export function resolveValueForResolvedOverride(
         return effectiveValue;
     }
 
-    if (elementState?.valueSource === 'Derived') {
+    if (elementState?.valueSource === ComputedElementValueSource.Derived) {
+        return effectiveValue;
+    }
+
+    if (elementState?.valueSource === ComputedElementValueSource.Identity) {
         return effectiveValue;
     }
 
     return authoredValue;
+}
+
+export function resolveDisabled(element: AnyElement, derivedData: DerivedRuntimeElementData): boolean {
+    const disabled = resolveElementState(element, derivedData)?.disabled;
+    return disabled ?? false;
 }
 
 export function resolveErrors(element: AnyElement, derivedData: DerivedRuntimeElementData): string[] | undefined | null {
@@ -141,7 +151,7 @@ export function synchronizeAuthoredElementValuesByDestinationPath(
             }
 
             const destinationPath = state?.destinationPath;
-            if (destinationPath == null || state?.valueSource === 'Derived') {
+            if (destinationPath == null || state?.valueSource === ComputedElementValueSource.Derived || state?.valueSource === ComputedElementValueSource.Identity) {
                 return;
             }
 
@@ -171,7 +181,7 @@ export function synchronizeAuthoredElementValuesByDestinationPath(
                 return value;
             }
 
-            if (state?.destinationPath !== sourceDestinationPath || state?.valueSource === 'Derived') {
+            if (state?.destinationPath !== sourceDestinationPath || state?.valueSource === ComputedElementValueSource.Derived || state?.valueSource === ComputedElementValueSource.Identity) {
                 return value;
             }
 
@@ -345,7 +355,7 @@ export function cleanAuthoredElementValues(rootElement: AnyElement, authoredElem
     delete cleanedElementValues[IdentityCustomerInputKey];
 
     return mapAuthoredElementValues(rootElement, cleanedElementValues, (element, value) => {
-        if (element.type === ElementType.FileUpload || element.type === ElementType.IdentityInput) {
+        if (element.type === ElementType.FileUpload || element.type === ElementType.IdentityConfigElement) {
             return undefined;
         }
 

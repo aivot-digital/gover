@@ -160,6 +160,38 @@ public class ElementPOJOMapper {
         var valueObj = elementValues
                 .getOrDefault(id, null);
 
+        if (List.class.isAssignableFrom(field.getType())) {
+            var genericTypeClass = ReflectionUtils
+                    .getGenericType(field, 0)
+                    .orElse(null);
+
+            if (genericTypeClass != null) {
+                if (valueObj == null) {
+                    return new LinkedList<>();
+                }
+
+                var sourceList = ObjectMapperFactory
+                        .getInstance()
+                        .convertValue(valueObj, List.class);
+
+                if (sourceList == null) {
+                    return new LinkedList<>();
+                }
+
+                var resList = new LinkedList<>();
+
+                for (var source : sourceList) {
+                    var res = ObjectMapperFactory
+                            .getInstance()
+                            .convertValue(source, genericTypeClass);
+
+                    resList.add(res);
+                }
+
+                return resList;
+            }
+        }
+
         return ObjectMapperFactory
                 .getInstance()
                 .convertValue(valueObj, field.getType());

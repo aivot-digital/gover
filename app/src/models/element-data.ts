@@ -5,10 +5,15 @@ export type AuthoredElementValues = Partial<Record<string, any>>;
 
 export type EffectiveElementValues = Partial<Record<string, any>>;
 
-export type ComputedElementValueSource = 'Authored' | 'Derived';
+export enum ComputedElementValueSource {
+    Authored = 'Authored',
+    Derived = 'Derived',
+    Identity = 'Identity',
+}
 
 export interface ComputedElementState {
     visible?: boolean | null;
+    disabled?: boolean | null;
     error?: string | null;
     errorDetails?: Record<string, any> | null;
     override?: AnyElement | null;

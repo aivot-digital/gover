@@ -29,7 +29,7 @@ export enum ElementType {
     CodeInput = 27,
     RichTextInput = 28,
     UiDefinitionInput = 29,
-    IdentityInput = 30,
+    IdentityConfigElement = 30,
     TabLayout = 31,
     ChipInput = 32,
     DateTime = 33,

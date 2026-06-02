@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementReferenceUtils;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
@@ -21,7 +22,8 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
@@ -37,7 +39,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.w3c.dom.Node;
 
 import java.util.List;
 import java.util.Optional;
@@ -172,7 +173,7 @@ public class StaffProcessInstanceTaskViewController {
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
@@ -185,7 +186,7 @@ public class StaffProcessInstanceTaskViewController {
         );
 
         var logger = processNodeExecutionLoggerFactory
-                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), identityId);
+                .create(taskViewData.instance().getId(), taskViewData.task().getId(), user.getId(), identitySessionId);
 
         var processData = processDataService
                 .foldProcessInstanceData(
@@ -410,7 +411,11 @@ public class StaffProcessInstanceTaskViewController {
         );
         var derivationLogger = new ElementDerivationLogger();
         var derivedRuntimeData = elementDerivationService
-                .derive(derivationRequest, derivationLogger);
+                .derive(
+                        derivationRequest,
+                        new IdentityDataMap(), // TODO: Maybe read from instance?
+                        derivationLogger
+                );
 
         return new TaskViewData<>(
                 user,

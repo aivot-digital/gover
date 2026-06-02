@@ -14,7 +14,9 @@ import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
@@ -24,7 +26,12 @@ import de.aivot.GoverBackend.form.dtos.FormCostCalculationResponseDTO;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
+import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
+import de.aivot.GoverBackend.identity.enums.IdentityProviderType;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
+import de.aivot.GoverBackend.identity.services.IdentityService;
+import de.aivot.GoverBackend.identity.utils.IdentityCookieUtils;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.models.dtos.MaxFileSizeDto;
@@ -93,9 +100,11 @@ public class FormTriggerControllerV1 {
     private final CaptchaReplayGuard captchaReplayGuard;
     private final ProcessInstanceService processInstanceService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final FileUploadMultipartInputService fileUploadMultipartInputService;
     private final ElementDataTransformService elementDataTransformService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final FormTriggerNodeV1 formTriggerNodeV1;
+    private final IdentityService identityService;
 
     @Autowired
     public FormTriggerControllerV1(GoverConfig goverConfig,
@@ -114,7 +123,18 @@ public class FormTriggerControllerV1 {
                                    ProcessNodeService processNodeService,
                                    ProcessTestClaimService processTestClaimService,
                                    ProcessVersionService processVersionService,
-                                   ProcessNodeDefinitionService processNodeDefinitionService, SystemConfigService systemConfigService, StorageProviderService storageProviderService, AVService aVService, CaptchaReplayGuard captchaReplayGuard, ProcessInstanceService processInstanceService, ProcessInstanceAttachmentService processInstanceAttachmentService, ElementDataTransformService elementDataTransformService, ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory, FormTriggerNodeV1 formTriggerNodeV1) {
+                                   ProcessNodeDefinitionService processNodeDefinitionService,
+                                   SystemConfigService systemConfigService,
+                                   StorageProviderService storageProviderService,
+                                   AVService aVService,
+                                   CaptchaReplayGuard captchaReplayGuard,
+                                   ProcessInstanceService processInstanceService,
+                                   ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                   FileUploadMultipartInputService fileUploadMultipartInputService,
+                                   ElementDataTransformService elementDataTransformService,
+                                   ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                   FormTriggerNodeV1 formTriggerNodeV1,
+                                   IdentityService identityService) {
         this.goverConfig = goverConfig;
         this.paymentService = paymentService;
         this.paymentProviderService = paymentProviderService;
@@ -138,9 +158,11 @@ public class FormTriggerControllerV1 {
         this.captchaReplayGuard = captchaReplayGuard;
         this.processInstanceService = processInstanceService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.fileUploadMultipartInputService = fileUploadMultipartInputService;
         this.elementDataTransformService = elementDataTransformService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.formTriggerNodeV1 = formTriggerNodeV1;
+        this.identityService = identityService;
     }
 
     @GetMapping("")
@@ -148,7 +170,7 @@ public class FormTriggerControllerV1 {
                                      @Nonnull @PathVariable UUID processAccessKey,
                                      @Nonnull @PathVariable String formSlug,
                                      @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                     @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId) throws ResponseException {
+                                     @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId) throws ResponseException {
         var execUser = getExecUser(jwt);
 
         var process = getProcessEntity(processAccessKey);
@@ -156,32 +178,104 @@ public class FormTriggerControllerV1 {
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
+        var identitySlots = getIdentitySlots(identitySessionId, config);
 
-        /*
-        TODO: Reimplement
-
-        var identityCache = identityId == null
-                ? Optional.empty()
-                : identityCacheRepository.findById(identityId);
-
-        var obfuscateSteps = (
-                formVersion.getType() == FormType.Internal &&
-                        formVersion.getIdentityVerificationRequired() &&
-                        identityCache.isEmpty()
-        );
-         */
+        var shouldObfuscateSteps = identitySlots
+                .stream()
+                .anyMatch(s -> s.getIsRequired() && !s.isAuthenticated());
 
         var formLayout = config
                 .configuration()
                 .formLayout;
 
-        ElementStreamUtils.applyAction(formLayout, BaseElement::removeInternalInformation);
+        ElementStreamUtils.applyAction(formLayout, (element) -> {
+            element.removeInternalInformation();
+            if (shouldObfuscateSteps && element instanceof GenericStepElement stepElement) {
+                stepElement.setChildren(List.of());
+            }
+        });
 
         return new RetrieveResponse(
                 formLayout,
                 node,
                 process,
-                processVersion
+                processVersion,
+                identitySlots
+        );
+    }
+
+    @Nonnull
+    private List<IdentitySlot> getIdentitySlots(@Nullable String identitySessionId, ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config) {
+        if (config.configuration().identities == null) {
+            return new LinkedList<>();
+        }
+
+        var identityDataMap = identityService
+                .getIdentityDataMap(identitySessionId);
+
+        return config
+                .configuration()
+                .identities
+                .stream()
+                .map((slot) -> getIdentitySlot(slot, identityDataMap))
+                .toList();
+    }
+
+    @Nonnull
+    private IdentitySlot getIdentitySlot(IdentityConfigElementSlot slot, IdentityDataMap identityDataMap) {
+        if (slot.getId() == null) {
+            throw new IllegalArgumentException("Slot ID is null");
+        }
+
+        var options = slot.getOptions();
+
+        if (options == null) {
+            return new IdentitySlot(
+                    slot.getId(),
+                    slot.getTitle(),
+                    slot.getDescription(),
+                    Boolean.TRUE.equals(slot.getIsOptional()),
+                    Boolean.TRUE.equals(slot.getAllowsMail()),
+                    identityDataMap.containsKey(slot.getId()),
+                    List.of()
+            );
+        }
+
+        var identityData = identityDataMap.get(slot.getId());
+
+        List<IdentityProvider> identityProviders = options
+                .stream()
+                .filter(opt -> opt.getIdentityProviderKey() != null)
+                .map((opt) -> {
+                    IdentityProviderEntity idpEntity;
+                    try {
+                        idpEntity = identityProviderService
+                                .retrieve(opt.getIdentityProviderKey())
+                                .orElseThrow(ResponseException::notFound);
+                    } catch (ResponseException e) {
+                        throw new RuntimeException(e);
+                    }
+
+                    return new IdentityProvider(
+                            idpEntity.getKey(),
+                            idpEntity.getName(),
+                            idpEntity.getIconAssetKey(),
+                            idpEntity.getType(),
+                            identityData != null && Objects.equals(identityData.providerKey(), idpEntity.getKey()),
+                            opt.getAdditionalScopes() != null ? opt.getAdditionalScopes() : List.of()
+                    );
+                })
+                .sorted(Comparator.comparing(IdentityProvider::identityProviderName))
+                .toList();
+
+        return new IdentitySlot(
+                slot.getId(),
+                slot.getTitle(),
+                slot.getDescription(),
+                Boolean.TRUE.equals(slot.getIsOptional()),
+                Boolean.TRUE.equals(slot.getAllowsMail()),
+                identityDataMap.containsKey(slot.getId()),
+                identityProviders
         );
     }
 
@@ -193,7 +287,46 @@ public class FormTriggerControllerV1 {
             @Nonnull
             ProcessEntity process,
             @Nonnull
-            ProcessVersionEntity version
+            ProcessVersionEntity version,
+            @Nonnull
+            List<IdentitySlot> identitySlots
+    ) {
+    }
+
+    public record IdentitySlot(
+            @Nonnull
+            String id,
+            @Nullable
+            String title,
+            @Nullable
+            String description,
+            @Nonnull
+            Boolean isOptional,
+            @Nonnull
+            Boolean allowsEmail,
+            @Nonnull
+            Boolean isAuthenticated,
+            @Nonnull
+            List<IdentityProvider> availableIdentityProviders
+    ) {
+        public Boolean getIsRequired() {
+            return !isOptional;
+        }
+    }
+
+    public record IdentityProvider(
+            @Nonnull
+            UUID identityProviderKey,
+            @Nonnull
+            String identityProviderName,
+            @Nullable
+            UUID identityProviderAssetKey,
+            @Nonnull
+            IdentityProviderType identityProviderType,
+            @Nonnull
+            Boolean isAuthenticatedWithThis,
+            @Nonnull
+            List<String> additionalScopes
     ) {
     }
 
@@ -215,7 +348,7 @@ public class FormTriggerControllerV1 {
                                          @Nonnull @PathVariable UUID processAccessKey,
                                          @Nonnull @PathVariable String formSlug,
                                          @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                         @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId) throws ResponseException {
+                                         @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId) throws ResponseException {
         var val = systemConfigService
                 .retrieve(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY)
                 .getValueAsInteger()
@@ -242,7 +375,7 @@ public class FormTriggerControllerV1 {
                                                          @Nonnull @PathVariable UUID processAccessKey,
                                                          @Nonnull @PathVariable String formSlug,
                                                          @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                                         @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
+                                                         @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
                                                          @Nonnull @RequestBody AuthoredElementValues values) throws PaymentException, ResponseException {
         // TODO: Implement
         return new FormCostCalculationResponseDTO(BigDecimal.ZERO, List.of(), "");
@@ -259,7 +392,7 @@ public class FormTriggerControllerV1 {
                                             @Nonnull @PathVariable UUID processAccessKey,
                                             @Nonnull @PathVariable String formSlug,
                                             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
+                                            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
                                             @Nonnull @Valid @RequestBody AuthoredElementValues authoredElementValues,
                                             @Nullable @RequestParam(value = "skipErrorsFor") List<String> skipErrorsFor,
                                             @Nullable @RequestParam(value = "skipVisibilitiesFor") List<String> skipVisibilitiesFor,
@@ -284,9 +417,12 @@ public class FormTriggerControllerV1 {
                 options
         );
 
+        var identities = identityService
+                .getIdentityDataMap(identitySessionId);
+
         var derivationLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
-                .derive(request, derivationLogger);
+                .derive(request, identities, derivationLogger);
 
         return ElementDerivationResponse
                 .from(derivedElementData, derivationLogger, jwt != null);
@@ -297,9 +433,11 @@ public class FormTriggerControllerV1 {
                                               @Nonnull @PathVariable UUID processAccessKey,
                                               @Nonnull @PathVariable String formSlug,
                                               @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                              @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
+                                              @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
                                               @Nonnull @RequestParam(value = "inputs", required = true) String rawInputs,
-                                              @Nullable @RequestParam(value = "files", required = false) MultipartFile[] files) throws ResponseException {
+                                              @Nullable @RequestParam(value = "files", required = false) MultipartFile[] files,
+                                              @Nullable @RequestParam(value = "fileUris", required = false) List<String> fileUris,
+                                              @Nonnull HttpServletResponse response) throws ResponseException {
         var execUser = getExecUser(jwt);
         var process = getProcessEntity(processAccessKey);
         var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process);
@@ -316,8 +454,8 @@ public class FormTriggerControllerV1 {
             throw ResponseException.badRequest();
         }
 
-        // TODO: Hydrate the customer input with the data from an idp
-        // hydrateCustomerInputWithIdpData(form, optionalIdp, derivedRuntimeElementData);
+        var identities = identityService
+                .getIdentityDataMap(identitySessionId);
 
         // Perform derivation
         var logger = new ElementDerivationLogger();
@@ -327,18 +465,13 @@ public class FormTriggerControllerV1 {
                 new ElementDerivationOptions()
         );
         var derivedRuntimeElementData = elementDerivationService
-                .derive(derivationRequest, logger);
+                .derive(derivationRequest, identities, logger);
 
         if (derivedRuntimeElementData.hasAnyError()) {
             throw ResponseException.badRequest(derivedRuntimeElementData);
         }
 
         var effectiveValues = derivedRuntimeElementData.getEffectiveValues();
-
-        // Test files for viruses
-        aVService.testMultipartFiles(files);
-        // TODO: Check with default process instance attachment storage provider max file size
-
 
         var testClaim = processTestClaimService
                 .retrieve(ProcessTestClaimFilter
@@ -356,10 +489,13 @@ public class FormTriggerControllerV1 {
                 testClaim,
                 config.configuration().formLayout,
                 node,
-                effectiveValues,
-                files
+                inputs,
+                files,
+                fileUris,
+                identities
         );
 
+        response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
         return new SubmissionStatusResponseDTO(processInstance.getAccessKey());
     }
 
@@ -394,8 +530,10 @@ public class FormTriggerControllerV1 {
     private ProcessInstanceEntity startProcess(@Nullable ProcessTestClaimEntity testClaimEntity,
                                                @Nonnull FormLayoutElement form,
                                                @Nonnull ProcessNodeEntity nodeEntity,
-                                               @Nonnull EffectiveElementValues effectiveValues,
-                                               @Nullable MultipartFile[] files) throws ResponseException {
+                                               @Nonnull AuthoredElementValues inputs,
+                                               @Nullable MultipartFile[] files,
+                                               @Nullable List<String> fileUris,
+                                               @Nonnull IdentityDataMap identities) throws ResponseException {
         var startedAt = Instant.now();
         var instance = new ProcessInstanceEntity(
                 null,
@@ -407,7 +545,7 @@ public class FormTriggerControllerV1 {
                 null,
                 null,
                 List.of(),
-                Map.of(),
+                identities,
                 startedAt,
                 startedAt,
                 null,
@@ -422,36 +560,39 @@ public class FormTriggerControllerV1 {
                 .create(instance);
 
         try {
-            var attachments = new LinkedList<ProcessInstanceAttachmentEntity>();
-            if (files != null) {
-                for (var file : files) {
-                    byte[] bytes;
-                    try {
-                        bytes = file.getBytes();
-                    } catch (IOException e) {
-                        throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
-                    }
+            var normalizationResult = fileUploadMultipartInputService.normalizeInputs(
+                    form,
+                    inputs,
+                    files,
+                    fileUris,
+                    createdInstance.getId(),
+                    null,
+                    null
+            );
+            var normalizedInputs = normalizationResult.inputs();
+            var normalizedDerivedRuntimeElementData = elementDerivationService.derive(
+                    new ElementDerivationRequest(
+                            form,
+                            normalizedInputs,
+                            new ElementDerivationOptions()
+                    ),
+                    identities,
+                    new ElementDerivationLogger()
+            );
 
-                    var attachment = ProcessInstanceAttachmentEntity.of(
-                            file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
-                            createdInstance.getId(),
-                            null,
-                            bytes
-                    );
-
-                    var createdAttachment = processInstanceAttachmentService
-                            .create(attachment);
-
-                    attachments.add(createdAttachment);
-                }
+            if (normalizedDerivedRuntimeElementData.hasAnyError()) {
+                throw ResponseException.badRequest(normalizedDerivedRuntimeElementData);
             }
 
+            var normalizedEffectiveValues = normalizedDerivedRuntimeElementData.getEffectiveValues();
+            var attachments = normalizationResult.createdAttachments();
+
             var initialPayload = new HashMap<String, Object>();
-            initialPayload.put(FormTriggerNodeV1.DATA_KEY_PAYLOAD, elementDataTransformService.buildPayload(form, effectiveValues));
-            initialPayload.put(FormTriggerNodeV1.DATA_KEY_UNMAPPED, effectiveValues);
+            initialPayload.put(FormTriggerNodeV1.DATA_KEY_PAYLOAD, elementDataTransformService.buildPayload(form, normalizedEffectiveValues));
+            initialPayload.put(FormTriggerNodeV1.DATA_KEY_UNMAPPED, normalizedEffectiveValues);
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
                     "key", a.getKey(),
-                    "filename", a.getFileName(),
+                    "fileName", a.getFileName(),
                     "storageProviderId", a.getStorageProviderId(),
                     "storagePathFromRoot", a.getStoragePathFromRoot()
             )).toList());
@@ -470,6 +611,14 @@ public class FormTriggerControllerV1 {
                             null
                     );
             logger.logException(e);
+
+            processInstanceService.update(createdInstance.getId(), createdInstance);
+
+            if (e instanceof ResponseException responseException) {
+                throw responseException;
+            }
+
+            throw ResponseException.internalServerError(e);
         }
 
         return processInstanceService.update(createdInstance.getId(), createdInstance);

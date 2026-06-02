@@ -110,7 +110,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.Time,
             ElementType.Image,
             ElementType.FileUpload,
-            ElementType.IdentityInput,
             ElementType.ChipInput,
             ElementType.DateTime,
             ElementType.DateRange,

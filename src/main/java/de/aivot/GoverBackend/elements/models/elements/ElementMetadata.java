@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public class ElementMetadata implements Serializable {
+    private String identitySourceId;
     private Map<String, String> identityMappings;
     private String userInfoIdentifier;
 
@@ -13,21 +14,28 @@ public class ElementMetadata implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-
         ElementMetadata that = (ElementMetadata) o;
-        return Objects.equals(identityMappings, that.identityMappings) && Objects.equals(userInfoIdentifier, that.userInfoIdentifier);
+        return Objects.equals(identitySourceId, that.identitySourceId) && Objects.equals(identityMappings, that.identityMappings) &&
+                Objects.equals(userInfoIdentifier, that.userInfoIdentifier);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hashCode(identityMappings);
-        result = 31 * result + Objects.hashCode(userInfoIdentifier);
-        return result;
+        return Objects.hash(identitySourceId, identityMappings, userInfoIdentifier);
     }
 
     // endregion
 
     // region Getters & Setters
+
+    public String getIdentitySourceId() {
+        return identitySourceId;
+    }
+
+    public ElementMetadata setIdentitySourceId(String identitySourceId) {
+        this.identitySourceId = identitySourceId;
+        return this;
+    }
 
     public Map<String, String> getIdentityMappings() {
         return identityMappings;

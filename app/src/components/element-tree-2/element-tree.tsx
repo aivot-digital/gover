@@ -22,6 +22,7 @@ import {flattenElementsWithParents} from '../../utils/flatten-elements';
 import SearchOff from '@aivot/mui-material-symbols-400-outlined/dist/search-off/SearchOff';
 import {ElementTreeEditor} from './components/element-tree-editor';
 import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
+import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
@@ -34,6 +35,7 @@ export interface ElementTreeProps<T extends AnyElement> {
     highlightElementSignal?: number;
     onHoveredElementIdChange?: (elementId: string | null) => void;
     openRootAddElementSignal?: number;
+    identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
 }
 
 interface ElementTreeSearchResult {
@@ -54,6 +56,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
         highlightElementSignal,
         onHoveredElementIdChange,
         openRootAddElementSignal,
+        identityMappingInformation,
     } = props;
 
     const {
@@ -479,6 +482,7 @@ export function ElementTree<T extends AnyElement>(props: ElementTreeProps<T>) {
                                 allElements: allElements,
                                 displayContext: displayContext,
                                 allowElementIdEditing: allowElementIdEditing,
+                                identityMappingInformation: identityMappingInformation,
                             }}
                         >
                             <ElementTreeChildList

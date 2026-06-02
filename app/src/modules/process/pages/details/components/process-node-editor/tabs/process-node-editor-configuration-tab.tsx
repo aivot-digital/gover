@@ -3,8 +3,9 @@ import {TextFieldComponent} from '../../../../../../../components/text-field/tex
 import {useProcessNodeEditorContext} from '../process-node-editor-context';
 import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
 import Typography from '@mui/material/Typography';
-import {useRef} from 'react';
+import {useCallback, useRef} from 'react';
 import {useProcessDetailsPageContext} from '../../../process-details-page-context';
+import {AuthoredElementValues} from '../../../../../../../models/element-data';
 
 export function ProcessNodeEditorConfigurationTab() {
     const {
@@ -21,6 +22,20 @@ export function ProcessNodeEditorConfigurationTab() {
 
     const initialDerivationNodeIdRef = useRef<number | null>(null);
 
+    const handleDerivationFinished = useCallback(() => {
+        if (initialDerivationNodeIdRef.current !== localNode.id) {
+            initialDerivationNodeIdRef.current = localNode.id;
+            setLocalNode(localNode, true);
+        }
+    }, [localNode]);
+
+    const handleAuthoredElementValuesChange = useCallback((authoredElementValues: AuthoredElementValues) => {
+        setLocalNode({
+            ...localNode,
+            configuration: authoredElementValues,
+        }, false);
+    }, [localNode]);
+
     return (
         <Box
             sx={{
@@ -32,10 +47,12 @@ export function ProcessNodeEditorConfigurationTab() {
             <Typography variant="h4">
                 Eigenschaften des Elements
             </Typography>
-            <Typography variant="body1"
-                        mt={1}
-                        mb={2}
-                        maxWidth={400}>
+            <Typography
+                variant="body1"
+                mt={1}
+                mb={2}
+                maxWidth={400}
+            >
                 Konfigurieren Sie dieses Prozesselement gemäß ihrer fachlichen Anforderungen.
             </Typography>
 
@@ -89,18 +106,8 @@ export function ProcessNodeEditorConfigurationTab() {
                 key={localNode.id}
                 element={layout}
                 authoredElementValues={localNode.configuration}
-                onAuthoredElementValuesChange={(authoredElementValues) => {
-                    setLocalNode({
-                        ...localNode,
-                        configuration: authoredElementValues,
-                    }, false);
-                }}
-                onDerivationFinished={() => {
-                    if (initialDerivationNodeIdRef.current !== localNode.id) {
-                        initialDerivationNodeIdRef.current = localNode.id;
-                        setLocalNode(localNode, true);
-                    }
-                }}
+                onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
+                onDerivationFinished={handleDerivationFinished}
                 computedErrors={problems?.derivedRuntimeElementData.elementStates}
                 suppressErrors={!localNode.savedWithErrors && !showNodeProblemsForNodes[localNode.id]}
                 disabled={!isEditable}

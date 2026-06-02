@@ -1,6 +1,6 @@
 import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
-import {BaseApiService} from '../../services/base-api-service';
+import {BaseApiService, RequestOptions} from '../../services/base-api-service';
 
 interface ElementDerivationOptions {
     skipErrorsForElementIds: string[];
@@ -23,8 +23,8 @@ export interface ElementDerivationRequest {
 }
 
 export class ElementsApiService extends BaseApiService {
-    public async derive(request: ElementDerivationRequest): Promise<DerivedRuntimeElementData> {
-        return await this.post<ElementDerivationRequest, DerivedRuntimeElementData>('/api/elements/derive/', request);
+    public async derive(request: ElementDerivationRequest, opt?: RequestOptions): Promise<DerivedRuntimeElementData> {
+        return await this.post<ElementDerivationRequest, DerivedRuntimeElementData>('/api/elements/derive/', request, opt);
     }
 
     public async recalculateReferencedIds<T extends AnyElement>(element: T): Promise<T> {

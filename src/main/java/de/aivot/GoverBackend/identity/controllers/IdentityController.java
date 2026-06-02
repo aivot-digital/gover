@@ -1,23 +1,18 @@
 package de.aivot.GoverBackend.identity.controllers;
 
-import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
-import de.aivot.GoverBackend.identity.dtos.IdentityDetailsDTO;
-import de.aivot.GoverBackend.identity.filters.IdentityProviderFilter;
-import de.aivot.GoverBackend.identity.models.IdentityData;
-import de.aivot.GoverBackend.identity.services.IdentityProviderService;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.identity.services.IdentityService;
+import de.aivot.GoverBackend.identity.utils.IdentityCookieUtils;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import jakarta.servlet.http.Cookie;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 
 import java.io.IOException;
 import java.util.List;
@@ -30,51 +25,52 @@ import java.util.UUID;
         description = "These endpoints are used for authentication with external identity providers and retrieving identity data."
 )
 public class IdentityController {
-    public static final String IDENTITY_COOKIE_NAME = "GOVER_IDENTITY_ID";
+    public static final String IDENTITY_COOKIE_NAME = IdentityCookieUtils.IDENTITY_COOKIE_NAME;
+    public static final String IDENTITY_COOKIE_PATH = IdentityCookieUtils.IDENTITY_COOKIE_PATH;
 
-    private final IdentityCacheRepository identityCacheRepository;
     private final IdentityService identityService;
-    private final IdentityProviderService identityProviderService;
 
     @Autowired
-    public IdentityController(IdentityCacheRepository identityCacheRepository,
-                              IdentityService identityService, IdentityProviderService identityProviderService) {
-        this.identityCacheRepository = identityCacheRepository;
+    public IdentityController(IdentityService identityService) {
         this.identityService = identityService;
-        this.identityProviderService = identityProviderService;
     }
 
-    @GetMapping("{providerKey}/start/")
+    @GetMapping("{providerKey}/{identityId}/start/")
     @Operation(
             summary = "Start Identity Provider Authentication",
             description = "Initiates the authentication process with the specified identity provider."
     )
     public void start(
             @Nonnull @PathVariable UUID providerKey,
-            @Nullable @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
+            @Nonnull @PathVariable String identityId,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ADDITIONAL_SCOPES, required = false) List<String> additionalScopes,
+            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String preexistingIdentitySessionId,
             @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         var redirectUrl = identityService
                 .createRedirectURL(
+                        preexistingIdentitySessionId,
                         providerKey,
+                        identityId,
                         origin,
-                        additionalScopes
+                        additionalScopes == null ? List.of() : additionalScopes
                 );
 
         response
                 .sendRedirect(redirectUrl.toString());
     }
 
-    @GetMapping("{providerKey}/callback/{identitySessionId}/")
+    @GetMapping("{providerKey}/callback/{identitySessionId}/{identityCacheEntityId}/")
     @Operation(
             summary = "Handle Identity Provider Callback",
             description = "Processes the callback from the identity provider after authentication."
     )
     public void callback(
             @Nonnull @PathVariable UUID providerKey,
-            @Nonnull @PathVariable UUID identitySessionId,
+            @Nonnull @PathVariable String identitySessionId,
+            @Nonnull @PathVariable String identityCacheEntityId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_STATE) String state,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR, required = false) String error,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.REMOTE_AUTH_ERROR_DESCRIPTION, required = false) String errorDescription,
@@ -84,6 +80,7 @@ public class IdentityController {
         if (error != null) {
             var redirectUrl = identityService
                     .createErrorRedirectURL(
+                            identityCacheEntityId,
                             identitySessionId,
                             state,
                             error,
@@ -96,18 +93,13 @@ public class IdentityController {
         var redirectUrl = identityService
                 .handleCallback(
                         providerKey,
+                        identityCacheEntityId,
                         identitySessionId,
                         authorizationCode,
                         state
                 );
 
-        var cookie = new Cookie(IDENTITY_COOKIE_NAME, identitySessionId.toString());
-        cookie.setHttpOnly(true);
-        cookie.setSecure(true);
-        cookie.setAttribute("SameSite", "Strict");
-        cookie.setPath("/api/public/");
-
-        response.addCookie(cookie);
+        response.addCookie(IdentityCookieUtils.createIdentityCookie(identitySessionId));
         response.sendRedirect(redirectUrl);
     }
 
@@ -116,35 +108,35 @@ public class IdentityController {
             summary = "Get Identity Data",
             description = "Retrieves the identity data associated with the provided identity session ID."
     )
-    public IdentityData get(
-            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) UUID identitySessionId
+    public IdentityDataMap get(
+            @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) String identitySessionId,
+            @Nullable @RequestParam(name = "clear", required = false) Boolean clear,
+            @Nonnull HttpServletResponse response
     ) throws ResponseException {
-        if (identitySessionId == null) {
-            throw ResponseException
-                    .unauthorized("Sie haben sich bisher nicht angemeldet.");
+        try {
+            return identityService.getIdentityDataMap(identitySessionId);
+        } finally {
+            if (Boolean.TRUE.equals(clear)) {
+                response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+            }
         }
-
-        var identityCacheEntity = identityCacheRepository
-                .findById(identitySessionId)
-                .orElseThrow(() -> ResponseException
-                        .unauthorized("Sie haben sich bisher nicht angemeldet."));
-
-        return IdentityData
-                .from(identityCacheEntity);
     }
 
-    @GetMapping("providers/")
+    @DeleteMapping("session/")
     @Operation(
-            summary = "Get Identity Data",
-            description = "Retrieves the identity data associated with the provided identity session ID."
+            summary = "Clear Identity Session",
+            description = "Removes the current identity session from the backend cache and expires the local identity session cookie."
     )
-    public List<IdentityDetailsDTO> listProviders(
-            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) UUID identitySessionId
-    ) throws ResponseException {
-        return identityProviderService
-                .list(IdentityProviderFilter.create().setIsEnabled(true))
-                .stream()
-                .map(IdentityDetailsDTO::from)
-                .toList();
+    public void clearSession(
+            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nonnull HttpServletResponse response
+    ) {
+        try {
+            identityService.clearIdentitySession(identitySessionId);
+        } finally {
+            response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+        }
+
+        response.setStatus(HttpServletResponse.SC_NO_CONTENT);
     }
 }

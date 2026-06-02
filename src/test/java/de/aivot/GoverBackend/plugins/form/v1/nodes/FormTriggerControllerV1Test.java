@@ -13,6 +13,7 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.form.services.FormPaymentService;
 import de.aivot.GoverBackend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.GoverBackend.identity.services.IdentityProviderService;
+import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -20,14 +21,7 @@ import de.aivot.GoverBackend.process.entities.ProcessTestClaimEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessVersionFilter;
-import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.GoverBackend.process.services.ProcessInstanceService;
-import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
-import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
-import de.aivot.GoverBackend.process.services.ProcessNodeService;
-import de.aivot.GoverBackend.process.services.ProcessService;
-import de.aivot.GoverBackend.process.services.ProcessTestClaimService;
-import de.aivot.GoverBackend.process.services.ProcessVersionService;
+import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import de.aivot.GoverBackend.system.services.SystemService;
@@ -41,14 +35,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 class FormTriggerControllerV1Test {
     @Test
@@ -273,9 +261,11 @@ class FormTriggerControllerV1Test {
                 mock(CaptchaReplayGuard.class),
                 mock(ProcessInstanceService.class),
                 mock(ProcessInstanceAttachmentService.class),
+                mock(FileUploadMultipartInputService.class),
                 mock(ElementDataTransformService.class),
                 mock(ProcessNodeExecutionLoggerFactory.class),
-                provider
+                provider,
+                mock(IdentityService.class)
         );
 
         return new TestFixture(

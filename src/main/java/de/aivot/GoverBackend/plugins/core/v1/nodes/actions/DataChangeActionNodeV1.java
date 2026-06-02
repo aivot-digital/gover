@@ -21,7 +21,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputEl
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -306,9 +305,8 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 update,
                 new ElementDerivationOptions()
         );
-        var derivationLogger = new ElementDerivationLogger();
         var derivedRuntimeData = elementDerivationService
-                .derive(derivationRequest, derivationLogger);
+                .derive(derivationRequest);
 
         return switch (event) {
             case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues(), update));

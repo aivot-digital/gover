@@ -60,7 +60,7 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
         case 'process_instances':
             return `/process-instances/${id}`;
         case 'process_nodes':
-            return `/form-triggers/${id}/formLayout/0`;
+            return `/form-triggers/${id}`;
         default:
             return '/not-found';
     }

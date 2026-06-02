@@ -1,8 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.triggers.webhook;
 
-import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
-import de.aivot.GoverBackend.identity.controllers.IdentityController;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
@@ -70,7 +68,6 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         return handleRequest(request, accessKey, slug, null, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
@@ -90,7 +87,6 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @RequestBody Map<String, Object> payload,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_XML, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
@@ -110,7 +106,6 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @RequestBody Map<String, Object> payload,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
@@ -129,7 +124,6 @@ public class WebhookTriggerControllerV1 {
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identityId,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
         var payload = new HashMap<String, Object>();
@@ -253,7 +247,7 @@ public class WebhookTriggerControllerV1 {
                 null,
                 null,
                 List.of(),
-                Map.of(),
+                new IdentityDataMap(),
                 startedAt,
                 startedAt,
                 null,

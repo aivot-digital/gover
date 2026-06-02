@@ -15,6 +15,8 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContaine
 import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.identity.models.IdentityData;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
@@ -30,7 +32,10 @@ import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Centralizes runtime derivation for form elements so the rest of the system can work with one consistent interpretation of a form definition.
@@ -67,7 +72,7 @@ public class ElementDerivationService {
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request) {
-        return derive(request, new ElementDerivationLogger());
+        return derive(request, new IdentityDataMap(), new ElementDerivationLogger());
     }
 
     /**
@@ -82,6 +87,7 @@ public class ElementDerivationService {
      */
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
+                                            @Nonnull IdentityDataMap identities,
                                             @Nonnull ElementDerivationLogger logger) {
         var javascriptEngine = javascriptEngineFactoryService
                 .getEngine();
@@ -108,6 +114,7 @@ public class ElementDerivationService {
                 true,
                 List.of(),
                 List.of(),
+                identities,
                 logger
         );
 
@@ -142,6 +149,7 @@ public class ElementDerivationService {
             @Nonnull Boolean isParentVisible,
             @Nonnull List<String> destinationPathPrefixSegments,
             @Nonnull List<Integer> replicationIndices,
+            @Nonnull IdentityDataMap identities,
             @Nonnull ElementDerivationLogger logger
     ) {
         var elementState = new ComputedElementState();
@@ -212,6 +220,7 @@ public class ElementDerivationService {
                         options,
                         authoredValue,
                         elementState,
+                        identities,
                         logger
                 );
                 effectiveValue = inputElement.formatValue(effectiveValue);
@@ -297,6 +306,7 @@ public class ElementDerivationService {
                                         isVisible,
                                         childDestinationPathPrefixSegments,
                                         childReplicationIndices,
+                                        identities,
                                         logger
                                 );
                             }
@@ -323,6 +333,7 @@ public class ElementDerivationService {
                             isVisible,
                             destinationPathPrefixSegments,
                             replicationIndices,
+                            identities,
                             logger
                     );
                 }
@@ -595,9 +606,45 @@ public class ElementDerivationService {
             @Nonnull ElementDerivationOptions options,
             @Nullable Object authoredValue,
             @Nonnull ComputedElementState elementState,
+            @Nonnull IdentityDataMap identities,
             @Nonnull ElementDerivationLogger logger
     ) throws DerivationException {
         var baseElement = (BaseElement) inputElement;
+
+        // Check if an identity mapping exists and assign the mapped value if possible and disable this field to prevent further changes.
+        if (
+                baseElement.getMetadata() != null &&
+                        baseElement.getMetadata().getIdentitySourceId() != null &&
+                        baseElement.getMetadata().getIdentityMappings() != null &&
+                        !baseElement.getMetadata().getIdentityMappings().isEmpty() &&
+                        identities.containsKey(baseElement.getMetadata().getIdentitySourceId())
+        ) {
+            IdentityData identityData = identities
+                    .get(baseElement.getMetadata().getIdentitySourceId());
+
+            if (identityData != null) {
+                String identityAttributeKey = baseElement
+                        .getMetadata()
+                        .getIdentityMappings()
+                        .get(identityData.metadataIdentifier());
+
+                if (StringUtils.isNotNullOrEmpty(identityAttributeKey)) {
+                    Object attributeValue = identityData
+                            .attributes()
+                            .get(identityAttributeKey);
+                    if (attributeValue != null) {
+                        var formattedAttributeValue = inputElement.formatValue(attributeValue);
+
+                        if (formattedAttributeValue != null) {
+                            effectiveElementValues.put(inputElement.getId(), formattedAttributeValue);
+                            elementState.setValueSource(EffectiveValueSource.Identity);
+                            elementState.setDisabled(true);
+                            return formattedAttributeValue;
+                        }
+                    }
+                }
+            }
+        }
 
         if (options.containsSkipValues(inputElement.getId())) {
             effectiveElementValues.put(inputElement.getId(), authoredValue);

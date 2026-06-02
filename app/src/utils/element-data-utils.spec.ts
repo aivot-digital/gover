@@ -1,5 +1,5 @@
 import {ElementType} from '../data/element-type/element-type';
-import {createDerivedRuntimeElementData} from '../models/element-data';
+import {ComputedElementValueSource, createDerivedRuntimeElementData} from '../models/element-data';
 import {synchronizeAuthoredElementValuesByDestinationPath} from './element-data-utils';
 
 describe('synchronizeAuthoredElementValuesByDestinationPath', () => {
@@ -22,15 +22,15 @@ describe('synchronizeAuthoredElementValuesByDestinationPath', () => {
                 elementStates: {
                     firstNameA: {
                         destinationPath: 'person.first_name',
-                        valueSource: 'Authored',
+                        valueSource: ComputedElementValueSource.Authored,
                     },
                     firstNameB: {
                         destinationPath: 'person.first_name',
-                        valueSource: 'Authored',
+                        valueSource: ComputedElementValueSource.Authored,
                     },
                     lastName: {
                         destinationPath: 'person.last_name',
-                        valueSource: 'Authored',
+                        valueSource: ComputedElementValueSource.Authored,
                     },
                 },
             }),
@@ -72,13 +72,13 @@ describe('synchronizeAuthoredElementValuesByDestinationPath', () => {
                             {
                                 name: {
                                     destinationPath: 'members.0.first_name',
-                                    valueSource: 'Authored',
+                                    valueSource: ComputedElementValueSource.Authored,
                                 },
                             },
                             {
                                 name: {
                                     destinationPath: 'members.1.first_name',
-                                    valueSource: 'Authored',
+                                    valueSource: ComputedElementValueSource.Authored,
                                 },
                             },
                         ],
@@ -123,11 +123,11 @@ describe('synchronizeAuthoredElementValuesByDestinationPath', () => {
                             {
                                 firstName: {
                                     destinationPath: 'members.0.first_name',
-                                    valueSource: 'Authored',
+                                    valueSource: ComputedElementValueSource.Authored,
                                 },
                                 alias: {
                                     destinationPath: 'members.0.first_name',
-                                    valueSource: 'Authored',
+                                    valueSource: ComputedElementValueSource.Authored,
                                 },
                             },
                         ],
@@ -166,11 +166,11 @@ describe('synchronizeAuthoredElementValuesByDestinationPath', () => {
                 elementStates: {
                     firstNameA: {
                         destinationPath: 'person.first_name',
-                        valueSource: 'Authored',
+                        valueSource: ComputedElementValueSource.Authored,
                     },
                     firstNameB: {
                         destinationPath: 'person.first_name',
-                        valueSource: 'Derived',
+                        valueSource: ComputedElementValueSource.Derived,
                     },
                 },
             }),

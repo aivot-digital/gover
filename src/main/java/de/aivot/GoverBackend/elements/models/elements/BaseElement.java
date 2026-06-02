@@ -1,20 +1,16 @@
 package de.aivot.GoverBackend.elements.models.elements;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import de.aivot.GoverBackend.elements.enums.ElementApprovalStatus;
 import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.*;
-import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
-import de.aivot.GoverBackend.models.lib.TestProtocolSet;
-import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -61,7 +57,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = CodeInputElement.class, name = ElementType.ID_CodeInput),
         @JsonSubTypes.Type(value = RichTextInputElement.class, name = ElementType.ID_RichTextInput),
         @JsonSubTypes.Type(value = UiDefinitionInputElement.class, name = ElementType.ID_UiDefinitionInput),
-        @JsonSubTypes.Type(value = IdentityInputElement.class, name = ElementType.ID_IdentityInput),
+        @JsonSubTypes.Type(value = IdentityConfigElement.class, name = ElementType.ID_IdentityInput),
         @JsonSubTypes.Type(value = TabLayoutElement.class, name = ElementType.ID_TabLayout),
         @JsonSubTypes.Type(value = ChipInputElement.class, name = ElementType.ID_ChipInput),
         @JsonSubTypes.Type(value = DateTimeInputElement.class, name = ElementType.ID_DateTime),

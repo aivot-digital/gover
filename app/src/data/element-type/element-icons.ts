@@ -69,7 +69,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.CodeInput]: CodeOutlinedIcon,
     [ElementType.RichTextInput]: UploadFileOutlinedIcon,
     [ElementType.UiDefinitionInput]: Dashboard2,
-    [ElementType.IdentityInput]: UploadFileOutlinedIcon,
+    [ElementType.IdentityConfigElement]: UploadFileOutlinedIcon,
     [ElementType.TabLayout]: UploadFileOutlinedIcon,
     [ElementType.ChipInput]: LocalOfferOutlinedIcon,
     [ElementType.DateTime]: CalendarClock,

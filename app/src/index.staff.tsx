@@ -12,7 +12,9 @@ import {StaffShellRouter} from './shells/staff/staff-shell-router';
 
 const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);
-root.render(<StaffShellRouter />);
+root.render(
+        <StaffShellRouter/>
+);
 
 if (isStringNotNullOrEmpty(AppConfig.sentryDsn)) {
     Sentry.init({

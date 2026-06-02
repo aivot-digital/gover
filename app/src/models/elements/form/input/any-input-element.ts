@@ -10,9 +10,9 @@ import {TimeFieldElement} from './time-field-element';
 import {ReplicatingContainerLayout} from '../layout/replicating-container-layout';
 import {FileUploadElement} from './file-upload-element';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {CodeInputElement} from "./code-input-element";
-import {FunctionInputElement} from "./function-input-element";
-import {RichTextInputElement} from "./rich-text-input-element";
+import {CodeInputElement} from './code-input-element';
+import {FunctionInputElement} from './function-input-element';
+import {RichTextInputElement} from './rich-text-input-element';
 import {ChipInputFieldElement} from './chip-input-field-element';
 import {DateTimeFieldElement} from './date-time-field-element';
 import {DateRangeFieldElement} from './date-range-field-element';
@@ -26,7 +26,7 @@ import {DataObjectSelectFieldElement} from './data-object-select-field-element';
 import {NoCodeInputFieldElement} from './no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from './ui-definition-input-field-element';
 import {ProcessDataKeyInputFieldElement} from './process-data-key-input-field-element';
-import {IdentityInputFieldElement} from './identity-input-field-element';
+import {IdentityConfigElement} from './identity-config-element';
 import {ElementIsInput} from '../../../../data/element-type/element-is-input';
 
 export type AnyInputElement = (
@@ -56,7 +56,7 @@ export type AnyInputElement = (
     DataObjectSelectFieldElement |
     ProcessDataKeyInputFieldElement |
     UiDefinitionInputFieldElement |
-    IdentityInputFieldElement |
+    IdentityConfigElement |
     NoCodeInputFieldElement |
 
     ReplicatingContainerLayout

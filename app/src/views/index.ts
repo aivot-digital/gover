@@ -72,7 +72,7 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.CodeInput]: CodeInputView,
     [ElementType.RichTextInput]: RichTextView,
     [ElementType.UiDefinitionInput]: UiDefinitionInputFieldView,
-    [ElementType.IdentityInput]: IdentityInputFieldView,
+    [ElementType.IdentityConfigElement]: IdentityConfigView,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: ChipInputFieldView,
     [ElementType.DateTime]: DateTimeFieldView,

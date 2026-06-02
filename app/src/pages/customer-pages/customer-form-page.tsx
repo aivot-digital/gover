@@ -1,6 +1,6 @@
 import {useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
-import {Box, ThemeProvider, useTheme} from '@mui/material';
+import {Box, Button, Grid, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -30,7 +30,7 @@ import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/priva
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {AnyElement} from '../../models/elements/any-element';
-import {flattenElements, flattenElementsWithParents} from '../../utils/flatten-elements';
+import {flattenElements} from '../../utils/flatten-elements';
 import {RootComponentFooter} from '../../components/form/root-component-footer';
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {SUBMIT_EVENT} from '../../components/form/root.component.view';
@@ -38,31 +38,38 @@ import {FileUploadElementItem, isFileUploadElementItem} from '../../models/eleme
 import {walkAuthoredElementValues} from '../../utils/element-data-utils';
 import {ElementType} from '../../data/element-type/element-type';
 import {Submitted} from '../../components/submitted/submitted';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {IdentityIdQueryParam} from '../../modules/identity/constants/identity-id-query-param';
-import {IdentityStateQueryParam} from '../../modules/identity/constants/identity-state-query-param';
-import {IdentityResultState} from '../../modules/identity/enums/identity-result-state';
-import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
-import {extractVisibleFormSteps} from '../../utils/visible-form-steps';
-import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
-import {isIdentityInputFieldElement} from '../../models/elements/form/input/identity-input-field-element';
-import {
-    clampStepIndex,
-    clearPendingIdentityInputAuthContext,
-    getIdentityInputOptionForProvider,
-    isElementNestedInReplicatingContainer,
-    loadPendingIdentityInputAuthContext,
-} from '../../utils/identity-input-field-utils';
 import {DialogSearchParam, TestClaimSearchParam} from '../../modules/forms/constants/form-trigger-search-params';
 import {FormTriggerApiService} from '../../modules/forms/services/form-trigger-api-service';
 import {createAppTheme} from '../../theming/themes';
 import {BaseTheme} from '../../theming/base-theme';
+import {IdentityProvidersApiService} from '../../modules/identity/identity-providers-api-service';
+import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
+import {RichtextComponent} from '../../components/richtext/richtext.component';
+import {IdentityButton} from '../../modules/identity/components/identity-button/identity-button';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
+    identitySlots: {
+        id: string;
+        title: string | null;
+        description: string | null;
+        isOptional: boolean;
+        isRequired: boolean;
+        allowsEmail: boolean;
+        isAuthenticated: boolean;
+        availableIdentityProviders: {
+            identityProviderKey: string;
+            identityProviderName: string;
+            identityProviderAssetKey: string | null;
+            identityProviderType: IdentityProviderType;
+            isAuthenticatedWithThis: boolean;
+            additionalScopes: string[];
+        }[];
+    }[];
 }
 
 export function CustomerFormPage() {
@@ -190,146 +197,6 @@ export function CustomerFormPage() {
         return createAppTheme(theme, BaseTheme);
     }, [baseTheme, theme]);
 
-    useEffect(() => {
-        if (startedProcessAccessKey != null || layoutElement == null) {
-            return;
-        }
-
-        const callbackIdentityId = searchParams.get(IdentityIdQueryParam);
-        if (callbackIdentityId == null || handledIdentityCallbackRef.current === callbackIdentityId) {
-            return;
-        }
-
-        handledIdentityCallbackRef.current = callbackIdentityId;
-
-        const callbackStateRaw = searchParams.get(IdentityStateQueryParam);
-        const callbackState = callbackStateRaw != null ? parseInt(callbackStateRaw, 10) : NaN;
-        const pendingAuthContext = loadPendingIdentityInputAuthContext();
-
-        const cleanupCallbackState = () => {
-            clearPendingIdentityInputAuthContext();
-            clearIdentityCallbackSearchParams(searchParams, setSearchParams);
-        };
-
-        if (pendingAuthContext == null) {
-            cleanupCallbackState();
-            return;
-        }
-
-        if (Number.isNaN(callbackState) || callbackState !== IdentityResultState.Success) {
-            dispatch(showErrorSnackbar('Die Identifizierung konnte nicht abgeschlossen werden.'));
-            cleanupCallbackState();
-            return;
-        }
-
-        let isCancelled = false;
-
-        IdentityProvidersApiService
-            .fetchIdentity(callbackIdentityId)
-            .then((identityData) => {
-                if (isCancelled) {
-                    return;
-                }
-
-                const flattenedElementsWithParents = flattenElementsWithParents(layoutElement, [], false);
-                const sourceEntry = flattenedElementsWithParents
-                    .find(({element}) => element.id === pendingAuthContext.elementId);
-
-                if (sourceEntry == null || !isIdentityInputFieldElement(sourceEntry.element)) {
-                    dispatch(showErrorSnackbar('Das verknüpfte Identitätselement konnte nicht gefunden werden.'));
-                    cleanupCallbackState();
-                    return;
-                }
-
-                const sourceElement = sourceEntry.element;
-                const selectedOption = getIdentityInputOptionForProvider(
-                    sourceElement,
-                    pendingAuthContext.optionIdentityProviderKey ?? identityData.providerKey,
-                );
-
-                let nextAuthoredValues: AuthoredElementValues = {
-                    ...(pendingAuthContext.authoredElementValues ?? {}),
-                    [sourceElement.id]: {
-                        identityProviderKey: identityData.providerKey,
-                        identityAttributes: identityData.attributes,
-                    },
-                };
-
-                nextAuthoredValues = applyIdentityInputAttributeMappings(
-                    flattenedElementsWithParents,
-                    sourceElement.id,
-                    nextAuthoredValues,
-                    selectedOption?.attributeMappings ?? [],
-                    identityData.attributes,
-                );
-
-                setAuthoredElementValues(nextAuthoredValues);
-
-                const nextDerivedDataVersion = derivedDataVersion + 1;
-                handleDerive(nextAuthoredValues, ['ALL'])
-                    .then((nextDerivedData) => {
-                        if (isCancelled) {
-                            return;
-                        }
-
-                        setDerivedData(nextDerivedData);
-                        setDerivedDataVersion((current) => current + 1);
-                        setPendingStepRestore({
-                            stepId: pendingAuthContext.stepId,
-                            stepIndex: pendingAuthContext.stepIndex,
-                            minimumDerivedDataVersion: nextDerivedDataVersion,
-                        });
-
-                        cleanupCallbackState();
-                    })
-                    .catch((error) => {
-                        console.error('Error deriving restored identity data:', error);
-                        if (!isCancelled) {
-                            dispatch(showErrorSnackbar('Die Formulardaten konnten nach der Identifizierung nicht aktualisiert werden.'));
-                            cleanupCallbackState();
-                        }
-                    });
-            })
-            .catch((error) => {
-                console.error('Error restoring identity callback data:', error);
-                if (!isCancelled) {
-                    dispatch(showErrorSnackbar('Die Identifizierungsdaten konnten nicht geladen werden.'));
-                    cleanupCallbackState();
-                }
-            });
-
-        return () => {
-            isCancelled = true;
-        };
-    }, [
-        authoredElementValues,
-        derivedDataVersion,
-        dispatch,
-        layoutElement,
-        searchParams,
-        setSearchParams,
-        startedProcessAccessKey,
-    ]);
-
-    useEffect(() => {
-        if (layoutElement == null || pendingStepRestore == null || derivedDataVersion < pendingStepRestore.minimumDerivedDataVersion) {
-            return;
-        }
-
-        const visibleSteps = extractVisibleFormSteps(layoutElement.children, derivedData);
-        const restoredStepIndex = pendingStepRestore.stepId == null ?
-            -1 :
-            visibleSteps.findIndex((step) => step.id === pendingStepRestore.stepId);
-
-        dispatch(setCurrentStep(
-            clampStepIndex(
-                restoredStepIndex >= 0 ? restoredStepIndex : pendingStepRestore.stepIndex,
-                visibleSteps.length,
-            ),
-        ));
-        setPendingStepRestore(null);
-    }, [pendingStepRestore, derivedData, derivedDataVersion, dispatch, layoutElement]);
-
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
         if (event !== SUBMIT_EVENT || layoutElement == null || node == null) {
             return;
@@ -392,7 +259,9 @@ export function CustomerFormPage() {
             });
     };
 
-    if (layoutElement == null || node == null || process == null || version == null) {
+    const [dismissAuthentication, setDismissAuthentication] = useState(false);
+
+    if (data == null || layoutElement == null || node == null || process == null || version == null) {
         return null;
     }
 
@@ -435,10 +304,41 @@ export function CustomerFormPage() {
                             setDerivedDataVersion(0);
                             setPendingStepRestore(null);
                             setStartedProcessAccessKey(null);
+                            setDismissAuthentication(false);
+                            IdentityProvidersApiService.clearIdentity();
+                            setData((currentData) => {
+                                if (currentData == null) {
+                                    return null;
+                                }
+
+                                return {
+                                    ...currentData,
+                                    identitySlots: currentData.identitySlots.map((slot) => ({
+                                        ...slot,
+                                        isAuthenticated: false,
+                                        availableIdentityProviders: slot.availableIdentityProviders.map((provider) => ({
+                                            ...provider,
+                                            isAuthenticatedWithThis: false,
+                                        })),
+                                    })),
+                                };
+                            });
                         }}
                     />
 
                     {
+                        data.identitySlots.length > 0 &&
+                        !dismissAuthentication &&
+                        <AuthPlaceholder
+                            identitySlots={data.identitySlots}
+                            onDismiss={() => {
+                                setDismissAuthentication(true);
+                            }}
+                        />
+                    }
+
+                    {
+                        (data.identitySlots.length === 0 || dismissAuthentication) &&
                         startedProcessAccessKey == null &&
                         <ElementDerivationContext
                             element={layoutElement}
@@ -454,6 +354,7 @@ export function CustomerFormPage() {
                         />
                     }
                     {
+                        (data.identitySlots.length === 0 || dismissAuthentication) &&
                         startedProcessAccessKey != null &&
                         <Submitted
                             startedProcessAccessKey={startedProcessAccessKey}
@@ -501,57 +402,170 @@ export function CustomerFormPage() {
     );
 }
 
-function clearIdentityCallbackSearchParams(
-    searchParams: URLSearchParams,
-    setSearchParams: ReturnType<typeof useSearchParams>[1],
-): void {
-    const nextSearchParams = new URLSearchParams(searchParams);
-    nextSearchParams.delete(IdentityIdQueryParam);
-    nextSearchParams.delete(IdentityStateQueryParam);
-
-    setSearchParams(nextSearchParams, {
-        replace: true,
-    });
+interface AuthPlaceholderProps {
+    identitySlots: RetrieveResponse['identitySlots'];
+    onDismiss: () => void;
 }
 
-function applyIdentityInputAttributeMappings(
-    flattenedElementsWithParents: ReturnType<typeof flattenElementsWithParents>,
-    sourceElementId: string,
-    authoredElementValues: AuthoredElementValues,
-    attributeMappings: Array<{
-        fromIdentityProviderAttribute: string | null | undefined;
-        toFormElementWithId: string | null | undefined;
-    }>,
-    identityAttributes: Record<string, string>,
-): AuthoredElementValues {
-    const eligibleTargetIds = new Set(
-        flattenedElementsWithParents
-            .filter(({element, parents}) => (
-                element.id !== sourceElementId &&
-                isAnyInputElement(element) &&
-                !isElementNestedInReplicatingContainer(parents)
-            ))
-            .map(({element}) => element.id),
+function AuthPlaceholder(props: AuthPlaceholderProps) {
+    const {
+        identitySlots,
+        onDismiss,
+    } = props;
+
+    const theme = useTheme();
+
+    const authRequired = identitySlots
+        .some(slot => slot.isRequired);
+    const allRequiredAuthenticated = identitySlots
+        .every(slot => slot.isOptional || slot.isAuthenticated);
+    const someAuthenticated = identitySlots
+        .some(slot => slot.isAuthenticated);
+
+    return (
+        <Box
+            sx={{
+                px: 24,
+                pt: 8,
+                pb: 16,
+                [theme.breakpoints.down('md')]: {
+                    px: 8,
+                },
+                [theme.breakpoints.down('sm')]: {
+                    px: 4,
+                },
+            }}
+        >
+            <Box marginBottom={4}>
+                {
+                    authRequired &&
+                    <>
+                        <Typography
+                            variant="h2"
+                            component="div"
+                        >
+                            Anmeldung erforderlich
+                        </Typography>
+
+                        <Typography
+                            sx={{
+                                mt: 1,
+                                maxWidth: 600,
+                            }}
+                        >
+                            Sie müssen als mindestens einer der folgenden Identitäten anmelden.
+                            Nach einer erfolgreichen Authentifizierung können Sie mit dem Ausfüllen des Formulars
+                            fortfahren.
+                        </Typography>
+                    </>
+                }
+            </Box>
+
+            <Grid
+                container
+                spacing={2}
+            >
+                {
+                    identitySlots
+                        .map(slot => (
+                            <Grid
+                                key={slot.id}
+                                size={{
+                                    xs: 12,
+                                    xl: 6,
+                                }}
+                                component={Paper}
+                                variant="outlined"
+                                sx={{
+                                    p: 2,
+                                }}
+                            >
+                                <Typography variant="caption">
+                                    Anmelden als
+                                </Typography>
+                                <Typography
+                                    variant="h4"
+                                    component="h2"
+                                >
+                                    {slot.title}
+                                </Typography>
+
+                                <RichtextComponent
+                                    content={slot.description}
+                                    sx={{
+                                        mt: 1,
+                                    }}
+                                />
+
+                                {
+                                    slot.isRequired &&
+                                    <Typography
+                                        variant="body2"
+                                        mt={2}
+                                    >
+                                        Eine Authentifizierung mittels einem der nachfolgenden Konten
+                                        ist <strong>verpflichtend</strong>.
+                                        Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
+                                    </Typography>
+                                }
+
+                                {
+                                    slot.isOptional &&
+                                    <Typography
+                                        variant="body2"
+                                        mt={2}
+                                    >
+                                        Eine Authentifizierung mittels der nachfolgenden Konten
+                                        ist <strong>optional</strong> möglich.
+                                        Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
+                                    </Typography>
+                                }
+
+                                {
+                                    slot
+                                        .availableIdentityProviders
+                                        .map((idp) => (
+                                            <IdentityButton
+                                                identityProviderKey={idp.identityProviderKey}
+                                                identityProviderName={idp.identityProviderName}
+                                                identityProviderType={idp.identityProviderType}
+                                                identityProviderAssetKey={idp.identityProviderAssetKey}
+                                                isAuthenticated={idp.isAuthenticatedWithThis}
+                                                identityId={slot.id}
+                                                additionalScopes={idp.additionalScopes}
+                                            />
+                                        ))
+                                }
+                            </Grid>
+                        ))
+                }
+            </Grid>
+
+            <Box
+                marginTop={2}
+                textAlign="right"
+            >
+                {
+                    !authRequired &&
+                    !someAuthenticated &&
+                    <Button
+                        endIcon={<ArrowForward/>}
+                        onClick={onDismiss}
+                    >
+                        Ohne Anmeldung fortfahren
+                    </Button>
+                }
+                {
+                    authRequired &&
+                    <Button
+                        endIcon={<ArrowForward/>}
+                        onClick={onDismiss}
+                        disabled={!allRequiredAuthenticated}
+                    >
+                        Mit Formular fortfahren
+                    </Button>
+                }
+            </Box>
+        </Box>
     );
-
-    const nextAuthoredElementValues = {
-        ...authoredElementValues,
-    };
-
-    for (const mapping of attributeMappings) {
-        const attributeKey = mapping.fromIdentityProviderAttribute;
-        const targetElementId = mapping.toFormElementWithId;
-        if (attributeKey == null || targetElementId == null || !eligibleTargetIds.has(targetElementId)) {
-            continue;
-        }
-
-        const mappedValue = identityAttributes[attributeKey];
-        if (mappedValue == null) {
-            continue;
-        }
-
-        nextAuthoredElementValues[targetElementId] = mappedValue;
-    }
-
-    return nextAuthoredElementValues;
 }

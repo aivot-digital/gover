@@ -9,15 +9,13 @@ import {useDrag} from 'react-dnd';
 import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {Actions} from '../../actions/actions';
 import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
-import {
-    useElementEditorNavigation,
-} from '../../../hooks/use-element-editor-navigation';
+import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
 import {ElementTreeEditor} from './element-tree-editor';
 import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
 import {checkId} from '../../../utils/id-utils';
 import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
 import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
-import {AnyInputElement, isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
+import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {Action} from '../../actions/actions-props';
 import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementWithParents} from '../../../utils/flatten-elements';
@@ -32,6 +30,9 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-s
 import {useConfirm} from '../../../providers/confirm-provider';
 import {isSectionElementType} from '../../../models/elements/steps/step-element';
 import {createTheme, useTheme} from '@mui/material/styles';
+import {getMetadataMapping} from '../../../utils/prefill-elements';
+import {AccountCircleOutlined} from '@mui/icons-material';
+import {IdentityConfigElementSlotWithProviders} from '../../../models/elements/form/input/identity-config-element';
 
 interface ElementTreeItemProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -73,6 +74,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
         highlightedElementSignal,
         onHoveredElementIdChange,
         allElements,
+        identityMappingInformation,
     } = useElementTreeContext();
 
     const {
@@ -226,7 +228,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
     }, [onHoveredElementIdChange]);
 
     const icons: Action[] = useMemo(() => {
-        const leadingIcons: Action[] = getIcons(root, value, referencingElementLabels, navigateToElementEditor);
+        const leadingIcons: Action[] = getIcons(root, value, referencingElementLabels, navigateToElementEditor, identityMappingInformation);
         const trailingIcons: Action[] = isAnyElementWithChildren(value) ? [
             {
                 icon: (
@@ -253,7 +255,7 @@ export function ElementTreeItem<T extends AnyElement>(props: ElementTreeItemProp
             ...(leadingIcons.length > 0 && trailingIcons.length > 0 ? ['separator'] : []) as Action[],
             ...trailingIcons,
         ];
-    }, [isCollapsed, navigateToElementEditor, referencingElementLabels, root, value]);
+    }, [isCollapsed, navigateToElementEditor, referencingElementLabels, root, value, identityMappingInformation]);
 
     const backgroundColor = isActiveSearchResult ?
         'action.focus' :
@@ -586,7 +588,11 @@ function checkIfChildExists(element: AnyElementWithChildren, childId: string): b
     return element.children.some(child => child.id === childId || (isAnyElementWithChildren(child) && checkIfChildExists(child, childId)));
 }
 
-function getIcons<T extends AnyElement>(root: AnyElement, element: T, referencingElementLabels: string[], navigateToElementEditor: (elementId: string, tab?: (string | null)) => void): Action[] {
+function getIcons<T extends AnyElement>(root: AnyElement,
+                                        element: T,
+                                        referencingElementLabels: string[],
+                                        navigateToElementEditor: (elementId: string, tab?: (string | null)) => void,
+                                        identityMappingInformation: IdentityConfigElementSlotWithProviders[] | undefined): Action[] {
     const actions: Action[] = [];
     const createNavigateToTabHandler = (tab?: string | null) => (event: React.MouseEvent) => {
         event.stopPropagation();
@@ -655,24 +661,27 @@ function getIcons<T extends AnyElement>(root: AnyElement, element: T, referencin
         }
     }
 
-    /* TODO: Find IdentityProviderMappings for this element.
-    if (isAnyInputElement(element)) {
-        const mappedIdentityProviders: string[] = [];
-        for (const identityProviderInfo of enabledIdentityProviderInfos) {
-            const isMapped = getMetadataMapping(element, identityProviderInfo.metadataIdentifier) != null;
-            if (isMapped) {
-                mappedIdentityProviders.push(identityProviderInfo.name);
+    if (isAnyInputElement(element) && identityMappingInformation != null && element.metadata?.identitySourceId != null) {
+        const mappedIdentity = identityMappingInformation
+            .find(idm => idm.id === element.metadata?.identitySourceId);
+
+        if (mappedIdentity != null) {
+            const mappedIdentityProviders: string[] = [];
+            for (const identityProviderInfo of (mappedIdentity.options ?? [])) {
+                const isMapped = getMetadataMapping(element, identityProviderInfo.provider.metadataIdentifier) != null;
+                if (isMapped) {
+                    mappedIdentityProviders.push(identityProviderInfo.provider.name);
+                }
+            }
+            if (mappedIdentityProviders.length > 0) {
+                actions.push({
+                    icon: <AccountCircleOutlined/>,
+                    tooltip: 'Verknüpfung mit Nutzerkontenanbieter vorhanden: ' + mappedIdentityProviders.join(', '),
+                    onClick: createNavigateToTabHandler(DefaultTabs.metadata),
+                });
             }
         }
-        if (mappedIdentityProviders.length > 0) {
-            icons.push({
-                icon: <AccountCircleOutlinedIcon/>,
-                tooltip: 'Verknüpfung mit Nutzerkontenanbieter vorhanden: ' + mappedIdentityProviders.join(', '),
-            });
-        }
     }
-
-     */
 
     return actions;
 }

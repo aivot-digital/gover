@@ -53,7 +53,7 @@ const columns: GenericListColDef<FormTriggerListItem>[] = [
         },
         renderCell: (params) => (
             <CellLink
-                to={`/form-triggers/${params.row.node.id}/formLayout/0`}
+                to={`/form-triggers/${params.row.node.id}`}
                 title="Formulareingang bearbeiten"
             >
                 {params.row.node.name ?? 'Formulareingang'}
@@ -284,13 +284,13 @@ export function FormsListPage() {
     const rowActions = useCallback((item: FormTriggerListItem): Action[] => [
         {
             icon: <Edit/>,
-            to: `/form-triggers/${item.node.id}/formLayout/0`,
+            to: `/form-triggers/${item.node.id}`,
             tooltip: 'Formular bearbeiten',
             visible: item.version.status === ProcessStatus.Drafted,
         },
         {
             icon: <ArrowForward/>,
-            to: `/form-triggers/${item.node.id}/formLayout/0`,
+            to: `/form-triggers/${item.node.id}`,
             tooltip: 'Formular ansehen',
             visible: item.version.status !== ProcessStatus.Drafted,
         },

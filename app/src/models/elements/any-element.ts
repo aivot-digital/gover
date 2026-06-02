@@ -89,6 +89,6 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                         T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
                                                                                                                                             T extends ElementType.ProcessDataKeyInput ? ProcessDataKeyInputFieldElement :
                                                                                                                                             T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
-                                                                                                                                                T extends ElementType.IdentityInput ? IdentityInputFieldElement :
+                                                                                                                                                T extends ElementType.IdentityConfigElement ? IdentityConfigElement :
                                                                                                                                                 T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
                                                                                                                                                     T extends ElementType.SummaryLayout ? SummaryLayoutElement : never;

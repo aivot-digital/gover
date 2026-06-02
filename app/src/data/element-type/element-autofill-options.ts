@@ -71,7 +71,7 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.CodeInput]: [],
     [ElementType.RichTextInput]: [],
     [ElementType.UiDefinitionInput]: [],
-    [ElementType.IdentityInput]: [],
+    [ElementType.IdentityConfigElement]: [],
     [ElementType.TabLayout]: [],
     [ElementType.ChipInput]: [],
     [ElementType.DateTime]: [],

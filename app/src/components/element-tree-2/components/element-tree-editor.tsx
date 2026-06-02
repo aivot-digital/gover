@@ -15,7 +15,6 @@ import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementIsInput} from '../../../data/element-type/element-is-input';
 import {ElementTreeEditorContentDispatcher} from './element-tree-editor-content-dispatcher';
 import {Actions} from '../../actions/actions';
-import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import {ElementType} from '../../../data/element-type/element-type';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
@@ -46,6 +45,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
         editable,
         parentModalZIndex,
         displayContext,
+        identityMappingInformation,
     } = useElementTreeContext();
 
     const {
@@ -265,6 +265,16 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             label="Eigenschaften"
                             value={DefaultTabs.properties}
                         />
+
+                        {
+                            ElementIsInput[value.type] &&
+                            identityMappingInformation != null &&
+                            identityMappingInformation.length > 0 &&
+                            <Tab
+                                label="Identitätsdatenzuordnung"
+                                value={DefaultTabs.metadata}
+                            />
+                        }
 
                         <Box
                             sx={{

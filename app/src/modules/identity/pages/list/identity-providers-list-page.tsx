@@ -106,7 +106,7 @@ export function IdentityProvidersListPage() {
     }), [hasAccess]);
 
     const fetchIdentityProviders = useCallback((options: GenericListPropsFetchOptions<IdentityProviderListDTO>) => {
-        return new IdentityProvidersApiService(options.api)
+        return new IdentityProvidersApiService()
             .list(options.page, options.size, options.sort, options.order, {name: options.search});
     }, []);
 

@@ -7,10 +7,8 @@ import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectItemRepository;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectSchemaRepository;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
@@ -211,8 +209,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 entityElementData,
                 edo
         );
-        var dummyLogger = new ElementDerivationLogger();
-        var derivedData = elementDerivationService.derive(edr, dummyLogger);
+        var derivedData = elementDerivationService.derive(edr);
 
         if (derivedData.hasAnyError()) {
             throw ResponseException

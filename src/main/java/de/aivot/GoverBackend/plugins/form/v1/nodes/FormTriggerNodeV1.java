@@ -36,11 +36,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Component
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
@@ -268,12 +264,18 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
+        // Clean the form layout because it has references to system specific resources like department ids.
         var rawLayout = configuration.get(FormTriggerConfigV1.FORM_LAYOUT);
         var layout = ObjectMapperFactory
                 .getInstance()
                 .convertValue(rawLayout, FormLayoutElement.class);
         var cleanedLayout = FormLayoutCleanerService.clean(layout);
         configuration.put(FormTriggerConfigV1.FORM_LAYOUT, cleanedLayout);
+
+        // Clean the identities for they are not the same on every system.
+        configuration.remove(FormTriggerConfigV1.IDENTITIES);
+
+        // Return the cleaned config.
         return configuration;
     }
 

@@ -3,6 +3,7 @@ import {ElementType} from '../../data/element-type/element-type';
 import {ElementWithParents} from '../../utils/flatten-elements';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementDisplayContext} from '../../data/element-type/element-child-options';
+import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
 
 export interface ElementTreeDragItem {
     id: string;
@@ -34,6 +35,7 @@ export interface ElementTreeContextType {
     allElements: ElementWithParents[];
     displayContext: ElementDisplayContext;
     allowElementIdEditing: boolean;
+    identityMappingInformation?: IdentityConfigElementSlotWithProviders[];
 }
 
 export const ElementTreeContext = createContext<ElementTreeContextType | null>(null);

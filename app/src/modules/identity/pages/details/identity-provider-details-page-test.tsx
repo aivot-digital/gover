@@ -1,6 +1,9 @@
 import {Box, Button, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {useSearchParams} from 'react-router-dom';
 import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
@@ -9,8 +12,8 @@ import {IdentityResultState} from '../../enums/identity-result-state';
 import {IdentityStateQueryParam} from '../../constants/identity-state-query-param';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {IdentityData} from '../../models/identity-data';
-import {IdentityIdQueryParam} from '../../constants/identity-id-query-param';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
+import {ApiError, isApiError} from '../../../../models/api-error';
 
 export function IdentityProviderDetailsPageTest() {
     const [urlSearchParams, _] = useSearchParams();
@@ -27,27 +30,42 @@ export function IdentityProviderDetailsPageTest() {
             return '#';
         }
 
-        return IdentityProvidersApiService.createLink(identityProvider.key);
+        return IdentityProvidersApiService.createLink(identityProvider.key, identityProvider.key);
     }, [identityProvider]);
 
     useEffect(() => {
+        if (identityProvider == null) {
+            return;
+        }
+
         const stateStr = urlSearchParams.get(IdentityStateQueryParam);
         const state = stateStr != null ? parseInt(stateStr) : IdentityResultState.UnknownError;
-        const id = urlSearchParams.get(IdentityIdQueryParam);
 
         switch (state) {
             case IdentityResultState.Success:
-                if (id == null) {
-                    setIdentityError('Es wurde kein Nutzerkonto übergeben.');
-                    break;
-                }
-
                 setIdentityError(undefined);
                 IdentityProvidersApiService
-                    .fetchIdentity(id)
-                    .then(setIdentityData)
+                    .fetchIdentity(true)
+                    .then((res) => {
+                        if (res[identityProvider.key] != null) {
+                            setIdentityData(res[identityProvider.key]);
+                        } else {
+                            const err: ApiError = {
+                                message: 'Die Identität wurde nicht gesetzt',
+                                details: `In der Map der Identitäten ist keine Identität mit dem Provider-Key ${identityProvider.key} vorhanden.`,
+                                displayableToUser: true,
+                                status: 404,
+                            };
+                            throw err;
+                        }
+                    })
                     .catch(err => {
                         console.error(err);
+                        if (isApiError(err) && err.displayableToUser) {
+                            setIdentityError(err.message);
+                        } else {
+                            setIdentityError('Beim Abruf der Identität ist ein Fehler aufgetreten');
+                        }
                     });
                 break;
             default:
@@ -55,7 +73,7 @@ export function IdentityProviderDetailsPageTest() {
                 setIdentityError('Unbekannter Fehler aufgetreten. Bitte versuchen Sie es erneut.');
                 break;
         }
-    }, [urlSearchParams]);
+    }, [urlSearchParams, identityProvider]);
 
     return (
         <Box>

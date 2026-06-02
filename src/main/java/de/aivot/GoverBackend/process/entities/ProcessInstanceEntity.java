@@ -1,9 +1,9 @@
 package de.aivot.GoverBackend.process.entities;
 
 import de.aivot.GoverBackend.core.converters.JsonObjectConverter;
-import de.aivot.GoverBackend.process.converters.ProcessIdentityItemsConverter;
+import de.aivot.GoverBackend.identity.converters.IdentityDataMapConverter;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
-import de.aivot.GoverBackend.process.models.ProcessIdentityItem;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -65,9 +65,9 @@ public class ProcessInstanceEntity {
 
     @Nonnull
     @NotNull(message = "Die Zustellkanalkonfigurationen dürfen nicht null sein.")
-    @Convert(converter = ProcessIdentityItemsConverter.class)
+    @Convert(converter = IdentityDataMapConverter.class)
     @Column(columnDefinition = "jsonb")
-    private Map<String, ProcessIdentityItem> identities;
+    private IdentityDataMap identities;
 
     @Nonnull
     @NotNull(message = "Das Startdatum darf nicht null sein.")
@@ -119,7 +119,7 @@ public class ProcessInstanceEntity {
                                  @Nullable String statusOverride,
                                  @Nullable String assignedUserId,
                                  @Nonnull List<String> assignedFileNumbers,
-                                 @Nonnull Map<String, ProcessIdentityItem> identities,
+                                 @Nonnull IdentityDataMap identities,
                                  @Nonnull Instant started,
                                  @Nonnull Instant updated,
                                  @Nullable Instant finished,
@@ -256,11 +256,11 @@ public class ProcessInstanceEntity {
     }
 
     @Nonnull
-    public Map<String, ProcessIdentityItem> getIdentities() {
+    public IdentityDataMap getIdentities() {
         return identities;
     }
 
-    public ProcessInstanceEntity setIdentities(@Nonnull Map<String, ProcessIdentityItem> identities) {
+    public ProcessInstanceEntity setIdentities(@Nonnull IdentityDataMap identities) {
         this.identities = identities;
         return this;
     }

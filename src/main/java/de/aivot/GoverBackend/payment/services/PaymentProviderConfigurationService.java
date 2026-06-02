@@ -3,7 +3,6 @@ package de.aivot.GoverBackend.payment.services;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
@@ -45,8 +44,7 @@ public class PaymentProviderConfigurationService {
                         layout,
                         provider.getConfig(),
                         options
-                ),
-                new ElementDerivationLogger()
+                )
         );
     }
 }
