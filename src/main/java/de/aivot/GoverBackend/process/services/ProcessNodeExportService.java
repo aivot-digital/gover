@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Service
 public class ProcessNodeExportService {
@@ -57,10 +58,10 @@ public class ProcessNodeExportService {
                 node.getProcessNodeDefinitionKey(), // processNodeDefinitionKey
                 node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
                 cleanedConfiguration, // configuration
-                node.getOutputMappings(), // outputMappings
-                node.getTimeLimitDays(), // timeLimitDays
-                node.getRequirements(), // requirements
-                node.getNotes(), // notes
+                Map.of(), // outputMappings
+                null, // timeLimitDays
+                null, // requirements
+                null, // notes
                 false // savedWithErrors
         );
 

@@ -1278,7 +1278,7 @@ export function ProcessDetailsPage(): ReactNode {
                             Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind
                             für die importierende Person nicht sichtbar.
                             Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und
-                            Referenzen auf auslösende Formulare.
+                            Referenzen auf Organisationseinheiten.
                         </p>
                         <p>
                             Bei Bedarf müssen Sie diese Informationen nach einem Import im Zielsystem neu konfigurieren.
