@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, Divider, IconButton, Paper, Typography} from '@mui/material';
+import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -59,8 +59,6 @@ import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@mui/icons-material/Undo';
 import Redo from '@mui/icons-material/Redo';
 import Refresh from '@mui/icons-material/Refresh';
-import ChevronLeft from '@mui/icons-material/ChevronLeft';
-import ChevronRight from '@mui/icons-material/ChevronRight';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
@@ -1870,17 +1868,32 @@ export function ProcessDetailsPage(): ReactNode {
             },
             'separator',
             {
-                label: 'Veröffentlichen',
-                tooltip: 'Prozessversion veröffentlichen',
-                disabledTooltip: 'Während des Tests kann der Prozess nicht veröffentlicht werden.',
+                label: processFlow?.version.status === ProcessStatus.Drafted
+                    ? 'Veröffentlichen'
+                    : (
+                        processFlow?.version.status === ProcessStatus.Published
+                            ? 'Zurückziehen'
+                            : 'Veröffentlichen'
+                    ),
+                tooltip: processFlow?.version.status === ProcessStatus.Drafted
+                    ? 'Prozessversion veröffentlichen'
+                    : (
+                        processFlow?.version.status === ProcessStatus.Published
+                            ? 'Prozessversion zurückziehen'
+                            : 'Prozessversion erneut veröffentlichen'
+                    ),
+                disabledTooltip: 'Während des Tests kann der Status der Prozessversion nicht verändert werden.',
                 icon: null,
                 onClick: notImplemented,
                 variant: 'contained',
-                disabled: isInTestMode,
-                activeStyle: {ml: 1},
+                disabled: processFlow == null || isInTestMode,
+                activeStyle: {
+                    ml: 1,
+                },
             },
         ];
     }, [
+        processFlow,
         activeTestClaimId,
         currentTestClaim,
         instanceId,
@@ -1956,8 +1969,10 @@ export function ProcessDetailsPage(): ReactNode {
                     position: 'relative',
                 }}
             >
-                <Allotment onDragStart={() => setHideEditorPaneExpandButton(true)}
-                           onDragEnd={handleEditorPaneDragEnd}>
+                <Allotment
+                    onDragStart={() => setHideEditorPaneExpandButton(true)}
+                    onDragEnd={handleEditorPaneDragEnd}
+                >
                     <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
                         <Box
                             sx={{
