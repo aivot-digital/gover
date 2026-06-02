@@ -1,16 +1,15 @@
 package de.aivot.GoverBackend.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
-import de.aivot.GoverBackend.elements.models.elements.BaseElement;
-import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
-import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
+import de.aivot.GoverBackend.elements.models.BaseElement;
+import de.aivot.GoverBackend.elements.models.RootElement;
+import de.aivot.GoverBackend.elements.models.form.BaseFormElement;
+import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.form.input.FileUploadField;
+import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
+import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
+import de.aivot.GoverBackend.elements.models.steps.StepElement;
+import de.aivot.GoverBackend.form.entities.Form;
+import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
 import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
 import de.aivot.GoverBackend.identity.models.IdentityData;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
@@ -18,11 +17,7 @@ import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.HashMap;
@@ -37,6 +32,8 @@ public class DestinationDataFormatter {
     private final Map<String, Object> data;
     private static final String destinationSkipKey = "#";
 
+    private final FormDerivationServiceFactory formDerivationServiceFactory;
+
     private final VFormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;
@@ -45,6 +42,8 @@ public class DestinationDataFormatter {
     private final Map<String, byte[]> attachmentBytes;
 
     private DestinationDataFormatter(
+            @Nonnull
+            FormDerivationServiceFactory formDerivationServiceFactory,
             @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
@@ -58,6 +57,7 @@ public class DestinationDataFormatter {
             @Nullable
             Map<String, byte[]> attachmentBytes
     ) {
+        this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.form = form;
         this.submission = submission;
         this.paymentTransaction = paymentTransaction;
@@ -69,6 +69,8 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
+            FormDerivationServiceFactory formDerivationServiceFactory,
+            @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
@@ -78,6 +80,7 @@ public class DestinationDataFormatter {
             PaymentProviderEntity paymentProvider
     ) {
         return new DestinationDataFormatter(
+                formDerivationServiceFactory,
                 form,
                 submission,
                 paymentTransaction,
@@ -87,6 +90,8 @@ public class DestinationDataFormatter {
     }
 
     public static DestinationDataFormatter create(
+            @Nonnull
+            FormDerivationServiceFactory formDerivationServiceFactory,
             @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
@@ -101,6 +106,7 @@ public class DestinationDataFormatter {
             Map<String, byte[]> attachmentBytes
     ) {
         return new DestinationDataFormatter(
+                formDerivationServiceFactory,
                 form,
                 submission,
                 paymentTransaction,
@@ -179,6 +185,18 @@ public class DestinationDataFormatter {
     }
 
     private void createCustomerData() {
+        try (var drs = formDerivationServiceFactory.create(
+                form,
+                form.getRoot().getChildren().stream().map(StepElement::getId).toList(),
+                form.getRoot().getChildren().stream().map(StepElement::getId).toList(),
+                form.getRoot().getChildren().stream().map(StepElement::getId).toList(),
+                form.getRoot().getChildren().stream().map(StepElement::getId).toList()
+        ).derive(form.getRoot(), submission.getCustomerInput())) {
+            submission.setCustomerInput(drs.getFormState().values());
+        } catch (Exception e) {
+            // In case of any error during form derivation, we still want to return the unprocessed customer input
+        }
+
         Map<String, Object> customerData = new HashMap<>();
         extractDataFromElement(customerData, form.getRootElement(), null);
         data.put("data", customerData);

@@ -21,6 +21,12 @@
 * **System:** Add new prototype for processes.
 * **System:** Improve plugin system for better extensibility and maintainability.
 
+## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.1...v4.6.2) (2026-05-05)
+
+### Bug Fixes
+* **Destination:** Fix sending disabled and technical fields to the http destination.
+
+
 ## [4.6.1](https://github.com/aivot-digital/gover/compare/v4.6.0...v4.6.1) (2026-04-14)
 
 ### Bug Fixes
