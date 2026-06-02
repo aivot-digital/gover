@@ -15,6 +15,8 @@ import java.util.Map;
 public class DestinationDataFormatter {
     private final Map<String, Object> data;
 
+    private final FormDerivationServiceFactory formDerivationServiceFactory;
+
     private final VFormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;
@@ -23,6 +25,8 @@ public class DestinationDataFormatter {
     private final Map<String, byte[]> attachmentBytes;
 
     private DestinationDataFormatter(
+            @Nonnull
+            FormDerivationServiceFactory formDerivationServiceFactory,
             @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
@@ -36,6 +40,7 @@ public class DestinationDataFormatter {
             @Nullable
             Map<String, byte[]> attachmentBytes
     ) {
+        this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.form = form;
         this.submission = submission;
         this.paymentTransaction = paymentTransaction;
@@ -47,6 +52,8 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
+            FormDerivationServiceFactory formDerivationServiceFactory,
+            @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
@@ -56,6 +63,7 @@ public class DestinationDataFormatter {
             PaymentProviderEntity paymentProvider
     ) {
         return new DestinationDataFormatter(
+                formDerivationServiceFactory,
                 form,
                 submission,
                 paymentTransaction,
@@ -65,6 +73,8 @@ public class DestinationDataFormatter {
     }
 
     public static DestinationDataFormatter create(
+            @Nonnull
+            FormDerivationServiceFactory formDerivationServiceFactory,
             @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
@@ -79,6 +89,7 @@ public class DestinationDataFormatter {
             Map<String, byte[]> attachmentBytes
     ) {
         return new DestinationDataFormatter(
+                formDerivationServiceFactory,
                 form,
                 submission,
                 paymentTransaction,
