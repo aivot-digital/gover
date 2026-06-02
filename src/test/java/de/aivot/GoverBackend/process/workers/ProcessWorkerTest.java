@@ -49,7 +49,7 @@ class ProcessWorkerTest {
                 null,
                 null,
                 List.of(),
-                Map.of(),
+                new de.aivot.GoverBackend.identity.models.IdentityDataMap(),
                 Instant.now(),
                 Instant.now(),
                 null,

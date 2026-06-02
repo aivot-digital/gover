@@ -63,7 +63,7 @@ class FormTriggerControllerV1SubmitTest {
         assertEquals(startedProcessAccessKey, result.startedProcessAccessKey());
         assertClearsIdentityCookie(response);
         verify(fixture.identityService()).getIdentityDataMap("identity-session-id");
-        verify(fixture.elementDerivationService()).derive(
+        verify(fixture.elementDerivationService(), times(2)).derive(
                 any(ElementDerivationRequest.class),
                 same(identities),
                 any(ElementDerivationLogger.class)

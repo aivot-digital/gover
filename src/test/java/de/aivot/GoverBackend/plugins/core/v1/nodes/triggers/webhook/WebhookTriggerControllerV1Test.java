@@ -59,7 +59,6 @@ class WebhookTriggerControllerV1Test {
                         Map.class,
                         String.class,
                         String.class,
-                        UUID.class,
                         String.class
                 )
                 .getAnnotation(RequestMapping.class);
@@ -81,7 +80,6 @@ class WebhookTriggerControllerV1Test {
                         String.class,
                         String.class,
                         String.class,
-                        UUID.class,
                         String.class
                 )
                 .getAnnotation(RequestMapping.class);
@@ -111,7 +109,6 @@ class WebhookTriggerControllerV1Test {
                         Map.<String, Object>of("key", "value"),
                         null,
                         null,
-                        null,
                         null
                 )
         );
@@ -137,7 +134,6 @@ class WebhookTriggerControllerV1Test {
                         ACCESS_KEY,
                         "example-slug",
                         Map.<String, Object>of("key", "value"),
-                        null,
                         null,
                         null,
                         null
@@ -167,7 +163,6 @@ class WebhookTriggerControllerV1Test {
                 Map.<String, Object>of("key", "value"),
                 null,
                 null,
-                null,
                 null
         );
 
@@ -193,7 +188,6 @@ class WebhookTriggerControllerV1Test {
                 request,
                 ACCESS_KEY,
                 "example-slug",
-                null,
                 null,
                 null,
                 null
@@ -222,7 +216,6 @@ class WebhookTriggerControllerV1Test {
                 request,
                 ACCESS_KEY,
                 "example-slug",
-                null,
                 null,
                 null,
                 null

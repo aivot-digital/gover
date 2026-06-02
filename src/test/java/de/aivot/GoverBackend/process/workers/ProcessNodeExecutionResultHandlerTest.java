@@ -262,7 +262,7 @@ class ProcessNodeExecutionResultHandlerTest {
                 null,
                 null,
                 List.of("AZ-123"),
-                Map.of(),
+                new de.aivot.GoverBackend.identity.models.IdentityDataMap(),
                 Instant.now(),
                 Instant.now(),
                 null,

@@ -77,7 +77,7 @@ class ProcessNodeServiceTest {
         when(processRepository.findById(PROCESS_ID)).thenReturn(Optional.of(createProcess()));
         when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION)))
                 .thenReturn(Optional.of(createProcessVersion()));
-        when(elementDerivationService.derive(any(), any(ElementDerivationLogger.class)))
+        when(elementDerivationService.derive(any()))
                 .thenReturn(new DerivedRuntimeElementData());
     }
 

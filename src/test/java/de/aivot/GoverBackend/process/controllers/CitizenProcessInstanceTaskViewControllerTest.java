@@ -70,7 +70,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 now,
                 null,
                 null,
-                new IdentityDataMap(),
+                Map.of(),
                 11,
                 null,
                 null
@@ -162,7 +162,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 List.of(),
-                Map.of(),
+                new IdentityDataMap(),
                 Instant.now(),
                 Instant.now(),
                 null,

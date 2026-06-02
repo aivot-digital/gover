@@ -3,12 +3,12 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -135,7 +135,7 @@ class ApprovalActionNodeV1Test {
         );
 
         var layout = node.getStaffTaskView(context);
-        var dataSummary = layout.findChild("approval-data-root", SummaryLayoutElement.class).orElseThrow();
+        var dataSummary = layout.findChild("approval-data-root", GroupLayoutElement.class).orElseThrow();
         var remarkField = layout.findChild("approvalRemark", RichTextInputElement.class).orElseThrow();
         assertTrue(dataSummary.findChild("approvalValue", TextInputElement.class).isPresent());
         assertEquals(6.0, remarkField.getWeight());
@@ -217,7 +217,7 @@ class ApprovalActionNodeV1Test {
     }
 
     private static AuthoredElementValues dataModeConfiguration() {
-        var contentRoot = new SummaryLayoutElement();
+        var contentRoot = new GroupLayoutElement();
         contentRoot.setId("approval-data-root");
 
         var valueField = new TextInputElement();
@@ -290,7 +290,7 @@ class ApprovalActionNodeV1Test {
                 .setStatus(ProcessInstanceStatus.Running)
                 .setAssignedUserId(assignedUserId)
                 .setAssignedFileNumbers(List.of())
-                .setIdentities(Map.of())
+                .setIdentities(new de.aivot.GoverBackend.identity.models.IdentityDataMap())
                 .setStarted(now)
                 .setUpdated(now)
                 .setInitialPayload(Map.of())

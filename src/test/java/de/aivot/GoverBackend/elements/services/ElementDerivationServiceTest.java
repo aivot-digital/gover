@@ -534,6 +534,7 @@ class ElementDerivationServiceTest {
     ) {
         return createService().derive(
                 new ElementDerivationRequest(root, authoredValues, options),
+                new de.aivot.GoverBackend.identity.models.IdentityDataMap(),
                 new ElementDerivationLogger()
         );
     }

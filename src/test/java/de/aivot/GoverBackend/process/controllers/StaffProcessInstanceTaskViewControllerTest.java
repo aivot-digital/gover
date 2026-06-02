@@ -360,6 +360,13 @@ class StaffProcessInstanceTaskViewControllerTest {
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
             return new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
         }
+
+        @Override
+        public DerivedRuntimeElementData derive(ElementDerivationRequest request,
+                                                de.aivot.GoverBackend.identity.models.IdentityDataMap identities,
+                                                de.aivot.GoverBackend.elements.services.ElementDerivationLogger logger) {
+            return new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
+        }
     }
 
     private static final class TestProcessService extends ProcessService {

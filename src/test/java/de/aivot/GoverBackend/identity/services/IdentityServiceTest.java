@@ -40,6 +40,7 @@ class IdentityServiceTest {
     private static final String VALID_HOSTNAME = "https://example.com";
     private static final String VALID_ORIGIN = "https://example.com/origin";
     private static final String VALID_STATE = "state-nonce";
+    private static final String VALID_IDENTITY_ID = "identity-1";
 
     private GoverConfig goverConfig;
     private IdentityProviderService identityProviderService;
@@ -90,7 +91,7 @@ class IdentityServiceTest {
         when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        URI result = identityService.createRedirectURL(providerKey, VALID_ORIGIN, additionalScopes);
+        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, additionalScopes);
 
         var savedIdentityCaptor = ArgumentCaptor.forClass(IdentityCacheEntity.class);
         verify(identityCacheRepository).save(savedIdentityCaptor.capture());
@@ -104,13 +105,14 @@ class IdentityServiceTest {
         assertEquals("value2", queryParams.getFirst("param2"));
         assertEquals(savedIdentity.getStateNonce(), returnedState);
         assertEquals(VALID_ORIGIN, savedIdentity.getOrigin());
+        assertEquals(VALID_IDENTITY_ID, savedIdentity.getIdentityId());
         assertNotEquals(VALID_ORIGIN, returnedState);
     }
 
     @Test
     void createRedirectURL_ShouldThrowException_WhenProviderKeyIsNull() {
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(null, VALID_HOSTNAME, null)
+                identityService.createRedirectURL(null, null, VALID_IDENTITY_ID, VALID_HOSTNAME, null)
         );
 
         assertEquals("Der Nutzerkontenanbieter ist nicht angegeben.", exception.getMessage());
@@ -130,7 +132,7 @@ class IdentityServiceTest {
         when(goverConfig.getGoverHostname()).thenReturn(VALID_HOSTNAME);
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(providerKey, invalidOrigin, null)
+                identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, invalidOrigin, null)
         );
 
         assertEquals("Der Referer-Header ist ungültig.", exception.getMessage());
@@ -162,7 +164,7 @@ class IdentityServiceTest {
         when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        URI result = identityService.createRedirectURL(providerKey, VALID_HOSTNAME, additionalScopes);
+        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, additionalScopes);
 
         assertTrue(result.toString().contains("scope=scope1%20scope2%20scope3"));
     }
@@ -170,13 +172,14 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldThrowException_WhenAuthorizationCodeIsNull() {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
-        when(identityCacheRepository.findById(sessionId))
-                .thenReturn(Optional.of(createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, sessionId, null, VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, sessionId, null, VALID_STATE)
         );
 
         assertEquals("Es wurde kein Autorisierungscode übergeben.", exception.getMessage());
@@ -185,14 +188,15 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldThrowException_WhenProviderKeyIsInvalid() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.empty());
-        when(identityCacheRepository.findById(sessionId))
-                .thenReturn(Optional.of(createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
         );
 
         assertEquals("Der Nutzerkontenanbieter existiert nicht.", exception.getMessage());
@@ -201,10 +205,11 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldThrowException_WhenSessionNotFound() {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
         );
 
         assertEquals("Die Identitätssitzung existiert nicht.", exception.getMessage());
@@ -223,7 +228,7 @@ class IdentityServiceTest {
         when(goverConfig.getGoverHostname()).thenReturn("https://other.example.com");
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(providerKey, VALID_HOSTNAME, null)
+                identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, null)
         );
 
         assertEquals("Der Referer-Header ist ungültig oder nicht erlaubt.", exception.getMessage());
@@ -232,7 +237,8 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldProcessCallbackSuccessfully() throws Exception {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
@@ -242,10 +248,10 @@ class IdentityServiceTest {
         provider.setUserinfoEndpoint("https://auth.example.com/userinfo");
         provider.setAttributes(List.of());
 
-        IdentityCacheEntity identity = createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
+        IdentityCacheEntity identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(identity));
+        when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
 
         var mockTokenResponse = mockHttpResponse(200, """
                 {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
@@ -258,10 +264,9 @@ class IdentityServiceTest {
         when(httpService.get(any(URI.class), any(HttpServiceHeaders.class))).thenReturn(mockUserInfoResponse);
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
 
-        String result = identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE);
+        String result = identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE);
 
         assertNotNull(result);
-        assertTrue(result.contains(sessionId.toString()));
         assertTrue(result.contains("identity-state=0"));
         assertTrue(result.startsWith(VALID_ORIGIN));
     }
@@ -269,7 +274,8 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldThrowException_WhenTokenRetrievalFails() throws ResponseException, HttpConnectionException {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
@@ -279,8 +285,8 @@ class IdentityServiceTest {
         provider.setAttributes(List.of());
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
-        when(identityCacheRepository.findById(sessionId))
-                .thenReturn(Optional.of(createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
 
         var mockResponse = mockHttpResponse(400, "Bad Request");
         when(httpService.postFormUrlEncoded(
@@ -289,7 +295,7 @@ class IdentityServiceTest {
         )).thenReturn(mockResponse);
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
         );
 
         assertEquals("Ungültiger Status-Code beim Abrufen des Zugriffsschlüssels für Nutzerkontenanbieter null (" + providerKey + "): 400", exception.getMessage());
@@ -298,7 +304,8 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldPerformLogoutSuccessfully() throws ResponseException, HttpConnectionException {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
@@ -311,8 +318,8 @@ class IdentityServiceTest {
 
         when(identityProviderService.retrieve(providerKey)).thenReturn(Optional.of(provider));
 
-        IdentityCacheEntity identity = createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
-        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(identity));
+        IdentityCacheEntity identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
+        when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
 
         var mockTokenResponse = mockHttpResponse(200, """
                 {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
@@ -339,13 +346,12 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
 
-        String result = identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE);
+        String result = identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE);
 
         assertNotNull(result);
         String expectedUrl = UriComponentsBuilder
                 .fromUriString(VALID_ORIGIN)
                 .queryParam("identity-state", "0")
-                .queryParam("identity-id", identity.getSessionId())
                 .build()
                 .toString();
         assertEquals(expectedUrl, result);
@@ -359,7 +365,8 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldRetrieveAndUseClientSecret() throws Exception {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
         IdentityProviderEntity provider = new IdentityProviderEntity();
         provider.setKey(providerKey);
@@ -377,8 +384,8 @@ class IdentityServiceTest {
         when(secretService.retrieve(provider.getClientSecretKey())).thenReturn(Optional.of(dummySecret));
         when(secretService.decrypt(dummySecret)).thenReturn(decryptedSecret);
 
-        IdentityCacheEntity identity = createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
-        when(identityCacheRepository.findById(sessionId)).thenReturn(Optional.of(identity));
+        IdentityCacheEntity identity = createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE);
+        when(identityCacheRepository.findById(cacheEntityId)).thenReturn(Optional.of(identity));
 
         var mockTokenResponse = mockHttpResponse(200, """
                 {"access_token": "access-token", "refresh_token": "refresh-token", "expires_in": 3600}
@@ -398,13 +405,12 @@ class IdentityServiceTest {
 
         when(identityCacheRepository.save(any(IdentityCacheEntity.class))).thenReturn(identity);
 
-        String result = identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE);
+        String result = identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE);
 
         assertNotNull(result);
         String expectedUrl = UriComponentsBuilder
                 .fromUriString(VALID_ORIGIN)
                 .queryParam("identity-state", "0")
-                .queryParam("identity-id", identity.getSessionId())
                 .build()
                 .toString();
         assertEquals(expectedUrl, result);
@@ -415,13 +421,14 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldThrowException_WhenStateDoesNotMatch() {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
-        when(identityCacheRepository.findById(sessionId))
-                .thenReturn(Optional.of(createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, "different-state")));
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, "different-state")));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
         );
 
         assertEquals("Der state-Parameter ist ungültig.", exception.getMessage());
@@ -430,13 +437,14 @@ class IdentityServiceTest {
     @Test
     void handleCallback_ShouldThrowException_WhenCachedStateNonceIsMissing() {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
-        when(identityCacheRepository.findById(sessionId))
-                .thenReturn(Optional.of(createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, "")));
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, "")));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.handleCallback(providerKey, sessionId, "auth-code", VALID_STATE)
+                identityService.handleCallback(providerKey, cacheEntityId, sessionId, "auth-code", VALID_STATE)
         );
 
         assertEquals("Für die Identitätssitzung " + sessionId + " wurde kein state-Nonce gespeichert.", exception.getMessage());
@@ -445,12 +453,14 @@ class IdentityServiceTest {
     @Test
     void createErrorRedirectURL_ShouldUseCachedOrigin() throws ResponseException {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
-        when(identityCacheRepository.findById(sessionId))
-                .thenReturn(Optional.of(createIdentityCacheEntity(sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, VALID_ORIGIN, VALID_STATE)));
 
         String result = identityService.createErrorRedirectURL(
+                cacheEntityId,
                 sessionId,
                 VALID_STATE,
                 "access_denied",
@@ -470,28 +480,32 @@ class IdentityServiceTest {
     @Test
     void createErrorRedirectURL_ShouldThrowException_WhenCachedOriginIsMissing() {
         UUID providerKey = UUID.randomUUID();
-        UUID sessionId = UUID.randomUUID();
+        var cacheEntityId = "cache-entity-id";
+        var sessionId = "identity-session-id";
 
-        when(identityCacheRepository.findById(sessionId))
-                .thenReturn(Optional.of(createIdentityCacheEntity(sessionId, providerKey, "", VALID_STATE)));
+        when(identityCacheRepository.findById(cacheEntityId))
+                .thenReturn(Optional.of(createIdentityCacheEntity(cacheEntityId, sessionId, providerKey, "", VALID_STATE)));
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createErrorRedirectURL(sessionId, VALID_STATE, "access_denied", null)
+                identityService.createErrorRedirectURL(cacheEntityId, sessionId, VALID_STATE, "access_denied", null)
         );
 
         assertEquals("Für die Identitätssitzung " + sessionId + " wurde keine Ursprungs-URL gespeichert.", exception.getMessage());
     }
 
     private IdentityCacheEntity createIdentityCacheEntity(
-            UUID sessionId,
+            String cacheEntityId,
+            String sessionId,
             UUID providerKey,
             String origin,
             String stateNonce
     ) {
         return new IdentityCacheEntity(
+                cacheEntityId,
                 sessionId,
                 null,
-                providerKey.toString(),
+                providerKey,
+                VALID_IDENTITY_ID,
                 "meta",
                 origin,
                 stateNonce,

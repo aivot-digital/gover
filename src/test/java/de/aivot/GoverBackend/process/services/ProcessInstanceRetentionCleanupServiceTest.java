@@ -131,7 +131,7 @@ class ProcessInstanceRetentionCleanupServiceTest {
                 null,
                 null,
                 List.of(),
-                Map.of(),
+                new de.aivot.GoverBackend.identity.models.IdentityDataMap(),
                 Instant.now().minus(Duration.ofDays(3)),
                 Instant.now().minus(Duration.ofDays(1)),
                 Instant.now().minus(Duration.ofDays(1)),

@@ -209,7 +209,7 @@ class PdfActionNodeV1Test {
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
                 .setAssignedFileNumbers(java.util.List.of())
-                .setIdentities(Map.of())
+                .setIdentities(new de.aivot.GoverBackend.identity.models.IdentityDataMap())
                 .setStarted(now)
                 .setUpdated(now)
                 .setInitialPayload(Map.of())
