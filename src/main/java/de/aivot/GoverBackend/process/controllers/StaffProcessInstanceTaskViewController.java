@@ -60,7 +60,7 @@ public class StaffProcessInstanceTaskViewController {
     private final ElementDerivationService elementDerivationService;
     private final ProcessService processService;
     private final ProcessVersionService processVersionService;
-    private final TaskViewMultipartInputService taskViewMultipartInputService;
+    private final FileUploadMultipartInputService fileUploadMultipartInputService;
     private final ProcessDataService processDataService;
 
     public StaffProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
@@ -73,7 +73,7 @@ public class StaffProcessInstanceTaskViewController {
                                                   ElementDerivationService elementDerivationService,
                                                   ProcessService processService,
                                                   ProcessVersionService processVersionService,
-                                                  TaskViewMultipartInputService taskViewMultipartInputService, ProcessDataService processDataService) {
+                                                  FileUploadMultipartInputService fileUploadMultipartInputService, ProcessDataService processDataService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -84,7 +84,7 @@ public class StaffProcessInstanceTaskViewController {
         this.elementDerivationService = elementDerivationService;
         this.processService = processService;
         this.processVersionService = processVersionService;
-        this.taskViewMultipartInputService = taskViewMultipartInputService;
+        this.fileUploadMultipartInputService = fileUploadMultipartInputService;
         this.processDataService = processDataService;
     }
 
@@ -217,6 +217,13 @@ public class StaffProcessInstanceTaskViewController {
             previousTask = null;
         }
 
+        var layout = taskViewData
+                .provider
+                .getStaffTaskView(context);
+        if (!(layout instanceof BaseElement rootLayout)) {
+            throw ResponseException.internalServerError("Die Aufgabenansicht muss ein Basis-Element sein.");
+        }
+
         var events = taskViewData
                 .provider
                 .getStaffTaskViewEvents(context);
@@ -237,14 +244,15 @@ public class StaffProcessInstanceTaskViewController {
         } catch (JsonProcessingException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
-        inputs = taskViewMultipartInputService.normalizeInputs(
+        inputs = fileUploadMultipartInputService.normalizeInputs(
+                rootLayout,
                 inputs,
                 files,
                 fileUris,
                 taskViewData.instance().getId(),
                 taskViewData.task().getId(),
                 user.getId()
-        );
+        ).inputs();
 
         Optional<ProcessNodeExecutionResult> res;
         try {

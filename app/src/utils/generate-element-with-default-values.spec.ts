@@ -1,5 +1,6 @@
 import {ElementType} from '../data/element-type/element-type';
 import {type TextFieldElement} from '../models/elements/form/input/text-field-element';
+import {type FileUploadElement} from '../models/elements/form/input/file-upload-element';
 import {generateElementWithDefaultValues} from './generate-element-with-default-values';
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 
@@ -8,5 +9,17 @@ describe('generateElementWithDefaultValues', () => {
         const element = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
         expect(element.copyable).toBe(false);
+    });
+
+    it('should initialize process attachment display elements with an empty file name', () => {
+        const element = generateElementWithDefaultValues(ElementType.ProcessAttachmentDisplay) as ProcessAttachmentDisplayElement;
+
+        expect(element.fileName).toBeUndefined();
+    });
+
+    it('should initialize file upload elements without a submitted file name override', () => {
+        const element = generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement;
+
+        expect(element.submittedFileName).toBeUndefined();
     });
 });

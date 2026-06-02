@@ -215,6 +215,7 @@ export function CustomerFormPage() {
         for (const file of files) {
             const blob = await fetch(file.uri).then((r) => r.blob());
             formData.append('files', blob, file.name);
+            formData.append('fileUris', file.uri);
         }
 
         dispatch(setLoadingMessage({

@@ -6,6 +6,7 @@ export interface FileUploadElement extends BaseInputElement<ElementType.FileUplo
     isMultifile: boolean | null | undefined;
     maxFiles: number | null | undefined;
     minFiles: number | null | undefined;
+    submittedFileName: string | null | undefined;
 }
 
 export interface FileUploadElementItem {

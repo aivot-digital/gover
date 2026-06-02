@@ -365,6 +365,7 @@ const elementConstructors: {
         isMultifile: undefined,
         maxFiles: undefined,
         minFiles: undefined,
+        submittedFileName: undefined,
     }),
     [ElementType.DialogLayout]: (id) => ({}),
     [ElementType.StepperLayout]: (id) => ({}),

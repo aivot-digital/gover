@@ -49,7 +49,7 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ElementDerivationService elementDerivationService;
-    private final TaskViewMultipartInputService taskViewMultipartInputService;
+    private final FileUploadMultipartInputService fileUploadMultipartInputService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
@@ -58,7 +58,7 @@ public class CitizenProcessInstanceTaskViewController {
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                                     ElementDerivationService elementDerivationService,
-                                                    TaskViewMultipartInputService taskViewMultipartInputService) {
+                                                    FileUploadMultipartInputService fileUploadMultipartInputService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -66,7 +66,7 @@ public class CitizenProcessInstanceTaskViewController {
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.elementDerivationService = elementDerivationService;
-        this.taskViewMultipartInputService = taskViewMultipartInputService;
+        this.fileUploadMultipartInputService = fileUploadMultipartInputService;
     }
 
     @GetMapping("")
@@ -201,14 +201,15 @@ public class CitizenProcessInstanceTaskViewController {
         } catch (JsonProcessingException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
-        inputs = taskViewMultipartInputService.normalizeInputs(
+        inputs = fileUploadMultipartInputService.normalizeInputs(
+                layout,
                 inputs,
                 files,
                 fileUris,
                 taskViewData.instance.getId(),
                 taskViewData.task.getId(),
                 null
-        );
+        ).inputs();
 
         var derivedElementData = elementDerivationService.derive(
                 new ElementDerivationRequest(
