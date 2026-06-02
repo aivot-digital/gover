@@ -154,34 +154,6 @@ class _AuthService {
     private isTokenExpired(token: number): boolean {
         return token <= Date.now();
     }
-
-    public consumePostLoginRedirect(): string | null {
-        const redirectTarget = sessionStorage.getItem(STORAGE_KEY_POST_LOGIN_REDIRECT);
-        sessionStorage.removeItem(STORAGE_KEY_POST_LOGIN_REDIRECT);
-
-        // Only accept in-app relative targets to avoid redirecting to arbitrary locations.
-        if (redirectTarget == null || !redirectTarget.startsWith('/')) {
-            return null;
-        }
-
-        const redirectUrl = new URL(redirectTarget, window.location.origin);
-        const currentUrl = new URL(window.location.href);
-        const patchedKeys = new Set<string>();
-
-        currentUrl.searchParams.forEach((_, key) => {
-            if (patchedKeys.has(key) || redirectUrl.searchParams.has(key)) {
-                return;
-            }
-
-            patchedKeys.add(key);
-            currentUrl.searchParams.getAll(key).forEach((value) => {
-                redirectUrl.searchParams.append(key, value);
-            });
-        });
-
-        const query = redirectUrl.searchParams.toString();
-        return `${redirectUrl.pathname}${query.length > 0 ? `?${query}` : ''}${redirectUrl.hash}`;
-    }
 }
 
 export const AuthService = new _AuthService();
