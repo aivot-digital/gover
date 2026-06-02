@@ -134,7 +134,7 @@ const elementConstructors: {
     [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
     [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
     [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
-    [ElementType.ProcessAttachmentDisplay]: (id: string) => any; // TODO
+    [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -483,7 +483,7 @@ const elementConstructors: {
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),
-        // TODO
+        fileName: undefined,
     }),
 };
 

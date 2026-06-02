@@ -39,7 +39,8 @@ import {NoCodeInputFieldView} from './no-code-input-field-view';
 import {UiDefinitionInputFieldView} from './ui-definition-input-field-view';
 import {SummaryLayoutView} from './summary-layout-view';
 import {ProcessDataKeyInputFieldView} from './process-data-key-input-field-view';
-import {IdentityInputFieldView} from './identity-input-field-view';
+import {IdentityConfigView} from './identity-config-view';
+import {ProcessAttachmentDisplayView} from './process-attachment-display-view';
 
 export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.FormLayout]: RootComponentView,
@@ -87,5 +88,5 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.NoCodeInput]: NoCodeInputFieldView,
     [ElementType.SummaryLayout]: SummaryLayoutView,
     [ElementType.ProcessDataKeyInput]: ProcessDataKeyInputFieldView,
-    [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.ProcessAttachmentDisplay]: ProcessAttachmentDisplayView,
 };

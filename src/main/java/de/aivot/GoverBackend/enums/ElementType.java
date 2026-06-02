@@ -185,8 +185,7 @@ public enum ElementType implements Identifiable<Integer> {
             case NoCodeInput -> new NoCodeInputElement();
             case SummaryLayout -> new SummaryLayoutElement();
             case ProcessDataKeyInput -> new ProcessDataKeyInputElement();
-            case ProcessAttachmentDisplay ->
-                    throw new ElementDataConversionException("Element type ProcessAttachmentDisplay is not yet implemented.");
+            case ProcessAttachmentDisplay -> new ProcessAttachmentDisplayContentElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

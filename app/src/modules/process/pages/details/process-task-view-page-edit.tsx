@@ -39,6 +39,10 @@ import {
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AuthService} from '../../../../services/auth-service';
+import {ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
+import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
+import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-context';
+import {BaseApiService} from '../../../../services/base-api-service';
 
 const TASK_INPUT_DATA_PUSH_DELAY_MS = 2000;
 const TASK_INPUT_DATA_MIN_SAVE_DURATION_MS = 800;
@@ -70,6 +74,8 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
     const [pendingBlockedNavigation, setPendingBlockedNavigation] = useState<Blocker | null>(null);
+    const [taskAttachments, setTaskAttachments] = useState<ProcessInstanceAttachmentEntity[]>([]);
+    const [isLoadingTaskAttachments, setIsLoadingTaskAttachments] = useState(false);
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(taskInputData, lastPersistedTaskInputData);
@@ -292,6 +298,52 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         };
     }, [flushCurrentTaskInputData]);
 
+    useEffect(() => {
+        let cancelled = false;
+
+        if (item?.instance == null) {
+            setTaskAttachments([]);
+            setIsLoadingTaskAttachments(false);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        setTaskAttachments([]);
+        setIsLoadingTaskAttachments(true);
+
+        new ProcessInstanceAttachmentApiService()
+            .listAll({
+                processInstanceId: item.instance.id,
+            })
+            .then((page) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setTaskAttachments(page.content);
+            })
+            .catch((err) => {
+                if (cancelled) {
+                    return;
+                }
+
+                dispatch(showApiErrorSnackbar(err, 'Die Vorgangsanhänge konnten nicht geladen werden.'));
+                setTaskAttachments([]);
+            })
+            .finally(() => {
+                if (cancelled) {
+                    return;
+                }
+
+                setIsLoadingTaskAttachments(false);
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, item?.instance?.id]);
+
     const introItems = useMemo<StatusTablePropsItem[]>(() => {
         if (item == null) {
             return [];
@@ -319,6 +371,32 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const rightAlignedTaskViewEvents = useMemo(() => {
         return (taskView?.events ?? []).filter((evt) => getTaskViewEventAlignment(evt) === 'right');
     }, [taskView?.events]);
+
+    const handleDownloadAttachment = useCallback(async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
+        try {
+            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=true`);
+            const objectUrl = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = attachment.fileName;
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(objectUrl);
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
+        }
+    }, [dispatch]);
+
+    const taskViewAttachmentContextValue = useMemo(() => ({
+        attachments: taskAttachments,
+        isLoadingAttachments: isLoadingTaskAttachments,
+        downloadAttachment: handleDownloadAttachment,
+    }), [handleDownloadAttachment, isLoadingTaskAttachments, taskAttachments]);
 
     const handleEventClick = async (evt: TaskViewEvent) => {
         if (item == null || taskView == null) {
@@ -562,7 +640,9 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                         sx={{mt: 4}}
                         height={360}
                     /> :
-                    <>
+                    <ProcessTaskViewAttachmentProvider
+                        value={taskViewAttachmentContextValue}
+                    >
                         <Box
                             sx={{
                                 mt: 4,
@@ -695,7 +775,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                             />
 
                         </Stack>
-                    </>
+                    </ProcessTaskViewAttachmentProvider>
             }
 
             {

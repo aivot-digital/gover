@@ -72,6 +72,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = NoCodeInputElement.class, name = ElementType.ID_NoCodeInput),
         @JsonSubTypes.Type(value = SummaryLayoutElement.class, name = ElementType.ID_SummaryLayout),
         @JsonSubTypes.Type(value = ProcessDataKeyInputElement.class, name = ElementType.ID_ProcessDataKeyInput),
+        @JsonSubTypes.Type(value = ProcessAttachmentDisplayContentElement.class, name = ElementType.ID_ProcessAttachmentDisplay),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull
