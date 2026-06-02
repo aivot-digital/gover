@@ -1,5 +1,6 @@
 import {Box, Button, Divider, Grid, Stack, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
+import {alpha} from '@mui/material/styles';
 import {BaseViewProps} from './base-view';
 import {IdentityConfigElement, IdentityConfigElementSlot} from '../models/elements/form/input/identity-config-element';
 import {IdentityProvidersApiService} from '../modules/identity/identity-providers-api-service';
@@ -63,6 +64,8 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
     const Component = useMemo(() => {
         return wrapIdentityConfigSlot(providers);
     }, [providers]);
+
+    const shouldShowEmptyState = (value?.length ?? 0) === 0;
 
     const handleAddSlot = () => {
         setValue([
@@ -130,21 +133,52 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                 </Button>
             </Stack>
 
-            <Stack
-                direction="column"
-                spacing={2}
-            >
-                <DialogList
-                    dialogTitle="Identität bearbeiten"
-                    getId={(i) => i.id ?? ''}
-                    items={value ?? []}
-                    title={(i) => i.title ?? 'Unbenannte Identität'}
-                    dialogContentComponent={Component}
-                    onDialogSave={handleSlotChanged}
-                    onDelete={handleDelete}
-                    disabled={element.disabled || isDisabled || isFieldBusy}
-                />
-            </Stack>
+            {
+                shouldShowEmptyState &&
+                <Box
+                    sx={(theme) => ({
+                        my: 2,
+                        px: 3,
+                        py: 2.4,
+                        borderRadius: 1,
+                        border: '1px dashed',
+                        borderColor: errors != null || providersError != null
+                            ? alpha(theme.palette.error.main, 0.35)
+                            : alpha(theme.palette.text.primary, 0.18),
+                        textAlign: 'left',
+                    })}
+                >
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                    >
+                        Keine Identitäten vorhanden.{' '}
+                        {
+                            element.required &&
+                            <>Mindestens eine Identität ist erforderlich.</>
+                        }
+                    </Typography>
+                </Box>
+            }
+
+            {
+                !shouldShowEmptyState &&
+                <Stack
+                    direction="column"
+                    spacing={2}
+                >
+                    <DialogList
+                        dialogTitle="Identität bearbeiten"
+                        getId={(i) => i.id ?? ''}
+                        items={value ?? []}
+                        title={(i) => i.title ?? 'Unbenannte Identität'}
+                        dialogContentComponent={Component}
+                        onDialogSave={handleSlotChanged}
+                        onDelete={handleDelete}
+                        disabled={element.disabled || isDisabled || isFieldBusy}
+                    />
+                </Stack>
+            }
 
             {
                 (errors != null || providersError != null) &&
