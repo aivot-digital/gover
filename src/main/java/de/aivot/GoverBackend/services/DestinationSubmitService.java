@@ -249,9 +249,7 @@ public class DestinationSubmitService {
 
 
 
-        Map<String, Object> destinationData = DestinationDataFormatter
-                .create(formDerivationServiceFactory, form, submission, paymentTransaction, paymentProvider, pdfBytes, attachmentBytes)
-                .format();
+        Map<String, Object> destinationData = Map.of();
 
         ObjectMapper mapper = new ObjectMapper();
         String jsonResult;
@@ -384,9 +382,7 @@ public class DestinationSubmitService {
 
         byte[] destinationDataBytes;
         try {
-            var destinationData = DestinationDataFormatter
-                    .createDataWithoutFiles(formDerivationServiceFactory, form, submission, paymentTransaction, paymentProvider)
-                    .format();
+            var destinationData = Map.of();
             destinationDataBytes = new ObjectMapper().writeValueAsBytes(destinationData);
         } catch (JsonProcessingException e) {
             return new DestinationResponse(
