@@ -501,8 +501,8 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getStateNonce())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Identitätssitzung %s wurde kein state-Nonce gespeichert.",
-                            identity.getSessionId()
+                            "Für die Identitätssitzung %s wurde kein state-Nonce gespeichert."
+                                    .formatted(identity.getSessionId())
                     );
         }
 
@@ -514,8 +514,8 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getOrigin())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Identitätssitzung %s wurde keine Ursprungs-URL gespeichert.",
-                            identity.getSessionId()
+                            "Für die Identitätssitzung %s wurde keine Ursprungs-URL gespeichert."
+                                    .formatted(identity.getSessionId())
                     );
         }
 
