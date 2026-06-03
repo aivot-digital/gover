@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
@@ -174,12 +175,23 @@ public class ProcessController {
         );
 
         var newProcess = processDefinitionService
-                .create(exportData.process());
+                .create(
+                        exportData
+                                .process()
+                                .setVersionCount(0)
+                                .setDraftedVersion(null)
+                                .setPublishedVersion(null)
+                );
 
         var newVersion = processDefinitionVersionService
-                .create(exportData
-                        .version()
-                        .setProcessId(newProcess.getId())
+                .create(
+                        exportData
+                                .version()
+                                .setProcessVersion(1)
+                                .setStatus(ProcessVersionStatus.Drafted)
+                                .setProcessId(newProcess.getId())
+                                .setPublished(null)
+                                .setRevoked(null)
                 );
 
         var createdNodesIds = new LinkedList<Integer>();
