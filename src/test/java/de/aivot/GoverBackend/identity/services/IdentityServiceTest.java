@@ -91,7 +91,7 @@ class IdentityServiceTest {
         when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, additionalScopes);
+        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_ORIGIN, additionalScopes, null);
 
         var savedIdentityCaptor = ArgumentCaptor.forClass(IdentityCacheEntity.class);
         verify(identityCacheRepository).save(savedIdentityCaptor.capture());
@@ -112,7 +112,7 @@ class IdentityServiceTest {
     @Test
     void createRedirectURL_ShouldThrowException_WhenProviderKeyIsNull() {
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(null, null, VALID_IDENTITY_ID, VALID_HOSTNAME, null)
+                identityService.createRedirectURL(null, null, VALID_IDENTITY_ID, VALID_HOSTNAME, null, null)
         );
 
         assertEquals("Der Nutzerkontenanbieter ist nicht angegeben.", exception.getMessage());
@@ -132,7 +132,7 @@ class IdentityServiceTest {
         when(goverConfig.getGoverHostname()).thenReturn(VALID_HOSTNAME);
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, invalidOrigin, null)
+                identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, invalidOrigin, null, null)
         );
 
         assertEquals("Der Referer-Header ist ungültig.", exception.getMessage());
@@ -164,7 +164,7 @@ class IdentityServiceTest {
         when(identityCacheRepository.save(any(IdentityCacheEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, additionalScopes);
+        URI result = identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, additionalScopes, null);
 
         assertTrue(result.toString().contains("scope=scope1%20scope2%20scope3"));
     }
@@ -228,7 +228,7 @@ class IdentityServiceTest {
         when(goverConfig.getGoverHostname()).thenReturn("https://other.example.com");
 
         ResponseException exception = assertThrows(ResponseException.class, () ->
-                identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, null)
+                identityService.createRedirectURL(null, providerKey, VALID_IDENTITY_ID, VALID_HOSTNAME, null, null)
         );
 
         assertEquals("Der Referer-Header ist ungültig oder nicht erlaubt.", exception.getMessage());
@@ -503,6 +503,7 @@ class IdentityServiceTest {
         return new IdentityCacheEntity(
                 cacheEntityId,
                 sessionId,
+                null,
                 null,
                 providerKey,
                 VALID_IDENTITY_ID,

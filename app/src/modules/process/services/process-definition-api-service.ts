@@ -49,4 +49,12 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
     public import(processData: ProcessExport): Promise<ProcessEntity> {
         return this.post<ProcessExport, ProcessEntity>(`/api/processes/import/`, processData);
     }
+
+    public move(processId: number, targetDepartmentId: number): Promise<ProcessEntity> {
+        return this.put<any, ProcessEntity>(`/api/processes/${processId}/move/?targetDepartmentId=${targetDepartmentId}`, {});
+    }
+
+    public addNewVersion(processId: number, sourceVersionNumber?: number): Promise<ProcessEntity> {
+        return this.post<any, ProcessEntity>(`/api/processes/${processId}/new-version/${sourceVersionNumber ?? 'latest'}/`, {});
+    }
 }

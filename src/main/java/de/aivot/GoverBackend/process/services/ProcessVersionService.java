@@ -126,4 +126,17 @@ public class ProcessVersionService implements EntityService<ProcessVersionEntity
         return processNodeService
                 .validate(node, provider, true);
     }
+
+    public Optional<ProcessVersionEntity> getLatestVersion(Integer processDefinitionId) {
+        var maxVersion = processDefinitionVersionRepository
+                .maxVersionForProcessDefinition(processDefinitionId)
+                .orElse(0);
+
+        if (maxVersion == 0) {
+            return Optional.empty();
+        }
+
+        var id = new ProcessVersionEntityId(processDefinitionId, maxVersion);
+        return processDefinitionVersionRepository.findById(id);
+    }
 }

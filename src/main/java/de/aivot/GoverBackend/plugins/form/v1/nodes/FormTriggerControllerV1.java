@@ -178,7 +178,7 @@ public class FormTriggerControllerV1 {
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
-        var identitySlots = getIdentitySlots(identitySessionId, config);
+        var identitySlots = getIdentitySlots(node, identitySessionId, config);
 
         var shouldObfuscateSteps = identitySlots
                 .stream()
@@ -205,13 +205,15 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private List<IdentitySlot> getIdentitySlots(@Nullable String identitySessionId, ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config) {
+    private List<IdentitySlot> getIdentitySlots(@Nonnull ProcessNodeEntity node,
+                                                @Nullable String identitySessionId,
+                                                @Nonnull ProcessNodeService.ProcessConfigurationDetails<FormTriggerConfigV1> config) {
         if (config.configuration().identities == null) {
             return new LinkedList<>();
         }
 
         var identityDataMap = identityService
-                .getIdentityDataMap(identitySessionId);
+                .getIdentityDataMap(identitySessionId, node.getId());
 
         return config
                 .configuration()
@@ -418,7 +420,7 @@ public class FormTriggerControllerV1 {
         );
 
         var identities = identityService
-                .getIdentityDataMap(identitySessionId);
+                .getIdentityDataMap(identitySessionId, node.getId());
 
         var derivationLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
@@ -455,7 +457,7 @@ public class FormTriggerControllerV1 {
         }
 
         var identities = identityService
-                .getIdentityDataMap(identitySessionId);
+                .getIdentityDataMap(identitySessionId, node.getId());
 
         // Perform derivation
         var logger = new ElementDerivationLogger();

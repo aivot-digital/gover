@@ -73,13 +73,24 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
         //return createApiPath('/api/public/identity/' + key + '/start/') + (additionalScopes != null ? '?additionalScopes=' + additionalScopes.join('%20') : '');
     }
 
-    public static async fetchIdentity(clear: boolean): Promise<IdentityDataMap> {
-        const res = await fetch(createApiPath(`api/public/identity/get/?${clear ? 'clear=true' : ''}`));
+    public static async fetchIdentity(clear: boolean, relatedNodeId: number | undefined): Promise<IdentityDataMap> {
+        const qp = new URLSearchParams();
+        if (clear) {
+            qp.set('clear', 'true');
+        }
+        if (relatedNodeId != null) {
+            qp.set('relatedProcessNodeId', relatedNodeId.toString());
+        }
+
+        const res = await fetch(createApiPath('api/public/identity/get/?' + qp.toString()));
         return await res.json();
     }
 
-    public static async clearIdentity(): Promise<void> {
-        await fetch(createApiPath('api/public/identity/session/'), {
+    public static async clearIdentity(relatedNodeId: number): Promise<void> {
+        const qp = new URLSearchParams();
+        qp.set('relatedProcessNodeId', relatedNodeId.toString());
+
+        await fetch(createApiPath('api/public/identity/session/?' + qp.toString()), {
             method: 'DELETE',
         });
     }

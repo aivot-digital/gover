@@ -44,8 +44,6 @@ import java.util.Map;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ProcessVersionController {
-    private static final String MODULE_NAME = "Prozesse";
-
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessVersionService processDefinitionVersionService;
@@ -132,12 +130,32 @@ public class ProcessVersionController {
         return result;
     }
 
+    @GetMapping("{processDefinitionId}/latest/")
+    @Operation(
+            summary = "Retrieve Latest Form Version",
+            description = "Retrieve the latest version of a form. " +
+                    "Requires read permissions on the parent form unless the user is a super admin."
+    )
+    public ProcessVersionEntity retrieveLatest(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer processDefinitionId
+    ) throws ResponseException {
+        // Get the latest version number for the form
+        var latestVersion = processDefinitionVersionService
+                .getLatestVersion(processDefinitionId)
+                .orElseThrow(ResponseException::notFound)
+                .getProcessVersion();
+
+        return retrieve(jwt, processDefinitionId, latestVersion);
+    }
+
     @GetMapping("{processDefinitionId}/{processDefinitionVersion}/")
     @Operation(
             summary = "Retrieve Process Definition Version",
             description = "Retrieve a process definition version by its composite ID."
     )
     public ProcessVersionEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer processDefinitionId,
             @Nonnull @PathVariable Integer processDefinitionVersion
     ) throws ResponseException {

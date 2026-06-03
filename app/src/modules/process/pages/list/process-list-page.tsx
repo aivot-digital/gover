@@ -26,6 +26,10 @@ import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
+import {useDispatch} from 'react-redux';
+import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
+import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
+import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 
 const availableFilter = [
     {
@@ -181,6 +185,8 @@ const columns: GridColDef<ProcessListEntry>[] = [
 ];
 
 export function ProcessListPage() {
+    const dispatch = useAppDispatch();
+
     const memberships = useAppSelector(selectMemberships);
 
     const listControlRef = useRef<ListControlRef>(null);
@@ -192,6 +198,28 @@ export function ProcessListPage() {
         new ProcessDefinitionVersionApiService()
             .listAll()
             .then(console.log);
+    }, []);
+
+    const handleAddDraft = useCallback((process: ProcessListEntry) => {
+        dispatch(setLoadingMessage({
+            message: 'Neue Version wird erzeugt',
+            estimatedTime: 2000,
+            blocking: true,
+        }));
+
+        new ProcessDefinitionApiService()
+            .addNewVersion(process.id)
+            .then(() => {
+                if (listControlRef.current) {
+                    listControlRef.current.refresh();
+                }
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Fehler beim Anlegen einer neuen Version'));
+            })
+            .finally(() => {
+                dispatch(clearLoadingMessage());
+            })
     }, []);
 
     const header: GenericPageHeaderProps = useMemo(() => ({
@@ -313,7 +341,7 @@ export function ProcessListPage() {
         {
             icon: <NewWindow/>,
             onClick: () => {
-                notImplemented();
+                handleAddDraft(item);
             },
             tooltip: 'Neuen Entwurf anlegen',
             visible: item.draftedVersion == null,
@@ -333,7 +361,7 @@ export function ProcessListPage() {
             },
             tooltip: 'Optionen',
         },
-    ], []);
+    ], [handleAddDraft]);
 
     return (
         <>

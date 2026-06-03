@@ -306,7 +306,7 @@ export function CustomerFormPage() {
                             setPendingStepRestore(null);
                             setStartedProcessAccessKey(null);
                             setDismissAuthentication(false);
-                            IdentityProvidersApiService.clearIdentity();
+                            IdentityProvidersApiService.clearIdentity(node.id);
                             setData((currentData) => {
                                 if (currentData == null) {
                                     return null;

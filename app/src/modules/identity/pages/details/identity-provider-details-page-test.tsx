@@ -45,7 +45,7 @@ export function IdentityProviderDetailsPageTest() {
             case IdentityResultState.Success:
                 setIdentityError(undefined);
                 IdentityProvidersApiService
-                    .fetchIdentity(true)
+                    .fetchIdentity(true, undefined)
                     .then((res) => {
                         if (res[identityProvider.key] != null) {
                             setIdentityData(res[identityProvider.key]);

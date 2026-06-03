@@ -20,6 +20,9 @@ public class IdentityCacheEntity implements Serializable {
     @Indexed
     private String sessionId = "";
     @Nullable
+    @Indexed
+    private Integer relatedProcessNodeId;
+    @Nullable
     private String codeVerifier;
     @Nonnull
     private UUID providerKey = UUID.randomUUID();
@@ -40,6 +43,7 @@ public class IdentityCacheEntity implements Serializable {
 
     public IdentityCacheEntity(@Nonnull String id,
                                @Nonnull String sessionId,
+                               @Nullable Integer relatedProcessNodeId,
                                @Nullable String codeVerifier,
                                @Nonnull UUID providerKey,
                                @Nonnull String identityId,
@@ -49,6 +53,7 @@ public class IdentityCacheEntity implements Serializable {
                                @Nullable Map<String, String> identityData) {
         this.id = id;
         this.sessionId = sessionId;
+        this.relatedProcessNodeId = relatedProcessNodeId;
         this.codeVerifier = codeVerifier;
         this.providerKey = providerKey;
         this.identityId = identityId;
@@ -66,7 +71,8 @@ public class IdentityCacheEntity implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         IdentityCacheEntity that = (IdentityCacheEntity) o;
-        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) && Objects.equals(codeVerifier, that.codeVerifier) &&
+        return Objects.equals(id, that.id) && Objects.equals(sessionId, that.sessionId) &&
+                Objects.equals(relatedProcessNodeId, that.relatedProcessNodeId) && Objects.equals(codeVerifier, that.codeVerifier) &&
                 Objects.equals(providerKey, that.providerKey) && Objects.equals(identityId, that.identityId) &&
                 Objects.equals(metadataIdentifier, that.metadataIdentifier) && Objects.equals(origin, that.origin) &&
                 Objects.equals(stateNonce, that.stateNonce) && Objects.equals(identityData, that.identityData);
@@ -74,8 +80,9 @@ public class IdentityCacheEntity implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, sessionId, codeVerifier, providerKey, identityId, metadataIdentifier, origin, stateNonce, identityData);
+        return Objects.hash(id, sessionId, relatedProcessNodeId, codeVerifier, providerKey, identityId, metadataIdentifier, origin, stateNonce, identityData);
     }
+
 
     // endregion
 
@@ -98,6 +105,16 @@ public class IdentityCacheEntity implements Serializable {
 
     public IdentityCacheEntity setSessionId(@Nonnull String sessionId) {
         this.sessionId = sessionId;
+        return this;
+    }
+
+    @Nullable
+    public Integer getRelatedProcessNodeId() {
+        return relatedProcessNodeId;
+    }
+
+    public IdentityCacheEntity setRelatedProcessNodeId(@Nullable Integer relatedProcessNodeId) {
+        this.relatedProcessNodeId = relatedProcessNodeId;
         return this;
     }
 

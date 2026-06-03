@@ -45,6 +45,7 @@ public class IdentityController {
             @Nonnull @PathVariable String identityId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ADDITIONAL_SCOPES, required = false) List<String> additionalScopes,
+            @Nullable @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = false) Integer relatedProcessNodeId,
             @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String preexistingIdentitySessionId,
             @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response
@@ -55,7 +56,8 @@ public class IdentityController {
                         providerKey,
                         identityId,
                         origin,
-                        additionalScopes == null ? List.of() : additionalScopes
+                        additionalScopes == null ? List.of() : additionalScopes,
+                        relatedProcessNodeId
                 );
 
         response
@@ -110,14 +112,20 @@ public class IdentityController {
     )
     public IdentityDataMap get(
             @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME, required = true) String identitySessionId,
-            @Nullable @RequestParam(name = "clear", required = false) Boolean clear,
+            @Nullable @RequestParam(name = IdentityQueryParameterConstants.CLEAR, required = false) Boolean clear,
+            @Nullable @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = false) Integer relatedProcessNodeId,
             @Nonnull HttpServletResponse response
     ) throws ResponseException {
         try {
-            return identityService.getIdentityDataMap(identitySessionId);
+            return identityService
+                    .getIdentityDataMap(identitySessionId, relatedProcessNodeId);
         } finally {
             if (Boolean.TRUE.equals(clear)) {
-                response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+                boolean someIdentitiesStillExist = identityService.clearIdentitySession(identitySessionId, relatedProcessNodeId);
+
+                if (!someIdentitiesStillExist) {
+                    response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+                }
             }
         }
     }
@@ -129,12 +137,16 @@ public class IdentityController {
     )
     public void clearSession(
             @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nullable @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = false) Integer relatedProcessNodeId,
             @Nonnull HttpServletResponse response
     ) {
+        boolean someIdentitiesStillExist = true;
         try {
-            identityService.clearIdentitySession(identitySessionId);
+            someIdentitiesStillExist = identityService.clearIdentitySession(identitySessionId, relatedProcessNodeId);
         } finally {
-            response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+            if (!someIdentitiesStillExist) {
+                response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
+            }
         }
 
         response.setStatus(HttpServletResponse.SC_NO_CONTENT);

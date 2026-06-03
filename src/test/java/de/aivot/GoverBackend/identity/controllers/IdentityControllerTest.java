@@ -28,22 +28,22 @@ class IdentityControllerTest {
     void clearSessionShouldDeleteCurrentSessionAndExpireCookie() {
         var response = new MockHttpServletResponse();
 
-        controller.clearSession("identity-session-id", response);
+        controller.clearSession("identity-session-id", null, response);
 
         assertEquals(204, response.getStatus());
         assertClearsCookie(response);
-        verify(identityService).clearIdentitySession("identity-session-id");
+        verify(identityService).clearIdentitySession("identity-session-id", null);
     }
 
     @Test
     void clearSessionShouldExpireCookieWhenSessionCookieIsMissing() {
         var response = new MockHttpServletResponse();
 
-        controller.clearSession(null, response);
+        controller.clearSession(null, null, response);
 
         assertEquals(204, response.getStatus());
         assertClearsCookie(response);
-        verify(identityService).clearIdentitySession(null);
+        verify(identityService).clearIdentitySession(null, null);
     }
 
     private static void assertClearsCookie(MockHttpServletResponse response) {

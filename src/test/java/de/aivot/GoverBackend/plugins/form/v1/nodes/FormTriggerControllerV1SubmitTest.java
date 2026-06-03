@@ -62,7 +62,7 @@ class FormTriggerControllerV1SubmitTest {
 
         assertEquals(startedProcessAccessKey, result.startedProcessAccessKey());
         assertClearsIdentityCookie(response);
-        verify(fixture.identityService()).getIdentityDataMap("identity-session-id");
+        verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
         verify(fixture.elementDerivationService(), times(2)).derive(
                 any(ElementDerivationRequest.class),
                 same(identities),
@@ -95,7 +95,7 @@ class FormTriggerControllerV1SubmitTest {
         ));
 
         assertEquals(0, response.getCookies().length);
-        verify(fixture.identityService()).getIdentityDataMap("identity-session-id");
+        verify(fixture.identityService()).getIdentityDataMap("identity-session-id", fixture.processNodeId());
         verify(fixture.processInstanceService(), never()).create(any(ProcessInstanceEntity.class));
         verify(fixture.processInstanceService(), never()).update(anyLong(), any(ProcessInstanceEntity.class));
     }
@@ -160,7 +160,7 @@ class FormTriggerControllerV1SubmitTest {
                 .thenReturn(Optional.of(provider));
 
         var identityService = mock(IdentityService.class);
-        when(identityService.getIdentityDataMap("identity-session-id")).thenReturn(identities);
+        when(identityService.getIdentityDataMap("identity-session-id", node.getId())).thenReturn(identities);
 
         var elementDerivationService = mock(ElementDerivationService.class);
         when(elementDerivationService.derive(
@@ -237,6 +237,7 @@ class FormTriggerControllerV1SubmitTest {
                 controller,
                 processAccessKey,
                 formSlug,
+                node.getId(),
                 identityService,
                 elementDerivationService,
                 processInstanceService
@@ -262,6 +263,7 @@ class FormTriggerControllerV1SubmitTest {
             FormTriggerControllerV1 controller,
             UUID processAccessKey,
             String formSlug,
+            Integer processNodeId,
             IdentityService identityService,
             ElementDerivationService elementDerivationService,
             ProcessInstanceService processInstanceService

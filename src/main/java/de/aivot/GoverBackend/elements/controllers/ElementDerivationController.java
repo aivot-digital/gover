@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
+import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -42,13 +43,14 @@ public class ElementDerivationController {
     )
     public DerivedRuntimeElementData derive(
             @Nonnull @RequestBody @Valid ElementDerivationRequest request,
-            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
-            ) throws ResponseException {
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nullable @RequestParam(value = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = false) Integer relatedProcessNodeId
+    ) throws ResponseException {
         ElementStreamUtils
                 .applyAction(request.element(), BaseElement::recalculateReferencedIds);
 
         var identities = identityService
-                .getIdentityDataMap(identitySessionId);
+                .getIdentityDataMap(identitySessionId, relatedProcessNodeId);
 
         return elementDerivationServiceV2
                 .derive(request, identities, new ElementDerivationLogger());

@@ -80,12 +80,19 @@ public class IdentityService {
         this.identityCacheRepository = identityCacheRepository;
     }
 
-    public IdentityDataMap getIdentityDataMap(@Nullable String identitySessionId) {
+    public IdentityDataMap getIdentityDataMap(@Nullable String identitySessionId, @Nullable Integer relatedProcessNodeId) {
         if (identitySessionId == null) {
             return new IdentityDataMap();
         }
-        return identityCacheRepository
-                .findAllBySessionId(identitySessionId)
+
+        List<IdentityCacheEntity> identityList;
+        if (relatedProcessNodeId == null) {
+            identityList = identityCacheRepository.findAllBySessionId(identitySessionId);
+        } else {
+            identityList = identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId);
+        }
+
+        return identityList
                 .stream()
                 .map(IdentityData::from)
                 .reduce(
@@ -101,20 +108,23 @@ public class IdentityService {
                 );
     }
 
-
-    public boolean checkIdentitySessionIdExists(String identitySessionId) {
-        return identityCacheRepository
-                .existsBySessionId(identitySessionId);
-    }
-
-    public void clearIdentitySession(@Nullable String identitySessionId) {
+    /**
+     * Clear the identit session cache.
+     *
+     * @return True if there are still identities existing for this session id, false otherwise
+     */
+    public boolean clearIdentitySession(@Nullable String identitySessionId, @Nullable Integer relatedProcessNodeId) {
         if (StringUtils.isNullOrEmpty(identitySessionId)) {
-            return;
+            return false;
         }
 
-        identityCacheRepository.deleteAll(
-                identityCacheRepository.findAllBySessionId(identitySessionId)
-        );
+        if (relatedProcessNodeId == null) {
+            identityCacheRepository.deleteAllBySessionId(identitySessionId);
+            return false;
+        } else {
+            identityCacheRepository.deleteAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId);
+            return identityCacheRepository.existsBySessionId(identitySessionId);
+        }
     }
 
     /**
@@ -136,7 +146,8 @@ public class IdentityService {
             @Nonnull UUID providerKey,
             @Nonnull String identityId,
             @Nonnull String origin,
-            @Nonnull List<String> additionalScopes
+            @Nonnull List<String> additionalScopes,
+            @Nullable Integer relatedProcessNodeId
     ) throws ResponseException {
         var provider = getIdentityProviderEntity(providerKey);
         var resolvedOrigin = resolveOrigin(origin);
@@ -152,6 +163,7 @@ public class IdentityService {
         var identityCacheEntity = new IdentityCacheEntity(
                 entityId,
                 preexistingIdentitySessionId,
+                relatedProcessNodeId,
                 null,
                 providerKey,
                 identityId,

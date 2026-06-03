@@ -979,7 +979,7 @@ export function FormNodeEditorPage() {
                                                     dispatch(setCurrentStep(0));
                                                     setAuthoredElementValues({});
                                                     setStartedProcessAccessKey(null);
-                                                    IdentityProvidersApiService.clearIdentity();
+                                                    IdentityProvidersApiService.clearIdentity(node.id);
                                                 }}
                                             />
 
