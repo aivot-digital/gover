@@ -1,5 +1,5 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
+import {Box, Button, Dialog, DialogActions, DialogContent, Stack, Typography, useTheme} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -26,6 +26,13 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {isRootElement} from '../../models/elements/form-layout-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 import {deepEquals} from '../../utils/equality-utils';
+import {Actions} from '../actions/actions';
+import Undo from '@mui/icons-material/Undo';
+import Redo from '@mui/icons-material/Redo';
+import DoneAll from '@aivot/mui-material-symbols-400-outlined/dist/done-all/DoneAll';
+import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import VisibilityOff from '@aivot/mui-material-symbols-400-outlined/dist/visibility-off/VisibilityOff';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -167,7 +174,8 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
             title: 'Ungespeicherte Änderungen',
             children: (
                 <Typography>
-                    Sie haben ungespeicherte Änderungen an der UI-Definition. Möchten Sie den Dialog wirklich schließen? Dabei gehen alle ungespeicherten Änderungen verloren.
+                    Sie haben ungespeicherte Änderungen an der UI-Definition. Möchten Sie den Dialog wirklich schließen?
+                    Dabei gehen alle ungespeicherten Änderungen verloren.
                 </Typography>
             ),
         });
@@ -387,7 +395,60 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         void requestClose();
                     }}
                 >
-                    {displayLabel}
+                    <Stack
+                        direction="row"
+                        alignItems="center"
+                    >
+                        {displayLabel}
+
+                        <Actions
+                            size="small"
+                            dense={true}
+                            sx={{
+                                ml: 'auto',
+                                mr: 6,
+                            }}
+                            actions={[
+                                {
+                                    tooltip: 'Rückgängig',
+                                    icon: <Undo/>,
+                                    onClick: () => {
+
+                                    },
+                                },
+                                {
+                                    tooltip: 'Forwärts',
+                                    icon: <Redo/>,
+                                    onClick: () => {
+
+                                    },
+                                },
+                                'separator',
+                                {
+                                    tooltip: 'Validierung testen',
+                                    icon: <DoneAll/>,
+                                    onClick: () => {
+                                        // TODO
+                                    },
+                                },
+                                {
+                                    tooltip: false ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
+                                    icon: false ? <Visibility/> : <VisibilityOff/>,
+                                    onClick: () => {
+                                        // TODO
+                                    },
+                                },
+                                'separator',
+                                {
+                                    tooltip: 'Wurzeleinstellungen öffnen',
+                                    icon: <Settings/>,
+                                    onClick: () => {
+                                        // TODO
+                                    },
+                                },
+                            ]}
+                        />
+                    </Stack>
                 </DialogTitleWithClose>
 
                 <DialogContent
@@ -475,14 +536,6 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                         }}
                     >
                         Übernehmen
-                    </Button>
-
-                    <Button
-                        onClick={() => {
-                            // TODO
-                        }}
-                    >
-                        Validierung testen
                     </Button>
 
                     <Button
