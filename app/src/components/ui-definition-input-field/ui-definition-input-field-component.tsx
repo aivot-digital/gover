@@ -1,4 +1,4 @@
-import React, {useCallback, useMemo, useState} from 'react';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, Stack, Typography, useTheme} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
@@ -33,6 +33,7 @@ import DoneAll from '@aivot/mui-material-symbols-400-outlined/dist/done-all/Done
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import VisibilityOff from '@aivot/mui-material-symbols-400-outlined/dist/visibility-off/VisibilityOff';
+import {useNotImplemented} from '../../hooks/use-not-implemented';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -66,6 +67,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const theme = useTheme();
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
+    const notImplemented = useNotImplemented();
 
     const {
         label,
@@ -84,11 +86,15 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [showDraftDialog, setShowDraftDialog] = useState<boolean>(false);
     const [draftValue, setDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
     const [initialDraftValue, setInitialDraftValue] = useState<UiDefinitionInputFieldElementItem | null>(null);
+    const [pastDraftValues, setPastDraftValues] = useState<UiDefinitionInputFieldElementItem[]>([]);
+    const [futureDraftValues, setFutureDraftValues] = useState<UiDefinitionInputFieldElementItem[]>([]);
     const [inputData, setInputData] = useState<AuthoredElementValues>({});
     const [highlightElementId, setHighlightElementId] = useState<string | null>(null);
     const [highlightElementSignal, setHighlightElementSignal] = useState(0);
     const [hoveredTreeElementId, setHoveredTreeElementId] = useState<string | null>(null);
     const [openRootAddElementSignal, setOpenRootAddElementSignal] = useState(0);
+    const [disableVisibilities, setDisableVisibilities] = useState(false);
+    const draftValueRef = useRef<UiDefinitionInputFieldElementItem | null>(null);
 
     const {
         navigateToElementEditor,
@@ -119,6 +125,9 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         return !deepEquals(initialDraftValue, draftValue);
     }, [draftValue, initialDraftValue, showDraftDialog]);
 
+    const hasPastDraftValue = useMemo(() => pastDraftValues.length > 0, [pastDraftValues]);
+    const hasFutureDraftValue = useMemo(() => futureDraftValues.length > 0, [futureDraftValues]);
+
     const allowedRootChildTypes = useMemo(() => {
         return ElementChildOptions[displayContext][effectiveValue.type] ?? [];
     }, [displayContext, effectiveValue.type]);
@@ -143,26 +152,85 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         return isRootElement(effectiveValue) ? 'section' : 'element';
     }, [allowedRootChildTypes.length, effectiveValue]);
 
-    const handleClose = () => {
+    const setCurrentDraftValue = useCallback((nextDraftValue: UiDefinitionInputFieldElementItem | null) => {
+        draftValueRef.current = nextDraftValue;
+        setDraftValue(nextDraftValue);
+    }, []);
+
+    const resetDraftDialogState = useCallback(() => {
+        setCurrentDraftValue(null);
+        setInitialDraftValue(null);
+        setPastDraftValues([]);
+        setFutureDraftValues([]);
+        setInputData({});
+        setHoveredTreeElementId(null);
+    }, [setCurrentDraftValue]);
+
+    const handleClose = useCallback(() => {
         setShowDraftDialog(false);
         setTimeout(() => {
-            setDraftValue(null);
-            setInitialDraftValue(null);
-            setInputData({});
-            setHoveredTreeElementId(null);
+            resetDraftDialogState();
         }, 300);
-    };
+    }, [resetDraftDialogState]);
+
+    const handlePatchDraftValue = useCallback((nextDraftValue: UiDefinitionInputFieldElementItem) => {
+        const currentDraftValue = draftValueRef.current;
+
+        if (currentDraftValue != null) {
+            setPastDraftValues((currentPastDraftValues) => [
+                ...currentPastDraftValues,
+                cloneUiDefinitionValue(currentDraftValue),
+            ]);
+        }
+
+        setFutureDraftValues([]);
+        setCurrentDraftValue(cloneUiDefinitionValue(nextDraftValue));
+    }, [setCurrentDraftValue]);
+
+    const handleUndo = useCallback(() => {
+        const currentDraftValue = draftValueRef.current;
+
+        if (currentDraftValue == null || pastDraftValues.length === 0) {
+            return;
+        }
+
+        const previousDraftValue = pastDraftValues[pastDraftValues.length - 1];
+        setPastDraftValues((currentPastDraftValues) => currentPastDraftValues.slice(0, -1));
+        setFutureDraftValues((currentFutureDraftValues) => [
+            ...currentFutureDraftValues,
+            cloneUiDefinitionValue(currentDraftValue),
+        ]);
+        setCurrentDraftValue(cloneUiDefinitionValue(previousDraftValue));
+    }, [pastDraftValues, setCurrentDraftValue]);
+
+    const handleRedo = useCallback(() => {
+        const currentDraftValue = draftValueRef.current;
+
+        if (currentDraftValue == null || futureDraftValues.length === 0) {
+            return;
+        }
+
+        const nextDraftValue = futureDraftValues[futureDraftValues.length - 1];
+        setFutureDraftValues((currentFutureDraftValues) => currentFutureDraftValues.slice(0, -1));
+        setPastDraftValues((currentPastDraftValues) => [
+            ...currentPastDraftValues,
+            cloneUiDefinitionValue(currentDraftValue),
+        ]);
+        setCurrentDraftValue(cloneUiDefinitionValue(nextDraftValue));
+    }, [futureDraftValues, setCurrentDraftValue]);
 
     const openDialog = useCallback(() => {
         if (openOverride != null) {
             openOverride();
         } else {
             const nextDraftValue = cloneUiDefinitionValue(value ?? defaultValue);
-            setDraftValue(nextDraftValue);
+            setPastDraftValues([]);
+            setFutureDraftValues([]);
+            setCurrentDraftValue(nextDraftValue);
             setInitialDraftValue(cloneUiDefinitionValue(nextDraftValue));
             setShowDraftDialog(true);
         }
-    }, [defaultValue, openOverride, value]);
+    }, [defaultValue, openOverride, setCurrentDraftValue, value]);
 
     const requestClose = useCallback(async () => {
         if (!hasUnsavedChanges) {
@@ -185,10 +253,10 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         }
 
         handleClose();
-    }, [confirm, hasUnsavedChanges]);
+    }, [confirm, handleClose, hasUnsavedChanges]);
 
     const handleDeleteElement = (element: AnyElement) => {
-        if (draftValue == null) {
+        if (draftValueRef.current == null) {
             return;
         }
 
@@ -202,6 +270,11 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         })
             .then((conf) => {
                 if (!conf) {
+                    return;
+                }
+
+                const currentDraftValue = draftValueRef.current;
+                if (currentDraftValue == null) {
                     return;
                 }
 
@@ -219,12 +292,13 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     }
                 }
 
-                setDraftValue(deleteElementRecursive(draftValue));
+                handlePatchDraftValue(deleteElementRecursive(currentDraftValue));
             });
     };
 
     const handleCloneElement = (element: AnyElement) => {
-        if (draftValue == null) {
+        const currentDraftValue = draftValueRef.current;
+        if (currentDraftValue == null) {
             return;
         }
 
@@ -260,7 +334,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         }
 
 
-        setDraftValue(cloneElementRecursive(draftValue));
+        handlePatchDraftValue(cloneElementRecursive(currentDraftValue));
     };
 
     const handleNavigateToElementEditor = (element: AnyElement, tab?: string | null) => {
@@ -410,32 +484,30 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             }}
                             actions={[
                                 {
-                                    tooltip: 'Rückgängig',
+                                    tooltip: 'Änderung rückgängig machen',
                                     icon: <Undo/>,
-                                    onClick: () => {
-
-                                    },
+                                    onClick: handleUndo,
+                                    disabled: !hasPastDraftValue || !!disabled,
                                 },
                                 {
-                                    tooltip: 'Forwärts',
+                                    tooltip: 'Änderung wiederherstellen',
                                     icon: <Redo/>,
-                                    onClick: () => {
-
-                                    },
+                                    onClick: handleRedo,
+                                    disabled: !hasFutureDraftValue || !!disabled,
                                 },
                                 'separator',
                                 {
                                     tooltip: 'Validierung testen',
                                     icon: <DoneAll/>,
                                     onClick: () => {
-                                        // TODO
+                                        notImplemented();
                                     },
                                 },
                                 {
-                                    tooltip: false ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
-                                    icon: false ? <Visibility/> : <VisibilityOff/>,
+                                    tooltip: disableVisibilities ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
+                                    icon: disableVisibilities ? <Visibility/> : <VisibilityOff/>,
                                     onClick: () => {
-                                        // TODO
+                                        setDisableVisibilities(prev => !prev);
                                     },
                                 },
                                 'separator',
@@ -443,8 +515,11 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     tooltip: 'Wurzeleinstellungen öffnen',
                                     icon: <Settings/>,
                                     onClick: () => {
-                                        // TODO
+                                        if (draftValue != null) {
+                                            navigateToElementEditor(draftValue.id);
+                                        }
                                     },
+                                    disabled: draftValue == null,
                                 },
                             ]}
                         />
@@ -491,6 +566,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                                     authoredElementValues={inputData}
                                                     onAuthoredElementValuesChange={setInputData}
                                                     highlightedElementId={hoveredTreeElementId}
+                                                    disableVisibilities={disableVisibilities}
                                                 />
                                         }
                                     </ElementTreeInlineEditorContextProvider>
@@ -502,7 +578,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             >
                                 <ElementTree
                                     value={effectiveValue}
-                                    onChange={setDraftValue}
+                                    onChange={handlePatchDraftValue}
                                     editable={!disabled}
                                     // The tree editor drawer needs to know the surrounding dialog layer.
                                     parentModalZIndex={theme.zIndex.modal}
