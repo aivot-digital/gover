@@ -113,13 +113,8 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
             return;
         }
 
-        // Advance from the current non-final step to the next section
-        if (currentStep === 0) {
-            dispatch(nextStep());
-        }
-
         // Check if submit step
-        else if (currentStep === (totalStepCount - 1)) {
+        if (currentStep === (totalStepCount - 1)) {
             await onEvent(authoredElementValues, SUBMIT_EVENT);
         }
 
