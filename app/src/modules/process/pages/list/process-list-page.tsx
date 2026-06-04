@@ -26,10 +26,10 @@ import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
-import {useDispatch} from 'react-redux';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 
 const availableFilter = [
     {
@@ -60,7 +60,8 @@ const columns: GridColDef<ProcessListEntry>[] = [
         field: 'icon',
         headerName: '',
         renderCell: () => <CellContentWrapper
-            sx={{alignItems: 'start', py: 2}}><Route/></CellContentWrapper>,
+            sx={{alignItems: 'start', py: 2}}
+        ><Route/></CellContentWrapper>,
         disableColumnMenu: true,
         width: 24,
         sortable: false,
@@ -186,12 +187,12 @@ const columns: GridColDef<ProcessListEntry>[] = [
 
 export function ProcessListPage() {
     const dispatch = useAppDispatch();
-
     const memberships = useAppSelector(selectMemberships);
-
     const listControlRef = useRef<ListControlRef>(null);
 
     const [showAddDialog, setShowAddDialog] = useState(false);
+    const [showVersionsDialogForProcess, setShowVersionsDialogForProcess] = useState<ProcessEntity | null>(null);
+
     const notImplemented = useNotImplemented();
 
     useEffect(() => {
@@ -200,7 +201,7 @@ export function ProcessListPage() {
             .then(console.log);
     }, []);
 
-    const handleAddDraft = useCallback((process: ProcessListEntry) => {
+    const handleAddDraft = useCallback((process: number, version?: number) => {
         dispatch(setLoadingMessage({
             message: 'Neue Version wird erzeugt',
             estimatedTime: 2000,
@@ -208,7 +209,7 @@ export function ProcessListPage() {
         }));
 
         new ProcessDefinitionApiService()
-            .addNewVersion(process.id)
+            .addNewVersion(process, version)
             .then(() => {
                 if (listControlRef.current) {
                     listControlRef.current.refresh();
@@ -219,7 +220,7 @@ export function ProcessListPage() {
             })
             .finally(() => {
                 dispatch(clearLoadingMessage());
-            })
+            });
     }, []);
 
     const header: GenericPageHeaderProps = useMemo(() => ({
@@ -341,7 +342,7 @@ export function ProcessListPage() {
         {
             icon: <NewWindow/>,
             onClick: () => {
-                handleAddDraft(item);
+                handleAddDraft(item.id);
             },
             tooltip: 'Neuen Entwurf anlegen',
             visible: item.draftedVersion == null,
@@ -350,7 +351,7 @@ export function ProcessListPage() {
         {
             icon: <HomeStorage/>,
             onClick: () => {
-                notImplemented();
+                setShowVersionsDialogForProcess(item);
             },
             tooltip: 'Versionen anzeigen',
         },
@@ -396,6 +397,25 @@ export function ProcessListPage() {
                     setShowAddDialog(false);
                 }}
             />
+
+            {
+                showVersionsDialogForProcess &&
+                <ProcessVersionsDialog
+                    open={true}
+                    process={showVersionsDialogForProcess}
+                    onClose={() => {
+                        setShowVersionsDialogForProcess(null);
+                    }}
+                    onNewDraft={({process, version}) => {
+                        handleAddDraft(process.id, version.processVersion);
+                    }}
+                    onDeleteVersion={() => {
+                        if (listControlRef.current) {
+                            listControlRef.current.refresh();
+                        }
+                    }}
+                />
+            }
         </>
     );
 }

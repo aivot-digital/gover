@@ -82,6 +82,9 @@ import {
 } from './components/process-node-editor/process-node-editor-change-blocker';
 import {ProcessStatus} from '../../enums/process-status';
 import {useSyncState} from '../../../../hooks/use-sync-state';
+import {useProcessExport} from '../../../../hooks/use-process-export';
+import {FormVersionsDialog} from '../../../forms/dialogs/form-versions-dialog';
+import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -285,6 +288,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [hideEditorPaneExpandButton, setHideEditorPaneExpandButton] = useState(false);
     const [editorPaneWidth, setEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
     const [lastExpandedEditorPaneWidth, setLastExpandedEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
+    const [showVersionsDialog, setShowVersionsDialog] = useState(false);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -409,11 +413,17 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, [params]);
 
+    // Reset the versions dialog when the process id or process version change to compensate for process switching while the dialog is open
+    useEffect(() => {
+        setShowVersionsDialog(false);
+    }, [processId, processVersion]);
+
     const [currentTestClaim, setCurrentTestClaim] = useSyncState<{
         claim: ProcessTestClaimEntity;
         user: User | null;
     } | null>(`process_${processId}_${processVersion}_test_claim`, null);
 
+    const showProcessExport = useProcessExport();
 
     useEffect(() => {
         if (processFlow == null || processVersion == null) {
@@ -1257,53 +1267,7 @@ export function ProcessDetailsPage(): ReactNode {
     };
 
     const handleExport = (): void => {
-        confirm({
-            title: 'Prozess exportieren',
-            children: (
-                <>
-                    <Typography>
-                        Sie können den Prozess exportieren, um ihn z. B. in einem anderen System weiterzuverwenden oder
-                        zu archivieren.
-                        Der Export erfolgt im offenen .json-Format.
-                    </Typography>
-
-                    <AlertComponent
-                        color="info"
-                        title="Wichtig"
-                        sx={{
-                            mt: 2,
-                        }}
-                    >
-                        <p>
-                            Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind
-                            für die importierende Person nicht sichtbar.
-                            Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und
-                            Referenzen auf Organisationseinheiten.
-                        </p>
-                        <p>
-                            Bei Bedarf müssen Sie diese Informationen nach einem Import im Zielsystem neu konfigurieren.
-                        </p>
-                    </AlertComponent>
-                </>
-            ),
-            confirmButtonText: 'Prozess als .json-Datei herunterladen',
-        })
-            .then((confirmed) => {
-                if (!confirmed) {
-                    return null;
-                }
-                return new ProcessDefinitionApiService()
-                    .export(processId, processVersion);
-            })
-            .then((exp) => {
-                if (exp == null) {
-                    return null;
-                }
-                downloadObjectFile(`${exp.process.internalTitle}.process.gover.json`, exp);
-            })
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));
-            });
+        showProcessExport(processId, processVersion);
     };
 
     const handleTest = async (): Promise<void> => {
@@ -1847,7 +1811,9 @@ export function ProcessDetailsPage(): ReactNode {
                 tooltip: 'Versionen',
                 ariaLabel: 'Versionen',
                 icon: <HomeStorage/>,
-                onClick: notImplemented,
+                onClick: () => {
+                    setShowVersionsDialog(true);
+                },
             },
             {
                 tooltip: 'Einstellungen',
@@ -2484,6 +2450,22 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
                 process={processFlow.definition}
                 version={processFlow.version}
+            />
+
+            <ProcessVersionsDialog
+                open={showVersionsDialog}
+                process={processFlow.definition}
+                onClose={() => {
+                    setShowVersionsDialog(false);
+                }}
+                onNewDraft={({}) => {
+                    // TODO
+                }}
+                onDeleteVersion={(process, version) => {
+                    if (version == processVersion) {
+                        navigate('/processes');
+                    }
+                }}
             />
         </PageWrapper>
     );
