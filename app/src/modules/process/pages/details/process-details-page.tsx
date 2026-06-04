@@ -1902,6 +1902,26 @@ export function ProcessDetailsPage(): ReactNode {
         return processFlow.nodes.find((node) => node.id === replaceNodeRequest.nodeId) ?? null;
     }, [processFlow, replaceNodeRequest]);
 
+    const handleAddDraft = useCallback((process: number, version?: number) => {
+        dispatch(setLoadingMessage({
+            message: 'Neue Version wird erzeugt',
+            estimatedTime: 2000,
+            blocking: true,
+        }));
+
+        new ProcessDefinitionApiService()
+            .addNewVersion(process, version)
+            .then((createdVersion) => {
+                navigate(`/processes/${createdVersion.processId}/versions/${createdVersion.processVersion}`);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Fehler beim Anlegen einer neuen Version'));
+            })
+            .finally(() => {
+                dispatch(clearLoadingMessage());
+            });
+    }, []);
+
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
             return <ProcessDetailsPageSkeleton/>;
@@ -2461,8 +2481,8 @@ export function ProcessDetailsPage(): ReactNode {
                 onClose={() => {
                     setShowVersionsDialog(false);
                 }}
-                onNewDraft={({}) => {
-                    // TODO
+                onNewDraft={({process, version}) => {
+                    handleAddDraft(process.id, version.processVersion);
                 }}
                 onDeleteVersion={(process, version) => {
                     if (version == processVersion) {

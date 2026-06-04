@@ -442,7 +442,7 @@ public class ProcessController {
             description = "Export the latest version of a process definition. " +
                     "Requires read permissions for the process definition."
     )
-    public ProcessEntity newVersionFromLatest(
+    public ProcessVersionEntity newVersionFromLatest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -459,7 +459,7 @@ public class ProcessController {
             description = "Export the latest version of a process definition. " +
                     "Requires read permissions for the process definition."
     )
-    public ProcessEntity newVersionFromExisting(
+    public ProcessVersionEntity newVersionFromExisting(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
             @Nonnull @PathVariable Integer version
@@ -541,7 +541,7 @@ public class ProcessController {
                     ));
         }
 
-        return retrieve(jwt, id);
+        return createdProcessVersion;
     }
 
     @GetMapping("{id}/export/latest/")
