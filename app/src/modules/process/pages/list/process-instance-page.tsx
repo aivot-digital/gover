@@ -10,6 +10,7 @@ import {
     ProcessInstanceStatusLabels,
 } from '../../enums/process-instance-status';
 import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
+import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     GenericListFilter,
@@ -20,7 +21,7 @@ import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete'
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {type Page} from '../../../../models/dtos/page';
 import {useSearchParams} from 'react-router-dom';
@@ -123,6 +124,37 @@ export function ProcessInstanceListPage(): ReactNode {
     }, [confirm, dispatch, handleListRefresh]);
 
     const [showEventsForInstanceId, setShowEventsForInstanceId] = React.useState<number | null>(null);
+
+    const handleRestart = useCallback((item: ProcessInstanceEntity): void => {
+        confirm({
+            title: 'Vorgang neu starten',
+            children: (
+                <Typography>
+                    Wirklich neu starten? Der Neustart ist nur möglich, wenn der Vorgang noch keine Aufgaben hat oder die letzte Aufgabe fehlgeschlagen ist.
+                </Typography>
+            ),
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return false;
+                }
+
+                return new ProcessInstanceApiService()
+                    .restartFailedInstance(item.id)
+                    .then(() => true);
+            })
+            .then((reload) => {
+                if (!reload) {
+                    return;
+                }
+
+                dispatch(showSuccessSnackbar('Der Vorgang wurde neu gestartet.'));
+                handleListRefresh();
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Der Vorgang konnte nicht neu gestartet werden.'));
+            });
+    }, [confirm, dispatch, handleListRefresh]);
 
     // Wrap fetchData to inject processId and processVersion
     const fetchDataWithParams = useCallback(async (options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> => {
@@ -255,6 +287,14 @@ export function ProcessInstanceListPage(): ReactNode {
 
     const rowActions = useCallback((item: ProcessInstanceEntityWithProcessInfo) => [
         {
+            icon: <Replay/>,
+            tooltip: 'Fehlgeschlagenen Vorgang neu starten',
+            visible: item.status === ProcessInstanceStatus.Failed,
+            onClick: () => {
+                handleRestart(item);
+            },
+        },
+        {
             icon: <Delete/>,
             tooltip: 'Vorgang löschen',
             onClick: () => {
@@ -273,7 +313,7 @@ export function ProcessInstanceListPage(): ReactNode {
             tooltip: 'Prozessverlauf ansehen',
             to: `/processes/${item.processId}/versions/${item.initialProcessVersion}/?instanceId=${item.id}`,
         },
-    ], [handleDelete]);
+    ], [handleDelete, handleRestart]);
 
     return (
         <>
@@ -295,7 +335,7 @@ export function ProcessInstanceListPage(): ReactNode {
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder="Keine Vorgänge gestartet"
                     noSearchResultsPlaceholder="Keine Vorgänge gefunden"
-                    rowActionsCount={3}
+                    rowActionsCount={4}
                     rowActions={rowActions}
                     defaultSortField="started"
                     disableFullWidthToggle={true}

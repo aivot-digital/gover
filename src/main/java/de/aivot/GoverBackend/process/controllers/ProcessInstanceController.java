@@ -8,11 +8,17 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
+import de.aivot.GoverBackend.process.enums.ProcessNodeExecutionLogLevel;
+import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.entities.VUserProcessInstanceAccessPermissionsEntity;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
+import de.aivot.GoverBackend.process.services.ProcessInstanceTaskService;
+import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.GoverBackend.process.services.ProcessService;
+import de.aivot.GoverBackend.process.workers.ProcessWorker;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilderArrayContains;
@@ -23,6 +29,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -31,6 +38,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.Map;
 
 @RestController
@@ -44,20 +52,29 @@ public class ProcessInstanceController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceService processInstanceService;
+    private final ProcessInstanceTaskService processInstanceTaskService;
     private final DepartmentService departmentService;
     private final ProcessService processDefinitionService;
+    private final RabbitTemplate rabbitTemplate;
+    private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
 
     @Autowired
     public ProcessInstanceController(AuditService auditService,
                                      UserService userService,
                                      ProcessInstanceService processInstanceService,
                                      DepartmentService departmentService,
-                                     ProcessService processDefinitionService) {
+                                     ProcessService processDefinitionService,
+                                     ProcessInstanceTaskService processInstanceTaskService,
+                                     RabbitTemplate rabbitTemplate,
+                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceService = processInstanceService;
+        this.processInstanceTaskService = processInstanceTaskService;
         this.departmentService = departmentService;
         this.processDefinitionService = processDefinitionService;
+        this.rabbitTemplate = rabbitTemplate;
+        this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
     }
 
     @GetMapping("")
@@ -172,6 +189,105 @@ public class ProcessInstanceController {
         ).log();
 
         return result;
+    }
+
+    @PutMapping("{id}/restart-failed/")
+    @Operation(
+            summary = "Restart Failed Process Instance",
+            description = "Restart a failed process instance when it has no tasks yet or when the latest task failed."
+    )
+    public ProcessInstanceEntity restartFailed(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Long id
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized)
+                .asSuperAdmin()
+                .orElseThrow(ResponseException::noSuperAdminPermission);
+
+        var processInstance = processInstanceService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        if (processInstance.getStatus() != ProcessInstanceStatus.Failed) {
+            throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
+        }
+
+        var latestTask = processInstanceTaskService
+                .retrieveLatestForInstanceId(processInstance.getId())
+                .orElse(null);
+
+        var now = Instant.now();
+        ProcessWorker.WorkerPayload payload;
+
+        if (latestTask == null) {
+            if (processInstance.getInitialPayload() == null || processInstance.getInitialPayload().isEmpty()) {
+                throw ResponseException.conflict("Der Vorgang kann nicht neu gestartet werden, weil keine Initialdaten für einen erneuten Start vorliegen.");
+            }
+
+            payload = new ProcessWorker.WorkerPayload(
+                    processInstance.getId(),
+                    null,
+                    null,
+                    null,
+                    processInstance.getInitialNodeId()
+            );
+        } else {
+            if (latestTask.getStatus() != ProcessTaskStatus.Failed) {
+                throw ResponseException.conflict("Der Vorgang kann derzeit nur neu gestartet werden, wenn die letzte Aufgabe fehlgeschlagen ist oder noch keine Aufgabe angelegt wurde.");
+            }
+
+            payload = new ProcessWorker.WorkerPayload(
+                    latestTask.getProcessInstanceId(),
+                    latestTask.getPreviousProcessInstanceTaskId(),
+                    latestTask.getPreviousProcessNodeId(),
+                    latestTask.getPreviousProcessNodePortKey(),
+                    latestTask.getProcessNodeId()
+            );
+        }
+
+        try {
+            rabbitTemplate.convertAndSend(ProcessWorker.DO_WORK_ON_INSTANCE_QUEUE, payload);
+        } catch (Exception e) {
+            throw ResponseException.internalServerError("Der Vorgang konnte nicht zum Neustart eingeplant werden.", e);
+        }
+
+        processInstance
+                .setStatus(ProcessInstanceStatus.Running)
+                .setUpdated(now);
+        var updatedInstance = processInstanceService.save(processInstance);
+
+        if (latestTask != null) {
+            latestTask
+                    .setStatus(ProcessTaskStatus.Restarted)
+                    .setUpdated(now);
+            processInstanceTaskService.save(latestTask);
+        }
+
+        processNodeExecutionLoggerFactory
+                .create(updatedInstance.getId(), latestTask != null ? latestTask.getId() : null, user.getId(), null)
+                .logf(
+                        ProcessNodeExecutionLogLevel.Info,
+                        true,
+                        true,
+                        "Vorgang neu gestartet",
+                        latestTask == null
+                                ? "Der fehlgeschlagene Vorgang wurde manuell neu gestartet, bevor eine erste Aufgabe angelegt wurde."
+                                : "Der fehlgeschlagene Vorgang wurde manuell neu gestartet. Die letzte fehlgeschlagene Aufgabe wird erneut ausgeführt."
+                );
+
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, ProcessInstanceEntity.class, updatedInstance.getId(), "id", Map.of(
+                "id", updatedInstance.getId(),
+                "processDefinitionId", updatedInstance.getProcessId()
+        )).withMessage(
+                "Die fehlgeschlagene Prozessinstanz mit der ID %s für den Prozess %s wurde von der Mitarbeiter:in %s neu gestartet.",
+                StringUtils.quote(String.valueOf(updatedInstance.getId())),
+                StringUtils.quote(String.valueOf(updatedInstance.getProcessId())),
+                StringUtils.quote(user.getFullName())
+        ).log();
+
+        return updatedInstance;
     }
 
     @DeleteMapping("{id}/")

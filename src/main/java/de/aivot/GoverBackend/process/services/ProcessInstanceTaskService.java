@@ -110,4 +110,14 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
         return processInstanceTaskRepository
                 .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(id, previousProcessNodeId);
     }
+
+    public Optional<ProcessInstanceTaskEntity> retrieveLatestForInstanceId(@Nonnull Long processInstanceId) {
+        return processInstanceTaskRepository
+                .findFirstByProcessInstanceIdOrderByStartedDescIdDesc(processInstanceId);
+    }
+
+    @Nonnull
+    public ProcessInstanceTaskEntity save(@Nonnull ProcessInstanceTaskEntity entity) {
+        return processInstanceTaskRepository.save(entity);
+    }
 }

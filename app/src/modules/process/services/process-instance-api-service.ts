@@ -49,4 +49,8 @@ export class ProcessInstanceApiService extends BaseCrudApiService<
             id: 0,
         };
     }
+
+    public restartFailedInstance(id: number): Promise<ProcessInstanceEntity> {
+        return this.put<any, ProcessInstanceEntity>(this.buildPath(id) + 'restart-failed/', {});
+    }
 }
