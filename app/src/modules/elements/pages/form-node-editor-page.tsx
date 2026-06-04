@@ -87,7 +87,7 @@ import {FormHeaderComponent} from '../../../components/form/form-header-componen
 import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
 import {RootComponentFooter} from '../../../components/form/root-component-footer';
-import {PRE_SUBMIT_EVENT, SUBMIT_EVENT} from '../../../components/form/root.component.view';
+import {SUBMIT_EVENT} from '../../../components/form/root.component.view';
 import {BaseApiService} from '../../../services/base-api-service';
 import {ProcessTestClaimApiService} from '../../process/services/process-test-claim-api-service';
 import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
@@ -785,91 +785,117 @@ export function FormNodeEditorPage() {
 
     const formLogoUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
 
-    const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
-        if (event !== PRE_SUBMIT_EVENT && event !== SUBMIT_EVENT) {
+    const handleSubmitEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
+        if (event != SUBMIT_EVENT) {
             return;
         }
 
-        if (event === PRE_SUBMIT_EVENT) {
-            if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
-                await confirm({
-                    title: 'Keine Formular-URL vergeben',
-                    children: (
+        if (disableValidation) {
+            const confirmProcess = await confirm({
+                title: 'Fortfahren ohne Validierungen',
+                children: (
+                    <>
                         <Typography>
-                            Sie haben für dieses Formular keine Formular-URL konfiguriert.
-                            Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
-                            Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
+                            Sie haben die Validierungen für dieses Formular deaktiviert.
+                            Es können ungültige oder fehlenden Eingaben vorliegen, die zu Fehlern beim Absenden des
+                            Formulars führen können.
+                            Nur wenn alle Felder gültig sind, kann das Formular korrekt abgesendet werden.
+                            Andernfalls wird die Einreichung automatisch abgelehnt.
                         </Typography>
-                    ),
-                    confirmButtonText: 'Ok',
-                    hideCancelButton: true,
-                });
+                        <Typography
+                            sx={{
+                                mt: 2,
+                            }}
+                        >
+                            Sind Sie sicher, dass Sie fortfahren möchten?
+                        </Typography>
+                    </>
+                ),
+                confirmButtonText: 'Ja, fortfahren',
+            });
+
+            if (!confirmProcess) {
+                return;
+            }
+        }
+
+        // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
+        if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
+            await confirm({
+                title: 'Keine Formular-URL vergeben',
+                children: (
+                    <Typography>
+                        Sie haben für dieses Formular keine Formular-URL konfiguriert.
+                        Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
+                        Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
+                    </Typography>
+                ),
+                confirmButtonText: 'Ok',
+                hideCancelButton: true,
+            });
+            return;
+        }
+
+        // Check if changes exist. If so, ask for saving them.
+        if (hasChanged) {
+            const saveNow = await confirm({
+                title: 'Ungespeicherte Änderungen',
+                children: (
+                    <Typography>
+                        Sie haben aktuell ungespeicherte Änderungen.
+                        Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt
+                        werden.
+                        Sie können die Änderungen jetzt speichern.
+                    </Typography>
+                ),
+                confirmButtonText: 'Jetzt speichern',
+            });
+
+            if (!saveNow) {
+                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
                 return;
             }
 
-            if (hasChanged) {
-                const saveNow = await confirm({
-                    title: 'Ungespeicherte Änderungen',
-                    children: (
-                        <Typography>
-                            Sie haben aktuell ungespeicherte Änderungen.
-                            Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt
-                            werden.
-                            Sie können die Änderungen jetzt speichern.
-                        </Typography>
-                    ),
-                    confirmButtonText: 'Jetzt speichern',
-                });
+            await handleSave();
+        }
 
-                if (!saveNow) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
-                    return false;
-                }
+        const testClaimApi = new ProcessTestClaimApiService();
 
-                await handleSave();
+        let testClaim = await testClaimApi
+            .listAll({
+                processId: node.processId,
+                processVersion: node.processVersion,
+            })
+            .then(response => {
+                return response.content.length > 0 ? response.content[0] : null;
+            });
+
+        if (testClaim == null) {
+            const createTestClaim = await confirm({
+                title: 'Nicht im Test-Modus',
+                children: (
+                    <Typography>
+                        Der Prozess, für den Sie das Formular absenden möchten, befindet
+                        sich <strong>nicht</strong> im Testmodus.
+                        Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
+                    </Typography>
+                ),
+                confirmButtonText: 'Testmodus starten',
+            });
+
+            if (!createTestClaim) {
+                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
+                return;
             }
 
-            const testClaimApi = new ProcessTestClaimApiService();
-
-            let testClaim = await testClaimApi
-                .listAll({
+            testClaim = await testClaimApi
+                .create({
+                    ...testClaimApi.initialize(),
                     processId: node.processId,
                     processVersion: node.processVersion,
-                })
-                .then(response => {
-                    return response.content.length > 0 ? response.content[0] : null;
                 });
-
-            if (testClaim == null) {
-                const createTestClaim = await confirm({
-                    title: 'Nicht im Test-Modus',
-                    children: (
-                        <Typography>
-                            Der Prozess, für den Sie das Formular absenden möchten, befindet
-                            sich <strong>nicht</strong> im
-                            Testmodus.
-                            Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
-                        </Typography>
-                    ),
-                    confirmButtonText: 'Testmodus starten',
-                });
-
-                if (!createTestClaim) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
-                    return false;
-                }
-
-                testClaim = await testClaimApi
-                    .create({
-                        ...testClaimApi.initialize(),
-                        processId: node.processId,
-                        processVersion: node.processVersion,
-                    });
-                setTestClaim(testClaim);
-                testClaimRef.current = testClaim;
-            }
-
-            return true;
+            setTestClaim(testClaim);
+            testClaimRef.current = testClaim;
         }
 
         const formData = new FormData();
@@ -909,6 +935,8 @@ export function FormNodeEditorPage() {
                 );
 
             setStartedProcessAccessKey(startRes.startedProcessAccessKey);
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Beim Absenden des Formulars ist ein Fehler aufgetreten'));
         } finally {
             dispatch(clearLoadingMessage());
         }

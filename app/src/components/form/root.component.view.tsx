@@ -28,7 +28,6 @@ import {useViewDispatcherContext, ViewDispatcherMode} from '../view-dispatcher/v
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 
 export const SUBMIT_EVENT = 'submit';
-export const PRE_SUBMIT_EVENT = 'pre-submit';
 
 function extractCurrentStep(currentStep: number, allVisibleSteps: VisibleFormStepElement[]) {
     if (currentStep < 0 || currentStep >= allVisibleSteps.length) {
@@ -88,14 +87,6 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
         if (form == null) {
             return;
         }
-
-        if (currentStep === (totalStepCount - 1) && mode === ViewDispatcherMode.Editor) {
-            const shouldContinue = await onEvent(authoredElementValues, PRE_SUBMIT_EVENT);
-            if (shouldContinue === false) {
-                return;
-            }
-        }
-
         setIsBusyNavigating(true);
 
         // Check if the current step is valid
@@ -106,7 +97,6 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
         );
 
         const currentPageHasErrors = hasAnyErrorRecursively(derivationData.elementStates);
-
         if (currentPageHasErrors) {
             setIsBusyNavigating(false);
             setHasSteppedOnce(true);
