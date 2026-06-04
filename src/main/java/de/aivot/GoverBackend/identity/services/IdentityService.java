@@ -147,7 +147,7 @@ public class IdentityService {
             @Nonnull String identityId,
             @Nonnull String origin,
             @Nonnull List<String> additionalScopes,
-            @Nullable Integer relatedProcessNodeId
+            @Nonnull Integer relatedProcessNodeId
     ) throws ResponseException {
         var provider = getIdentityProviderEntity(providerKey);
         var resolvedOrigin = resolveOrigin(origin);

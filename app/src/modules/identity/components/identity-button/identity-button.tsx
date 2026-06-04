@@ -2,9 +2,11 @@ import {Box, Button, Typography, useTheme} from '@mui/material';
 import React, {useMemo} from 'react';
 import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
+import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 
 export interface IdentityButtonProps {
     isAuthenticated: boolean;
+    relatedProcessNodeId: number;
     identityId: string;
     identityProviderKey: string;
     identityProviderAssetKey: string | null;
@@ -18,6 +20,7 @@ export function IdentityButton(props: IdentityButtonProps) {
 
     const {
         isAuthenticated,
+        relatedProcessNodeId,
         identityId,
         identityProviderKey,
         identityProviderAssetKey,
@@ -26,8 +29,6 @@ export function IdentityButton(props: IdentityButtonProps) {
         additionalScopes,
     } = props;
 
-    const value = null;
-
     const startUri = useMemo(() => {
         const searchParams = new URLSearchParams(window.location.search);
         for (const key of (additionalScopes ?? [])) {
@@ -35,7 +36,8 @@ export function IdentityButton(props: IdentityButtonProps) {
         }
         searchParams.set('origin', window.location.href);
 
-        return `/api/public/identity/${identityProviderKey}/${identityId}/start/?${searchParams.toString()}`;
+        return IdentityProvidersApiService
+            .createLink(identityProviderKey, identityId, relatedProcessNodeId, additionalScopes, window.location.href);
     }, [identityProviderKey, additionalScopes]);
 
     const successColorWithOpacity = useMemo(() => {

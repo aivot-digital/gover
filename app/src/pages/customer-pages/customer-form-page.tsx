@@ -331,6 +331,7 @@ export function CustomerFormPage() {
                         data.identitySlots.length > 0 &&
                         !dismissAuthentication &&
                         <AuthPlaceholder
+                            relatedProcessNodeId={node.id}
                             identitySlots={data.identitySlots}
                             onDismiss={() => {
                                 setDismissAuthentication(true);
@@ -404,6 +405,7 @@ export function CustomerFormPage() {
 }
 
 interface AuthPlaceholderProps {
+    relatedProcessNodeId: number;
     identitySlots: RetrieveResponse['identitySlots'];
     onDismiss: () => void;
 }
@@ -412,6 +414,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
     const {
         identitySlots,
         onDismiss,
+        relatedProcessNodeId,
     } = props;
 
     const theme = useTheme();
@@ -527,6 +530,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                         .availableIdentityProviders
                                         .map((idp) => (
                                             <IdentityButton
+                                                relatedProcessNodeId={relatedProcessNodeId}
                                                 identityProviderKey={idp.identityProviderKey}
                                                 identityProviderName={idp.identityProviderName}
                                                 identityProviderType={idp.identityProviderType}

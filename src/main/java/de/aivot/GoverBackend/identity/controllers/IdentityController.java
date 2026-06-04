@@ -45,8 +45,8 @@ public class IdentityController {
             @Nonnull @PathVariable String identityId,
             @Nonnull @RequestParam(name = IdentityQueryParameterConstants.ORIGIN, required = true) String origin,
             @Nullable @RequestParam(name = IdentityQueryParameterConstants.ADDITIONAL_SCOPES, required = false) List<String> additionalScopes,
-            @Nullable @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = false) Integer relatedProcessNodeId,
-            @Nullable @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String preexistingIdentitySessionId,
+            @Nonnull @RequestParam(name = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = true) Integer relatedProcessNodeId,
+            @Nonnull @CookieValue(name = IDENTITY_COOKIE_NAME, required = false) String preexistingIdentitySessionId,
             @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {

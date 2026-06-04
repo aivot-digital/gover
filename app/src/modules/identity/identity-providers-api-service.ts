@@ -56,7 +56,11 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
         });
     }
 
-    public static createLink(key: string, identityId: string, additionalScopes?: string[], origin?: string): string {
+    public static createLink(key: string,
+                             identityId: string,
+                             relatedProcessNodeId: number,
+                             additionalScopes?: string[],
+                             origin?: string): string {
         const path = createApiPath('/api/public/identity/' + key + '/' + identityId + '/start/');
 
         const resolvedOrigin = origin ?? `${window.location.origin}${window.location.pathname}`;
@@ -68,9 +72,9 @@ export class IdentityProvidersApiService extends BaseCrudApiService<
             searchParams.set('additionalScopes', additionalScopesParam);
         }
 
-        return path + '?' + searchParams.toString();
+        searchParams.set('relatedProcessNodeId', relatedProcessNodeId.toString());
 
-        //return createApiPath('/api/public/identity/' + key + '/start/') + (additionalScopes != null ? '?additionalScopes=' + additionalScopes.join('%20') : '');
+        return path + '?' + searchParams.toString();
     }
 
     public static async fetchIdentity(clear: boolean, relatedNodeId: number | undefined): Promise<IdentityDataMap> {

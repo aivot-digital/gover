@@ -1235,6 +1235,7 @@ export function FormNodeEditorPage() {
                                             .map((opt) => (
                                                 <IdentityButton
                                                     isAuthenticated={false}
+                                                    relatedProcessNodeId={node.id}
                                                     identityId={idm.id ?? ''}
                                                     identityProviderKey={opt.provider.key}
                                                     identityProviderAssetKey={opt.provider.iconAssetKey}

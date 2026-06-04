@@ -19,7 +19,7 @@ public class IdentityCacheEntity implements Serializable {
     @Nonnull
     @Indexed
     private String sessionId = "";
-    @Nullable
+    @Nonnull
     @Indexed
     private Integer relatedProcessNodeId;
     @Nullable
@@ -43,7 +43,7 @@ public class IdentityCacheEntity implements Serializable {
 
     public IdentityCacheEntity(@Nonnull String id,
                                @Nonnull String sessionId,
-                               @Nullable Integer relatedProcessNodeId,
+                               @Nonnull Integer relatedProcessNodeId,
                                @Nullable String codeVerifier,
                                @Nonnull UUID providerKey,
                                @Nonnull String identityId,
@@ -108,12 +108,12 @@ public class IdentityCacheEntity implements Serializable {
         return this;
     }
 
-    @Nullable
+    @Nonnull
     public Integer getRelatedProcessNodeId() {
         return relatedProcessNodeId;
     }
 
-    public IdentityCacheEntity setRelatedProcessNodeId(@Nullable Integer relatedProcessNodeId) {
+    public IdentityCacheEntity setRelatedProcessNodeId(@Nonnull Integer relatedProcessNodeId) {
         this.relatedProcessNodeId = relatedProcessNodeId;
         return this;
     }

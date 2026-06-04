@@ -30,7 +30,7 @@ export function IdentityProviderDetailsPageTest() {
             return '#';
         }
 
-        return IdentityProvidersApiService.createLink(identityProvider.key, identityProvider.key);
+        return IdentityProvidersApiService.createLink(identityProvider.key, identityProvider.key, 0);
     }, [identityProvider]);
 
     useEffect(() => {
