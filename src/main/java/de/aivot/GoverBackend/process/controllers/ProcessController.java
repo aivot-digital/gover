@@ -413,14 +413,14 @@ public class ProcessController {
                 .orElseThrow(ResponseException::notFound);
 
         // Check if the user has edit permission for the process in the original department
-        permissionService.hasDepartmentPermission(
+        permissionService.testDepartmentPermission(
                 user.getId(),
                 process.getDepartmentId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
         // Check if the user has create permission for the process in the target department
-        permissionService.hasDepartmentPermission(
+        permissionService.testDepartmentPermission(
                 user.getId(),
                 targetDepartmentId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_CREATE

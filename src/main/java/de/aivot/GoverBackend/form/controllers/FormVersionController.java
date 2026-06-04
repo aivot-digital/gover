@@ -436,7 +436,7 @@ public class FormVersionController {
                     formId,
                     user.getId(),
                     VFormWithPermissionsEntity::getFormPermissionPublish,
-                    PermissionLabels.ProcessPermissionPublish);
+                    PermissionLabels.FormPermissionPublish);
         }
 
         // Check if the form is locked by another user

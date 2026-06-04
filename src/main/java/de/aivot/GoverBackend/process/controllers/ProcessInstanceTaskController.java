@@ -11,11 +11,11 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessInstanceTaskService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.workers.ProcessWorker;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -126,10 +126,10 @@ public class ProcessInstanceTaskController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         var result = processInstanceTaskService
@@ -192,10 +192,10 @@ public class ProcessInstanceTaskController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         updateDTO.setId(existing.getId());

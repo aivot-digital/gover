@@ -11,12 +11,13 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
+import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessVersionFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
+import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessVersionService;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -106,7 +107,7 @@ public class ProcessVersionController {
                 .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         var result = processDefinitionVersionService
@@ -197,7 +198,7 @@ public class ProcessVersionController {
                 .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         updateDTO.setProcessId(existing.getProcessId());
@@ -272,11 +273,88 @@ public class ProcessVersionController {
             @Nonnull @PathVariable Integer processDefinitionId,
             @Nonnull @PathVariable Integer processDefinitionVersion
     ) throws ResponseException {
-        var id = new ProcessVersionEntityId(processDefinitionId, processDefinitionVersion);
+        var id = ProcessVersionEntityId.of(processDefinitionId, processDefinitionVersion);
         var version = processDefinitionVersionService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
         return processDefinitionVersionService
                 .validate(version);
+    }
+
+    @PutMapping("{processDefinitionId}/{processDefinitionVersion}/publish/")
+    @Operation(
+            summary = "Publish a Process Definition Version",
+            description = "Publish a process definition version by its composite ID."
+    )
+    public ProcessVersionEntity publish(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer processDefinitionId,
+            @Nonnull @PathVariable Integer processDefinitionVersion
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                processDefinitionId,
+                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
+        );
+
+        var versionId = ProcessVersionEntityId.of(processDefinitionId, processDefinitionVersion);
+        var version = processDefinitionVersionService
+                .retrieve(versionId)
+                .orElseThrow(ResponseException::notFound);
+
+        var hasErrors = processDefinitionVersionService
+                .validate(version)
+                .stream()
+                .anyMatch(ProcessNodeProblems::hasAnyProblems);
+        if (hasErrors) {
+            throw ResponseException
+                    .notAcceptable("Die Prozessdefinition enthält Fehler und kann daher nicht veröffentlicht werden. Bitte beheben Sie alle Fehler, bevor Sie die Prozessdefinition veröffentlichen.");
+        }
+
+        if (version.getStatus() != ProcessVersionStatus.Drafted && version.getStatus() != ProcessVersionStatus.Revoked) {
+            throw ResponseException.conflict("Es kann nur eine Prozessdefinition im Entwurfs- oder zurückgezogenen Status veröffentlicht werden.");
+        }
+
+        version.setStatus(ProcessVersionStatus.Published);
+
+        return processDefinitionVersionService.update(versionId, version);
+    }
+
+    @PutMapping("{processDefinitionId}/{processDefinitionVersion}/revoke/")
+    @Operation(
+            summary = "Revoke a Process Definition Version",
+            description = "Revoke a process definition version by its composite ID."
+    )
+    public ProcessVersionEntity revoke(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer processDefinitionId,
+            @Nonnull @PathVariable Integer processDefinitionVersion
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                processDefinitionId,
+                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
+        );
+
+        var versionId = ProcessVersionEntityId.of(processDefinitionId, processDefinitionVersion);
+        var version = processDefinitionVersionService
+                .retrieve(versionId)
+                .orElseThrow(ResponseException::notFound);
+
+        if (version.getStatus() != ProcessVersionStatus.Published) {
+            throw ResponseException.conflict("Es kann nur eine veröffentlichte Prozessdefinition zurückgezogen werden.");
+        }
+
+        version.setStatus(ProcessVersionStatus.Revoked);
+
+        return processDefinitionVersionService.update(versionId, version);
     }
 }

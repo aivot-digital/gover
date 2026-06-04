@@ -10,10 +10,10 @@ import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessChangeEntity;
 import de.aivot.GoverBackend.process.filters.ProcessDefinitionChangeFilter;
+import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessDefinitionChangeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
 import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -97,10 +97,10 @@ public class ProcessChangeController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         var result = processDefinitionChangeService
@@ -161,10 +161,10 @@ public class ProcessChangeController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         updateDTO.setId(existing.getId());
