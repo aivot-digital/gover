@@ -309,6 +309,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                         {
                             ElementIsInput[value.type] &&
                             displayContext != ElementDisplayContext.DataObjectSchema &&
+                            value.type != ElementType.FileUpload &&
                             <Tab
                                 label="Dynamischer Wert"
                                 value={DefaultTabs.value}
