@@ -170,7 +170,12 @@ export function CustomerInputLoader(props: LoadUserInputDialogProps) {
                 disableEscapeKeyDown={true}
             >
                 <DialogTitle>
-                    Möchten Sie den existierenden Entwurf fortführen?
+                    <Typography
+                        variant="h4"
+                        component="div"
+                    >
+                        Möchten Sie den existierenden Entwurf fortführen?
+                    </Typography>
                 </DialogTitle>
                 <DialogContent tabIndex={0}>
                     <DialogContentText component="div">

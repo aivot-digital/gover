@@ -34,7 +34,12 @@ export function ShellSessionExpiredDialog() {
             }}
         >
             <DialogTitle>
-                Sitzung abgelaufen
+                <Typography
+                    variant="h4"
+                    component="div"
+                >
+                    Sitzung abgelaufen
+                </Typography>
             </DialogTitle>
             <DialogContent tabIndex={0}>
                 <Typography>
