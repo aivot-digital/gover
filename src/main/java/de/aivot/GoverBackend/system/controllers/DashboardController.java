@@ -42,10 +42,10 @@ public class DashboardController {
     @GetMapping("stats/")
     public List<DashboardStatsItemDTO> getStats() {
         return List.of(
+                getProcessesStat(),
                 getActiveSubmissionsStat(),
                 getPublishedFormsStat(),
-                getUsersStat(),
-                getProcessesStat()
+                getUsersStat()
         );
     }
 
