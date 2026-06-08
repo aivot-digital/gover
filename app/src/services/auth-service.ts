@@ -1,4 +1,5 @@
 import {Location} from 'react-router-dom';
+import {ApiError} from '../models/api-error';
 
 const APP_URI_QUERY_PARAM = 'app_uri';
 const APP_STATE_QUERY_PARAM = 'app_state';
@@ -47,7 +48,13 @@ class _AuthService {
 
             if (!response.ok) {
                 this.logout();
-                throw new Error(`Authentication refresh failed with status ${response.status}`);
+                const apiError: ApiError = {
+                    details: undefined,
+                    displayableToUser: false,
+                    message: `Authentication refresh failed with status ${response.status}`,
+                    status: response.status,
+                }
+                throw apiError;
             }
 
             const csrfToken = response.headers.get(CSRF_HEADER_NAME);
