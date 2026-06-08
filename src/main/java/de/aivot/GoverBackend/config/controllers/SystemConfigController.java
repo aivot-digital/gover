@@ -84,7 +84,7 @@ public class SystemConfigController {
             summary = "List System Configuration Definitions",
             description = "Retrieve a list of all system configuration definitions. This endpoint can be used to get metadata about the available system configurations, such as their types, categories and descriptions. This is especially useful for clients to dynamically adapt to available configurations."
     )
-    public List<SystemConfigDefinition> list() throws ResponseException {
+    public List<SystemConfigDefinition<?>> list() throws ResponseException {
         return systemConfigService
                 .getSystemConfigDefinitions();
     }

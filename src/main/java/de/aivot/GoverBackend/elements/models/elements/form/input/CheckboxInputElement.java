@@ -12,6 +12,9 @@ import jakarta.annotation.Nullable;
 import java.util.Objects;
 
 public class CheckboxInputElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
+    public static final String VARIANT_STANDARD = "standard";
+    public static final String VARIANT_SWITCH = "switch";
+
     /**
      * Variant of the checkbox. Options are:
      * - "standard": Standard checkbox.

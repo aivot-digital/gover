@@ -1,14 +1,25 @@
 package de.aivot.GoverBackend.process.configs;
 
-import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
-import de.aivot.GoverBackend.data.SystemConfigKey;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.storage.enums.StorageProviderType;
+import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements SystemConfigDefinition {
+public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements SystemConfigDefinition<String> {
     public static final String KEY = "storage.attachments.default_storage_provider";
+
+    private final StorageProviderRepository storageProviderRepository;
+
+    public DefaultStorageProcessAttachmentsSystemConfigDefinition(StorageProviderRepository storageProviderRepository) {
+        this.storageProviderRepository = storageProviderRepository;
+    }
 
     @Nonnull
     @Override
@@ -18,8 +29,18 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
 
     @Nonnull
     @Override
-    public ConfigType getType() {
-        return ConfigType.TEXT;
+    public BaseElement getConfigElement() {
+        return new SelectInputElement()
+                .setOptions(
+                        storageProviderRepository
+                                .findAllByType(StorageProviderType.Attachments)
+                                .stream()
+                                .map((sp) -> SelectInputElementOption.of(sp.getId().toString(), sp.getName()))
+                                .toList()
+                )
+                .setLabel(getLabel())
+                .setHint(getDescription())
+                .setId(getKey());
     }
 
     @Nonnull
@@ -44,5 +65,16 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
     @Override
     public Boolean isPublicConfig() {
         return false;
+    }
+
+    @Nullable
+    @Override
+    public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        try {
+            Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw ResponseException.internalServerError("Ungültiger Wert für " + getKey() + ": " + value);
+        }
+        return value;
     }
 }
