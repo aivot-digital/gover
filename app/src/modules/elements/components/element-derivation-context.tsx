@@ -239,13 +239,13 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             return;
         }
 
-        console.log(relevantIds);
-
-        setDerivationTriggerIdQueue([
-            ...derivationTriggerIdQueue,
+        setDerivationTriggerIdQueue((current) => [
+            ...current,
             ...relevantIds,
         ]);
-        await deriveWithMinimumVisibleDuration(newData, []);
+
+        // Change-driven derivation updates dependent visibility/values without surfacing validation errors.
+        await deriveWithMinimumVisibleDuration(newData);
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];
             for (const id of relevantIds) {
@@ -311,7 +311,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     const deriveWithMinimumVisibleDuration = (
         authoredElementValues: AuthoredElementValues,
-        skipErrorsForElements: string[],
+        skipErrorsForElements: string[] = ['ALL'],
     ): Promise<DerivedRuntimeElementData> => {
         return withAsyncWrapper<undefined, DerivedRuntimeElementData>({
             desiredMinRuntime: 600,
