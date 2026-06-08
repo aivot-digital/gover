@@ -41,6 +41,7 @@ import {PermissionApiService} from '../../modules/permissions/permission-api-ser
 import {PermissionSet} from '../../modules/permissions/models/permission-set';
 import {AlphaVersionNoticeDialog} from '../../dialogs/alpha-version-notice-dialog/alpha-version-notice-dialog';
 import {DuplicatePageWarning} from '../../components/duplicate-page-warning/duplicate-page-warning';
+import {isApiError} from '../../models/api-error';
 
 export function StaffShell(): ReactNode {
     const routerError = useRouteError();
@@ -89,8 +90,12 @@ export function StaffShell(): ReactNode {
                 }
             })
             .catch((err) => {
+                if (isApiError(err) && err.status >= 501) {
+                    dispatch(setStatus(ShellStatus.Offline));
+                } else {
+                    dispatch(setStatus(ShellStatus.Login));
+                }
                 console.error(err);
-                dispatch(setStatus(ShellStatus.Login));
             });
     }, []);
 
