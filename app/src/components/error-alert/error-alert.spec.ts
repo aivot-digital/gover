@@ -20,6 +20,7 @@ function createIntroductionStepElement(id: string): IntroductionStepElement {
         eligiblePersons: null,
         supportingDocuments: null,
         documentsToAttach: null,
+        expiring: null,
         expectedCosts: null,
         privacyText: null,
         children: [],

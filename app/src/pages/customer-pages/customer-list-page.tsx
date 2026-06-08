@@ -26,6 +26,11 @@ import {FormTriggerApiService, FormTriggerListItem} from '../../modules/forms/se
 import {resolveFormNodeName} from '../../models/elements/form-layout-element';
 
 function mapPublicFormListItem(form: FormTriggerListItem): FormCitizenListResponseDTO | null {
+    const formLayout = form.node.configuration.formLayout;
+    if (formLayout?.showOnFormIndexPage === false) {
+        return null;
+    }
+
     const formSlug = form.node.configuration.formSlug;
     if (formSlug == null || formSlug.length === 0) {
         return null;
@@ -34,7 +39,7 @@ function mapPublicFormListItem(form: FormTriggerListItem): FormCitizenListRespon
     return {
         slug: `forms/v1/${form.process.accessKey}/${formSlug}`,
         version: form.version.processVersion,
-        title: resolveFormNodeName(form.node.configuration.formLayout, form.version),
+        title: resolveFormNodeName(formLayout, form.version),
         updated: form.version.updated,
     };
 }

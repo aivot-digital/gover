@@ -13,12 +13,11 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
     tabTitle: string | null | undefined;
     children: AnyElement[] | null | undefined;
 
-    expiring: string | null | undefined;
-
     offlineSubmissionText: string | null | undefined;
     offlineSignatureNeeded: boolean | null | undefined;
 
     publicTitle: string | null | undefined;
+    showOnFormIndexPage: boolean | null | undefined;
 
     managingDepartmentId: number | null | undefined;
     responsibleDepartmentId: number | null | undefined;

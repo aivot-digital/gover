@@ -134,7 +134,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 columnSpacing={4}
             >
                 {
-                    root !== currentElement &&
+                    root.id !== currentElement.id &&
                     <Grid
                         size={{
                             xs: 12,

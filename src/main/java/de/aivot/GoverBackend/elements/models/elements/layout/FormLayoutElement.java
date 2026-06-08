@@ -20,12 +20,11 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
     private String tabTitle;
     private List<BaseStepElement> children = new LinkedList<>();
 
-    private String expiring;
-
     private String offlineSubmissionText;
     private Boolean offlineSignatureNeeded;
 
     private String publicTitle;
+    private Boolean showOnFormIndexPage = true;
 
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
@@ -48,9 +47,10 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
         FormLayoutElement that = (FormLayoutElement) o;
-        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) && Objects.equals(expiring, that.expiring) &&
+        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) &&
                 Objects.equals(offlineSubmissionText, that.offlineSubmissionText) && Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded) &&
-                Objects.equals(publicTitle, that.publicTitle) && Objects.equals(managingDepartmentId, that.managingDepartmentId) &&
+                Objects.equals(publicTitle, that.publicTitle) && Objects.equals(showOnFormIndexPage, that.showOnFormIndexPage) &&
+                Objects.equals(managingDepartmentId, that.managingDepartmentId) &&
                 Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) &&
                 Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) &&
                 Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) &&
@@ -59,7 +59,7 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), tabTitle, children, expiring, offlineSubmissionText, offlineSignatureNeeded, publicTitle, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, themeId, pdfTemplateKey);
+        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, themeId, pdfTemplateKey);
     }
 
     @JsonIgnore
@@ -100,15 +100,6 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
         return this;
     }
 
-    public String getExpiring() {
-        return expiring;
-    }
-
-    public FormLayoutElement setExpiring(String expiring) {
-        this.expiring = expiring;
-        return this;
-    }
-
     @JsonIgnore
     public String getPrivacyText() {
         return findChild(c -> c.getType() == ElementType.IntroductionStep)
@@ -141,6 +132,15 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     public FormLayoutElement setPublicTitle(String publicTitle) {
         this.publicTitle = publicTitle;
+        return this;
+    }
+
+    public Boolean getShowOnFormIndexPage() {
+        return showOnFormIndexPage;
+    }
+
+    public FormLayoutElement setShowOnFormIndexPage(Boolean showOnFormIndexPage) {
+        this.showOnFormIndexPage = showOnFormIndexPage;
         return this;
     }
 

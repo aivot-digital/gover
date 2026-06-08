@@ -47,14 +47,14 @@
         <th:block th:replace="~{::list}"></th:block>
     </th:block>
 
-    <!--/* Informationen über die Antragsfristen */-->
+    <!--/* Informationen über die Fristen */-->
     <div
             class="avoid-break-inside"
-            th:if="${ not #strings.isEmpty(form.rootElement.expiring) }"
+            th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.expiring) }"
     >
-        <h4>Antragsfristen</h4>
-        <div th:utext="${ form.rootElement.expiring }">
-            Antragsfristen
+        <h4>Fristen</h4>
+        <div th:utext="${ form.rootElement?.introductionStep?.expiring }">
+            Fristen
         </div>
     </div>
 

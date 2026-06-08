@@ -11,7 +11,7 @@ interface MarkdownContentProps {
 }
 
 const defaultComponents: Components = {
-    a: ({href, ...props}) => {
+    a: ({href, node: _node, ...props}) => {
         const isExternalLink = href != null && /^(https?:)?\/\//.test(href);
 
         return (

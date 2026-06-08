@@ -227,6 +227,29 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         lg: 6,
                     }}
                 >
+                    <CheckboxFieldComponent
+                        label="Auf Formular-Index-Seite anzeigen"
+                        hint="Wenn diese Option aktiviert ist, wird das veröffentlichte Formular auf der öffentlichen Formular-Index-Seite gelistet. Wenn sie deaktiviert ist, bleibt das Formular weiterhin über direkte Links erreichbar."
+                        value={form.showOnFormIndexPage !== false}
+                        onChange={(val) => {
+                            onPatch({
+                                showOnFormIndexPage: val,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+            </Grid>
+            <Grid
+                container
+                columnSpacing={4}
+            >
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
                     <TextFieldComponent
                         label="Allgemeiner Link des Formulars"
                         disabled
@@ -594,36 +617,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                             sx={{ml: 2}}
                         />
                     </Box>
-                </Grid>
-            </Grid>
-            <ElementEditorSectionHeader
-                title="Fristen"
-                variant="h5"
-            >
-                Geben Sie die für diesen Antrag gültigen Fristen ein, welche den Antragstellenden im Formular angezeigt
-                werden.
-            </ElementEditorSectionHeader>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <TextFieldComponent
-                        label="Antragsfristen"
-                        multiline
-                        value={props.element.expiring}
-                        onChange={(val) => {
-                            props.onPatch({
-                                expiring: val,
-                            });
-                        }}
-                        disabled={!props.editable}
-                    />
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader
