@@ -590,7 +590,14 @@ public class FormTriggerControllerV1 {
             var attachments = normalizationResult.createdAttachments();
 
             var initialPayload = new HashMap<String, Object>();
-            initialPayload.put(FormTriggerNodeV1.DATA_KEY_PAYLOAD, elementDataTransformService.buildPayload(form, normalizedEffectiveValues));
+            initialPayload.put(
+                    FormTriggerNodeV1.DATA_KEY_PAYLOAD,
+                    elementDataTransformService.buildPayload(
+                            form,
+                            normalizedEffectiveValues,
+                            normalizedDerivedRuntimeElementData.getElementStates()
+                    )
+            );
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_UNMAPPED, normalizedEffectiveValues);
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
                     "key", a.getKey(),

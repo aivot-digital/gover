@@ -1,5 +1,6 @@
 package de.aivot.GoverBackend.process.models;
 
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -70,6 +71,18 @@ public class ProcessExecutionData extends HashMap<String, Object> {
     public ProcessExecutionData patchWithElementData(ElementDataTransformService elementDataTransformService,
                                                      BaseElement baseElement,
                                                      EffectiveElementValues effectiveElementValues) {
+        return patchWithElementData(
+                elementDataTransformService,
+                baseElement,
+                effectiveElementValues,
+                new ComputedElementStates()
+        );
+    }
+
+    public ProcessExecutionData patchWithElementData(ElementDataTransformService elementDataTransformService,
+                                                     BaseElement baseElement,
+                                                     EffectiveElementValues effectiveElementValues,
+                                                     ComputedElementStates computedElementStates) {
         var clone = new ProcessExecutionData();
         clone.putAll(MapUtils.deepCopy(this));
 
@@ -83,6 +96,7 @@ public class ProcessExecutionData extends HashMap<String, Object> {
                 .buildPayload(
                         baseElement,
                         effectiveElementValues,
+                        computedElementStates,
                         processData
                 );
         clone.put(PROCESS_DATA_KEY, patchedProcessData);

@@ -393,7 +393,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(currentElement)
@@ -448,7 +449,8 @@ public class ElementDerivationService {
             var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                     elementDataTransformService,
                     rootElement,
-                    effectiveElementValues
+                    effectiveElementValues,
+                    computedElementStates
             );
 
             for (var entry : override.getFieldNoCodeMap().entrySet()) {
@@ -532,7 +534,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(currentElement)
@@ -552,7 +555,8 @@ public class ElementDerivationService {
             var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                     elementDataTransformService,
                     rootElement,
-                    effectiveElementValues
+                    effectiveElementValues,
+                    computedElementStates
             );
 
             return noCodeEvaluationService
@@ -687,7 +691,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(baseElement)
@@ -715,7 +720,8 @@ public class ElementDerivationService {
                 var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                         elementDataTransformService,
                         rootElement,
-                        effectiveElementValues
+                        effectiveElementValues,
+                        computedElementStates
                 );
 
                 var derivedValue = noCodeEvaluationService
@@ -906,7 +912,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(baseElement)
@@ -929,7 +936,8 @@ public class ElementDerivationService {
             var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                     elementDataTransformService,
                     rootElement,
-                    effectiveElementValues
+                    effectiveElementValues,
+                    computedElementStates
             );
 
             for (var validationExpression : validation.getNoCodeList()) {

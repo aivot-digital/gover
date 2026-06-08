@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.captcha.services.CaptchaReplayGuard;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.destination.services.DestinationService;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
@@ -32,6 +33,7 @@ import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.services.ThemeService;
 import de.aivot.GoverBackend.user.services.UserService;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockHttpServletResponse;
 
 import java.util.*;
@@ -45,7 +47,8 @@ class FormTriggerControllerV1SubmitTest {
     void submitShouldClearIdentityCookieAfterSuccessfulSubmission() throws Exception {
         var identities = new IdentityDataMap();
         var startedProcessAccessKey = UUID.randomUUID();
-        var fixture = createFixture(new DerivedRuntimeElementData(), identities, startedProcessAccessKey);
+        var derivedRuntimeElementData = new DerivedRuntimeElementData();
+        var fixture = createFixture(derivedRuntimeElementData, identities, startedProcessAccessKey);
         var response = new MockHttpServletResponse();
 
         var result = fixture.controller().submit(
@@ -68,8 +71,18 @@ class FormTriggerControllerV1SubmitTest {
                 same(identities),
                 any(ElementDerivationLogger.class)
         );
+        verify(fixture.elementDataTransformService()).buildPayload(
+                any(FormLayoutElement.class),
+                same(derivedRuntimeElementData.getEffectiveValues()),
+                same(derivedRuntimeElementData.getElementStates())
+        );
         verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
-        verify(fixture.processInstanceService()).update(eq(1L), any(ProcessInstanceEntity.class));
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        assertEquals(
+                Map.of("mapped", "payload"),
+                updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_PAYLOAD)
+        );
     }
 
     @Test
@@ -181,8 +194,11 @@ class FormTriggerControllerV1SubmitTest {
                 .thenAnswer(invocation -> invocation.getArgument(1, ProcessInstanceEntity.class));
 
         var elementDataTransformService = mock(ElementDataTransformService.class);
-        when(elementDataTransformService.buildPayload(any(FormLayoutElement.class), any(EffectiveElementValues.class)))
-                .thenReturn(Map.of());
+        when(elementDataTransformService.buildPayload(
+                any(FormLayoutElement.class),
+                any(EffectiveElementValues.class),
+                any(ComputedElementStates.class)
+        )).thenReturn(Map.of("mapped", "payload"));
 
         var fileUploadMultipartInputService = mock(FileUploadMultipartInputService.class);
         when(fileUploadMultipartInputService.normalizeInputs(
@@ -240,6 +256,7 @@ class FormTriggerControllerV1SubmitTest {
                 node.getId(),
                 identityService,
                 elementDerivationService,
+                elementDataTransformService,
                 processInstanceService
         );
     }
@@ -266,6 +283,7 @@ class FormTriggerControllerV1SubmitTest {
             Integer processNodeId,
             IdentityService identityService,
             ElementDerivationService elementDerivationService,
+            ElementDataTransformService elementDataTransformService,
             ProcessInstanceService processInstanceService
     ) {
     }

@@ -1,6 +1,8 @@
 package de.aivot.GoverBackend.submission.services;
 
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
@@ -61,6 +63,25 @@ public class ElementDataTransformService {
     }
 
     /**
+     * Creates a payload map from a runtime-derived form tree.
+     * <p>
+     * Dynamic element overrides may change structural export metadata such as
+     * {@code destinationKey}. Passing the computed element states lets the traversal use the same
+     * runtime element definition that produced the effective values.
+     *
+     * @param rootElement the static root of the form tree
+     * @param effectiveValues the resolved element values keyed by element id
+     * @param computedElementStates the runtime states containing optional element overrides
+     * @return a newly built payload containing only data referenced by destination keys
+     */
+    @Nonnull
+    public Map<String, Object> buildPayload(@Nullable BaseElement rootElement,
+                                            @Nonnull Map<String, Object> effectiveValues,
+                                            @Nonnull ComputedElementStates computedElementStates) {
+        return buildPayload(rootElement, effectiveValues, computedElementStates, new HashMap<>());
+    }
+
+    /**
      * Creates a payload map for the given form tree.
      * <p>
      * The returned map is suitable for downstream submission targets that address data by
@@ -76,8 +97,26 @@ public class ElementDataTransformService {
     public Map<String, Object> buildPayload(@Nullable BaseElement rootElement,
                                             @Nonnull Map<String, Object> effectiveValues,
                                             @Nonnull Map<String, Object> existingPayload) {
+        return buildPayload(rootElement, effectiveValues, new ComputedElementStates(), existingPayload);
+    }
+
+    /**
+     * Creates a payload map from a runtime-derived form tree and patches it onto an existing
+     * payload.
+     *
+     * @param rootElement the static root of the form tree
+     * @param effectiveValues the resolved element values keyed by element id
+     * @param computedElementStates the runtime states containing optional element overrides
+     * @param existingPayload an existing payload to patch the built payload onto
+     * @return a newly built payload containing only data referenced by destination keys
+     */
+    @Nonnull
+    public Map<String, Object> buildPayload(@Nullable BaseElement rootElement,
+                                            @Nonnull Map<String, Object> effectiveValues,
+                                            @Nonnull ComputedElementStates computedElementStates,
+                                            @Nonnull Map<String, Object> existingPayload) {
         var payload = new LinkedHashMap<>(existingPayload);
-        mergeDestinationKeyPayload(rootElement, effectiveValues, payload, List.of());
+        mergeDestinationKeyPayload(rootElement, effectiveValues, payload, List.of(), computedElementStates);
         return payload;
     }
 
@@ -161,23 +200,27 @@ public class ElementDataTransformService {
     private void mergeDestinationKeyPayload(@Nullable BaseElement element,
                                             @Nonnull Map<String, Object> effectiveValues,
                                             @Nonnull Map<String, Object> payload,
-                                            @Nonnull List<Integer> replicationIndices) {
+                                            @Nonnull List<Integer> replicationIndices,
+                                            @Nonnull ComputedElementStates computedElementStates) {
         if (element == null) {
             return;
         }
 
-        if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
-            mergeReplicatingContainerPayload(replicatingContainer, effectiveValues, payload, replicationIndices);
+        var elementState = computedElementStates.get(element.getId());
+        var runtimeElement = resolveRuntimeElement(element, elementState);
+
+        if (runtimeElement instanceof ReplicatingContainerLayoutElement replicatingContainer) {
+            mergeReplicatingContainerPayload(replicatingContainer, effectiveValues, payload, replicationIndices, elementState);
             return;
         }
 
-        if (element instanceof BaseInputElement<?> inputElement) {
+        if (runtimeElement instanceof BaseInputElement<?> inputElement) {
             mergeInputPayload(inputElement, effectiveValues, payload, replicationIndices);
         }
 
-        if (element instanceof LayoutElement<?> layoutElement) {
+        if (runtimeElement instanceof LayoutElement<?> layoutElement) {
             for (var child : layoutElement.getChildren()) {
-                mergeDestinationKeyPayload(child, effectiveValues, payload, replicationIndices);
+                mergeDestinationKeyPayload(child, effectiveValues, payload, replicationIndices, computedElementStates);
             }
         }
     }
@@ -231,7 +274,8 @@ public class ElementDataTransformService {
     private void mergeReplicatingContainerPayload(@Nonnull ReplicatingContainerLayoutElement replicatingContainer,
                                                   @Nonnull Map<String, Object> effectiveValues,
                                                   @Nonnull Map<String, Object> payload,
-                                                  @Nonnull List<Integer> replicationIndices) {
+                                                  @Nonnull List<Integer> replicationIndices,
+                                                  @Nullable ComputedElementState replicatingContainerState) {
         if (!effectiveValues.containsKey(replicatingContainer.getId())) {
             return;
         }
@@ -258,10 +302,11 @@ public class ElementDataTransformService {
             if (rawItem instanceof Map<?, ?> rawItemMap) {
                 var itemEffectiveValues = toStringObjectMap(rawItemMap);
                 var itemReplicationIndices = appendReplicationIndex(replicationIndices, itemIndex);
+                var itemElementStates = resolveReplicatingContainerItemStates(replicatingContainerState, itemIndex);
 
                 if (StringUtils.isNullOrEmpty(replicatingContainer.getDestinationKey())) {
                     for (var child : replicatingContainer.getChildren()) {
-                        mergeDestinationKeyPayload(child, itemEffectiveValues, payload, itemReplicationIndices);
+                        mergeDestinationKeyPayload(child, itemEffectiveValues, payload, itemReplicationIndices, itemElementStates);
                     }
 
                     continue;
@@ -269,7 +314,7 @@ public class ElementDataTransformService {
 
                 var itemPayload = resolveExistingReplicatingContainerItemPayload(existingItems, itemIndex);
                 for (var child : replicatingContainer.getChildren()) {
-                    mergeDestinationKeyPayload(child, itemEffectiveValues, itemPayload, itemReplicationIndices);
+                    mergeDestinationKeyPayload(child, itemEffectiveValues, itemPayload, itemReplicationIndices, itemElementStates);
                 }
 
                 mappedItems.add(itemPayload);
@@ -279,6 +324,25 @@ public class ElementDataTransformService {
         }
 
         writePayloadValue(payload, replicatingContainer.getDestinationKey(), mappedItems, replicationIndices);
+    }
+
+    @Nonnull
+    private BaseElement resolveRuntimeElement(@Nonnull BaseElement element,
+                                              @Nullable ComputedElementState elementState) {
+        return elementState != null && elementState.getOverride() != null
+                ? elementState.getOverride()
+                : element;
+    }
+
+    @Nonnull
+    private ComputedElementStates resolveReplicatingContainerItemStates(@Nullable ComputedElementState elementState,
+                                                                        int itemIndex) {
+        var subStates = elementState != null ? elementState.getSubStates() : null;
+        if (subStates != null && itemIndex >= 0 && itemIndex < subStates.size()) {
+            return subStates.get(itemIndex);
+        }
+
+        return new ComputedElementStates();
     }
 
     @Nonnull

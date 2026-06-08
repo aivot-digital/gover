@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
@@ -309,7 +309,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                 .derive(derivationRequest);
 
         return switch (event) {
-            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData.getEffectiveValues(), update));
+            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedRuntimeData, update));
             default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         };
     }
@@ -317,13 +317,19 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     @Nonnull
     private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context,
                                                                  @Nonnull DataChangeActionNodeConfig config,
-                                                                 @Nonnull EffectiveElementValues update,
+                                                                 @Nonnull DerivedRuntimeElementData derivedRuntimeData,
                                                                  @Nonnull AuthoredElementValues authoredUpdate) {
-        var payloadUpdate = elementDataTransformService.buildPayload(config.dataDefinition, update);
+        var update = derivedRuntimeData.getEffectiveValues();
+        var payloadUpdate = elementDataTransformService.buildPayload(
+                config.dataDefinition,
+                update,
+                derivedRuntimeData.getElementStates()
+        );
         var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
         var updatedProcessData = elementDataTransformService.buildPayload(
                 config.dataDefinition,
                 update,
+                derivedRuntimeData.getElementStates(),
                 ObjectMapperFactory.Utils.convertToMap(originalProcessData)
         );
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
