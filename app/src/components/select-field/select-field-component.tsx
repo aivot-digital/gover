@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {InputAdornment, ListItemIcon, ListItemText, MenuItem, TextField, Typography} from '@mui/material';
+import {InputAdornment, ListItemIcon, ListItemText, MenuItem, TextField} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
 import {renderIconButton} from '../text-field/text-field-component';
@@ -49,6 +49,10 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
             ));
     }, [options]);
 
+    const isValueInOptions = useMemo(() => {
+        return options.some((opt) => opt.value === value);
+    }, [value, options]);
+
     return (
         <TextField
             {...muiPassTroughProps}
@@ -59,10 +63,10 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
             error={error != null}
             helperText={error != null ? error : hint}
             placeholder={placeholder}
-            value={val}
+            value={isValueInOptions ? val : ''}
             onChange={(event) => {
                 if (isStringNullOrEmpty(event.target.value)) {
-                    onChange(undefined);
+                    onChange(null);
                 } else {
                     onChange(event.target.value);
                 }

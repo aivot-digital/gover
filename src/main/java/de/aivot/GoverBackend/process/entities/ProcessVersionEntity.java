@@ -61,7 +61,7 @@ public class ProcessVersionEntity {
                                 @Nonnull Integer processVersion,
                                 @Nonnull ProcessVersionStatus status,
                                 @Nonnull String publicTitle,
-                                @Nonnull String caseNumberTemplate,
+                                @Nullable String caseNumberTemplate,
                                 @Nonnull Instant created,
                                 @Nonnull Instant updated,
                                 @Nullable Instant published,

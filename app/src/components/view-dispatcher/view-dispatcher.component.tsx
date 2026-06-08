@@ -13,6 +13,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableElementContextMenu, setComponentTree} from '../../slices/admin-settings-slice';
 import {ElementErrorBoundary} from '../element-error-boundary/element-error-boundary';
 import {
+    resolveDisabled,
     resolveErrorDetails,
     resolveErrors,
     resolveOverride,
@@ -68,6 +69,10 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
     }, [element, authoredElementValues, derivedData]);
     const authoredValue = authoredElementValues[elementId];
 
+    const disabled: boolean = useMemo(() => {
+        return resolveDisabled(element, derivedData);
+    }, [element, derivedData]);
+
     const resolvedErrors: string[] | undefined | null = useMemo(() => {
         return resolveErrors(element, derivedData);
     }, [element, derivedData]);
@@ -84,27 +89,27 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         return rootDerivedData ?? derivedData;
     }, [rootDerivedData, derivedData]);
 
-    const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
-        if (updatedValue == authoredValue) {
+    const handleSetValue = useCallback((updatedValue: any | null, triggeringElementIds?: string[]) => {
+        if (updatedValue === authoredValue) {
             return;
         }
 
         const newAuthoredElementValues = {
             ...authoredElementValues,
-            [elementId]: updatedValue ?? null,
+            [elementId]: updatedValue,
         };
 
         onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
     }, [authoredValue, authoredElementValues, onAuthoredElementValuesChange, elementId]);
 
-    const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
-        if (updatedValue == authoredValue || onElementBlur == null) {
+    const handleOnBlur = useCallback((updatedValue: any | null, triggeringElementIds?: string[]) => {
+        if (updatedValue === authoredValue || onElementBlur == null) {
             return;
         }
 
         const newAuthoredElementValues = {
             ...authoredElementValues,
-            [elementId]: updatedValue ?? null,
+            [elementId]: updatedValue,
         };
 
         onElementBlur(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
@@ -173,6 +178,8 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
                     onBlur={handleOnBlur}
                     errors={suppressErrors ? undefined : resolvedErrors}
                     errorDetails={suppressErrors ? undefined : resolvedErrorDetails}
+                    isBusy={isBusy || disabled}
+                    isDeriving={baseIsDeriving}
                 />
             </ElementErrorBoundary>
         </Grid>

@@ -78,7 +78,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         const allChildIds = flattenElements(element, false)
             .map(child => child.id);
 
-        setValue(newValue.length === 0 ? undefined : newValue, allChildIds);
+        setValue(newValue.length === 0 ? null : newValue, allChildIds);
         setConfirmDelete(undefined);
     }, [setValue, value]);
 

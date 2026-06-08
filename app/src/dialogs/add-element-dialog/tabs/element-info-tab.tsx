@@ -1,5 +1,5 @@
-import React from 'react';
-import {Box, Button, Divider, Typography} from '@mui/material';
+import React, {type ReactNode} from 'react';
+import {Box, Divider, Typography} from '@mui/material';
 import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
@@ -48,7 +48,6 @@ import {getElementIconForType} from '../../../data/element-type/element-icons';
 import {type AnyElement} from '../../../models/elements/any-element';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {getElementDescriptionForType, getElementGroupLabelForType} from '../element-dialog-metadata';
-import {type ReactNode} from 'react';
 import {AppInfo} from '../../../app-info';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
@@ -1265,7 +1264,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Typography>
         </Box>
     ),
-    [ElementType.IdentityInput]: (
+    [ElementType.IdentityConfigElement]: (
         <Box>
             <Typography>
                 Das Element „Identitätseingabe“ startet die Anmeldung über einen konfigurierten

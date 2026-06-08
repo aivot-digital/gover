@@ -16,16 +16,16 @@ function getCharacterCount(count: number): string {
 
 /**
  * Clean the value for passing it to the parent.
- * Empty strings should be converted to undefined.
+ * Empty strings should be converted to null.
  * Leading and trailing whitespace should be removed if the corresponding flag is set.
  *
  * @param originalValue The original value to be cleaned.
  * @param flag The flag to determine if trailing whitespace should be kept or dropped. This is used during the debounce process to keep trailing whitespaces when debounce is triggered and the user is still typing.
  */
-function cleanValue(originalValue: string | undefined, flag: 'keepTrailingWhitespace' | 'dropTrailingWhitespace'): string | undefined {
-    // If the value is undefined, return undefined
+function cleanValue(originalValue: string | null | undefined, flag: 'keepTrailingWhitespace' | 'dropTrailingWhitespace'): string | null {
+    // Missing input is emitted as an explicit clear once it originated from user interaction.
     if (originalValue == null) {
-        return undefined;
+        return null;
     }
 
     let cleanedValue = originalValue;
@@ -36,9 +36,9 @@ function cleanValue(originalValue: string | undefined, flag: 'keepTrailingWhites
         cleanedValue = cleanedValue.trim();
     }
 
-    // If the value is empty after trimming, return undefined
+    // If the value is empty after trimming, return an explicit clear
     if (cleanedValue.length === 0) {
-        return undefined;
+        return null;
     }
 
     return cleanedValue;
@@ -151,9 +151,9 @@ export function AutocompleteTextField(props: TextFieldComponentProps & {
                 }
 
                 if (value == null) {
-                    rest.onChange(undefined);
+                    rest.onChange(null);
                 } else {
-                    rest.onChange((value as any).id);
+                    rest.onChange((value as any).id ?? null);
                 }
             }}
             value={rest.value ?? null}
@@ -204,7 +204,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
                 props.onChange(cleanedValue);
             }, props.debounce);
         } else {
-            props.onChange(newValue);
+            props.onChange(cleanValue(newValue, 'keepTrailingWhitespace'));
         }
     };
 

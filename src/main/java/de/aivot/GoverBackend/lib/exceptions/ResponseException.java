@@ -181,7 +181,7 @@ public class ResponseException extends Exception {
     }
 
     public static ResponseException internalServerError() {
-        return ResponseException.locked("Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
+        return ResponseException.internalServerError("Ein unbekannter Fehler ist aufgetreten. Bitte versuchen Sie es später erneut.");
     }
 
     public static ResponseException internalServerError(String message) {

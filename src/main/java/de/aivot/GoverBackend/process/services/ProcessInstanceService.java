@@ -112,6 +112,11 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
         processInstanceRepository.delete(entity);
     }
 
+    @Nonnull
+    public ProcessInstanceEntity save(@Nonnull ProcessInstanceEntity entity) {
+        return processInstanceRepository.save(entity);
+    }
+
     /**
      * The generator reads the current maximum increment before persisting, but the database unique constraint is still
      * the last line of defense under concurrent instance creation. Retrying here keeps the sequencing logic simple in

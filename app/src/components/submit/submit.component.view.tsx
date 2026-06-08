@@ -39,7 +39,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
     const departmentSections = useFormDepartmentAddressSections(formElement);
 
     useEffect(() => {
-        setValue(undefined);
+        setValue(null);
     }, []);
 
     /* TODO: calculate costs

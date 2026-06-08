@@ -5,14 +5,18 @@ export type AuthoredElementValues = Partial<Record<string, any>>;
 
 export type EffectiveElementValues = Partial<Record<string, any>>;
 
-export type ComputedElementValueSource = 'Authored' | 'Derived';
+export enum ComputedElementValueSource {
+    Authored = 'Authored',
+    Derived = 'Derived',
+    Identity = 'Identity',
+}
 
 export interface ComputedElementState {
     visible?: boolean | null;
+    disabled?: boolean | null;
     error?: string | null;
     errorDetails?: Record<string, any> | null;
     override?: AnyElement | null;
-    destinationPath?: string | null;
     valueSource?: ComputedElementValueSource | null;
     subStates?: ComputedElementStates[] | null;
 }
@@ -76,7 +80,7 @@ export function hasAuthoredElementValuesSomeInput(authoredElementValues: Authore
     }
 
     for (const key of Object.keys(authoredElementValues)) {
-        if (authoredElementValues[key] != null) {
+        if (authoredElementValues[key] !== undefined) {
             return true;
         }
     }

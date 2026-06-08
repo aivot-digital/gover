@@ -8,11 +8,19 @@ public class ProcessNodeExecutionExceptionMissingPermissions extends ProcessNode
         super(message);
     }
 
+    public ProcessNodeExecutionExceptionMissingPermissions(@Nonnull Throwable cause, @Nonnull String message) {
+        super(message, cause);
+    }
+
     public ProcessNodeExecutionExceptionMissingPermissions(@Nonnull Throwable cause) {
         super(cause);
     }
 
     public ProcessNodeExecutionExceptionMissingPermissions(@Nonnull String format, @Nonnull Object... args) {
         super(format, args);
+    }
+
+    public ProcessNodeExecutionExceptionMissingPermissions(@Nonnull Throwable cause, @Nonnull String format, @Nonnull Object... args) {
+        super(cause, format, args);
     }
 }

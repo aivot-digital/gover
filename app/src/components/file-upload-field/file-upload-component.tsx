@@ -43,7 +43,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
         if (index >= 0) {
             const updatedFiles = [...props.value];
             updatedFiles.splice(index, 1);
-            props.onChange(updatedFiles.length > 0 ? updatedFiles : undefined);
+            props.onChange(updatedFiles.length > 0 ? updatedFiles : null);
         }
     };
 
@@ -99,7 +99,7 @@ export function FileUploadComponent(props: FileUploadComponentProps) {
             dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
         }
 
-        props.onChange(fileUploadItems.length > 0 ? fileUploadItems : undefined);
+        props.onChange(fileUploadItems.length > 0 ? fileUploadItems : null);
     };
 
     const fileMaximumReached = (

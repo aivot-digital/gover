@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -47,8 +46,7 @@ public class StorageProviderConfigurationService {
                         layout,
                         provider.getConfiguration(),
                         options
-                ),
-                new ElementDerivationLogger()
+                )
         );
     }
 

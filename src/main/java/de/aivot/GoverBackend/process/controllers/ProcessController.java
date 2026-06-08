@@ -9,8 +9,8 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
-import de.aivot.GoverBackend.process.entities.ProcessEntity;
-import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessVersionRepository;
@@ -32,6 +32,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -174,12 +175,23 @@ public class ProcessController {
         );
 
         var newProcess = processDefinitionService
-                .create(exportData.process());
+                .create(
+                        exportData
+                                .process()
+                                .setVersionCount(0)
+                                .setDraftedVersion(null)
+                                .setPublishedVersion(null)
+                );
 
         var newVersion = processDefinitionVersionService
-                .create(exportData
-                        .version()
-                        .setProcessId(newProcess.getId())
+                .create(
+                        exportData
+                                .version()
+                                .setProcessVersion(1)
+                                .setStatus(ProcessVersionStatus.Drafted)
+                                .setProcessId(newProcess.getId())
+                                .setPublished(null)
+                                .setRevoked(null)
                 );
 
         var createdNodesIds = new LinkedList<Integer>();
@@ -376,6 +388,160 @@ public class ProcessController {
                         StringUtils.quote(String.valueOf(deleted.getId())),
                         StringUtils.quote(user.getFullName())
                 ).log();
+    }
+
+    @PutMapping("{id}/move/")
+    @Operation(
+            summary = "Move Process",
+            description = "Move a form to another department. " +
+                    "The user must be a super admin or have edit permission in the current developing department of the form."
+    )
+    @SecurityRequirement(name = OpenApiConfiguration.Security)
+    public ProcessEntity move(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id,
+            @Nonnull @RequestParam Integer targetDepartmentId
+    ) throws ResponseException {
+        // Extract staff user
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        // Fetch process
+        var process = processDefinitionService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        // Check if the user has edit permission for the process in the original department
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                process.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
+
+        // Check if the user has create permission for the process in the target department
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                targetDepartmentId,
+                ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
+        );
+
+        // Move the form to the target department
+        process.setDraftedVersion(targetDepartmentId);
+
+        // Create a revision for the form
+        return processDefinitionService.update(process.getId(), process);
+
+        // TODO: Create revisions
+    }
+
+
+    @PostMapping("{id}/new-version/latest/")
+    @Operation(
+            summary = "Export Latest Process Definition Version",
+            description = "Export the latest version of a process definition. " +
+                    "Requires read permissions for the process definition."
+    )
+    public ProcessVersionEntity newVersionFromLatest(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var latestVersion = processDefinitionVersionRepository
+                .maxVersionForProcessDefinition(id)
+                .orElseThrow(ResponseException::notFound);
+
+        return newVersionFromExisting(jwt, id, latestVersion);
+    }
+
+    @PostMapping("{id}/new-version/{version}/")
+    @Operation(
+            summary = "Export Latest Process Definition Version",
+            description = "Export the latest version of a process definition. " +
+                    "Requires read permissions for the process definition."
+    )
+    public ProcessVersionEntity newVersionFromExisting(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id,
+            @Nonnull @PathVariable Integer version
+    ) throws ResponseException {
+        var process = processDefinitionService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var draftExists = processDefinitionVersionRepository
+                .existsByProcessIdAndStatus(process.getId(), ProcessVersionStatus.Drafted);
+        if (draftExists) {
+            throw ResponseException.conflict("Es existiert bereits ein Entwurf für diesen Prozess. Bitte veröffentlichen oder löschen Sie den bestehenden Entwurf, bevor Sie einen neuen erstellen.");
+        }
+
+        var originalProcessVersion = processDefinitionVersionService
+                .retrieve(ProcessVersionEntityId.of(process.getId(), version))
+                .orElseThrow(ResponseException::notFound);
+
+        if (
+                originalProcessVersion.getStatus() != ProcessVersionStatus.Published &&
+                        originalProcessVersion.getStatus() != ProcessVersionStatus.Drafted
+        ) {
+            throw ResponseException
+                    .conflict("Version %d des Prozesses ist ein Entwurf. Aus Entwürfen können keine neuen Entwürfe angelegt werden.", version);
+        }
+
+        var nextProcessVersionNumber = processDefinitionVersionRepository
+                .maxVersionForProcessDefinition(id)
+                .orElse(0) + 1;
+
+        var createdProcessVersion = processDefinitionVersionService
+                .create(new ProcessVersionEntity(
+                        process.getId(),
+                        nextProcessVersionNumber,
+                        ProcessVersionStatus.Drafted,
+                        originalProcessVersion.getPublicTitle(),
+                        originalProcessVersion.getCaseNumberTemplate(),
+                        Instant.now(),
+                        Instant.now(),
+                        null,
+                        null
+                ));
+
+        var originalNodes = processDefinitionNodeService
+                .findAllByProcessIdAndProcessVersion(process.getId(), originalProcessVersion.getProcessVersion());
+        var nodesIdMap = new HashMap<Integer, Integer>();
+        for (var originalNode : originalNodes) {
+            var createdNode = processDefinitionNodeService
+                    .create(new ProcessNodeEntity(
+                            null,
+                            process.getId(),
+                            createdProcessVersion.getProcessVersion(),
+                            originalNode.getName(),
+                            originalNode.getDescription(),
+                            originalNode.getDataKey(),
+                            originalNode.getProcessNodeDefinitionKey(),
+                            originalNode.getProcessNodeDefinitionVersion(),
+                            originalNode.getConfiguration().clone(),
+                            new HashMap<>(originalNode.getOutputMappings()),
+                            originalNode.getTimeLimitDays(),
+                            originalNode.getRequirements(),
+                            originalNode.getNotes(),
+                            originalNode.getSavedWithErrors()
+                    ));
+            nodesIdMap.put(originalNode.getId(), createdNode.getId());
+        }
+
+        var originalEdges = processDefinitionEdgeService
+                .findAllByProcessIdAndProcessVersion(process.getId(), originalProcessVersion.getProcessVersion());
+        for (var originalEdge : originalEdges) {
+            processDefinitionEdgeService
+                    .create(new ProcessEdgeEntity(
+                            null,
+                            process.getId(),
+                            createdProcessVersion.getProcessVersion(),
+                            nodesIdMap.get(originalEdge.getFromNodeId()),
+                            nodesIdMap.get(originalEdge.getToNodeId()),
+                            originalEdge.getViaPort()
+                    ));
+        }
+
+        return createdProcessVersion;
     }
 
     @GetMapping("{id}/export/latest/")

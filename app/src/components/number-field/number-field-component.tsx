@@ -8,7 +8,7 @@ import {isStringNullOrEmpty} from '../../utils/string-utils';
 const AbsoluteMaxValue = Math.pow(2, 31);
 const AbsoluteMinValue = -AbsoluteMaxValue;
 
-function validateValue(inputValue: string | undefined, value: number | undefined, minValue: number | undefined, maxValue: number | undefined, decimalPlaces: number | undefined) {
+function validateValue(inputValue: string | undefined, value: number | null | undefined, minValue: number | undefined, maxValue: number | undefined, decimalPlaces: number | undefined) {
     const isEmpty = isStringNullOrEmpty(inputValue);
     const hasNoValue = value == null;
 
@@ -104,7 +104,7 @@ export function NumberFieldComponent({
                 setInputValue(undefined);
             }
         } else {
-            onChange(undefined);
+            onChange(null);
             if (formatAfter) {
                 setInputValue(undefined);
             }
@@ -125,7 +125,7 @@ export function NumberFieldComponent({
 
         if (onBlur) {
             const parsed = parseGermanNumber(inputValue);
-            const finalValue = !isNaN(parsed) ? parseFloat(parsed.toFixed(decimalPlaces)) : undefined;
+            const finalValue = !isNaN(parsed) ? parseFloat(parsed.toFixed(decimalPlaces)) : null;
             onBlur(finalValue);
         }
     };

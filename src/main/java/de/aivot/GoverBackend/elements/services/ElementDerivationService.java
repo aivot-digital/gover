@@ -7,7 +7,6 @@ import de.aivot.GoverBackend.elements.enums.EffectiveValueSource;
 import de.aivot.GoverBackend.elements.exceptions.DerivationException;
 import de.aivot.GoverBackend.elements.models.*;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.InputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
@@ -15,6 +14,8 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContaine
 import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementFlattenUtils;
 import de.aivot.GoverBackend.exceptions.ValidationException;
+import de.aivot.GoverBackend.identity.models.IdentityData;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
@@ -30,7 +31,10 @@ import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.util.*;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 /**
  * Centralizes runtime derivation for form elements so the rest of the system can work with one consistent interpretation of a form definition.
@@ -67,7 +71,7 @@ public class ElementDerivationService {
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request) {
-        return derive(request, new ElementDerivationLogger());
+        return derive(request, new IdentityDataMap(), new ElementDerivationLogger());
     }
 
     /**
@@ -82,6 +86,7 @@ public class ElementDerivationService {
      */
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull ElementDerivationRequest request,
+                                            @Nonnull IdentityDataMap identities,
                                             @Nonnull ElementDerivationLogger logger) {
         var javascriptEngine = javascriptEngineFactoryService
                 .getEngine();
@@ -106,8 +111,7 @@ public class ElementDerivationService {
                 computedElementStates,
                 request.derivationOptions(),
                 true,
-                List.of(),
-                List.of(),
+                identities,
                 logger
         );
 
@@ -125,8 +129,7 @@ public class ElementDerivationService {
      * logic will actually see.
      * <p>
      * The recursive shape also preserves row-local state for replicating containers. Each repeated item gets its own authored/effective maps and child state container so
-     * row-specific rules do not bleed into siblings. The same recursion also carries payload-path context so each computed state can describe where its value would land in the
-     * outbound payload without building that payload eagerly.
+     * row-specific rules do not bleed into siblings.
      */
     private void derive(
             @Nonnull JavascriptEngine javascriptEngine,
@@ -140,8 +143,7 @@ public class ElementDerivationService {
             @Nonnull ComputedElementStates computedElementStates,
             @Nonnull ElementDerivationOptions options,
             @Nonnull Boolean isParentVisible,
-            @Nonnull List<String> destinationPathPrefixSegments,
-            @Nonnull List<Integer> replicationIndices,
+            @Nonnull IdentityDataMap identities,
             @Nonnull ElementDerivationLogger logger
     ) {
         var elementState = new ComputedElementState();
@@ -174,13 +176,6 @@ public class ElementDerivationService {
             if (actualElement instanceof SummaryLayoutElement) {
                 childOptions.getSkipErrorsForElementIds().add(ElementDerivationOptions.ALL_ELEMENTS);
             }
-            // The payload location is structural metadata, so it should reflect override decisions
-            // but remain available even when later visibility or validation logic short-circuits.
-            elementState.setDestinationPath(resolveDestinationPath(
-                    actualElement,
-                    destinationPathPrefixSegments,
-                    replicationIndices
-            ));
 
             var isVisible = isParentVisible && deriveVisibility(
                     javascriptEngine,
@@ -196,6 +191,8 @@ public class ElementDerivationService {
             elementState.setVisible(isVisible);
 
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
+                var hasAuthoredValue = authoredElementValues
+                        .containsKey(currentElement.getId());
                 var authoredValue = authoredElementValues
                         .getOrDefault(currentElement.getId(), null);
 
@@ -210,8 +207,10 @@ public class ElementDerivationService {
                         computedElementStates,
                         processExecutionData,
                         options,
+                        hasAuthoredValue,
                         authoredValue,
                         elementState,
+                        identities,
                         logger
                 );
                 effectiveValue = inputElement.formatValue(effectiveValue);
@@ -269,18 +268,6 @@ public class ElementDerivationService {
                             var childAuthoredElementValues = om.convertValue(mutableEffectiveChildDataSet, AuthoredElementValues.class);
                             // Row-local effective values must be rebuilt from visible descendants only.
                             var childEffectiveElementValues = new EffectiveElementValues();
-                            var childReplicationIndices = appendReplicationIndex(
-                                    replicationIndices,
-                                    itemIndex
-                            );
-                            // A container destination key introduces a row-local payload root, so
-                            // descendants inherit that concrete row path instead of the parent one.
-                            var childDestinationPathPrefixSegments = resolveChildDestinationPathPrefixSegments(
-                                    replicatingContainer,
-                                    destinationPathPrefixSegments,
-                                    replicationIndices,
-                                    itemIndex
-                            );
 
                             for (var currentChildElement : replicatingContainer.getChildren()) {
                                 derive(
@@ -295,8 +282,7 @@ public class ElementDerivationService {
                                         childItemElementStates,
                                         childOptions,
                                         isVisible,
-                                        childDestinationPathPrefixSegments,
-                                        childReplicationIndices,
+                                        identities,
                                         logger
                                 );
                             }
@@ -321,8 +307,7 @@ public class ElementDerivationService {
                             computedElementStates,
                             childOptions,
                             isVisible,
-                            destinationPathPrefixSegments,
-                            replicationIndices,
+                            identities,
                             logger
                     );
                 }
@@ -379,7 +364,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(currentElement)
@@ -434,7 +420,8 @@ public class ElementDerivationService {
             var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                     elementDataTransformService,
                     rootElement,
-                    effectiveElementValues
+                    effectiveElementValues,
+                    computedElementStates
             );
 
             for (var entry : override.getFieldNoCodeMap().entrySet()) {
@@ -518,7 +505,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(currentElement)
@@ -538,7 +526,8 @@ public class ElementDerivationService {
             var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                     elementDataTransformService,
                     rootElement,
-                    effectiveElementValues
+                    effectiveElementValues,
+                    computedElementStates
             );
 
             return noCodeEvaluationService
@@ -593,11 +582,48 @@ public class ElementDerivationService {
             @Nonnull ComputedElementStates computedElementStates,
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull ElementDerivationOptions options,
+            boolean hasAuthoredValue,
             @Nullable Object authoredValue,
             @Nonnull ComputedElementState elementState,
+            @Nonnull IdentityDataMap identities,
             @Nonnull ElementDerivationLogger logger
     ) throws DerivationException {
         var baseElement = (BaseElement) inputElement;
+
+        // Check if an identity mapping exists and assign the mapped value if possible and disable this field to prevent further changes.
+        if (
+                baseElement.getMetadata() != null &&
+                        baseElement.getMetadata().getIdentitySourceId() != null &&
+                        baseElement.getMetadata().getIdentityMappings() != null &&
+                        !baseElement.getMetadata().getIdentityMappings().isEmpty() &&
+                        identities.containsKey(baseElement.getMetadata().getIdentitySourceId())
+        ) {
+            IdentityData identityData = identities
+                    .get(baseElement.getMetadata().getIdentitySourceId());
+
+            if (identityData != null) {
+                String identityAttributeKey = baseElement
+                        .getMetadata()
+                        .getIdentityMappings()
+                        .get(identityData.metadataIdentifier());
+
+                if (StringUtils.isNotNullOrEmpty(identityAttributeKey)) {
+                    Object attributeValue = identityData
+                            .attributes()
+                            .get(identityAttributeKey);
+                    if (attributeValue != null) {
+                        var formattedAttributeValue = inputElement.formatValue(attributeValue);
+
+                        if (formattedAttributeValue != null) {
+                            effectiveElementValues.put(inputElement.getId(), formattedAttributeValue);
+                            elementState.setValueSource(EffectiveValueSource.Identity);
+                            elementState.setDisabled(true);
+                            return formattedAttributeValue;
+                        }
+                    }
+                }
+            }
+        }
 
         if (options.containsSkipValues(inputElement.getId())) {
             effectiveElementValues.put(inputElement.getId(), authoredValue);
@@ -607,8 +633,9 @@ public class ElementDerivationService {
 
         var valueFunction = inputElement.getValue();
 
-        // If the value function is null, or an authored value exists and the element is not disabled, set the authored value as the effective value
-        if (valueFunction == null || valueFunction.getType() == null || (authoredValue != null && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
+        // Key presence represents explicit user intent. A present null value is an authored clear,
+        // while an absent key allows the dynamic value function to supply the effective value.
+        if (valueFunction == null || valueFunction.getType() == null || (hasAuthoredValue && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
             var sanitizedValue = sanitizeSelectEffectiveValue(
                     rootElement,
                     inputElement,
@@ -635,7 +662,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(baseElement)
@@ -663,7 +691,8 @@ public class ElementDerivationService {
                 var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                         elementDataTransformService,
                         rootElement,
-                        effectiveElementValues
+                        effectiveElementValues,
+                        computedElementStates
                 );
 
                 var derivedValue = noCodeEvaluationService
@@ -769,7 +798,8 @@ public class ElementDerivationService {
      * Reads the controlling select value from the nearest meaningful scope.
      * <p>
      * Replicated rows need local dependencies to win over root-level data, otherwise one row could accidentally validate itself against another row's selection. The fallback order
-     * therefore prefers row-local effective data, then row-local authored data, and only then falls back to root-level state.
+     * therefore prefers row-local effective data, then row-local authored data, and only then falls back to root-level state. A present null value stops that fallback because it
+     * represents an explicit clear in the nearer scope.
      */
     @Nullable
     private String resolveReferencedSelectValue(
@@ -779,15 +809,16 @@ public class ElementDerivationService {
             @Nonnull AuthoredElementValues rootAuthoredElementValues,
             @Nonnull EffectiveElementValues rootEffectiveElementValues
     ) {
-        var rawValue = effectiveElementValues.get(referencedSelectField.getId());
-        if (rawValue == null) {
-            rawValue = authoredElementValues.get(referencedSelectField.getId());
-        }
-        if (rawValue == null) {
-            rawValue = rootEffectiveElementValues.get(referencedSelectField.getId());
-        }
-        if (rawValue == null) {
-            rawValue = rootAuthoredElementValues.get(referencedSelectField.getId());
+        var referencedElementId = referencedSelectField.getId();
+        Object rawValue;
+        if (effectiveElementValues.containsKey(referencedElementId)) {
+            rawValue = effectiveElementValues.get(referencedElementId);
+        } else if (authoredElementValues.containsKey(referencedElementId)) {
+            rawValue = authoredElementValues.get(referencedElementId);
+        } else if (rootEffectiveElementValues.containsKey(referencedElementId)) {
+            rawValue = rootEffectiveElementValues.get(referencedElementId);
+        } else {
+            rawValue = rootAuthoredElementValues.get(referencedElementId);
         }
 
         return referencedSelectField.formatValue(rawValue);
@@ -857,7 +888,8 @@ public class ElementDerivationService {
                                         .patchWithElementData(
                                                 elementDataTransformService,
                                                 rootElement,
-                                                effectiveElementValues
+                                                effectiveElementValues,
+                                                computedElementStates
                                         )
                         )
                         .registerElementObject(baseElement)
@@ -880,7 +912,8 @@ public class ElementDerivationService {
             var patchedProcessExecutionData = processExecutionData.patchWithElementData(
                     elementDataTransformService,
                     rootElement,
-                    effectiveElementValues
+                    effectiveElementValues,
+                    computedElementStates
             );
 
             for (var validationExpression : validation.getNoCodeList()) {
@@ -945,67 +978,4 @@ public class ElementDerivationService {
         );
     }
 
-    /**
-     * Resolves the destination path that should be attached to the current computed state.
-     * <p>
-     * The path must be based on the effective element definition rather than the authored one, otherwise overrides that change the destination key would leave the runtime metadata
-     * out of sync with the payload export logic.
-     */
-    @Nullable
-    private String resolveDestinationPath(@Nonnull BaseElement element,
-                                          @Nonnull List<String> destinationPathPrefixSegments,
-                                          @Nonnull List<Integer> replicationIndices) {
-        if (!(element instanceof BaseInputElement<?> inputElement)) {
-            return null;
-        }
-
-        return elementDataTransformService.resolveDestinationPath(
-                inputElement.getDestinationKey(),
-                destinationPathPrefixSegments,
-                replicationIndices
-        );
-    }
-
-    /**
-     * Resolves the destination-path prefix that descendant states should inherit from a replicating container row.
-     * <p>
-     * Containers with their own destination key create a row-local payload object first and only then attach that object to the parent payload. Child states therefore need the
-     * container path plus the current row index as an inherited prefix. Containers without a destination key do not create such an intermediate payload root, so their children
-     * must keep using the existing inherited prefix.
-     */
-    @Nonnull
-    private List<String> resolveChildDestinationPathPrefixSegments(
-            @Nonnull ReplicatingContainerLayoutElement replicatingContainer,
-            @Nonnull List<String> destinationPathPrefixSegments,
-            @Nonnull List<Integer> replicationIndices,
-            int itemIndex
-    ) {
-        var containerDestinationPathSegments = elementDataTransformService.resolveDestinationPathSegments(
-                replicatingContainer.getDestinationKey(),
-                destinationPathPrefixSegments,
-                replicationIndices
-        );
-        if (containerDestinationPathSegments.isEmpty()) {
-            return destinationPathPrefixSegments;
-        }
-
-        var childDestinationPathPrefixSegments = new LinkedList<>(containerDestinationPathSegments);
-        // The row index becomes part of the inherited prefix only when the container owns the
-        // payload array, because descendants are nested inside the row object written at that slot.
-        childDestinationPathPrefixSegments.add(String.valueOf(itemIndex));
-        return childDestinationPathPrefixSegments;
-    }
-
-    /**
-     * Extends replication context for the next replicated row.
-     * <p>
-     * Wildcard substitution is positional, so nested replicated structures need an ordered list of indices instead of a single mutable cursor shared across recursion branches.
-     */
-    @Nonnull
-    private List<Integer> appendReplicationIndex(@Nonnull List<Integer> replicationIndices,
-                                                 int itemIndex) {
-        var childReplicationIndices = new LinkedList<>(replicationIndices);
-        childReplicationIndices.add(itemIndex);
-        return childReplicationIndices;
-    }
 }

@@ -10,9 +10,9 @@ interface FormManager<T> {
     hasNotChanged: boolean;
 
     handleInputPatch: (patch: Partial<T>) => void;
-    handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
-    handleInputChangeWithValidation: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
-    handleInputBlur: (field: keyof T) => (value?: T[keyof T]) => void;
+    handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => void;
+    handleInputChangeWithValidation: <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => void;
+    handleInputBlur: (field: keyof T) => (value?: T[keyof T] | null) => void;
 
     validate: () => boolean;
     reset: () => void;
@@ -50,7 +50,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         });
     }
 
-    const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+    const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => {
         if (currentItem == null) {
             return;
         }
@@ -63,7 +63,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         validateField(field, value);
     };
 
-    const handleInputChangeWithValidation = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+    const handleInputChangeWithValidation = <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => {
         if (currentItem == null) {
             return;
         }
@@ -81,7 +81,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         validateField(field, value, true);
     };
 
-    const handleInputBlur = (field: keyof T) => (value?: T[keyof T]) => {
+    const handleInputBlur = (field: keyof T) => (value?: T[keyof T] | null) => {
         if (currentItem == null) {
             return;
         }
@@ -91,10 +91,10 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             [field]: true,
         });
 
-        validateField(field, value ?? currentItem[field], true);
+        validateField(field, value === undefined ? currentItem[field] : value, true);
     };
 
-    const validateField = (field: keyof T, value: T[keyof T] | undefined, validateUntouchedField: boolean = false) => {
+    const validateField = (field: keyof T, value: T[keyof T] | null | undefined, validateUntouchedField: boolean = false) => {
         if (!validateUntouchedField && !touchedFields[field]) {
             // Do nothing if the field hasn't been touched or is not forced to validate
             return;

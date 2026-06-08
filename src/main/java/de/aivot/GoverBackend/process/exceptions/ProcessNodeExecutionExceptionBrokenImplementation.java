@@ -11,11 +11,19 @@ public class ProcessNodeExecutionExceptionBrokenImplementation extends ProcessNo
         super(message);
     }
 
+    public ProcessNodeExecutionExceptionBrokenImplementation(@Nonnull Throwable cause, @Nonnull String message) {
+        super(message, cause);
+    }
+
     public ProcessNodeExecutionExceptionBrokenImplementation(@Nonnull Throwable cause) {
         super(cause);
     }
 
     public ProcessNodeExecutionExceptionBrokenImplementation(@Nonnull String format, @Nonnull Object... args) {
         super(format, args);
+    }
+
+    public ProcessNodeExecutionExceptionBrokenImplementation(@Nonnull Throwable cause, @Nonnull String format, @Nonnull Object... args) {
+        super(cause, format, args);
     }
 }

@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.enums.PaymentType;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
@@ -20,10 +19,10 @@ import de.aivot.GoverBackend.payment.models.PaymentItem;
 import de.aivot.GoverBackend.payment.services.PaymentProviderService;
 import de.aivot.GoverBackend.payment.services.PaymentTransactionService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
 import java.math.BigDecimal;
 import java.util.LinkedList;
 import java.util.List;
@@ -91,9 +90,8 @@ public class FormPaymentService {
                         .setSkipVisibilitiesForElementIds(List.of())
         );
 
-        var dummyLogger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
-                .derive(derivationRequest, dummyLogger);
+                .derive(derivationRequest);
 
         var javascriptEngine = javascriptEngineFactoryService
                 .getEngine();

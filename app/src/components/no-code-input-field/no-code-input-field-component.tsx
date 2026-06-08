@@ -28,7 +28,7 @@ interface NoCodeInputFieldComponentProps {
     disabled?: boolean;
     value?: NoCodeInputFieldElementItem | null;
     desiredReturnType: NoCodeDataType;
-    onChange: (value: NoCodeInputFieldElementItem | undefined) => void;
+    onChange: (value: NoCodeInputFieldElementItem | null) => void;
 }
 
 export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps) {
@@ -206,7 +206,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                                     variant="contained"
                                     onClick={() => {
                                         if (draftNoCode == null) {
-                                            onChange(undefined);
+                                            onChange(null);
                                         } else {
                                             onChange({
                                                 noCode: draftNoCode,
@@ -229,7 +229,7 @@ export function NoCodeInputFieldComponent(props: NoCodeInputFieldComponentProps)
                         noCode={value?.noCode ?? undefined}
                         onChange={(noCode) => {
                             if (noCode == null) {
-                                onChange(undefined);
+                                onChange(null);
                                 return;
                             }
 

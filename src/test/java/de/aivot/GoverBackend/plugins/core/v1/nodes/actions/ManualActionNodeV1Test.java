@@ -505,7 +505,7 @@ class ManualActionNodeV1Test {
                 .setStatus(ProcessInstanceStatus.Running)
                 .setAssignedUserId(assignedUserId)
                 .setAssignedFileNumbers(List.of())
-                .setIdentities(Map.of())
+                .setIdentities(new de.aivot.GoverBackend.identity.models.IdentityDataMap())
                 .setStarted(now)
                 .setUpdated(now)
                 .setInitialPayload(Map.of())

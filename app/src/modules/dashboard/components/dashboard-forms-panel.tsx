@@ -138,7 +138,7 @@ export function DashboardFormsPanel() {
                                         <ListItem disablePadding>
                                             <ListItemButton
                                                 component={Link}
-                                                to={`/form-triggers/${form.node.id}/formLayout/0/`}
+                                                to={`/form-triggers/${form.node.id}`}
                                                 sx={{
                                                     py: 2,
                                                     px: 1,

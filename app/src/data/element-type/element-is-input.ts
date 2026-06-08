@@ -31,7 +31,7 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.CodeInput]: true,
     [ElementType.RichTextInput]: true,
     [ElementType.UiDefinitionInput]: true,
-    [ElementType.IdentityInput]: true,
+    [ElementType.IdentityConfigElement]: true,
     [ElementType.TabLayout]: false,
     [ElementType.ChipInput]: true,
     [ElementType.DateTime]: true,

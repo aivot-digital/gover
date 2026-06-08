@@ -200,6 +200,12 @@ gover:
   http:
     connectionTimeoutSeconds: "${GOVER_HTTP_CONNECTION_TIMEOUT_SECONDS:2}"
     readTimeoutSeconds: "${GOVER_HTTP_READ_TIMEOUT_SECONDS:60}"
+  ai:
+    defaultMaxTokens: "${GOVER_AI_DEFAULT_MAX_TOKENS:1000}"
+    completion:
+      maxTokens: "${GOVER_AI_COMPLETION_MAX_TOKENS:1000}"
+    processDataTransformation:
+      maxTokens: "${GOVER_AI_PROCESS_DATA_TRANSFORMATION_MAX_TOKENS:4000}"
   fileExtensions: "${GOVER_FILE_EXTENSIONS}"
   contentTypes: "${GOVER_CONTENT_TYPES}"
   maxSubmissionCopyRetryCount: 3

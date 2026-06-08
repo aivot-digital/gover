@@ -6,7 +6,7 @@ import {DateRangeValue} from '../../models/elements/form/input/date-range-field-
 interface DateRangeFieldComponentProps {
     label: string;
     value?: DateRangeValue | null;
-    onChange: (value: DateRangeValue | undefined) => void;
+    onChange: (value: DateRangeValue | null) => void;
     hint?: string;
     required?: boolean;
     disabled?: boolean;
@@ -15,12 +15,12 @@ interface DateRangeFieldComponentProps {
     mode?: DateFieldComponentModelMode;
 }
 
-function normalizeRange(value: DateRangeValue): DateRangeValue | undefined {
-    const start = value.start ?? undefined;
-    const end = value.end ?? undefined;
+function normalizeRange(value: DateRangeValue): DateRangeValue | null {
+    const start = value.start ?? null;
+    const end = value.end ?? null;
 
     if (start == null && end == null) {
-        return undefined;
+        return null;
     }
 
     return {
@@ -45,7 +45,7 @@ export function DateRangeFieldComponent(props: DateRangeFieldComponentProps) {
                                 props.onChange(normalizeRange({
                                     start,
                                     end: props.value?.end,
-                                }) ?? undefined);
+                                }));
                             }}
                             required={props.required}
                             disabled={props.disabled}
@@ -79,7 +79,7 @@ export function DateRangeFieldComponent(props: DateRangeFieldComponentProps) {
                                 props.onChange(normalizeRange({
                                     start: props.value?.start,
                                     end,
-                                }) ?? undefined);
+                                }));
                             }}
                             required={props.required}
                             disabled={props.disabled}

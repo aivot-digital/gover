@@ -20,8 +20,8 @@ export interface TextFieldComponentProps {
     softLimitCharactersWarning?: string;
     rows?: number;
     type?: string;
-    onChange: (val: string | undefined) => void;
-    onBlur?: (val: string | undefined) => void;
+    onChange: (val: string | null) => void;
+    onBlur?: (val: string | null) => void;
     endAction?: EndAction | Array<EndAction>;
     copyable?: boolean;
     startIcon?: ReactNode;

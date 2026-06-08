@@ -7,6 +7,7 @@ import {ElementTreeEditorContentTabVisibility} from './element-tree-editor-conte
 import {ElementTreeEditorContentTabValidation} from './element-tree-editor-content-tab-validation';
 import {ElementTreeEditorContentTabValue} from './element-tree-editor-content-tab-value';
 import {ElementTreeEditorContentTabOverride} from './element-tree-editor-content-tab-override';
+import {ElementTreeEditorContentTabMetadata} from './element-tree-editor-content-tab-metdata';
 
 export interface ElementTreeEditorContentDispatcherProps<T extends AnyElement> {
     element: T;
@@ -42,6 +43,8 @@ export function ElementTreeEditorContentDispatcher<T extends AnyElement>(props: 
                     editable={editable}
                 />
             );
+        case DefaultTabs.metadata:
+            return <ElementTreeEditorContentTabMetadata/>;
         default:
             return null;
     }

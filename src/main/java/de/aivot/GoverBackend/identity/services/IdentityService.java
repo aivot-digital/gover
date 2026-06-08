@@ -12,18 +12,20 @@ import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
 import de.aivot.GoverBackend.identity.entities.IdentityProviderEntity;
 import de.aivot.GoverBackend.identity.enums.IdentityResultState;
 import de.aivot.GoverBackend.identity.models.IdentityAuthTokenData;
+import de.aivot.GoverBackend.identity.models.IdentityData;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -36,13 +38,11 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
- * Service for handling identity provider authentication flows, including
- * redirect URL construction, callback handling, token exchange, user info retrieval,
- * and logout. Integrates with caching, configuration, and secret management.
+ * Service for handling identity provider authentication flows, including redirect URL construction, callback handling, token exchange, user info retrieval, and logout. Integrates
+ * with caching, configuration, and secret management.
  *
  * <p>
- * This service supports OAuth2/OpenID Connect flows for external identity providers,
- * manages PKCE, validates origins, and ensures secure handling of authentication data.
+ * This service supports OAuth2/OpenID Connect flows for external identity providers, manages PKCE, validates origins, and ensures secure handling of authentication data.
  * </p>
  */
 @Service
@@ -56,6 +56,8 @@ public class IdentityService {
 
     private static final int PKCE_CODE_VERIFIER_LENGTH = 48;
     private static final int STATE_NONCE_NUM_BYTES = 32;
+    private static final int SESSION_ID_NUM_BYTES = 96;
+    private static final int ENTITY_ID_NUM_BYTES = 32;
     private static final String PKCE_METHOD_S256 = "S256";
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
@@ -78,36 +80,93 @@ public class IdentityService {
         this.identityCacheRepository = identityCacheRepository;
     }
 
+    public IdentityDataMap getIdentityDataMap(@Nullable String identitySessionId, @Nullable Integer relatedProcessNodeId) {
+        if (identitySessionId == null) {
+            return new IdentityDataMap();
+        }
+
+        List<IdentityCacheEntity> identityList;
+        if (relatedProcessNodeId == null) {
+            identityList = identityCacheRepository.findAllBySessionId(identitySessionId);
+        } else {
+            identityList = identityCacheRepository.findAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId);
+        }
+
+        return identityList
+                .stream()
+                .map(IdentityData::from)
+                .reduce(
+                        new IdentityDataMap(),
+                        (map, id) -> {
+                            map.put(id.identityId(), id);
+                            return map;
+                        },
+                        (a, b) -> {
+                            a.putAll(b);
+                            return a;
+                        }
+                );
+    }
+
+    /**
+     * Clear the identit session cache.
+     *
+     * @return True if there are still identities existing for this session id, false otherwise
+     */
+    public boolean clearIdentitySession(@Nullable String identitySessionId, @Nullable Integer relatedProcessNodeId) {
+        if (StringUtils.isNullOrEmpty(identitySessionId)) {
+            return false;
+        }
+
+        if (relatedProcessNodeId == null) {
+            identityCacheRepository.deleteAllBySessionId(identitySessionId);
+            return false;
+        } else {
+            identityCacheRepository.deleteAllBySessionIdAndRelatedProcessNodeId(identitySessionId, relatedProcessNodeId);
+            return identityCacheRepository.existsBySessionId(identitySessionId);
+        }
+    }
+
     /**
      * Constructs a redirect URL for an identity provider's authorization endpoint.
      *
      * <p>This method builds a URL that redirects the user to the identity provider's authorization
-     * endpoint with the necessary query parameters, including client ID, response type,
-     * redirect URI, scopes, and a generated state nonce. It also validates the referer,
-     * stores the resolved origin in the identity cache, and combines default and additional scopes.</p>
+     * endpoint with the necessary query parameters, including client ID, response type, redirect URI, scopes, and a generated state nonce. It also validates the referer, stores
+     * the resolved origin in the identity cache, and combines default and additional scopes.</p>
      *
      * @param providerKey      The key of the identity provider. Can be <code>null</code>.
      * @param origin           The referer of the request, typically from the "Referer" header. Can be <code>null</code>.
      * @param additionalScopes A list of additional scopes to include in the request. Can be <code>null</code>.
      * @return A {@link URI} representing the constructed redirect URL.
-     * @throws ResponseException If the provider key is invalid, the provider is not enabled, the referer is invalid,
-     *                           or any required configuration is missing.
+     * @throws ResponseException If the provider key is invalid, the provider is not enabled, the referer is invalid, or any required configuration is missing.
      */
     @Nonnull
     public URI createRedirectURL(
-            @Nullable UUID providerKey,
-            @Nullable String origin,
-            @Nullable List<String> additionalScopes
+            @Nullable String preexistingIdentitySessionId,
+            @Nonnull UUID providerKey,
+            @Nonnull String identityId,
+            @Nonnull String origin,
+            @Nonnull List<String> additionalScopes,
+            @Nonnull Integer relatedProcessNodeId
     ) throws ResponseException {
         var provider = getIdentityProviderEntity(providerKey);
         var resolvedOrigin = resolveOrigin(origin);
         var stateNonce = generateStateNonce();
 
+        if (preexistingIdentitySessionId == null) {
+            preexistingIdentitySessionId = generateSessionId();
+        }
+
+        var entityId = generateEntityId();
+
         // Create a new cache entity
-        var identity = new IdentityCacheEntity(
-                UUID.randomUUID(),
+        var identityCacheEntity = new IdentityCacheEntity(
+                entityId,
+                preexistingIdentitySessionId,
+                relatedProcessNodeId,
                 null,
-                provider.getKey().toString(),
+                providerKey,
+                identityId,
                 provider.getMetadataIdentifier(),
                 resolvedOrigin.toString(),
                 stateNonce,
@@ -119,7 +178,7 @@ public class IdentityService {
         var resolvedAuthorizationUri = resolveRelativeOrAbsoluteURL(provider.getAuthorizationEndpoint());
 
         // Create the callback URI
-        var callbackUri = createCallbackUri(provider, identity);
+        var callbackUri = createCallbackUri(provider, identityCacheEntity);
 
         // Create the redirect URL
         var builder = UriComponentsBuilder
@@ -153,7 +212,7 @@ public class IdentityService {
                     }
                     byte[] encodedhash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
 
-                    identity.setCodeVerifier(codeVerifier);
+                    identityCacheEntity.setCodeVerifier(codeVerifier);
 
                     builder.queryParam(
                             IdentityQueryParameterConstants.AUTH_ENDPOINT_CODE_CHALLENGE_METHOD,
@@ -175,7 +234,7 @@ public class IdentityService {
             }
         }
 
-        identityCacheRepository.save(identity);
+        identityCacheRepository.save(identityCacheEntity);
 
         return builder
                 .build()
@@ -186,23 +245,23 @@ public class IdentityService {
      * Handles the callback from the identity provider after user authentication.
      *
      * <p>This method processes the authorization code received from the identity provider,
-     * retrieves the authentication token, fetches user information, performs a logout
-     * with the identity provider, and caches the identity data for future use.</p>
+     * retrieves the authentication token, fetches user information, performs a logout with the identity provider, and caches the identity data for future use.</p>
      *
      * @param providerKey       The key of the identity provider. Can be <code>null</code>.
      * @param authorizationCode The authorization code received from the identity provider. Must not be <code>null</code>.
      * @return The {@link IdentityCacheEntity} containing the cached identity data.
-     * @throws ResponseException If the authorization code is missing, the identity provider is invalid or not enabled,
-     *                           the token cannot be retrieved, user information cannot be fetched, or logout fails.
+     * @throws ResponseException If the authorization code is missing, the identity provider is invalid or not enabled, the token cannot be retrieved, user information cannot be
+     *                           fetched, or logout fails.
      */
     @Nonnull
     public String handleCallback(
             @Nullable UUID providerKey,
-            @Nonnull UUID identitySessionId,
+            @Nonnull String identityCacheEntityId,
+            @Nonnull String identitySessionId,
             @Nullable String authorizationCode,
             @Nonnull String state
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identitySessionId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, state);
 
         if (authorizationCode == null) {
             throw ResponseException
@@ -235,7 +294,6 @@ public class IdentityService {
         return UriComponentsBuilder
                 .fromUriString(getStoredOrigin(identity))
                 .queryParam(IdentityQueryParameterConstants.RESULT_STATE_CODE, IdentityResultState.Success.getKey())
-                .queryParam(IdentityQueryParameterConstants.RESULT_IDENTITY_ID, identity.getSessionId())
                 .build()
                 .toString();
     }
@@ -253,19 +311,19 @@ public class IdentityService {
      *
      * @param identitySessionId The identity session identifier from the callback path.
      * @param state             The OIDC state nonce returned by the identity provider.
-     * @param error            The error code or message. Must not be <code>null</code>.
-     * @param errorDescription A detailed description of the error. Can be <code>null</code>.
+     * @param error             The error code or message. Must not be <code>null</code>.
+     * @param errorDescription  A detailed description of the error. Can be <code>null</code>.
      * @return A string representing the constructed error redirect URL.
-     * @throws ResponseException If the identity session is invalid, the state nonce does not match,
-     *                           or the cached origin is missing.
+     * @throws ResponseException If the identity session is invalid, the state nonce does not match, or the cached origin is missing.
      */
     public String createErrorRedirectURL(
-            @Nonnull UUID identitySessionId,
+            @Nonnull String identityCacheEntityId,
+            @Nonnull String identitySessionId,
             @Nonnull String state,
             @Nonnull String error,
             @Nullable String errorDescription
     ) throws ResponseException {
-        var identity = getValidatedIdentitySession(identitySessionId, state);
+        var identity = getValidatedIdentitySession(identityCacheEntityId, state);
 
         return UriComponentsBuilder
                 .fromUriString(getStoredOrigin(identity))
@@ -282,8 +340,8 @@ public class IdentityService {
      * Resolves a given URL to an absolute {@link URI}.
      *
      * <p>If the provided URL starts with a forward slash (<code>/</code>), it is treated as a relative path.
-     * In this case, the method uses the application's configuration to construct an absolute URL
-     * by appending the relative path to the base URL defined in the {@link GoverConfig}.</p>
+     * In this case, the method uses the application's configuration to construct an absolute URL by appending the relative path to the base URL defined in the
+     * {@link GoverConfig}.</p>
      *
      * <p>If the provided URL does not start with a forward slash, it is assumed to be an absolute URL
      * and is directly converted into a {@link URI} object.</p>
@@ -340,12 +398,10 @@ public class IdentityService {
      * Combines the default scopes of an identity provider with additional scopes.
      *
      * <p>This method creates a unified list of scopes by merging the default scopes
-     * from the provided {@link IdentityProviderEntity} with any additional scopes
-     * specified in the input. Duplicate scopes and <code>null</code> values are removed,
-     * and the resulting list is returned as a single space-separated string.</p>
+     * from the provided {@link IdentityProviderEntity} with any additional scopes specified in the input. Duplicate scopes and <code>null</code> values are removed, and the
+     * resulting list is returned as a single space-separated string.</p>
      *
-     * @param provider         The {@link IdentityProviderEntity} containing the default scopes.
-     *                         Must not be <code>null</code>.
+     * @param provider         The {@link IdentityProviderEntity} containing the default scopes. Must not be <code>null</code>.
      * @param additionalScopes A list of additional scopes to include. Can be <code>null</code>.
      * @return A space-separated string of combined scopes, with duplicates and <code>null</code> values removed.
      */
@@ -432,11 +488,11 @@ public class IdentityService {
 
     @Nonnull
     private IdentityCacheEntity getValidatedIdentitySession(
-            @Nonnull UUID identitySessionId,
+            @Nonnull String identityCacheEntityId,
             @Nullable String state
     ) throws ResponseException {
         var identity = identityCacheRepository
-                .findById(identitySessionId)
+                .findById(identityCacheEntityId)
                 .orElseThrow(() -> ResponseException
                         .badRequest("Die Identitätssitzung existiert nicht.")
                 );
@@ -457,8 +513,8 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getStateNonce())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Identitätssitzung %s wurde kein state-Nonce gespeichert.",
-                            identity.getSessionId()
+                            "Für die Identitätssitzung %s wurde kein state-Nonce gespeichert."
+                                    .formatted(identity.getSessionId())
                     );
         }
 
@@ -470,8 +526,8 @@ public class IdentityService {
         if (StringUtils.isNullOrEmpty(identity.getOrigin())) {
             throw ResponseException
                     .internalServerError(
-                            "Für die Identitätssitzung %s wurde keine Ursprungs-URL gespeichert.",
-                            identity.getSessionId()
+                            "Für die Identitätssitzung %s wurde keine Ursprungs-URL gespeichert."
+                                    .formatted(identity.getSessionId())
                     );
         }
 
@@ -493,16 +549,14 @@ public class IdentityService {
      * Fetches an authentication token from the identity provider using the authorization code flow.
      *
      * <p>This method sends a POST request to the identity provider's token endpoint with the required
-     * parameters, including the authorization code, client ID, and redirect URI. If a client secret
-     * is available, it is included in the request. The response is parsed into an {@link IdentityAuthTokenData}
-     * object containing the access token, refresh token, and other related data.</p>
+     * parameters, including the authorization code, client ID, and redirect URI. If a client secret is available, it is included in the request. The response is parsed into an
+     * {@link IdentityAuthTokenData} object containing the access token, refresh token, and other related data.</p>
      *
      * @param provider    The {@link IdentityProviderEntity} representing the identity provider. Must not be <code>null</code>.
      * @param code        The authorization code received from the identity provider. Must not be <code>null</code>.
      * @param callbackUrl The callback URL used during the authorization process. Must not be <code>null</code>.
      * @return An {@link IdentityAuthTokenData} object containing the authentication token data.
-     * @throws ResponseException If the token endpoint cannot be reached, the response status code is invalid,
-     *                           or the response body cannot be parsed.
+     * @throws ResponseException If the token endpoint cannot be reached, the response status code is invalid, or the response body cannot be parsed.
      */
     @Nonnull
     private IdentityAuthTokenData fetchAuthToken(
@@ -573,15 +627,14 @@ public class IdentityService {
      * Fetches user information from the identity provider's user info endpoint.
      *
      * <p>This method sends a GET request to the user info endpoint of the identity provider
-     * using the access token provided in the {@link IdentityAuthTokenData}. The response is
-     * parsed into a map of user attributes, which includes both mapped attributes defined
-     * in the identity provider's configuration and any additional attributes from the raw data.</p>
+     * using the access token provided in the {@link IdentityAuthTokenData}. The response is parsed into a map of user attributes, which includes both mapped attributes defined in
+     * the identity provider's configuration and any additional attributes from the raw data.</p>
      *
      * @param provider      The {@link IdentityProviderEntity} representing the identity provider. Must not be <code>null</code>.
      * @param authTokenData The {@link IdentityAuthTokenData} containing the access token. Must not be <code>null</code>.
      * @return A {@link Map} containing the user information, with attribute names as keys and their values as strings.
-     * @throws ResponseException If the user info endpoint is not configured, the endpoint cannot be reached,
-     *                           the response status code is invalid, or the response body cannot be parsed.
+     * @throws ResponseException If the user info endpoint is not configured, the endpoint cannot be reached, the response status code is invalid, or the response body cannot be
+     *                           parsed.
      */
     @Nonnull
     private Map<String, String> fetchUserInfo(
@@ -658,14 +711,13 @@ public class IdentityService {
      * Performs the logout process for the given identity provider.
      *
      * <p>This method sends a POST request to the identity provider's end session endpoint
-     * to terminate the user's session. The request includes the client ID, refresh token,
-     * and optionally the client secret. If the end session endpoint is not configured,
-     * the method exits without performing any action.</p>
+     * to terminate the user's session. The request includes the client ID, refresh token, and optionally the client secret. If the end session endpoint is not configured, the
+     * method exits without performing any action.</p>
      *
      * @param provider      The {@link IdentityProviderEntity} representing the identity provider. Must not be <code>null</code>.
      * @param authTokenData The {@link IdentityAuthTokenData} containing the access and refresh tokens. Must not be <code>null</code>.
-     * @throws ResponseException If the end session endpoint cannot be reached, the response status code is invalid,
-     *                           or the request fails due to connection issues or interruptions.
+     * @throws ResponseException If the end session endpoint cannot be reached, the response status code is invalid, or the request fails due to connection issues or
+     *                           interruptions.
      */
     private void performLogout(
             @Nonnull IdentityProviderEntity provider,
@@ -715,8 +767,7 @@ public class IdentityService {
      * Retrieves and decrypts the client secret for the given identity provider.
      *
      * <p>This method fetches the client secret associated with the provided {@link IdentityProviderEntity}.
-     * If the client secret key is not set, it returns an empty {@link Optional}. If the secret cannot
-     * be retrieved or decrypted, a {@link ResponseException} is thrown.</p>
+     * If the client secret key is not set, it returns an empty {@link Optional}. If the secret cannot be retrieved or decrypted, a {@link ResponseException} is thrown.</p>
      *
      * @param provider The {@link IdentityProviderEntity} for which the client secret is retrieved. Must not be <code>null</code>.
      * @return An {@link Optional} containing the decrypted client secret, or an empty {@link Optional} if no client secret key is set.
@@ -763,9 +814,23 @@ public class IdentityService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
+    @Nonnull
+    private static String generateSessionId() {
+        var bytes = new byte[SESSION_ID_NUM_BYTES];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    @Nonnull
+    private static String generateEntityId() {
+        var bytes = new byte[ENTITY_ID_NUM_BYTES];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
     private String createCallbackUri(@Nonnull IdentityProviderEntity provider, @Nonnull IdentityCacheEntity cacheEntity) {
         return goverConfig
-                .createUrl("/api/public/identity/" + provider.getKey() +"/callback/" + cacheEntity.getSessionId() + "/");
+                .createUrl("/api/public/identity/" + provider.getKey() + "/callback/" + cacheEntity.getSessionId() + "/" + cacheEntity.getId() + "/");
     }
 
     // endregion

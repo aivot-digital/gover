@@ -18,12 +18,12 @@ public class SystemConfigStartupService implements ApplicationListener<Applicati
     private final Logger logger = LoggerFactory.getLogger(SystemConfigStartupService.class);
 
     private final SystemConfigRepository systemConfigRepository;
-    private final List<SystemConfigDefinition> systemConfigDefinitions;
+    private final List<SystemConfigDefinition<?>> systemConfigDefinitions;
 
     @Autowired
     public SystemConfigStartupService(
             SystemConfigRepository systemConfigRepository,
-            List<SystemConfigDefinition> systemConfigDefinitions
+            List<SystemConfigDefinition<?>> systemConfigDefinitions
     ) {
         this.systemConfigRepository = systemConfigRepository;
         this.systemConfigDefinitions = systemConfigDefinitions;
@@ -31,7 +31,7 @@ public class SystemConfigStartupService implements ApplicationListener<Applicati
 
     @Override
     public void onApplicationEvent(@Nonnull ApplicationReadyEvent event) {
-        var availableDefinitions = new HashMap<String, SystemConfigDefinition>();
+        var availableDefinitions = new HashMap<String, SystemConfigDefinition<?>>();
 
         // Iterate over all existing definitions and collect them in a map
         // Check if there are any conflicting keys

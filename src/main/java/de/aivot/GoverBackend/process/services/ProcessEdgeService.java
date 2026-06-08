@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -78,6 +79,11 @@ public class ProcessEdgeService implements EntityService<ProcessEdgeEntity, Inte
     @Override
     public void performDelete(@Nonnull ProcessEdgeEntity entity) throws ResponseException {
         processDefinitionEdgeRepository.delete(entity);
+    }
+
+    public List<ProcessEdgeEntity> findAllByProcessIdAndProcessVersion(Integer id, Integer processVersion) {
+        return processDefinitionEdgeRepository
+                .findAllByProcessIdAndProcessVersion(id, processVersion);
     }
 }
 

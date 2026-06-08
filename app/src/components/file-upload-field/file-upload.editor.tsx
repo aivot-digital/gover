@@ -7,6 +7,7 @@ import {MultiCheckboxComponent} from '../multi-checkbox-field/multi-checkbox-com
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {SystemApiService} from '../../modules/system/system-api-service';
+import {TextFieldComponent} from '../text-field/text-field-component';
 
 export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
     const {
@@ -111,6 +112,19 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                     </Grid>
                 </>
             }
+            <Grid size={12}>
+                <TextFieldComponent
+                    label="Dateiname bei Einreichung"
+                    value={props.element.submittedFileName ?? undefined}
+                    onChange={(val) => {
+                        props.onPatch({
+                            submittedFileName: val,
+                        });
+                    }}
+                    hint="Optional. Wenn gesetzt, werden hochgeladene Dateien bei der Einreichung unter diesem Dateinamen gespeichert. Ohne Endung wird die Original-Endung übernommen."
+                    disabled={!props.editable}
+                />
+            </Grid>
             <Grid size={12}>
                 <MultiCheckboxComponent
                     label="Erlaubte Dateiendungen"

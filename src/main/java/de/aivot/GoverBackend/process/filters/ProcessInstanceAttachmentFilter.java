@@ -9,7 +9,7 @@ import org.springframework.data.jpa.domain.Specification;
 public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAttachmentEntity> {
     private Long processInstanceId;
     private Long processInstanceTaskId;
-    private String filename;
+    private String fileName;
     private String mimeType;
     private String uploadedByUserId;
 
@@ -24,7 +24,7 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
                 .create(ProcessInstanceAttachmentEntity.class)
                 .withEquals("processInstanceId", processInstanceId)
                 .withEquals("processInstanceTaskId", processInstanceTaskId)
-                .withContains("filename", filename)
+                .withContains("fileName", fileName)
                 .withEquals("mimeType", mimeType)
                 .withEquals("uploadedByUserId", uploadedByUserId);
 
@@ -49,12 +49,12 @@ public class ProcessInstanceAttachmentFilter implements Filter<ProcessInstanceAt
         return this;
     }
 
-    public String getFilename() {
-        return filename;
+    public String getFileName() {
+        return fileName;
     }
 
-    public ProcessInstanceAttachmentFilter setFilename(String filename) {
-        this.filename = filename;
+    public ProcessInstanceAttachmentFilter setFileName(String fileName) {
+        this.fileName = fileName;
         return this;
     }
 

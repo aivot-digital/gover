@@ -15,6 +15,7 @@ import java.util.Map;
 public class DestinationDataFormatter {
     private final Map<String, Object> data;
 
+
     private final VFormVersionWithDetailsEntity form;
     private final Submission submission;
     private final PaymentTransactionEntity paymentTransaction;

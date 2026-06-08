@@ -25,7 +25,7 @@ export function ChipInputFieldView(props: BaseViewProps<ChipInputFieldElement, s
     return (
         <ChipInputFieldComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             placeholder={element.placeholder ?? undefined}
             hint={element.hint ?? undefined}

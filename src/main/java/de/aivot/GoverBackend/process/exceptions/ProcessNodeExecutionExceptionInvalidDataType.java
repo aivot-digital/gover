@@ -8,11 +8,19 @@ public class ProcessNodeExecutionExceptionInvalidDataType extends ProcessNodeExe
         super(message);
     }
 
+    public ProcessNodeExecutionExceptionInvalidDataType(@Nonnull Throwable cause, @Nonnull String message) {
+        super(message, cause);
+    }
+
     public ProcessNodeExecutionExceptionInvalidDataType(@Nonnull Throwable cause) {
         super(cause);
     }
 
     public ProcessNodeExecutionExceptionInvalidDataType(@Nonnull String format, @Nonnull Object... args) {
         super(format, args);
+    }
+
+    public ProcessNodeExecutionExceptionInvalidDataType(@Nonnull Throwable cause, @Nonnull String format, @Nonnull Object... args) {
+        super(cause, format, args);
     }
 }

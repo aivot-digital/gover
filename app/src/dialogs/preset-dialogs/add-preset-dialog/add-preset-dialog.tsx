@@ -147,7 +147,7 @@ export function AddPresetDialog(props: AddPresetDialogProps) {
                     value={preset.title}
                     onChange={(val) => {
                         handlePatch({
-                            title: val,
+                            title: val ?? undefined,
                         });
                     }}
                     required

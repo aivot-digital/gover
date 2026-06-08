@@ -60,7 +60,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             return undefined;
         }
 
-        return 'Mindestens ein übergeordnetes Strukturiertes Listeneingabe-Element hat noch keinen Datenschlüssel.';
+        return 'Mindestens ein übergeordnetes Strukturiertes Listeneingabe-Element hat noch keinen Prozess-Datenschlüssel.';
     }, [replicatingParents]);
 
     const replicatingParentDestinationKeyPrefix = useMemo(() => {
@@ -353,15 +353,13 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 displayContext != ElementDisplayContext.DataObjectSchema &&
                 <>
                     <ElementEditorSectionHeader
-                        title="Datenzuordnung"
+                        title="Prozess-Datenzuordnung"
                         sx={{mt: 8}}
                     >
-                        Legen Sie fest, mit welchem Datenschlüssel der Wert dieses Feldes im Datensatz ausgelesen
-                        (soweit vorhanden) und gespeichert wird (sogenanntes 2-Way-Data-Binding).
-                        Ohne eigenen Schlüssel wird standardmäßig die Element-ID verwendet.
-                        Mit Punktnotation, wie beispielsweise „person.vorname“, können Sie Werte in verschachtelte
-                        Datenstrukturen
-                        schreiben und lesen.
+                        Legen Sie fest, unter welchem Prozess-Datenschlüssel der Wert dieses Feldes in die Vorgangsdaten
+                        geschrieben und aus vorhandenen Vorgangsdaten übernommen wird. Ohne eigenen Prozess-Schlüssel wird
+                        dieses Feld nicht in den zugeordneten Datensatz geschrieben. Mit Punktnotation, wie beispielsweise
+                        „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen schreiben und lesen.
                     </ElementEditorSectionHeader>
 
                     <Grid
@@ -376,7 +374,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             }}
                         >
                             <ProcessDataKeyInputComponent
-                                label="Datenschlüssel"
+                                label="Prozess-Datenschlüssel"
                                 value={currentElement.destinationKey}
                                 onChange={(val) => {
                                     onChangeCurrentElement({
@@ -384,7 +382,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         destinationKey: val,
                                     } as T);
                                 }}
-                                hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
+                                hint="Optionaler Prozess-Datenschlüssel für die Zuordnung in den Datensatz. Ohne Schlüssel wird dieses Feld nicht in den zugeordneten Datensatz geschrieben."
                                 disabled={!editable}
                                 disableWildCards={true}
                                 prefix={replicatingParentDestinationKeyPrefix}
@@ -396,7 +394,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     {
                         httpKeyProblems.length > 0 &&
                         <AlertComponent
-                            title="Warnungen zu Ihrem gewählten Datenschlüssel"
+                            title="Warnungen zu Ihrem gewählten Prozess-Datenschlüssel"
                             color="warning"
                         >
                             <ul>
@@ -539,7 +537,7 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
             problems.push(
                 <>
                     <Typography>
-                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> wird bereits von
+                        Der Prozess-Datenschlüssel <strong>„{element.destinationKey}”</strong> wird bereits von
                         dem
                         Formularelement <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.properties)}>„{otherElementPath} &gt; {otherElementLabel}”</a> verwendet.
                         Dies führt dazu, dass die Daten gegebenenfalls überschrieben werden. Stellen Sie sicher, dass
@@ -560,8 +558,8 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
             problems.push(
                 <>
                     <Typography gutterBottom>
-                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich
-                        mit dem Datenschlüssel <strong>„{otherElement.destinationKey}”</strong> des
+                        Der Prozess-Datenschlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich
+                        mit dem Prozess-Datenschlüssel <strong>„{otherElement.destinationKey}”</strong> des
                         Formularelements <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementPath} &gt; {otherElementLabel}”</a>.
                         {
                             otherElementWritesParent ?

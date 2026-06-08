@@ -143,7 +143,7 @@ function getStaticValueLabel(label: string): string {
     return `${label ?? ''} — (Fester Wert)`;
 }
 
-function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: string | undefined) {
+function updateStaticValue(props: NoCodeOperandEditorStaticValueProps, value: string | null | undefined) {
     props.onChange({
         ...props.value,
         value: value != null && value.length > 0 ? value : undefined,

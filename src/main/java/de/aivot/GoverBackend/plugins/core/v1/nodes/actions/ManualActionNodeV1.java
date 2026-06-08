@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
-import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
@@ -19,7 +19,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContent
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -31,11 +30,7 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -293,10 +288,10 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                                                                          @Nonnull AuthoredElementValues update,
                                                                          @Nonnull String event) throws ResponseException {
         var config = loadConfigurationForUi(context);
-        var effectiveUiUpdate = deriveEffectiveUiUpdate(config, update);
+        var derivedUiUpdate = deriveUiUpdate(config, update);
 
         return switch (event) {
-            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, effectiveUiUpdate, update));
+            case EVENT_COMPLETE -> Optional.of(completeTask(context, config, derivedUiUpdate, update));
             default -> throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         };
     }
@@ -447,10 +442,10 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     }
 
     @Nonnull
-    private EffectiveElementValues deriveEffectiveUiUpdate(@Nonnull ResolvedConfiguration config,
-                                                           @Nonnull AuthoredElementValues update) {
+    private DerivedRuntimeElementData deriveUiUpdate(@Nonnull ResolvedConfiguration config,
+                                                    @Nonnull AuthoredElementValues update) {
         if (config.uiDefinition() == null) {
-            return new EffectiveElementValues();
+            return new DerivedRuntimeElementData();
         }
 
         var derivationRequest = new ElementDerivationRequest(
@@ -458,27 +453,27 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 update,
                 new ElementDerivationOptions()
         );
-        var derivationLogger = new ElementDerivationLogger();
         return elementDerivationService
-                .derive(derivationRequest, derivationLogger)
-                .getEffectiveValues();
+                .derive(derivationRequest);
     }
 
     @Nonnull
     private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff<ManualActionNodeConfig> context,
                                                                  @Nonnull ResolvedConfiguration config,
-                                                                 @Nonnull EffectiveElementValues effectiveUiUpdate,
+                                                                 @Nonnull DerivedRuntimeElementData derivedUiUpdate,
                                                                  @Nonnull AuthoredElementValues update) {
+        var effectiveUiUpdate = derivedUiUpdate.getEffectiveValues();
         var payloadUpdate = config.uiDefinition() != null
-                ? elementDataTransformService.buildPayload(config.uiDefinition(), effectiveUiUpdate)
+                ? elementDataTransformService.buildPayload(config.uiDefinition(), effectiveUiUpdate, derivedUiUpdate.getElementStates())
                 : Map.<String, Object>of();
         var originalProcessData = ObjectMapperFactory.Utils.convertToMap(context.getThisTask().getProcessData());
         var updatedProcessData = config.uiDefinition() != null
                 ? elementDataTransformService.buildPayload(
-                config.uiDefinition(),
-                effectiveUiUpdate,
-                ObjectMapperFactory.Utils.convertToMap(originalProcessData)
-        )
+                        config.uiDefinition(),
+                        effectiveUiUpdate,
+                        derivedUiUpdate.getElementStates(),
+                        ObjectMapperFactory.Utils.convertToMap(originalProcessData)
+                )
                 : ObjectMapperFactory.Utils.convertToMap(originalProcessData);
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
         var remark = normalizeRemark(update.get(TASK_VIEW_REMARK_FIELD_ID));

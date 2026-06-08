@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudControlData;
 import de.aivot.GoverBackend.ozgCloud.models.OZGCloudPayload;
 import jakarta.annotation.Nonnull;
@@ -54,6 +55,7 @@ public class OZGCloudDestinationService {
                         elementData,
                         new ElementDerivationOptions()
                 ),
+                new IdentityDataMap(), // TODO: Add real identities here
                 new ElementDerivationLogger()
         );
 

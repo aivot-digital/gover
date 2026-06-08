@@ -1,6 +1,5 @@
 import React, {useMemo} from 'react';
 import {type RadioFieldElement} from '../../models/elements/form/input/radio-field-element';
-import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {RadioFieldComponent} from './radio-field-component';
@@ -34,7 +33,7 @@ export function RadioFieldComponentView(props: BaseViewProps<RadioFieldElement, 
             value={value}
             onChange={(newValue) => {
                 if (!isBusy) {
-                    setValue(isStringNullOrEmpty(newValue) ? undefined : newValue ?? undefined);
+                    setValue(newValue);
                 }
             }}
             required={element.required}

@@ -23,7 +23,7 @@ import {SelectFieldElement} from '../models/elements/form/input/select-field-ele
 import {SpacerElement} from '../models/elements/form/content/spacer-element';
 import {TableFieldElement} from '../models/elements/form/input/table-field-element';
 import {TextFieldElement} from '../models/elements/form/input/text-field-element';
-import {TimeFieldElement} from '../models/elements/form/input/time-field-element';
+import {TimeFieldComponentModelMode, TimeFieldElement} from '../models/elements/form/input/time-field-element';
 import {ImageElement} from '../models/elements/form/content/image-element';
 import {SubmittedStepElement} from '../models/elements/steps/submitted-step-element';
 import {FileUploadElement} from '../models/elements/form/input/file-upload-element';
@@ -33,10 +33,11 @@ import {DateTimeFieldElement} from '../models/elements/form/input/date-time-fiel
 import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
 import {TimeRangeFieldElement} from '../models/elements/form/input/time-range-field-element';
 import {DateTimeRangeFieldElement} from '../models/elements/form/input/date-time-range-field-element';
-import {TimeFieldComponentModelMode} from '../models/elements/form/input/time-field-element';
 import {MapPointFieldElement} from '../models/elements/form/input/map-point-field-element';
-import {DomainUserSelectFieldElement} from '../models/elements/form/input/domain-user-select-field-element';
-import {DomainAndUserSelectItemTypes} from '../models/elements/form/input/domain-user-select-field-element';
+import {
+    DomainAndUserSelectItemTypes,
+    DomainUserSelectFieldElement,
+} from '../models/elements/form/input/domain-user-select-field-element';
 import {AssignmentContextFieldElement} from '../models/elements/form/input/assignment-context-field-element';
 import {DataModelSelectFieldElement} from '../models/elements/form/input/data-model-select-field-element';
 import {DataObjectSelectFieldElement} from '../models/elements/form/input/data-object-select-field-element';
@@ -44,12 +45,13 @@ import {RichTextInputElement} from '../models/elements/form/input/rich-text-inpu
 import {CodeInputElement, CodeInputFieldLanguage} from '../models/elements/form/input/code-input-element';
 import {
     NoCodeInputFieldElement,
-    NoCodeInputFieldReturnType
+    NoCodeInputFieldReturnType,
 } from '../models/elements/form/input/no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from '../models/elements/form/input/ui-definition-input-field-element';
 import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layout-element';
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
-import {IdentityInputFieldElement} from '../models/elements/form/input/identity-input-field-element';
+import {IdentityConfigElement} from '../models/elements/form/input/identity-config-element';
+import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import {getDefaultElementWeight} from './element-widths';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
@@ -117,7 +119,7 @@ const elementConstructors: {
     [ElementType.CodeInput]: (id: string) => CodeInputElement;
     [ElementType.RichTextInput]: (id: string) => RichTextInputElement;
     [ElementType.UiDefinitionInput]: (id: string) => UiDefinitionInputFieldElement;
-    [ElementType.IdentityInput]: (id: string) => IdentityInputFieldElement;
+    [ElementType.IdentityConfigElement]: (id: string) => IdentityConfigElement;
     [ElementType.TabLayout]: (id: string) => void;
     [ElementType.ChipInput]: (id: string) => ChipInputFieldElement;
     [ElementType.DateTime]: (id: string) => DateTimeFieldElement;
@@ -132,7 +134,7 @@ const elementConstructors: {
     [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
     [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
     [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
-    [ElementType.ProcessAttachmentDisplay]: (id: string) => any; // TODO
+    [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
         ...makeBase(ElementType.FormLayout, id),
@@ -364,6 +366,7 @@ const elementConstructors: {
         isMultifile: undefined,
         maxFiles: undefined,
         minFiles: undefined,
+        submittedFileName: undefined,
     }),
     [ElementType.DialogLayout]: (id) => ({}),
     [ElementType.StepperLayout]: (id) => ({}),
@@ -388,8 +391,8 @@ const elementConstructors: {
         displayContext: undefined,
         openExternalEditor: undefined,
     }),
-    [ElementType.IdentityInput]: (id) => ({
-        ...makeInputBase(ElementType.IdentityInput, id),
+    [ElementType.IdentityConfigElement]: (id) => ({
+        ...makeInputBase(ElementType.IdentityConfigElement, id),
         label: 'Identitätsnachweis',
         options: [],
         allowsMail: false,
@@ -482,7 +485,7 @@ const elementConstructors: {
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),
-        // TODO
+        fileName: undefined,
     }),
 };
 

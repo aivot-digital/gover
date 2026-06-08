@@ -1,6 +1,9 @@
 import {Box, Button, Divider, Grid, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
-import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
+import {
+    GenericDetailsPageContext,
+    GenericDetailsPageContextType,
+} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {Api, useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
@@ -34,7 +37,12 @@ import {ImageSelector} from '../../../assets/components/image-selector';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import {
+    addSnackbarMessage,
+    removeSnackbarMessage,
+    SnackbarSeverity,
+    SnackbarType,
+} from '../../../../slices/shell-slice';
 import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
@@ -188,8 +196,8 @@ export function IdentityProviderDetailsPageIndex() {
     const [endpointConfigUrlError, setEndpointConfigUrlError] = useState<string>();
 
     const apiService = useMemo(() => {
-        return new IdentityProvidersApiService(api);
-    }, [api]);
+        return new IdentityProvidersApiService();
+    }, []);
 
     const {
         item: originalIdentityProvider,

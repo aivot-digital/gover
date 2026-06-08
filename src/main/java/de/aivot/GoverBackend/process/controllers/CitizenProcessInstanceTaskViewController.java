@@ -6,7 +6,6 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.identity.controllers.IdentityController;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -20,9 +19,9 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceFilter;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
-import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUICustomer;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,7 +49,7 @@ public class CitizenProcessInstanceTaskViewController {
     private final ProcessNodeExecutionResultHandler processNodeExecutionResultHandler;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
     private final ElementDerivationService elementDerivationService;
-    private final TaskViewMultipartInputService taskViewMultipartInputService;
+    private final FileUploadMultipartInputService fileUploadMultipartInputService;
 
     public CitizenProcessInstanceTaskViewController(ProcessInstanceService processInstanceService,
                                                     ProcessInstanceTaskService processInstanceTaskService,
@@ -59,7 +58,7 @@ public class CitizenProcessInstanceTaskViewController {
                                                     ProcessNodeExecutionResultHandler processNodeExecutionResultHandler,
                                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                                     ElementDerivationService elementDerivationService,
-                                                    TaskViewMultipartInputService taskViewMultipartInputService) {
+                                                    FileUploadMultipartInputService fileUploadMultipartInputService) {
         this.processInstanceService = processInstanceService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.processNodeProviderService = processNodeProviderService;
@@ -67,7 +66,7 @@ public class CitizenProcessInstanceTaskViewController {
         this.processNodeExecutionResultHandler = processNodeExecutionResultHandler;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
         this.elementDerivationService = elementDerivationService;
-        this.taskViewMultipartInputService = taskViewMultipartInputService;
+        this.fileUploadMultipartInputService = fileUploadMultipartInputService;
     }
 
     @GetMapping("")
@@ -79,7 +78,7 @@ public class CitizenProcessInstanceTaskViewController {
     public TaskViewResponse retrieve(
             @Nonnull @PathVariable UUID procAccess,
             @Nonnull @PathVariable UUID taskAccess,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(
                 procAccess,
@@ -91,7 +90,7 @@ public class CitizenProcessInstanceTaskViewController {
                         taskViewData.instance.getId(),
                         taskViewData.task.getId(),
                         null,
-                        identityId
+                        identitySessionId
                 );
 
         var context = new ProcessNodeExecutionContextUICustomer(
@@ -100,7 +99,7 @@ public class CitizenProcessInstanceTaskViewController {
                 taskViewData.instance,
                 taskViewData.task,
                 new ProcessTestClaimEntity(), // TODO: Get Test Claim
-                identityId
+                identitySessionId
         );
 
         var layout = taskViewData
@@ -135,7 +134,7 @@ public class CitizenProcessInstanceTaskViewController {
             @RequestParam(value = "files", required = false) MultipartFile[] files,
             @RequestParam(value = "fileUris", required = false) List<String> fileUris,
             @Nullable @RequestParam(value = "event", required = false) String rawEvent,
-            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identityId
+            @Nullable @RequestHeader(name = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId
     ) throws ResponseException {
         var taskViewData = fetchTaskViewData(
                 procAccess,
@@ -147,7 +146,7 @@ public class CitizenProcessInstanceTaskViewController {
                         taskViewData.instance.getId(),
                         taskViewData.task.getId(),
                         null,
-                        identityId
+                        identitySessionId
                 );
 
         var context = new ProcessNodeExecutionContextUICustomer(
@@ -156,7 +155,7 @@ public class CitizenProcessInstanceTaskViewController {
                 taskViewData.instance,
                 taskViewData.task,
                 new ProcessTestClaimEntity(), // TODO: Get Test Claim
-                identityId
+                identitySessionId
         );
 
         ProcessInstanceTaskEntity previousTask;
@@ -202,22 +201,22 @@ public class CitizenProcessInstanceTaskViewController {
         } catch (JsonProcessingException e) {
             throw ResponseException.badRequest("Ungültige Eingabedaten.", e);
         }
-        inputs = taskViewMultipartInputService.normalizeInputs(
+        inputs = fileUploadMultipartInputService.normalizeInputs(
+                layout,
                 inputs,
                 files,
                 fileUris,
                 taskViewData.instance.getId(),
                 taskViewData.task.getId(),
                 null
-        );
+        ).inputs();
 
         var derivedElementData = elementDerivationService.derive(
                 new ElementDerivationRequest(
                         layout,
                         inputs,
                         new ElementDerivationOptions()
-                ),
-                new ElementDerivationLogger()
+                )
         );
 
         if (derivedElementData.hasAnyError()) {

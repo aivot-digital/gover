@@ -3,8 +3,11 @@ package de.aivot.GoverBackend.plugins.form.v1.nodes;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.models.elements.form.input.IdentityConfigElementSlot;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
+
+import java.util.List;
 
 @LayoutElementPOJOBinding(id = FormTriggerNodeV1.NODE_KEY, type = ElementType.ConfigLayout)
 public class FormTriggerConfigV1 {
@@ -25,19 +28,11 @@ public class FormTriggerConfigV1 {
     })
     public FormLayoutElement formLayout;
 
-    /*
-    public static final String IDENTITY_PROVIDERS = "identityProviders";
-    public List<IdentityProviderConfig> identityProviders;
-
-    @ReplicatingContainerLayoutElementElementPOJOBinding(id = IDENTITY_PROVIDERS, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Identitätsanbieter"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Definieren Sie alle Identitätsanbieter, die in diesem Formular zur Verfügung stehen."),
-            @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "#. Identitätsanbieter"),
-            @ElementPOJOBindingProperty(key = "addLabel", strValue = "Neuer Identitätsanbieter"),
-            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Identitätsanbieter entfernen")
+    public static final String IDENTITIES = "identities";
+    @InputElementPOJOBinding(id = IDENTITIES, type = ElementType.IdentityConfig, properties = {
+            @ElementPOJOBindingProperty(key = "label", strValue = "Identitäten"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = ""),
+            @ElementPOJOBindingProperty(key = "required", boolValue = false)
     })
-    public static class IdentityProviderConfig {
-    }
-     */
+    public List<IdentityConfigElementSlot> identities;
 }

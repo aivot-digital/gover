@@ -1,8 +1,8 @@
 import {AuthService} from './auth-service';
 import {
-    ApiError,
     API_ERROR_REASON_NETWORK_UNREACHABLE,
     API_ERROR_REASON_TIMEOUT,
+    ApiError,
     createApiError,
 } from '../models/api-error';
 import {createApiPath} from '../utils/url-path-utils';
@@ -130,7 +130,7 @@ export class BaseApiService {
                 body: body,
             });
         } catch (error: any) {
-            response = handleFetchError(error);
+            response = handleFetchError(error, options);
         }
 
         if (response.status >= 400) {
@@ -208,10 +208,15 @@ export class BaseApiService {
     }
 }
 
-export function handleFetchError(error: any): Response {
-    console.log(error.message);
-    console.log(error.name);
-    console.log(JSON.stringify(error));
+export function handleFetchError(error: any, options?: RequestOptions): Response {
+    if (error.name === 'AbortError' && options?.abort?.aborted) {
+        console.log('Request aborted');
+    } else {
+        console.log(error.message);
+        console.log(error.name);
+        console.log(JSON.stringify(error));
+    }
+
     if (error.name === 'TimeoutError') {
         const payload: ApiError = {
             status: 504,

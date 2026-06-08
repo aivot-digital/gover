@@ -1,4 +1,4 @@
-import {Box, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Box, Dialog, DialogContent, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {showDialog} from '../../../slices/app-slice';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -87,7 +87,7 @@ import {FormHeaderComponent} from '../../../components/form/form-header-componen
 import {FormLayoutElement} from '../../../models/elements/form-layout-element';
 import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
 import {RootComponentFooter} from '../../../components/form/root-component-footer';
-import {PRE_SUBMIT_EVENT, SUBMIT_EVENT} from '../../../components/form/root.component.view';
+import {SUBMIT_EVENT} from '../../../components/form/root.component.view';
 import {BaseApiService} from '../../../services/base-api-service';
 import {ProcessTestClaimApiService} from '../../process/services/process-test-claim-api-service';
 import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
@@ -109,9 +109,20 @@ import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {XdfApiService} from '../../xdf/v1/xdf-api-service';
 import Code from '@aivot/mui-material-symbols-400-outlined/dist/code/Code';
-import {getNodeName} from '../../process/pages/details/components/process-flow-editor/utils/node-utils';
+import {IdentityProvidersApiService} from '../../identity/identity-providers-api-service';
+import {
+    IdentityConfigElementOptionWithProvider,
+    IdentityConfigElementSlot,
+    IdentityConfigElementSlotWithProviders,
+} from '../../../models/elements/form/input/identity-config-element';
+import IdentityPlatform from '@aivot/mui-material-symbols-400-outlined/dist/identity-platform/IdentityPlatform';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
+import {IdentityButton} from '../../identity/components/identity-button/identity-button';
 
 export const DialogSearchParam = 'dialog';
+
+const FormLayoutFieldKey = 'formLayout';
+const IdentitiesFieldKey = 'identities';
 
 function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
     return JSON.parse(JSON.stringify(element)) as T;
@@ -120,8 +131,6 @@ function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
 export function FormNodeEditorPage() {
     const {
         nodeId = '',
-        fieldKey = '',
-        elementType = ElementType.FormLayout.toString(),
     } = useParams<{
         nodeId: string;
         fieldKey: string;
@@ -145,13 +154,16 @@ export function FormNodeEditorPage() {
     const testClaimRef = useRef<ProcessTestClaimEntity | null>(null);
     const [formTheme, setFormTheme] = useState<AppTheme>();
 
+    const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
+    const [showIdentityDialog, setShowIdentityDialog] = useState(false);
+
     const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
 
     const {
         dialog: changeBlockerDialog,
         hasChanged,
     } = useChangeBlocker({
-        original: node?.configuration[fieldKey],
+        original: node?.configuration[FormLayoutFieldKey],
         edited: formLayout,
     });
 
@@ -167,14 +179,53 @@ export function FormNodeEditorPage() {
     }, [node]);
 
     useEffect(() => {
+        if (node == null) {
+            return;
+        }
+
+        new IdentityProvidersApiService()
+            .listAll()
+            .then((page) => {
+                const mappedIdentities = node.configuration[IdentitiesFieldKey] as IdentityConfigElementSlot[] | null | undefined;
+
+                if (mappedIdentities == null || mappedIdentities.length === 0) {
+                    return [];
+                }
+
+                const identityMappingInformation: IdentityConfigElementSlotWithProviders[] = [];
+                for (const identity of mappedIdentities) {
+                    const updatedOptions: IdentityConfigElementOptionWithProvider[] = (identity.options ?? [])
+                        .map((opt) => ({
+                            ...opt,
+                            provider: page.content.find(idp => idp.key === opt.identityProviderKey)!,
+                        }))
+                        .filter((opt) => opt.provider != null);
+
+                    if (updatedOptions.length > 0) {
+                        identityMappingInformation.push({
+                            ...identity,
+                            options: updatedOptions,
+                        });
+                    }
+                }
+
+                return identityMappingInformation;
+            })
+            .then(setIdentityMappingInformation)
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Beim Laden der Identitätsanbieter ist ein unbekannter Fehler aufgetreten'));
+            });
+    }, [node]);
+
+    useEffect(() => {
         const nodeIdInt = parseInt(nodeId);
         dispatch(setCurrentStep(0));
         new ProcessNodeApiService()
             .retrieve(nodeIdInt)
             .then((node) => {
-                let uiElement = node.configuration[fieldKey];
+                let uiElement = node.configuration[FormLayoutFieldKey];
                 if (uiElement == null) {
-                    uiElement = generateElementWithDefaultValues(parseInt(elementType) as ElementType);
+                    uiElement = generateElementWithDefaultValues(ElementType.FormLayout);
                 }
 
                 setPastLoadedForm([]);
@@ -185,7 +236,7 @@ export function FormNodeEditorPage() {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Die UI-Definition konnte nicht geladen werden.'));
             });
-    }, [dispatch, elementType, fieldKey, nodeId]);
+    }, [dispatch, nodeId]);
 
     useEffect(() => {
         if (node == null) {
@@ -348,16 +399,16 @@ export function FormNodeEditorPage() {
                 ...node,
                 configuration: {
                     ...node.configuration,
-                    [fieldKey]: formLayout,
+                    [FormLayoutFieldKey]: formLayout,
                 },
             }, {
                 query: {
-                    onlyConfigSave: fieldKey,
+                    onlyConfigSave: FormLayoutFieldKey,
                 },
             })
             .then((updated) => {
                 setNode(updated);
-                setFormLayout(updated.configuration[fieldKey]);
+                setFormLayout(updated.configuration[FormLayoutFieldKey]);
             });
     };
 
@@ -639,6 +690,14 @@ export function FormNodeEditorPage() {
             },
         },
         {
+            label: 'Mit Identitätsanbieter anmelden',
+            icon: <IdentityPlatform/>,
+            onClick: () => {
+                setShowIdentityDialog(true);
+            },
+            visible: identityMappingInformation.length > 0,
+        },
+        {
             label: 'Entwicklerwerkzeuge öffnen',
             icon: <BugReport/>,
             onClick: () => {
@@ -726,91 +785,117 @@ export function FormNodeEditorPage() {
 
     const formLogoUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
 
-    const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
-        if (event !== PRE_SUBMIT_EVENT && event !== SUBMIT_EVENT) {
+    const handleSubmitEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
+        if (event != SUBMIT_EVENT) {
             return;
         }
 
-        if (event === PRE_SUBMIT_EVENT) {
-            if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
-                await confirm({
-                    title: 'Keine Formular-URL vergeben',
-                    children: (
+        if (disableValidation) {
+            const confirmProcess = await confirm({
+                title: 'Fortfahren ohne Validierungen',
+                children: (
+                    <>
                         <Typography>
-                            Sie haben für dieses Formular keine Formular-URL konfiguriert.
-                            Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
-                            Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
+                            Sie haben die Validierungen für dieses Formular deaktiviert.
+                            Es können ungültige oder fehlenden Eingaben vorliegen, die zu Fehlern beim Absenden des
+                            Formulars führen können.
+                            Nur wenn alle Felder gültig sind, kann das Formular korrekt abgesendet werden.
+                            Andernfalls wird die Einreichung automatisch abgelehnt.
                         </Typography>
-                    ),
-                    confirmButtonText: 'Ok',
-                    hideCancelButton: true,
-                });
+                        <Typography
+                            sx={{
+                                mt: 2,
+                            }}
+                        >
+                            Sind Sie sicher, dass Sie fortfahren möchten?
+                        </Typography>
+                    </>
+                ),
+                confirmButtonText: 'Ja, fortfahren',
+            });
+
+            if (!confirmProcess) {
+                return;
+            }
+        }
+
+        // Check if a slug is configured and break if no slug is present because we cannot submit data without a slug
+        if (node.configuration.formSlug == null || node.configuration.formSlug === '') {
+            await confirm({
+                title: 'Keine Formular-URL vergeben',
+                children: (
+                    <Typography>
+                        Sie haben für dieses Formular keine Formular-URL konfiguriert.
+                        Öffnen Sie die Eigenschaften des entsprechenden Formular-Eingangselements und konfigurieren
+                        Sie eine Formular-URL, damit dieses Formular abgesendet werden kann.
+                    </Typography>
+                ),
+                confirmButtonText: 'Ok',
+                hideCancelButton: true,
+            });
+            return;
+        }
+
+        // Check if changes exist. If so, ask for saving them.
+        if (hasChanged) {
+            const saveNow = await confirm({
+                title: 'Ungespeicherte Änderungen',
+                children: (
+                    <Typography>
+                        Sie haben aktuell ungespeicherte Änderungen.
+                        Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt
+                        werden.
+                        Sie können die Änderungen jetzt speichern.
+                    </Typography>
+                ),
+                confirmButtonText: 'Jetzt speichern',
+            });
+
+            if (!saveNow) {
+                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
                 return;
             }
 
-            if (hasChanged) {
-                const saveNow = await confirm({
-                    title: 'Ungespeicherte Änderungen',
-                    children: (
-                        <Typography>
-                            Sie haben aktuell ungespeicherte Änderungen.
-                            Diese müssen gespeichert werden, damit sie beim Absenden des Formulars berücksichtigt
-                            werden.
-                            Sie können die Änderungen jetzt speichern.
-                        </Typography>
-                    ),
-                    confirmButtonText: 'Jetzt speichern',
-                });
+            await handleSave();
+        }
 
-                if (!saveNow) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
-                    return false;
-                }
+        const testClaimApi = new ProcessTestClaimApiService();
 
-                await handleSave();
+        let testClaim = await testClaimApi
+            .listAll({
+                processId: node.processId,
+                processVersion: node.processVersion,
+            })
+            .then(response => {
+                return response.content.length > 0 ? response.content[0] : null;
+            });
+
+        if (testClaim == null) {
+            const createTestClaim = await confirm({
+                title: 'Nicht im Test-Modus',
+                children: (
+                    <Typography>
+                        Der Prozess, für den Sie das Formular absenden möchten, befindet
+                        sich <strong>nicht</strong> im Testmodus.
+                        Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
+                    </Typography>
+                ),
+                confirmButtonText: 'Testmodus starten',
+            });
+
+            if (!createTestClaim) {
+                dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
+                return;
             }
 
-            const testClaimApi = new ProcessTestClaimApiService();
-
-            let testClaim = await testClaimApi
-                .listAll({
+            testClaim = await testClaimApi
+                .create({
+                    ...testClaimApi.initialize(),
                     processId: node.processId,
                     processVersion: node.processVersion,
-                })
-                .then(response => {
-                    return response.content.length > 0 ? response.content[0] : null;
                 });
-
-            if (testClaim == null) {
-                const createTestClaim = await confirm({
-                    title: 'Nicht im Test-Modus',
-                    children: (
-                        <Typography>
-                            Der Prozess, für den Sie das Formular absenden möchten, befindet
-                            sich <strong>nicht</strong> im
-                            Testmodus.
-                            Sie können den Prozess jetzt in den Testmodus versetzen, um das Formular absenden zu können.
-                        </Typography>
-                    ),
-                    confirmButtonText: 'Testmodus starten',
-                });
-
-                if (!createTestClaim) {
-                    dispatch(showWarningSnackbar('Das Absenden des Formulars wurde abgebrochen, da der Prozess nicht im Testmodus ist.'));
-                    return false;
-                }
-
-                testClaim = await testClaimApi
-                    .create({
-                        ...testClaimApi.initialize(),
-                        processId: node.processId,
-                        processVersion: node.processVersion,
-                    });
-                setTestClaim(testClaim);
-                testClaimRef.current = testClaim;
-            }
-
-            return true;
+            setTestClaim(testClaim);
+            testClaimRef.current = testClaim;
         }
 
         const formData = new FormData();
@@ -826,6 +911,7 @@ export function FormNodeEditorPage() {
         for (const file of files) {
             const blob = await fetch(file.uri).then((r) => r.blob());
             formData.append('files', blob, file.name);
+            formData.append('fileUris', file.uri);
         }
 
         dispatch(setLoadingMessage({
@@ -849,6 +935,8 @@ export function FormNodeEditorPage() {
                 );
 
             setStartedProcessAccessKey(startRes.startedProcessAccessKey);
+        } catch (err) {
+            dispatch(showApiErrorSnackbar(err, 'Beim Absenden des Formulars ist ein Fehler aufgetreten'));
         } finally {
             dispatch(clearLoadingMessage());
         }
@@ -919,6 +1007,7 @@ export function FormNodeEditorPage() {
                                                     dispatch(setCurrentStep(0));
                                                     setAuthoredElementValues({});
                                                     setStartedProcessAccessKey(null);
+                                                    IdentityProvidersApiService.clearIdentity(node.id);
                                                 }}
                                             />
 
@@ -1020,6 +1109,7 @@ export function FormNodeEditorPage() {
                                                 highlightElementSignal={highlightElementSignal}
                                                 onHoveredElementIdChange={setHoveredTreeElementId}
                                                 openRootAddElementSignal={openAddSectionSignal}
+                                                identityMappingInformation={identityMappingInformation}
                                             />
                                         </Paper>
                                     </Allotment.Pane>
@@ -1126,6 +1216,68 @@ export function FormNodeEditorPage() {
                 }}
                 displayContext={ElementDisplayContext.CitizenFacing}
             />
+
+            <Dialog
+                open={showIdentityDialog}
+                onClose={() => {
+                    setShowIdentityDialog(false);
+                }}
+                fullWidth={true}
+                maxWidth="md"
+            >
+                <DialogTitleWithClose
+                    onClose={() => {
+                        setShowIdentityDialog(false);
+                    }}
+                >
+                    Mit Identitätsanbieter Anmelden
+                </DialogTitleWithClose>
+                <DialogContent>
+                    <Typography
+                        variant="body2"
+                        component="div"
+                        maxWidth={600}
+                        marginBottom={4}
+                    >
+                        Sie können sich zu Testzwecken für jede der Konfigurierten Identitäten mit einem
+                        Identitätsanbieter anmelden. Um Ihren Authentifizierungsstatus zurückzusetzen, können Sie das
+                        Formularspezifische Drei-Punkte-Menü verwenden
+                        und <strong>Alle Antragsdaten löschen</strong>auswählen.
+                    </Typography>
+
+                    {
+                        identityMappingInformation
+                            .map((idm) => (
+                                <Box
+                                    key={idm.id}
+                                    sx={{
+                                        mb: 4,
+                                    }}
+                                >
+                                    <Typography>
+                                        Identität <strong>{idm.title}</strong>
+                                    </Typography>
+
+                                    {
+                                        (idm.options ?? [])
+                                            .map((opt) => (
+                                                <IdentityButton
+                                                    isAuthenticated={false}
+                                                    relatedProcessNodeId={node.id}
+                                                    identityId={idm.id ?? ''}
+                                                    identityProviderKey={opt.provider.key}
+                                                    identityProviderAssetKey={opt.provider.iconAssetKey}
+                                                    additionalScopes={opt.additionalScopes ?? []}
+                                                    identityProviderName={opt.provider.name}
+                                                    identityProviderType={opt.provider.type}
+                                                />
+                                            ))
+                                    }
+                                </Box>
+                            ))
+                    }
+                </DialogContent>
+            </Dialog>
 
             {changeBlockerDialog}
         </PageWrapper>

@@ -247,9 +247,9 @@ public class DestinationSubmitService {
                 null :
                 paymentProviderRepository.findById(paymentTransaction.getPaymentProviderKey()).orElse(null);
 
-        Map<String, Object> destinationData = DestinationDataFormatter
-                .create(form, submission, paymentTransaction, paymentProvider, pdfBytes, attachmentBytes)
-                .format();
+
+
+        Map<String, Object> destinationData = Map.of();
 
         ObjectMapper mapper = new ObjectMapper();
         String jsonResult;
@@ -382,9 +382,7 @@ public class DestinationSubmitService {
 
         byte[] destinationDataBytes;
         try {
-            var destinationData = DestinationDataFormatter
-                    .createDataWithoutFiles(form, submission, paymentTransaction, paymentProvider)
-                    .format();
+            var destinationData = Map.of();
             destinationDataBytes = new ObjectMapper().writeValueAsBytes(destinationData);
         } catch (JsonProcessingException e) {
             return new DestinationResponse(

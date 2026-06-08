@@ -1,4 +1,3 @@
-import {type FormLayoutElement} from '../models/elements/form-layout-element';
 import {type AnyElement} from '../models/elements/any-element';
 import {ElementType} from '../data/element-type/element-type';
 import ShortUniqueId from 'short-unique-id';
@@ -69,7 +68,7 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.CodeInput]: 'ci',
     [ElementType.RichTextInput]: 'ri',
     [ElementType.UiDefinitionInput]: 'ui',
-    [ElementType.IdentityInput]: 'ii',
+    [ElementType.IdentityConfigElement]: 'ii',
     [ElementType.TabLayout]: 'tl',
     [ElementType.ChipInput]: 'ch',
     [ElementType.DateTime]: 'zt',

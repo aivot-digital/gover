@@ -10,9 +10,9 @@ const deLocale = de as unknown as Locale;
 
 interface TimeFieldComponentProps {
     label: string;
-    value?: string;
-    onChange: (value: string | undefined) => void;
-    onBlur?: (val: string | undefined) => void;
+    value?: string | null;
+    onChange: (value: string | null) => void;
+    onBlur?: (val: string | null) => void;
     autocomplete?: string;
     hint?: string;
     hideHelperText?: boolean;
@@ -33,7 +33,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     // MUI fires picker changes for both popover selection and direct field edits.
     // We track keyboard-driven edits separately so clearing the text field also
-    // propagates `undefined` to the parent instead of only mutating local picker state.
+    // propagates an explicit clear to the parent instead of only mutating local picker state.
     const lastInputWasTypingRef = useRef(false);
     const lastPickerValueRef = useRef<Date | null>(dateValue);
 
@@ -53,8 +53,8 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
 
     const triggerChange = (date: Date | null) => {
         if (date === null) {
-            props.onChange(undefined);
-            props.onBlur?.(undefined);
+            props.onChange(null);
+            props.onBlur?.(null);
             return;
         }
 

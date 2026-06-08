@@ -13,8 +13,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
-import jakarta.annotation.Nonnull;
-import java.util.List;
 import java.util.Optional;
 
 @Entity
@@ -93,6 +91,7 @@ public class UserEntity {
 
     // region Transformers
 
+    @Deprecated
     public Optional<UserEntity> asSuperAdmin() {
         if (getIsSuperAdmin()) {
             return Optional.of(this);
@@ -101,6 +100,7 @@ public class UserEntity {
         }
     }
 
+    @Deprecated
     public Optional<UserEntity> asSystemAdmin() {
         if (getIsSystemAdmin() || getIsSuperAdmin()) {
             return Optional.of(this);

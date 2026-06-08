@@ -22,7 +22,7 @@ import L from 'leaflet';
 interface MapPointFieldComponentProps {
     label: string;
     value?: MapPointValue | null;
-    onChange: (value: MapPointValue | undefined) => void;
+    onChange: (value: MapPointValue | null) => void;
     hint?: string;
     required?: boolean;
     disabled?: boolean;
@@ -77,13 +77,13 @@ function normalizeZoom(zoom?: number): number {
     return clamp(Math.round(zoom), 1, 19);
 }
 
-function normalizePoint(value: MapPointValue): MapPointValue | undefined {
-    const latitude = value.latitude ?? undefined;
-    const longitude = value.longitude ?? undefined;
-    const address = value.address?.trim().length ? value.address.trim() : undefined;
+function normalizePoint(value: MapPointValue): MapPointValue | null {
+    const latitude = value.latitude ?? null;
+    const longitude = value.longitude ?? null;
+    const address = value.address?.trim().length ? value.address.trim() : null;
 
     if (latitude == null && longitude == null && address == null) {
-        return undefined;
+        return null;
     }
 
     return {

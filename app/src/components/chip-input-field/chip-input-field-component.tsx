@@ -7,7 +7,7 @@ import {pluralize} from '../../utils/humanization-utils';
 interface ChipInputFieldComponentProps {
     label: string;
     value: string[] | null | undefined;
-    onChange: (value: string[] | null | undefined) => void;
+    onChange: (value: string[] | null) => void;
     placeholder?: string;
     hint?: string;
     error?: string;
@@ -21,7 +21,7 @@ interface ChipInputFieldComponentProps {
 }
 
 interface NormalizedValuesResult {
-    values: string[] | undefined;
+    values: string[] | null;
     hasRejectedDuplicate: boolean;
     hasRejectedItem: boolean;
 }
@@ -55,7 +55,7 @@ function normalizeValues(values: string[], allowDuplicates: boolean, maxItems?: 
     }
 
     return {
-        values: normalizedValues.length > 0 ? normalizedValues : undefined,
+        values: normalizedValues.length > 0 ? normalizedValues : null,
         hasRejectedDuplicate,
         hasRejectedItem,
     };

@@ -6,7 +6,6 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
@@ -17,11 +16,7 @@ import de.aivot.GoverBackend.process.entities.ProcessEdgeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHintType;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeProblems;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
@@ -190,8 +185,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 entity.getConfiguration(),
                 edo
         );
-        var dummyLogger = new ElementDerivationLogger();
-        var derivedData = elementDerivationService.derive(edr, dummyLogger);
+        var derivedData = elementDerivationService.derive(edr);
 
         NodeConfig config;
         try {

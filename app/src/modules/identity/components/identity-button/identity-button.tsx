@@ -1,44 +1,44 @@
 import {Box, Button, Typography, useTheme} from '@mui/material';
 import React, {useMemo} from 'react';
-import {IdentityProviderLink} from '../../models/identity-provider-link';
-import {IdentityProviderInfo} from '../../models/identity-provider-info';
-import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderIcon} from '../identity-provider-icon/identity-provider-icon';
-import {IdentityData} from '../../models/identity-data';
+import {IdentityProviderType} from '../../enums/identity-provider-type';
+import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 
 export interface IdentityButtonProps {
-    identityProviderLink: IdentityProviderLink;
-    identityProviderInfo: IdentityProviderInfo;
-    isBusy: boolean;
-    value?: IdentityData | undefined | null;
+    isAuthenticated: boolean;
+    relatedProcessNodeId: number;
+    identityId: string;
+    identityProviderKey: string;
+    identityProviderAssetKey: string | null;
+    additionalScopes: string[];
+    identityProviderName: string;
+    identityProviderType: IdentityProviderType;
 }
 
 export function IdentityButton(props: IdentityButtonProps) {
     const theme = useTheme();
 
     const {
-        identityProviderLink,
-        identityProviderInfo,
-        isBusy,
-        value,
+        isAuthenticated,
+        relatedProcessNodeId,
+        identityId,
+        identityProviderKey,
+        identityProviderAssetKey,
+        identityProviderName,
+        identityProviderType,
+        additionalScopes,
     } = props;
 
-    const {
-        identityProviderKey,
-        additionalScopes,
-    } = identityProviderLink;
-
     const startUri = useMemo(() => {
-        return IdentityProvidersApiService
-            .createLink(identityProviderKey, additionalScopes);
-    }, [identityProviderKey, additionalScopes]);
-
-    const isSuccessful = useMemo(() => {
-        if (value == null) {
-            return false;
+        const searchParams = new URLSearchParams(window.location.search);
+        for (const key of (additionalScopes ?? [])) {
+            searchParams.set('additionalScopes', key);
         }
-        return value.providerKey === identityProviderInfo.key;
-    }, [identityProviderInfo, value]);
+        searchParams.set('origin', window.location.href);
+
+        return IdentityProvidersApiService
+            .createLink(identityProviderKey, identityId, relatedProcessNodeId, additionalScopes, window.location.href);
+    }, [identityProviderKey, additionalScopes]);
 
     const successColorWithOpacity = useMemo(() => {
         const successColor = theme.palette.success.main; // Greift auf die Haupt-"success"-Farbe zu
@@ -49,29 +49,29 @@ export function IdentityButton(props: IdentityButtonProps) {
         <Button
             variant="outlined"
             color={
-                isSuccessful
+                isAuthenticated
                     ? 'success'
                     : 'primary'
             }
             fullWidth
-            component={isSuccessful ? 'div' : 'a'}
+            component={isAuthenticated ? 'div' : 'a'}
             href={startUri}
             sx={{
                 textTransform: 'none',
                 p: 1.5,
                 mt: 2,
-                backgroundColor: isSuccessful ? successColorWithOpacity : 'inherit',
+                backgroundColor: isAuthenticated ? successColorWithOpacity : 'inherit',
                 justifyContent: 'start',
                 flexDirection: {
                     xs: 'column',
                     md: 'row',
                 },
             }}
-            disabled={(!isSuccessful && value != null) || isBusy}
+            disabled={isAuthenticated}
         >
             <Box
                 sx={{
-                    opacity: ((!isSuccessful && value != null) || isBusy) ? 0.6 : 1,
+                    opacity: isAuthenticated ? 0.6 : 1,
                     width: {md: 210},
                     flexShrink: {md: 0},
                     pr: {md: 4},
@@ -83,9 +83,9 @@ export function IdentityButton(props: IdentityButtonProps) {
                 }}
             >
                 <IdentityProviderIcon
-                    name={identityProviderInfo.name}
-                    type={identityProviderInfo.type}
-                    iconAssetKey={identityProviderInfo.iconAssetKey}
+                    name={identityProviderName}
+                    type={identityProviderType}
+                    iconAssetKey={identityProviderAssetKey}
                 />
             </Box>
             <Typography
@@ -96,10 +96,10 @@ export function IdentityButton(props: IdentityButtonProps) {
                     textAlign: {xs: 'center', md: 'left'},
                 }}
             >
-                {isSuccessful ? (
-                    <>Sie haben sich erfolgreich mit dem Nutzerkonto <b>„{identityProviderInfo.name}“</b> angemeldet.</>
+                {isAuthenticated ? (
+                    <>Sie haben sich erfolgreich mit dem Nutzerkonto <b>„{identityProviderName}“</b> angemeldet.</>
                 ) : (
-                    <>Mit Nutzerkonto <b>„{identityProviderInfo.name}“</b> anmelden</>
+                    <>Mit Nutzerkonto <b>„{identityProviderName}“</b> anmelden</>
                 )}
             </Typography>
         </Button>

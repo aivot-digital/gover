@@ -25,7 +25,7 @@ export function DataObjectSelectFieldView(props: BaseViewProps<DataObjectSelectF
     return (
         <DataObjectSelectFieldComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             dataModelKey={element.dataModelKey ?? undefined}
             dataLabelAttributeKey={element.dataLabelAttributeKey ?? undefined}

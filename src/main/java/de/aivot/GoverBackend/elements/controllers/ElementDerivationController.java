@@ -6,6 +6,9 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
+import de.aivot.GoverBackend.identity.constants.IdentityQueryParameterConstants;
+import de.aivot.GoverBackend.identity.controllers.IdentityController;
+import de.aivot.GoverBackend.identity.services.IdentityService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
@@ -13,11 +16,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/elements/")
@@ -28,9 +29,11 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class ElementDerivationController {
     private final ElementDerivationService elementDerivationServiceV2;
+    private final IdentityService identityService;
 
-    public ElementDerivationController(ElementDerivationService elementDerivationServiceV2) {
+    public ElementDerivationController(ElementDerivationService elementDerivationServiceV2, IdentityService identityService) {
         this.elementDerivationServiceV2 = elementDerivationServiceV2;
+        this.identityService = identityService;
     }
 
     @PostMapping("derive/")
@@ -39,15 +42,18 @@ public class ElementDerivationController {
             description = "Derives an element based on the provided data in the request."
     )
     public DerivedRuntimeElementData derive(
-            @Nonnull @RequestBody @Valid ElementDerivationRequest request
+            @Nonnull @RequestBody @Valid ElementDerivationRequest request,
+            @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+            @Nullable @RequestParam(value = IdentityQueryParameterConstants.RELATED_PROCESS_NODE_ID, required = false) Integer relatedProcessNodeId
     ) throws ResponseException {
-        var derivationLogger = new ElementDerivationLogger();
-
         ElementStreamUtils
                 .applyAction(request.element(), BaseElement::recalculateReferencedIds);
 
+        var identities = identityService
+                .getIdentityDataMap(identitySessionId, relatedProcessNodeId);
+
         return elementDerivationServiceV2
-                .derive(request, derivationLogger);
+                .derive(request, identities, new ElementDerivationLogger());
     }
 
     @PostMapping("recalculate-referenced-ids/")

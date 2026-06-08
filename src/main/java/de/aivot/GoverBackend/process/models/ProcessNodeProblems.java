@@ -21,4 +21,8 @@ public record ProcessNodeProblems(
         @Nonnull DerivedRuntimeElementData derivedRuntimeElementData
 ) {
     public static final String COMMON_ERROR_KEY_DATA_KEY = "dataKey";
+
+    public boolean hasAnyProblems() {
+        return !problems.isEmpty() || !commonErrors.isEmpty() || derivedRuntimeElementData.hasAnyError();
+    }
 }

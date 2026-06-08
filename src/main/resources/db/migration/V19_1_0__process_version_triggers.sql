@@ -18,7 +18,11 @@ BEGIN
 
     IF NEW.status = 0 THEN -- drafted
     -- Check if there is already a drafted version and raise an exception if so
-        IF exists(SELECT 1 FROM process_versions WHERE process_id = NEW.process_id AND status = 0 AND process_version <> NEW.process_version) THEN
+        IF exists(SELECT 1
+                  FROM process_versions
+                  WHERE process_id = NEW.process_id
+                    AND status = 0
+                    AND process_version <> NEW.process_version) THEN
             RAISE EXCEPTION 'A drafted version already exists for this process.';
         END IF;
 
@@ -66,7 +70,7 @@ BEGIN
     END IF;
 
     IF NEW.status = 0 THEN -- drafted
-        -- Check if the previous status was not drafted
+    -- Check if the previous status was not drafted
         IF OLD.status <> 0 THEN
             RAISE EXCEPTION 'Cannot change status to drafted from a different status.';
         END IF;
@@ -77,7 +81,7 @@ BEGIN
             updated         = now()
         WHERE id = NEW.process_id;
     ELSIF NEW.status = 1 THEN -- published
-        -- Set the published timestamp for the process version
+    -- Set the published timestamp for the process version
         NEW.published = now();
 
         -- Revoke all other published versions
@@ -101,7 +105,7 @@ BEGIN
         WHERE id = NEW.process_id
           AND drafted_version = NEW.process_version;
     ELSEIF NEW.status = 2 THEN -- revoked
-        -- Set the revoked timestamp for the process version
+    -- Set the revoked timestamp for the process version
         NEW.revoked = now();
 
         -- Remove the published reference if necessary
@@ -123,6 +127,35 @@ BEGIN
 END;
 $$;
 
+CREATE FUNCTION handle_process_version_delete()
+    RETURNS TRIGGER
+    LANGUAGE plpgsql AS
+$$
+BEGIN
+    -- Decrement the version count of the parent process
+    UPDATE processes
+    SET version_count = version_count - 1,
+        updated       = now()
+    WHERE id = OLD.process_id;
+
+    -- Remove the draft version reference if necessary
+    UPDATE processes
+    SET drafted_version = null,
+        updated         = now()
+    WHERE id = OLD.process_id
+      AND drafted_version = OLD.process_version;
+
+    -- Remove the published version reference if necessary
+    UPDATE processes
+    SET drafted_version = null,
+        updated         = now()
+    WHERE id = OLD.process_id
+      AND published_version = OLD.process_version;
+
+    RETURN OLD;
+END;
+$$;
+
 -- Create new triggers
 CREATE TRIGGER on_process_version_insert
     AFTER INSERT
@@ -135,3 +168,9 @@ CREATE TRIGGER on_process_version_update
     ON process_versions
     FOR EACH ROW
 EXECUTE FUNCTION handle_process_version_update();
+
+CREATE TRIGGER on_process_version_delete
+    BEFORE DELETE
+    ON process_versions
+    FOR EACH ROW
+EXECUTE FUNCTION handle_process_version_delete();

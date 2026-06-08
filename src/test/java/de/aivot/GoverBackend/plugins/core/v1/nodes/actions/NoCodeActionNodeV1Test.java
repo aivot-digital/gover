@@ -270,7 +270,7 @@ class NoCodeActionNodeV1Test {
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
                 .setAssignedFileNumbers(List.of())
-                .setIdentities(Map.of())
+                .setIdentities(new de.aivot.GoverBackend.identity.models.IdentityDataMap())
                 .setStarted(now)
                 .setUpdated(now)
                 .setInitialPayload(Map.of())

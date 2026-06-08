@@ -8,8 +8,8 @@ export interface MultiCheckboxOptions {
 
 export interface MultiCheckboxComponentProps {
     label: string;
-    value?: string[];
-    onChange: (val: string[] | undefined) => void;
+    value?: string[] | null;
+    onChange: (val: string[] | null) => void;
     options: MultiCheckboxOptions[];
     error?: string;
     hint?: string;
@@ -40,7 +40,7 @@ export function MultiCheckboxComponent(props: MultiCheckboxComponentProps) {
 
         if (value.includes(toggledOption)) {
             const splicedList = value.filter((v) => v !== toggledOption);
-            onChange(splicedList.length > 0 ? splicedList : undefined);
+            onChange(splicedList.length > 0 ? splicedList : null);
             return;
         }
 

@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessDefinitionEdgeFilter;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
@@ -44,9 +45,13 @@ public class ProcessExportService {
                 .retrieve(processId)
                 .orElseThrow(ResponseException::notFound);
 
+        cleanProcessDataForExport(processDefinition);
+
         var processVersion = processDefinitionVersionService
                 .retrieve(ProcessVersionEntityId.of(processId, version))
                 .orElseThrow(ResponseException::notFound);
+
+        cleanProcessVersionDataForExport(processVersion);
 
         var nodes = processDefinitionNodeService
                 .list(
@@ -80,9 +85,9 @@ public class ProcessExportService {
                             node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
                             cleanedConfiguration, // configuration
                             node.getOutputMappings(), // outputMappings
-                            node.getTimeLimitDays(), // timeLimitDays
-                            node.getRequirements(), // requirements
-                            node.getNotes(), // notes
+                            null, // timeLimitDays
+                            null, // requirements
+                            null, // notes
                             false // savedWithErrors
                     );
                 })
@@ -115,6 +120,21 @@ public class ProcessExportService {
                 nodes,
                 edges
         );
+    }
+
+    private static void cleanProcessVersionDataForExport(ProcessVersionEntity processVersion) {
+        processVersion.setPublished(null);
+        processVersion.setRevoked(null);
+        processVersion.setStatus(ProcessVersionStatus.Drafted);
+    }
+
+    private static void cleanProcessDataForExport(ProcessEntity processDefinition) {
+        processDefinition.setAccessKey(null);
+        processDefinition.setDepartmentId(null);
+        processDefinition.setVersionCount(null);
+        processDefinition.setPublishedVersion(null);
+        processDefinition.setDraftedVersion(null);
+        processDefinition.setInternalTitle(null);
     }
 
     public record ProcessExport(

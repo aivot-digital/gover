@@ -6,9 +6,11 @@ import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
@@ -37,7 +39,7 @@ import de.aivot.GoverBackend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.services.ProcessVersionService;
-import de.aivot.GoverBackend.process.services.TaskViewMultipartInputService;
+import de.aivot.GoverBackend.process.services.FileUploadMultipartInputService;
 import de.aivot.GoverBackend.process.workers.ProcessNodeExecutionResultHandler;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
@@ -109,7 +111,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 null,
                 null,
                 List.of(),
-                Map.of(),
+                new IdentityDataMap(),
                 now,
                 now,
                 null,
@@ -355,7 +357,14 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
 
         @Override
-        public DerivedRuntimeElementData derive(ElementDerivationRequest request, ElementDerivationLogger logger) {
+        public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
+            return new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
+        }
+
+        @Override
+        public DerivedRuntimeElementData derive(ElementDerivationRequest request,
+                                                de.aivot.GoverBackend.identity.models.IdentityDataMap identities,
+                                                de.aivot.GoverBackend.elements.services.ElementDerivationLogger logger) {
             return new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
         }
     }
@@ -388,19 +397,20 @@ class StaffProcessInstanceTaskViewControllerTest {
         }
     }
 
-    private static final class PassthroughTaskViewMultipartInputService extends TaskViewMultipartInputService {
+    private static final class PassthroughTaskViewMultipartInputService extends FileUploadMultipartInputService {
         private PassthroughTaskViewMultipartInputService() {
             super(null, null);
         }
 
         @Override
-        public AuthoredElementValues normalizeInputs(AuthoredElementValues inputs,
-                                                     MultipartFile[] files,
-                                                     List<String> fileUris,
-                                                     Long processInstanceId,
-                                                     Long processInstanceTaskId,
-                                                     String uploadedByUserId) {
-            return inputs;
+        public NormalizationResult normalizeInputs(BaseElement layout,
+                                                   AuthoredElementValues inputs,
+                                                   MultipartFile[] files,
+                                                   List<String> fileUris,
+                                                   Long processInstanceId,
+                                                   Long processInstanceTaskId,
+                                                   String uploadedByUserId) {
+            return new NormalizationResult(inputs, List.of());
         }
     }
 

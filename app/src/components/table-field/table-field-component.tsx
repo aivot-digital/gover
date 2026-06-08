@@ -49,8 +49,8 @@ export function TableFieldComponent(props: TableFieldComponentProps) {
         const updatedRows = value
             .filter((_: any, index: number) => !selectedIds.has(index));
 
-        // Propagate the change. If no rows are left, propagate undefined to signal that the field is empty
-        props.onChange(updatedRows.length > 0 ? updatedRows : undefined);
+        // Propagate the change. If no rows are left, propagate an explicit clear.
+        props.onChange(updatedRows.length > 0 ? updatedRows : null);
 
         // Reset the selection model and the confirm dialog
         setSelectionModel({ type: 'include', ids: new Set() });

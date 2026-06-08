@@ -35,7 +35,7 @@ export function Dashboard() {
                         },
                         'separator',
                         {
-                            icon: <Logout />,
+                            icon: <Logout/>,
                             tooltip: 'Abmelden',
                             onClick: logout,
                         },
@@ -59,7 +59,7 @@ export function Dashboard() {
                             md: 6,
                         }}
                     >
-                        <DashboardFormsPanel />
+                        <DashboardFormsPanel/>
                     </Grid>
                     <Grid
                         size={{
@@ -67,7 +67,7 @@ export function Dashboard() {
                             md: 6,
                         }}
                     >
-                        <DashboardStatsPanel />
+                        <DashboardStatsPanel/>
                     </Grid>
                 </Grid>
 
@@ -77,12 +77,19 @@ export function Dashboard() {
                     }}
                 />
                 <Box sx={{mt: 4}}>
-                    <Divider sx={{borderColor: 'rgba(0, 0, 0, 0.15)', mx: -2}} />
+                    <Divider sx={{borderColor: 'rgba(0, 0, 0, 0.15)', mx: -2}}/>
                     <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2}}>
                         <Typography sx={{fontSize: '0.8125rem', color: 'rgba(0, 0, 0, 0.6)'}}>
                             Gover – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
                         </Typography>
-                        <Typography sx={{fontSize: '0.8125rem', color: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center'}}>
+                        <Typography
+                            sx={{
+                                fontSize: '0.8125rem',
+                                color: 'rgba(0, 0, 0, 0.6)',
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
                             Entwickelt in Deutschland für die deutsche Verwaltung.
                             <Box
                                 component="button"

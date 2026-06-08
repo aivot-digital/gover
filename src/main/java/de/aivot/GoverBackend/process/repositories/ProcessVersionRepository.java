@@ -17,4 +17,6 @@ public interface ProcessVersionRepository extends JpaRepository<ProcessVersionEn
     Optional<Integer> maxVersionForProcessDefinition(@Param("processDefinitionId") Integer processDefinitionId);
 
     long countAllByStatusIs(ProcessVersionStatus status);
+
+    boolean existsByProcessIdAndStatus(Integer processId, ProcessVersionStatus status);
 }

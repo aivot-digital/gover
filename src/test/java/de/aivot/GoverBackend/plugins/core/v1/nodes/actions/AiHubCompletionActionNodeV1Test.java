@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.plugins.ai.properties.AiPluginProperties;
 import de.aivot.GoverBackend.plugins.ai.v1.nodes.AiCompletionActionNodeV1;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -56,6 +57,7 @@ class AiHubCompletionActionNodeV1Test {
     private static final Integer NODE_ID = 123;
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 456L;
+    private static final int CONFIGURED_COMPLETION_MAX_TOKENS = 1337;
 
     private HttpService httpService;
     private SecretRepository secretRepository;
@@ -74,7 +76,8 @@ class AiHubCompletionActionNodeV1Test {
                 httpService,
                 templateRenderService,
                 secretRepository,
-                secretService
+                secretService,
+                createAiPluginProperties(1000, CONFIGURED_COMPLETION_MAX_TOKENS, 4000)
         );
     }
 
@@ -156,7 +159,7 @@ class AiHubCompletionActionNodeV1Test {
         var headersCaptor = ArgumentCaptor.forClass(HttpServiceHeaders.class);
         verify(httpService).request(eq(HttpMethod.POST), uriCaptor.capture(), bodyCaptor.capture(), headersCaptor.capture());
 
-        assertEquals(URI.create("https://aihub.example/api/completions"), uriCaptor.getValue());
+        assertEquals(URI.create("https://aihub.example/api/completions/chat/completions"), uriCaptor.getValue());
         assertEquals("Hello {{ $.person.name }}", templateRenderService.lastTemplate);
 
         var requestBody = ObjectMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
@@ -170,7 +173,7 @@ class AiHubCompletionActionNodeV1Test {
         assertEquals(0.9d, ((Number) requestBody.get("top_p")).doubleValue(), 0.0001d);
         assertEquals(1, ((Number) requestBody.get("n")).intValue());
         assertEquals(false, requestBody.get("stream"));
-        assertEquals(1000, ((Number) requestBody.get("max_tokens")).intValue());
+        assertEquals(CONFIGURED_COMPLETION_MAX_TOKENS, ((Number) requestBody.get("max_tokens")).intValue());
         assertNull(requestBody.get("prompt"));
         assertNull(requestBody.get("stop"));
         assertNull(requestBody.get("presence_penalty"));
@@ -253,6 +256,58 @@ class AiHubCompletionActionNodeV1Test {
         );
 
         assertTrue(exception.getMessage().contains("Die Antwort der KI enthält keinen Texte."));
+    }
+
+    @Test
+    void init_ShouldUsePluginDefaultMaxTokensWhenCompletionOverrideIsMissing() throws Exception {
+        var secretId = UUID.randomUUID();
+        when(secretService.retrieve(secretId)).thenReturn(Optional.of(secret(secretId, "AI Hub Token")));
+        when(secretService.decrypt(any(SecretEntity.class))).thenReturn("secret-token");
+        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
+                .thenReturn(ResponseEntity.ok("""
+                        {
+                          "id": "resp-3",
+                          "choices": [
+                            {
+                              "finish_reason": "stop",
+                              "index": 0,
+                              "message": {
+                                "role": "assistant",
+                                "content": "Completion"
+                              }
+                            }
+                          ],
+                          "created": 1716972002,
+                          "object": "chat.completion",
+                          "model": "meta-llama/Llama-3.3-70B-Instruct",
+                          "usage": {
+                            "prompt_tokens": 11,
+                            "completion_tokens": 7,
+                            "total_tokens": 18
+                          }
+                        }
+                        """.getBytes(StandardCharsets.UTF_8)));
+
+        var defaultOnlyNode = new AiCompletionActionNodeV1(
+                httpService,
+                templateRenderService,
+                secretRepository,
+                secretService,
+                createAiPluginProperties(2222, null, 4000)
+        );
+
+        defaultOnlyNode.init(context(configuration(
+                "https://aihub.example/api/completions",
+                secretId,
+                "meta-llama/Llama-3.3-70B-Instruct",
+                "Prompt"
+        )));
+
+        var bodyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(httpService).request(eq(HttpMethod.POST), any(), bodyCaptor.capture(), any());
+
+        var requestBody = ObjectMapperFactory.getInstance().readValue(bodyCaptor.getValue(), Map.class);
+        assertEquals(2222, ((Number) requestBody.get("max_tokens")).intValue());
     }
 
     @Test
@@ -342,7 +397,7 @@ class AiHubCompletionActionNodeV1Test {
                 .setInitialProcessVersion(PROCESS_VERSION)
                 .setStatus(ProcessInstanceStatus.Running)
                 .setAssignedFileNumbers(List.of())
-                .setIdentities(Map.of())
+                .setIdentities(new de.aivot.GoverBackend.identity.models.IdentityDataMap())
                 .setStarted(now)
                 .setUpdated(now)
                 .setInitialPayload(Map.of())
@@ -390,6 +445,23 @@ class AiHubCompletionActionNodeV1Test {
         secret.setValue("encrypted");
         secret.setSalt("salt");
         return secret;
+    }
+
+    private static AiPluginProperties createAiPluginProperties(int defaultMaxTokens,
+                                                               Integer completionMaxTokens,
+                                                               Integer processDataTransformationMaxTokens) {
+        var properties = new AiPluginProperties();
+        properties.setDefaultMaxTokens(defaultMaxTokens);
+
+        var completion = new AiPluginProperties.CompletionProperties();
+        completion.setMaxTokens(completionMaxTokens);
+        properties.setCompletion(completion);
+
+        var processDataTransformation = new AiPluginProperties.ProcessDataTransformationProperties();
+        processDataTransformation.setMaxTokens(processDataTransformationMaxTokens);
+        properties.setProcessDataTransformation(processDataTransformation);
+
+        return properties;
     }
 
     private static class RecordingTemplateRenderService extends TemplateRenderService {

@@ -12,6 +12,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface ProcessInstanceTaskRepository extends JpaRepository<ProcessInstanceTaskEntity, Long>, JpaSpecificationExecutor<ProcessInstanceTaskEntity> {
+    Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdOrderByStartedDescIdDesc(Long processInstanceId);
+
     Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(Long processInstanceId, Integer processDefinitionNodeId);
 
     Optional<ProcessInstanceTaskEntity> findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc(Long processInstanceId,

@@ -4,11 +4,9 @@ import {ProcessStatus} from '../enums/process-status';
 import {ProcessNodeProblems} from '../entities/process-node-problems';
 
 interface ProcessDefinitionVersionFilter {
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     status: string;
-    retentionTimeUnit: string;
-    retentionTimeAmount: number;
 }
 
 interface ProcessDefinitionVersionEntityId {
@@ -52,5 +50,13 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
 
     public validate(id: ProcessDefinitionVersionEntityId): Promise<ProcessNodeProblems[]> {
         return this.get<ProcessNodeProblems[]>(this.buildPath(id) + 'problems/');
+    }
+
+    public publish(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionEntity> {
+        return this.put<any, ProcessVersionEntity>(this.buildPath(id) + 'publish/', {});
+    }
+
+    public revoke(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionEntity> {
+        return this.put<any, ProcessVersionEntity>(this.buildPath(id) + 'revoke/', {});
     }
 }

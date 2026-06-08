@@ -4,7 +4,7 @@ import {editor} from 'monaco-editor';
 
 export interface CodeEditorProps {
     label?: string;
-    value?: string;
+    value?: string | null;
     onChange: (value: string) => void;
     onBlur?: (value: string) => void;
     disabled?: boolean;

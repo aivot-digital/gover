@@ -2,6 +2,8 @@ package de.aivot.GoverBackend.process.services;
 
 import de.aivot.GoverBackend.av.services.AVService;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import org.junit.jupiter.api.Test;
@@ -16,14 +18,15 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-class TaskViewMultipartInputServiceTest {
+class FileUploadMultipartInputServiceTest {
     @Test
     void normalizeInputs_ReplacesTransientFileItemsWithPersistedAttachmentUris() throws Exception {
         var attachmentService = new TestProcessInstanceAttachmentService();
-        var service = new TaskViewMultipartInputService(
+        var service = new FileUploadMultipartInputService(
                 attachmentService,
                 new TestAVService()
         );
+        var layout = createLayout("documents", null);
 
         var inputs = new AuthoredElementValues();
         inputs.put("documents", List.of(
@@ -47,13 +50,14 @@ class TaskViewMultipartInputServiceTest {
         );
 
         var normalized = service.normalizeInputs(
+                layout,
                 inputs,
                 new MultipartFile[]{file},
                 List.of("blob:report"),
                 42L,
                 9L,
                 "staff-user"
-        );
+        ).inputs();
 
         @SuppressWarnings("unchecked")
         var documents = (List<Map<String, Object>>) normalized.get("documents");
@@ -61,7 +65,7 @@ class TaskViewMultipartInputServiceTest {
         assertEquals("report.pdf", documents.get(0).get("name"));
         assertEquals(3, documents.get(0).get("size"));
         assertEquals(
-                TaskViewMultipartInputService.buildAttachmentUri(attachmentService.createdAttachments().getFirst().getKey()),
+                FileUploadMultipartInputService.buildAttachmentUri(attachmentService.createdAttachments().getFirst().getKey()),
                 documents.get(0).get("uri")
         );
         assertEquals("process-instance-attachment:existing", documents.get(1).get("uri"));
@@ -75,10 +79,11 @@ class TaskViewMultipartInputServiceTest {
 
     @Test
     void normalizeInputs_RejectsMissingMultipartDataForTransientFiles() {
-        var service = new TaskViewMultipartInputService(
+        var service = new FileUploadMultipartInputService(
                 new TestProcessInstanceAttachmentService(),
                 new TestAVService()
         );
+        var layout = createLayout("documents", null);
 
         var inputs = new AuthoredElementValues();
         inputs.put("documents", List.of(Map.of(
@@ -88,6 +93,7 @@ class TaskViewMultipartInputServiceTest {
         )));
 
         var exception = assertThrows(ResponseException.class, () -> service.normalizeInputs(
+                layout,
                 inputs,
                 null,
                 null,
@@ -97,6 +103,62 @@ class TaskViewMultipartInputServiceTest {
         ));
 
         assertTrue(exception.getMessage().contains("keine Binärdaten"));
+    }
+
+    @Test
+    void normalizeInputs_UsesConfiguredSubmittedFileNameAndSuffixesMultipleUploads() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var service = new FileUploadMultipartInputService(
+                attachmentService,
+                new TestAVService()
+        );
+        var layout = createLayout("documents", "evidence");
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("documents", List.of(
+                Map.of(
+                        "name", "report.pdf",
+                        "uri", "blob:report",
+                        "size", 3
+                ),
+                Map.of(
+                        "name", "invoice.pdf",
+                        "uri", "blob:invoice",
+                        "size", 7
+                )
+        ));
+
+        var normalized = service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "report.pdf", "application/pdf", "pdf".getBytes(StandardCharsets.UTF_8)),
+                        new MockMultipartFile("files", "invoice.pdf", "application/pdf", "invoice".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:report", "blob:invoice"),
+                42L,
+                9L,
+                "staff-user"
+        ).inputs();
+
+        @SuppressWarnings("unchecked")
+        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        assertEquals("evidence.pdf", documents.get(0).get("name"));
+        assertEquals("evidence-2.pdf", documents.get(1).get("name"));
+        assertEquals("evidence.pdf", attachmentService.createdAttachments().get(0).getFileName());
+        assertEquals("evidence-2.pdf", attachmentService.createdAttachments().get(1).getFileName());
+    }
+
+    private static GroupLayoutElement createLayout(String elementId, String submittedFileName) {
+        var uploadElement = new FileUploadInputElement();
+        uploadElement.setId(elementId);
+        uploadElement.setSubmittedFileName(submittedFileName);
+        uploadElement.setExtensions(List.of("pdf"));
+
+        var layout = new GroupLayoutElement();
+        layout.setId("root");
+        layout.setChildren(List.of(uploadElement));
+        return layout;
     }
 
     private static final class TestProcessInstanceAttachmentService extends ProcessInstanceAttachmentService {

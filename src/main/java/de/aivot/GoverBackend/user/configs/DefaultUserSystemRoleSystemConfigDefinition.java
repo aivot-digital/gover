@@ -1,16 +1,18 @@
 package de.aivot.GoverBackend.user.configs;
 
-import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
-import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.userRoles.repositories.SystemRoleRepository;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 @Component
-public class DefaultUserSystemRoleSystemConfigDefinition implements SystemConfigDefinition {
+public class DefaultUserSystemRoleSystemConfigDefinition implements SystemConfigDefinition<String> {
     public static final String KEY = "users.default_system_role";
     public static final Integer DEFAULT_SYSTEM_ROLE_ID = 3;
 
@@ -29,8 +31,18 @@ public class DefaultUserSystemRoleSystemConfigDefinition implements SystemConfig
 
     @Nonnull
     @Override
-    public ConfigType getType() {
-        return ConfigType.TEXT;
+    public BaseElement getConfigElement() {
+        return new SelectInputElement()
+                .setOptions(
+                        systemRoleRepository
+                                .findAll()
+                                .stream()
+                                .map(role -> SelectInputElementOption.of(role.getId().toString(), role.getName()))
+                                .toList()
+                )
+                .setLabel(getLabel())
+                .setHint(getDescription())
+                .setId(getKey());
     }
 
     @Nonnull
@@ -52,17 +64,18 @@ public class DefaultUserSystemRoleSystemConfigDefinition implements SystemConfig
     }
 
     @Override
-    public Object getDefaultValue() {
-        return DEFAULT_SYSTEM_ROLE_ID;
+    public String getDefaultValue() {
+        return DEFAULT_SYSTEM_ROLE_ID.toString();
     }
 
+    @Nullable
     @Override
-    public void validate(@Nonnull SystemConfigEntity entity) throws ResponseException {
-        var systemRoleId = entity.getValueAsInteger()
-                .orElseThrow(() -> ResponseException.badRequest("Bitte wählen Sie eine gültige Standard-Systemrolle aus."));
-
-        if (!systemRoleRepository.existsById(systemRoleId)) {
-            throw ResponseException.badRequest("Die ausgewählte Standard-Systemrolle existiert nicht.");
+    public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        try {
+            Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw ResponseException.internalServerError("Ungültiger Wert für " + getKey() + ": " + value);
         }
+        return value;
     }
 }

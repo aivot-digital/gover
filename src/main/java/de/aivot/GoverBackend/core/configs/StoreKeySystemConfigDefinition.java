@@ -1,13 +1,16 @@
 package de.aivot.GoverBackend.core.configs;
 
-import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.data.SystemConfigKey;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
-public class StoreKeySystemConfigDefinition implements SystemConfigDefinition {
+public class StoreKeySystemConfigDefinition implements SystemConfigDefinition<String> {
     // TODO: Remove SystemConfigKey.GOVER__STORE_KEY and use the key directly
     public static final String KEY = SystemConfigKey.GOVER__STORE_KEY.getKey();
 
@@ -19,8 +22,11 @@ public class StoreKeySystemConfigDefinition implements SystemConfigDefinition {
 
     @Nonnull
     @Override
-    public ConfigType getType() {
-        return ConfigType.SECRET;
+    public BaseElement getConfigElement() {
+        return new TextInputElement()
+                .setLabel(getLabel())
+                .setHint(getDescription())
+                .setId(getKey());
     }
 
     @Nonnull
@@ -45,5 +51,11 @@ public class StoreKeySystemConfigDefinition implements SystemConfigDefinition {
     @Override
     public Boolean isPublicConfig() {
         return false;
+    }
+
+    @Nullable
+    @Override
+    public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        return value;
     }
 }

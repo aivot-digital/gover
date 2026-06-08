@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
+import de.aivot.GoverBackend.identity.models.IdentityDataMap;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.preset.entities.PresetVersionEntityId;
 import de.aivot.GoverBackend.preset.repositories.PresetRepository;
@@ -74,7 +75,7 @@ public class PresetDerivationController {
 
         var logger = new ElementDerivationLogger();
         var derivedElementData = elementDerivationService
-                .derive(request, logger);
+                .derive(request, new IdentityDataMap(), logger);
 
         return ElementDerivationResponse
                 .from(derivedElementData, logger, true);

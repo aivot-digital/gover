@@ -53,6 +53,7 @@ import {DepartmentBrowser} from '../../departments/components/department-browser
 interface NewProcessDialogProps {
     open: boolean;
     onCancel: () => void;
+    preselectedTemplate?: ProcessExport;
 }
 
 type StartPointType = 'empty' | 'import' | 'template';
@@ -69,6 +70,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const {
         open,
         onCancel,
+        preselectedTemplate = null,
     } = props;
 
     const user = useAppSelector(selectUser);
@@ -84,9 +86,12 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
     const [templates, setTemplates] = useState<TemplateRegistryProcessItem[] | null>(null);
 
-    const [activeStep, setActiveStep] = useState(0);
-    const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(null);
-    const [selectedStartPoint, setSelectedStartPoint] = useState<SelectedStartPoint | null>(null);
+    const [activeStep, setActiveStep] = useState(preselectedTemplate != null ? 1 : 0);
+    const [selectedTemplateData, setSelectedTemplateData] = useState<ProcessExport | null>(preselectedTemplate);
+    const [selectedStartPoint, setSelectedStartPoint] = useState<SelectedStartPoint | null>(preselectedTemplate != null ? {
+        type: 'template',
+        label: preselectedTemplate.process.internalTitle,
+    } : null);
 
     const selectedDepartment = useMemo(() => (
         availableDepartments?.find((department) => department.id === departmentOverride) ?? null
@@ -567,6 +572,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                         setActiveStep(0);
                                     }}
                                     startIcon={<ArrowBack/>}
+                                    disabled={preselectedTemplate != null}
                                 >
                                     Zurück
                                 </Button>

@@ -1,7 +1,11 @@
 package de.aivot.GoverBackend.submission.services;
 
+import de.aivot.GoverBackend.elements.models.ComputedElementState;
+import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TableInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -52,6 +56,76 @@ class DestinationKeyPayloadServiceTest {
                         "person", Map.of(
                                 "first_name", "Ada",
                                 "address", Map.of("street", "Main Street 1")
+                        )
+                ),
+                payload
+        );
+    }
+
+    @Test
+    void shouldUseRuntimeOverrideDestinationKeyWhenBuildingPayload() {
+        var table = new TableInputElement();
+        table.setId("table");
+
+        var tableOverride = new TableInputElement();
+        tableOverride.setId("table");
+        tableOverride.setDestinationKey("tabellenKeyViaCodeGesetzt");
+
+        var elementStates = new ComputedElementStates();
+        elementStates.put("table", new ComputedElementState().setOverride(tableOverride));
+
+        var tableRows = List.of(
+                Map.of("name", "Ada"),
+                Map.of("name", "Grace")
+        );
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.put("table", tableRows);
+
+        var payload = service.buildPayload(createRoot(table), effectiveValues, elementStates);
+
+        assertEquals(
+                Map.of("tabellenKeyViaCodeGesetzt", tableRows),
+                payload
+        );
+    }
+
+    @Test
+    void shouldUseRuntimeOverrideDestinationKeysInReplicatingContainerRows() {
+        var firstName = new TextInputElement();
+        firstName.setId("rowFirstName");
+
+        var firstNameOverride = new TextInputElement();
+        firstNameOverride.setId("rowFirstName");
+        firstNameOverride.setDestinationKey("first_name");
+
+        var people = new ReplicatingContainerLayoutElement();
+        people.setId("people");
+        people.setDestinationKey("people");
+        people.setChildren(new LinkedList<>(List.of(firstName)));
+
+        var firstPerson = new EffectiveElementValues();
+        firstPerson.put("rowFirstName", "Ada");
+
+        var secondPerson = new EffectiveElementValues();
+        secondPerson.put("rowFirstName", "Grace");
+
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.put("people", List.of(firstPerson, secondPerson));
+
+        var peopleState = new ComputedElementState().setSubStates(List.of(
+                elementStatesWithOverride("rowFirstName", firstNameOverride),
+                elementStatesWithOverride("rowFirstName", firstNameOverride)
+        ));
+        var elementStates = new ComputedElementStates();
+        elementStates.put("people", peopleState);
+
+        var payload = service.buildPayload(createRoot(people), effectiveValues, elementStates);
+
+        assertEquals(
+                Map.of(
+                        "people", List.of(
+                                Map.of("first_name", "Ada"),
+                                Map.of("first_name", "Grace")
                         )
                 ),
                 payload
@@ -412,5 +486,11 @@ class DestinationKeyPayloadServiceTest {
         var root = new FormLayoutElement();
         root.setChildren(new LinkedList<BaseStepElement>(List.of(step)));
         return root;
+    }
+
+    private static ComputedElementStates elementStatesWithOverride(String elementId, BaseElement override) {
+        var elementStates = new ComputedElementStates();
+        elementStates.put(elementId, new ComputedElementState().setOverride(override));
+        return elementStates;
     }
 }

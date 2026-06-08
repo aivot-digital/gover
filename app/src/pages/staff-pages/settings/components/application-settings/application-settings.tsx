@@ -1,6 +1,11 @@
-import {Box, Button, Grid, Typography} from '@mui/material';
-import React, {type FormEvent, useEffect, useState} from 'react';
-import {selectSystemConfig, setSystemConfigs, type SystemConfigMap} from '../../../../../slices/system-config-slice';
+import {Box, Button, Grid, Tab, Tabs, Typography} from '@mui/material';
+import React, {type FormEvent, useEffect, useMemo, useState} from 'react';
+import {
+    selectSystemConfig,
+    setSystemConfigs,
+    setSystemConfigsFromMap,
+    type SystemConfigMap,
+} from '../../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../../../components/text-field/text-field-component';
@@ -20,7 +25,9 @@ import {
     SnackbarSeverity,
     SnackbarType,
 } from '../../../../../slices/shell-slice';
-import {VDepartmentShadowedApiService} from '../../../../../modules/departments/services/v-department-shadowed-api-service';
+import {
+    VDepartmentShadowedApiService,
+} from '../../../../../modules/departments/services/v-department-shadowed-api-service';
 import {type VDepartmentShadowedEntity} from '../../../../../modules/departments/entities/v-department-shadowed-entity';
 import {StorageProvidersApiService} from '../../../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../../../modules/storage/enums/storage-provider-type';
@@ -31,7 +38,14 @@ import {DepartmentSelectField} from '../../../../../modules/departments/componen
 import {SelectDepartmentDialog} from '../../../../../modules/departments/dialogs/select-department-dialog';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
-import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import SupervisedUserCircle
+    from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import {
+    SystemConfigDefinitionResponseDTO,
+} from '../../../../../modules/configs/dtos/system-config-definition-response-dto';
+import {ElementDerivationContext} from '../../../../../modules/elements/components/element-derivation-context';
+import {ElementType} from '../../../../../data/element-type/element-type';
+import {GroupLayout} from '../../../../../models/elements/form/layout/group-layout';
 
 type ListingPageDepartmentDialog = 'imprint' | 'privacy' | 'accessibility';
 
@@ -66,6 +80,13 @@ export function ApplicationSettings() {
             dispatch(removeSnackbarMessage('application-settings-no-access'));
         };
     }, [hasAccess]);
+
+    const [configDefinitions, setConfigDefinitions] = useState<SystemConfigDefinitionResponseDTO[]>([]);
+    useEffect(() => {
+        new SystemConfigsApiService(api)
+            .listDefinitions()
+            .then(setConfigDefinitions);
+    }, [api]);
 
     const config = useAppSelector(selectSystemConfig);
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
@@ -357,493 +378,623 @@ export function ApplicationSettings() {
             });
     }, []);
 
+    const [currentSettingsTab, setCurrentSettingsTab] = useState<string>();
+    const availableTabs = useMemo(() => configDefinitions
+        .reduce((acc, cur) => {
+            if (!acc.includes(cur.category)) {
+                acc.push(cur.category);
+            }
+            return acc;
+        }, [] as string[])
+        .sort((a, b) => a.localeCompare(b)), [configDefinitions]);
+    const groups: Record<string, GroupLayout> = useMemo(() => {
+        return availableTabs
+            .reduce((acc, category) => {
+                const configsChildren = configDefinitions
+                    .filter((def) => def.category === category)
+                    .map((def) => def.configElement);
+
+                acc[category] = {
+                    id: category,
+                    type: ElementType.GroupLayout,
+                    children: configsChildren,
+                    name: null,
+                    storeLink: null,
+                    testProtocolSet: null,
+                    weight: null,
+                    visibility: null,
+                    override: null,
+                    metadata: null,
+                };
+                return acc;
+            }, {} as Record<string, GroupLayout>);
+    }, [availableTabs]);
+    const currentGroup: GroupLayout | undefined = useMemo(() => {
+        return groups[currentSettingsTab ?? availableTabs[0]];
+    }, [groups, currentSettingsTab, availableTabs]);
+
     const activeDepartmentDialogConfigKey = activeDepartmentDialog != null
         ? ListingPageDepartmentConfigKeys[activeDepartmentDialog]
         : undefined;
 
-    return (
-        <>
-            <form onSubmit={handleSubmit}>
-            <Typography
-                variant="subtitle1"
-            >
-                Über den Betreiber
-            </Typography>
-            <Typography
+    if (localStorage.getItem('showNewSettings') != null) {
+        return (
+            <Box
                 sx={{
-                    maxWidth: 900,
-                    mb: 1.6,
+                    marginTop: 3.5,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems.
-                Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
-                Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen Bereichen
-                sichtbar.
-            </Typography>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
+                <Tabs
+                    value={currentSettingsTab ?? availableTabs[0] ?? ''}
+                    onChange={(_, value) => {
+                        console.log(value);
+                        setCurrentSettingsTab(value);
                     }}
                 >
-                    <TextFieldComponent
-                        label="Name des Betreibers"
-                        placeholder="Bad Musterstadt"
-                        value={editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name]}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.provider.name]: val ?? '',
-                            });
-                        }}
-                        required
-                        disabled={!hasAccess}
-                        startIcon={<Label/>}
-                    />
-                </Grid>
-            </Grid>
-            {
-                themes.length > 0 &&
-                <>
-                    <Typography
-                        variant="subtitle1"
+                    {
+                        availableTabs.map((category) => (
+                            <Tab
+                                key={category}
+                                label={category}
+                                value={category}
+                            />
+                        ))
+                    }
+                </Tabs>
+
+                <Box
+                    sx={{
+                        paddingX: 2,
+                        paddingTop: 1,
+                        paddingBottom: 2,
+                    }}
+                >
+                    {
+                        currentGroup != null &&
+                        <ElementDerivationContext
+                            element={currentGroup}
+                            authoredElementValues={config}
+                            onAuthoredElementValuesChange={(updated) => {
+                                console.log(updated);
+                                dispatch(setSystemConfigsFromMap(updated));
+                            }}
+                        />
+                    }
+
+                    <Box
                         sx={{
                             mt: 4,
                         }}
                     >
-                        Erscheinungsbild der Gover-Instanz
-                    </Typography>
+                        <Button
+                            type="submit"
+                            disabled={hasNotChanged || !hasAccess}
+                            color="primary"
+                            variant="contained"
+                            startIcon={<SaveOutlinedIcon
+                                sx={{
+                                    marginTop: '-2px',
+                                }}
+                            />}
+                        >
+                            Speichern
+                        </Button>
 
-                    <Typography
-                        sx={{
-                            maxWidth: 900,
-                            mb: 1.6,
-                        }}
-                    >
-                        Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Gover an Ihr
-                        Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die
-                        Index-Seite der veröffentlichten
-                        Formulare).
-                    </Typography>
-
-                    <Grid
-                        container
-                        columnSpacing={4}
-                    >
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
+                        <Button
+                            sx={{
+                                ml: 2,
+                            }}
+                            type="button"
+                            color="error"
+                            disabled={hasNotChanged || !hasAccess}
+                            onClick={() => {
+                                setEditedConfig({});
                             }}
                         >
-                            <SelectFieldComponent
-                                label="Erscheinungsbild"
-                                options={themes}
-                                value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
-                                onChange={(val) => {
-                                    setEditedConfig({
-                                        ...editedConfig,
-                                        [SystemConfigKeys.system.theme]: val ?? '',
-                                    });
-                                }}
-                                disabled={!hasAccess}
-                                startIcon={ModuleIcons.themes}
-                            />
-                        </Grid>
-                    </Grid>
-                </>
-            }
-
-            <Typography
-                variant="subtitle1"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Gover Store
-            </Typography>
-            <Typography
-                sx={{
-                    maxWidth: 900,
-                    mb: 1.6,
-                }}
-            >
-                Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare und/oder
-                Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel (API-Key).
-            </Typography>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <TextFieldComponent
-                        label="Schlüssel für den Gover Store"
-                        placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
-                        hint="Geben Sie hier Ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Gover Store veröffentlichen wollen."
-                        value={editedConfig[SystemConfigKeys.gover.storeKey] ?? config[SystemConfigKeys.gover.storeKey]}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.gover.storeKey]: val ?? '',
-                            });
-                        }}
-                        disabled={!hasAccess}
-                        startIcon={ModuleIcons.secrets}
-                    />
-                </Grid>
-            </Grid>
-
-            <Typography
-                variant="subtitle1"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Automatische Rollenzuweisung
-            </Typography>
-            <Typography
-                sx={{
-                    maxWidth: 900,
-                    mb: 1.6,
-                }}
-            >
-                Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu in
-                Gover synchronisiert oder anderweitig importiert werden.
-            </Typography>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <SelectFieldComponent
-                        label="Standard-Systemrolle für automatische Benutzerimporte"
-                        hint={
-                            hasSystemRolesLoadingError
-                                ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
-                                : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
-                        }
-                        value={defaultSystemRoleValue}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.users.defaultSystemRole]: val ?? '',
-                            });
-                        }}
-                        required
-                        error={defaultSystemRoleError}
-                        disabled={!hasAccess || isLoadingSystemRoles}
-                        options={systemRoleOptions}
-                        emptyStatePlaceholder={
-                            isLoadingSystemRoles
-                                ? 'Systemrollen werden geladen…'
-                                : hasSystemRolesLoadingError
-                                    ? 'Systemrollen konnten nicht geladen werden'
-                                    : 'Keine Systemrollen vorhanden'
-                        }
-                        startIcon={<SupervisedUserCircle/>}
-                    />
-                </Grid>
-            </Grid>
-
-            <Typography
-                variant="subtitle1"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Zentraler Speicheranbieter für Vorgangsanlagen
-            </Typography>
-            <Typography
-                sx={{
-                    maxWidth: 900,
-                    mb: 1.6,
-                }}
-            >
-                Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer
-                Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
-                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den
-                zentralen Speicheranbieter verwenden.
-            </Typography>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <SelectFieldComponent
-                        label="Zentraler Speicheranbieter für Vorgangsanlagen"
-                        hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
-                        value={attachmentStorageProviderValue}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
-                            });
-                        }}
-                        required
-                        error={attachmentStorageProviderError}
-                        disabled={!hasAccess}
-                        options={attStorageProviders}
-                        emptyStatePlaceholder="Keine Speicheranbieter für Vorgangsanlagen vorhanden"
-                        startIcon={ModuleIcons.storage}
-                    />
-                </Grid>
-            </Grid>
-
-            <Typography
-                variant="subtitle1"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Zentraler Speicheranbieter für Assets
-            </Typography>
-            <Typography
-                sx={{
-                    maxWidth: 900,
-                    mb: 1.6,
-                }}
-            >
-                Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer Speicheranbieter
-                für ein Asset konfiguriert ist.
-                Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den
-                zentralen Speicheranbieter verwenden.
-            </Typography>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <SelectFieldComponent
-                        label="Zentraler Speicheranbieter für Assets"
-                        hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
-                        value={assetStorageProviderValue}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.storage.assets.default_storage_provider]: val ?? '',
-                            });
-                        }}
-                        required
-                        error={assetStorageProviderError}
-                        disabled={!hasAccess}
-                        options={assetStorageProviders}
-                        emptyStatePlaceholder="Keine Speicheranbieter für Assets vorhanden"
-                        startIcon={ModuleIcons.storage}
-                    />
-                </Grid>
-            </Grid>
-
-
-            <Typography
-                variant="h6"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Öffentliche Auflistung der veröffentlichten Formulare (Index-Seite)
-            </Typography>
-            <Typography
-                sx={{
-                    maxWidth: 900,
-                    mb: 1.6,
-                }}
-            >
-                Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
-                angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren und
-                ggf. deaktivieren.
-            </Typography>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 4,
-                    }}
-                >
-                    <DepartmentSelectField
-                        label="Text für das Impressum"
-                        value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId)}
-                        onOpenDialog={() => {
-                            setActiveDepartmentDialog('imprint');
-                        }}
-                        onClear={() => {
-                            handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, null);
-                        }}
-                        disabled={!hasAccess}
-                    />
-
-                </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 4,
-                    }}
-                >
-                    <DepartmentSelectField
-                        label="Text für die Datenschutzerklärung"
-                        value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId)}
-                        onOpenDialog={() => {
-                            setActiveDepartmentDialog('privacy');
-                        }}
-                        onClear={() => {
-                            handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, null);
-                        }}
-                        disabled={!hasAccess}
-                    />
-                </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 4,
-                    }}
-                >
-                    <DepartmentSelectField
-                        label="Text für die Erklärung der Barrierefreiheit"
-                        value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId)}
-                        onOpenDialog={() => {
-                            setActiveDepartmentDialog('accessibility');
-                        }}
-                        onClear={() => {
-                            handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, null);
-                        }}
-                        disabled={!hasAccess}
-                    />
-                </Grid>
-            </Grid>
-            <Typography
-                variant="caption"
-                color={'text.secondary'}
-            >
-                Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Sie können hier die
-                Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
-            </Typography>
-            <CheckboxFieldComponent
-                label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
-                value={(editedConfig[SystemConfigKeys.provider.listingPage.disableGoverListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableGoverListingPage]) == 'true'}
-                onChange={(checked) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.provider.listingPage.disableGoverListingPage]: checked ? 'true' : '',
-                    });
-                }}
-                hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                disabled={!hasAccess}
-            />
-            <Typography
-                variant="subtitle1"
-                sx={{
-                    mt: 4,
-                }}
-            >
-                Verweis auf Formular-Index aus Formularen heraus
-            </Typography>
-            <Typography
-                sx={{
-                    maxWidth: 900,
-                    mb: 1.6,
-                }}
-            >
-                Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
-                Diese Verlinkung dient der Barrierefreiheit
-                (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
-                und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
-                Link ersetzen
-                (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
-            </Typography>
-            {
-                (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
-                <Box>
-                    <TextFieldComponent
-                        label="Link zu externer Formular-Auflistung"
-                        placeholder="https://bad-musterstadt.de/formulare"
-                        hint="Der Link wird (soweit angegeben) anstelle des regulären Links mit dem Text „Weitere Formulare“ am Ende eines jeden Formulars angezeigt."
-                        value={editedConfig[SystemConfigKeys.provider.listingPage.customListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.customListingPageLink]}
-                        pattern={{
-                            regex: '^(https?://)([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$',
-                            message: 'Bitte geben Sie eine gültige URL ein (z.B. https://bad-musterstadt.de/formulare).',
-                        }}
-                        onChange={(val) => {
-                            setEditedConfig({
-                                ...editedConfig,
-                                [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
-                            });
-                        }}
-                        disabled={!hasAccess}
-                        startIcon={ModuleIcons.providerLinks}
-                    />
+                            Zurücksetzen
+                        </Button>
+                    </Box>
                 </Box>
-            }
-            <CheckboxFieldComponent
-                label="Verlinkung von Formularen zur Formular-Index-Seite vollständig deaktivieren"
-                value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
-                onChange={(checked) => {
-                    setEditedConfig({
-                        ...editedConfig,
-                        [SystemConfigKeys.provider.listingPage.disableListingPageLink]: checked ? 'true' : 'false',
-                    });
-                }}
-                hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                disabled={!hasAccess}
-            />
-            <Box
-                sx={{
-                    mt: 4,
-                }}
-            >
-                <Button
-                    type="submit"
-                    disabled={hasNotChanged || !hasAccess}
-                    color="primary"
-                    variant="contained"
-                    startIcon={<SaveOutlinedIcon
-                        sx={{
-                            marginTop: '-2px',
-                        }}
-                    />}
-                >
-                    Speichern
-                </Button>
-
-                <Button
-                    sx={{
-                        ml: 2,
-                    }}
-                    type="button"
-                    color="error"
-                    disabled={hasNotChanged || !hasAccess}
-                    onClick={() => {
-                        setEditedConfig({});
-                    }}
-                >
-                    Zurücksetzen
-                </Button>
             </Box>
+        );
+    }
+
+    return (
+        <Box
+            sx={{
+                marginTop: 3.5,
+                padding: 2,
+            }}
+        >
+            <form onSubmit={handleSubmit}>
+                <Typography
+                    variant="subtitle1"
+                >
+                    Über den Betreiber
+                </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Hinterlegen Sie grundsätzliche Informationen über den Betreiber dieses Systems.
+                    Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                    Änderungen am Betreiber-Namen werden erst nach dem nächsten Neu-Laden der Anwendung in allen
+                    Bereichen
+                    sichtbar.
+                </Typography>
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Name des Betreibers"
+                            placeholder="Bad Musterstadt"
+                            value={editedConfig[SystemConfigKeys.provider.name] ?? config[SystemConfigKeys.provider.name]}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.provider.name]: val ?? '',
+                                });
+                            }}
+                            required
+                            disabled={!hasAccess}
+                            startIcon={<Label/>}
+                        />
+                    </Grid>
+                </Grid>
+                {
+                    themes.length > 0 &&
+                    <>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{
+                                mt: 4,
+                            }}
+                        >
+                            Erscheinungsbild der Gover-Instanz
+                        </Typography>
+
+                        <Typography
+                            sx={{
+                                maxWidth: 900,
+                                mb: 1.6,
+                            }}
+                        >
+                            Sie können ein eigenes Erscheinungsbild für die Benutzeroberfläche auswählen, um Gover an
+                            Ihr
+                            Corporate Design anzugleichen (wird z.B. verwendet für Administrationsoberfläche und die
+                            Index-Seite der veröffentlichten
+                            Formulare).
+                        </Typography>
+
+                        <Grid
+                            container
+                            columnSpacing={4}
+                        >
+                            <Grid
+                                size={{
+                                    xs: 12,
+                                    lg: 6,
+                                }}
+                            >
+                                <SelectFieldComponent
+                                    label="Erscheinungsbild"
+                                    options={themes}
+                                    value={editedConfig[SystemConfigKeys.system.theme] ?? config[SystemConfigKeys.system.theme]}
+                                    onChange={(val) => {
+                                        setEditedConfig({
+                                            ...editedConfig,
+                                            [SystemConfigKeys.system.theme]: val ?? '',
+                                        });
+                                    }}
+                                    disabled={!hasAccess}
+                                    startIcon={ModuleIcons.themes}
+                                />
+                            </Grid>
+                        </Grid>
+                    </>
+                }
+
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    Gover Store
+                </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Im Gover Store finden Sie Bausteine und Formulare zur Nachnutzung. Wenn Sie eigene Formulare
+                    und/oder
+                    Bausteine im Gover Store zur Verfügung stellen möchten, benötigen Sie einen eigenen Schlüssel
+                    (API-Key).
+                </Typography>
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Schlüssel für den Gover Store"
+                            placeholder="b721fe43-5800-40a3-ae7f-d19274dd72f1"
+                            hint="Geben Sie hier Ihren Schlüssel für den Gover Store ein, wenn Sie eigene Formulare und/oder Vorlagen im Gover Store veröffentlichen wollen."
+                            value={editedConfig[SystemConfigKeys.gover.storeKey] ?? config[SystemConfigKeys.gover.storeKey]}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.gover.storeKey]: val ?? '',
+                                });
+                            }}
+                            disabled={!hasAccess}
+                            startIcon={ModuleIcons.secrets}
+                        />
+                    </Grid>
+                </Grid>
+
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    Automatische Rollenzuweisung
+                </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Wählen Sie hier die Systemrolle aus, die Mitarbeiter:innen automatisch erhalten sollen, wenn sie neu
+                    in
+                    Gover synchronisiert oder anderweitig importiert werden.
+                </Typography>
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <SelectFieldComponent
+                            label="Standard-Systemrolle für automatische Benutzerimporte"
+                            hint={
+                                hasSystemRolesLoadingError
+                                    ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
+                                    : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
+                            }
+                            value={defaultSystemRoleValue}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.users.defaultSystemRole]: val ?? '',
+                                });
+                            }}
+                            required
+                            error={defaultSystemRoleError}
+                            disabled={!hasAccess || isLoadingSystemRoles}
+                            options={systemRoleOptions}
+                            emptyStatePlaceholder={
+                                isLoadingSystemRoles
+                                    ? 'Systemrollen werden geladen…'
+                                    : hasSystemRolesLoadingError
+                                        ? 'Systemrollen konnten nicht geladen werden'
+                                        : 'Keine Systemrollen vorhanden'
+                            }
+                            startIcon={<SupervisedUserCircle/>}
+                        />
+                    </Grid>
+                </Grid>
+
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    Zentraler Speicheranbieter für Vorgangsanlagen
+                </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Dieser Speicheranbieter wird verwendet, um Vorgangsanlagen zu speichern, wenn kein spezifischer
+                    Speicheranbieter innerhalb eines Prozesselementes konfiguriert ist.
+                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Vorgänge hat, die den
+                    zentralen Speicheranbieter verwenden.
+                </Typography>
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <SelectFieldComponent
+                            label="Zentraler Speicheranbieter für Vorgangsanlagen"
+                            hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
+                            value={attachmentStorageProviderValue}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.storage.attachments.default_storage_provider]: val ?? '',
+                                });
+                            }}
+                            required
+                            error={attachmentStorageProviderError}
+                            disabled={!hasAccess}
+                            options={attStorageProviders}
+                            emptyStatePlaceholder="Keine Speicheranbieter für Vorgangsanlagen vorhanden"
+                            startIcon={ModuleIcons.storage}
+                        />
+                    </Grid>
+                </Grid>
+
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    Zentraler Speicheranbieter für Assets
+                </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Dieser Speicheranbieter wird verwendet, um Assets zu speichern, wenn kein spezifischer
+                    Speicheranbieter
+                    für ein Asset konfiguriert ist.
+                    Bitte beachten Sie, dass die Änderung dieses Schlüssels Auswirkungen auf alle Assets hat, die den
+                    zentralen Speicheranbieter verwenden.
+                </Typography>
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                        }}
+                    >
+                        <SelectFieldComponent
+                            label="Zentraler Speicheranbieter für Assets"
+                            hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
+                            value={assetStorageProviderValue}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.storage.assets.default_storage_provider]: val ?? '',
+                                });
+                            }}
+                            required
+                            error={assetStorageProviderError}
+                            disabled={!hasAccess}
+                            options={assetStorageProviders}
+                            emptyStatePlaceholder="Keine Speicheranbieter für Assets vorhanden"
+                            startIcon={ModuleIcons.storage}
+                        />
+                    </Grid>
+                </Grid>
+
+
+                <Typography
+                    variant="h6"
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    Öffentliche Auflistung der veröffentlichten Formulare (Index-Seite)
+                </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
+                    angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren
+                    und
+                    ggf. deaktivieren.
+                </Typography>
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 4,
+                        }}
+                    >
+                        <DepartmentSelectField
+                            label="Text für das Impressum"
+                            value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId)}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('imprint');
+                            }}
+                            onClear={() => {
+                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, null);
+                            }}
+                            disabled={!hasAccess}
+                        />
+
+                    </Grid>
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 4,
+                        }}
+                    >
+                        <DepartmentSelectField
+                            label="Text für die Datenschutzerklärung"
+                            value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId)}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('privacy');
+                            }}
+                            onClear={() => {
+                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, null);
+                            }}
+                            disabled={!hasAccess}
+                        />
+                    </Grid>
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 4,
+                        }}
+                    >
+                        <DepartmentSelectField
+                            label="Text für die Erklärung der Barrierefreiheit"
+                            value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId)}
+                            onOpenDialog={() => {
+                                setActiveDepartmentDialog('accessibility');
+                            }}
+                            onClear={() => {
+                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, null);
+                            }}
+                            disabled={!hasAccess}
+                        />
+                    </Grid>
+                </Grid>
+                <Typography
+                    variant="caption"
+                    color={'text.secondary'}
+                >
+                    Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Sie können hier
+                    die
+                    Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
+                </Typography>
+                <CheckboxFieldComponent
+                    label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
+                    value={(editedConfig[SystemConfigKeys.provider.listingPage.disableGoverListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableGoverListingPage]) == 'true'}
+                    onChange={(checked) => {
+                        setEditedConfig({
+                            ...editedConfig,
+                            [SystemConfigKeys.provider.listingPage.disableGoverListingPage]: checked ? 'true' : '',
+                        });
+                    }}
+                    hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                    disabled={!hasAccess}
+                />
+                <Typography
+                    variant="subtitle1"
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    Verweis auf Formular-Index aus Formularen heraus
+                </Typography>
+                <Typography
+                    sx={{
+                        maxWidth: 900,
+                        mb: 1.6,
+                    }}
+                >
+                    Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
+                    Diese Verlinkung dient der Barrierefreiheit
+                    (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
+                    und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
+                    Link ersetzen
+                    (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
+                </Typography>
+                {
+                    (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
+                    <Box>
+                        <TextFieldComponent
+                            label="Link zu externer Formular-Auflistung"
+                            placeholder="https://bad-musterstadt.de/formulare"
+                            hint="Der Link wird (soweit angegeben) anstelle des regulären Links mit dem Text „Weitere Formulare“ am Ende eines jeden Formulars angezeigt."
+                            value={editedConfig[SystemConfigKeys.provider.listingPage.customListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.customListingPageLink]}
+                            pattern={{
+                                regex: '^(https?://)([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$',
+                                message: 'Bitte geben Sie eine gültige URL ein (z.B. https://bad-musterstadt.de/formulare).',
+                            }}
+                            onChange={(val) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
+                                });
+                            }}
+                            disabled={!hasAccess}
+                            startIcon={ModuleIcons.providerLinks}
+                        />
+                    </Box>
+                }
+                <CheckboxFieldComponent
+                    label="Verlinkung von Formularen zur Formular-Index-Seite vollständig deaktivieren"
+                    value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
+                    onChange={(checked) => {
+                        setEditedConfig({
+                            ...editedConfig,
+                            [SystemConfigKeys.provider.listingPage.disableListingPageLink]: checked ? 'true' : 'false',
+                        });
+                    }}
+                    hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                    disabled={!hasAccess}
+                />
+                <Box
+                    sx={{
+                        mt: 4,
+                    }}
+                >
+                    <Button
+                        type="submit"
+                        disabled={hasNotChanged || !hasAccess}
+                        color="primary"
+                        variant="contained"
+                        startIcon={<SaveOutlinedIcon
+                            sx={{
+                                marginTop: '-2px',
+                            }}
+                        />}
+                    >
+                        Speichern
+                    </Button>
+
+                    <Button
+                        sx={{
+                            ml: 2,
+                        }}
+                        type="button"
+                        color="error"
+                        disabled={hasNotChanged || !hasAccess}
+                        onClick={() => {
+                            setEditedConfig({});
+                        }}
+                    >
+                        Zurücksetzen
+                    </Button>
+                </Box>
             </form>
 
             <SelectDepartmentDialog
@@ -864,6 +1015,6 @@ export function ApplicationSettings() {
                         : undefined
                 }
             />
-        </>
+        </Box>
     );
 }

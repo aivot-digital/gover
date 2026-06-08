@@ -16,10 +16,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
-import {
-    synchronizeAuthoredElementValuesByDestinationPath,
-    walkAuthoredElementValues,
-} from '../../../utils/element-data-utils';
+import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher/view-dispatcher.component';
 import {
     ViewDispatcherContextProvider,
@@ -27,6 +24,7 @@ import {
 } from '../../../components/view-dispatcher/view-dispatcher.context';
 import {deepEquals} from '../../../utils/equality-utils';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {extractValue} from '../../../utils/has-derivable-aspects';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -105,8 +103,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         onDeriveOverride,
         onEvent,
         mode: renderMode = ViewDispatcherMode.Viewer,
-        disableValidation,
-        disableVisibilities,
+        disableValidation = false,
+        disableVisibilities = false,
         highlightedElementId,
     } = props;
 
@@ -185,30 +183,25 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [computedErrors]);
 
     useEffect(() => {
+        const controller = new AbortController();
+
         setMode('busy');
         setSuppressedErrorElementIds([]);
-        derive(authoredElementValues)
+        derive(authoredElementValues, undefined, controller.signal)
             .finally(() => {
                 setMode('idle');
             });
+
+        return () => {
+            controller.abort();
+        };
     }, [element]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
-        // Synchronizing before reference analysis keeps mirrored destination-path aliases and their
-        // dependents inside the same authored-data update, regardless of which subtree hosts them.
-        const synchronizedUpdate = synchronizeAuthoredElementValuesByDestinationPath(
-            element,
-            authoredElementValues,
-            newData,
-            derivedData,
-            triggeringElementIds,
-        );
-        const effectiveNewData = synchronizedUpdate.authoredElementValues;
-        const effectiveTriggeringElementIds = synchronizedUpdate.triggeringElementIds;
         const changedElementIds = getChangedAuthoredElementIds(
             element,
             authoredElementValues,
-            effectiveNewData,
+            newData,
         );
 
         if (changedElementIds.length > 0) {
@@ -222,7 +215,16 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         }
 
         const relevantIds: string[] = [];
-        for (const id of effectiveTriggeringElementIds) {
+        for (const id of triggeringElementIds) {
+            /*const triggeringElement = allElements.find((element) => element.id === id);
+            if (
+                triggeringElement != null &&
+                isAnyInputElement(triggeringElement) &&
+                extractValue(triggeringElement) != null
+            ) {
+                relevantIds.push(id);
+            }*/
+
             for (const element of allElements) {
                 if (checkElementReferencesId(element, id)) {
                     if (!relevantIds.includes(element.id)) {
@@ -233,15 +235,17 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         }
 
         if (relevantIds.length === 0) {
-            onAuthoredElementValuesChange(effectiveNewData);
+            onAuthoredElementValuesChange(newData);
             return;
         }
+
+        console.log(relevantIds);
 
         setDerivationTriggerIdQueue([
             ...derivationTriggerIdQueue,
             ...relevantIds,
         ]);
-        await deriveWithMinimumVisibleDuration(effectiveNewData, []);
+        await deriveWithMinimumVisibleDuration(newData, []);
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];
             for (const id of relevantIds) {
@@ -254,7 +258,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         });
     };
 
-    const derive = async (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[] = ['ALL']) => {
+    const derive = async (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[] = ['ALL'], abort?: AbortSignal) => {
         try {
             if (onDerivationStarted != null) {
                 onDerivationStarted(authoredElementValues);
@@ -275,6 +279,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                         $$: {},
                         _: {},
                     },
+                }, {
+                    abort: abort,
                 }));
 
             setInternalDerivedData(derivedRuntimeElementData);
@@ -287,11 +293,13 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
             return derivedRuntimeElementData;
         } catch (error) {
-            if (isApiError(error) && error.displayableToUser) {
-                dispatch(showErrorSnackbar(error.message));
-            } else {
-                console.error(error);
-                dispatch(showErrorSnackbar('Beim Verarbeiten der Eingaben ist ein unbekannter Fehler aufgetreten'));
+            if (!abort?.aborted) {
+                if (isApiError(error) && error.displayableToUser) {
+                    dispatch(showErrorSnackbar(error.message));
+                } else {
+                    console.error(error);
+                    dispatch(showErrorSnackbar('Beim Verarbeiten der Eingaben ist ein unbekannter Fehler aufgetreten'));
+                }
             }
         }
 
@@ -310,14 +318,20 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             runtimeCallback: (isRunning) => {
                 setMode(isRunning ? 'deriving' : 'idle');
             },
-            main: () => derive(authoredElementValues, skipErrorsForElements),
+            main: () => derive(authoredElementValues, skipErrorsForElements, undefined),
         });
     };
 
     // Derive all data if the disable visibilities flag is reset
+    const [previousVisFlag, setPreviousVisFlag] = useState<boolean>(false);
     useEffect(() => {
-        if (!disableVisibilities) {
-            derive(authoredElementValues);
+        if (previousVisFlag !== disableVisibilities) {
+            const controller = new AbortController();
+            derive(authoredElementValues, undefined, controller.signal);
+            setPreviousVisFlag(disableVisibilities);
+            return () => {
+                controller.abort();
+            }
         }
     }, [disableVisibilities]);
 

@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, Divider, IconButton, Paper, Typography} from '@mui/material';
+import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -36,7 +36,7 @@ import {
     ProcessDetailsPageMoreMenu,
     type ProcessDetailsPageMoreMenuEvent,
 } from './components/process-details-page-more-menu';
-import {downloadObjectFile, uploadObjectFile} from '../../../../utils/download-utils';
+import {uploadObjectFile} from '../../../../utils/download-utils';
 import {ProcessTestClaimApiService} from '../../services/process-test-claim-api-service';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {type ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
@@ -59,8 +59,6 @@ import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
 import Undo from '@mui/icons-material/Undo';
 import Redo from '@mui/icons-material/Redo';
 import Refresh from '@mui/icons-material/Refresh';
-import ChevronLeft from '@mui/icons-material/ChevronLeft';
-import ChevronRight from '@mui/icons-material/ChevronRight';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
@@ -73,7 +71,6 @@ import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
 import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test-claim-process-instances-dialog';
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
-import {AlertComponent} from '../../../../components/alert/alert-component';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
@@ -84,6 +81,10 @@ import {
 } from './components/process-node-editor/process-node-editor-change-blocker';
 import {ProcessStatus} from '../../enums/process-status';
 import {useSyncState} from '../../../../hooks/use-sync-state';
+import {useProcessExport} from '../../../../hooks/use-process-export';
+import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
+import {NodeProblemsAlert} from '../../components/node-problems-alert';
+import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -287,6 +288,8 @@ export function ProcessDetailsPage(): ReactNode {
     const [hideEditorPaneExpandButton, setHideEditorPaneExpandButton] = useState(false);
     const [editorPaneWidth, setEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
     const [lastExpandedEditorPaneWidth, setLastExpandedEditorPaneWidth] = useState(MIN_EDITOR_DRAWER_WIDTH_PX);
+    const [showVersionsDialog, setShowVersionsDialog] = useState(false);
+    const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
     const [newNodeFor, setNewNodeFor] = useState<{
@@ -411,11 +414,17 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, [params]);
 
+    // Reset the versions dialog when the process id or process version change to compensate for process switching while the dialog is open
+    useEffect(() => {
+        setShowVersionsDialog(false);
+    }, [processId, processVersion]);
+
     const [currentTestClaim, setCurrentTestClaim] = useSyncState<{
         claim: ProcessTestClaimEntity;
         user: User | null;
     } | null>(`process_${processId}_${processVersion}_test_claim`, null);
 
+    const showProcessExport = useProcessExport();
 
     useEffect(() => {
         if (processFlow == null || processVersion == null) {
@@ -1259,53 +1268,7 @@ export function ProcessDetailsPage(): ReactNode {
     };
 
     const handleExport = (): void => {
-        confirm({
-            title: 'Prozess exportieren',
-            children: (
-                <>
-                    <Typography>
-                        Sie können den Prozess exportieren, um ihn z. B. in einem anderen System weiterzuverwenden oder
-                        zu archivieren.
-                        Der Export erfolgt im offenen .json-Format.
-                    </Typography>
-
-                    <AlertComponent
-                        color="info"
-                        title="Wichtig"
-                        sx={{
-                            mt: 2,
-                        }}
-                    >
-                        <p>
-                            Zum Schutz Ihrer Daten werden bestimmte Informationen aus dem Export ausgeschlossen und sind
-                            für die importierende Person nicht sichtbar.
-                            Dazu zählen u. a. Personenkreis-Definitionen, Referenzen auf lokale Dateien und Medien und
-                            Referenzen auf auslösende Formulare.
-                        </p>
-                        <p>
-                            Bei Bedarf müssen Sie diese Informationen nach einem Import im Zielsystem neu konfigurieren.
-                        </p>
-                    </AlertComponent>
-                </>
-            ),
-            confirmButtonText: 'Prozess als .json-Datei herunterladen',
-        })
-            .then((confirmed) => {
-                if (!confirmed) {
-                    return null;
-                }
-                return new ProcessDefinitionApiService()
-                    .export(processId, processVersion);
-            })
-            .then((exp) => {
-                if (exp == null) {
-                    return null;
-                }
-                downloadObjectFile(`${exp.process.internalTitle}.process.gover.json`, exp);
-            })
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));
-            });
+        showProcessExport(processId, processVersion);
     };
 
     const handleTest = async (): Promise<void> => {
@@ -1348,38 +1311,13 @@ export function ProcessDetailsPage(): ReactNode {
                         </Typography>
                         {
                             problems.length > 0 &&
-                            <AlertComponent
-                                color="warning"
+                            <NodeProblemsAlert
+                                problems={problems}
+                                availableNodeProviders={availableNodeProviders}
                                 sx={{
                                     marginTop: '1rem',
                                 }}
-                            >
-                                Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
-                                Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der
-                                ungültigen Konfiguration kommen.
-
-                                <ul>
-                                    {
-                                        problems.map((problem) => {
-                                            const provider = availableNodeProviders
-                                                .find((p) => p.key === problem.node.processNodeDefinitionKey && p.majorVersion === problem.node.processNodeDefinitionVersion)!;
-
-                                            return (
-                                                <li key={problem.node.id}>
-                                                    {getNodeName(problem.node, provider)}:
-                                                    <ul>
-                                                        {
-                                                            problem.problems.map((problem, index) => (
-                                                                <li key={index}>{problem}</li>
-                                                            ))
-                                                        }
-                                                    </ul>
-                                                </li>
-                                            );
-                                        })
-                                    }
-                                </ul>
-                            </AlertComponent>
+                            />
                         }
                     </>
                 ),
@@ -1849,7 +1787,9 @@ export function ProcessDetailsPage(): ReactNode {
                 tooltip: 'Versionen',
                 ariaLabel: 'Versionen',
                 icon: <HomeStorage/>,
-                onClick: notImplemented,
+                onClick: () => {
+                    setShowVersionsDialog(true);
+                },
             },
             {
                 tooltip: 'Einstellungen',
@@ -1872,15 +1812,57 @@ export function ProcessDetailsPage(): ReactNode {
             {
                 label: 'Veröffentlichen',
                 tooltip: 'Prozessversion veröffentlichen',
-                disabledTooltip: 'Während des Tests kann der Prozess nicht veröffentlicht werden.',
+                disabledTooltip: 'Während des Tests kann der Status der Prozessversion nicht verändert werden.',
                 icon: null,
-                onClick: notImplemented,
+                onClick: () => {
+                    setShowPublishDialog(true);
+                },
                 variant: 'contained',
-                disabled: isInTestMode,
-                activeStyle: {ml: 1},
+                disabled: processFlow == null || isInTestMode,
+                visible: processFlow?.version.status === ProcessStatus.Drafted || processFlow?.version.status === ProcessStatus.Revoked,
+                activeStyle: {
+                    ml: 1,
+                },
+            },
+            {
+                label: 'Zurückziehen',
+                tooltip: 'Prozessversion zurückziehen',
+                disabledTooltip: 'Während des Tests kann der Status der Prozessversion nicht verändert werden.',
+                icon: null,
+                onClick: () => {
+                    if (processFlow == null) {
+                        return;
+                    }
+                    new ProcessDefinitionVersionApiService()
+                        .revoke({
+                            processDefinitionId: processFlow.definition.id,
+                            processDefinitionVersion: processFlow.version.processVersion,
+                        })
+                        .then((updatedVersion) => {
+                            setProcessFlow({
+                                ...processFlow,
+                                version: updatedVersion,
+                                definition: {
+                                    ...processFlow.definition,
+                                    publishedVersion: null,
+                                },
+                            });
+                            dispatch(showSuccessSnackbar('Die Prozessversion wurde zurückgezogen.'));
+                        })
+                        .catch((err) => {
+                            dispatch(showApiErrorSnackbar(err, 'Die Prozessversion konnte nicht zurückgezogen werden.'));
+                        });
+                },
+                variant: 'contained',
+                disabled: processFlow == null || isInTestMode,
+                visible: processFlow?.version.status === ProcessStatus.Published,
+                activeStyle: {
+                    ml: 1,
+                },
             },
         ];
     }, [
+        processFlow,
         activeTestClaimId,
         currentTestClaim,
         instanceId,
@@ -1920,6 +1902,26 @@ export function ProcessDetailsPage(): ReactNode {
         return processFlow.nodes.find((node) => node.id === replaceNodeRequest.nodeId) ?? null;
     }, [processFlow, replaceNodeRequest]);
 
+    const handleAddDraft = useCallback((process: number, version?: number) => {
+        dispatch(setLoadingMessage({
+            message: 'Neue Version wird erzeugt',
+            estimatedTime: 2000,
+            blocking: true,
+        }));
+
+        new ProcessDefinitionApiService()
+            .addNewVersion(process, version)
+            .then((createdVersion) => {
+                navigate(`/processes/${createdVersion.processId}/versions/${createdVersion.processVersion}`);
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Fehler beim Anlegen einer neuen Version'));
+            })
+            .finally(() => {
+                dispatch(clearLoadingMessage());
+            });
+    }, []);
+
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
             return <ProcessDetailsPageSkeleton/>;
@@ -1956,8 +1958,10 @@ export function ProcessDetailsPage(): ReactNode {
                     position: 'relative',
                 }}
             >
-                <Allotment onDragStart={() => setHideEditorPaneExpandButton(true)}
-                           onDragEnd={handleEditorPaneDragEnd}>
+                <Allotment
+                    onDragStart={() => setHideEditorPaneExpandButton(true)}
+                    onDragEnd={handleEditorPaneDragEnd}
+                >
                     <Allotment.Pane minSize={DISPLAYABLE_AREA - MIN_EDITOR_DRAWER_WIDTH_PX}>
                         <Box
                             sx={{
@@ -2469,6 +2473,43 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
                 process={processFlow.definition}
                 version={processFlow.version}
+            />
+
+            <ProcessVersionsDialog
+                open={showVersionsDialog}
+                process={processFlow.definition}
+                onClose={() => {
+                    setShowVersionsDialog(false);
+                }}
+                onNewDraft={({process, version}) => {
+                    handleAddDraft(process.id, version.processVersion);
+                }}
+                onDeleteVersion={(process, version) => {
+                    if (version == processVersion) {
+                        navigate('/processes');
+                    }
+                }}
+            />
+
+            <ProcessPublishDialog
+                open={showPublishDialog}
+                onClose={() => {
+                    setShowPublishDialog(false);
+                }}
+                process={processFlow.definition}
+                version={processFlow.version}
+                availableNodeProviders={availableNodeProviders}
+                onPublish={(publishedVersion) => {
+                    setProcessFlow({
+                        ...processFlow,
+                        definition: {
+                            ...processFlow.definition,
+                            publishedVersion: publishedVersion.processVersion,
+                        },
+                        version: publishedVersion,
+                    });
+                    setShowPublishDialog(false);
+                }}
             />
         </PageWrapper>
     );

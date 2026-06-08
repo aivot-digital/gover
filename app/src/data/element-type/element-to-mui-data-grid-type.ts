@@ -33,7 +33,7 @@ export const ElementToMuiDataGridType: Record<ElementType, GridColType | null> =
     [ElementType.CodeInput]: null,
     [ElementType.RichTextInput]: 'string',
     [ElementType.UiDefinitionInput]: null,
-    [ElementType.IdentityInput]: null,
+    [ElementType.IdentityConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: 'string',
     [ElementType.DateTime]: 'string',

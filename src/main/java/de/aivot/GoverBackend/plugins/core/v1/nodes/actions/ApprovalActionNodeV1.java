@@ -18,7 +18,6 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContent
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -31,11 +30,7 @@ import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -441,7 +436,7 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Modellieren Sie eine Gover-UI, in der die freizugebenden Inhalte dargestellt werden."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
-        public SummaryLayoutElement dataContent;
+        public GroupLayoutElement dataContent;
 
         public static final String CUSTOM_CONTENT = CUSTOM_CONTENT_FIELD_ID;
         @InputElementPOJOBinding(id = CUSTOM_CONTENT, type = ElementType.RichTextInput, properties = {

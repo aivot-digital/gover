@@ -7,12 +7,14 @@ import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 
 public class ComputedElementState implements Serializable {
     @Nonnull
     private Boolean visible = true;
+
+    @Nonnull
+    private Boolean disabled = false;
 
     @Nullable
     private String error = null;
@@ -22,9 +24,6 @@ public class ComputedElementState implements Serializable {
 
     @Nullable
     private BaseElement override = null;
-
-    @Nullable
-    private String destinationPath = null;
 
     @Nonnull
     private EffectiveValueSource valueSource = EffectiveValueSource.Authored;
@@ -50,14 +49,14 @@ public class ComputedElementState implements Serializable {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         ComputedElementState that = (ComputedElementState) o;
-        return Objects.equals(visible, that.visible) && Objects.equals(error, that.error) && Objects.equals(errorDetails, that.errorDetails) &&
-                Objects.equals(override, that.override) && Objects.equals(destinationPath, that.destinationPath) && valueSource == that.valueSource &&
-                Objects.equals(subStates, that.subStates);
+        return Objects.equals(visible, that.visible) && Objects.equals(disabled, that.disabled) && Objects.equals(error, that.error) &&
+                Objects.equals(errorDetails, that.errorDetails) && Objects.equals(override, that.override) &&
+                valueSource == that.valueSource && Objects.equals(subStates, that.subStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visible, error, errorDetails, override, destinationPath, valueSource, subStates);
+        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, subStates);
     }
 
 
@@ -72,6 +71,16 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setVisible(@Nonnull Boolean visible) {
         this.visible = visible;
+        return this;
+    }
+
+    @Nonnull
+    public Boolean getDisabled() {
+        return disabled;
+    }
+
+    public ComputedElementState setDisabled(@Nonnull Boolean disabled) {
+        this.disabled = disabled;
         return this;
     }
 
@@ -92,16 +101,6 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setOverride(@Nullable BaseElement override) {
         this.override = override;
-        return this;
-    }
-
-    @Nullable
-    public String getDestinationPath() {
-        return destinationPath;
-    }
-
-    public ComputedElementState setDestinationPath(@Nullable String destinationPath) {
-        this.destinationPath = destinationPath;
         return this;
     }
 

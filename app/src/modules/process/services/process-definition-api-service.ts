@@ -1,6 +1,7 @@
 import {BaseCrudApiService} from "../../../services/base-crud-api-service";
 import {ProcessEntity} from "../entities/process-entity";
 import {ProcessExport} from "../entities/process-export";
+import {ProcessVersionEntity} from '../entities/process-version-entity';
 
 interface ProcessDefinitionFilter {
     internalTitle: string;
@@ -48,5 +49,13 @@ export class ProcessDefinitionApiService extends BaseCrudApiService<
 
     public import(processData: ProcessExport): Promise<ProcessEntity> {
         return this.post<ProcessExport, ProcessEntity>(`/api/processes/import/`, processData);
+    }
+
+    public move(processId: number, targetDepartmentId: number): Promise<ProcessEntity> {
+        return this.put<any, ProcessEntity>(`/api/processes/${processId}/move/?targetDepartmentId=${targetDepartmentId}`, {});
+    }
+
+    public addNewVersion(processId: number, sourceVersionNumber?: number): Promise<ProcessVersionEntity> {
+        return this.post<any, ProcessVersionEntity>(`/api/processes/${processId}/new-version/${sourceVersionNumber ?? 'latest'}/`, {});
     }
 }

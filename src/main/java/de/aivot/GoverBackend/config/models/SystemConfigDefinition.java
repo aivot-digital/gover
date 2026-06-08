@@ -1,19 +1,16 @@
 package de.aivot.GoverBackend.config.models;
 
-import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
-import de.aivot.GoverBackend.config.enums.ConfigType;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.util.List;
 
-public interface SystemConfigDefinition {
+public interface SystemConfigDefinition<T> {
     @Nonnull
     String getKey();
 
     @Nonnull
-    ConfigType getType();
+    BaseElement getConfigElement();
 
     @Nonnull
     String getCategory();
@@ -35,31 +32,19 @@ public interface SystemConfigDefinition {
     }
 
     @Nullable
-    default List<ConfigDefinitionOption> getOptions() {
-        return null;
-    }
-
-    @Nullable
-    default Object getDefaultValue() {
+    default T getDefaultValue() {
         return null;
     }
 
     @Nonnull
-    default String serializeValueToDB(@Nullable Object value) throws ResponseException {
+    default String serializeValueToDB(@Nullable T value) throws ResponseException {
         return value == null ? "" : value.toString();
     }
 
     @Nullable
-    default Object parseValueFromDB(@Nonnull String value) throws ResponseException {
-        return value;
-    }
+    T parseValueFromDB(@Nonnull String value) throws ResponseException;
 
-    default void validate(@Nonnull SystemConfigEntity entity) throws ResponseException {
-    }
-
-    default void beforeChange(@Nonnull SystemConfigEntity entity) throws ResponseException {
-    }
-
-    default void afterChange(@Nonnull SystemConfigEntity entity) throws ResponseException {
+    default void validate(@Nullable T value) throws ResponseException {
+        // Raise an exception here if the value is broken
     }
 }

@@ -5,7 +5,6 @@ import de.aivot.GoverBackend.destination.entities.Destination;
 import de.aivot.GoverBackend.exceptions.InvalidUserEMailException;
 import de.aivot.GoverBackend.exceptions.NoValidUserEMailsInDepartmentException;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
-import de.aivot.GoverBackend.form.services.FormVersionService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.mail.enums.MailTemplate;
 import de.aivot.GoverBackend.models.lib.MailAttachmentBytes;
@@ -19,6 +18,7 @@ import de.aivot.GoverBackend.services.PdfService;
 import de.aivot.GoverBackend.services.storages.SubmissionStorageService;
 import de.aivot.GoverBackend.submission.entities.Submission;
 import de.aivot.GoverBackend.submission.entities.SubmissionAttachment;
+import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import de.aivot.GoverBackend.utils.StringUtils;
@@ -44,7 +44,6 @@ public class SubmissionMailService {
     private final PdfService pdfService;
     private final PaymentTransactionRepository paymentTransactionService;
     private final PaymentProviderRepository paymentProviderService;
-    private final FormVersionService formVersionService;
 
     @Autowired
     public SubmissionMailService(
@@ -53,14 +52,13 @@ public class SubmissionMailService {
             UserService userService,
             PdfService pdfService,
             PaymentTransactionRepository paymentTransactionService,
-            PaymentProviderRepository paymentProviderService, FormVersionService formVersionService) {
+            PaymentProviderRepository paymentProviderService) {
         this.mailService = mailService;
         this.submissionStorageService = submissionStorageService;
         this.userService = userService;
         this.pdfService = pdfService;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderService = paymentProviderService;
-        this.formVersionService = formVersionService;
     }
 
     public void sendToDestination(VFormVersionWithDetailsEntity form, Submission submission, Destination destination, Collection<SubmissionAttachment> attachments) throws MessagingException, IOException, ResponseException {
@@ -105,15 +103,12 @@ public class SubmissionMailService {
                 paymentProviderService.findById(paymentTransaction.getPaymentProviderKey()).orElse(null) :
                 null;
 
-        var destinationData = DestinationDataFormatter.createDataWithoutFiles(form, submission, paymentTransaction, paymentProvider).format();
+        var destinationData = Map.of();// DestinationDataFormatter.createDataWithoutFiles(formDerivationServiceFactory, form, submission, paymentTransaction, paymentProvider).format();
         var destinationDataBytes = new ObjectMapper().writeValueAsBytes(destinationData);
         attachmentsData.add(new MailAttachmentBytes("Antrag.json", MediaType.APPLICATION_JSON, destinationDataBytes));
 
-        var departmentTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion());
-
         mailService.sendMail(
-                departmentTheme.getFirst(),
+                null,
                 to,
                 cc,
                 bcc,
@@ -217,9 +212,7 @@ public class SubmissionMailService {
         mailData.put("triggeringUser", triggeringUser);
         mailData.put("assignee", assignee);
 
-        var formTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
-                .getFirst();
+        ThemeEntity formTheme = null;
 
         if (assignee != null) {
             mailService.sendMailToUser(
@@ -285,13 +278,10 @@ public class SubmissionMailService {
             recipients.add(previousAssignee);
         }
 
-        var formTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
-                .getFirst();
 
         for (UserEntity recipient : recipients) {
             mailService.sendMailToUser(
-                    formTheme,
+                    null,
                     recipient.getId(),
                     "[Gover] " + (submission.getIsTestSubmission() ? "[Test] " : "") + title,
                     isReassignment ? MailTemplate.SubmissionReassigned : MailTemplate.SubmissionAssigned,

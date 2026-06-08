@@ -51,7 +51,7 @@ export function DateFieldComponent({
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     // MUI fires picker changes for both popover selection and direct field edits.
     // We track keyboard-driven edits separately so clearing the text field also
-    // propagates `undefined` to the parent instead of only mutating local picker state.
+    // propagates an explicit clear to the parent instead of only mutating local picker state.
     const lastInputWasTypingRef = useRef(false);
     const lastPickerValueRef = useRef<Date | null>(dateValue);
 
@@ -88,8 +88,8 @@ export function DateFieldComponent({
 
     const triggerChange = (date: Date | null) => {
         if (date === null) {
-            onChange(undefined);
-            onBlur?.(undefined);
+            onChange(null);
+            onBlur?.(null);
             return;
         }
 

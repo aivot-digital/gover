@@ -108,7 +108,7 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
             return;
         }
 
-        setValue(undefined, [dependencyElement.id]);
+        setValue(null, [dependencyElement.id]);
     }, [allOptions, dependencyElement, dependsOnSelectFieldId, options, setValue, value]);
 
     const isDisabled = useMemo(() => {
@@ -142,7 +142,7 @@ export function SelectFieldView(props: BaseViewProps<SelectFieldElement, string>
             error={errors != null ? errors.join(' ') : undefined}
             hint={element.hint ?? undefined}
             placeholder={element.placeholder ?? undefined}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             disabled={isDisabled}
             required={element.required ?? undefined}

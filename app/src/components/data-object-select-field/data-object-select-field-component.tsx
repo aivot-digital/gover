@@ -14,7 +14,7 @@ import {normalizeDataModelKey} from '../data-model-select-field/data-model-selec
 export interface DataObjectSelectFieldComponentProps {
     label: string;
     value: string | null | undefined;
-    onChange: (value: string | null | undefined) => void;
+    onChange: (value: string | null) => void;
     dataModelKey: string | null | undefined;
     dataLabelAttributeKey?: string | null | undefined;
     placeholder?: string;
@@ -203,7 +203,7 @@ export function DataObjectSelectFieldComponent(props: DataObjectSelectFieldCompo
                         : 'Keine Optionen verfügbar'
             }
             onChange={(_: SyntheticEvent, nextValue) => {
-                onChange(nextValue?.value);
+                onChange(nextValue?.value ?? null);
             }}
             renderOption={(optionProps, option, state) => (
                 <Box

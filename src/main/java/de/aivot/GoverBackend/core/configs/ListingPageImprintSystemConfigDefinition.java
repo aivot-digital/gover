@@ -1,15 +1,26 @@
 package de.aivot.GoverBackend.core.configs;
 
-import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.data.SystemConfigKey;
+import de.aivot.GoverBackend.department.repositories.VDepartmentShadowedRepository;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ListingPageImprintSystemConfigDefinition implements SystemConfigDefinition {
+public class ListingPageImprintSystemConfigDefinition implements SystemConfigDefinition<String> {
     // TODO: Remove SystemConfigKey.PROVIDER__LISTINGPAGE__IMPRINTDEPARTMENTID and use the key directly
     public static final String KEY = SystemConfigKey.PROVIDER__LISTINGPAGE__IMPRINTDEPARTMENTID.getKey();
+
+    private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
+
+    public ListingPageImprintSystemConfigDefinition(VDepartmentShadowedRepository vDepartmentShadowedRepository) {
+        this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
+    }
 
     @Nonnull
     @Override
@@ -19,8 +30,18 @@ public class ListingPageImprintSystemConfigDefinition implements SystemConfigDef
 
     @Nonnull
     @Override
-    public ConfigType getType() {
-        return ConfigType.DEPARTMENT;
+    public BaseElement getConfigElement() {
+        return new SelectInputElement()
+                .setOptions(
+                        vDepartmentShadowedRepository
+                                .findAll()
+                                .stream()
+                                .map(dep -> SelectInputElementOption.of(dep.getId().toString(), dep.getName()))
+                                .toList()
+                )
+                .setLabel(getLabel())
+                .setHint(getDescription())
+                .setId(getKey());
     }
 
     @Nonnull
@@ -45,5 +66,16 @@ public class ListingPageImprintSystemConfigDefinition implements SystemConfigDef
     @Override
     public Boolean isPublicConfig() {
         return true;
+    }
+
+    @Nullable
+    @Override
+    public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        try {
+            Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw ResponseException.internalServerError("Ungültiger Wert für " + getLabel());
+        }
+        return value;
     }
 }

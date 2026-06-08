@@ -57,7 +57,7 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
             </Typography>
 
             <CodeEditor
-                value={value ?? ''}
+                value={value}
                 onChange={(nextValue) => {
                     if (isStringNullOrEmpty(nextValue)) {
                         onChange(null);

@@ -1,6 +1,5 @@
 package de.aivot.GoverBackend.user.configs;
 
-import de.aivot.GoverBackend.config.entities.SystemConfigEntity;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.userRoles.repositories.SystemRoleRepository;
 import org.junit.jupiter.api.Test;
@@ -26,23 +25,15 @@ class DefaultUserSystemRoleSystemConfigDefinitionTest {
         when(repository.existsById(3)).thenReturn(true);
 
         var definition = new DefaultUserSystemRoleSystemConfigDefinition(repository);
-        var entity = new SystemConfigEntity()
-                .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
-                .setValue("3")
-                .setPublicConfig(false);
 
-        assertDoesNotThrow(() -> definition.validate(entity));
+        assertDoesNotThrow(() -> definition.validate(definition.parseValueFromDB("3")));
     }
 
     @Test
     void validateShouldRejectNonNumericValue() {
         var definition = new DefaultUserSystemRoleSystemConfigDefinition(mock(SystemRoleRepository.class));
-        var entity = new SystemConfigEntity()
-                .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
-                .setValue("not-a-role-id")
-                .setPublicConfig(false);
 
-        var exception = assertThrows(ResponseException.class, () -> definition.validate(entity));
+        var exception = assertThrows(ResponseException.class, () -> definition.parseValueFromDB("not-a-role-id"));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("Bitte wählen Sie eine gültige Standard-Systemrolle aus.", exception.getTitle());
@@ -54,12 +45,8 @@ class DefaultUserSystemRoleSystemConfigDefinitionTest {
         when(repository.existsById(999)).thenReturn(false);
 
         var definition = new DefaultUserSystemRoleSystemConfigDefinition(repository);
-        var entity = new SystemConfigEntity()
-                .setKey(DefaultUserSystemRoleSystemConfigDefinition.KEY)
-                .setValue("999")
-                .setPublicConfig(false);
 
-        var exception = assertThrows(ResponseException.class, () -> definition.validate(entity));
+        var exception = assertThrows(ResponseException.class, () -> definition.validate(definition.parseValueFromDB("999")));
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals("Die ausgewählte Standard-Systemrolle existiert nicht.", exception.getTitle());
