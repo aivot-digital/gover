@@ -35,6 +35,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -106,6 +107,37 @@ public class ProcessController {
                         execUser.getId(),
                         filter.build()
                 );
+    }
+
+    @GetMapping("slug-availability/")
+    @Operation(
+            summary = "Check Process Slug Availability",
+            description = "Check whether a public URL namespace can be used by a process definition."
+    )
+    public ProcessSlugAvailabilityResponse checkSlugAvailability(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @RequestParam String slug,
+            @Nullable @RequestParam(required = false) Integer processId
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (processId != null) {
+            var process = processDefinitionService
+                    .retrieve(processId)
+                    .orElseThrow(ResponseException::notFound);
+
+            permissionService.testDepartmentPermission(
+                    execUser.getId(),
+                    process.getDepartmentId(),
+                    ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+            );
+        }
+
+        return new ProcessSlugAvailabilityResponse(
+                processDefinitionService.isSlugAvailable(slug, processId)
+        );
     }
 
     @PostMapping("")
@@ -359,6 +391,71 @@ public class ProcessController {
         return result;
     }
 
+    @GetMapping("{id}/slug-history/")
+    @Operation(
+            summary = "List Process Slug History",
+            description = "List previous public URL namespaces for a process definition. " +
+                    "Requires edit permissions for the process definition."
+    )
+    public List<ProcessSlugHistoryEntity> listSlugHistory(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var process = processDefinitionService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.testDepartmentPermission(
+                execUser.getId(),
+                process.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
+
+        return processDefinitionService.listSlugHistory(id);
+    }
+
+    @DeleteMapping("{id}/slug-history/")
+    @Operation(
+            summary = "Clear Process Slug History",
+            description = "Delete previous public URL namespaces for a process definition. " +
+                    "Requires edit permissions for the process definition."
+    )
+    public void clearSlugHistory(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var process = processDefinitionService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.testDepartmentPermission(
+                execUser.getId(),
+                process.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
+
+        processDefinitionService.clearSlugHistory(id);
+
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Update, ProcessEntity.class,
+                        process.getId(),
+                        "id"
+                ).withMessage(
+                        "Die Slug-Historie des Prozesses mit der ID %s wurde von der Mitarbeiter:in %s geleert.",
+                        StringUtils.quote(String.valueOf(process.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
+    }
+
     @DeleteMapping("{id}/")
     @Operation(
             summary = "Delete Process Definition",
@@ -393,8 +490,8 @@ public class ProcessController {
     @PutMapping("{id}/move/")
     @Operation(
             summary = "Move Process",
-            description = "Move a form to another department. " +
-                    "The user must be a super admin or have edit permission in the current developing department of the form."
+            description = "Move a process to another department. " +
+                    "The user must be a super admin or have edit permission in the current managing department of the process."
     )
     @SecurityRequirement(name = OpenApiConfiguration.Security)
     public ProcessEntity move(
@@ -412,6 +509,9 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        var existingMap = objectMapper
+                .convertValue(process, Map.class);
+
         // Check if the user has edit permission for the process in the original department
         permissionService.testDepartmentPermission(
                 user.getId(),
@@ -426,13 +526,29 @@ public class ProcessController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
         );
 
-        // Move the form to the target department
-        process.setDraftedVersion(targetDepartmentId);
+        // Moving a process changes only the managing department. Version pointers must remain untouched.
+        process.setDepartmentId(targetDepartmentId);
 
-        // Create a revision for the form
-        return processDefinitionService.update(process.getId(), process);
+        // Persist through the regular update path so process metadata handling stays centralized.
+        var result = processDefinitionService.update(process.getId(), process);
 
-        // TODO: Create revisions
+        var updatedMap = objectMapper
+                .convertValue(result, Map.class);
+
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(AuditAction.Update, ProcessEntity.class,
+                        result.getId(),
+                        "id"
+                )
+                .withDiff(existingMap, updatedMap).withMessage(
+                        "Der Prozess mit der ID %s wurde von der Mitarbeiter:in %s an die Organisationseinheit mit der ID %s übertragen.",
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(user.getFullName()),
+                        StringUtils.quote(String.valueOf(targetDepartmentId))
+                ).log();
+
+        return result;
     }
 
 
@@ -606,5 +722,8 @@ public class ProcessController {
                 .log();
 
         return result;
+    }
+
+    public record ProcessSlugAvailabilityResponse(boolean available) {
     }
 }

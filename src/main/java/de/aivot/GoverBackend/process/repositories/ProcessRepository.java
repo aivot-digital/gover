@@ -20,4 +20,10 @@ public interface ProcessRepository extends JpaRepository<ProcessEntity, Integer>
                                               @Nonnull @Param("permission") String permission);
 
     Optional<ProcessEntity> findByAccessKey(UUID accessKey);
+
+    Optional<ProcessEntity> findBySlug(@Nonnull String slug);
+
+    boolean existsBySlug(@Nonnull String slug);
+
+    boolean existsBySlugAndIdIsNot(@Nonnull String slug, @Nonnull Integer id);
 }

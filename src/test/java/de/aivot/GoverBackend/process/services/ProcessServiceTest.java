@@ -1,9 +1,12 @@
 package de.aivot.GoverBackend.process.services;
 
 import de.aivot.GoverBackend.permissions.services.PermissionService;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessSlugHistoryEntity;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.repositories.ProcessRepository;
+import de.aivot.GoverBackend.process.repositories.ProcessSlugHistoryRepository;
 import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Path;
@@ -17,9 +20,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -34,10 +39,129 @@ class ProcessServiceTest {
     private static final String READ_PERMISSION = ProcessPermissionProvider.PROCESS_DEFINITION_READ;
 
     @Test
+    void createShouldNormalizeExplicitSlug() throws Exception {
+        var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
+        var permissionService = mock(PermissionService.class);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
+        var process = new ProcessEntity()
+                .setInternalTitle("Hundesteuer Antrag")
+                .setDepartmentId(10)
+                .setSlug("Hundesteuer-Antrag")
+                .setVersionCount(0);
+
+        when(repository.save(any(ProcessEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create(process);
+
+        assertEquals("hundesteuer-antrag", result.getSlug());
+        assertEquals(10, result.getDepartmentId());
+        verify(repository).save(process);
+    }
+
+    @Test
+    void createShouldRejectMissingSlug() {
+        var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
+        var permissionService = mock(PermissionService.class);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
+        var process = new ProcessEntity()
+                .setInternalTitle("Hundesteuer Antrag")
+                .setDepartmentId(10)
+                .setSlug("")
+                .setVersionCount(0);
+
+        assertThrows(ResponseException.class, () -> service.create(process));
+        verify(repository, never()).save(any(ProcessEntity.class));
+    }
+
+    @Test
+    void retrieveBySlugOrHistoryShouldResolveHistoricalSlug() throws Exception {
+        var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
+        var permissionService = mock(PermissionService.class);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
+        var process = new ProcessEntity()
+                .setId(42)
+                .setInternalTitle("Hundesteuer Antrag")
+                .setDepartmentId(10)
+                .setSlug("hundesteuer")
+                .setVersionCount(1);
+
+        when(repository.findBySlug("alter-slug"))
+                .thenReturn(Optional.empty());
+        when(processSlugHistoryRepository.findBySlug("alter-slug"))
+                .thenReturn(Optional.of(new ProcessSlugHistoryEntity("alter-slug", 42)));
+        when(repository.findById(42))
+                .thenReturn(Optional.of(process));
+
+        var result = service.retrieveBySlugOrHistory("ALTER-SLUG");
+
+        assertTrue(result.isPresent());
+        assertSame(process, result.get());
+    }
+
+    @Test
+    void listSlugHistoryShouldReturnEntriesForExistingProcess() throws Exception {
+        var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
+        var permissionService = mock(PermissionService.class);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
+        var history = List.of(
+                new ProcessSlugHistoryEntity("alter-slug", 42),
+                new ProcessSlugHistoryEntity("noch-aelterer-slug", 42)
+        );
+
+        when(repository.existsById(42))
+                .thenReturn(true);
+        when(processSlugHistoryRepository.findAllByProcessIdOrderByCreatedDesc(42))
+                .thenReturn(history);
+
+        var result = service.listSlugHistory(42);
+
+        assertSame(history, result);
+        verify(processSlugHistoryRepository).findAllByProcessIdOrderByCreatedDesc(42);
+    }
+
+    @Test
+    void clearSlugHistoryShouldDeleteEntriesForExistingProcess() throws Exception {
+        var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
+        var permissionService = mock(PermissionService.class);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
+
+        when(repository.existsById(42))
+                .thenReturn(true);
+
+        service.clearSlugHistory(42);
+
+        verify(processSlugHistoryRepository).deleteAllByProcessId(42);
+    }
+
+    @Test
+    void isSlugAvailableShouldAllowCurrentProcessSlug() throws Exception {
+        var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
+        var permissionService = mock(PermissionService.class);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
+
+        when(repository.existsBySlugAndIdIsNot("hundesteuer", 42))
+                .thenReturn(false);
+        when(processSlugHistoryRepository.existsBySlugAndProcessIdIsNot("hundesteuer", 42))
+                .thenReturn(false);
+
+        var result = service.isSlugAvailable("Hundesteuer", 42);
+
+        assertTrue(result);
+    }
+
+    @Test
     void listAllByAccessibleForUserShouldReturnUnscopedResultForSystemReadPermission() throws Exception {
         var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
         var permissionService = mock(PermissionService.class);
-        var service = new ProcessService(repository, permissionService);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
         var pageable = PageRequest.of(0, 10);
         Specification<ProcessEntity> specification = (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
         var page = Page.<ProcessEntity>empty(pageable);
@@ -58,8 +182,9 @@ class ProcessServiceTest {
     @Test
     void listAllByAccessibleForUserShouldReturnEmptyPageWhenUserHasNoScopedAccess() throws Exception {
         var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
         var permissionService = mock(PermissionService.class);
-        var service = new ProcessService(repository, permissionService);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
         var pageable = PageRequest.of(0, 10);
 
         when(permissionService.hasSystemPermission(USER_ID, READ_PERMISSION))
@@ -79,8 +204,9 @@ class ProcessServiceTest {
     @Test
     void listAllByAccessibleForUserShouldScopeByDepartmentsAndExplicitProcessAccess() throws Exception {
         var repository = mock(ProcessRepository.class);
+        var processSlugHistoryRepository = mock(ProcessSlugHistoryRepository.class);
         var permissionService = mock(PermissionService.class);
-        var service = new ProcessService(repository, permissionService);
+        var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
         var pageable = PageRequest.of(0, 10);
         var page = Page.<ProcessEntity>empty(pageable);
 
