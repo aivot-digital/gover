@@ -35,7 +35,6 @@ import {isStringNullOrEmpty} from '../../../../../utils/string-utils';
 import {SystemRolesApiService} from '../../../../../modules/system/services/system-roles-api-service';
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {DepartmentSelectField} from '../../../../../modules/departments/components/department-select-field';
-import {SelectDepartmentDialog} from '../../../../../modules/departments/dialogs/select-department-dialog';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
 import SupervisedUserCircle
@@ -46,14 +45,6 @@ import {
 import {ElementDerivationContext} from '../../../../../modules/elements/components/element-derivation-context';
 import {ElementType} from '../../../../../data/element-type/element-type';
 import {GroupLayout} from '../../../../../models/elements/form/layout/group-layout';
-
-type ListingPageDepartmentDialog = 'imprint' | 'privacy' | 'accessibility';
-
-const ListingPageDepartmentConfigKeys: Record<ListingPageDepartmentDialog, string> = {
-    imprint: SystemConfigKeys.provider.listingPage.imprintDepartmentId,
-    privacy: SystemConfigKeys.provider.listingPage.privacyDepartmentId,
-    accessibility: SystemConfigKeys.provider.listingPage.accessibilityDepartmentId,
-};
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
@@ -92,7 +83,6 @@ export function ApplicationSettings() {
     const [editedConfig, setEditedConfig] = useState<SystemConfigMap>({});
 
     const [departments, setDepartments] = useState<VDepartmentShadowedEntity[]>([]);
-    const [activeDepartmentDialog, setActiveDepartmentDialog] = useState<ListingPageDepartmentDialog | null>(null);
     const [themes, setThemes] = useState<SelectFieldComponentOption[]>([]);
     const [systemRoleOptions, setSystemRoleOptions] = useState<SelectFieldComponentOption[]>([]);
     const [isLoadingSystemRoles, setIsLoadingSystemRoles] = useState(true);
@@ -412,10 +402,6 @@ export function ApplicationSettings() {
     const currentGroup: GroupLayout | undefined = useMemo(() => {
         return groups[currentSettingsTab ?? availableTabs[0]];
     }, [groups, currentSettingsTab, availableTabs]);
-
-    const activeDepartmentDialogConfigKey = activeDepartmentDialog != null
-        ? ListingPageDepartmentConfigKeys[activeDepartmentDialog]
-        : undefined;
 
     if (localStorage.getItem('showNewSettings') != null) {
         return (
@@ -839,11 +825,8 @@ export function ApplicationSettings() {
                         <DepartmentSelectField
                             label="Text für das Impressum"
                             value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId)}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('imprint');
-                            }}
-                            onClear={() => {
-                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, null);
+                            onChange={(department) => {
+                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, department?.id ?? null);
                             }}
                             disabled={!hasAccess}
                         />
@@ -858,11 +841,8 @@ export function ApplicationSettings() {
                         <DepartmentSelectField
                             label="Text für die Datenschutzerklärung"
                             value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId)}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('privacy');
-                            }}
-                            onClear={() => {
-                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, null);
+                            onChange={(department) => {
+                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, department?.id ?? null);
                             }}
                             disabled={!hasAccess}
                         />
@@ -876,11 +856,8 @@ export function ApplicationSettings() {
                         <DepartmentSelectField
                             label="Text für die Erklärung der Barrierefreiheit"
                             value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId)}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('accessibility');
-                            }}
-                            onClear={() => {
-                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, null);
+                            onChange={(department) => {
+                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, department?.id ?? null);
                             }}
                             disabled={!hasAccess}
                         />
@@ -997,24 +974,6 @@ export function ApplicationSettings() {
                 </Box>
             </form>
 
-            <SelectDepartmentDialog
-                open={activeDepartmentDialog != null}
-                onClose={() => {
-                    setActiveDepartmentDialog(null);
-                }}
-                onSelect={(department) => {
-                    if (activeDepartmentDialogConfigKey != null) {
-                        handleChangeListingPageDepartment(activeDepartmentDialogConfigKey, department.id);
-                    }
-
-                    setActiveDepartmentDialog(null);
-                }}
-                selectedDepartmentId={
-                    activeDepartmentDialogConfigKey != null
-                        ? getConfiguredDepartment(activeDepartmentDialogConfigKey)?.id
-                        : undefined
-                }
-            />
         </Box>
     );
 }

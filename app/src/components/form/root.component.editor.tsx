@@ -4,35 +4,21 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {type FormLayoutElement} from '../../models/elements/form-layout-element';
 import {SelectFieldComponent} from '../select-field/select-field-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {type SelectFieldComponentOption} from '../select-field/select-field-component-option';
-import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
 import {useApi} from '../../hooks/use-api';
 import {Link} from 'react-router-dom';
 import {Hint} from '../hint/hint';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {ThemesApiService} from '../../modules/themes/themes-api-service';
-import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
-import {downloadQrCode} from '../../utils/download-qrcode';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
 import {withDelay} from '../../utils/with-delay';
-import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
 import {type VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {VDepartmentShadowedApiService} from '../../modules/departments/services/v-department-shadowed-api-service';
 import {DepartmentSelectField} from '../../modules/departments/components/department-select-field';
-import {SelectDepartmentDialog} from '../../modules/departments/dialogs/select-department-dialog';
-
-type DepartmentDialogTarget =
-    'responsible' |
-    'managing' |
-    'imprint' |
-    'privacy' |
-    'accessibility' |
-    'legalSupport' |
-    'technicalSupport';
 
 export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
     const dispatch = useAppDispatch();
@@ -45,16 +31,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
 
     const [departments, setDepartments] = useState<VDepartmentShadowedEntity[] | null>(null);
     const [themes, setThemes] = useState<SelectFieldComponentOption[] | null>(null);
-    const [activeDepartmentDialog, setActiveDepartmentDialog] = useState<DepartmentDialogTarget | null>(null);
-
-    const handleDownloadQrCode = async (link: string, filename: string) => {
-        try {
-            await downloadQrCode(link, filename);
-            dispatch(showSuccessSnackbar('QR-Code wurde als PNG heruntergeladen!'));
-        } catch {
-            dispatch(showErrorSnackbar('Fehler beim Herunterladen des QR-Codes!'));
-        }
-    };
 
     useEffect(() => {
         withDelay(
@@ -102,72 +78,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
     const accessibilityDepartment = getDepartmentById(form.accessibilityDepartmentId);
     const legalSupportDepartment = getDepartmentById(form.legalSupportDepartmentId);
     const technicalSupportDepartment = getDepartmentById(form.technicalSupportDepartmentId);
-
-    const handleSelectDepartment = (departmentId: number) => {
-        switch (activeDepartmentDialog) {
-            case 'responsible':
-                onPatch({
-                    responsibleDepartmentId: departmentId,
-                });
-                return;
-            case 'managing':
-                onPatch({
-                    managingDepartmentId: departmentId,
-                });
-                return;
-            case 'imprint':
-                onPatch({
-                    imprintDepartmentId: departmentId,
-                });
-                return;
-            case 'privacy':
-                onPatch({
-                    privacyDepartmentId: departmentId,
-                });
-                return;
-            case 'accessibility':
-                onPatch({
-                    accessibilityDepartmentId: departmentId,
-                });
-                return;
-            case 'legalSupport':
-                onPatch({
-                    legalSupportDepartmentId: departmentId,
-                });
-                return;
-            case 'technicalSupport':
-                onPatch({
-                    technicalSupportDepartmentId: departmentId,
-                });
-                return;
-            default:
-                return;
-        }
-    };
-
-    const getActiveDepartmentId = (): number | null | undefined => {
-        switch (activeDepartmentDialog) {
-            case 'responsible':
-                return form.responsibleDepartmentId;
-            case 'managing':
-                return form.managingDepartmentId;
-            case 'imprint':
-                return form.imprintDepartmentId;
-            case 'privacy':
-                return form.privacyDepartmentId;
-            case 'accessibility':
-                return form.accessibilityDepartmentId;
-            case 'legalSupport':
-                return form.legalSupportDepartmentId;
-            case 'technicalSupport':
-                return form.technicalSupportDepartmentId;
-            default:
-                return null;
-        }
-    };
-
-    const generalLink = ''; //TODO: createCustomerPath(`${props.entity?.form.slug ?? ''}`);
-    const versionedLink = ''; //TODO: createCustomerPath(`${props.entity?.form.slug ?? ''}/${form.version ?? ''}`);
 
     return (
         <>
@@ -240,88 +150,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     />
                 </Grid>
             </Grid>
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-                    <TextFieldComponent
-                        label="Allgemeiner Link des Formulars"
-                        disabled
-                        onChange={() => {
-                        }}
-                        value={generalLink}
-                        hint="Wenn Sie immer die aktuellste Version des Formulars verlinken möchten, dann wählen Sie den Link ohne Versionierung. Es wird immer das zuletzt veröffentlichte Formular unter diesem Link angezeigt."
-                        endAction={
-                            [
-                                {
-                                    icon: <ContentPasteOutlinedIcon/>,
-                                    tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: async () => {
-                                        const success = await copyToClipboardText(generalLink);
-                                        if (success) {
-                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                        } else {
-                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                        }
-                                    },
-                                },
-                                {
-                                    icon: <QrCode2OutlinedIcon/>,
-                                    tooltip: 'QR-Code herunterladen',
-                                    onClick: async () => {
-                                        //TODO: await handleDownloadQrCode(generalLink, `qr-code-${props.entity?.form.slug ?? ''}.png`);
-                                    },
-                                },
-                            ]
-                        }
-                    />
-                </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                >
-
-                    <TextFieldComponent
-                        label="Versionsspezifischer Link des Formulars"
-                        disabled
-                        onChange={() => {
-                        }}
-                        value={versionedLink}
-                        hint="Wenn Sie die explizite Version eines Formulars verlinken möchten, dann wählen Sie den Link inkl. Versionierung. Sobald Sie eine andere Version des Formulars nutzen möchten, müssen Sie den Link z.B. auf Ihrer Webseite entsprechend austauschen."
-                        endAction={
-                            [
-                                {
-                                    icon: <ContentPasteOutlinedIcon/>,
-                                    tooltip: 'Link in Zwischenablage kopieren',
-                                    onClick: async () => {
-                                        const success = await copyToClipboardText(versionedLink);
-                                        if (success) {
-                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                        } else {
-                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                        }
-                                    },
-                                },
-                                {
-                                    icon: <QrCode2OutlinedIcon/>,
-                                    tooltip: 'QR-Code herunterladen',
-                                    onClick: async () => {
-                                        // TODO: await handleDownloadQrCode(versionedLink, `qr-code-${props.entity?.form.slug ?? ''}-${(form.version ?? '')}.png`);
-                                    },
-                                },
-                            ]
-                        }
-                    />
-                </Grid>
-            </Grid>
             <ElementEditorSectionHeader
                 title="Zuständige Organisationseinheiten"
                 variant="h5"
@@ -351,12 +179,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         <DepartmentSelectField
                             label="Zuständige Organisationseinheit"
                             value={responsibleDepartment}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('responsible');
-                            }}
-                            onClear={() => {
+                            onChange={(department) => {
                                 onPatch({
-                                    responsibleDepartmentId: null,
+                                    responsibleDepartmentId: department?.id ?? null,
                                 });
                             }}
                             disabled={!props.editable}
@@ -381,12 +206,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         <DepartmentSelectField
                             label="Bewirtschaftende Organisationseinheit"
                             value={managingDepartment}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('managing');
-                            }}
-                            onClear={() => {
+                            onChange={(department) => {
                                 onPatch({
-                                    managingDepartmentId: null,
+                                    managingDepartmentId: department?.id ?? null,
                                 });
                             }}
                             disabled={!props.editable}
@@ -424,12 +246,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         <DepartmentSelectField
                             label="Text für das Impressum"
                             value={imprintDepartment}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('imprint');
-                            }}
-                            onClear={() => {
+                            onChange={(department) => {
                                 onPatch({
-                                    imprintDepartmentId: null,
+                                    imprintDepartmentId: department?.id ?? null,
                                 });
                             }}
                             disabled={!props.editable}
@@ -454,12 +273,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         <DepartmentSelectField
                             label="Text für die Datenschutzerklärung"
                             value={privacyDepartment}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('privacy');
-                            }}
-                            onClear={() => {
+                            onChange={(department) => {
                                 onPatch({
-                                    privacyDepartmentId: null,
+                                    privacyDepartmentId: department?.id ?? null,
                                 });
                             }}
                             disabled={!props.editable}
@@ -484,12 +300,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         <DepartmentSelectField
                             label="Text für die Erklärung der Barrierefreiheit"
                             value={accessibilityDepartment}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('accessibility');
-                            }}
-                            onClear={() => {
+                            onChange={(department) => {
                                 onPatch({
-                                    accessibilityDepartmentId: null,
+                                    accessibilityDepartmentId: department?.id ?? null,
                                 });
                             }}
                             disabled={!props.editable}
@@ -648,12 +461,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         <DepartmentSelectField
                             label="Fachlicher Support"
                             value={legalSupportDepartment}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('legalSupport');
-                            }}
-                            onClear={() => {
+                            onChange={(department) => {
                                 onPatch({
-                                    legalSupportDepartmentId: null,
+                                    legalSupportDepartmentId: department?.id ?? null,
                                 });
                             }}
                             disabled={!props.editable}
@@ -678,12 +488,9 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                         <DepartmentSelectField
                             label="Technischer Support"
                             value={technicalSupportDepartment}
-                            onOpenDialog={() => {
-                                setActiveDepartmentDialog('technicalSupport');
-                            }}
-                            onClear={() => {
+                            onChange={(department) => {
                                 onPatch({
-                                    technicalSupportDepartmentId: null,
+                                    technicalSupportDepartmentId: department?.id ?? null,
                                 });
                             }}
                             disabled={!props.editable}
@@ -691,16 +498,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     }
                 </Grid>
             </Grid>
-            <SelectDepartmentDialog
-                open={activeDepartmentDialog != null}
-                onClose={() => {
-                    setActiveDepartmentDialog(null);
-                }}
-                onSelect={(department) => {
-                    handleSelectDepartment(department.id);
-                }}
-                selectedDepartmentId={getActiveDepartmentId()}
-            />
             <ElementEditorSectionHeader
                 title="Hinweise zur Offline-Einreichung"
                 variant="h5"
