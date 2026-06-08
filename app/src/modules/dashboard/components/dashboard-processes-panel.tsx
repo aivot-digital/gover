@@ -16,7 +16,8 @@ import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {Page} from '../../../models/dtos/page';
 import {Link} from 'react-router-dom';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
-import {FormTriggerApiService, FormTriggerListItem} from '../../forms/services/form-trigger-api-service';
+import type {ProcessEntity} from '../../process/entities/process-entity';
+import {ProcessDefinitionApiService} from '../../process/services/process-definition-api-service';
 
 const fetchSize = 4;
 
@@ -41,18 +42,28 @@ function formatUpdatedAt(value: string): string {
     }).format(date)} Uhr`;
 }
 
-export function DashboardFormsPanel() {
-    const [forms, setForms] = useState<FormTriggerListItem[] | null>(null);
+function createProcessLink(process: ProcessEntity): string {
+    const editableVersion = process.draftedVersion ?? process.publishedVersion;
+
+    if (editableVersion == null) {
+        return '/processes';
+    }
+
+    return `/processes/${process.id}/versions/${editableVersion}`;
+}
+
+export function DashboardProcessesPanel() {
+    const [processes, setProcesses] = useState<ProcessEntity[] | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        withAsyncWrapper<void, Page<FormTriggerListItem>>({
+        withAsyncWrapper<void, Page<ProcessEntity>>({
             main: () =>
-                new FormTriggerApiService()
+                new ProcessDefinitionApiService()
                     .list(0, fetchSize, 'updated', 'DESC'),
             desiredMinRuntime: 600,
         }).then((page) => {
-            setForms(page.content);
+            setProcesses(page.content);
             setLoading(false);
         });
     }, []);
@@ -67,7 +78,7 @@ export function DashboardFormsPanel() {
                         fontWeight={600}
                         fontSize={'1.5rem'}
                     >
-                        Online-Formulare
+                        Prozesse
                     </Typography>
 
                     <Typography
@@ -75,7 +86,7 @@ export function DashboardFormsPanel() {
                         color="text.secondary"
                         sx={{mt: 1, mb: 2, maxWidth: 400}}
                     >
-                        Hier sehen Sie eine Übersicht der zuletzt bearbeiteten Formulare.
+                        Hier sehen Sie eine Übersicht der zuletzt bearbeiteten Prozesse.
                     </Typography>
                 </Box>
 
@@ -129,16 +140,18 @@ export function DashboardFormsPanel() {
                                 {i < fetchSize - 1 && <Divider component="li"/>}
                             </React.Fragment>
                         ))
-                        : forms?.length
-                            ? forms.map((form, index) => {
-                                const formName = form.node.name ?? 'Formulareingang';
+                        : processes?.length
+                            ? processes.map((processDefinition, index) => {
+                                const processName = processDefinition.internalTitle.trim().length > 0 ?
+                                    processDefinition.internalTitle :
+                                    'Unbenannter Prozess';
 
                                 return (
-                                    <React.Fragment key={form.node.id}>
+                                    <React.Fragment key={processDefinition.id}>
                                         <ListItem disablePadding>
                                             <ListItemButton
                                                 component={Link}
-                                                to={`/form-triggers/${form.node.id}`}
+                                                to={createProcessLink(processDefinition)}
                                                 sx={{
                                                     py: 2,
                                                     px: 1,
@@ -164,7 +177,7 @@ export function DashboardFormsPanel() {
                                                             variant="subtitle1"
                                                             fontWeight={700}
                                                             noWrap
-                                                            title={formName}
+                                                            title={processName}
                                                             sx={{
                                                                 overflow: 'hidden',
                                                                 textOverflow: 'ellipsis',
@@ -172,7 +185,7 @@ export function DashboardFormsPanel() {
                                                                 display: 'block',
                                                             }}
                                                         >
-                                                            {formName}
+                                                            {processName}
                                                         </Typography>
 
                                                         <Typography
@@ -181,7 +194,7 @@ export function DashboardFormsPanel() {
                                                             fontSize="0.875rem"
                                                             noWrap
                                                         >
-                                                            {formatUpdatedAt(form.node.updated)}
+                                                            {formatUpdatedAt(processDefinition.updated)}
                                                         </Typography>
                                                     </Box>
 
@@ -193,7 +206,7 @@ export function DashboardFormsPanel() {
                                             </ListItemButton>
                                         </ListItem>
 
-                                        {index < forms.length - 1 && <Divider component="li"/>}
+                                        {index < processes.length - 1 && <Divider component="li"/>}
                                     </React.Fragment>
                                 );
                             })
@@ -261,7 +274,7 @@ export function DashboardFormsPanel() {
                                             sx={{maxWidth: 320}}
                                         >
                                             In den Organisationseinheiten, denen Sie angehören, sind (noch) keine
-                                            Formulare vorhanden.
+                                            Prozesse vorhanden.
                                         </Typography>
                                     </Box>
                                 </Box>
@@ -273,11 +286,11 @@ export function DashboardFormsPanel() {
                             mt: 2,
                             mx: 1,
                         }}
-                        startIcon={ModuleIcons.forms}
+                        startIcon={ModuleIcons.processes}
                         component={Link}
-                        to="/forms"
+                        to="/processes"
                     >
-                        Formulare verwalten
+                        Prozesse verwalten
                     </Button>
                 </List>
             </CardContent>

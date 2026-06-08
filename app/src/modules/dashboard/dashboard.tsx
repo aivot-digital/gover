@@ -8,7 +8,7 @@ import {DashboardStatsPanel} from './components/dashboard-stats-panel';
 import {useLogout} from '../../hooks/use-logout';
 import {DashboardHero} from './components/dashboard-hero';
 import {DashboardProviderLinks} from './components/dashboard-provider-links';
-import {DashboardFormsPanel} from './components/dashboard-forms-panel';
+import {DashboardProcessesPanel} from './components/dashboard-processes-panel';
 import {CanvasConfettiOverlay} from '../../components/confetti/canvas-confetti-overlay';
 
 const germanyFlagColors = ['#213048', '#EA312A', '#EEA53C'];
@@ -59,7 +59,7 @@ export function Dashboard() {
                             md: 6,
                         }}
                     >
-                        <DashboardFormsPanel/>
+                        <DashboardProcessesPanel/>
                     </Grid>
                     <Grid
                         size={{
