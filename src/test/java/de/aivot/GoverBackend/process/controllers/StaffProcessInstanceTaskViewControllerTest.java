@@ -5,6 +5,7 @@ import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
@@ -161,6 +162,7 @@ class StaffProcessInstanceTaskViewControllerTest {
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
 
+        var elementDerivationService = new TestElementDerivationService();
         var controller = new StaffProcessInstanceTaskViewController(
                 new TestProcessInstanceService(instance),
                 new TestProcessInstanceTaskService(task),
@@ -169,11 +171,23 @@ class StaffProcessInstanceTaskViewControllerTest {
                 new ApplyingProcessNodeExecutionResultHandler(),
                 new TestUserService(user),
                 new TestProcessNodeExecutionLoggerFactory(),
-                new TestElementDerivationService(),
+                elementDerivationService,
                 new TestProcessService(process),
                 new TestProcessVersionService(version),
                 new PassthroughTaskViewMultipartInputService(),
                 new TestProcessDataService()
+        );
+
+        controller.derive(
+                jwt,
+                instance.getId(),
+                task.getId(),
+                new AuthoredElementValues(),
+                List.of(ElementDerivationOptions.ALL_ELEMENTS)
+        );
+        assertEquals(
+                List.of(ElementDerivationOptions.ALL_ELEMENTS),
+                elementDerivationService.lastRequest.derivationOptions().getSkipErrorsForElementIds()
         );
 
         var initialResponse = controller.retrieve(jwt, instance.getId(), task.getId());
@@ -352,12 +366,15 @@ class StaffProcessInstanceTaskViewControllerTest {
     }
 
     private static final class TestElementDerivationService extends ElementDerivationService {
+        private ElementDerivationRequest lastRequest;
+
         private TestElementDerivationService() {
             super(null, null, null);
         }
 
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
+            lastRequest = request;
             return new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
         }
 

@@ -320,7 +320,8 @@ public class StaffProcessInstanceTaskViewController {
             @Nonnull @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long procId,
             @Nonnull @PathVariable Long taskId,
-            @Nonnull @RequestBody AuthoredElementValues authoredElementValues
+            @Nonnull @RequestBody AuthoredElementValues authoredElementValues,
+            @Nullable @RequestParam(value = "skipErrorsFor", required = false) List<String> skipErrorsFor
     ) throws ResponseException {
         TaskViewData<NodeConfig> taskViewData = fetchTaskViewData(
                 jwt,
@@ -355,6 +356,8 @@ public class StaffProcessInstanceTaskViewController {
         var elementDerivationRequest = new ElementDerivationRequest(
                 (BaseElement) staffTaskView,
                 authoredElementValues,
+                new ElementDerivationOptions()
+                        .setSkipErrorsForElementIds(skipErrorsFor),
                 incomingProcessExecutionData
         );
 

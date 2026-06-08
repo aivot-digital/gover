@@ -653,7 +653,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                 authoredElementValues={taskInputData}
                                 onAuthoredElementValuesChange={handleAuthoredValuesChange}
                                 computedErrors={derivedErrors?.elementStates}
-                                onDeriveOverride={(aev) => {
+                                onDeriveOverride={(aev, skipErrorsForElements) => {
                                     if (item == null || item.instance == null || item.task == null) {
                                         return Promise.resolve({
                                             effectiveValues: {},
@@ -662,7 +662,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
                                     }
 
                                     return new ProcessInstanceTaskApiService()
-                                        .deriveStaffTaskView(item.instance.id, item.task.id, aev);
+                                        .deriveStaffTaskView(item.instance.id, item.task.id, aev, skipErrorsForElements);
                                 }}
                             />
                         </Box>

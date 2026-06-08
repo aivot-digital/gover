@@ -108,8 +108,21 @@ export class ProcessInstanceTaskApiService extends BaseCrudApiService<
         return this.get(`/api/processes/${instanceId}/tasks/${taskId}/`);
     }
 
-    public deriveStaffTaskView(instanceId: number, taskId: number, aev: AuthoredElementValues): Promise<DerivedRuntimeElementData> {
-        return this.post(`/api/processes/${instanceId}/tasks/${taskId}/derive/`, aev);
+    public deriveStaffTaskView(
+        instanceId: number,
+        taskId: number,
+        aev: AuthoredElementValues,
+        skipErrorsForElements: string[] = ['ALL'],
+    ): Promise<DerivedRuntimeElementData> {
+        return this.post<AuthoredElementValues, DerivedRuntimeElementData>(
+            `/api/processes/${instanceId}/tasks/${taskId}/derive/`,
+            aev,
+            {
+                query: {
+                    skipErrorsFor: skipErrorsForElements,
+                },
+            },
+        );
     }
 
     public getCustomerTaskView(instanceAccessKey: string, taskAccessKey: string): Promise<TaskView> {
