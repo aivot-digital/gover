@@ -357,9 +357,11 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         sx={{mt: 8}}
                     >
                         Legen Sie fest, unter welchem Prozess-Datenschlüssel der Wert dieses Feldes in die Vorgangsdaten
-                        geschrieben und aus vorhandenen Vorgangsdaten übernommen wird. Ohne eigenen Prozess-Schlüssel wird
-                        dieses Feld nicht in den zugeordneten Datensatz geschrieben. Mit Punktnotation, wie beispielsweise
-                        „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen schreiben und lesen.
+                        geschrieben und aus vorhandenen Vorgangsdaten übernommen wird.
+                        Ohne eigenen Prozess-Schlüssel wird dieses Feld nicht in die Zugewiesenen Formulardaten des
+                        Formulareingangs geschrieben.
+                        Mit Punktnotation, wie beispielsweise „person.vorname“, können Sie Werte in verschachtelte
+                        Datenstrukturen schreiben und lesen.
                     </ElementEditorSectionHeader>
 
                     <Grid
