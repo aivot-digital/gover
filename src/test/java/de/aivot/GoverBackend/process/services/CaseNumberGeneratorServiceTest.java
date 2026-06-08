@@ -74,7 +74,7 @@ class CaseNumberGeneratorServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Die Aktenzeichenvorlage enthält einen unbekannten Platzhalter an Position 4. Unterstützt werden %YYY, %Y, %M, %D, %h, %m und %I(n).",
+                "Die Vorgangsschlüssel-Formatvorlage enthält einen unbekannten Platzhalter an Position 4. Unterstützt werden %YYY, %Y, %M, %D, %h, %m und %I(n).",
                 exception.getTitle()
         );
     }
@@ -90,7 +90,7 @@ class CaseNumberGeneratorServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Die Aktenzeichenvorlage muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten.",
+                "Die Vorgangsschlüssel-Formatvorlage muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten.",
                 exception.getTitle()
         );
     }
@@ -106,7 +106,7 @@ class CaseNumberGeneratorServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Die Inkrement-Breite in der Aktenzeichenvorlage muss zwischen 4 und 12 Stellen liegen.",
+                "Die Inkrement-Breite in der Vorgangsschlüssel-Formatvorlage muss zwischen 4 und 12 Stellen liegen.",
                 exception.getTitle()
         );
     }
@@ -122,7 +122,7 @@ class CaseNumberGeneratorServiceTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
         assertEquals(
-                "Das erzeugte Aktenzeichen würde das Limit von 36 Zeichen überschreiten.",
+                "Der erzeugte Vorgangsschlüssel würde das Limit von 36 Zeichen überschreiten.",
                 exception.getTitle()
         );
     }

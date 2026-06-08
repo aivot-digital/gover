@@ -29,7 +29,7 @@ public class ProcessInstanceEntity {
     private Long id;
 
     @Nonnull
-    @NotNull(message = "Das Aktenzeichen darf nicht null sein.")
+    @NotNull(message = "Der Vorgangsschlüssel darf nicht null sein.")
     private String caseNumber;
 
     @Nonnull

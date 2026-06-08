@@ -105,7 +105,7 @@ public class CaseNumberGeneratorService {
 
         if (caseNumber.codePointCount(0, caseNumber.length()) > MAX_CASE_NUMBER_LENGTH) {
             throw ResponseException.internalServerError(
-                    "Das erzeugte Aktenzeichen überschreitet unerwartet das zulässige Limit von %d Zeichen.",
+                    "Der erzeugte Vorgangsschlüssel überschreitet unerwartet das zulässige Limit von %d Zeichen.",
                     MAX_CASE_NUMBER_LENGTH
             );
         }
@@ -116,7 +116,7 @@ public class CaseNumberGeneratorService {
     @Nonnull
     private ParsedCaseNumberTemplate parseTemplate(@Nonnull String caseNumberTemplate) throws ResponseException {
         if (caseNumberTemplate.isBlank()) {
-            throw ResponseException.badRequest("Die Aktenzeichenvorlage darf nicht leer sein.");
+            throw ResponseException.badRequest("Die Vorgangsschlüssel-Formatvorlage darf nicht leer sein.");
         }
 
         var incrementMatcher = CASE_NUMBER_INCREMENT_PATTERN.matcher(caseNumberTemplate);
@@ -160,7 +160,7 @@ public class CaseNumberGeneratorService {
             int codePoint = caseNumberTemplate.codePointAt(index);
             if (codePoint == '%') {
                 throw ResponseException.badRequest(
-                        "Die Aktenzeichenvorlage enthält einen unbekannten Platzhalter an Position %d. Unterstützt werden %s.",
+                        "Die Vorgangsschlüssel-Formatvorlage enthält einen unbekannten Platzhalter an Position %d. Unterstützt werden %s.",
                         index + 1,
                         SUPPORTED_PLACEHOLDERS
                 );
@@ -172,13 +172,13 @@ public class CaseNumberGeneratorService {
 
         if (incrementMatchCount != 1) {
             throw ResponseException.badRequest(
-                    "Die Aktenzeichenvorlage muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten."
+                    "Die Vorgangsschlüssel-Formatvorlage muss genau einen Inkrement-Platzhalter im Format %I(n) enthalten."
             );
         }
 
         if (renderedLength > MAX_CASE_NUMBER_LENGTH) {
             throw ResponseException.badRequest(
-                    "Das erzeugte Aktenzeichen würde das Limit von %d Zeichen überschreiten.",
+                    "Der erzeugte Vorgangsschlüssel würde das Limit von %d Zeichen überschreiten.",
                     MAX_CASE_NUMBER_LENGTH
             );
         }
@@ -195,7 +195,7 @@ public class CaseNumberGeneratorService {
         var padding = Integer.parseInt(incrementMatcher.group(1));
         if (padding < CASE_NUMBER_PADDING_MIN || padding > CASE_NUMBER_PADDING_MAX) {
             throw ResponseException.badRequest(
-                    "Die Inkrement-Breite in der Aktenzeichenvorlage muss zwischen %d und %d Stellen liegen.",
+                    "Die Inkrement-Breite in der Vorgangsschlüssel-Formatvorlage muss zwischen %d und %d Stellen liegen.",
                     CASE_NUMBER_PADDING_MIN,
                     CASE_NUMBER_PADDING_MAX
             );

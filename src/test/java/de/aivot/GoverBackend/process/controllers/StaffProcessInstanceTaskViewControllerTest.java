@@ -390,7 +390,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessEntity process;
 
         private TestProcessService(ProcessEntity process) {
-            super(null, null);
+            super(null, null, null);
             this.process = process;
         }
 

@@ -7,8 +7,10 @@ import {
     Button,
     Card,
     CardActionArea,
+    CircularProgress,
     Divider,
     Grid,
+    InputAdornment,
     Step,
     StepLabel,
     type SvgIconProps,
@@ -20,6 +22,7 @@ import Typography from '@mui/material/Typography';
 import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
 import Check from '@aivot/mui-material-symbols-400-outlined/dist/check/Check';
 import Draft from '@aivot/mui-material-symbols-400-outlined/dist/draft/Draft';
+import LinkIcon from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
 import {uploadObjectFile} from '../../../utils/download-utils';
 import {type ProcessExport} from '../entities/process-export';
 import {
@@ -48,7 +51,7 @@ import {type StatusTablePropsItem} from '../../../components/status-table/status
 import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
 import {DepartmentSelectField} from '../../departments/components/department-select-field';
 import {type VDepartmentShadowedEntityWithChildren} from '../../departments/entities/v-department-shadowed-entity';
-import {DepartmentBrowser} from '../../departments/components/department-browser';
+import {normalizeProcessSlugInput, PROCESS_SLUG_MAX_LENGTH, validateProcessSlug} from '../utils/process-slug-utils';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -77,10 +80,17 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
     const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntityWithChildren[]>();
     const [nameOverride, setNameOverride] = useState<string | null>(null);
+    const [publicTitleOverride, setPublicTitleOverride] = useState<string | null>(preselectedTemplate?.version.publicTitle ?? null);
+    const [publicTitleManuallyEdited, setPublicTitleManuallyEdited] = useState(preselectedTemplate != null && isStringNotNullOrEmpty(preselectedTemplate.version.publicTitle));
+    const [slugOverride, setSlugOverride] = useState<string | null>(null);
+    const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
     const [departmentOverride, setDepartmentOverride] = useState<number | null>(null);
     const [nameError, setNameError] = useState<string | undefined>();
+    const [publicTitleError, setPublicTitleError] = useState<string | undefined>();
+    const [slugError, setSlugError] = useState<string | undefined>();
+    const [slugAvailabilityError, setSlugAvailabilityError] = useState<string | undefined>();
+    const [isCheckingSlugAvailability, setIsCheckingSlugAvailability] = useState(false);
     const [departmentError, setDepartmentError] = useState<string | undefined>();
-    const [showDepartmentDialog, setShowDepartmentDialog] = useState(false);
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -100,7 +110,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         getDepartmentPath(selectedDepartment) :
         undefined;
 
-    const hasProcessConfigurationErrors = nameError != null || departmentError != null;
+    const hasProcessConfigurationErrors = nameError != null || publicTitleError != null || slugError != null || slugAvailabilityError != null || departmentError != null;
 
     const summaryItems = useMemo<StatusTablePropsItem[]>(() => [
         {
@@ -118,6 +128,24 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             children: (
                 <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
                     {nameOverride?.trim() ?? 'Nicht angegeben'}
+                </Typography>
+            ),
+        },
+        {
+            label: 'Öffentliche Bezeichnung',
+            icon: <SummaryIcon><Label/></SummaryIcon>,
+            children: (
+                <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
+                    {publicTitleOverride?.trim() ?? 'Nicht angegeben'}
+                </Typography>
+            ),
+        },
+        {
+            label: 'URL-Namespace',
+            icon: <SummaryIcon><LinkIcon/></SummaryIcon>,
+            children: (
+                <Typography variant="body2" sx={{overflowWrap: 'anywhere'}}>
+                    {slugOverride != null ? `/${slugOverride.trim()}` : 'Nicht angegeben'}
                 </Typography>
             ),
         },
@@ -148,7 +176,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 </Typography>
             ),
         },
-    ], [nameOverride, selectedDepartment, selectedDepartmentPath, selectedStartPoint]);
+    ], [nameOverride, publicTitleOverride, selectedDepartment, selectedDepartmentPath, selectedStartPoint, slugOverride]);
 
     useEffect(() => {
         if (user == null) {
@@ -210,6 +238,24 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         return undefined;
     };
 
+    const validatePublicTitle = (value: string | null): string | undefined => {
+        const trimmedValue = value?.trim() ?? '';
+
+        if (!isStringNotNullOrEmpty(trimmedValue)) {
+            return 'Bitte geben Sie eine öffentliche Bezeichnung für den Prozess an.';
+        }
+
+        if (trimmedValue.length < 3) {
+            return 'Die öffentliche Bezeichnung des Prozesses muss mindestens 3 Zeichen lang sein.';
+        }
+
+        if (trimmedValue.length > 96) {
+            return 'Die öffentliche Bezeichnung des Prozesses darf maximal 96 Zeichen lang sein.';
+        }
+
+        return undefined;
+    };
+
     const validateDepartment = (value: number | null): string | undefined => {
         if (value == null) {
             return 'Bitte wählen Sie eine Organisationseinheit aus.';
@@ -218,20 +264,98 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         return undefined;
     };
 
-    const validateProcessConfiguration = (): boolean => {
+    const checkSlugAvailability = async (slug: string | null): Promise<boolean> => {
+        const slugFormatError = validateProcessSlug(slug);
+        if (slugFormatError != null || slug == null) {
+            return false;
+        }
+
+        setIsCheckingSlugAvailability(true);
+        try {
+            const isAvailable = await new ProcessDefinitionApiService()
+                .checkSlugAvailability(slug);
+
+            const nextAvailabilityError = isAvailable ? undefined : 'Dieser URL-Namespace ist bereits vergeben.';
+            setSlugAvailabilityError(nextAvailabilityError);
+            return isAvailable;
+        } catch (error) {
+            setSlugAvailabilityError('Die Verfügbarkeit des URL-Namespace konnte nicht geprüft werden.');
+            dispatch(showApiErrorSnackbar(error, 'Die Verfügbarkeit des URL-Namespace konnte nicht geprüft werden.'));
+            return false;
+        } finally {
+            setIsCheckingSlugAvailability(false);
+        }
+    };
+
+    const validateProcessConfiguration = async (): Promise<boolean> => {
         const nextNameError = validateName(nameOverride);
+        const nextPublicTitleError = validatePublicTitle(publicTitleOverride);
+        const nextSlugError = validateProcessSlug(slugOverride);
         const nextDepartmentError = validateDepartment(departmentOverride);
 
         setNameError(nextNameError);
+        setPublicTitleError(nextPublicTitleError);
+        setSlugError(nextSlugError);
         setDepartmentError(nextDepartmentError);
 
-        return nextNameError == null && nextDepartmentError == null;
+        if (nextNameError != null || nextPublicTitleError != null || nextSlugError != null || nextDepartmentError != null) {
+            return false;
+        }
+
+        return checkSlugAvailability(slugOverride);
     };
 
+    useEffect(() => {
+        const slugFormatError = validateProcessSlug(slugOverride);
+        setSlugAvailabilityError(undefined);
+
+        if (slugOverride == null || slugFormatError != null) {
+            setIsCheckingSlugAvailability(false);
+            return;
+        }
+
+        let cancelled = false;
+        setIsCheckingSlugAvailability(true);
+
+        const timeoutId = window.setTimeout(() => {
+            new ProcessDefinitionApiService()
+                .checkSlugAvailability(slugOverride)
+                .then((isAvailable) => {
+                    if (!cancelled) {
+                        setSlugAvailabilityError(isAvailable ? undefined : 'Dieser URL-Namespace ist bereits vergeben.');
+                    }
+                })
+                .catch((error) => {
+                    if (!cancelled) {
+                        setSlugAvailabilityError('Die Verfügbarkeit des URL-Namespace konnte nicht geprüft werden.');
+                        dispatch(showApiErrorSnackbar(error, 'Die Verfügbarkeit des URL-Namespace konnte nicht geprüft werden.'));
+                    }
+                })
+                .finally(() => {
+                    if (!cancelled) {
+                        setIsCheckingSlugAvailability(false);
+                    }
+                });
+        }, 500);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timeoutId);
+        };
+    }, [dispatch, slugOverride]);
+
     const handleSelectStartPoint = (templateData: ProcessExport, startPoint: SelectedStartPoint): void => {
+        const defaultPublicTitle = startPoint.type === 'empty' || !isStringNotNullOrEmpty(templateData.version.publicTitle) ? null : templateData.version.publicTitle;
+
         setSelectedTemplateData(templateData);
         setSelectedStartPoint(startPoint);
+        setPublicTitleOverride(defaultPublicTitle);
+        setPublicTitleManuallyEdited(isStringNotNullOrEmpty(defaultPublicTitle));
         setNameError(undefined);
+        setPublicTitleError(undefined);
+        setSlugError(undefined);
+        setSlugAvailabilityError(undefined);
+        setSlugManuallyEdited(false);
         setDepartmentError(undefined);
         setActiveStep(1);
     };
@@ -241,10 +365,16 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
         setSelectedTemplateData(null);
         setSelectedStartPoint(null);
         setNameOverride(null);
+        setPublicTitleOverride(null);
+        setPublicTitleManuallyEdited(false);
+        setSlugOverride(null);
+        setSlugManuallyEdited(false);
         setDepartmentOverride(null);
         setNameError(undefined);
+        setPublicTitleError(undefined);
+        setSlugError(undefined);
+        setSlugAvailabilityError(undefined);
         setDepartmentError(undefined);
-        setShowDepartmentDialog(false);
     };
 
     const handleClose = (): void => {
@@ -286,21 +416,23 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
             });
     };
 
-    const handleSave = (): void => {
+    const handleSave = async (): Promise<void> => {
         if (selectedTemplateData == null) {
             return;
         }
 
-        if (!validateProcessConfiguration()) {
+        if (!await validateProcessConfiguration()) {
             setActiveStep(1);
             return;
         }
 
-        if (nameOverride == null || departmentOverride == null) {
+        if (nameOverride == null || publicTitleOverride == null || slugOverride == null || departmentOverride == null) {
             return;
         }
 
         const processName = nameOverride.trim();
+        const publicTitle = publicTitleOverride.trim();
+        const processSlug = slugOverride.trim();
 
         setIsLoading(true);
 
@@ -310,6 +442,11 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 ...selectedTemplateData.process,
                 internalTitle: processName,
                 departmentId: departmentOverride,
+                slug: processSlug,
+            },
+            version: {
+                ...selectedTemplateData.version,
+                publicTitle,
             },
         };
 
@@ -533,26 +670,115 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     label="Name des Prozesses (intern)"
                                     value={nameOverride}
                                     onChange={(val) => {
-                                        setNameOverride(val ?? null);
+                                        const nextName = val ?? null;
+                                        setNameOverride(nextName);
+                                        setNameError(undefined);
+
+                                        if (!publicTitleManuallyEdited) {
+                                            setPublicTitleOverride(nextName);
+                                            setPublicTitleError(undefined);
+                                        }
+
+                                        if (!slugManuallyEdited) {
+                                            // Keep the URL namespace in sync until the user enters a custom value.
+                                            setSlugOverride(normalizeProcessSlugInput(nextName));
+                                            setSlugError(undefined);
+                                            setSlugAvailabilityError(undefined);
+                                        }
                                     }}
                                     required={true}
                                     disabled={isLoading}
                                     error={nameError}
                                     minCharacters={3}
                                     maxCharacters={96}
+                                    hint="Nur intern sichtbar; dient zur Wiedererkennung des Prozesses in der Verwaltung."
+                                />
+
+                                <TextFieldComponent
+                                    label="Öffentliche Bezeichnung"
+                                    value={publicTitleOverride}
+                                    onChange={(val) => {
+                                        const nextPublicTitle = val ?? null;
+                                        setPublicTitleOverride(nextPublicTitle);
+                                        setPublicTitleManuallyEdited(nextPublicTitle != null && nextPublicTitle.length > 0);
+                                        setPublicTitleError(undefined);
+                                    }}
+                                    required={true}
+                                    disabled={isLoading}
+                                    error={publicTitleError}
+                                    minCharacters={3}
+                                    maxCharacters={96}
+                                    hint="Wird öffentlich im Kontext der Prozessversion verwendet (z. B. im Self-Service-Portal)."
+                                    sx={{
+                                        mt: 2,
+                                    }}
+                                />
+
+                                <TextFieldComponent
+                                    label="URL-Namespace des Prozesses"
+                                    value={slugOverride}
+                                    onChange={(val) => {
+                                        const nextSlug = normalizeProcessSlugInput(val);
+                                        setSlugOverride(nextSlug);
+                                        setSlugManuallyEdited(nextSlug != null && nextSlug.length > 0);
+                                        setSlugError(undefined);
+                                        setSlugAvailabilityError(undefined);
+                                    }}
+                                    required={true}
+                                    disabled={isLoading}
+                                    error={slugError ?? slugAvailabilityError}
+                                    minCharacters={3}
+                                    maxCharacters={PROCESS_SLUG_MAX_LENGTH}
+                                    hint="Der Namespace steht in öffentlichen URLs zwischen Elementtyp und Element-Slug, z. B. /form/hundesteuer/antrag."
+                                    pattern={{
+                                        regex: '^[a-z0-9-]+$',
+                                        message: 'Der URL-Namespace darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.',
+                                    }}
+                                    muiPassTroughProps={{
+                                        InputProps: {
+                                            startAdornment: (
+                                                <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                                    <Box component="span" sx={{whiteSpace: 'nowrap'}}>
+                                                        /element-typ/
+                                                    </Box>
+                                                </InputAdornment>
+                                            ),
+                                            endAdornment: (
+                                                <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                                    <Box
+                                                        component="span"
+                                                        sx={{
+                                                            display: 'inline-flex',
+                                                            alignItems: 'center',
+                                                            gap: 0.75,
+                                                            whiteSpace: 'nowrap',
+                                                        }}
+                                                    >
+                                                        {
+                                                            isCheckingSlugAvailability &&
+                                                            <CircularProgress size={16} color="inherit"/>
+                                                        }
+                                                        /element-slug
+                                                    </Box>
+                                                </InputAdornment>
+                                            ),
+                                        },
+                                    }}
+                                    sx={{
+                                        mt: 2,
+                                    }}
                                 />
 
                                 <DepartmentSelectField
                                     label="Verwaltende Organisationseinheit"
                                     value={selectedDepartment}
-                                    onOpenDialog={() => {
-                                        setShowDepartmentDialog(true);
-                                    }}
-                                    onClear={() => {
-                                        setDepartmentOverride(null);
+                                    departments={availableDepartments}
+                                    dialogTitle="Organisationseinheit auswählen"
+                                    onChange={(department) => {
+                                        setDepartmentOverride(department?.id ?? null);
                                         setDepartmentError(undefined);
                                     }}
-                                    disabled={isLoading}
+                                    disabled={isLoading || availableDepartments == null}
                                     error={departmentError}
                                     required={true}
                                     hint="Die ausgewählte Einheit wird als verantwortlich für diesen Prozess festgelegt und kann z. B. Berechtigungen verwalten."
@@ -579,12 +805,13 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
                                 <Button
                                     onClick={() => {
-                                        if (!validateProcessConfiguration()) {
-                                            return;
-                                        }
-
-                                        setActiveStep(2);
+                                        void validateProcessConfiguration().then((isValid) => {
+                                            if (isValid) {
+                                                setActiveStep(2);
+                                            }
+                                        });
                                     }}
+                                    disabled={isLoading || isCheckingSlugAvailability}
                                     endIcon={<ArrowForward/>}
                                     variant="contained"
                                 >
@@ -641,10 +868,10 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
                                 <Button
                                     onClick={() => {
-                                        handleSave();
+                                        void handleSave();
                                     }}
                                     endIcon={<Save/>}
-                                    disabled={isLoading}
+                                    disabled={isLoading || isCheckingSlugAvailability}
                                     variant="contained"
                                 >
                                     Anlegen und Bearbeiten
@@ -656,84 +883,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                 </DialogContent>
             </Dialog>
 
-            <DepartmentSelectionDialog
-                open={showDepartmentDialog}
-                departments={availableDepartments}
-                selectedDepartmentId={departmentOverride}
-                onClose={() => {
-                    setShowDepartmentDialog(false);
-                }}
-                onSelect={(department) => {
-                    setDepartmentOverride(department.id);
-                    setDepartmentError(undefined);
-                    setShowDepartmentDialog(false);
-                }}
-            />
         </>
-    );
-}
-
-interface DepartmentSelectionDialogProps {
-    open: boolean;
-    departments?: VDepartmentShadowedEntityWithChildren[];
-    selectedDepartmentId: number | null;
-    onClose: () => void;
-    onSelect: (department: VDepartmentShadowedEntityWithChildren) => void;
-}
-
-function DepartmentSelectionDialog(props: DepartmentSelectionDialogProps): ReactNode {
-    const {
-        open,
-        departments,
-        selectedDepartmentId,
-        onClose,
-        onSelect,
-    } = props;
-
-    return (
-        <Dialog
-            open={open}
-            onClose={onClose}
-            fullWidth
-            maxWidth="lg"
-        >
-            <DialogTitleWithClose onClose={onClose}>
-                Organisationseinheit auswählen
-            </DialogTitleWithClose>
-
-            <DialogContent
-                sx={{
-                    p: 2,
-                    height: 'min(74vh, 820px)',
-                    overflowY: 'auto',
-                }}
-            >
-                <DepartmentBrowser
-                    departments={departments}
-                    selectedDepartmentId={selectedDepartmentId}
-                    searchLabel="Organisationseinheit suchen"
-                    searchPlaceholder="Name, Adresse oder Typ suchen…"
-                    emptyState={(
-                        <AlertComponent
-                            color="info"
-                            sx={{my: 1}}
-                        >
-                            Es sind keine Organisationseinheiten verfügbar.
-                        </AlertComponent>
-                    )}
-                    getActions={(department) => [
-                        {
-                            label: 'Auswählen',
-                            icon: <Check />,
-                            variant: 'contained',
-                            onClick: () => {
-                                onSelect(department);
-                            },
-                        },
-                    ]}
-                />
-            </DialogContent>
-        </Dialog>
     );
 }
 
@@ -983,6 +1133,7 @@ const EmptyProcess: ProcessExport = {
         internalTitle: 'Neuer Prozess',
         departmentId: 0,
         accessKey: '',
+        slug: '',
         versionCount: 0,
         draftedVersion: null,
         publishedVersion: null,
