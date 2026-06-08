@@ -1,7 +1,7 @@
 export interface FileUploadComponentProps {
     id: string;
-    value?: File[];
-    onChange: (val: File[] | undefined) => void;
+    value?: File[] | null;
+    onChange: (val: File[] | null) => void;
     error?: string;
     label: string;
     placeholder?: string;

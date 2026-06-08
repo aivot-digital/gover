@@ -63,7 +63,7 @@ export function TableFieldComponentView(props: BaseViewProps<TableFieldElement, 
         if (element.id != null && selectionModel != null) {
             const selectedIds = new Set(getSelectedRowIds(selectionModel, rows.map((row) => row._id)));
             const updatedRows = (value ?? []).filter((_: any, index: number) => !selectedIds.has(index));
-            setValue(updatedRows.length > 0 ? updatedRows : undefined);
+            setValue(updatedRows.length > 0 ? updatedRows : null);
             setSelectionModel({
                 type: 'include',
                 ids: new Set(),

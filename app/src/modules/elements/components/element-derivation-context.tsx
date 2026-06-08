@@ -27,6 +27,7 @@ import {
 } from '../../../components/view-dispatcher/view-dispatcher.context';
 import {deepEquals} from '../../../utils/equality-utils';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
+import {extractValue} from '../../../utils/has-derivable-aspects';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -229,6 +230,15 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
         const relevantIds: string[] = [];
         for (const id of effectiveTriggeringElementIds) {
+            /*const triggeringElement = allElements.find((element) => element.id === id);
+            if (
+                triggeringElement != null &&
+                isAnyInputElement(triggeringElement) &&
+                extractValue(triggeringElement) != null
+            ) {
+                relevantIds.push(id);
+            }*/
+
             for (const element of allElements) {
                 if (checkElementReferencesId(element, id)) {
                     if (!relevantIds.includes(element.id)) {
@@ -242,6 +252,8 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             onAuthoredElementValuesChange(effectiveNewData);
             return;
         }
+
+        console.log(relevantIds);
 
         setDerivationTriggerIdQueue([
             ...derivationTriggerIdQueue,

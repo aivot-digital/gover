@@ -28,12 +28,12 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
     }, [isDeriving, element]);
 
     const dateValue = useMemo(() => {
-        if (value == null) return undefined;
+        if (value == null) return value;
         const date = new Date(value);
-        return isNaN(date.getTime()) ? undefined : value;
+        return isNaN(date.getTime()) ? null : value;
     }, [value]);
 
-    const handleChange = useCallback((changedValue: string | undefined) => {
+    const handleChange = useCallback((changedValue: string | null) => {
         setValue(changedValue);
     }, [setValue]);
 

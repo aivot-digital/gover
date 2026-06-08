@@ -204,6 +204,8 @@ public class ElementDerivationService {
             elementState.setVisible(isVisible);
 
             if (isVisible && actualElement instanceof InputElement<?> inputElement) {
+                var hasAuthoredValue = authoredElementValues
+                        .containsKey(currentElement.getId());
                 var authoredValue = authoredElementValues
                         .getOrDefault(currentElement.getId(), null);
 
@@ -218,6 +220,7 @@ public class ElementDerivationService {
                         computedElementStates,
                         processExecutionData,
                         options,
+                        hasAuthoredValue,
                         authoredValue,
                         elementState,
                         identities,
@@ -604,6 +607,7 @@ public class ElementDerivationService {
             @Nonnull ComputedElementStates computedElementStates,
             @Nonnull ProcessExecutionData processExecutionData,
             @Nonnull ElementDerivationOptions options,
+            boolean hasAuthoredValue,
             @Nullable Object authoredValue,
             @Nonnull ComputedElementState elementState,
             @Nonnull IdentityDataMap identities,
@@ -654,8 +658,9 @@ public class ElementDerivationService {
 
         var valueFunction = inputElement.getValue();
 
-        // If the value function is null, or an authored value exists and the element is not disabled, set the authored value as the effective value
-        if (valueFunction == null || valueFunction.getType() == null || (authoredValue != null && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
+        // Key presence represents explicit user intent. A present null value is an authored clear,
+        // while an absent key allows the dynamic value function to supply the effective value.
+        if (valueFunction == null || valueFunction.getType() == null || (hasAuthoredValue && !Boolean.TRUE.equals(inputElement.getDisabled()))) {
             var sanitizedValue = sanitizeSelectEffectiveValue(
                     rootElement,
                     inputElement,
@@ -816,7 +821,8 @@ public class ElementDerivationService {
      * Reads the controlling select value from the nearest meaningful scope.
      * <p>
      * Replicated rows need local dependencies to win over root-level data, otherwise one row could accidentally validate itself against another row's selection. The fallback order
-     * therefore prefers row-local effective data, then row-local authored data, and only then falls back to root-level state.
+     * therefore prefers row-local effective data, then row-local authored data, and only then falls back to root-level state. A present null value stops that fallback because it
+     * represents an explicit clear in the nearer scope.
      */
     @Nullable
     private String resolveReferencedSelectValue(
@@ -826,15 +832,16 @@ public class ElementDerivationService {
             @Nonnull AuthoredElementValues rootAuthoredElementValues,
             @Nonnull EffectiveElementValues rootEffectiveElementValues
     ) {
-        var rawValue = effectiveElementValues.get(referencedSelectField.getId());
-        if (rawValue == null) {
-            rawValue = authoredElementValues.get(referencedSelectField.getId());
-        }
-        if (rawValue == null) {
-            rawValue = rootEffectiveElementValues.get(referencedSelectField.getId());
-        }
-        if (rawValue == null) {
-            rawValue = rootAuthoredElementValues.get(referencedSelectField.getId());
+        var referencedElementId = referencedSelectField.getId();
+        Object rawValue;
+        if (effectiveElementValues.containsKey(referencedElementId)) {
+            rawValue = effectiveElementValues.get(referencedElementId);
+        } else if (authoredElementValues.containsKey(referencedElementId)) {
+            rawValue = authoredElementValues.get(referencedElementId);
+        } else if (rootEffectiveElementValues.containsKey(referencedElementId)) {
+            rawValue = rootEffectiveElementValues.get(referencedElementId);
+        } else {
+            rawValue = rootAuthoredElementValues.get(referencedElementId);
         }
 
         return referencedSelectField.formatValue(rawValue);

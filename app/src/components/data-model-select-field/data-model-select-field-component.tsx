@@ -11,7 +11,7 @@ import {
 export interface DataModelSelectFieldComponentProps {
     label: string;
     value: string | null | undefined;
-    onChange: (value: string | null | undefined) => void;
+    onChange: (value: string | null) => void;
     placeholder?: string;
     hint?: string;
     error?: string;
@@ -155,7 +155,7 @@ export function DataModelSelectFieldComponent(props: DataModelSelectFieldCompone
             getOptionLabel={(option) => option.label}
             noOptionsText={isLoading ? 'Lade Optionen…' : 'Keine Optionen verfügbar'}
             onChange={(_: SyntheticEvent, nextValue) => {
-                onChange(nextValue?.value);
+                onChange(nextValue?.value ?? null);
             }}
             renderOption={(optionProps, option, state) => (
                 <Box

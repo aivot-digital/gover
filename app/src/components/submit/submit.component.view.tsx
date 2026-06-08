@@ -42,7 +42,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
     const [costs, setCosts] = useState<FormCostCalculationResponseDTO>();
 
     useEffect(() => {
-        setValue(undefined);
+        setValue(null);
     }, []);
 
     /* TODO: calculate costs

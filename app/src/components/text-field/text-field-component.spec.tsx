@@ -87,4 +87,24 @@ describe('TextFieldComponent', () => {
         expect(onChange).not.toHaveBeenCalled();
         expect(screen.getByTestId('copy-button')).toHaveAttribute('data-text', 'draft-value');
     });
+
+    it('should emit null when the user clears the value', () => {
+        const onChange = jest.fn();
+
+        render(
+            <TextFieldComponent
+                label="Name"
+                value="Ma"
+                onChange={onChange}
+            />,
+        );
+
+        fireEvent.change(screen.getByRole('textbox', {name: 'Name'}), {
+            target: {
+                value: '',
+            },
+        });
+
+        expect(onChange).toHaveBeenCalledWith(null);
+    });
 });

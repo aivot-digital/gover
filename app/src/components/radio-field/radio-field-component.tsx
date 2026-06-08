@@ -15,7 +15,7 @@ import {Fragment, useMemo} from 'react';
 export interface RadioFieldComponentProps {
     label: string;
     value?: string | undefined | null;
-    onChange: (val: string | undefined) => void;
+    onChange: (val: string | null) => void;
     options: SelectFieldComponentOption[] | undefined | null;
     error?: string | undefined | null;
     hint?: string | undefined | null;
@@ -63,7 +63,7 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
                         exclusive={true}
                         value={value ?? null}
                         onChange={(_, newValue: string | null) => {
-                            onChange(isStringNullOrEmpty(newValue) ? undefined : (newValue ?? undefined));
+                            onChange(isStringNullOrEmpty(newValue) ? null : newValue);
                         }}
                         fullWidth={!displayInline}
                         sx={{
@@ -95,7 +95,7 @@ export function RadioFieldComponent(props: RadioFieldComponentProps) {
                         value={value ?? ''}
                         onChange={event => {
                             if (isStringNullOrEmpty(event.target.value)) {
-                                onChange(undefined);
+                                onChange(null);
                             } else {
                                 onChange(event.target.value ?? '');
                             }

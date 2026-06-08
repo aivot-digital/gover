@@ -41,7 +41,7 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const handleBlur = (val: string | null | undefined) => {
+    const handleBlur = (val: string | null) => {
         if (onBlur != null) {
             onBlur(val, [element.id]);
         }
@@ -59,7 +59,7 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         busy: isBusy,
         maxCharacters: maxCharacters ?? undefined,
         minCharacters: minCharacters ?? undefined,
-        value: value?.toString() ?? undefined,
+        value: value == null ? value : value.toString(),
         onChange: val => setValue(val),
         onBlur: onBlur != null ? handleBlur : undefined,
         debounce: 1000,

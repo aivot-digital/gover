@@ -19,7 +19,7 @@ import {
 interface DomainUserSelectFieldComponentProps {
     label: string;
     value: DomainAndUserSelectItem[] | null | undefined;
-    onChange: (value: DomainAndUserSelectItem[] | null | undefined) => void;
+    onChange: (value: DomainAndUserSelectItem[] | null) => void;
     placeholder?: string;
     hint?: string;
     error?: string;
@@ -31,13 +31,13 @@ interface DomainUserSelectFieldComponentProps {
     processAccessConstraint?: DomainAndUserSelectProcessAccessConstraint | null;
 }
 
-function normalizeValues(values: Array<DomainAndUserSelectItem | unknown>): DomainAndUserSelectItem[] | undefined {
+function normalizeValues(values: Array<DomainAndUserSelectItem | unknown>): DomainAndUserSelectItem[] | null {
     const normalizedValues = values
         .map(normalizeDomainAndUserSelectItem)
         .filter((entry): entry is DomainAndUserSelectItem => entry != null);
 
     if (normalizedValues.length === 0) {
-        return undefined;
+        return null;
     }
 
     const uniqueValues = new Map<string, DomainAndUserSelectItem>();

@@ -27,7 +27,7 @@ export function AssignmentContextFieldView(props: BaseViewProps<AssignmentContex
 
     return (
         <AssignmentContextFieldComponent
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             title={element.headline ?? undefined}
             description={element.text ?? undefined}

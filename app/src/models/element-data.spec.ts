@@ -3,7 +3,19 @@ import {
     ComputedElementErrors,
     ComputedElementStates,
     ComputedElementValueSource,
+    hasAuthoredElementValuesSomeInput,
 } from './element-data';
+
+describe('hasAuthoredElementValuesSomeInput', () => {
+    it('should treat an explicit null as authored input', () => {
+        expect(hasAuthoredElementValuesSomeInput({field: null})).toBe(true);
+    });
+
+    it('should ignore missing and undefined values', () => {
+        expect(hasAuthoredElementValuesSomeInput({})).toBe(false);
+        expect(hasAuthoredElementValuesSomeInput({field: undefined})).toBe(false);
+    });
+});
 
 describe('applyComputedErrors', () => {
     it('should override existing errors without changing unrelated state fields', () => {

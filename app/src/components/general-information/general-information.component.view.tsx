@@ -337,7 +337,7 @@ export function GeneralInformationComponentView(props: BaseViewProps<Introductio
             <Box id={element.id}>
                 <CheckboxFieldComponent
                     label="Ich habe die Hinweise zum Datenschutz zur Kenntnis genommen."
-                    value={value ?? undefined}
+                    value={value}
                     onChange={(checked) => {
                         setValue(checked);
                     }}

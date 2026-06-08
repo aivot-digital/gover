@@ -412,7 +412,7 @@ function ProviderOption(props: {
         }
     };
 
-    const handleScopesChange = (scopeValue: string | undefined) => {
+    const handleScopesChange = (scopeValue: string | null) => {
         onChange({
             ...item,
             options: (item.options ?? [])
@@ -448,7 +448,7 @@ function ProviderOption(props: {
                 provider.type === IdentityProviderType.BayernID &&
                 <SelectFieldComponent
                     label="Mindest-Vertrauensniveau"
-                    value={relatedOption?.additionalScopes?.[0] ?? undefined}
+                    value={relatedOption?.additionalScopes?.[0]}
                     onChange={handleScopesChange}
                     options={BayernIdAccessLevelOptions}
                     required={true}
@@ -460,7 +460,7 @@ function ProviderOption(props: {
                 provider.type === IdentityProviderType.BundID &&
                 <SelectFieldComponent
                     label="Mindest-Vertrauensniveau"
-                    value={relatedOption?.additionalScopes?.[0] ?? undefined}
+                    value={relatedOption?.additionalScopes?.[0]}
                     onChange={handleScopesChange}
                     options={BundIdAccessLevelOptions}
                     required={true}
@@ -472,7 +472,7 @@ function ProviderOption(props: {
                 provider.type === IdentityProviderType.SHID &&
                 <SelectFieldComponent
                     label="Mindest-Vertrauensniveau"
-                    value={relatedOption?.additionalScopes?.[0] ?? undefined}
+                    value={relatedOption?.additionalScopes?.[0]}
                     onChange={handleScopesChange}
                     options={ShIdAccessLevelOptions}
                     required={true}

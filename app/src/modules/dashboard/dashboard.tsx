@@ -10,6 +10,7 @@ import {DashboardHero} from './components/dashboard-hero';
 import {DashboardProviderLinks} from './components/dashboard-provider-links';
 import {DashboardFormsPanel} from './components/dashboard-forms-panel';
 import {CanvasConfettiOverlay} from '../../components/confetti/canvas-confetti-overlay';
+import {DocumentTemplateDesigner} from '../../components/document-template-designer/document-template-designer';
 
 const germanyFlagColors = ['#213048', '#EA312A', '#EEA53C'];
 
@@ -35,7 +36,7 @@ export function Dashboard() {
                         },
                         'separator',
                         {
-                            icon: <Logout />,
+                            icon: <Logout/>,
                             tooltip: 'Abmelden',
                             onClick: logout,
                         },
@@ -59,7 +60,7 @@ export function Dashboard() {
                             md: 6,
                         }}
                     >
-                        <DashboardFormsPanel />
+                        <DashboardFormsPanel/>
                     </Grid>
                     <Grid
                         size={{
@@ -67,7 +68,7 @@ export function Dashboard() {
                             md: 6,
                         }}
                     >
-                        <DashboardStatsPanel />
+                        <DashboardStatsPanel/>
                     </Grid>
                 </Grid>
 
@@ -77,12 +78,19 @@ export function Dashboard() {
                     }}
                 />
                 <Box sx={{mt: 4}}>
-                    <Divider sx={{borderColor: 'rgba(0, 0, 0, 0.15)', mx: -2}} />
+                    <Divider sx={{borderColor: 'rgba(0, 0, 0, 0.15)', mx: -2}}/>
                     <Box sx={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2}}>
                         <Typography sx={{fontSize: '0.8125rem', color: 'rgba(0, 0, 0, 0.6)'}}>
                             Gover – Die quelloffene Plattform für Ende-zu-Ende digitalisierte Antragsprozesse.
                         </Typography>
-                        <Typography sx={{fontSize: '0.8125rem', color: 'rgba(0, 0, 0, 0.6)', display: 'flex', alignItems: 'center'}}>
+                        <Typography
+                            sx={{
+                                fontSize: '0.8125rem',
+                                color: 'rgba(0, 0, 0, 0.6)',
+                                display: 'flex',
+                                alignItems: 'center',
+                            }}
+                        >
                             Entwickelt in Deutschland für die deutsche Verwaltung.
                             <Box
                                 component="button"
@@ -134,6 +142,13 @@ export function Dashboard() {
                     colors={germanyFlagColors}
                 />
             </Container>
+
+            <DocumentTemplateDesigner
+                value={{}}
+                onChange={(val) => {
+                }}
+            />
+
         </PageWrapper>
     );
 }

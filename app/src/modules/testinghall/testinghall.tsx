@@ -151,7 +151,7 @@ export function Testinghall() {
                 >
                     <TextFieldComponent
                         label="Input"
-                        onChange={setInput}
+                        onChange={(value) => setInput(value ?? undefined)}
                         value={input}
                     />
 

@@ -6,7 +6,7 @@ import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time
 interface DateTimeRangeFieldComponentProps {
     label: string;
     value?: DateTimeRangeValue | null;
-    onChange: (value: DateTimeRangeValue | undefined) => void;
+    onChange: (value: DateTimeRangeValue | null) => void;
     hint?: string;
     required?: boolean;
     disabled?: boolean;
@@ -16,12 +16,12 @@ interface DateTimeRangeFieldComponentProps {
     mode?: TimeFieldComponentModelMode;
 }
 
-function normalizeRange(value: DateTimeRangeValue): DateTimeRangeValue | undefined {
-    const start = value.start ?? undefined;
-    const end = value.end ?? undefined;
+function normalizeRange(value: DateTimeRangeValue): DateTimeRangeValue | null {
+    const start = value.start ?? null;
+    const end = value.end ?? null;
 
     if (start == null && end == null) {
-        return undefined;
+        return null;
     }
 
     return {
@@ -45,7 +45,7 @@ export function DateTimeRangeFieldComponent(props: DateTimeRangeFieldComponentPr
                                 props.onChange(normalizeRange({
                                     start,
                                     end: props.value?.end,
-                                }) ?? undefined);
+                                }));
                             }}
                             required={props.required}
                             disabled={props.disabled}
@@ -80,7 +80,7 @@ export function DateTimeRangeFieldComponent(props: DateTimeRangeFieldComponentPr
                                 props.onChange(normalizeRange({
                                     start: props.value?.start,
                                     end,
-                                }) ?? undefined);
+                                }));
                             }}
                             required={props.required}
                             disabled={props.disabled}

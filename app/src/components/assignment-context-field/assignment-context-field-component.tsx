@@ -12,7 +12,7 @@ import {
 
 export interface AssignmentContextFieldComponentProps {
     value?: AssignmentContextValue | null;
-    onChange: (value: AssignmentContextValue | undefined) => void;
+    onChange: (value: AssignmentContextValue | null) => void;
 
     title?: string;
     description?: string;
@@ -55,7 +55,7 @@ function resolvePreferredAssigneeOption(value: AssignmentContextValue): Preferre
     return 'none';
 }
 
-function normalizeValue(value: AssignmentContextValue): AssignmentContextValue | undefined {
+function normalizeValue(value: AssignmentContextValue): AssignmentContextValue | null {
     const domainAndUserSelection = value.domainAndUserSelection != null && value.domainAndUserSelection.length > 0
         ? value.domainAndUserSelection
         : undefined;
@@ -66,7 +66,7 @@ function normalizeValue(value: AssignmentContextValue): AssignmentContextValue |
     const preferProcessInstanceAssignee = selectedPreference === 'processInstance';
 
     if (domainAndUserSelection == null && !preferPreviousTaskAssignee && !preferUninvolvedUser && !preferProcessInstanceAssignee) {
-        return undefined;
+        return null;
     }
 
     return {

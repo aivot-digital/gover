@@ -90,6 +90,29 @@ class ElementDerivationServiceTest {
     }
 
     @Test
+    void shouldTreatPresentNullAsAuthoredClearInsteadOfDerivingValue() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("derived value")));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("field", null);
+
+        var result = derive(
+                createRoot(List.of(field)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertTrue(result.getEffectiveValues().containsKey("field"));
+        assertNull(result.getEffectiveValues().get("field"));
+        assertEquals(
+                EffectiveValueSource.Authored,
+                result.getElementStates().get("field").getValueSource()
+        );
+    }
+
+    @Test
     void shouldExposeResolvedDestinationPathForSimpleDestinationKey() {
         var field = new TextInputElement();
         field.setId("field");
@@ -491,6 +514,41 @@ class ElementDerivationServiceTest {
         assertEquals("group_b", firstRow.get("row_parent"));
         assertNull(firstRow.get("row_child"));
         assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("row_child").getError());
+    }
+
+    @Test
+    void shouldNotFallBackToRootValueWhenReplicatingRowParentIsExplicitlyCleared() {
+        var rowParent = createGroupedSelect("row_parent", null, List.of(
+                SelectInputElementOption.of("group_a", "Gruppe A")
+        ));
+
+        var rowChild = createGroupedSelect("row_child", "row_parent", List.of(
+                SelectInputElementOption.of("option_a", "Option A", "group_a")
+        ));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(rowParent, rowChild)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("row_parent", null);
+        rowValues.put("row_child", "option_a");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("row_parent", "group_a");
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertNull(firstRow.get("row_parent"));
+        assertNull(firstRow.get("row_child"));
     }
 
     @Test

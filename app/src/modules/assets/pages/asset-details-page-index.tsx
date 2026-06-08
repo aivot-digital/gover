@@ -336,7 +336,7 @@ export function AssetDetailsPageIndex() {
                             if (!canCreateAsset) {
                                 return;
                             }
-                            setFile(file);
+                            setFile(file ?? undefined);
                             setUploadError(undefined);
                         }}
                         label="Datei"

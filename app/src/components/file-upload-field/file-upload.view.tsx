@@ -56,7 +56,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             if (index >= 0) {
                 const updatedFiles = [...value];
                 updatedFiles.splice(index, 1);
-                setValue(updatedFiles.length > 0 ? updatedFiles : undefined);
+                setValue(updatedFiles.length > 0 ? updatedFiles : null);
             }
         }
     };
@@ -104,7 +104,7 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             dispatch(showErrorSnackbar('Einige Anlagen konnten nicht hinzugefügt werden, da das Maximum überschritten wurde.'));
         }
 
-        setValue(fileUploadItems.length > 0 ? fileUploadItems : undefined);
+        setValue(fileUploadItems.length > 0 ? fileUploadItems : null);
     };
 
     const fileMaximumReached = (

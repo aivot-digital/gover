@@ -81,7 +81,7 @@ export function hasAuthoredElementValuesSomeInput(authoredElementValues: Authore
     }
 
     for (const key of Object.keys(authoredElementValues)) {
-        if (authoredElementValues[key] != null) {
+        if (authoredElementValues[key] !== undefined) {
             return true;
         }
     }

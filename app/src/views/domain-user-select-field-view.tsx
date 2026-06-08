@@ -28,7 +28,7 @@ export function DomainUserSelectFieldView(props: BaseViewProps<DomainUserSelectF
     return (
         <DomainUserSelectFieldComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             placeholder={element.placeholder ?? undefined}
             hint={element.hint ?? undefined}

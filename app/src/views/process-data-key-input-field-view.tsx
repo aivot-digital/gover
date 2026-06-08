@@ -6,7 +6,6 @@ import {AutocompleteTextField} from '../components/text-field/text-field-compone
 import {
     useOptionalProcessNodeEditorContext,
 } from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
-import {isStringNullOrEmpty} from '../utils/string-utils';
 
 const processDataKeyPatternWithWildcard = {
     regex: '^[a-zA-Z0-9.\\*_]+$',
@@ -40,10 +39,10 @@ export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKey
     return (
         <ProcessDataKeyInputComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={(newValue) => {
                 if (!isBusy) {
-                    setValue(isStringNullOrEmpty(newValue) ? undefined : newValue ?? undefined);
+                    setValue(newValue);
                 }
             }}
             onBlur={onBlur == null ? undefined : (val) => onBlur(val, [element.id])}
@@ -59,8 +58,8 @@ export function ProcessDataKeyInputFieldView(props: BaseViewProps<ProcessDataKey
 
 interface ProcessDataKeyInputComponentProps {
     value: string | null | undefined;
-    onChange: (value: string | undefined) => void;
-    onBlur?: (value: string | undefined) => void;
+    onChange: (value: string | null) => void;
+    onBlur?: (value: string | null) => void;
     label: string;
     hint?: string;
     required?: boolean;

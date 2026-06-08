@@ -43,7 +43,7 @@ interface UiDefinitionInputFieldComponentProps {
     disabled?: boolean;
     value?: UiDefinitionInputFieldElementItem | null;
     expectedRootType?: ElementType | null;
-    onChange: (value: UiDefinitionInputFieldElementItem | undefined) => void;
+    onChange: (value: UiDefinitionInputFieldElementItem | null) => void;
     displayContext: ElementDisplayContext;
     openOverride?: () => void;
 }
@@ -607,7 +607,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     <Button
                         variant="contained"
                         onClick={() => {
-                            onChange(draftValue ?? undefined);
+                            onChange(draftValue);
                             handleClose();
                         }}
                     >

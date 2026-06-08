@@ -13,12 +13,12 @@ export interface DateFieldComponentProps {
     required?: boolean;
     disabled?: boolean;
     busy?: boolean;
-    value?: string;
+    value?: string | null;
     minDate?: Date;
     maxDate?: Date;
     mode: DateFieldComponentModelMode;
-    onChange: (val: string | undefined) => void;
-    onBlur?: (val: string | undefined) => void;
+    onChange: (val: string | null) => void;
+    onBlur?: (val: string | null) => void;
     sx?: SxProps<Theme>;
     bufferInputUntilBlur?: boolean;
     debounce?: number;

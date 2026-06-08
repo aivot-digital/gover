@@ -31,7 +31,7 @@ export function DateFieldView(props: BaseViewProps<DateFieldElement, string>) {
         <DateFieldComponent
             label={element.label ?? ''}
             autocomplete={element.autocomplete ?? undefined}
-            value={value ?? undefined}
+            value={value}
             error={errors?.join(', ') ?? undefined}
             onChange={setValue}
             disabled={isDisabled}

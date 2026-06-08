@@ -9,8 +9,8 @@ export interface BaseViewProps<M extends AnyElement, V> {
     isDeriving: boolean;
 
     value?: V | null | undefined;
-    setValue: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
-    onBlur: (value: V | null | undefined, triggeringElementIds?: string[]) => void;
+    setValue: (value: V | null, triggeringElementIds?: string[]) => void;
+    onBlur: (value: V | null, triggeringElementIds?: string[]) => void;
 
     errors?: string[] | null | undefined;
     errorDetails?: Record<string, any> | null | undefined;

@@ -26,7 +26,7 @@ export function DateTimeRangeFieldView(props: BaseViewProps<DateTimeRangeFieldEl
     return (
         <DateTimeRangeFieldComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             hint={element.hint ?? undefined}
             required={element.required ?? false}

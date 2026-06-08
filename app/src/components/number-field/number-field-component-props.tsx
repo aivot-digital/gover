@@ -10,9 +10,9 @@ export interface NumberFieldComponentProps {
     required?: boolean;
     disabled?: boolean;
     readOnly?: boolean;
-    value?: number;
-    onChange: (val: number | undefined) => void;
-    onBlur?: (val: number | undefined) => void;
+    value?: number | null;
+    onChange: (val: number | null) => void;
+    onBlur?: (val: number | null) => void;
     minValue?: number;
     maxValue?: number;
     sx?: SxProps<Theme>;

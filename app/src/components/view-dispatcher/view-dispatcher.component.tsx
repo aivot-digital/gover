@@ -89,27 +89,27 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
         return rootDerivedData ?? derivedData;
     }, [rootDerivedData, derivedData]);
 
-    const handleSetValue = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
-        if (updatedValue == authoredValue) {
+    const handleSetValue = useCallback((updatedValue: any | null, triggeringElementIds?: string[]) => {
+        if (updatedValue === authoredValue) {
             return;
         }
 
         const newAuthoredElementValues = {
             ...authoredElementValues,
-            [elementId]: updatedValue ?? null,
+            [elementId]: updatedValue,
         };
 
         onAuthoredElementValuesChange(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);
     }, [authoredValue, authoredElementValues, onAuthoredElementValuesChange, elementId]);
 
-    const handleOnBlur = useCallback((updatedValue: any | null | undefined, triggeringElementIds?: string[]) => {
-        if (updatedValue == authoredValue || onElementBlur == null) {
+    const handleOnBlur = useCallback((updatedValue: any | null, triggeringElementIds?: string[]) => {
+        if (updatedValue === authoredValue || onElementBlur == null) {
             return;
         }
 
         const newAuthoredElementValues = {
             ...authoredElementValues,
-            [elementId]: updatedValue ?? null,
+            [elementId]: updatedValue,
         };
 
         onElementBlur(newAuthoredElementValues, [elementId, ...(triggeringElementIds ?? [])]);

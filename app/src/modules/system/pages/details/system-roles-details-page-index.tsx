@@ -541,7 +541,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                         <SelectFieldComponent
                             label="Ersatz-Systemrolle"
                             value={replacementSystemRoleId}
-                            onChange={setReplacementSystemRoleId}
+                            onChange={(value) => setReplacementSystemRoleId(value ?? undefined)}
                             options={systemRoleOptions}
                             required
                             disabled={isBusy || isSystemRolesLoading}

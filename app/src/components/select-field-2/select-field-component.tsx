@@ -31,7 +31,7 @@ export interface SelectFieldComponentProps<T extends SelectFieldValueType> {
     required?: boolean;
     error?: string;
     value: T | null | undefined;
-    onChange: (val: T | undefined, opt: SelectFieldComponentOption<T> | undefined) => void;
+    onChange: (val: T | null, opt: SelectFieldComponentOption<T> | null) => void;
     options: SelectFieldComponentOption<T>[];
     emptyStatePlaceholder?: string;
     sx?: SxProps<Theme>;
@@ -92,7 +92,7 @@ export function SelectFieldComponent<T extends SelectFieldValueType>(props: Sele
         const option = options
             .find((option) => normalizeValue(option.value) === val);
 
-        onChange(option?.value, option);
+        onChange(option?.value ?? null, option ?? null);
     }, [onChange, options]);
 
     const isValueInOptions = useMemo(() => {

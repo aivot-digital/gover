@@ -25,7 +25,7 @@ export function DataModelSelectFieldView(props: BaseViewProps<DataModelSelectFie
     return (
         <DataModelSelectFieldComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             placeholder={element.placeholder ?? undefined}
             hint={element.hint ?? undefined}

@@ -51,7 +51,7 @@ export function UiDefinitionInputFieldView(
             error={errors != null ? errors.join(' ') : undefined}
             required={element.required}
             disabled={Boolean(isDisabled) || isBusy}
-            value={value ?? undefined}
+            value={value}
             expectedRootType={element.elementType}
             onChange={setValue}
             displayContext={element.displayContext ?? ElementDisplayContext.CitizenFacing}

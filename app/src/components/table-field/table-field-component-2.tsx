@@ -28,8 +28,8 @@ interface TableFieldComponentProps<T extends GridValidRowModel> {
     noRowsPlaceholder?: string;
     fields: TableField<T, keyof T & string>[];
     createDefaultRow: () => T;
-    value?: T[];
-    onChange: (value: T[] | undefined) => void;
+    value?: T[] | null;
+    onChange: (value: T[] | null) => void;
     disabled?: boolean;
     required?: boolean;
     rowsHaveIds?: boolean;
@@ -109,8 +109,8 @@ export function TableFieldComponent2<T extends GridValidRowModel>(props: TableFi
                 return !selectedIds.has(rowId);
             });
 
-        // Propagate the change. If no rows are left, propagate undefined to signal that the field is empty
-        onChange(updatedRows.length > 0 ? updatedRows : undefined);
+        // Propagate the change. If no rows are left, propagate an explicit clear.
+        onChange(updatedRows.length > 0 ? updatedRows : null);
 
         // Reset the selection model and the confirm dialog
         setSelectionModel({ type: 'include', ids: new Set() });

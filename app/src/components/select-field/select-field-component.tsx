@@ -66,7 +66,7 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
             value={isValueInOptions ? val : ''}
             onChange={(event) => {
                 if (isStringNullOrEmpty(event.target.value)) {
-                    onChange(undefined);
+                    onChange(null);
                 } else {
                     onChange(event.target.value);
                 }

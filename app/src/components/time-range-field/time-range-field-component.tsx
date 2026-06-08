@@ -6,7 +6,7 @@ import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time
 interface TimeRangeFieldComponentProps {
     label: string;
     value?: TimeRangeValue | null;
-    onChange: (value: TimeRangeValue | undefined) => void;
+    onChange: (value: TimeRangeValue | null) => void;
     hint?: string;
     required?: boolean;
     disabled?: boolean;
@@ -15,12 +15,12 @@ interface TimeRangeFieldComponentProps {
     mode?: TimeFieldComponentModelMode;
 }
 
-function normalizeRange(value: TimeRangeValue): TimeRangeValue | undefined {
-    const start = value.start ?? undefined;
-    const end = value.end ?? undefined;
+function normalizeRange(value: TimeRangeValue): TimeRangeValue | null {
+    const start = value.start ?? null;
+    const end = value.end ?? null;
 
     if (start == null && end == null) {
-        return undefined;
+        return null;
     }
 
     return {
@@ -44,7 +44,7 @@ export function TimeRangeFieldComponent(props: TimeRangeFieldComponentProps) {
                                 props.onChange(normalizeRange({
                                     start,
                                     end: props.value?.end,
-                                }) ?? undefined);
+                                }));
                             }}
                             required={props.required}
                             disabled={props.disabled}
@@ -78,7 +78,7 @@ export function TimeRangeFieldComponent(props: TimeRangeFieldComponentProps) {
                                 props.onChange(normalizeRange({
                                     start: props.value?.start,
                                     end,
-                                }) ?? undefined);
+                                }));
                             }}
                             required={props.required}
                             disabled={props.disabled}

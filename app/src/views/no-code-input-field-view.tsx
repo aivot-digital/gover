@@ -65,7 +65,7 @@ export function NoCodeInputFieldView(props: BaseViewProps<NoCodeInputFieldElemen
             errorDetails={errorDetails}
             required={element.required}
             disabled={Boolean(isDisabled) || isBusy}
-            value={value ?? undefined}
+            value={value}
             desiredReturnType={desiredReturnType}
             onChange={setValue}
         />

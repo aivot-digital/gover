@@ -25,11 +25,11 @@ export function DateTimeFieldView(props: BaseViewProps<DateTimeFieldElement, str
 
     const dateValue = useMemo(() => {
         if (value == null) {
-            return undefined;
+            return value;
         }
 
         const date = new Date(value);
-        return isNaN(date.getTime()) ? undefined : value;
+        return isNaN(date.getTime()) ? null : value;
     }, [value]);
 
     return (
