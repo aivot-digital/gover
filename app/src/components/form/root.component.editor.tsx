@@ -251,6 +251,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                     imprintDepartmentId: department?.id ?? null,
                                 });
                             }}
+                            required
                             disabled={!props.editable}
                         />
                     }
@@ -278,6 +279,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                     privacyDepartmentId: department?.id ?? null,
                                 });
                             }}
+                            required
                             disabled={!props.editable}
                         />
                     }
@@ -305,6 +307,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                     accessibilityDepartmentId: department?.id ?? null,
                                 });
                             }}
+                            required
                             disabled={!props.editable}
                         />
                     }
@@ -466,6 +469,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                     legalSupportDepartmentId: department?.id ?? null,
                                 });
                             }}
+                            required
                             disabled={!props.editable}
                         />
                     }
@@ -493,6 +497,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                     technicalSupportDepartmentId: department?.id ?? null,
                                 });
                             }}
+                            required
                             disabled={!props.editable}
                         />
                     }
