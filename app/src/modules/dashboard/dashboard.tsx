@@ -10,7 +10,6 @@ import {DashboardHero} from './components/dashboard-hero';
 import {DashboardProviderLinks} from './components/dashboard-provider-links';
 import {DashboardFormsPanel} from './components/dashboard-forms-panel';
 import {CanvasConfettiOverlay} from '../../components/confetti/canvas-confetti-overlay';
-import {DocumentTemplateDesigner} from '../../components/document-template-designer/document-template-designer';
 
 const germanyFlagColors = ['#213048', '#EA312A', '#EEA53C'];
 
@@ -142,13 +141,6 @@ export function Dashboard() {
                     colors={germanyFlagColors}
                 />
             </Container>
-
-            <DocumentTemplateDesigner
-                value={{}}
-                onChange={(val) => {
-                }}
-            />
-
         </PageWrapper>
     );
 }
