@@ -141,55 +141,6 @@ public class ElementDataTransformService {
     }
 
     /**
-     * Resolves a destination key to the concrete payload path currently addressed by the active
-     * traversal context.
-     * <p>
-     * Derivation needs this view because callers want to understand where an element would write in
-     * the outbound payload without forcing the service to build that payload first. Reusing the same
-     * normalization and wildcard substitution rules as the payload writer keeps the reported path
-     * aligned with the actual export logic.
-     *
-     * @param destinationKey the destination key configured on the current element
-     * @param pathPrefixSegments an already resolved payload prefix contributed by parent structures
-     * @param replicationIndices the active replication indices used to substitute wildcard segments
-     * @return the resolved destination path, or {@code null} when the element has no destination key
-     */
-    @Nullable
-    public String resolveDestinationPath(@Nullable String destinationKey,
-                                         @Nonnull List<String> pathPrefixSegments,
-                                         @Nonnull List<Integer> replicationIndices) {
-        var resolvedSegments = resolveDestinationPathSegments(destinationKey, pathPrefixSegments, replicationIndices);
-        return resolvedSegments.isEmpty() ? null : String.join(".", resolvedSegments);
-    }
-
-    /**
-     * Resolves a destination key to its normalized path segments within the current traversal
-     * context.
-     * <p>
-     * Returning segments instead of only a string matters for replicated rows. The derivation
-     * service needs to extend a resolved container path with the current row index before resolving
-     * descendant paths, and keeping the segmented representation avoids lossy string round-trips.
-     *
-     * @param destinationKey the destination key configured on the current element
-     * @param pathPrefixSegments an already resolved payload prefix contributed by parent structures
-     * @param replicationIndices the active replication indices used to substitute wildcard segments
-     * @return the resolved path segments, or an empty list when the element has no destination key
-     */
-    @Nonnull
-    public List<String> resolveDestinationPathSegments(@Nullable String destinationKey,
-                                                       @Nonnull List<String> pathPrefixSegments,
-                                                       @Nonnull List<Integer> replicationIndices) {
-        var destinationSegments = parseDestinationKeySegments(destinationKey);
-        if (destinationSegments.isEmpty()) {
-            return List.of();
-        }
-
-        var resolvedSegments = new LinkedList<>(pathPrefixSegments);
-        resolvedSegments.addAll(substituteWildcardSegments(destinationSegments, replicationIndices));
-        return resolvedSegments;
-    }
-
-    /**
      * Traverses the element tree and delegates payload generation based on element type.
      * <p>
      * Replication indices are carried alongside the traversal so nested writes can resolve

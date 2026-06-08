@@ -17,7 +17,6 @@ export interface ComputedElementState {
     error?: string | null;
     errorDetails?: Record<string, any> | null;
     override?: AnyElement | null;
-    destinationPath?: string | null;
     valueSource?: ComputedElementValueSource | null;
     subStates?: ComputedElementStates[] | null;
 }

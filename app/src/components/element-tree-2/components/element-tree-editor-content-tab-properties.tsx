@@ -356,12 +356,10 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         title="Datenzuordnung"
                         sx={{mt: 8}}
                     >
-                        Legen Sie fest, mit welchem Datenschlüssel der Wert dieses Feldes im Datensatz ausgelesen
-                        (soweit vorhanden) und gespeichert wird (sogenanntes 2-Way-Data-Binding).
-                        Ohne eigenen Schlüssel wird standardmäßig die Element-ID verwendet.
-                        Mit Punktnotation, wie beispielsweise „person.vorname“, können Sie Werte in verschachtelte
-                        Datenstrukturen
-                        schreiben und lesen.
+                        Legen Sie fest, unter welchem Datenschlüssel der Wert dieses Feldes in die Vorgangsdaten
+                        geschrieben und aus vorhandenen Vorgangsdaten übernommen wird. Ohne eigenen Schlüssel wird
+                        dieses Feld nicht in den zugeordneten Datensatz geschrieben. Mit Punktnotation, wie beispielsweise
+                        „person.vorname“, können Sie Werte in verschachtelte Datenstrukturen schreiben und lesen.
                     </ElementEditorSectionHeader>
 
                     <Grid
@@ -384,7 +382,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         destinationKey: val,
                                     } as T);
                                 }}
-                                hint="Überschreiben Sie die Element-ID mit einem eigenen Datenschlüssel (optional). Der Wert dieses Elements wird im Datensatz unter diesem Schlüssel ausgelesen/gespeichert."
+                                hint="Optionaler Datenschlüssel für die Zuordnung in den Datensatz. Ohne Schlüssel wird dieses Feld nicht in den zugeordneten Datensatz geschrieben."
                                 disabled={!editable}
                                 disableWildCards={true}
                                 prefix={replicatingParentDestinationKeyPrefix}

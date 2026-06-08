@@ -16,10 +16,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
-import {
-    synchronizeAuthoredElementValuesByDestinationPath,
-    walkAuthoredElementValues,
-} from '../../../utils/element-data-utils';
+import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher/view-dispatcher.component';
 import {
     ViewDispatcherContextProvider,
@@ -201,21 +198,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [element]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
-        // Synchronizing before reference analysis keeps mirrored destination-path aliases and their
-        // dependents inside the same authored-data update, regardless of which subtree hosts them.
-        const synchronizedUpdate = synchronizeAuthoredElementValuesByDestinationPath(
-            element,
-            authoredElementValues,
-            newData,
-            derivedData,
-            triggeringElementIds,
-        );
-        const effectiveNewData = synchronizedUpdate.authoredElementValues;
-        const effectiveTriggeringElementIds = synchronizedUpdate.triggeringElementIds;
         const changedElementIds = getChangedAuthoredElementIds(
             element,
             authoredElementValues,
-            effectiveNewData,
+            newData,
         );
 
         if (changedElementIds.length > 0) {
@@ -229,7 +215,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         }
 
         const relevantIds: string[] = [];
-        for (const id of effectiveTriggeringElementIds) {
+        for (const id of triggeringElementIds) {
             /*const triggeringElement = allElements.find((element) => element.id === id);
             if (
                 triggeringElement != null &&
@@ -249,7 +235,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         }
 
         if (relevantIds.length === 0) {
-            onAuthoredElementValuesChange(effectiveNewData);
+            onAuthoredElementValuesChange(newData);
             return;
         }
 
@@ -259,7 +245,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             ...derivationTriggerIdQueue,
             ...relevantIds,
         ]);
-        await deriveWithMinimumVisibleDuration(effectiveNewData, []);
+        await deriveWithMinimumVisibleDuration(newData, []);
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];
             for (const id of relevantIds) {

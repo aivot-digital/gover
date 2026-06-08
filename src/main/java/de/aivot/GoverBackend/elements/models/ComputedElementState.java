@@ -25,9 +25,6 @@ public class ComputedElementState implements Serializable {
     @Nullable
     private BaseElement override = null;
 
-    @Nullable
-    private String destinationPath = null;
-
     @Nonnull
     private EffectiveValueSource valueSource = EffectiveValueSource.Authored;
 
@@ -54,12 +51,12 @@ public class ComputedElementState implements Serializable {
         ComputedElementState that = (ComputedElementState) o;
         return Objects.equals(visible, that.visible) && Objects.equals(disabled, that.disabled) && Objects.equals(error, that.error) &&
                 Objects.equals(errorDetails, that.errorDetails) && Objects.equals(override, that.override) &&
-                Objects.equals(destinationPath, that.destinationPath) && valueSource == that.valueSource && Objects.equals(subStates, that.subStates);
+                valueSource == that.valueSource && Objects.equals(subStates, that.subStates);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(visible, disabled, error, errorDetails, override, destinationPath, valueSource, subStates);
+        return Objects.hash(visible, disabled, error, errorDetails, override, valueSource, subStates);
     }
 
 
@@ -104,16 +101,6 @@ public class ComputedElementState implements Serializable {
 
     public ComputedElementState setOverride(@Nullable BaseElement override) {
         this.override = override;
-        return this;
-    }
-
-    @Nullable
-    public String getDestinationPath() {
-        return destinationPath;
-    }
-
-    public ComputedElementState setDestinationPath(@Nullable String destinationPath) {
-        this.destinationPath = destinationPath;
         return this;
     }
 
