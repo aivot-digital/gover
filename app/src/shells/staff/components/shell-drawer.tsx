@@ -83,14 +83,14 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 to: '/process-instances',
             },
             {
-                icon: ModuleIcons.forms,
-                label: 'Formulare',
-                to: '/forms',
-            },
-            {
                 icon: ModuleIcons.processes,
                 label: 'Prozesse',
                 to: '/processes',
+            },
+            {
+                icon: ModuleIcons.forms,
+                label: 'Formulare',
+                to: '/forms',
             },
             {
                 icon: ModuleIcons.dataObjects,
