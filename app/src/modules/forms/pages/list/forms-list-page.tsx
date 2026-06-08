@@ -42,6 +42,7 @@ import {ProcessStatusChip} from '../../../process/components/process-status/proc
 import {Action} from '../../../../components/actions/actions-props';
 import {ProcessStatus} from '../../../process/enums/process-status';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {AlertComponent} from '../../../../components/alert/alert-component';
 
 const columns: GenericListColDef<FormTriggerListItem>[] = [
     {
@@ -244,6 +245,13 @@ export function FormsListPage() {
 
     const columnIcon = useMemo(() => <DescriptionOutlinedIcon/>, []);
 
+    const listContextElements = useMemo(() => [
+        <AlertComponent
+            color="info"
+            text="Diese Übersicht zeigt alle Formulareingänge, die in Prozessen verwendet werden. Jeder Eintrag entspricht einem Formulareingang-Prozesselement in einer konkreten Prozessversion und führt zum dort verwendeten Formular."
+        />,
+    ], []);
+
     const noDataPlaceholder = useMemo(() => (
         <Box
             sx={{
@@ -314,6 +322,7 @@ export function FormsListPage() {
                     header={header}
                     searchLabel="Prozesselemente vom Typ „Formulareingang“ suchen"
                     searchPlaceholder="Titel des Prozesselementes eingeben…"
+                    listContextElements={listContextElements}
                     fetch={fetch}
                     columnIcon={columnIcon}
                     columnDefinitions={columns}

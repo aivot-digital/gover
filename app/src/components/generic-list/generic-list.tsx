@@ -550,6 +550,28 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 }
             </Box>
 
+            {
+                props.listContextElements != null &&
+                props.listContextElements.length > 0 &&
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        paddingX: 2,
+                        paddingBottom: 2,
+                        gap: 1.5,
+                    }}
+                >
+                    {
+                        props.listContextElements.map((element, index) => (
+                            <Box key={index}>
+                                {element}
+                            </Box>
+                        ))
+                    }
+                </Box>
+            }
+
             <Box
                 sx={{
                     display: 'flex',
