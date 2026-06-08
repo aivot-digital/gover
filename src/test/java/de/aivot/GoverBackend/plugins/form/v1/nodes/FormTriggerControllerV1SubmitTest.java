@@ -53,7 +53,7 @@ class FormTriggerControllerV1SubmitTest {
 
         var result = fixture.controller().submit(
                 null,
-                fixture.processAccessKey(),
+                fixture.processSlug(),
                 fixture.formSlug(),
                 null,
                 "identity-session-id",
@@ -97,7 +97,7 @@ class FormTriggerControllerV1SubmitTest {
 
         assertThrows(ResponseException.class, () -> fixture.controller().submit(
                 null,
-                fixture.processAccessKey(),
+                fixture.processSlug(),
                 fixture.formSlug(),
                 null,
                 "identity-session-id",
@@ -119,6 +119,7 @@ class FormTriggerControllerV1SubmitTest {
             UUID startedProcessAccessKey
     ) throws ResponseException {
         var processAccessKey = UUID.randomUUID();
+        var processSlug = "example-process";
         var formSlug = "example-form";
 
         var process = new ProcessEntity()
@@ -126,6 +127,7 @@ class FormTriggerControllerV1SubmitTest {
                 .setInternalTitle("Process")
                 .setDepartmentId(10)
                 .setAccessKey(processAccessKey)
+                .setSlug(processSlug)
                 .setVersionCount(1)
                 .setPublishedVersion(1);
 
@@ -145,7 +147,7 @@ class FormTriggerControllerV1SubmitTest {
         when(userService.fromJWT(isNull())).thenReturn(Optional.empty());
 
         var processService = mock(ProcessService.class);
-        when(processService.retrieveByAccessKey(processAccessKey)).thenReturn(Optional.of(process));
+        when(processService.retrieveBySlugOrHistory(processSlug)).thenReturn(Optional.of(process));
 
         var processVersionService = mock(ProcessVersionService.class);
         when(processVersionService.retrieve(any(de.aivot.GoverBackend.process.filters.ProcessVersionFilter.class)))
@@ -251,7 +253,7 @@ class FormTriggerControllerV1SubmitTest {
 
         return new SubmitFixture(
                 controller,
-                processAccessKey,
+                processSlug,
                 formSlug,
                 node.getId(),
                 identityService,
@@ -278,7 +280,7 @@ class FormTriggerControllerV1SubmitTest {
 
     private record SubmitFixture(
             FormTriggerControllerV1 controller,
-            UUID processAccessKey,
+            String processSlug,
             String formSlug,
             Integer processNodeId,
             IdentityService identityService,

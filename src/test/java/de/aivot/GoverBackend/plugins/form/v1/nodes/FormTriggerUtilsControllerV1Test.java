@@ -5,7 +5,6 @@ import de.aivot.GoverBackend.department.services.VDepartmentShadowedService;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.pdf.models.PrintableFormPdfData;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
@@ -14,6 +13,7 @@ import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
+import de.aivot.GoverBackend.process.services.PublicUrlService;
 import de.aivot.GoverBackend.services.PdfService;
 import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
@@ -66,8 +66,8 @@ class FormTriggerUtilsControllerV1Test {
         var printableFormCaptor = ArgumentCaptor.forClass(PrintableFormPdfData.class);
         verify(fixture.pdfService()).generatePrintableForm(printableFormCaptor.capture(), eq(formTheme), eq(responsibleDepartment));
         var printableForm = printableFormCaptor.getValue();
-        assertEquals("/forms/v1/%s/%s/?version=%d".formatted(
-                fixture.process().getAccessKey(),
+        assertEquals("/form/%s/%s/?version=%d".formatted(
+                fixture.process().getSlug(),
                 fixture.formSlug(),
                 fixture.node().getProcessVersion()
         ), printableForm.getSlug());
@@ -138,11 +138,12 @@ class FormTriggerUtilsControllerV1Test {
 
     private TestFixture createFixture(FormLayoutElement formLayout) throws Exception {
         var processAccessKey = UUID.randomUUID();
+        var processSlug = "example-process";
         var formSlug = "example-form";
 
-        var goverConfig = mock(GoverConfig.class);
-        when(goverConfig.createUrlWithTrailingSlash("/forms/v1/", processAccessKey, formSlug))
-                .thenReturn("https://gover.example/forms/v1/%s/%s/".formatted(processAccessKey, formSlug));
+        var publicUrlService = mock(PublicUrlService.class);
+        when(publicUrlService.createPublicFormUrl(any(ProcessEntity.class), eq(formSlug)))
+                .thenReturn("https://gover.example/form/%s/%s/".formatted(processSlug, formSlug));
 
         var user = new UserEntity()
                 .setId("user-1");
@@ -155,6 +156,7 @@ class FormTriggerUtilsControllerV1Test {
                 .setId(100)
                 .setDepartmentId(400)
                 .setAccessKey(processAccessKey)
+                .setSlug(processSlug)
                 .setInternalTitle("Process")
                 .setVersionCount(1)
                 .setPublishedVersion(1);
@@ -200,7 +202,7 @@ class FormTriggerUtilsControllerV1Test {
                 .thenReturn(new byte[]{0});
 
         var controller = new FormTriggerUtilsControllerV1(
-                goverConfig,
+                publicUrlService,
                 userService,
                 permissionService,
                 processService,

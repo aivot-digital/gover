@@ -1,4 +1,4 @@
-import {useParams, useSearchParams} from 'react-router-dom';
+import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box, Button, Grid, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {showDialog} from '../../slices/app-slice';
@@ -76,14 +76,16 @@ export function CustomerFormPage() {
     const baseTheme = useTheme();
 
     const [searchParams, setSearchParams] = useSearchParams();
+    const navigate = useNavigate();
+    const currentSearch = searchParams.toString();
     const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
     const {
-        processAccessKey,
+        processSlug,
         formSlug,
     } = useParams<{
-        processAccessKey: string;
+        processSlug: string;
         formSlug: string;
     }>();
 
@@ -107,17 +109,23 @@ export function CustomerFormPage() {
     const handledIdentityCallbackRef = useRef<string | null>(null);
 
     useEffect(() => {
-        if (processAccessKey == null || formSlug == null) {
+        if (processSlug == null || formSlug == null) {
             return;
         }
 
         new BaseApiService()
-            .get<RetrieveResponse>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/`, {
+            .get<RetrieveResponse>(`/api/public/form/${processSlug}/${formSlug}/`, {
                 query: {
                     'test-claim': testClaimKey,
                 },
             })
             .then((res) => {
+                if (res.process.slug !== processSlug) {
+                    navigate(`/form/${res.process.slug}/${formSlug}${currentSearch.length > 0 ? `?${currentSearch}` : ''}`, {
+                        replace: true,
+                    });
+                }
+
                 setData(res);
                 setAllElements(flattenElements(res.layoutElement, false));
                 setDerivedData(createDerivedRuntimeElementData());
@@ -143,7 +151,7 @@ export function CustomerFormPage() {
                     }
                 }
             });
-    }, [processAccessKey, formSlug, testClaimKey]);
+    }, [processSlug, formSlug, testClaimKey, navigate, currentSearch]);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
@@ -168,9 +176,10 @@ export function CustomerFormPage() {
 
         new FormTriggerApiService()
             .getFormTheme(
-                process.accessKey,
+                process.slug,
                 node.configuration.formSlug,
-                version.processVersion,
+                undefined,
+                testClaimKey ?? undefined,
             )
             .then((res) => {
                 if (!isCancelled) {
@@ -187,7 +196,7 @@ export function CustomerFormPage() {
         return () => {
             isCancelled = true;
         };
-    }, [node, process, version]);
+    }, [node, process, testClaimKey, version]);
 
     const resolvedTheme = useMemo(() => {
         if (theme == null) {
@@ -229,7 +238,7 @@ export function CustomerFormPage() {
                 .postFormData<{
                     startedProcessAccessKey: string;
                 }>(
-                    `/api/public/forms/v1/${process?.accessKey}/${node.configuration.formSlug}/submit/`,
+                    `/api/public/form/${process?.slug}/${node.configuration.formSlug}/submit/`,
                     formData,
                     {
                         query: {
@@ -246,7 +255,7 @@ export function CustomerFormPage() {
 
     const handleDerive = (values: AuthoredElementValues, skipErrorsForElements: string[]) => {
         return new BaseApiService()
-            .post<AuthoredElementValues, ElementDerivationResponse>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/derive/`, values, {
+            .post<AuthoredElementValues, ElementDerivationResponse>(`/api/public/form/${process?.slug ?? processSlug}/${formSlug}/derive/`, values, {
                 query: {
                     'test-claim': testClaimKey,
                     skipErrorsFor: skipErrorsForElements,
@@ -266,16 +275,14 @@ export function CustomerFormPage() {
         return null;
     }
 
-    const formAssetQueryParams = new URLSearchParams({
-        version: version.processVersion.toString(),
-    });
+    const formAssetQueryParams = new URLSearchParams();
     if (testClaimKey != null) {
         formAssetQueryParams.set('test-claim', testClaimKey);
     }
 
     const formAssetQuery = formAssetQueryParams.toString();
-    const formLogoUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/?${formAssetQuery}`;
-    const formFaviconUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/favicon/?${formAssetQuery}`;
+    const formLogoUrl = `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${formAssetQuery}`;
+    const formFaviconUrl = `/api/public/form/${process.slug}/${node.configuration.formSlug}/favicon/?${formAssetQuery}`;
 
     return (
         <ThemeProvider theme={resolvedTheme}>

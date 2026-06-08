@@ -27,9 +27,11 @@ import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
 import de.aivot.GoverBackend.theme.services.ThemeService;
+import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletResponse;
+import org.springframework.security.oauth2.jwt.Jwt;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -46,7 +48,7 @@ class FormTriggerControllerV1Test {
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
-        var result = fixture.controller().getTheme(null, fixture.processAccessKey(), fixture.formSlug(), null, null);
+        var result = fixture.controller().getTheme(null, fixture.processSlug(), fixture.formSlug(), null, null);
 
         assertEquals(formTheme.getId(), result.id());
         assertEquals(formTheme.getName(), result.name());
@@ -68,8 +70,8 @@ class FormTriggerControllerV1Test {
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
         var result = fixture.controller().getTheme(
-                null,
-                fixture.processAccessKey(),
+                mock(Jwt.class),
+                fixture.processSlug(),
                 fixture.formSlug(),
                 testClaimAccessKey,
                 requestedProcessVersion
@@ -101,7 +103,7 @@ class FormTriggerControllerV1Test {
         when(fixture.themeService().retrieve(responsibleTheme.getId())).thenReturn(Optional.of(responsibleTheme));
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processAccessKey(), fixture.formSlug(), testClaimAccessKey, null, response);
+        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), testClaimAccessKey, null, response);
 
         assertEquals("https://assets.example/" + responsibleTheme.getLogoKey(), response.getRedirectedUrl());
         verify(fixture.processTestClaimService()).retrieveByAccessKey(fixture.process().getId(), testClaimAccessKey);
@@ -115,7 +117,7 @@ class FormTriggerControllerV1Test {
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getLogo(null, fixture.processAccessKey(), fixture.formSlug(), null, null, response);
+        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
 
         assertEquals("https://gover.example/assets/default-logo.png", response.getRedirectedUrl());
     }
@@ -135,7 +137,7 @@ class FormTriggerControllerV1Test {
         when(fixture.themeService().retrieve(managingTheme.getId())).thenReturn(Optional.of(managingTheme));
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getFavicon(null, fixture.processAccessKey(), fixture.formSlug(), null, null, response);
+        fixture.controller().getFavicon(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
 
         assertEquals("https://assets.example/" + managingTheme.getFaviconKey(), response.getRedirectedUrl());
     }
@@ -145,7 +147,7 @@ class FormTriggerControllerV1Test {
         var fixture = createFixture(baseFormLayout());
 
         var response = new MockHttpServletResponse();
-        fixture.controller().getFavicon(null, fixture.processAccessKey(), fixture.formSlug(), null, null, response);
+        fixture.controller().getFavicon(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
 
         assertEquals("https://gover.example/assets/default-favicon.ico", response.getRedirectedUrl());
     }
@@ -163,6 +165,7 @@ class FormTriggerControllerV1Test {
                                       String testClaimAccessKey,
                                       int resolvedProcessVersion) throws Exception {
         var processAccessKey = UUID.randomUUID();
+        var processSlug = "example-process";
         var formSlug = "example-form";
 
         var goverConfig = mock(GoverConfig.class);
@@ -179,12 +182,14 @@ class FormTriggerControllerV1Test {
 
         var userService = mock(UserService.class);
         when(userService.fromJWT(isNull())).thenReturn(Optional.empty());
+        when(userService.fromJWT(any(Jwt.class))).thenReturn(Optional.of(new UserEntity().setId("staff-user")));
 
         var process = new ProcessEntity()
                 .setId(100)
                 .setInternalTitle("Process")
                 .setDepartmentId(10)
                 .setAccessKey(processAccessKey)
+                .setSlug(processSlug)
                 .setVersionCount(1)
                 .setPublishedVersion(1);
 
@@ -201,7 +206,7 @@ class FormTriggerControllerV1Test {
                 .setProcessNodeDefinitionVersion(1);
 
         var processService = mock(ProcessService.class);
-        when(processService.retrieveByAccessKey(processAccessKey)).thenReturn(Optional.of(process));
+        when(processService.retrieveBySlugOrHistory(processSlug)).thenReturn(Optional.of(process));
 
         var processTestClaimService = mock(ProcessTestClaimService.class);
         if (testClaimAccessKey != null) {
@@ -227,7 +232,7 @@ class FormTriggerControllerV1Test {
         triggerConfig.formSlug = formSlug;
         triggerConfig.formLayout = formLayout;
 
-        when(processNodeService.deriveConfiguration(eq(node), eq(provider), isNull(), eq(true)))
+        when(processNodeService.deriveConfiguration(eq(node), eq(provider), nullable(UserEntity.class), eq(true)))
                 .thenReturn(new ProcessNodeService.ProcessConfigurationDetails<>(
                         triggerConfig,
                         new DerivedRuntimeElementData()
@@ -270,7 +275,7 @@ class FormTriggerControllerV1Test {
 
         return new TestFixture(
                 controller,
-                processAccessKey,
+                processSlug,
                 formSlug,
                 process,
                 processTestClaimService,
@@ -306,7 +311,7 @@ class FormTriggerControllerV1Test {
 
     private record TestFixture(
             FormTriggerControllerV1 controller,
-            UUID processAccessKey,
+            String processSlug,
             String formSlug,
             ProcessEntity process,
             ProcessTestClaimService processTestClaimService,

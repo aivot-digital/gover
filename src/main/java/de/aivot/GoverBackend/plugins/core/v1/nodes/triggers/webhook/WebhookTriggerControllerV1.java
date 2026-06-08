@@ -5,7 +5,6 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
-import de.aivot.GoverBackend.process.filters.ProcessFilter;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.*;
@@ -58,22 +57,22 @@ public class WebhookTriggerControllerV1 {
     }
 
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/", method = {
+    @RequestMapping(value = "/api/public/webhook/{processSlug}/{slug}/", method = {
             RequestMethod.GET,
             RequestMethod.DELETE,
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleWithoutBody(
             @Nonnull HttpServletRequest request,
-            @Nonnull @PathVariable UUID accessKey,
+            @Nonnull @PathVariable String processSlug,
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
-        return handleRequest(request, accessKey, slug, null, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, processSlug, slug, null, new HashMap<>(), Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/xml/", method = {
+    @RequestMapping(value = "/api/public/webhook/{processSlug}/{slug}/xml/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
@@ -82,17 +81,17 @@ public class WebhookTriggerControllerV1 {
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleXml(
             @Nonnull HttpServletRequest request,
-            @Nonnull @PathVariable UUID accessKey,
+            @Nonnull @PathVariable String processSlug,
             @Nonnull @PathVariable String slug,
             @Nonnull @RequestBody Map<String, Object> payload,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
-        return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_XML, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, processSlug, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_XML, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/json/", method = {
+    @RequestMapping(value = "/api/public/webhook/{processSlug}/{slug}/json/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
@@ -101,17 +100,17 @@ public class WebhookTriggerControllerV1 {
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleJson(
             @Nonnull HttpServletRequest request,
-            @Nonnull @PathVariable UUID accessKey,
+            @Nonnull @PathVariable String processSlug,
             @Nonnull @PathVariable String slug,
             @Nonnull @RequestBody Map<String, Object> payload,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
             @Nullable @RequestHeader(name = AUTH_HEADER_NAME, required = false) String authorizationHeader
     ) throws ResponseException {
-        return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, processSlug, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON, payload, Map.of(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
-    @RequestMapping(value = "/api/public/webhooks/v1/{accessKey}/{slug}/form-data/", method = {
+    @RequestMapping(value = "/api/public/webhook/{processSlug}/{slug}/form-data/", method = {
             RequestMethod.POST,
             RequestMethod.PUT,
             RequestMethod.PATCH,
@@ -120,7 +119,7 @@ public class WebhookTriggerControllerV1 {
     }, produces = MediaType.APPLICATION_JSON_VALUE)
     public Response handleFormData(
             @Nonnull StandardMultipartHttpServletRequest request,
-            @Nonnull @PathVariable UUID accessKey,
+            @Nonnull @PathVariable String processSlug,
             @Nonnull @PathVariable String slug,
             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
             @Nullable @RequestParam(value = AUTH_TOKEN_QUERY_PARAM, required = false) String authToken,
@@ -136,12 +135,12 @@ public class WebhookTriggerControllerV1 {
                 payload.put(key, null);
             }
         }
-        return handleRequest(request, accessKey, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, processSlug, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
     @Nonnull
     private Response handleRequest(@Nonnull HttpServletRequest request,
-                                   @Nonnull UUID accessKey,
+                                   @Nonnull String processSlug,
                                    @Nonnull String slug,
                                    @Nullable String requestBody,
                                    @Nonnull Map<String, Object> payload,
@@ -149,7 +148,7 @@ public class WebhookTriggerControllerV1 {
                                    @Nullable String testClaimAccessKey,
                                    @Nullable String authToken,
                                    @Nullable String authorizationHeader) throws ResponseException {
-        var process = getProcess(accessKey);
+        var process = getProcess(processSlug);
         var testClaim = getTestClaim(process, testClaimAccessKey);
         var nodeEntities = retrieveWebhookNode(process, slug, request.getMethod(), requestBody, testClaim);
 
@@ -164,10 +163,16 @@ public class WebhookTriggerControllerV1 {
 
     @Nullable
     private ProcessTestClaimEntity getTestClaim(@Nonnull ProcessEntity process,
-                                                @Nullable String testClaimAccessKey) {
-        return testClaimAccessKey != null ? processTestClaimRepository
-                                            .findByProcessIdAndAccessKey(process.getId(), testClaimAccessKey)
-                                            .orElse(null) : null;
+                                                @Nullable String testClaimAccessKey) throws ResponseException {
+        if (testClaimAccessKey == null) {
+            return null;
+        }
+
+        // A provided test claim is part of the public routing contract. If it is wrong,
+        // the request must fail instead of silently falling back to the published version.
+        return processTestClaimRepository
+                .findByProcessIdAndAccessKey(process.getId(), testClaimAccessKey)
+                .orElseThrow(ResponseException::notFound);
     }
 
     @Nonnull
@@ -482,9 +487,9 @@ public class WebhookTriggerControllerV1 {
 
     }
 
-    private ProcessEntity getProcess(UUID accessKey) throws ResponseException {
+    private ProcessEntity getProcess(String processSlug) throws ResponseException {
         return processService
-                .retrieve(ProcessFilter.create().setAccessKey(accessKey))
-                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Access Key gefunden."));
+                .retrieveBySlugOrHistory(processSlug)
+                .orElseThrow(() -> ResponseException.notFound("Kein Prozess mit dem angegebenen Slug gefunden."));
     }
 }

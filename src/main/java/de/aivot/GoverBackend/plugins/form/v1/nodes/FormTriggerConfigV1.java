@@ -13,8 +13,8 @@ import java.util.List;
 public class FormTriggerConfigV1 {
     public static final String FORM_SLUG = "formSlug";
     @InputElementPOJOBinding(id = FORM_SLUG, type = ElementType.Text, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Formular-URL"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Die URL, über die das Formular angesprochen werden kann."),
+            @ElementPOJOBindingProperty(key = "label", strValue = "URL-Segment des Formulars"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Dieses Segment wird an den URL-Namespace des Prozesses angehängt. Der vollständige öffentliche Pfad lautet /form/{prozess-namespace}/{formular-segment}/."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true)
     })
     public String formSlug;

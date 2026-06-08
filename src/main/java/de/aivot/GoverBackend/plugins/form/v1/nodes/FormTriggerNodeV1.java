@@ -16,7 +16,6 @@ import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.form.FormPlugin;
 import de.aivot.GoverBackend.plugins.form.v1.services.FormLayoutCleanerService;
@@ -31,6 +30,7 @@ import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinition
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
+import de.aivot.GoverBackend.process.services.PublicUrlService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -47,12 +47,12 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_UNMAPPED = "unmapped";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
 
-    private final GoverConfig goverConfig;
+    private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
 
-    public FormTriggerNodeV1(GoverConfig goverConfig,
+    public FormTriggerNodeV1(PublicUrlService publicUrlService,
                              ProcessNodeRepository processNodeRepository) {
-        this.goverConfig = goverConfig;
+        this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
     }
 
@@ -157,11 +157,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 .findChild(FormTriggerConfigV1.FORM_SLUG, TextInputElement.class)
                 .ifPresent(field -> {
                     var pattern = new TextInputElementPattern()
-                            .setRegex("^[a-zA-Z0-9-]+$")
-                            .setMessage("Der Webhook-Slug darf nur aus Buchstaben, Zahlen und Bindestrichen bestehen.");
+                            .setRegex("^[a-z0-9-]+$")
+                            .setMessage("Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.");
                     field.setPattern(pattern);
 
-                    field.setPrefix(goverConfig.createUrlWithTrailingSlash("…/forms/…"));
+                    field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
                 });
 
         config
@@ -178,12 +178,10 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     @Nullable
     @Override
     public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<FormTriggerConfigV1> context) throws ResponseException {
-        var link = goverConfig
-                .createUrl(
-                        "/forms/v1/",
-                        context.processDefinition().getAccessKey().toString(),
-                        context.configuration().formSlug
-                ) + "?" + FormTriggerControllerV1.TEST_CLAIM_QUERY_PARAM + "=" + context.testClaim().getAccessKey();
+        var link = publicUrlService.createPublicFormUrl(
+                context.processDefinition(),
+                context.configuration().formSlug
+        ) + "?" + FormTriggerControllerV1.TEST_CLAIM_QUERY_PARAM + "=" + context.testClaim().getAccessKey();
 
         var layout = new GroupLayoutElement();
         layout.setId("testing");
@@ -207,6 +205,13 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         var formSlug = configuration.formSlug;
 
         if (StringUtils.isNotNullOrEmpty(formSlug)) {
+            if (!formSlug.matches("^[a-z0-9-]+$")) {
+                errors.put(
+                        FormTriggerConfigV1.FORM_SLUG,
+                        "Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                );
+            }
+
             var duplicateNodeFilter = ProcessNodeFilter
                     .create()
                     .setNotId(processNodeEntity.getId())
@@ -216,9 +221,9 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     .addConfigEquals(FormTriggerConfigV1.FORM_SLUG, formSlug);
 
             if (processNodeRepository.exists(duplicateNodeFilter.build())) {
-                errors.put(
+                errors.putIfAbsent(
                         FormTriggerConfigV1.FORM_SLUG,
-                        "Die Formular-URL wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
+                        "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
                 );
             }
         }

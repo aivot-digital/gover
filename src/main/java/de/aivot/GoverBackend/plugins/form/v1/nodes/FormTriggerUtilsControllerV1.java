@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.GoverBackend.department.services.VDepartmentShadowedService;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.pdf.models.PrintableFormPdfData;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
@@ -14,6 +13,7 @@ import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
 import de.aivot.GoverBackend.process.services.ProcessNodeService;
 import de.aivot.GoverBackend.process.services.ProcessService;
+import de.aivot.GoverBackend.process.services.PublicUrlService;
 import de.aivot.GoverBackend.services.PdfService;
 import de.aivot.GoverBackend.system.services.SystemService;
 import de.aivot.GoverBackend.theme.entities.ThemeEntity;
@@ -58,7 +58,7 @@ import java.util.List;
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class FormTriggerUtilsControllerV1 {
-    private final GoverConfig goverConfig;
+    private final PublicUrlService publicUrlService;
     private final UserService userService;
     private final PermissionService permissionService;
     private final ProcessService processService;
@@ -71,7 +71,7 @@ public class FormTriggerUtilsControllerV1 {
     private final FormTriggerNodeV1 formTriggerNodeV1;
 
     @Autowired
-    public FormTriggerUtilsControllerV1(GoverConfig goverConfig,
+    public FormTriggerUtilsControllerV1(PublicUrlService publicUrlService,
                                         UserService userService,
                                         PermissionService permissionService,
                                         ProcessService processService,
@@ -82,7 +82,7 @@ public class FormTriggerUtilsControllerV1 {
                                         SystemService systemService,
                                         PdfService pdfService,
                                         FormTriggerNodeV1 formTriggerNodeV1) {
-        this.goverConfig = goverConfig;
+        this.publicUrlService = publicUrlService;
         this.userService = userService;
         this.permissionService = permissionService;
         this.processService = processService;
@@ -197,7 +197,7 @@ public class FormTriggerUtilsControllerV1 {
     private String createPublicFormPath(@Nonnull ProcessEntity process,
                                         @Nonnull String formSlug,
                                         @Nonnull Integer processVersion) {
-        var publicUrl = goverConfig.createUrlWithTrailingSlash("/forms/v1/", process.getAccessKey(), formSlug);
+        var publicUrl = publicUrlService.createPublicFormUrl(process, formSlug);
         var rawPath = URI.create(publicUrl).getRawPath();
         return rawPath + "?version=" + processVersion;
     }

@@ -23,7 +23,7 @@ const router = sentryCreateBrowserRouter(
                     element: <CustomerListPage/>,
                 },
                 {
-                    path: '/:processAccessKey/:formSlug',
+                    path: '/form/:processSlug/:formSlug',
                     element: <CustomerFormPage/>,
                 },
             ],

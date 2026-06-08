@@ -14,17 +14,19 @@ import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeOrOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
+import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -32,6 +34,7 @@ import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinition
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
+import de.aivot.GoverBackend.process.services.PublicUrlService;
 import de.aivot.GoverBackend.utils.FormattedStringBuilder;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -40,6 +43,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -53,13 +57,13 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     public static final String INITIAL_DATA_KEY_REQUEST = "request";
     public static final String INITIAL_DATA_KEY_STARTED = "started";
 
-    private final GoverConfig goverConfig;
+    private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processDefinitionNodeRepository;
 
     @Autowired
-    public WebhookTriggerNodeV1(GoverConfig goverConfig,
+    public WebhookTriggerNodeV1(PublicUrlService publicUrlService,
                                 ProcessNodeRepository processDefinitionNodeRepository) {
-        this.goverConfig = goverConfig;
+        this.publicUrlService = publicUrlService;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
     }
 
@@ -155,11 +159,11 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 .findChild(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, TextInputElement.class)
                 .ifPresent(field -> {
                     var pattern = new TextInputElementPattern()
-                            .setRegex("^[a-zA-Z0-9-]+$")
-                            .setMessage("Der Webhook-Slug darf nur aus Buchstaben, Zahlen und Bindestrichen bestehen.");
+                            .setRegex("^[a-z0-9-]+$")
+                            .setMessage("Das URL-Segment des Webhooks darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.");
                     field.setPattern(pattern);
 
-                    field.setPrefix(goverConfig.createUrlWithTrailingSlash("…/webhooks/…"));
+                    field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
                 });
 
         // Add request method select options
@@ -330,6 +334,40 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
     @Nullable
     @Override
+    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull WebhookTriggerConfigV1 configuration) throws ResponseException {
+        var errors = new LinkedHashMap<String, String>();
+        var webhookSlug = configuration.slug;
+
+        if (StringUtils.isNotNullOrEmpty(webhookSlug)) {
+            if (!webhookSlug.matches("^[a-z0-9-]+$")) {
+                errors.put(
+                        WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
+                        "Das URL-Segment des Webhooks darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
+                );
+            }
+
+            var duplicateNodeFilter = ProcessNodeFilter
+                    .create()
+                    .setNotId(processNodeEntity.getId())
+                    .setProcessId(processNodeEntity.getProcessId())
+                    .setProcessVersion(processNodeEntity.getProcessVersion())
+                    .setProcessNodeDefinitionKey(processNodeEntity.getProcessNodeDefinitionKey())
+                    .addConfigEquals(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, webhookSlug);
+
+            if (processDefinitionNodeRepository.exists(duplicateNodeFilter.build())) {
+                errors.putIfAbsent(
+                        WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
+                        "Das URL-Segment des Webhooks wird in dieser Prozessversion bereits von einem anderen Webhook verwendet."
+                );
+            }
+        }
+
+        return errors.isEmpty() ? null : errors;
+    }
+
+    @Nullable
+    @Override
     public GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<WebhookTriggerConfigV1> context) throws ResponseException {
         WebhookTriggerConfigV1 config = context.configuration();
 
@@ -341,7 +379,7 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
         var triggerUrl = appendQueryParameter(
                 createWebhookUrl(
-                        context.processDefinition().getAccessKey().toString(),
+                        context.processDefinition(),
                         config.slug,
                         config.requestMethod,
                         config.requestBodyConfig != null ? config.requestBodyConfig.requestBodyType : null
@@ -532,13 +570,12 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
     }
 
     @Nonnull
-    private String createWebhookUrl(@Nonnull String processAccessKey,
+    private String createWebhookUrl(@Nonnull ProcessEntity process,
                                     @Nullable String slug,
                                     @Nullable String requestMethod,
                                     @Nullable String requestBodyType) {
-        return goverConfig.createUrlWithTrailingSlash(
-                "/api/public/webhooks/v1",
-                processAccessKey,
+        return publicUrlService.createWebhookUrl(
+                process,
                 slug,
                 resolveRequestBodyPathSegment(requestMethod, requestBodyType)
         );
