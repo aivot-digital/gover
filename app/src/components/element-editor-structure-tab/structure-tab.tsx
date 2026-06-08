@@ -80,7 +80,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
     };
 
     const handleDownload = (): void => {
-        downloadObjectFile(generateComponentTitle(props.elementModel) + '.json', props.elementModel);
+        downloadObjectFile(generateComponentTitle(props.elementModel) + '.uielement.gover.json', props.elementModel);
     };
 
     const handleUpload = (): void => {
