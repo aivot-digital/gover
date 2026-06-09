@@ -52,6 +52,8 @@ import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layou
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {IdentityConfigElement} from '../models/elements/form/input/identity-config-element';
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
+import {ProcessAttachmentNameChipInputElement} from '../models/elements/form/input/process-attachment-name-chip-input-element';
+import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {getDefaultElementWeight} from './element-widths';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
@@ -134,6 +136,8 @@ const elementConstructors: {
     [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
     [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
     [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
+    [ElementType.ProcessAttachmentNameChipInput]: (id: string) => ProcessAttachmentNameChipInputElement;
+    [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
     [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
@@ -482,6 +486,24 @@ const elementConstructors: {
         ...makeInputBase(ElementType.ProcessDataKeyInput, id),
         label: 'Prozessdaten-Schlüssel',
         disableWildCards: false,
+    }),
+    [ElementType.ProcessAttachmentNameChipInput]: (id) => ({
+        ...makeInputBase(ElementType.ProcessAttachmentNameChipInput, id),
+        label: 'Vorgangsanhänge',
+        placeholder: 'Anhang hinzufügen',
+        suggestions: undefined,
+        minItems: undefined,
+        maxItems: undefined,
+        allowDuplicates: false,
+    }),
+    [ElementType.ProcessIdentityIdInput]: (id) => ({
+        ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
+        label: 'Prozessidentitäten',
+        placeholder: 'Identität hinzufügen',
+        suggestions: undefined,
+        minItems: undefined,
+        maxItems: undefined,
+        allowDuplicates: false,
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),

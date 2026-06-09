@@ -41,6 +41,8 @@ import {SummaryLayoutElement} from './form/layout/summary-layout-element';
 import {ProcessDataKeyInputFieldElement} from './form/input/process-data-key-input-field-element';
 import {IdentityConfigElement} from './form/input/identity-config-element';
 import {ProcessAttachmentDisplayElement} from './form/content/process-attachment-display-element';
+import {ProcessAttachmentNameChipInputElement} from './form/input/process-attachment-name-chip-input-element';
+import {ProcessIdentityIdInputElement} from './form/input/process-identity-id-input-element';
 
 export type AnyElement =
     FormLayoutElement |
@@ -89,6 +91,8 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                     T extends ElementType.DataModelSelect ? DataModelSelectFieldElement :
                                                                                                                                         T extends ElementType.DataObjectSelect ? DataObjectSelectFieldElement :
                                                                                                                                             T extends ElementType.ProcessDataKeyInput ? ProcessDataKeyInputFieldElement :
+                                                                                                                                                T extends ElementType.ProcessAttachmentNameChipInput ? ProcessAttachmentNameChipInputElement :
+                                                                                                                                                    T extends ElementType.ProcessIdentityIdInput ? ProcessIdentityIdInputElement :
                                                                                                                                                 T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
                                                                                                                                             T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
                                                                                                                                                 T extends ElementType.IdentityConfigElement ? IdentityConfigElement :

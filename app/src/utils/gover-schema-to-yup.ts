@@ -97,6 +97,8 @@ const YupSchemaMap: {
     [ElementType.ProcessDataKeyInput]: processDataKeyInputFieldToYup,
     [ElementType.NoCodeInput]: noCodeInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
+    [ElementType.ProcessAttachmentNameChipInput]: chipInputFieldToYup,
+    [ElementType.ProcessIdentityIdInput]: chipInputFieldToYup,
 };
 
 function genericFieldToYup(elem: AnyInputElement): Schema {

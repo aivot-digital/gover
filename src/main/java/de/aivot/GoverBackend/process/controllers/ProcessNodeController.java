@@ -14,8 +14,8 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
@@ -446,12 +446,12 @@ public class ProcessNodeController {
                 .getConfigurationLayout(context);
     }
 
-    @GetMapping("{id}/data-key-hints/")
+    @GetMapping("{id}/incoming-metadata/")
     @Operation(
-            summary = "Retrieve Process Definition Node Data Key Hints",
-            description = "Retrieve the aggregated process data key hints available before a process definition node is executed."
+            summary = "Retrieve Incoming Process Definition Node Metadata",
+            description = "Retrieve the aggregated process node metadata available before a process definition node is executed."
     )
-    public List<ProcessDataKeyHintResponse> dataKeyHints(
+    public ProcessNodeDefinitionMetadata incomingMetadata(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {

@@ -88,18 +88,18 @@ export function ProcessDataKeyInputComponent(props: ProcessDataKeyInputComponent
     const opec = useOptionalProcessNodeEditorContext();
 
     const suggestions = useMemo(() => {
-        if (opec == null || opec.processDataKeyHints == null) {
+        if (opec == null || opec.incomingMetadata == null) {
             return [];
         }
 
-        return opec.processDataKeyHints
-            .filter((hint) => hint.type === 'ProcessData' && (!disableWildCards || !hint.key.includes('*')))
+        return opec.incomingMetadata.forwardedProcessDataKeys
+            .filter((hint) => !disableWildCards || !hint.processDataKey.includes('*'))
             .map((hint) => ({
-                id: hint.key,
-                label: hint.key,
-                subLabel: hint.node.name ?? undefined,
+                id: hint.processDataKey,
+                label: hint.processDataKey,
+                subLabel: hint.subLabel ?? hint.label ?? hint.origin.name ?? undefined,
             }));
-    }, [opec]);
+    }, [disableWildCards, opec]);
 
     return (
         <AutocompleteTextField

@@ -84,6 +84,8 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.NoCodeInput]: FunctionsOutlinedIcon,
     [ElementType.SummaryLayout]: Segment,
     [ElementType.ProcessDataKeyInput]: DataObject,
+    [ElementType.ProcessAttachmentNameChipInput]: LocalOfferOutlinedIcon,
+    [ElementType.ProcessIdentityIdInput]: LocalOfferOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: DataObject,
 };
 

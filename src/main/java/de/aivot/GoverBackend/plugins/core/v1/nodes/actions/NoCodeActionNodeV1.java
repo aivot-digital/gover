@@ -175,14 +175,17 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         );
     }
 
+    @Nonnull
     @Override
-    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity, @Nonnull NoCodeActionNodeConfiguration configuration, @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
-        var hints = new ArrayList<>(previousDataKeyHints);
-        var knownHints = new LinkedHashSet<>(hints);
-
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull NoCodeActionNodeConfiguration configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
         if (configuration.variables == null) {
-            return hints;
+            return previousMetadata;
         }
+
+        var metadata = ProcessNodeDefinitionMetadata
+                .reuse(previousMetadata);
 
         for (int i = 0; i < configuration.variables.size(); i++) {
             var row = configuration.variables.get(i);
@@ -194,18 +197,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 continue;
             }
 
-            try {
-                var normalizedPath = normalizeDestinationKey(variableName, i + 1, "Variablenname");
-                var hint = new ProcessDataKeyHint(normalizedPath, ProcessDataKeyHintType.ProcessData);
-                if (knownHints.add(hint)) {
-                    hints.add(hint);
-                }
-            } catch (ProcessNodeExecutionExceptionInvalidConfiguration ignored) {
-                // Invalid or unfinished rows should not break key hint aggregation in the editor.
-            }
+            metadata
+                    .addForwardedProcessDataKey(
+                            variableName,
+                            variableName,
+                            null,
+                            processNodeEntity
+                    );
         }
 
-        return hints;
+        return metadata;
     }
 
     @Override
@@ -683,7 +684,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
                             StringUtils.quote(s)
-                        );
+                    );
                 }
             }
         }

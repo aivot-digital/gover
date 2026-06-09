@@ -27,7 +27,9 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
-import java.util.*;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * This node is used to increment (or decrement) a counter when working with loops in a process. A user should be able to specify a process data key where the counter is stored as
@@ -148,35 +150,28 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         );
     }
 
+    @Nonnull
     @Override
-    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                                 @Nonnull CounterActionNodeV1Configuration configuration,
-                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull CounterActionNodeV1.CounterActionNodeV1Configuration configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+
+
         // Check if a process data key for the variable is set.
         // If not, return all previously calculated process data key hints.
         var variableProcessDestinationKey = configuration.variable;
         if (StringUtils.isNullOrEmpty(variableProcessDestinationKey)) {
-            return previousDataKeyHints;
+            return previousMetadata;
         }
 
-        // Create a list to store all previous calculated data key hints.
-        // Do not store a hint here, which has the same key as the current variable process data key, to avoid duplicates.
-        // The hint for the current variable process data key will be added at the end of this method.
-        var res = new ArrayList<ProcessDataKeyHint>();
-        for (var existingDataKey : previousDataKeyHints) {
-            if (Objects.equals(existingDataKey.key(), variableProcessDestinationKey)) {
-                continue;
-            }
-            res.add(existingDataKey);
-        }
-
-        // Add the hint for the current process data key for the configured variable.
-        res.add(new ProcessDataKeyHint(
-                variableProcessDestinationKey,
-                ProcessDataKeyHintType.ProcessData
-        ));
-
-        return res;
+        return ProcessNodeDefinitionMetadata
+                .reuse(previousMetadata)
+                .addForwardedProcessDataKey(
+                        variableProcessDestinationKey,
+                        "Zähler",
+                        null,
+                        processNodeEntity
+                );
     }
 
     @Override
@@ -304,8 +299,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         public static final String INCREMENT_FIELD_ID = "increment";
 
         /**
-         * This field contains the process data key variable where the counter value is stored id.
-         * It is nullable which will be handled by the node separately.
+         * This field contains the process data key variable where the counter value is stored id. It is nullable which will be handled by the node separately.
          */
         @InputElementPOJOBinding(id = VARIABLE_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Vorgangsdatenvariable"),
@@ -317,8 +311,7 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         public String variable;
 
         /**
-         * This field contains the increment value by which the counter is incremented on each instantiation.
-         * It is nullable which will be handled by the node separately.
+         * This field contains the increment value by which the counter is incremented on each instantiation. It is nullable which will be handled by the node separately.
          */
         @InputElementPOJOBinding(id = INCREMENT_FIELD_ID, type = ElementType.Number, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Inkrement"),

@@ -40,7 +40,7 @@ import java.util.*;
 @Service
 public class ProcessNodeService implements EntityService<ProcessNodeEntity, Integer> {
 
-    private final ProcessNodeRepository processDefinitionNodeRepository;
+    private final ProcessNodeRepository processNodeRepository;
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final ElementDerivationService elementDerivationService;
     private final UserService userService;
@@ -49,13 +49,13 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final ProcessEdgeRepository processEdgeRepository;
 
     @Autowired
-    public ProcessNodeService(ProcessNodeRepository processDefinitionNodeRepository,
+    public ProcessNodeService(ProcessNodeRepository processNodeRepository,
                               ProcessNodeDefinitionService processNodeProviderService,
                               ElementDerivationService elementDerivationService,
                               UserService userService,
                               ProcessRepository processDefinitionRepository,
                               ProcessVersionRepository processDefinitionVersionRepository, ProcessEdgeRepository processEdgeRepository) {
-        this.processDefinitionNodeRepository = processDefinitionNodeRepository;
+        this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
         this.userService = userService;
@@ -89,7 +89,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         }
 
         // Save the process node.
-        return processDefinitionNodeRepository.save(entity);
+        return processNodeRepository.save(entity);
     }
 
     @Nullable
@@ -97,29 +97,29 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public Page<ProcessNodeEntity> performList(@Nonnull Pageable pageable,
                                                @Nullable Specification<ProcessNodeEntity> specification,
                                                @Nullable Filter<ProcessNodeEntity> filter) throws ResponseException {
-        return processDefinitionNodeRepository.findAll(specification, pageable);
+        return processNodeRepository.findAll(specification, pageable);
     }
 
     @Nonnull
     @Override
     public Optional<ProcessNodeEntity> retrieve(@Nonnull Integer id) throws ResponseException {
-        return processDefinitionNodeRepository.findById(id);
+        return processNodeRepository.findById(id);
     }
 
     @Nonnull
     @Override
     public Optional<ProcessNodeEntity> retrieve(@Nonnull Specification<ProcessNodeEntity> specification) throws ResponseException {
-        return processDefinitionNodeRepository.findOne(specification);
+        return processNodeRepository.findOne(specification);
     }
 
     @Override
     public boolean exists(@Nonnull Integer id) {
-        return processDefinitionNodeRepository.existsById(id);
+        return processNodeRepository.existsById(id);
     }
 
     @Override
     public boolean exists(@Nonnull Specification<ProcessNodeEntity> specification) {
-        return processDefinitionNodeRepository.exists(specification);
+        return processNodeRepository.exists(specification);
     }
 
     @Nonnull
@@ -159,12 +159,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 }
         );
 
-        return processDefinitionNodeRepository.save(existingEntity);
+        return processNodeRepository.save(existingEntity);
     }
 
     @Override
     public void performDelete(@Nonnull ProcessNodeEntity entity) throws ResponseException {
-        processDefinitionNodeRepository.delete(entity);
+        processNodeRepository.delete(entity);
     }
 
     @Nonnull
@@ -230,26 +230,27 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     public Set<String> getAllUsedDataKeys(@Nonnull Integer processId, @Nonnull Integer processVersion) {
-        return processDefinitionNodeRepository.findAllDataKeysByProcessIdAndVersion(processId, processVersion);
+        return processNodeRepository.findAllDataKeysByProcessIdAndVersion(processId, processVersion);
     }
 
     public List<ProcessNodeEntity> findAllByProcessIdAndProcessVersion(Integer processId, Integer processVersion) {
-        return processDefinitionNodeRepository
+        return processNodeRepository
                 .findAllByProcessIdAndProcessVersion(processId, processVersion);
     }
 
     @Nonnull
-    public List<ProcessDataKeyHintResponse> getProcessDataKeyHintResponses(@Nonnull ProcessNodeEntity node) throws ResponseException {
+    public ProcessNodeDefinitionMetadata getProcessDataKeyHintResponses(@Nonnull ProcessNodeEntity node) throws ResponseException {
         var processNodesById = new LinkedHashMap<Integer, ProcessNodeEntity>();
 
-        processDefinitionNodeRepository
+        processNodeRepository
                 .findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
                 .stream()
                 .sorted(Comparator.comparing(ProcessNodeEntity::getId))
                 .forEach(processNode -> processNodesById.put(processNode.getId(), processNode));
 
         var incomingEdgesByNodeId = buildIncomingEdgesByNodeId(
-                processEdgeRepository.findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
+                processEdgeRepository
+                        .findAllByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
         );
 
         var previousNodes = new ArrayList<ProcessNodeEntity>();
@@ -263,21 +264,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 previousNodes
         );
 
-        var currentHints = new ArrayList<ProcessDataKeyHint>();
-        List<ProcessDataKeyHintResponse> responses = new ArrayList<>();
+        var previousMetadata = ProcessNodeDefinitionMetadata
+                .empty();
 
         for (var previousNode : previousNodes) {
-            var hintCalculationResult = calculateProcessDataKeyHintsForNode(previousNode, currentHints);
-            responses = mergeProcessDataKeyHintResponses(
-                    responses,
-                    hintCalculationResult.hints(),
-                    hintCalculationResult.contributedKeys(),
-                    previousNode
-            );
-            currentHints = new ArrayList<>(hintCalculationResult.hints());
+            previousMetadata = calculateProcessDataKeyHintsForNode(previousNode, previousMetadata);
         }
 
-        return responses;
+        return previousMetadata;
     }
 
     @Nonnull
@@ -354,90 +348,26 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     }
 
     @Nonnull
-    @SuppressWarnings("unchecked")
-    private <NodeConfig> ProcessDataKeyHintCalculationResult calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
-                                                                                                  @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) throws ResponseException {
-        var provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
+    private ProcessNodeDefinitionMetadata calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
+                                                                              @Nonnull ProcessNodeDefinitionMetadata previousMetadata) throws ResponseException {
+
+        var provider = processNodeProviderService
                 .getProcessNodeDefinition(node)
                 .orElseThrow(ResponseException::badRequest);
 
+        return calculateProcessDataKeyHintsForNode(node, provider, previousMetadata);
+    }
+
+    @Nonnull
+    private <NodeConfig> ProcessNodeDefinitionMetadata calculateProcessDataKeyHintsForNode(@Nonnull ProcessNodeEntity node,
+                                                                                           @Nonnull ProcessNodeDefinition<NodeConfig> provider,
+                                                                                           @Nonnull ProcessNodeDefinitionMetadata previousMetadata) throws ResponseException {
         var configuration = deriveConfiguration(node, provider, null, true);
-        var providerHints = provider.calculateProcessDataKeyHints(
+        var currentMetadata = provider.getMetadata(
                 node,
                 configuration.configuration(),
-                previousDataKeyHints
+                previousMetadata
         );
-
-        var updatedHints = providerHints != null ? providerHints : previousDataKeyHints;
-        var contributedKeys = getContributedHintKeys(previousDataKeyHints, updatedHints);
-        var outputMappingHints = getOutputMappingProcessDataKeyHints(node, provider);
-
-        for (var outputMappingHint : outputMappingHints) {
-            contributedKeys.add(outputMappingHint.key());
-        }
-
-        var mergedHints = new ArrayList<>(updatedHints);
-        mergedHints.addAll(outputMappingHints);
-
-        return new ProcessDataKeyHintCalculationResult(
-                deduplicateProcessDataKeyHintsByKey(mergedHints),
-                contributedKeys
-        );
-    }
-
-    @Nonnull
-    private List<ProcessDataKeyHintResponse> mergeProcessDataKeyHintResponses(@Nonnull List<ProcessDataKeyHintResponse> existingResponses,
-                                                                              @Nonnull List<ProcessDataKeyHint> updatedHints,
-                                                                              @Nonnull Set<String> contributedKeys,
-                                                                              @Nonnull ProcessNodeEntity currentNode) {
-        var sourceNodeByKey = new LinkedHashMap<String, ProcessNodeEntity>();
-        for (var existingResponse : existingResponses) {
-            sourceNodeByKey.put(existingResponse.key(), existingResponse.node());
-        }
-
-        var mergedResponses = new ArrayList<ProcessDataKeyHintResponse>();
-        for (var updatedHint : updatedHints) {
-            mergedResponses.add(new ProcessDataKeyHintResponse(
-                    updatedHint.key(),
-                    updatedHint.type(),
-                    contributedKeys.contains(updatedHint.key())
-                            ? currentNode
-                            : sourceNodeByKey.getOrDefault(updatedHint.key(), currentNode)
-            ));
-        }
-
-        return mergedResponses;
-    }
-
-    @Nonnull
-    private Set<String> getContributedHintKeys(@Nonnull List<ProcessDataKeyHint> previousHints,
-                                               @Nonnull List<ProcessDataKeyHint> updatedHints) {
-        var previousHintsByKey = new LinkedHashMap<String, ProcessDataKeyHint>();
-        for (var previousHint : previousHints) {
-            previousHintsByKey.put(previousHint.key(), previousHint);
-        }
-
-        var contributedKeys = new LinkedHashSet<String>();
-        var seenKeys = new HashSet<String>();
-
-        for (var updatedHint : updatedHints) {
-            var previousHint = previousHintsByKey.get(updatedHint.key());
-            var hasSameKeyBeenSeenBefore = !seenKeys.add(updatedHint.key());
-            var isNewOrChangedHint = previousHint == null || !Objects.equals(previousHint, updatedHint);
-
-            if (hasSameKeyBeenSeenBefore || isNewOrChangedHint) {
-                contributedKeys.remove(updatedHint.key());
-                contributedKeys.add(updatedHint.key());
-            }
-        }
-
-        return contributedKeys;
-    }
-
-    @Nonnull
-    private <NodeConfig> List<ProcessDataKeyHint> getOutputMappingProcessDataKeyHints(@Nonnull ProcessNodeEntity node,
-                                                                                       @Nonnull ProcessNodeDefinition<NodeConfig> provider) {
-        var hints = new ArrayList<ProcessDataKeyHint>();
 
         for (var output : provider.getOutputs()) {
             var mappedProcessDataKey = StringUtils.toNullableTrimmedString(node.getOutputMappings().get(output.key()));
@@ -445,25 +375,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 continue;
             }
 
-            hints.add(new ProcessDataKeyHint(
+            currentMetadata.addForwardedProcessDataKey(
                     mappedProcessDataKey,
-                    ProcessDataKeyHintType.ProcessData
-            ));
+                    output.label(),
+                    output.description(),
+                    node
+            );
         }
 
-        return hints;
-    }
-
-    @Nonnull
-    private List<ProcessDataKeyHint> deduplicateProcessDataKeyHintsByKey(@Nonnull List<ProcessDataKeyHint> hints) {
-        var hintsByKey = new LinkedHashMap<String, ProcessDataKeyHint>();
-
-        for (var hint : hints) {
-            hintsByKey.remove(hint.key());
-            hintsByKey.put(hint.key(), hint);
-        }
-
-        return new ArrayList<>(hintsByKey.values());
+        return currentMetadata;
     }
 
     @Nonnull
@@ -497,7 +417,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         ProcessConfigurationDetails<NodeConfig> derivedConfiguration;
         try {
             derivedConfiguration = this
-                    .deriveConfiguration(node, provider,  null,false);
+                    .deriveConfiguration(node, provider, null, false);
         } catch (ResponseException e) {
             problems.add(e.getMessage());
             derivedConfiguration = null;
@@ -548,19 +468,14 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             return Optional.empty();
         } else {
 
-            return Optional.of(new ProcessNodeProblems(node, problems, commonErrors, derivedConfiguration != null ? derivedConfiguration.derivedRuntimeElementData : new DerivedRuntimeElementData()));
+            return Optional.of(new ProcessNodeProblems(node, problems, commonErrors,
+                    derivedConfiguration != null ? derivedConfiguration.derivedRuntimeElementData : new DerivedRuntimeElementData()));
         }
     }
 
     public record ProcessConfigurationDetails<NodeConfig>(
             @Nonnull NodeConfig configuration,
             @Nonnull DerivedRuntimeElementData derivedRuntimeElementData
-    ) {
-    }
-
-    private record ProcessDataKeyHintCalculationResult(
-            @Nonnull List<ProcessDataKeyHint> hints,
-            @Nonnull Set<String> contributedKeys
     ) {
     }
 }

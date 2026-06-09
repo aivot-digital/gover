@@ -4,7 +4,7 @@ import {type ProcessNodeProvider} from '../../../../services/process-node-provid
 import {type GroupLayout} from '../../../../../../models/elements/form/layout/group-layout';
 import {type ProcessTestClaimEntity} from '../../../../entities/process-test-claim-entity';
 import {type ProcessNodeProblems} from '../../../../entities/process-node-problems';
-import {type ProcessDataKeyHintResponse} from '../../../../entities/process-data-key-hint-response';
+import {type ProcessNodeDefinitionMetadata} from '../../../../entities/process-node-definition-metadata';
 
 interface ProcessNodeEditorContextType {
     provider: ProcessNodeProvider;
@@ -18,7 +18,7 @@ interface ProcessNodeEditorContextType {
 
     problems: ProcessNodeProblems | null;
 
-    processDataKeyHints: ProcessDataKeyHintResponse[] | null;
+    incomingMetadata: ProcessNodeDefinitionMetadata | null;
 }
 
 const ProcessNodeEditorContext = createContext<ProcessNodeEditorContextType | null>(null);

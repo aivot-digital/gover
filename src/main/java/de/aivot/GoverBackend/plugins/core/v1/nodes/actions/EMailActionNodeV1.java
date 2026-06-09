@@ -615,7 +615,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         })
         public String bcc;
 
-        @InputElementPOJOBinding(id = ATTACHMENT_FILE_NAMES_FIELD_ID, type = ElementType.ChipInput, properties = {
+        @InputElementPOJOBinding(id = ATTACHMENT_FILE_NAMES_FIELD_ID, type = ElementType.ProcessAttachmentNameChipInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateinamen der Anhänge"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Dateinamen von Prozessanhängen, die später als E-Mail-Anhänge hinzugefügt werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)

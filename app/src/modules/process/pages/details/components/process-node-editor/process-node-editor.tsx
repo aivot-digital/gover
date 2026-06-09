@@ -37,7 +37,7 @@ import {flattenElements} from '../../../../../../utils/flatten-elements';
 import {
     isUiDefinitionInputFieldElement,
 } from '../../../../../../models/elements/form/input/ui-definition-input-field-element';
-import {ProcessDataKeyHintResponse} from '../../../../entities/process-data-key-hint-response';
+import {type ProcessNodeDefinitionMetadata} from '../../../../entities/process-node-definition-metadata';
 
 const PROCESS_NODE_EDITOR_LOADING_INDICATOR_DELAY = 150;
 const PROCESS_NODE_EDITOR_LOADED_FEEDBACK_DURATION = 1200;
@@ -59,7 +59,7 @@ export function ProcessNodeEditor(): ReactNode {
     const dispatch = useAppDispatch();
 
     const [originalNode, setOriginalNode] = useState<ProcessNodeEntity | null>(null);
-    const [processDataKeyHints, setProcessDataKeyHints] = useState<ProcessDataKeyHintResponse[] | null>(null);
+    const [incomingMetadata, setIncomingMetadata] = useState<ProcessNodeDefinitionMetadata | null>(null);
 
     const {
         editable,
@@ -122,11 +122,11 @@ export function ProcessNodeEditor(): ReactNode {
         setShowNodeLoadedFeedback(false);
 
         (async () => {
-            const [node, configurationLayout, problems, dataKeyHints] = await Promise.all([
+            const [node, configurationLayout, problems, incomingMetadata] = await Promise.all([
                 new ProcessNodeApiService().retrieve(nodeId),
                 new ProcessNodeApiService().getConfigurationLayout(nodeId),
                 new ProcessNodeApiService().validate(nodeId),
-                new ProcessNodeApiService().getDataKeyHints(nodeId),
+                new ProcessNodeApiService().getIncomingMetadata(nodeId),
             ]);
             const nodeProvider = await new ProcessNodeProviderApiService()
                 .getNodeProvider(node.processNodeDefinitionKey, node.processNodeDefinitionVersion);
@@ -136,10 +136,10 @@ export function ProcessNodeEditor(): ReactNode {
                 configurationLayout,
                 nodeProvider,
                 problems,
-                dataKeyHints,
+                incomingMetadata,
             };
         })()
-            .then(({node, configurationLayout, nodeProvider, problems, dataKeyHints}) => {
+            .then(({node, configurationLayout, nodeProvider, problems, incomingMetadata}) => {
                 if (isCancelled) {
                     return;
                 }
@@ -148,7 +148,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setLayout(configurationLayout);
                 setProvider(nodeProvider);
                 setProblems(problems);
-                setProcessDataKeyHints(dataKeyHints);
+                setIncomingMetadata(incomingMetadata);
                 if (hasEditorContent) {
                     setShowNodeLoadedFeedback(true);
                 }
@@ -541,7 +541,7 @@ export function ProcessNodeEditor(): ReactNode {
                                 },
                                 isEditable: editable,
                                 problems: problems,
-                                processDataKeyHints: processDataKeyHints,
+                                incomingMetadata,
                             }}
                         >
                             <Outlet/>

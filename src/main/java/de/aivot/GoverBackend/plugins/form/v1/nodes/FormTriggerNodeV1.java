@@ -4,14 +4,18 @@ import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -24,7 +28,10 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionMetadata;
+import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -34,6 +41,7 @@ import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.commonmark.node.Link;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -126,20 +134,70 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         );
     }
 
+    @Nonnull
     @Override
-    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                                 @Nonnull FormTriggerConfigV1 configuration,
-                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
-        var res = new LinkedList<ProcessDataKeyHint>();
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull FormTriggerConfigV1 configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        var pdm = ProcessNodeDefinitionMetadata
+                .empty();
+
         ElementStreamUtils.applyAction(configuration.formLayout, (e) -> {
             if (e instanceof BaseInputElement<?> i && StringUtils.isNotNullOrEmpty(i.getDestinationKey())) {
-                res.add(new ProcessDataKeyHint(
+                pdm.addForwardedProcessDataKey(
                         i.getDestinationKey(),
-                        ProcessDataKeyHintType.ProcessData
-                ));
+                        StringUtils.isNotNullOrEmpty(i.getLabel()) ? i.getLabel() : i.getId(),
+                        i.getHint(),
+                        processNodeEntity
+                );
+            }
+
+            if (e instanceof FileUploadInputElement f && StringUtils.isNotNullOrEmpty(f.getSubmittedFileName())) {
+                // TODO: Try to guess the extensions
+                pdm.addForwardedAttachment(
+                        f.getSubmittedFileName(),
+                        f.getSubmittedFileName(),
+                        StringUtils.isNotNullOrEmpty(f.getLabel()) ? f.getLabel() : f.getId(),
+                        processNodeEntity
+                );
+            }
+
+            if (e instanceof GenericStepElement s) {
+                var group = new GroupLayoutElement();
+                group.setId(s.getId());
+                var childCopy = new LinkedList<BaseFormElement>();
+                childCopy.add(
+                        new HeadlineContentElement()
+                                .setContent(s.getTitle())
+                );
+                childCopy.addAll(s.getChildren());
+                group.setChildren(childCopy);
+                pdm.addReusableUiDefinition(
+                        StringUtils.isNotNullOrEmpty(s.getTitle()) ? s.getTitle() : s.getId(),
+                        null,
+                        group,
+                        processNodeEntity
+                );
             }
         });
-        return res;
+
+        if (configuration.identities != null) {
+            for (var identity : configuration.identities) {
+                if (identity.getId() == null || identity.getTitle() == null) {
+                    continue;
+                }
+
+                pdm.addForwardedIdentity(
+                        identity.getId(),
+                        identity.getTitle(),
+                        identity.getDescription(),
+                        processNodeEntity
+                );
+            }
+        }
+
+
+        return pdm;
     }
 
     @Nonnull

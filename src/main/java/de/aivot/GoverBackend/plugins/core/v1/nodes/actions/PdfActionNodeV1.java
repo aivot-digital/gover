@@ -9,11 +9,7 @@ import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
-import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -24,12 +20,16 @@ import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionMetadata;
+import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -240,6 +240,25 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                         "Die Groesse des erzeugten PDF-Dokuments in Bytes."
                 )
         );
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull PdfActionNodeConfig configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        if (StringUtils.isNullOrEmpty(configuration.fileName)) {
+            return previousMetadata;
+        }
+
+        return ProcessNodeDefinitionMetadata
+                .reuse(previousMetadata)
+                .addForwardedAttachment(
+                        configuration.fileName,
+                        configuration.fileName,
+                        null,
+                        processNodeEntity
+                );
     }
 
     @Override

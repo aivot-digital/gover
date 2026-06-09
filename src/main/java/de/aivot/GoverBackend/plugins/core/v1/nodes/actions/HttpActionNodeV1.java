@@ -1417,7 +1417,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.
 
         @InputElementPOJOBinding(id = "valueKey", type = ElementType.ProcessDataKeyInput, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Wertpfad"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad innerhalb von $ oder _. Ohne Präfix wird $ verwendet."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Pfad, über welchen der Wert für dieses Feld gelesen werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 7.0)
         })

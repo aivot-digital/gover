@@ -167,6 +167,12 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.SummaryLayout]: null,
     [ElementType.ProcessDataKeyInput]: null,
+    [ElementType.ProcessAttachmentNameChipInput]: {
+        default: ChipInputFieldEditor,
+    },
+    [ElementType.ProcessIdentityIdInput]: {
+        default: ChipInputFieldEditor,
+    },
     [ElementType.ProcessAttachmentDisplay]: {
         default: ProcessAttachmentDisplayEditor,
     },

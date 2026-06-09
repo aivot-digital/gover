@@ -27,6 +27,8 @@ import {NoCodeInputFieldElement} from './no-code-input-field-element';
 import {UiDefinitionInputFieldElement} from './ui-definition-input-field-element';
 import {ProcessDataKeyInputFieldElement} from './process-data-key-input-field-element';
 import {IdentityConfigElement} from './identity-config-element';
+import {ProcessAttachmentNameChipInputElement} from './process-attachment-name-chip-input-element';
+import {ProcessIdentityIdInputElement} from './process-identity-id-input-element';
 import {ElementIsInput} from '../../../../data/element-type/element-is-input';
 
 export type AnyInputElement = (
@@ -55,6 +57,8 @@ export type AnyInputElement = (
     DataModelSelectFieldElement |
     DataObjectSelectFieldElement |
     ProcessDataKeyInputFieldElement |
+    ProcessAttachmentNameChipInputElement |
+    ProcessIdentityIdInputElement |
     UiDefinitionInputFieldElement |
     IdentityConfigElement |
     NoCodeInputFieldElement |

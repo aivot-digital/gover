@@ -45,4 +45,6 @@ export enum ElementType {
     SummaryLayout = 43,
     ProcessDataKeyInput = 44,
     ProcessAttachmentDisplay = 45,
+    ProcessAttachmentNameChipInput = 46,
+    ProcessIdentityIdInput = 47,
 }

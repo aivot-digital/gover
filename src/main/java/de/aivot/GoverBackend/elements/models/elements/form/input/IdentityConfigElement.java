@@ -59,6 +59,24 @@ public class IdentityConfigElement extends BaseInputElement<List<IdentityConfigE
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
             }
+            return;
         }
+
+        for (var slot : value) {
+            if (!hasSelectedOption(slot)) {
+                throw new ValidationException(this, "Für jede Identität muss mindestens ein Identitätsanbieter ausgewählt werden.");
+            }
+        }
+    }
+
+    private boolean hasSelectedOption(IdentityConfigElementSlot slot) {
+        if (slot == null || slot.getOptions() == null) {
+            return false;
+        }
+
+        return slot
+                .getOptions()
+                .stream()
+                .anyMatch(option -> option != null && option.getIdentityProviderKey() != null);
     }
 }

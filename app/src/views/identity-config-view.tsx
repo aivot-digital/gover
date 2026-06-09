@@ -1,4 +1,4 @@
-import {Box, Button, Divider, Grid, Stack, Typography} from '@mui/material';
+import {Box, Button, Divider, Grid, Stack, Tooltip, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {BaseViewProps} from './base-view';
@@ -198,7 +198,11 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
 }
 
 function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogListPropsDialogContentComponent<IdentityConfigElementSlot> {
-    return (props: { item: IdentityConfigElementSlot, onChange: (item: IdentityConfigElementSlot) => void, disabled?: boolean }) => (
+    return (props: {
+        item: IdentityConfigElementSlot,
+        onChange: (item: IdentityConfigElementSlot) => void,
+        disabled?: boolean
+    }) => (
         <IdentityConfigSlot
             item={props.item}
             onChange={props.onChange}
@@ -314,22 +318,26 @@ function IdentityConfigSlot(props: {
                         lg: 6,
                     }}
                 >
-                    <CheckboxFieldComponent
-                        label="E-Mail"
-                        hint="Statt einer Anmeldung mittles Identitätsanbieter kann auch lediglich eine E-Mail-Adresse angegeben werden."
-                        variant="switch"
-                        value={item.allowsMail ?? false}
-                        onChange={(val) => {
-                            onChange({
-                                ...item,
-                                allowsMail: val,
-                            });
-                        }}
-                        sx={{
-                            my: 0,
-                        }}
-                        disabled={disabled}
-                    />
+                    <Tooltip title="Eine alternative Nutzung von E-Mail als Kommunikationskanal wird in einer zukünftigen Version ermöglicht.">
+                        <span>
+                            <CheckboxFieldComponent
+                                label="E-Mail"
+                                hint="Statt einer Anmeldung mittles Identitätsanbieter kann auch lediglich eine E-Mail-Adresse angegeben werden."
+                                variant="switch"
+                                value={item.allowsMail ?? false}
+                                onChange={(val) => {
+                                    onChange({
+                                        ...item,
+                                        allowsMail: val,
+                                    });
+                                }}
+                                sx={{
+                                    my: 0,
+                                }}
+                                disabled={true}
+                            />
+                        </span>
+                    </Tooltip>
                 </Grid>
             </Grid>
 

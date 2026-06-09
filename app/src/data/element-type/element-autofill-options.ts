@@ -86,6 +86,8 @@ export const ElementAutofillMapping: Record<ElementType, string[]> = {
     [ElementType.NoCodeInput]: [],
     [ElementType.SummaryLayout]: [],
     [ElementType.ProcessDataKeyInput]: [],
+    [ElementType.ProcessAttachmentNameChipInput]: [],
+    [ElementType.ProcessIdentityIdInput]: [],
     [ElementType.ProcessAttachmentDisplay]: [],
 };
 

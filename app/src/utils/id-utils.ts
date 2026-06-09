@@ -83,6 +83,8 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.NoCodeInput]: 'nc',
     [ElementType.SummaryLayout]: 'sy',
     [ElementType.ProcessDataKeyInput]: 'pk',
+    [ElementType.ProcessAttachmentNameChipInput]: 'pn',
+    [ElementType.ProcessIdentityIdInput]: 'pi',
     [ElementType.ProcessAttachmentDisplay]: 'pa',
 };
 

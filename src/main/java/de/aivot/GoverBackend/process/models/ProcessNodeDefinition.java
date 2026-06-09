@@ -138,17 +138,18 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     }
 
     /**
-     * Calculate the list of all process data keys, this process node might pass on during the process execution as process data.
+     * Calculate the list of all process node metadata this process node produces or passes on.
      *
      * @param processNodeEntity The current node.
-     * @param configuration The configuration of the current node.
-     * @param previousDataKeyHints The list of all process data keys from previous nodes. Use this to build the complete list of process data keys by adding the keys from this node to the list of previous data keys.
+     * @param configuration     The configuration of the current node.
+     * @param previousMetadata  The set of all process node metadata this node produces or passes on.
      * @return The list of all process node keys this node passes onto the next node.
      */
-    default List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                                  @Nonnull NodeConfig configuration,
-                                                                  @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
-        return previousDataKeyHints;
+    @Nonnull
+    default ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                      @Nonnull NodeConfig configuration,
+                                                      @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        return previousMetadata;
     }
 
     /**
@@ -206,8 +207,8 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
 
     /**
      * Build the initial staff task view data from stable sources such as process data, configuration or templates. Saved task view data from the task runtime data is merged on top
-     * by {@link #getStaffTaskViewData(ProcessNodeExecutionContextUIStaff)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override regenerated
-     * defaults.
+     * by {@link #getStaffTaskViewData(ProcessNodeExecutionContextUIStaff)}. Saved keys with a {@code null} value are treated as explicit deletions and therefore override
+     * regenerated defaults.
      *
      * @param context The context to build the data for.
      * @return The initial task view data.

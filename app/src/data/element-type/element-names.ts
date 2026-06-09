@@ -47,6 +47,8 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.NoCodeInput]: 'No-Code-Eingabe',
     [ElementType.SummaryLayout]: 'Zusammenfassung',
     [ElementType.ProcessDataKeyInput]: 'Prozessdaten-Schlüssel',
+    [ElementType.ProcessAttachmentNameChipInput]: 'Vorgangsanhänge',
+    [ElementType.ProcessIdentityIdInput]: 'Prozessidentitäten',
     [ElementType.ProcessAttachmentDisplay]: 'Anlage zum Vorgang',
 };
 

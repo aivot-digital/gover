@@ -30,11 +30,7 @@ import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
-import de.aivot.GoverBackend.process.models.ProcessExecutionData;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -54,10 +50,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
@@ -184,37 +177,37 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         var modelSelectOverride = new ElementOverrideFunctions();
         modelSelectOverride.setType(OverrideFunctionType.Javascript);
         modelSelectOverride.setJavascriptCode(JavascriptCode.of("""
-                (function() {
-                    const endpointUrl = ctx.effectiveValues.%s;
-                    if (endpointUrl == null) {
-                        return element;
-                    }
-
-                    const secretKey = ctx.effectiveValues.%s;
-                    if (secretKey == null) {
-                        return element;
-                    }
-
-                    const apiToken = _secrets_v1.get(secretKey);
-
-                    const fullUrl = endpointUrl + '%s';
-
-                    const response = _http_v1.get(fullUrl, {
-                        Authorization: 'Bearer ' + apiToken,
-                    });
-
-                    const availableModels = JSON.parse(response.body);
-                    const options = availableModels.data.map(d => ({
-                        label: d.id,
-                        value: d.id,
-                    }));
-
-                    return {
-                        ...element,
-                        options: options,
-                    };
-                })()
-                """,
+                        (function() {
+                            const endpointUrl = ctx.effectiveValues.%s;
+                            if (endpointUrl == null) {
+                                return element;
+                            }
+                        
+                            const secretKey = ctx.effectiveValues.%s;
+                            if (secretKey == null) {
+                                return element;
+                            }
+                        
+                            const apiToken = _secrets_v1.get(secretKey);
+                        
+                            const fullUrl = endpointUrl + '%s';
+                        
+                            const response = _http_v1.get(fullUrl, {
+                                Authorization: 'Bearer ' + apiToken,
+                            });
+                        
+                            const availableModels = JSON.parse(response.body);
+                            const options = availableModels.data.map(d => ({
+                                label: d.id,
+                                value: d.id,
+                            }));
+                        
+                            return {
+                                ...element,
+                                options: options,
+                            };
+                        })()
+                        """,
                 AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID,
                 AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID,
                 API_MODELS_PATH_SUFFIX
@@ -256,10 +249,16 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     @Nonnull
     @Override
-    public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                                 @Nonnull AiProcessDataTransformationActionNodeConfig configuration,
-                                                                 @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
-        return List.of();
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull AiProcessDataTransformationActionNodeConfig configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        // Reset the forwarded data keys because this node might completely clear the process data layer
+        return new ProcessNodeDefinitionMetadata(
+                new LinkedList<>(previousMetadata.reusableUiDefinitions()),
+                new LinkedList<>(previousMetadata.forwardedAttachments()),
+                new LinkedList<>(),
+                new LinkedList<>(previousMetadata.forwardedIdentities())
+        );
     }
 
     @Nullable
@@ -521,7 +520,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         return """
                 Rendered prompt:
                 %s
-
+                
                 Current ProcessExecutionData JSON:
                 %s
                 """.formatted(renderedPrompt, serializedExecutionData);
@@ -652,8 +651,8 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
     }
 
     /**
-        * Configuration of the AI process data transformation node.
-        */
+     * Configuration of the AI process data transformation node.
+     */
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class AiProcessDataTransformationActionNodeConfig {
         public static final String ENDPOINT_URL_FIELD_ID = "endpointUrl";
