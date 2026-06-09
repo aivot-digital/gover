@@ -11,29 +11,30 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ProcessIdentityIdChipInputElementTest {
     @Test
-    void shouldAcceptConfiguredIdentityIds() {
+    void shouldAcceptAnyIdentityIdsWhenNoBoundsAreConfigured() {
         var element = new ProcessIdentityIdInputElement()
-                .setSuggestions(List.of("citizen", "business"));
+                .setPlaceholder("Identitäten auswählen");
 
         assertDoesNotThrow(() -> element.performValidation(List.of("citizen")));
     }
 
     @Test
-    void shouldRejectUnknownIdentityIds() {
+    void shouldRejectTooFewIdentityIds() {
         var element = new ProcessIdentityIdInputElement()
-                .setSuggestions(List.of("citizen", "business"));
-
-        var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of("unknown")));
-
-        assertEquals("Ungültige Auswahl: unknown", exception.getMessage());
-    }
-
-    @Test
-    void shouldRejectMissingIdentitySuggestions() {
-        var element = new ProcessIdentityIdInputElement();
+                .setMinItems(2);
 
         var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of("citizen")));
 
-        assertEquals("Dieses Element hat keine Identitäten definiert.", exception.getMessage());
+        assertEquals("Mindestens 2 Einträge erforderlich.", exception.getMessage());
+    }
+
+    @Test
+    void shouldRejectTooManyIdentityIds() {
+        var element = new ProcessIdentityIdInputElement()
+                .setMaxItems(1);
+
+        var exception = assertThrows(ValidationException.class, () -> element.performValidation(List.of("citizen", "business")));
+
+        assertEquals("Maximal 1 Einträge erlaubt.", exception.getMessage());
     }
 }

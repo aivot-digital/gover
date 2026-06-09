@@ -12,10 +12,8 @@ import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHintResponse;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHintType;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
@@ -102,11 +100,11 @@ class ProcessNodeServiceTest {
 
         assertEquals(
                 List.of(
-                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
-                        new ProcessDataKeyHintResponse("b", ProcessDataKeyHintType.ProcessData, nodeB),
-                        new ProcessDataKeyHintResponse("c", ProcessDataKeyHintType.ProcessData, nodeC)
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("b", "b", null, nodeB),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("c", "c", null, nodeC)
                 ),
-                result
+                result.forwardedProcessDataKeys()
         );
     }
 
@@ -129,10 +127,10 @@ class ProcessNodeServiceTest {
 
         assertEquals(
                 List.of(
-                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
-                        new ProcessDataKeyHintResponse("b", ProcessDataKeyHintType.ProcessData, nodeB)
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("b", "b", null, nodeB)
                 ),
-                result
+                result.forwardedProcessDataKeys()
         );
     }
 
@@ -153,15 +151,15 @@ class ProcessNodeServiceTest {
 
         assertEquals(
                 List.of(
-                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
-                        new ProcessDataKeyHintResponse("foo.bar", ProcessDataKeyHintType.ProcessData, nodeA)
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("foo.bar", "Result", "Mapped test result.", nodeA)
                 ),
-                result
+                result.forwardedProcessDataKeys()
         );
     }
 
     @Test
-    void getProcessDataKeyHintResponses_ShouldKeepOnlyLastNodeForDuplicateKeys() throws Exception {
+    void getProcessDataKeyHintResponses_ShouldKeepDuplicateKeysInTraversalOrder() throws Exception {
         var nodeA = createNode(1, "a");
         nodeA.getOutputMappings().put("result", "shared");
         var nodeB = createNode(2, "b");
@@ -180,11 +178,12 @@ class ProcessNodeServiceTest {
 
         assertEquals(
                 List.of(
-                        new ProcessDataKeyHintResponse("a", ProcessDataKeyHintType.ProcessData, nodeA),
-                        new ProcessDataKeyHintResponse("b", ProcessDataKeyHintType.ProcessData, nodeB),
-                        new ProcessDataKeyHintResponse("shared", ProcessDataKeyHintType.ProcessData, nodeB)
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("a", "a", null, nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("shared", "Result", "Mapped test result.", nodeA),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("b", "b", null, nodeB),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("shared", "Result", "Mapped test result.", nodeB)
                 ),
-                result
+                result.forwardedProcessDataKeys()
         );
     }
 
@@ -289,12 +288,17 @@ class ProcessNodeServiceTest {
         }
 
         @Override
-        public List<ProcessDataKeyHint> calculateProcessDataKeyHints(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                                     @Nonnull TestNodeConfig configuration,
-                                                                     @Nonnull List<ProcessDataKeyHint> previousDataKeyHints) {
-            var hints = new java.util.ArrayList<>(previousDataKeyHints);
-            hints.add(new ProcessDataKeyHint(processNodeEntity.getDataKey(), ProcessDataKeyHintType.ProcessData));
-            return hints;
+        public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                         @Nonnull TestNodeConfig configuration,
+                                                         @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+            return ProcessNodeDefinitionMetadata
+                    .reuse(previousMetadata)
+                    .addForwardedProcessDataKey(
+                            processNodeEntity.getDataKey(),
+                            processNodeEntity.getDataKey(),
+                            null,
+                            processNodeEntity
+                    );
         }
 
         @Override

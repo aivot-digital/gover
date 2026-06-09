@@ -11,9 +11,8 @@ import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHint;
-import de.aivot.GoverBackend.process.models.ProcessDataKeyHintType;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
@@ -54,7 +53,8 @@ class NoCodeActionNodeV1Test {
     }
 
     @Test
-    void calculateProcessDataKeyHints_ShouldKeepOnlyStrictDestinationKeys() {
+    void getMetadata_ShouldForwardTrimmedVariableNamesWithoutFilteringDuplicates() {
+        var processNode = processNode();
         var configuration = configuration(
                 variable("result.total", null),
                 variable(" result.date ", null),
@@ -67,20 +67,26 @@ class NoCodeActionNodeV1Test {
                 null
         );
 
-        var hints = node.calculateProcessDataKeyHints(
-                processNode(),
+        var metadata = node.getMetadata(
+                processNode,
                 configuration,
-                List.of(new ProcessDataKeyHint("existing", ProcessDataKeyHintType.ProcessData))
+                ProcessNodeDefinitionMetadata
+                        .empty()
+                        .addForwardedProcessDataKey("existing", "existing", null, processNode)
         );
 
         assertEquals(
                 List.of(
-                        new ProcessDataKeyHint("existing", ProcessDataKeyHintType.ProcessData),
-                        new ProcessDataKeyHint("result.total", ProcessDataKeyHintType.ProcessData),
-                        new ProcessDataKeyHint("result.date", ProcessDataKeyHintType.ProcessData),
-                        new ProcessDataKeyHint("items.0.name", ProcessDataKeyHintType.ProcessData)
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("existing", "existing", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("result.total", "result.total", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("result.date", "result.date", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("result..invalid", "result..invalid", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("result.total", "result.total", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("items.0.name", "items.0.name", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("items[0].name", "items[0].name", null, processNode),
+                        new ProcessNodeDefinitionMetadata.ForwardedProcessDataKey("items[*].name", "items[*].name", null, processNode)
                 ),
-                hints
+                metadata.forwardedProcessDataKeys()
         );
     }
 
