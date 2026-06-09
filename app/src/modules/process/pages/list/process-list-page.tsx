@@ -326,7 +326,7 @@ export function ProcessListPage() {
                 memberships.length > 0 &&
                 <EmptyDataListPlaceholder
                     title="Noch keine Prozesse angelegt"
-                    description="Prozesse modellieren den Ablauf eines Online-Dienstes: beispielsweise vom Formulareingang über Bearbeitungsschritte bis zu Ausgaben oder Übergaben."
+                    description="Prozesse verbinden Auslöser, Aufgaben, Entscheidungen und Automatisierungen zu strukturierten Abläufen."
                     addText="Neuen Prozess anlegen"
                     onAdd={() => setShowAddDialog(true)}
                 />
