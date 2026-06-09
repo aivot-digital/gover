@@ -1,6 +1,6 @@
 import {Handle, type NodeProps, Position, useUpdateNodeInternals} from '@xyflow/react';
 import {Box, Button, Divider, IconButton, Paper, Tooltip, useTheme} from '@mui/material';
-import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
@@ -42,6 +42,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const [showEventsDialog, setShowEventsDialog] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<HTMLElement | null>(null);
     const [runtimeActionsMenuAnchorEl, setRuntimeActionsMenuAnchorEl] = useState<HTMLElement | null>(null);
+    const menuButtonRef = useRef<HTMLButtonElement | null>(null);
 
     const {
         data,
@@ -321,6 +322,19 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         updateNodeInternals(String(node.id));
     }, [handleLayoutSignature, node.id, updateNodeInternals]);
 
+    const handleNodeContextMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
+        if (!editable) {
+            return;
+        }
+
+        event.stopPropagation();
+        event.preventDefault();
+
+        if (menuButtonRef.current != null) {
+            setMenuAnchorEl(menuButtonRef.current);
+        }
+    }, [editable]);
+
     return (
         <Box
             data-node-id={node.id}
@@ -381,6 +395,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 <Paper
                     elevation={0}
                     className="process-flow-editor-node-card"
+                    onContextMenu={handleNodeContextMenu}
                     sx={{
                         position: 'relative',
                         display: 'flex',
@@ -477,6 +492,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                             {
                                 shouldRenderMenuButtonSlot &&
                                 <IconButton
+                                    ref={menuButtonRef}
                                     size="small"
                                     aria-hidden={!editable}
                                     disabled={!editable}

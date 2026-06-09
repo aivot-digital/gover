@@ -1,4 +1,5 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
@@ -301,7 +302,14 @@ export function UserDetailsPageTeamMemberships() {
                     searchPlaceholder="Name des Teams eingeben…"
                     defaultSortField="teamName"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Teams vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Teams zugeordnet"
+                            description="Teams bündeln Personen für gemeinsame Zuständigkeiten, Berechtigungen oder Aufgaben in Prozessen."
+                            addText={hasAccess && canManageMemberships ? "Mitgliedschaft hinzufügen" : undefined}
+                            onAdd={hasAccess && canManageMemberships ? () => setShowSelectNewTeamDialog(true) : undefined}
+                        />
+                    }
                     loadingPlaceholder="Lade Teams…"
                     noSearchResultsPlaceholder="Keine Teams gefunden"
                     rowActions={(item) => [

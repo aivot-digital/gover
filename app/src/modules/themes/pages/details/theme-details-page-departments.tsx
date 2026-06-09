@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {GridColDef} from '@mui/x-data-grid';
@@ -72,9 +73,14 @@ export function ThemeDetailsPageDepartments() {
                 searchPlaceholder="Name der Organisationseinheit eingeben…"
                 defaultSortField="name"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Formulare vorhanden"
-                loadingPlaceholder="Lade Formulare…"
-                noSearchResultsPlaceholder="Keine Formulare gefunden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Organisationseinheiten zugeordnet"
+                        description="Organisationseinheiten können ein Erscheinungsbild vorgeben, das für ihre Formulare verwendet wird."
+                    />
+                }
+                loadingPlaceholder="Lade Organisationseinheiten…"
+                noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                 rowActions={(item) => [{
                     icon: <EditOutlined />,
                     to: `/departments/${item.id}`,

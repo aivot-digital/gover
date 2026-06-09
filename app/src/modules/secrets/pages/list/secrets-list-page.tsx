@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
@@ -18,6 +20,7 @@ import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function SecretsListPage() {
+    const navigate = useNavigate();
     const dispatch = useAppDispatch();
 
     const hasAccess = useAccessGuard({
@@ -135,7 +138,14 @@ export function SecretsListPage() {
                 fetch={fetchSecrets}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Geheimnisse angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Geheimnisse angelegt"
+                        description="Geheimnisse speichern vertrauliche Konfigurationswerte wie API-Schlüssel, Passwörter oder Tokens verschlüsselt."
+                        addText={hasAccess ? "Neues Geheimnis anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate('/secrets/new') : undefined}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Geheimnisse gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

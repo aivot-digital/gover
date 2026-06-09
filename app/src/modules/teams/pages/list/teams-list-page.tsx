@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -13,6 +15,7 @@ import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function TeamsListPage() {
+    const navigate = useNavigate();
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -109,7 +112,14 @@ export function TeamsListPage() {
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Teams angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Teams angelegt"
+                        description="Teams bündeln Mitarbeiter:innen für gemeinsame Zuständigkeiten, Berechtigungen oder Aufgaben in Prozessen."
+                        addText={hasAccess ? "Neues Team anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate('/teams/new') : undefined}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Teams gefunden"
                 rowActionsCount={3}
                 rowActions={rowActions}

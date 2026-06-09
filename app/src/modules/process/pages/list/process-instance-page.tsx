@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
@@ -333,7 +334,12 @@ export function ProcessInstanceListPage(): ReactNode {
                     columnIcon={columnIcon}
                     columnDefinitions={columns}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder="Keine Vorgänge gestartet"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Noch keine Vorgänge gestartet"
+                            description="Vorgänge sind konkrete Ausführungen (Instanzen) eines Prozesses, zum Beispiel eingereichte Anträge oder intern gestartete Abläufe."
+                        />
+                    }
                     noSearchResultsPlaceholder="Keine Vorgänge gefunden"
                     rowActionsCount={4}
                     rowActions={rowActions}

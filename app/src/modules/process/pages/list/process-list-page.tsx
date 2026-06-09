@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box} from '@mui/material';
@@ -323,9 +324,12 @@ export function ProcessListPage() {
             {
                 memberships != null &&
                 memberships.length > 0 &&
-                <Typography>
-                    Sie haben aktuell keine Prozesse. Starten Sie jetzt mit Ihrem ersten Prozess!
-                </Typography>
+                <EmptyDataListPlaceholder
+                    title="Noch keine Prozesse angelegt"
+                    description="Prozesse modellieren den Ablauf eines Online-Dienstes: beispielsweise vom Formulareingang über Bearbeitungsschritte bis zu Ausgaben oder Übergaben."
+                    addText="Neuen Prozess anlegen"
+                    onAdd={() => setShowAddDialog(true)}
+                />
             }
         </Box>
     ), [memberships]);

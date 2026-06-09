@@ -1,4 +1,5 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType
@@ -306,7 +307,14 @@ export function DepartmentsDetailsPageMembers() {
                 rowActions={isEditable ? buildRowActions : undefined}
                 defaultSortField="userFullName"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Mitarbeiter:innen zugeordnet"
+                        description="Mitarbeiter:innen einer Organisationseinheit teilen fachliche Zuständigkeiten und können dafür Rollen oder Aufgaben erhalten."
+                        addText={isEditable ? "Mitarbeiter:in hinzufügen" : undefined}
+                        onAdd={isEditable ? () => setShowSelectNewMemberDialog(true) : undefined}
+                    />
+                }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 preSearchElements={preSearchElements}

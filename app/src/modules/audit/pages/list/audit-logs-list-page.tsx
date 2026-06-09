@@ -1,4 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {Box, Chip, Tooltip, Typography} from '@mui/material';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
@@ -373,8 +374,13 @@ export function AuditLogsListPage(): ReactNode {
                 columnIcon={ModuleIcons.audit}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Kein Audit-Log vorhanden"
-                noSearchResultsPlaceholder="Kein Audit-Log für diese Filter gefunden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Audit-Log-Einträge vorhanden"
+                        description="Audit-Log-Einträge protokollieren sicherheits- und verwaltungsrelevante Aktionen im System."
+                    />
+                }
+                noSearchResultsPlaceholder="Keine Audit-Log-Einträge gefunden"
                 dynamicRowHeight={true}
                 rowActionsCount={1}
                 rowActions={rowActions}

@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -13,6 +15,7 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function DestinationListPage() {
+    const navigate = useNavigate();
     const header = useMemo(() => ({
         icon: <DataObjectOutlinedIcon/>,
         title: 'Schnittstellen',
@@ -147,7 +150,14 @@ export function DestinationListPage() {
                 fetch={fetchDestinations}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Schnittstellen angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Schnittstellen angelegt"
+                        description="Schnittstellen übertragen Vorgangs- oder Formulardaten an angebundene Fachverfahren und externe Dienste."
+                        addText="Neue Schnittstelle anlegen"
+                        onAdd={() => navigate('/destinations/new')}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Schnittstellen gefunden"
                 rowActionsCount={3}
                 rowActions={rowActions}

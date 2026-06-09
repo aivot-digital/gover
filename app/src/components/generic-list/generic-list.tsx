@@ -384,6 +384,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     ), [search, noSearchResultsPlaceholder, noDataPlaceholder]);
 
     const lastColIndex = columnDefinitions.length - 1;
+    const hasEmptyRows = (items?.content.length ?? 0) === 0;
 
     const style: SxProps = useMemo(() => ({
         width: '100%',
@@ -416,6 +417,13 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 display: 'none',
             },
         },
+        ...(hasEmptyRows
+            ? {
+                '& .MuiDataGrid-virtualScroller': {
+                    minHeight: 316,
+                },
+            }
+            : {}),
         ...(dynamicRowHeight
             ? {
                 // Let actual data rows grow with multiline/custom cell content instead of clipping.
@@ -432,7 +440,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 },
             }
             : {}),
-    }), [lastColIndex, dynamicRowHeight]);
+    }), [lastColIndex, dynamicRowHeight, hasEmptyRows]);
 
     return (
         <Box

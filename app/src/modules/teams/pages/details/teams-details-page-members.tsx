@@ -1,4 +1,5 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType
@@ -300,7 +301,14 @@ export function TeamsDetailsPageMembers() {
                 rowActions={isEditable ? buildRowActions : undefined}
                 defaultSortField="userId"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Mitarbeiter:innen zugeordnet"
+                        description="Mitglieder eines Teams teilen Zuständigkeiten, Berechtigungen oder Aufgaben in Prozessen."
+                        addText={isEditable ? "Mitarbeiter:in hinzufügen" : undefined}
+                        onAdd={isEditable ? () => setShowSelectNewMemberDialog(true) : undefined}
+                    />
+                }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 preSearchElements={preSearchElements}

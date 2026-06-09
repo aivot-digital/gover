@@ -1,4 +1,6 @@
 import React, {useCallback, useMemo} from 'react';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {Typography} from '@mui/material';
@@ -15,6 +17,7 @@ import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function ProviderLinksListPage() {
+    const navigate = useNavigate();
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -117,7 +120,14 @@ export function ProviderLinksListPage() {
                 fetch={fetchProviderLinks}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Links angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Links angelegt"
+                        description="Links verweisen auf externe Seiten oder interne Inhalte, die angemeldeten Nutzer:innen auf der Übersicht angeboten werden."
+                        addText={hasAccess ? "Neuen Link anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate('/provider-links/new') : undefined}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Links gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

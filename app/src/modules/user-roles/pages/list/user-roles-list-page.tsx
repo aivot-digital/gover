@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -13,6 +15,7 @@ import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function UserRolesListPage() {
+    const navigate = useNavigate();
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -113,8 +116,15 @@ export function UserRolesListPage() {
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Domänenrolle angelegt"
-                noSearchResultsPlaceholder="Keine Domänenrolle gefunden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Domänenrollen angelegt"
+                        description="Domänenrollen bündeln Berechtigungen, die erst im Kontext einer Organisationseinheit oder eines Teams gelten."
+                        addText={hasAccess ? "Neue Domänenrolle anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate('/user-roles/new') : undefined}
+                    />
+                }
+                noSearchResultsPlaceholder="Keine Domänenrollen gefunden"
                 rowActionsCount={1}
                 rowActions={rowActions}
                 defaultSortField="name"

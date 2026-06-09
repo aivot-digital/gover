@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Box, Typography} from '@mui/material';
@@ -31,6 +33,7 @@ const activeThemeChip = (
 );
 
 export function ThemeListPage() {
+    const navigate = useNavigate();
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
 
     const hasAccess = useAccessGuard({
@@ -182,7 +185,14 @@ export function ThemeListPage() {
                 fetch={fetchThemes}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Erscheinungsbilder angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Erscheinungsbilder angelegt"
+                        description="Erscheinungsbilder steuern Farben, Logos und Layout-Einstellungen für Gover und veröffentlichte Formulare."
+                        addText={hasAccess ? "Neues Erscheinungsbild anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate('/themes/new') : undefined}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

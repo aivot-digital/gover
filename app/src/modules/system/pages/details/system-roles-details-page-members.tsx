@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -75,7 +76,12 @@ export function SystemRolesDetailsPageMembers() {
                     searchLabel="Mitarbeiter:in suchen"
                     searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                     defaultSortField="fullName"
-                    noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Mitarbeiter:innen zugeordnet"
+                            description="Diese Zuordnung vergibt globale Berechtigungen an Mitarbeiter:innen, unabhängig von Team oder Organisationseinheit."
+                        />
+                    }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"
                     noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 />

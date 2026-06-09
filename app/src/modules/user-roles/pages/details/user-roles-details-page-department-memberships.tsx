@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -93,7 +94,12 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     searchLabel="Mitarbeiter:in suchen"
                     searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                     defaultSortField="userFullName"
-                    noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Mitarbeiter:innen zugeordnet"
+                            description="Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb einer Organisationseinheit."
+                        />
+                    }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"
                     noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 />

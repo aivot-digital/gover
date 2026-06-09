@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {GridColDef} from '@mui/x-data-grid';
@@ -99,7 +100,12 @@ export function PaymentProviderDetailsPageTransactions() {
                 }}
                 getRowIdentifier={(paymentProvider) => paymentProvider.key}
                 defaultSortField="created"
-                noDataPlaceholder="Keine Transaktionen vorhanden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Transaktionen vorhanden"
+                        description="Transaktionen dokumentieren gestartete Zahlungen und deren Status für diesen Zahlungsdienstleister."
+                    />
+                }
                 loadingPlaceholder="Lade Transaktionen…"
                 noSearchResultsPlaceholder="Keine Transaktionen gefunden"
             />

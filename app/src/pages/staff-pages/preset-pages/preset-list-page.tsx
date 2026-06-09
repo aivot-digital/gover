@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -143,7 +144,14 @@ export function PresetListPage() {
                 fetch={fetchPresets}
                 columnDefinitions={columns}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Vorlagen angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Vorlagen angelegt"
+                        description="Vorlagen bündeln wiederverwendbare Bausteine, damit Prozesse und Formulare schneller und einheitlicher erstellt werden können."
+                        addText="Neue Vorlage anlegen"
+                        onAdd={() => setShowAddPresetDialog(true)}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Vorlagen gefunden"
                 rowActionsCount={3}
                 rowActions={rowActions}

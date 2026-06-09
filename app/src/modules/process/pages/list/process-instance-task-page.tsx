@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {useParams} from 'react-router-dom';
@@ -294,14 +295,19 @@ export function ProcessInstanceTaskListPage() {
                 <GenericListPage<ProcessInstanceTaskEntityWithNodeAndProvider>
                     controlRef={listRef}
                     header={header}
-                    searchLabel="Team suchen"
-                    searchPlaceholder="Name des Teams eingeben…"
+                    searchLabel="Aufgabe suchen"
+                    searchPlaceholder="Name der Aufgabe eingeben…"
                     fetch={fetchTasks}
                     columnIcon={columnIcon}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder="Keine Team angelegt"
-                    noSearchResultsPlaceholder="Keine Teams gefunden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Aufgaben in diesem Vorgang vorhanden"
+                            description="Aufgaben dokumentieren die Bearbeitungsschritte, die dieser Vorgang an Personen oder Teams übergibt."
+                        />
+                    }
+                    noSearchResultsPlaceholder="Keine Aufgaben gefunden"
                     rowActionsCount={3}
                     rowActions={rowActions}
                     defaultSortField="started"

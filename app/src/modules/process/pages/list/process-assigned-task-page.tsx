@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {useUser} from '../../../../hooks/use-admin-guard';
@@ -204,7 +205,12 @@ export function ProcessAssignedTaskListPage() {
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Aufgaben vorhanden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Aktuell keine Aufgaben zu bearbeiten"
+                        description="Diese Liste zeigt Bearbeitungsschritte aus laufenden Vorgängen, für die aktuell Ihre Mitarbeit erforderlich ist."
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Aufgaben gefunden"
                 rowActionsCount={3}
                 rowActions={rowActions}
