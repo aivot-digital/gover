@@ -233,7 +233,7 @@ export function DestinationDetailsPageIndex() {
                 if (uniqueForms.content.length > maxVisibleLinks) {
                     processedLinks.push({
                         label: 'Weitere Formulare anzeigen…',
-                        to: `/departments/${destination.id}/forms`,
+                        to: `/destinations/${destination.id}/forms`,
                     });
                 }
 
