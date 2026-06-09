@@ -15,7 +15,8 @@ import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
@@ -135,6 +136,8 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
                         "Fehler bei der Ausführung des Low-Code-Skripts."
                 );
             }
+        } catch (ProcessNodeExecutionException e) {
+            throw e;
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
