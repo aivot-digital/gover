@@ -4,7 +4,6 @@ import {Link} from 'react-router-dom';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import GroupOutlined from '@mui/icons-material/GroupOutlined';
-import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
@@ -83,7 +82,7 @@ export function DepartmentsListPage(): React.ReactElement {
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Über die Aktionsbuttons können Sie direkt Untereinheiten anlegen, Einheiten bearbeiten,
-                                    Mitarbeitende verwalten und die zugehörigen Formulare einsehen.
+                                    Mitarbeitende verwalten und die zugehörigen Prozesse einsehen.
                                     Mit der Suche finden Sie Einheiten nach Name, Adresse oder Typ.
                                 </Typography>
                             </>
@@ -139,9 +138,9 @@ function getDepartmentActions(department: VDepartmentShadowedEntityWithChildren,
             to: `/departments/${department.id}/members`,
         },
         {
-            tooltip: 'Formulare der Organisationseinheit ansehen',
-            icon: <DescriptionOutlined />,
-            to: `/departments/${department.id}/forms`,
+            tooltip: 'Prozesse der Organisationseinheit ansehen',
+            icon: ModuleIcons.processes,
+            to: `/departments/${department.id}/processes`,
         },
     ];
 }

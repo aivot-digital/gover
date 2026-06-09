@@ -42,8 +42,8 @@ export function DepartmentsDetailsPage() {
                         isDisabled: (item) => !item?.id,
                     },
                     {
-                        path: '/departments/:id/forms',
-                        label: 'Formulare',
+                        path: '/departments/:id/processes',
+                        label: 'Prozesse',
                         isDisabled: (item) => !item?.id,
                     },
                 ]}

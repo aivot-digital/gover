@@ -26,7 +26,7 @@ import {SelectFieldComponentProps} from '../../../../components/select-field/sel
 import {DepartmentEntity} from '../../entities/department-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
 import {getDepartmentTypeLabelGenitiv} from '../../utils/department-utils';
-import {FormApiService} from '../../../forms/services/form-api-service';
+import {ProcessDefinitionApiService} from '../../../process/services/process-definition-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
 import {MoveDepartmentDialog} from '../../dialogs/move-department-dialog';
@@ -40,6 +40,14 @@ const emptyStringToNull = (value: unknown, originalValue: unknown) => {
 
     return value;
 };
+
+function getProcessDetailsPath(processId: number, version: number | null): string {
+    if (version == null) {
+        return '/processes';
+    }
+
+    return `/processes/${processId}/versions/${version}`;
+}
 
 export const DepartmentSchema = yup.object({
     name: yup.string()
@@ -341,24 +349,24 @@ export function DepartmentsDetailsPageIndex() {
 
         setIsBusy(true);
         try {
-            const formsApi = new FormApiService();
-            const developingForms = await formsApi.listAll({
-                developingDepartmentId: department.id,
+            const processesApi = new ProcessDefinitionApiService();
+            const managedProcesses = await processesApi.listAll({
+                departmentId: department.id,
             });
 
-            const uniqueForms = developingForms.content;
+            const uniqueProcesses = managedProcesses.content;
 
-            if (uniqueForms.length > 0) {
+            if (uniqueProcesses.length > 0) {
                 const maxVisibleLinks = 5;
-                let processedLinks = uniqueForms.slice(0, maxVisibleLinks).map(f => ({
-                    label: f.internalTitle,
-                    to: `/forms/${f.id}`,
+                let processedLinks = uniqueProcesses.slice(0, maxVisibleLinks).map(process => ({
+                    label: process.internalTitle,
+                    to: getProcessDetailsPath(process.id, process.draftedVersion ?? process.publishedVersion),
                 }));
 
-                if (uniqueForms.length > maxVisibleLinks) {
+                if (uniqueProcesses.length > maxVisibleLinks) {
                     processedLinks.push({
-                        label: 'Weitere Formulare anzeigen…',
-                        to: `/departments/${department.id}/forms`,
+                        label: 'Weitere Prozesse anzeigen…',
+                        to: `/departments/${department.id}/processes`,
                     });
                 }
 
@@ -951,8 +959,8 @@ export function DepartmentsDetailsPageIndex() {
             <ConstraintDialog
                 open={showConstraintDialog}
                 onClose={() => setShowConstraintDialog(false)}
-                message="Diese Organisationseinheit kann (noch) nicht gelöscht werden, da sie noch für Formulare als entwickelnde, zuständige oder bewirtschaftende Organisationseinheit zugewiesen ist."
-                solutionText="Bitte übertragen Sie die Formulare an eine andere Organisationseinheit und versuchen Sie es erneut:"
+                message="Diese Organisationseinheit kann (noch) nicht gelöscht werden, da sie noch Prozesse verwaltet."
+                solutionText="Bitte übertragen Sie die Prozesse an eine andere Organisationseinheit und versuchen Sie es erneut:"
                 links={relatedApplications}
             />
 
