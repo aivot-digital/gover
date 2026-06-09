@@ -337,6 +337,8 @@ public class ProcessController {
         );
 
         updateDTO.setId(existing.getId());
+        // Prevent department id overriding. This should be done via the move endpoint.
+        updateDTO.setDepartmentId(existing.getDepartmentId());
 
         var result = processDefinitionService
                 .update(id, updateDTO);
