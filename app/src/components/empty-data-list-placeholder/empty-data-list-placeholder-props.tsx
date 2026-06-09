@@ -1,5 +1,9 @@
+import {ReactNode} from 'react';
+
 export interface EmptyDataListPlaceholderProps {
-    helperText: string;
-    addText: string;
-    onAdd: () => void;
+    title?: ReactNode;
+    description?: ReactNode;
+    helperText?: ReactNode;
+    addText?: ReactNode;
+    onAdd?: () => void;
 }
