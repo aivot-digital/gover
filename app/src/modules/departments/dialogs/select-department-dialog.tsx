@@ -13,6 +13,7 @@ interface SelectDepartmentDialogProps {
     onSelect: (department: VDepartmentShadowedEntityWithChildren) => void;
     selectedDepartmentId?: number | null;
     title?: string;
+    departments?: VDepartmentShadowedEntityWithChildren[];
 }
 
 export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): React.ReactElement {
@@ -22,6 +23,7 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
         onSelect,
         selectedDepartmentId,
         title = 'Organisationseinheit auswählen',
+        departments: providedDepartments,
     } = props;
 
     const [
@@ -34,7 +36,7 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
     ] = useState(false);
 
     useEffect(() => {
-        if (!open) {
+        if (!open || providedDepartments != null) {
             return;
         }
 
@@ -65,7 +67,14 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
         return () => {
             active = false;
         };
-    }, [open]);
+    }, [open, providedDepartments]);
+
+    useEffect(() => {
+        if (providedDepartments != null) {
+            setDepartments(providedDepartments);
+            setLoadError(false);
+        }
+    }, [providedDepartments]);
 
     return (
         <Dialog

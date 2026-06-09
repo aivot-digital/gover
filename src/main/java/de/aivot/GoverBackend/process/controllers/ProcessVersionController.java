@@ -189,16 +189,15 @@ public class ProcessVersionController {
                 .orElseThrow(ResponseException::notFound);
         var existingMap = AuditLogPayload.toMap(existing);
 
-        // Check department permission for the process definition this version belongs to
-        var department = departmentService
+        var processDefinition = processDefinitionService
                 .retrieve(existing.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
                 .testDepartmentPermission(
                         execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
+                        processDefinition.getDepartmentId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
         updateDTO.setProcessId(existing.getProcessId());
@@ -295,16 +294,20 @@ public class ProcessVersionController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.testDepartmentPermission(
-                user.getId(),
-                processDefinitionId,
-                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
-        );
-
         var versionId = ProcessVersionEntityId.of(processDefinitionId, processDefinitionVersion);
         var version = processDefinitionVersionService
                 .retrieve(versionId)
                 .orElseThrow(ResponseException::notFound);
+
+        var processDefinition = processDefinitionService
+                .retrieve(version.getProcessId())
+                .orElseThrow(ResponseException::badRequest);
+
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                processDefinition.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
+        );
 
         var hasErrors = processDefinitionVersionService
                 .validate(version)
@@ -338,16 +341,20 @@ public class ProcessVersionController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.testDepartmentPermission(
-                user.getId(),
-                processDefinitionId,
-                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
-        );
-
         var versionId = ProcessVersionEntityId.of(processDefinitionId, processDefinitionVersion);
         var version = processDefinitionVersionService
                 .retrieve(versionId)
                 .orElseThrow(ResponseException::notFound);
+
+        var processDefinition = processDefinitionService
+                .retrieve(version.getProcessId())
+                .orElseThrow(ResponseException::badRequest);
+
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                processDefinition.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
+        );
 
         if (version.getStatus() != ProcessVersionStatus.Published) {
             throw ResponseException.conflict("Es kann nur eine veröffentlichte Prozessdefinition zurückgezogen werden.");

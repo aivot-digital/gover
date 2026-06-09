@@ -2473,6 +2473,18 @@ export function ProcessDetailsPage(): ReactNode {
                 }}
                 process={processFlow.definition}
                 version={processFlow.version}
+                onProcessChange={(process) => {
+                    setProcessFlow((current) => current == null ? current : {
+                        ...current,
+                        definition: process,
+                    });
+                }}
+                onVersionChange={(version) => {
+                    setProcessFlow((current) => current == null ? current : {
+                        ...current,
+                        version,
+                    });
+                }}
             />
 
             <ProcessVersionsDialog

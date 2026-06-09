@@ -31,6 +31,7 @@ import {ProcessInstanceAccessControlPresetEntity} from '../../entities/process-i
 import {ProcessInstanceAccessControlPresetApiService} from '../../services/process-instance-access-control-preset-api-service';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
 import {deepEquals} from '../../../../utils/equality-utils';
+import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
 
 interface ProcessSettingsDialogTabProps {
     open: boolean;
@@ -404,6 +405,15 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
 
     return (
         <>
+            <ElementEditorSectionHeader
+                title="Berechtigungen für neue Vorgänge"
+                variant="h5"
+                disableMarginTop
+                maxWidth={560}
+            >
+                Legen Sie fest, welche Organisationseinheiten und Teams bei neu erstellten Vorgängen standardmäßig Zugriff erhalten.
+            </ElementEditorSectionHeader>
+
             <TableContainer>
                 <Table size="small">
                     <TableHead>

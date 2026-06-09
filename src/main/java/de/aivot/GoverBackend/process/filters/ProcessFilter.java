@@ -13,6 +13,7 @@ public class ProcessFilter implements Filter<ProcessEntity> {
     private Integer departmentId;
     private Integer departmentIdNot;
     private UUID accessKey;
+    private String slug;
 
     private Boolean isDrafted;
     private Boolean isPublished;
@@ -30,7 +31,8 @@ public class ProcessFilter implements Filter<ProcessEntity> {
                 .withContains("internalTitle", internalTitle)
                 .withEquals("departmentId", departmentId)
                 .withNotEquals("departmentId", departmentIdNot)
-                .withEquals("accessKey", accessKey);
+                .withEquals("accessKey", accessKey)
+                .withEquals("slug", slug);
 
         if (Boolean.TRUE.equals(isDrafted)) {
             builder.withNotNull("draftedVersion");
@@ -80,6 +82,11 @@ public class ProcessFilter implements Filter<ProcessEntity> {
         return this;
     }
 
+    public ProcessFilter setSlug(String slug) {
+        this.slug = slug;
+        return this;
+    }
+
     public ProcessFilter setIsDrafted(Boolean drafted) {
         isDrafted = drafted;
         return this;
@@ -95,4 +102,3 @@ public class ProcessFilter implements Filter<ProcessEntity> {
         return this;
     }
 }
-

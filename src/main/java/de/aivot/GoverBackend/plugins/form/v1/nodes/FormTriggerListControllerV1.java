@@ -78,7 +78,7 @@ public class FormTriggerListControllerV1 {
     }
 
 
-    @GetMapping("/api/public/forms/v1/")
+    @GetMapping("/api/public/forms/")
     public Page<FormListItem> listPublic(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessNodeFilter filter

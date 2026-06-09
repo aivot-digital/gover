@@ -24,12 +24,13 @@ import {NewProcessDialog} from '../../dialogs/new-process-dialog';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
-import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
+import {MoveProcessToDepartmentDialog} from '../../dialogs/move-process-to-department-dialog';
+import {ProcessListRowMenu} from '../../components/process-list-row-menu';
 
 const availableFilter = [
     {
@@ -51,7 +52,7 @@ const availableFilter = [
 ];
 
 interface ProcessListEntry extends ProcessEntity {
-    developingDepartmentName?: string;
+    managingDepartmentName?: string;
     lastEditorName?: string;
 }
 
@@ -138,7 +139,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                         }}
                         color="textSecondary"
                     >
-                        Entwickelt von: {params.row.developingDepartmentName ?? 'Unbekannt'}
+                        Verwaltet von: {params.row.managingDepartmentName ?? 'Unbekannt'}
                     </Typography>
                 </Box>
             );
@@ -192,8 +193,11 @@ export function ProcessListPage() {
 
     const [showAddDialog, setShowAddDialog] = useState(false);
     const [showVersionsDialogForProcess, setShowVersionsDialogForProcess] = useState<ProcessEntity | null>(null);
-
-    const notImplemented = useNotImplemented();
+    const [processToMove, setProcessToMove] = useState<ProcessEntity>();
+    const [rowMenu, setRowMenu] = useState<{
+        target: HTMLElement;
+        process: ProcessListEntry;
+    }>();
 
     useEffect(() => {
         new ProcessDefinitionVersionApiService()
@@ -267,7 +271,7 @@ export function ProcessListPage() {
     const fetch = useCallback(async (options: GenericListPropsFetchOptions<ProcessListEntry>) => {
         const deps = (await new DepartmentApiService().listAll()).content;
 
-        const formsPage = await new ProcessDefinitionApiService()
+        const processesPage = await new ProcessDefinitionApiService()
             .list(options.page, options.size, options.sort as any, options.order, {
                 internalTitle: options.search,
                 isPublished: options.filter === 'published',
@@ -275,16 +279,16 @@ export function ProcessListPage() {
                 isRevoked: options.filter === 'revoked',
             });
 
-        const extendedFormsPage: Page<ProcessListEntry> = {
-            ...formsPage,
-            content: formsPage.content.map(form => ({
-                ...form,
-                developingDepartmentName: deps.find(dep => dep.id === form.departmentId)?.name,
+        const extendedProcessesPage: Page<ProcessListEntry> = {
+            ...processesPage,
+            content: processesPage.content.map(process => ({
+                ...process,
+                managingDepartmentName: deps.find(dep => dep.id === process.departmentId)?.name,
                 lastEditorName: '',
             })),
         };
 
-        return extendedFormsPage;
+        return extendedProcessesPage;
     }, []);
 
     const noDataPlaceholder = useMemo(() => (
@@ -357,8 +361,11 @@ export function ProcessListPage() {
         },
         {
             icon: <MoreVertOutlinedIcon/>,
-            onClick: () => {
-                notImplemented();
+            onClick: (event: React.MouseEvent<HTMLElement>) => {
+                setRowMenu({
+                    target: event.currentTarget as HTMLElement,
+                    process: item,
+                });
             },
             tooltip: 'Optionen',
         },
@@ -384,7 +391,7 @@ export function ProcessListPage() {
                     getRowIdentifier={getRowId}
                     noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Prozesse gefunden"
-                    rowActionsCount={4}
+                    rowActionsCount={5}
                     rowActions={rowActions}
                     defaultSortField="internalTitle"
                     disableFullWidthToggle={true}
@@ -413,6 +420,32 @@ export function ProcessListPage() {
                         if (listControlRef.current) {
                             listControlRef.current.refresh();
                         }
+                    }}
+                />
+            }
+
+            {
+                rowMenu != null &&
+                <ProcessListRowMenu
+                    anchorEl={rowMenu.target}
+                    process={rowMenu.process}
+                    onClose={() => {
+                        setRowMenu(undefined);
+                    }}
+                    onMoveProcessToDepartment={setProcessToMove}
+                />
+            }
+
+            {
+                processToMove != null &&
+                <MoveProcessToDepartmentDialog
+                    processId={processToMove.id}
+                    onClose={() => {
+                        setProcessToMove(undefined);
+                    }}
+                    onMoved={() => {
+                        setProcessToMove(undefined);
+                        listControlRef.current?.refresh();
                     }}
                 />
             }

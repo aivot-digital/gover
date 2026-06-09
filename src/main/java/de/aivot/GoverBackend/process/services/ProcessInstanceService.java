@@ -134,7 +134,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
             } catch (DataIntegrityViolationException e) {
                 if (processInstanceRepository.existsByCaseNumber(entity.getCaseNumber())) {
                     if (attempt == MAX_CASE_NUMBER_GENERATION_ATTEMPTS) {
-                        throw ResponseException.conflict("Es konnte kein eindeutiges Aktenzeichen erzeugt werden. Bitte versuchen Sie es erneut.");
+                        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
                     }
                     continue;
                 }
@@ -143,6 +143,6 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
             }
         }
 
-        throw ResponseException.conflict("Es konnte kein eindeutiges Aktenzeichen erzeugt werden. Bitte versuchen Sie es erneut.");
+        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
     }
 }

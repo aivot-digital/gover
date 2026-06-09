@@ -284,9 +284,10 @@ export function FormNodeEditorPage() {
 
         new FormTriggerApiService()
             .getFormTheme(
-                process.accessKey,
+                process.slug,
                 node.configuration.formSlug,
                 processVersion.processVersion,
+                testClaim?.accessKey,
             )
             .then((theme) => {
                 if (!isCancelled) {
@@ -303,7 +304,7 @@ export function FormNodeEditorPage() {
         return () => {
             isCancelled = true;
         };
-    }, [node, process, processVersion]);
+    }, [node, process, processVersion, testClaim]);
 
     const [searchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
@@ -422,7 +423,7 @@ export function FormNodeEditorPage() {
 
     const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-    const publicFormLink = createCustomerPath(`/${process?.accessKey}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
+    const publicFormLink = createCustomerPath(`/form/${process?.slug}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
 
     const handleImportFromXDF = async () => {
         try {
@@ -783,7 +784,7 @@ export function FormNodeEditorPage() {
         formAssetQueryParams.set('test-claim', testClaim.accessKey);
     }
 
-    const formLogoUrl = `/api/public/forms/v1/${process.accessKey}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
+    const formLogoUrl = `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
         if (event != SUBMIT_EVENT) {
@@ -925,7 +926,7 @@ export function FormNodeEditorPage() {
                 .postFormData<{
                     startedProcessAccessKey: string;
                 }>(
-                    `/api/public/forms/v1/${process?.accessKey}/${node.configuration.formSlug}/submit/`,
+                    `/api/public/form/${process?.slug}/${node.configuration.formSlug}/submit/`,
                     formData,
                     {
                         query: {

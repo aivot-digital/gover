@@ -42,7 +42,6 @@ import de.aivot.GoverBackend.process.entities.*;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
-import de.aivot.GoverBackend.process.filters.ProcessTestClaimFilter;
 import de.aivot.GoverBackend.process.filters.ProcessVersionFilter;
 import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
@@ -72,7 +71,7 @@ import java.time.Instant;
 import java.util.*;
 
 @RestController
-@RequestMapping("/api/public/forms/v1/{processAccessKey}/{formSlug}/")
+@RequestMapping("/api/public/form/{processSlug}/{formSlug}/")
 public class FormTriggerControllerV1 {
     public static final String TEST_CLAIM_QUERY_PARAM = "test-claim";
     public static final String VERSION_QUERY_PARAM = "version";
@@ -167,14 +166,14 @@ public class FormTriggerControllerV1 {
 
     @GetMapping("")
     public RetrieveResponse retrieve(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                     @Nonnull @PathVariable UUID processAccessKey,
+                                     @Nonnull @PathVariable String processSlug,
                                      @Nonnull @PathVariable String formSlug,
                                      @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                      @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId) throws ResponseException {
         var execUser = getExecUser(jwt);
 
-        var process = getProcessEntity(processAccessKey);
-        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
@@ -347,7 +346,7 @@ public class FormTriggerControllerV1 {
                     "Otherwise, a default value will be provided."
     )
     public MaxFileSizeDto getMaxFileSize(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                         @Nonnull @PathVariable UUID processAccessKey,
+                                         @Nonnull @PathVariable String processSlug,
                                          @Nonnull @PathVariable String formSlug,
                                          @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                          @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId) throws ResponseException {
@@ -374,7 +373,7 @@ public class FormTriggerControllerV1 {
                     "If no payment provider is linked, the response will indicate that there are no costs."
     )
     public FormCostCalculationResponseDTO calculateCosts(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                                         @Nonnull @PathVariable UUID processAccessKey,
+                                                         @Nonnull @PathVariable String processSlug,
                                                          @Nonnull @PathVariable String formSlug,
                                                          @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                                          @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
@@ -391,7 +390,7 @@ public class FormTriggerControllerV1 {
                     "Options are available to skip certain derivation aspects for specific elements."
     )
     public ElementDerivationResponse derive(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                            @Nonnull @PathVariable UUID processAccessKey,
+                                            @Nonnull @PathVariable String processSlug,
                                             @Nonnull @PathVariable String formSlug,
                                             @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                             @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
@@ -401,8 +400,8 @@ public class FormTriggerControllerV1 {
                                             @Nullable @RequestParam(value = "skipValuesFor") List<String> skipValuesFor,
                                             @Nullable @RequestParam(value = "skipOverridesFor") List<String> skipOverridesFor) throws ResponseException {
         var execUser = getExecUser(jwt);
-        var process = getProcessEntity(processAccessKey);
-        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
@@ -432,7 +431,7 @@ public class FormTriggerControllerV1 {
 
     @PostMapping("submit/")
     public SubmissionStatusResponseDTO submit(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                              @Nonnull @PathVariable UUID processAccessKey,
+                                              @Nonnull @PathVariable String processSlug,
                                               @Nonnull @PathVariable String formSlug,
                                               @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                               @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
@@ -441,8 +440,8 @@ public class FormTriggerControllerV1 {
                                               @Nullable @RequestParam(value = "fileUris", required = false) List<String> fileUris,
                                               @Nonnull HttpServletResponse response) throws ResponseException {
         var execUser = getExecUser(jwt);
-        var process = getProcessEntity(processAccessKey);
-        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process);
+        var process = getProcessEntity(processSlug);
+        var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
         var node = getProcessNodeEntity(formSlug, process, processVersion);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
@@ -475,13 +474,14 @@ public class FormTriggerControllerV1 {
 
         var effectiveValues = derivedRuntimeElementData.getEffectiveValues();
 
-        var testClaim = processTestClaimService
-                .retrieve(ProcessTestClaimFilter
-                        .create()
-                        .setProcessId(processVersion.getProcessId())
-                        .setProcessVersion(processVersion.getProcessVersion())
-                )
-                .orElse(null);
+        // Only bind a started instance to a test claim when the caller explicitly
+        // proves the claim through the public URL. Looking up by process/version alone
+        // would accidentally mark normal public submissions as test submissions.
+        var testClaim = testClaimAccessKey != null
+                ? processTestClaimService
+                .retrieveByAccessKey(process.getId(), testClaimAccessKey)
+                .orElseThrow(ResponseException::notFound)
+                : null;
 
 
         testCaptchaReplayProtection(config.configuration().formLayout, effectiveValues);
@@ -640,12 +640,12 @@ public class FormTriggerControllerV1 {
                     "Includes information such as colors, fonts, logos, and other visual elements that define the form's appearance."
     )
     public ThemeResponseDTO getTheme(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                     @Nonnull @PathVariable UUID processAccessKey,
+                                     @Nonnull @PathVariable String processSlug,
                                      @Nonnull @PathVariable String formSlug,
                                      @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                                      @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion
     ) throws ResponseException {
-        var context = resolveFormTriggerContext(jwt, processAccessKey, formSlug, testClaimAccessKey, processVersion);
+        var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
         var theme = getFormTheme(context.formLayout());
         return ThemeResponseDTO.fromEntity(theme);
     }
@@ -657,13 +657,13 @@ public class FormTriggerControllerV1 {
                     "If the form does not have a custom logo, a default logo URL will be provided."
     )
     public void getLogo(@Nullable @AuthenticationPrincipal Jwt jwt,
-                        @Nonnull @PathVariable UUID processAccessKey,
+                        @Nonnull @PathVariable String processSlug,
                         @Nonnull @PathVariable String formSlug,
                         @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                         @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
                         @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var context = resolveFormTriggerContext(jwt, processAccessKey, formSlug, testClaimAccessKey, processVersion);
+        var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
         var logoKey = getFormLogoKey(context.formLayout());
 
         String redirectUrl;
@@ -683,13 +683,13 @@ public class FormTriggerControllerV1 {
                     "If the form does not have a custom favicon, a default favicon URL will be provided."
     )
     public void getFavicon(@Nullable @AuthenticationPrincipal Jwt jwt,
-                           @Nonnull @PathVariable UUID processAccessKey,
+                           @Nonnull @PathVariable String processSlug,
                            @Nonnull @PathVariable String formSlug,
                            @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
                            @Nullable @RequestParam(value = VERSION_QUERY_PARAM, required = false) Integer processVersion,
                            @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
-        var context = resolveFormTriggerContext(jwt, processAccessKey, formSlug, testClaimAccessKey, processVersion);
+        var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
         var faviconKey = getFormFaviconKey(context.formLayout());
 
         String redirectUrl;
@@ -709,7 +709,7 @@ public class FormTriggerControllerV1 {
                     "If the form does not have a custom favicon, a default favicon URL will be provided."
     )
     public void getPrint(@Nullable @AuthenticationPrincipal Jwt jwt,
-                         @Nonnull @PathVariable UUID processAccessKey,
+                         @Nonnull @PathVariable String processSlug,
                          @Nonnull @PathVariable String formSlug,
                          @Nonnull @PathVariable UUID instanceAccessKey,
                          @Nullable @RequestParam(value = "version", required = false) Integer version,
@@ -725,7 +725,7 @@ public class FormTriggerControllerV1 {
                     "If the form does not have a custom favicon, a default favicon URL will be provided."
     )
     public void getStatus(@Nullable @AuthenticationPrincipal Jwt jwt,
-                          @Nonnull @PathVariable UUID processAccessKey,
+                          @Nonnull @PathVariable String processSlug,
                           @Nonnull @PathVariable String formSlug,
                           @Nonnull @PathVariable UUID instanceAccessKey,
                           @Nullable @RequestParam(value = "version", required = false) Integer version,
@@ -736,13 +736,13 @@ public class FormTriggerControllerV1 {
 
     @Nonnull
     private ResolvedFormTriggerContext resolveFormTriggerContext(@Nullable Jwt jwt,
-                                                                 @Nonnull UUID processAccessKey,
+                                                                 @Nonnull String processSlug,
                                                                  @Nonnull String formSlug,
                                                                  @Nullable String testClaimAccessKey,
                                                                  @Nullable Integer processVersion) throws ResponseException {
         var execUser = getExecUser(jwt);
-        var process = getProcessEntity(processAccessKey);
-        var processVersionEntity = getProcessVersionEntity(testClaimAccessKey, processVersion, process);
+        var process = getProcessEntity(processSlug);
+        var processVersionEntity = getProcessVersionEntity(testClaimAccessKey, processVersion, process, execUser);
         var node = getProcessNodeEntity(formSlug, process, processVersionEntity);
         var provider = getProvider(node);
         var config = getConfigurationDetails(node, provider, execUser);
@@ -846,12 +846,19 @@ public class FormTriggerControllerV1 {
     @Nonnull
     private ProcessVersionEntity getProcessVersionEntity(@Nullable String testClaimAccessKey,
                                                          @Nullable Integer processVersion,
-                                                         ProcessEntity process) throws ResponseException {
+                                                         ProcessEntity process,
+                                                         @Nullable UserEntity execUser) throws ResponseException {
         var processVersionFilter = ProcessVersionFilter
                 .create()
                 .setProcessId(process.getId());
 
         if (processVersion != null) {
+            // Explicit version access is only for authenticated staff tooling.
+            // Public citizen URLs must resolve through the published version or a test claim.
+            if (execUser == null) {
+                throw ResponseException.notFound();
+            }
+
             processVersionFilter
                     .setProcessVersion(processVersion);
         } else if (testClaimAccessKey != null) {
@@ -870,9 +877,9 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private ProcessEntity getProcessEntity(@Nonnull UUID processAccessKey) throws ResponseException {
+    private ProcessEntity getProcessEntity(@Nonnull String processSlug) throws ResponseException {
         return processService
-                .retrieveByAccessKey(processAccessKey)
+                .retrieveBySlugOrHistory(processSlug)
                 .orElseThrow(ResponseException::notFound);
     }
 

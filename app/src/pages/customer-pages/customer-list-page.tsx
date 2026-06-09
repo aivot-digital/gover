@@ -37,7 +37,7 @@ function mapPublicFormListItem(form: FormTriggerListItem): FormCitizenListRespon
     }
 
     return {
-        slug: `forms/v1/${form.process.accessKey}/${formSlug}`,
+        slug: `form/${form.process.slug}/${formSlug}`,
         version: form.version.processVersion,
         title: resolveFormNodeName(formLayout, form.version),
         updated: form.version.updated,

@@ -5,22 +5,19 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {isApiError} from '../../../models/api-error';
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
-import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {setLoadingMessage} from '../../../slices/shell-slice';
-import {withDelay} from '../../../utils/with-delay';
 import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';
-import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
-import {getDepartmentPath} from '../../departments/utils/department-utils';
+import {DepartmentSelectField} from '../../departments/components/department-select-field';
 import {ProcessEntity} from '../entities/process-entity';
 import {ProcessDefinitionApiService} from '../services/process-definition-api-service';
 
-interface MoveFormToDepartmentDialogProps {
+interface MoveProcessToDepartmentDialogProps {
     processId: number;
     onClose: () => void;
-    onMoved: () => void;
+    onMoved: (process: ProcessEntity) => void;
 }
 
-export function MoveProcessToDepartmentDialog(props: MoveFormToDepartmentDialogProps) {
+export function MoveProcessToDepartmentDialog(props: MoveProcessToDepartmentDialogProps) {
     const {
         processId,
         onClose,
@@ -29,61 +26,51 @@ export function MoveProcessToDepartmentDialog(props: MoveFormToDepartmentDialogP
 
     const dispatch = useAppDispatch();
 
-    const [targetDepartmentId, setTargetDepartmentId] = useState<number | null>(null);
+    const [targetDepartment, setTargetDepartment] = useState<VDepartmentShadowedEntity | null>(null);
+    const [targetDepartmentError, setTargetDepartmentError] = useState<string | undefined>();
 
     const [process, setProcess] = useState<ProcessEntity>();
     useEffect(() => {
+        setProcess(undefined);
+        setTargetDepartment(null);
+        setTargetDepartmentError(undefined);
+
         new ProcessDefinitionApiService()
             .retrieve(processId)
             .then(setProcess)
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Prozess konnte nicht geladen werden.'));
             });
-    }, [processId]);
-
-    const [departments, setDepartments] = useState<VDepartmentShadowedEntity[]>();
-
-    useEffect(() => {
-        withDelay(
-            new VDepartmentShadowedApiService()
-                .listAllOrdered(['parentNames', 'name'], 'ASC'),
-            600,
-        )
-            .then(({content}) => {
-                setDepartments(content);
-            })
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Liste der Organisationseinheiten konnte nicht geladen werden.'));
-            });
-    }, []);
+    }, [dispatch, processId]);
 
     const handleMove = () => {
         if (process == null) {
             return;
         }
 
-        if (targetDepartmentId == null) {
-            dispatch(showErrorSnackbar('Bitte wählen Sie eine Organisationseinheit aus, an die das Formular übertragen werden soll.'));
+        if (targetDepartment == null) {
+            setTargetDepartmentError('Bitte wählen Sie eine neue verwaltende Organisationseinheit aus.');
+            dispatch(showErrorSnackbar('Bitte wählen Sie eine Organisationseinheit aus, an die der Prozess übertragen werden soll.'));
             return;
         }
 
         dispatch(setLoadingMessage({
-            message: 'Formular wird übertragen',
+            message: 'Prozess wird übertragen',
             estimatedTime: 500,
             blocking: true,
         }));
 
         new ProcessDefinitionApiService()
-            .move(process.id, targetDepartmentId)
-            .then(() => {
-                dispatch(showSuccessSnackbar('Das Formular wurde erfolgreich übertragen.'));
-                onMoved();
+            .move(process.id, targetDepartment.id)
+            .then((updatedProcess) => {
+                dispatch(showSuccessSnackbar('Der Prozess wurde erfolgreich übertragen.'));
+                onMoved(updatedProcess);
             })
             .catch((err) => {
                 if (isApiError(err) && err.displayableToUser) {
                     dispatch(showErrorSnackbar(err.message));
                 } else {
-                    dispatch(showErrorSnackbar('Das Formular konnte nicht übertragen werden.'));
+                    dispatch(showErrorSnackbar('Der Prozess konnte nicht übertragen werden.'));
                 }
                 console.error(err);
             })
@@ -101,13 +88,12 @@ export function MoveProcessToDepartmentDialog(props: MoveFormToDepartmentDialogP
             <DialogTitleWithClose
                 onClose={onClose}
             >
-                Formular an Organisationseinheit übertragen
+                Prozess an Organisationseinheit übertragen
             </DialogTitleWithClose>
 
             {
-                (process == null || departments == null) &&
+                process == null &&
                 <DialogContent tabIndex={0}>
-                    {/* Skeleton for the first Typography */}
                     <Skeleton
                         variant="text"
                         width="90%"
@@ -117,7 +103,6 @@ export function MoveProcessToDepartmentDialog(props: MoveFormToDepartmentDialogP
                         }}
                     />
 
-                    {/* Skeleton for the second Typography */}
                     <Skeleton
                         variant="text"
                         width="100%"
@@ -128,7 +113,6 @@ export function MoveProcessToDepartmentDialog(props: MoveFormToDepartmentDialogP
                         }}
                     />
 
-                    {/* Skeleton for the SelectFieldComponent */}
                     <Skeleton
                         variant="rectangular"
                         width="100%"
@@ -139,37 +123,44 @@ export function MoveProcessToDepartmentDialog(props: MoveFormToDepartmentDialogP
 
             {
                 process != null &&
-                departments != null &&
                 <DialogContent tabIndex={0}>
                     <Typography
                         variant="body1"
                         gutterBottom={true}
                     >
-                        Bitte wählen Sie die Organisationseinheit aus, an die das Formular <strong>{process.internalTitle}</strong> übertragen werden soll.
+                        Bitte wählen Sie die Organisationseinheit aus, an die der Prozess <strong>{process.internalTitle}</strong> übertragen werden soll.
                     </Typography>
 
                     <Typography
                         variant="body2"
                         gutterBottom={true}
                     >
-                        Bitte beachten Sie, dass Sie möglicherweise nicht mehr auf das Formular zugreifen können, wenn Sie es an eine andere Organisationseinheit übertragen.
+                        Bitte beachten Sie, dass Sie möglicherweise nicht mehr auf den Prozess zugreifen können, wenn Sie ihn an eine andere Organisationseinheit übertragen.
                     </Typography>
 
-                    <SelectFieldComponent
-                        label="Organisation"
-                        value={targetDepartmentId?.toString() ?? undefined}
-                        onChange={(val) => {
-                            const valNumber = val != null ? parseInt(val.toString(), 10) : null;
-                            setTargetDepartmentId(valNumber);
+                    <DepartmentSelectField
+                        label="Neue verwaltende Organisationseinheit"
+                        value={targetDepartment}
+                        dialogTitle="Neue verwaltende Organisationseinheit auswählen"
+                        onChange={(department) => {
+                            if (department == null) {
+                                setTargetDepartment(null);
+                                setTargetDepartmentError(undefined);
+                                return;
+                            }
+
+                            if (department.id === process.departmentId) {
+                                setTargetDepartment(null);
+                                setTargetDepartmentError('Bitte wählen Sie eine andere Organisationseinheit aus.');
+                                return;
+                            }
+
+                            setTargetDepartment(department);
+                            setTargetDepartmentError(undefined);
                         }}
-                        options={
-                            departments
-                                .filter(dep => dep.id !== process.departmentId)
-                                .map(dep => ({
-                                    label: getDepartmentPath(dep),
-                                    value: dep.id.toString(),
-                                }))
-                        }
+                        error={targetDepartmentError}
+                        hint="Wählen Sie die Organisationseinheit aus, die den Prozess künftig verwalten soll."
+                        required
                     />
                 </DialogContent>
             }
@@ -180,9 +171,9 @@ export function MoveProcessToDepartmentDialog(props: MoveFormToDepartmentDialogP
                     color="primary"
                     variant="contained"
                     startIcon={<MoveGroup />}
-                    disabled={process == null || departments == null}
+                    disabled={process == null || targetDepartment == null || targetDepartmentError != null}
                 >
-                    Ja, Formular übertragen
+                    Ja, Prozess übertragen
                 </Button>
                 <Button
                     onClick={onClose}

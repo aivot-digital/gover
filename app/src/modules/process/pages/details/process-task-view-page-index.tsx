@@ -119,7 +119,7 @@ export function ProcessTaskViewPageIndex(): ReactNode {
         const fileNumbers = item.instance?.assignedFileNumbers?.filter((value) => value.trim().length > 0) ?? [];
         const entries: StatusTablePropsItem[] = [
             {
-                label: 'Vorgangskennung',
+                label: 'Vorgangsschlüssel',
                 icon: <Inbox />,
                 children: renderLinkedValue(item.instance?.caseNumber ?? 'Nicht hinterlegt', processPath),
             },

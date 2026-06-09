@@ -29,6 +29,7 @@ import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
 import {deepEquals} from '../../../../utils/equality-utils';
+import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
 
 interface ProcessSettingsDialogTabProps {
     open: boolean;
@@ -386,6 +387,15 @@ export function ProcessSettingsDialogProcessAccessTab(props: ProcessSettingsDial
 
     return (
         <>
+            <ElementEditorSectionHeader
+                title="Berechtigungen des Prozesses"
+                variant="h5"
+                disableMarginTop
+                maxWidth={560}
+            >
+                Steuern Sie, welche Organisationseinheiten und Teams diesen Prozess in der Verwaltung sehen, bearbeiten, prüfen oder veröffentlichen dürfen.
+            </ElementEditorSectionHeader>
+
             <TableContainer>
                 <Table size="small">
                     <TableHead>

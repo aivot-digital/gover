@@ -5,6 +5,7 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import org.hibernate.validator.constraints.Length;
 
 import java.time.Instant;
@@ -21,9 +22,9 @@ public class ProcessEntity {
     private Integer id;
 
     @Nonnull
-    @NotNull(message = "Der interne Title der Prozessdefinition darf nicht null sein.")
-    @NotBlank(message = "Der interne Title der Prozessdefinition darf nicht leer sein.")
-    @Length(min=3, max = 96, message = "Der interne Title der Prozessdefinition muss zwischen 3 und 96 Zeichen lang sein.")
+    @NotNull(message = "Der interne Titel der Prozessdefinition darf nicht null sein.")
+    @NotBlank(message = "Der interne Titel der Prozessdefinition darf nicht leer sein.")
+    @Length(min=3, max = 96, message = "Der interne Titel der Prozessdefinition muss zwischen 3 und 96 Zeichen lang sein.")
     private String internalTitle;
 
     @Nonnull
@@ -33,6 +34,12 @@ public class ProcessEntity {
     @Nonnull
     @NotNull(message = "Die ID der Organisationseinheit darf nicht null sein.")
     private UUID accessKey;
+
+    @Nonnull
+    @NotBlank(message = "Der URL-Namespace des Prozesses darf nicht leer sein.")
+    @Pattern(regexp = "^[a-z0-9-]+$", message = "Der URL-Namespace des Prozesses darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.")
+    @Length(min = 3, max = 128, message = "Der URL-Namespace des Prozesses muss zwischen 3 und 128 Zeichen lang sein.")
+    private String slug;
 
     @Nonnull
     @NotNull(message = "Die Versionsanzahl darf nicht null sein.")
@@ -64,6 +71,7 @@ public class ProcessEntity {
                          @Nonnull String internalTitle,
                          @Nonnull Integer departmentId,
                          @Nonnull UUID accessKey,
+                         @Nonnull String slug,
                          @Nonnull Integer versionCount,
                          @Nullable Integer draftedVersion,
                          @Nullable Integer publishedVersion,
@@ -73,11 +81,35 @@ public class ProcessEntity {
         this.internalTitle = internalTitle;
         this.departmentId = departmentId;
         this.accessKey = accessKey;
+        this.slug = slug;
         this.versionCount = versionCount;
         this.draftedVersion = draftedVersion;
         this.publishedVersion = publishedVersion;
         this.created = created;
         this.updated = updated;
+    }
+
+    public ProcessEntity(@Nonnull Integer id,
+                         @Nonnull String internalTitle,
+                         @Nonnull Integer departmentId,
+                         @Nonnull UUID accessKey,
+                         @Nonnull Integer versionCount,
+                         @Nullable Integer draftedVersion,
+                         @Nullable Integer publishedVersion,
+                         @Nonnull Instant created,
+                         @Nonnull Instant updated) {
+        this(
+                id,
+                internalTitle,
+                departmentId,
+                accessKey,
+                "process-" + id,
+                versionCount,
+                draftedVersion,
+                publishedVersion,
+                created,
+                updated
+        );
     }
 
     // endregion
@@ -186,6 +218,16 @@ public class ProcessEntity {
 
     public ProcessEntity setAccessKey(@Nonnull UUID accessKey) {
         this.accessKey = accessKey;
+        return this;
+    }
+
+    @Nonnull
+    public String getSlug() {
+        return slug;
+    }
+
+    public ProcessEntity setSlug(@Nonnull String slug) {
+        this.slug = slug;
         return this;
     }
 

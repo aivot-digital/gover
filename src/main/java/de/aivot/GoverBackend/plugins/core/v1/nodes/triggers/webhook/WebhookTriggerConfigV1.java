@@ -57,8 +57,8 @@ public class WebhookTriggerConfigV1 {
 
     @Nullable
     @InputElementPOJOBinding(id = SLUG_CONFIG_KEY, type = ElementType.Text, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "Webhook-URL"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Die URL, über die der Webhook angesprochen werden kann."),
+            @ElementPOJOBindingProperty(key = "label", strValue = "URL-Segment des Webhooks"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Dieses Segment wird an den URL-Namespace des Prozesses angehängt. Der vollständige öffentliche API-Pfad lautet /api/public/webhook/{prozess-namespace}/{webhook-segment}/."),
             @ElementPOJOBindingProperty(key = "required", boolValue = true),
             @ElementPOJOBindingProperty(key = "destinationKey", strValue = WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
     })

@@ -4,13 +4,11 @@ import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
-import de.aivot.GoverBackend.process.repositories.ProcessRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.ProcessInstanceService;
@@ -46,7 +44,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class WebhookTriggerControllerV1Test {
-    private static final UUID ACCESS_KEY = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final String PROCESS_SLUG = "example-process";
 
     @Test
     void jsonEndpointShouldRemainPublic() throws NoSuchMethodException {
@@ -54,7 +52,7 @@ class WebhookTriggerControllerV1Test {
                 .getMethod(
                         "handleJson",
                         HttpServletRequest.class,
-                        UUID.class,
+                        String.class,
                         String.class,
                         Map.class,
                         String.class,
@@ -64,7 +62,7 @@ class WebhookTriggerControllerV1Test {
                 .getAnnotation(RequestMapping.class);
 
         assertNotNull(mapping);
-        assertArrayEquals(new String[]{"/api/public/webhooks/v1/{accessKey}/{slug}/json/"}, mapping.value());
+        assertArrayEquals(new String[]{"/api/public/webhook/{processSlug}/{slug}/json/"}, mapping.value());
         assertArrayEquals(new RequestMethod[]{RequestMethod.POST, RequestMethod.PUT, RequestMethod.PATCH}, mapping.method());
         assertArrayEquals(new String[]{MediaType.APPLICATION_JSON_VALUE}, mapping.consumes());
         assertArrayEquals(new String[]{MediaType.APPLICATION_JSON_VALUE}, mapping.produces());
@@ -76,7 +74,7 @@ class WebhookTriggerControllerV1Test {
                 .getMethod(
                         "handleWithoutBody",
                         HttpServletRequest.class,
-                        UUID.class,
+                        String.class,
                         String.class,
                         String.class,
                         String.class,
@@ -85,7 +83,7 @@ class WebhookTriggerControllerV1Test {
                 .getAnnotation(RequestMapping.class);
 
         assertNotNull(mapping);
-        assertArrayEquals(new String[]{"/api/public/webhooks/v1/{accessKey}/{slug}/"}, mapping.value());
+        assertArrayEquals(new String[]{"/api/public/webhook/{processSlug}/{slug}/"}, mapping.value());
         assertArrayEquals(new RequestMethod[]{RequestMethod.GET, RequestMethod.DELETE}, mapping.method());
         assertArrayEquals(new String[]{MediaType.APPLICATION_JSON_VALUE}, mapping.produces());
     }
@@ -104,7 +102,7 @@ class WebhookTriggerControllerV1Test {
                 ResponseException.class,
                 () -> fixture.controller().handleJson(
                         request,
-                        ACCESS_KEY,
+                        PROCESS_SLUG,
                         "example-slug",
                         Map.<String, Object>of("key", "value"),
                         null,
@@ -131,7 +129,7 @@ class WebhookTriggerControllerV1Test {
                 ResponseException.class,
                 () -> fixture.controller().handleXml(
                         request,
-                        ACCESS_KEY,
+                        PROCESS_SLUG,
                         "example-slug",
                         Map.<String, Object>of("key", "value"),
                         null,
@@ -158,7 +156,7 @@ class WebhookTriggerControllerV1Test {
 
         var response = fixture.controller().handleJson(
                 request,
-                ACCESS_KEY,
+                PROCESS_SLUG,
                 "example-slug",
                 Map.<String, Object>of("key", "value"),
                 null,
@@ -186,7 +184,7 @@ class WebhookTriggerControllerV1Test {
 
         var response = fixture.controller().handleFormData(
                 request,
-                ACCESS_KEY,
+                PROCESS_SLUG,
                 "example-slug",
                 null,
                 null,
@@ -214,7 +212,7 @@ class WebhookTriggerControllerV1Test {
 
         var response = fixture.controller().handleWithoutBody(
                 request,
-                ACCESS_KEY,
+                PROCESS_SLUG,
                 "example-slug",
                 null,
                 null,
@@ -230,7 +228,7 @@ class WebhookTriggerControllerV1Test {
                                                                  String requestBodyType) throws ResponseException {
         var process = new ProcessEntity()
                 .setId(1)
-                .setAccessKey(ACCESS_KEY);
+                .setSlug(PROCESS_SLUG);
 
         var node = new ProcessNodeEntity()
                 .setId(1)
@@ -275,9 +273,8 @@ class WebhookTriggerControllerV1Test {
         when(processNodeDefinitionService.getProcessNodeDefinition(any(ProcessNodeEntity.class)))
                 .thenReturn(Optional.of(processNodeDefinition));
 
-        var processRepository = mock(ProcessRepository.class);
-        when(processRepository.findOne(any(Specification.class))).thenReturn(Optional.of(process));
-        var processService = new ProcessService(processRepository, mock(PermissionService.class));
+        var processService = mock(ProcessService.class);
+        when(processService.retrieveBySlugOrHistory(PROCESS_SLUG)).thenReturn(Optional.of(process));
 
         var processNodeRepository = mock(ProcessNodeRepository.class);
         when(processNodeRepository.findAll(any(Specification.class))).thenReturn(List.of(node));

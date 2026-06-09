@@ -2,9 +2,9 @@ package de.aivot.GoverBackend.plugins.form.v1.nodes;
 
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
-import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
+import de.aivot.GoverBackend.process.services.PublicUrlService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
@@ -30,7 +30,7 @@ class FormTriggerNodeV1Test {
     @BeforeEach
     void setUp() {
         processNodeRepository = mock(ProcessNodeRepository.class);
-        node = new FormTriggerNodeV1(mock(GoverConfig.class), processNodeRepository);
+        node = new FormTriggerNodeV1(mock(PublicUrlService.class), processNodeRepository);
     }
 
     @Test
@@ -78,7 +78,7 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(errors);
         assertEquals(
-                "Die Formular-URL wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet.",
+                "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet.",
                 errors.get(FormTriggerConfigV1.FORM_SLUG)
         );
     }

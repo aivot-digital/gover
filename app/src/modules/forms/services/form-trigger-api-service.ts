@@ -63,7 +63,7 @@ export class FormTriggerApiService extends BaseApiService {
         order?: SortOrder,
         filters?: Partial<FormTriggerFilter>,
     ): Promise<Page<FormTriggerListItem>> {
-        return await this.get<Page<FormTriggerListItem>>('/api/public/forms/v1/', {
+        return await this.get<Page<FormTriggerListItem>>('/api/public/forms/', {
             query: this.buildListQuery(page, limit, sort, order, filters),
             skipAuthCheck: true,
         });
@@ -80,12 +80,12 @@ export class FormTriggerApiService extends BaseApiService {
     }
 
     public async getFormTheme(
-        processAccessKey: string,
+        processSlug: string,
         formSlug: string,
         version?: number,
         testClaimAccessKey?: string,
     ): Promise<Theme> {
-        return await this.get<Theme>(`/api/public/forms/v1/${processAccessKey}/${formSlug}/theme/`, {
+        return await this.get<Theme>(`/api/public/form/${processSlug}/${formSlug}/theme/`, {
             query: {
                 version,
                 'test-claim': testClaimAccessKey,
