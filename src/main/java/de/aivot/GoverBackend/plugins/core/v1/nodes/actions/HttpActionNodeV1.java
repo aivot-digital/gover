@@ -503,7 +503,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.
             response = executeRequest(context, method, uri, headers, outgoing);
         } catch (HttpConnectionException e) {
             return ProcessNodeExecutionResultTaskCompleted.of(ERROR_PORT)
-                    .setNodeData(createBaseMetadata(null, Map.of(), null, null));
+                    .setNodeData(createBaseMetadata(599, Map.of(), e.getMessage(), null));
         } catch (ProcessNodeExecutionException e) {
             throw e;
         } catch (Exception e) {
