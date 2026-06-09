@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Box} from '@mui/material';
 import React, {useCallback, useMemo, useRef, useState} from 'react';
@@ -282,9 +283,10 @@ export function FormsListPage() {
             {
                 memberships != null &&
                 memberships.length > 0 &&
-                <Typography>
-                    Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!
-                </Typography>
+                <EmptyDataListPlaceholder
+                    title="Keine Formulareingänge vorhanden"
+                    description="Formulareingänge binden Formulare in Prozesse ein und übernehmen eingereichte Daten in den jeweiligen Vorgang."
+                />
             }
         </Box>
     ), [memberships]);
@@ -328,7 +330,7 @@ export function FormsListPage() {
                     columnDefinitions={columns}
                     getRowIdentifier={getRowIdentifier}
                     noDataPlaceholder={noDataPlaceholder}
-                    noSearchResultsPlaceholder="Keine Prozesselemente gefunden"
+                    noSearchResultsPlaceholder="Keine Formulareingänge gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}
                     defaultSortField={'id' as any}

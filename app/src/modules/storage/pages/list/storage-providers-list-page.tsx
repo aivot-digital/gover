@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -31,6 +33,7 @@ const availableFilter = [
 ];
 
 export function StorageProvidersListPage(): ReactNode {
+    const navigate = useNavigate();
     const [definitions, setDefinitions] = useState<StorageProviderDefinition[]>([]);
     const [selectedDefinitionKey, setSelectedDefinitionKey] = useState<string | undefined>(undefined);
 
@@ -190,7 +193,14 @@ export function StorageProvidersListPage(): ReactNode {
                     columnIcon={columnIcon}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder="Keine Speicheranbieter angelegt"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Noch keine Speicheranbieter angelegt"
+                            description="Speicheranbieter verbinden Gover mit Dateispeichern für Uploads, Anlagen und erzeugte Dokumente."
+                            addText="Neuen Speicheranbieter anlegen"
+                            onAdd={() => navigate('/storage-providers/new')}
+                        />
+                    }
                     noSearchResultsPlaceholder="Keine Speicheranbieter gefunden"
                     rowActionsCount={1}
                     rowActions={rowActions}

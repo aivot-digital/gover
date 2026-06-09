@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../../components/page-wrapper/page-wrapper';
 import {Link, Typography} from '@mui/material';
 import {EditOutlined, MailOutlined, PeopleOutlined} from '@mui/icons-material';
@@ -34,6 +36,7 @@ const Filters = [
 ];
 
 export function UserListPage() {
+    const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
@@ -262,7 +265,14 @@ export function UserListPage() {
                 columnIcon={columnIcon}
                 columnDefinitions={columns}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Mitarbeiter:innen angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Mitarbeiter:innen angelegt"
+                        description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Gover verwalten oder Aufgaben in Vorgängen bearbeiten."
+                        addText={hasAccess ? "Mitarbeiter:in anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate('/users/new') : undefined}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

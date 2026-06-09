@@ -1,4 +1,5 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import Box from '@mui/material/Box';
@@ -263,7 +264,14 @@ export function UserDetailsPageDeputies() {
                     searchPlaceholder="Name der Stellvertreter:in eingeben…"
                     defaultSortField="untilTimestamp"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Stellvertreter:innen vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Stellvertretungen eingerichtet"
+                            description="Stellvertretungen legen fest, wer Aufgaben dieser Person für einen Zeitraum übernehmen kann."
+                            addText={hasAccess && canManageDeputies ? "Stellvertretung hinzufügen" : undefined}
+                            onAdd={hasAccess && canManageDeputies ? () => setShowSelectUserDialog(true) : undefined}
+                        />
+                    }
                     loadingPlaceholder="Lade Stellvertreter:innen…"
                     noSearchResultsPlaceholder="Keine Stellvertreter:innen gefunden"
                     rowActions={(item) => [

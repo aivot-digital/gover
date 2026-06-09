@@ -1,4 +1,5 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@mui/icons-material/EditOutlined';
 import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
@@ -304,7 +305,14 @@ export function UserDetailsPageDepartmentMemberships() {
                     searchPlaceholder="Name der Organisationseinheit eingeben…"
                     defaultSortField="departmentName"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Organisationseinheiten vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Organisationseinheiten zugeordnet"
+                            description="Organisationseinheiten beschreiben, in welchen fachlichen Bereichen diese Person mitarbeitet."
+                            addText={hasAccess && canManageMemberships ? "Mitgliedschaft hinzufügen" : undefined}
+                            onAdd={hasAccess && canManageMemberships ? () => setShowSelectNewDepartmentDialog(true) : undefined}
+                        />
+                    }
                     loadingPlaceholder="Lade Organisationseinheiten…"
                     noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                     rowActions={(item) => [

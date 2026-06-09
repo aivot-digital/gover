@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {GridColDef} from '@mui/x-data-grid';
@@ -100,7 +101,12 @@ export function DepartmentsDetailsPageForms() {
                 searchPlaceholder="Titel des Formulars eingeben…"
                 defaultSortField="internalTitle"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Formulare vorhanden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Formulare zugeordnet"
+                        description="Diese Zuordnung zeigt, welche Formulare in dieser Organisationseinheit entwickelt oder fachlich verwaltet werden."
+                    />
+                }
                 loadingPlaceholder="Lade Formulare…"
                 noSearchResultsPlaceholder="Keine Formulare gefunden"
                 rowActions={(item) => [{

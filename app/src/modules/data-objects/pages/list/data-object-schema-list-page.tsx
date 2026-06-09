@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -152,7 +153,14 @@ export function DataObjectSchemaListPage() {
                     fetch={fetchSchemas}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder="Keine Datenmodelle angelegt"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Noch keine Datenmodelle angelegt"
+                            description="Datenmodelle definieren die Struktur wiederverwendbarer Datensätze, die in Formularen und Prozessen genutzt werden können."
+                            addText={hasAccess ? "Neues Datenmodell anlegen" : undefined}
+                            onAdd={hasAccess ? () => navigate('/data-models/new') : undefined}
+                        />
+                    }
                     noSearchResultsPlaceholder="Keine Datenmodelle gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}

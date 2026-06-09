@@ -1,4 +1,5 @@
 import React from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
 import EditOutlined from '@mui/icons-material/EditOutlined';
@@ -80,7 +81,12 @@ export function AccountDetailsPageDepartmentMemberships() {
                 searchPlaceholder="Name der Organisationseinheit eingeben…"
                 defaultSortField="departmentName"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Organisationseinheiten vorhanden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Organisationseinheiten zugeordnet"
+                        description="Ihre Organisationseinheiten bestimmen, in welchen fachlichen Bereichen Sie mitarbeiten."
+                    />
+                }
                 loadingPlaceholder="Lade Organisationseinheiten…"
                 noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                 rowActions={(item) => [{

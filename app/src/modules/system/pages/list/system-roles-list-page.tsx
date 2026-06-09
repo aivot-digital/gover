@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -20,6 +22,7 @@ import {
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function SystemRolesListPage() {
+    const navigate = useNavigate();
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
 
     const hasAccess = useAccessGuard({
@@ -129,8 +132,15 @@ export function SystemRolesListPage() {
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Systemrolle angelegt"
-                noSearchResultsPlaceholder="Keine Systemrolle gefunden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Systemrollen angelegt"
+                        description="Systemrollen bündeln globale Berechtigungen, die unabhängig von Organisationseinheiten oder Teams gelten."
+                        addText={hasAccess ? "Neue Systemrolle anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate('/system-roles/new') : undefined}
+                    />
+                }
+                noSearchResultsPlaceholder="Keine Systemrollen gefunden"
                 rowActionsCount={1}
                 rowActions={rowActions}
                 defaultSortField="name"

@@ -1,4 +1,6 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {useNavigate} from 'react-router-dom';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -16,6 +18,7 @@ import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function IdentityProvidersListPage() {
+    const navigate = useNavigate();
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -198,7 +201,14 @@ export function IdentityProvidersListPage() {
                     fetch={fetchIdentityProviders}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder="Keine Nutzerkontenanbieter angelegt"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Noch keine Nutzerkontenanbieter angelegt"
+                            description="Nutzerkontenanbieter verbinden Gover mit Anmeldeverfahren oder Benutzerquellen wie Verzeichnisdiensten."
+                            addText={hasAccess ? "Neuen Nutzerkontenanbieter anlegen" : undefined}
+                            onAdd={hasAccess ? () => navigate('/identity-providers/new') : undefined}
+                        />
+                    }
                     noSearchResultsPlaceholder="Keine Nutzerkontenanbieter gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}

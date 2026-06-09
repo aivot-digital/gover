@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
@@ -9,7 +10,7 @@ import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {useApi} from '../../../../hooks/use-api';
-import {useParams} from 'react-router-dom';
+import {useParams, useNavigate} from 'react-router-dom';
 import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loading-placeholder';
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import {GridColDef} from '@mui/x-data-grid';
@@ -36,6 +37,7 @@ import {AssignmentContextValue} from '../../../../models/elements/form/input/ass
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function DataObjectItemListPage() {
+    const navigate = useNavigate();
     const api = useApi();
     const schemaKey = useParams().schemaKey;
 
@@ -184,7 +186,14 @@ export function DataObjectItemListPage() {
                 fetch={fetchDataObjectItems}
                 columnDefinitions={columns}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Datenobjekte angelegt"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Datenobjekte angelegt"
+                        description="Datenobjekte sind einzelne Datensätze eines Datenmodells, die zentral gepflegt und wiederverwendet werden können."
+                        addText={hasAccess ? "Neues Datenobjekt anlegen" : undefined}
+                        onAdd={hasAccess ? () => navigate(`/data-objects/${dataObjectSchemaKey}/new`) : undefined}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Datenobjekte gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

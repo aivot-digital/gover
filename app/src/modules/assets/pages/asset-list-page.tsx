@@ -1,4 +1,5 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Stack, Typography} from '@mui/material';
@@ -13,7 +14,7 @@ import DriveFolderUploadOutlinedIcon from '@mui/icons-material/DriveFolderUpload
 import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useParams, useSearchParams} from 'react-router-dom';
+import {useParams, useSearchParams, useNavigate} from 'react-router-dom';
 import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {useApi} from '../../../hooks/use-api';
 import {ListControlRef} from '../../../components/generic-list/generic-list-props';
@@ -25,6 +26,7 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 
 export function AssetListPage() {
+    const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const api = useApi();
     const {storageProviderId} = useParams<{ storageProviderId?: string }>();
@@ -405,7 +407,14 @@ export function AssetListPage() {
                 fetch={fetchAssets}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder="Keine Dateien hochgeladen"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Dateien hochgeladen"
+                        description="Dateien sind hochgeladene Anlagen und Medien, die in Formularen, Prozessen oder Konfigurationen verwendet werden können."
+                        addText={parsedStorageProviderId != null && !storageProviderReadOnly ? "Datei hochladen" : undefined}
+                        onAdd={parsedStorageProviderId != null && !storageProviderReadOnly ? () => navigate(uploadRoute) : undefined}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Dateien gefunden"
                 rowActionsCount={1}
                 rowActions={rowActions}
