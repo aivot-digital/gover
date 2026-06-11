@@ -26,6 +26,7 @@ import de.aivot.GoverBackend.nocode.models.NoCodeReference;
 import de.aivot.GoverBackend.nocode.models.NoCodeStaticValue;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
@@ -219,6 +220,19 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                         "Der Zeitstempel der Entscheidung im ISO-Format."
                 )
         );
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull ApprovalConfiguration configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        if (!Objects.equals(configuration.contentMode, MODE_CUSTOM_CONTENT)) {
+            return ProcessNodeDefinitionMetadata
+                    .reuse(previousMetadata)
+                    .withLayout(configuration.dataContent, processNodeEntity);
+        }
+        return previousMetadata;
     }
 
     @Override
