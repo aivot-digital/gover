@@ -35,6 +35,7 @@ interface ProcessFlowEditorNodeHandleProps {
     editable: boolean;
     isConnected: boolean;
     port: ProcessNodePort;
+    showLabel: boolean;
     onClick: () => void;
     onConnectToExisting: (port: ProcessNodePort) => void;
     onDeleteEdge: (port: ProcessNodePort) => void;
@@ -80,6 +81,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
         editable,
         isConnected,
         port,
+        showLabel,
         onClick,
         onConnectToExisting,
         onDeleteEdge,
@@ -152,13 +154,26 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     sx={{
                         bgcolor: 'background.paper',
                         borderColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
+                        ...(!showLabel ? {
+                            width: CHIP_HEIGHT,
+                            minWidth: CHIP_HEIGHT,
+                            maxWidth: CHIP_HEIGHT,
+                            justifyContent: 'center',
+                            '& .MuiChip-label': {
+                                display: 'none',
+                                p: 0,
+                            },
+                            '& .MuiChip-deleteIcon': {
+                                m: 0,
+                            },
+                        } : {}),
                     }}
                     deleteIcon={editable ? (
                         isConnected ?
                             <PortChipActionIcon tooltip="Verbindung aufheben">
                                 <Close sx={{fontSize: 18}}/>
                             </PortChipActionIcon> :
-                            <PortChipActionIcon tooltip="Mit bestehendem Knoten verbinden">
+                            <PortChipActionIcon tooltip="Mit Element verbinden">
                                 <Link sx={{fontSize: 18}}/>
                             </PortChipActionIcon>
                     ) : undefined}
@@ -204,28 +219,30 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                                     />
                                 </Box>
 
-                                <IconButton
-                                    sx={{
-                                        bgcolor: 'background.paper',
-                                        border: `${HANDLE_WIDTH}px solid`,
-                                        borderColor: HANDLE_COLOR,
-                                        padding: 0,
-                                        width: ADD_BUTTON_SIZE,
-                                        height: ADD_BUTTON_SIZE,
-                                    }}
-                                    onClick={(event) => {
-                                        event.stopPropagation();
-                                        event.preventDefault();
-
-                                        onClick();
-                                    }}
-                                >
-                                    <Add
+                                <Tooltip title="Element hinzufügen" arrow>
+                                    <IconButton
                                         sx={{
-                                            fontSize: ADD_BUTTON_ICON_SIZE,
+                                            bgcolor: 'background.paper',
+                                            border: `${HANDLE_WIDTH}px solid`,
+                                            borderColor: HANDLE_COLOR,
+                                            padding: 0,
+                                            width: ADD_BUTTON_SIZE,
+                                            height: ADD_BUTTON_SIZE,
                                         }}
-                                    />
-                                </IconButton>
+                                        onClick={(event) => {
+                                            event.stopPropagation();
+                                            event.preventDefault();
+
+                                            onClick();
+                                        }}
+                                    >
+                                        <Add
+                                            sx={{
+                                                fontSize: ADD_BUTTON_ICON_SIZE,
+                                            }}
+                                        />
+                                    </IconButton>
+                                </Tooltip>
 
                                 <Box
                                     sx={{

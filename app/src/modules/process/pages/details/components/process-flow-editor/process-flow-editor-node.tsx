@@ -680,6 +680,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                     wasPerformed={performedPortKeys.has(port.key)}
                                     isConnected={outgoingEdges.some((outgoingEdge) => outgoingEdge.port?.key === port.key)}
                                     port={port}
+                                    showLabel={provider.ports.length > 1}
                                     onClick={() => {
                                         onAddFollowUpNode(node.id, port.key);
                                     }}
