@@ -291,6 +291,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
                     @ElementPOJOBindingProperty(key = "label", strValue = "Ausgangspfad"),
                     @ElementPOJOBindingProperty(key = "hint", strValue = "Der Ausgangspfad für den abzubildenden oder zu löschenden Wert. Wenn der Pfad nicht existiert, wird null verwendet. Pfade verwenden Destination-Key-Syntax mit Punktnotation, numerischen Array-Segmenten und dem Array-Wildcard-Segment *, z. B. person.name, items.0.price oder hunde.*.col.farbe. Klammer-Schreibweisen wie [0] oder [*] sind nicht erlaubt."),
                     @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                    @ElementPOJOBindingProperty(key = "disableWildCards", falseValue = true),
             })
             public String source;
 
@@ -315,6 +316,7 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
             @InputElementPOJOBinding(id = TARGET_FIELD_ID, type = ElementType.ProcessDataKeyInput, properties = {
                     @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
                     @ElementPOJOBindingProperty(key = "hint", strValue = "Der Zielpfad, auf den der Wert abgebildet werden soll. Wenn der Pfad nicht existiert, wird er automatisch erstellt. Pfade verwenden dieselbe Destination-Key-Syntax wie Ausgangspfade und unterstützen das Array-Wildcard-Segment *. Klammer-Schreibweisen wie [0] oder [*] sind nicht erlaubt. Kann leer bleiben, wenn der Wert nur gelöscht werden soll."),
+                    @ElementPOJOBindingProperty(key = "disableWildCards", falseValue = true),
             })
             public String target;
         }
