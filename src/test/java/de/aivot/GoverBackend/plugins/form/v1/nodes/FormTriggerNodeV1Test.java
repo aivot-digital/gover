@@ -46,6 +46,20 @@ class FormTriggerNodeV1Test {
     }
 
     @Test
+    void getOutputs_ShouldExposeStartedTimestamp() {
+        var output = node
+                .getOutputs()
+                .stream()
+                .filter(candidate -> FormTriggerNodeV1.DATA_KEY_STARTED.equals(candidate.key()))
+                .findFirst()
+                .orElse(null);
+
+        assertNotNull(output);
+        assertEquals("Eingangszeitstempel", output.label());
+        assertEquals("Der Zeitstempel des Dateneingangs an den Auslöser", output.description());
+    }
+
+    @Test
     void validateConfiguration_ShouldReportLegacyLayoutFieldsMissingFromFormLayout() throws Exception {
         when(processNodeRepository.exists(anySpecification())).thenReturn(false);
 

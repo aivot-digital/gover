@@ -54,6 +54,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
+    public static final String DATA_KEY_STARTED = "started";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
@@ -117,19 +118,24 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
                 new ProcessNodeOutput(
-                        "payload",
+                        DATA_KEY_PAYLOAD,
                         "Zugewiesene Formulardaten",
                         "Alle Formulardaten, welche über einen Datenschlüssel zugewiesen wurden"
                 ),
                 new ProcessNodeOutput(
-                        "unmapped",
+                        DATA_KEY_UNMAPPED,
                         "Alle Formulardaten",
                         "Alle Formulardaten, unabhängig, ob diese über einen Datenschlüssel zugewiesen wurden oder nicht"
                 ),
                 new ProcessNodeOutput(
-                        "attachments",
+                        DATA_KEY_ATTACHMENTS,
                         "Anlagen",
                         "Eine Liste aller Anlagen, die über dieses Formular hochgeladen wurden."
+                ),
+                new ProcessNodeOutput(
+                        DATA_KEY_STARTED,
+                        "Eingangszeitstempel",
+                        "Der Zeitstempel des Dateneingangs an den Auslöser"
                 )
         );
     }

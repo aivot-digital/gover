@@ -76,12 +76,17 @@ class FormTriggerControllerV1SubmitTest {
                 same(derivedRuntimeElementData.getEffectiveValues()),
                 same(derivedRuntimeElementData.getElementStates())
         );
-        verify(fixture.processInstanceService()).create(any(ProcessInstanceEntity.class));
+        var createdInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).create(createdInstanceCaptor.capture());
         var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
         verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
         assertEquals(
                 Map.of("mapped", "payload"),
                 updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_PAYLOAD)
+        );
+        assertEquals(
+                createdInstanceCaptor.getValue().getStarted(),
+                updatedInstanceCaptor.getValue().getInitialPayload().get(FormTriggerNodeV1.DATA_KEY_STARTED)
         );
     }
 

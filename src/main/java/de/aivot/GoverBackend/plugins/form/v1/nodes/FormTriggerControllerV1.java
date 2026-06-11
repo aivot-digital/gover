@@ -605,6 +605,7 @@ public class FormTriggerControllerV1 {
                     "storageProviderId", a.getStorageProviderId(),
                     "storagePathFromRoot", a.getStoragePathFromRoot()
             )).toList());
+            initialPayload.put(FormTriggerNodeV1.DATA_KEY_STARTED, startedAt);
 
             createdInstance
                     .setInitialPayload(initialPayload)
