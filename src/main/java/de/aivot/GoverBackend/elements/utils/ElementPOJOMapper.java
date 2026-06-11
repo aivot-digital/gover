@@ -361,9 +361,14 @@ public class ElementPOJOMapper {
             } else if (property.boolValue()) {
                 setterMethod.invoke(
                         target,
-                        property.boolValue()
+                        true
                 );
-            } else {
+            } else if (property.falseValue()) {
+                setterMethod.invoke(
+                        target,
+                        false
+                );
+            }else {
                 setterMethod.invoke(target, (Object) null);
             }
         }
