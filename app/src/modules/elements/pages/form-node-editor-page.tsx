@@ -622,12 +622,6 @@ export function FormNodeEditorPage() {
 
     const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
         {
-            label: 'XDatenfeld-Schema importieren',
-            icon: <Code/>,
-            onClick: handleImportFromXDF,
-        },
-        'separator',
-        {
             label: 'Vorschau in neuem Tab öffnen',
             icon: <Preview/>,
             endIcon: <OpenInNew fontSize="small"/>,
@@ -661,6 +655,11 @@ export function FormNodeEditorPage() {
                 notImplemented();
                 // setShowPrefillDialog(true);
             },
+        },
+        {
+            label: 'XDatenfeld-Schema importieren',
+            icon: <Code/>,
+            onClick: handleImportFromXDF,
         },
         'separator',
         {
