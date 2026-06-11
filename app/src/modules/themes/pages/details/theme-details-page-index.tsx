@@ -208,9 +208,21 @@ export function ThemeDetailsPageIndex() {
 
     return (
         <Box>
+            <Typography
+                variant="h5"
+                sx={{mt: 1.5, mb: 1}}
+            >
+                Erscheinungsbild konfigurieren
+            </Typography>
+            <Typography sx={{mb: 3, maxWidth: 900}}>
+                Konfigurieren Sie das Erscheinungsbild, um Namen, Logo, Favicon und Farben für Gover und veröffentlichte Formulare festzulegen.
+                Die Einstellungen können jederzeit angepasst werden, wirken sich aber unmittelbar auf alle Formulare aus, die dieses Erscheinungsbild verwenden.
+            </Typography>
+
             <Grid
                 container
                 columnSpacing={4}
+                rowSpacing={3}
             >
                 <Grid
                     size={{
@@ -231,6 +243,18 @@ export function ThemeDetailsPageIndex() {
                         disabled={!isEditable}
                     />
                 </Grid>
+
+                <Grid
+                    sx={{
+                        display: {
+                            xs: 'none',
+                            lg: 'block',
+                        },
+                    }}
+                    size={{
+                        lg: 6,
+                    }}
+                />
 
                 <Grid
                     size={{
@@ -268,8 +292,8 @@ export function ThemeDetailsPageIndex() {
                             handleInputChange('faviconKey')(key);
                         }}
                         size={{
-                            width: '8rem',
-                            height: '8rem',
+                            width: '4rem',
+                            height: '4rem',
                         }}
                         disabled={!isEditable}
                     />
