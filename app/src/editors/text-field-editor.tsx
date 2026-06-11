@@ -127,7 +127,7 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                     }}
                 >
                     <CheckboxFieldComponent
-                        label="Kopieren ermöglichen"
+                        label="Kopieren des Wertes in Zwischenablage ermöglichen"
                         value={element.copyable ?? false}
                         onChange={(checked) => {
                             onPatch({
@@ -135,7 +135,7 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
                             });
                         }}
                         disabled={!editable}
-                        hint={'Blendet am Ende des Eingabefelds eine Schaltfläche zum Kopieren des aktuellen Werts ein.'}
+                        hint={'Zeigt am Ende des Eingabefelds eine Schaltfläche zum einfachen Kopieren des aktuellen Wertes in die Zwischenablage ein.'}
                     />
                 </Grid>
             </Grid>
