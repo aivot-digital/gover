@@ -278,7 +278,7 @@ export function ProcessNodeEditor(): ReactNode {
                 setOriginalNode(savedNode);
                 setEditedNode(savedNode);
 
-                dispatch(showSuccessSnackbar('Der Knoten wurde erfolgreich gespeichert.'));
+                dispatch(showSuccessSnackbar('Das Prozesselement wurde erfolgreich gespeichert.'));
 
                 return new ProcessNodeApiService()
                     .validate(editedNode.id);
