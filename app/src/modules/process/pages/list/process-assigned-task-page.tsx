@@ -1,14 +1,13 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {Typography} from '@mui/material';
+import {Dialog, DialogContent, Typography} from '@mui/material';
 import {useUser} from '../../../../hooks/use-admin-guard';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
-import {useConfirm} from '../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../enums/process-task-status';
-import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
 import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
 import {ProcessInstanceEntity} from '../../entities/process-instance-entity';
@@ -24,6 +23,8 @@ import {getNodeName} from '../details/components/process-flow-editor/utils/node-
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
+import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
+import {useRetainedDialogValue} from '../../../../hooks/use-retained-dialog-value';
 
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
@@ -35,7 +36,9 @@ interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntit
 export function ProcessAssignedTaskListPage() {
     const user = useUser();
     const listRef = useRef<ListControlRef | null>(null);
-    const confirm = useConfirm();
+    const [selectedTaskData, setSelectedTaskData] = useState<ProcessInstanceTaskEntityWithInstance | null>(null);
+    const isTaskDataDialogOpen = selectedTaskData != null;
+    const renderTaskData = useRetainedDialogValue(isTaskDataDialogOpen, selectedTaskData);
 
     useEffect(() => {
         dispatchProcessAssignedTaskCountRefreshEvent();
@@ -155,13 +158,60 @@ export function ProcessAssignedTaskListPage() {
 
     const getRowIdentifier = useCallback((row: ProcessInstanceTaskEntityWithInstance) => row.id.toString(), []);
 
+    const handleTaskDataDialogClose = useCallback(() => {
+        setSelectedTaskData(null);
+    }, []);
+
     const rowActions = useCallback((item: ProcessInstanceTaskEntityWithInstance) => [
         {
             icon: <DataObject/>,
-            onClick: () => {
-                confirm({
-                    title: 'Daten der Aufgabe',
-                    children: (
+            onClick: () => setSelectedTaskData(item),
+            tooltip: 'Daten ansehen',
+        },
+    ], []);
+
+    return (
+        <>
+            <PageWrapper
+                title="Aufgaben"
+                fullWidth
+                background
+            >
+                <GenericListPage<ProcessInstanceTaskEntityWithInstance>
+                    controlRef={listRef}
+                    header={header}
+                    searchLabel="Aufgabe suchen"
+                    searchPlaceholder="Name der Aufgabe eingeben…"
+                    fetch={fetchAssignedTasks}
+                    columnIcon={columnIcon}
+                    columnDefinitions={columnDefinitions}
+                    getRowIdentifier={getRowIdentifier}
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Aktuell keine Aufgaben zu bearbeiten"
+                            description="Diese Liste zeigt Bearbeitungsschritte aus laufenden Vorgängen, für die aktuell Ihre Mitarbeit erforderlich ist."
+                        />
+                    }
+                    noSearchResultsPlaceholder="Keine Aufgaben gefunden"
+                    rowActionsCount={3}
+                    rowActions={rowActions}
+                    defaultSortField="started"
+                    disableFullWidthToggle={true}
+                />
+            </PageWrapper>
+
+            <Dialog
+                open={isTaskDataDialogOpen}
+                onClose={handleTaskDataDialogClose}
+                fullWidth
+                maxWidth="md"
+            >
+                <DialogTitleWithClose onClose={handleTaskDataDialogClose}>
+                    Daten der Aufgabe
+                </DialogTitleWithClose>
+                <DialogContent tabIndex={0}>
+                    {
+                        renderTaskData != null &&
                         <>
                             <Typography variant="h6">
                                 Vorgangsdaten der Aufgabe
@@ -170,7 +220,7 @@ export function ProcessAssignedTaskListPage() {
                                 Die Vorgangsdaten, welche die Aufgabe weitergegeben hat.
                             </Typography>
                             <ExpandableCodeBlock
-                                value={JSON.stringify(item.processData, null, 2)}
+                                value={JSON.stringify(renderTaskData.processData, null, 2)}
                             />
 
                             <Typography variant="h6">
@@ -180,43 +230,12 @@ export function ProcessAssignedTaskListPage() {
                                 Die Elementdaten, die diese Aufgabe erzeugt hat.
                             </Typography>
                             <ExpandableCodeBlock
-                                value={JSON.stringify(item.nodeData, null, 2)}
+                                value={JSON.stringify(renderTaskData.nodeData, null, 2)}
                             />
                         </>
-                    ),
-                });
-            },
-            tooltip: 'Daten ansehen',
-        },
-    ], [confirm]);
-
-    return (
-        <PageWrapper
-            title="Aufgaben"
-            fullWidth
-            background
-        >
-            <GenericListPage<ProcessInstanceTaskEntityWithInstance>
-                controlRef={listRef}
-                header={header}
-                searchLabel="Aufgabe suchen"
-                searchPlaceholder="Name der Aufgabe eingeben…"
-                fetch={fetchAssignedTasks}
-                columnIcon={columnIcon}
-                columnDefinitions={columnDefinitions}
-                getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Aktuell keine Aufgaben zu bearbeiten"
-                        description="Diese Liste zeigt Bearbeitungsschritte aus laufenden Vorgängen, für die aktuell Ihre Mitarbeit erforderlich ist."
-                    />
-                }
-                noSearchResultsPlaceholder="Keine Aufgaben gefunden"
-                rowActionsCount={3}
-                rowActions={rowActions}
-                defaultSortField="started"
-                disableFullWidthToggle={true}
-            />
-        </PageWrapper>
+                    }
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
