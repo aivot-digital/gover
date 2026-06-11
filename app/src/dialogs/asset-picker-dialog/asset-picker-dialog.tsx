@@ -2,10 +2,16 @@ import React, {type PropsWithChildren, useCallback, useEffect, useMemo, useRef, 
 import {
     Alert,
     Box,
+    Button,
+    Chip,
     CircularProgress,
     Dialog,
     DialogContent,
+    FormControl,
+    Grid,
+    InputLabel,
     MenuItem,
+    OutlinedInput,
     Stack,
     TextField,
     Typography,
@@ -23,6 +29,7 @@ import {type Asset} from '../../modules/assets/models/asset';
 import {type StorageProviderEntity} from '../../modules/storage/entities/storage-provider-entity';
 import {AssetExplorer} from '../../modules/storage/components/asset-explorer';
 import {useConfirm} from '../../providers/confirm-provider';
+import {getFileTypeFilterSummary} from '../../utils/file-type-label';
 
 export interface AssetPickerDialogProps {
     title: string;
@@ -49,25 +56,25 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
     const confirm = useConfirm();
     const [providers, setProviders] = useState<StorageProviderEntity[]>([]);
     const [isLoadingProviders, setIsLoadingProviders] = useState(false);
+    const [hasProviderLoadError, setHasProviderLoadError] = useState(false);
     const [selectedProviderId, setSelectedProviderId] = useState<number>();
     const [isProcessingSelection, setIsProcessingSelection] = useState(false);
     const [selectionProcessingMessage, setSelectionProcessingMessage] = useState<string>();
     const isProcessingSelectionRef = useRef(false);
+    const providerLoadRequestRef = useRef(0);
 
-    useEffect(() => {
-        if (!show) {
-            return;
-        }
-
-        let isActive = true;
+    const loadProviders = useCallback(() => {
+        const requestId = providerLoadRequestRef.current + 1;
+        providerLoadRequestRef.current = requestId;
         setIsLoadingProviders(true);
+        setHasProviderLoadError(false);
 
         new StorageProvidersApiService()
             .listAll({
                 type: StorageProviderType.Assets,
             })
             .then(({content: loadedProviders}) => {
-                if (!isActive) {
+                if (providerLoadRequestRef.current !== requestId) {
                     return;
                 }
 
@@ -76,6 +83,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                     .sort((a, b) => a.name.localeCompare(b.name, 'de', {sensitivity: 'base'}));
 
                 setProviders(sortedProviders);
+                setHasProviderLoadError(false);
                 setSelectedProviderId((previousProviderId) => {
                     if (previousProviderId != null && sortedProviders.some((provider) => provider.id === previousProviderId)) {
                         return previousProviderId;
@@ -85,24 +93,33 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                 });
             })
             .catch((err) => {
-                if (!isActive) {
+                if (providerLoadRequestRef.current !== requestId) {
                     return;
                 }
 
                 setProviders([]);
                 setSelectedProviderId(undefined);
+                setHasProviderLoadError(true);
                 dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden.'));
             })
             .finally(() => {
-                if (isActive) {
+                if (providerLoadRequestRef.current === requestId) {
                     setIsLoadingProviders(false);
                 }
             });
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (!show) {
+            return;
+        }
+
+        loadProviders();
 
         return () => {
-            isActive = false;
+            providerLoadRequestRef.current += 1;
         };
-    }, [dispatch, show]);
+    }, [loadProviders, show]);
 
     useEffect(() => {
         if (show) {
@@ -124,6 +141,9 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             .map((entry) => entry.trim())
             .filter((entry) => entry.length > 0);
     }, [mimeType]);
+
+    const mimeTypeFilterLabel = useMemo(() => getFileTypeFilterSummary(normalizedMimeTypes), [normalizedMimeTypes]);
+    const hasSelectionCriteria = normalizedMimeTypes.length > 0 || mode === 'public';
 
     const handleDialogClose = useCallback(() => {
         if (isProcessingSelection) {
@@ -165,6 +185,11 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             return;
         }
 
+        if (item.missing) {
+            dispatch(showErrorSnackbar('Die ausgewählte Datei fehlt im Speicher und kann nicht ausgewählt werden.'));
+            return;
+        }
+
         const itemAssetKey = typeof item.assetKey === 'string'
             ? item.assetKey.trim()
             : '';
@@ -194,6 +219,8 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
 
             if (mode === 'public' && assetIsPrivate === true) {
                 stopSelectionProcessing();
+                const providerName = providers.find((provider) => provider.id === item.storageProviderId)?.name
+                    ?? 'Unbekannter Speicheranbieter';
 
                 const confirmed = await confirm({
                     title: 'Datei öffentlich schalten?',
@@ -204,13 +231,38 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                             <Typography variant="body2">
                                 Die ausgewählte Datei ist aktuell nicht öffentlich erreichbar.
                             </Typography>
+                            <Box
+                                sx={{
+                                    border: '1px solid',
+                                    borderColor: 'divider',
+                                    borderRadius: 1,
+                                    bgcolor: 'action.hover',
+                                    p: 1.5,
+                                }}
+                            >
+                                <Stack spacing={0.75}>
+                                    <Typography variant="body2">
+                                        <Box component="span"
+                                             sx={{fontWeight: 600}}>Datei:</Box> {item.filename}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <Box component="span"
+                                             sx={{fontWeight: 600}}>Pfad:</Box> {item.pathFromRoot}
+                                    </Typography>
+                                    <Typography variant="body2">
+                                        <Box component="span"
+                                             sx={{fontWeight: 600}}>Speicheranbieter:</Box> {providerName}
+                                    </Typography>
+                                </Stack>
+                            </Box>
                             <Typography variant="body2">
-                                Wenn Sie fortfahren, wird der öffentliche Zugriff ohne Authentifizierung aktiviert und
-                                die Datei danach direkt ausgewählt.
+                                Wenn Sie fortfahren, wird der öffentliche Zugriff aktiviert und die Datei danach direkt
+                                ausgewählt.
                             </Typography>
                             <Alert severity="warning">
-                                Nutzen Sie diese Option nur für Dateien, die öffentlich sein müssen, und niemals für
-                                sicherheitsrelevante Dateien wie Zertifikate.
+                                Nach dem Veröffentlichen kann die Datei ohne Anmeldung abgerufen werden. Stellen Sie
+                                sicher, dass sie keine vertraulichen oder personenbezogenen Daten und keine
+                                sicherheitsrelevanten Dateien wie Zertifikate oder private Schlüssel enthält.
                             </Alert>
                         </Stack>
                     ),
@@ -262,6 +314,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
         loadAssetForSelection,
         mode,
         onSelectAsset,
+        providers,
         startSelectionProcessing,
         stopSelectionProcessing,
     ]);
@@ -274,7 +327,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
             onClose={handleDialogClose}
         >
             <DialogTitleWithClose onClose={handleDialogClose}>
-                {title} ({mimeType}) {mode === 'public' && `(nur öffentlich auswählbar)`}
+                {title}
             </DialogTitleWithClose>
 
             <DialogContent tabIndex={0}
@@ -289,31 +342,77 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                 )}
 
                 <Stack spacing={2}>
-                    {mode === 'public' && (
-                        <Alert severity="info">
-                            Nicht öffentliche Dateien werden angezeigt und grau markiert. Wenn Sie eine solche Datei
-                            auswählen, können Sie es direkt hier öffentlich schalten.
-                        </Alert>
-                    )}
+                    <Grid container={true}
+                          spacing={1.5}>
+                        <Grid size={{xs: 12, sm: hasSelectionCriteria ? 6 : 12}}>
+                            <TextField
+                                fullWidth={true}
+                                select={true}
+                                size="small"
+                                label="Speicheranbieter"
+                                value={selectedProviderId ?? ''}
+                                onChange={(event) => {
+                                    const nextProviderId = Number.parseInt(event.target.value, 10);
+                                    setSelectedProviderId(Number.isNaN(nextProviderId) ? undefined : nextProviderId);
+                                }}
+                                disabled={isLoadingProviders || providers.length === 0 || isProcessingSelection}
+                            >
+                                {providers.map((provider) => (
+                                    <MenuItem key={provider.id}
+                                              value={provider.id}>
+                                        {provider.name}
+                                    </MenuItem>
+                                ))}
+                            </TextField>
+                        </Grid>
 
-                    <TextField
-                        select={true}
-                        size="small"
-                        label="Speicheranbieter"
-                        value={selectedProviderId ?? ''}
-                        onChange={(event) => {
-                            const nextProviderId = Number.parseInt(event.target.value, 10);
-                            setSelectedProviderId(Number.isNaN(nextProviderId) ? undefined : nextProviderId);
-                        }}
-                        disabled={isLoadingProviders || providers.length === 0 || isProcessingSelection}
-                    >
-                        {providers.map((provider) => (
-                            <MenuItem key={provider.id}
-                                      value={provider.id}>
-                                {provider.name}
-                            </MenuItem>
-                        ))}
-                    </TextField>
+                        {hasSelectionCriteria && (
+                            <Grid size={{xs: 12, sm: 6}}>
+                                <FormControl fullWidth={true}
+                                             size="small">
+                                    <InputLabel shrink={true}>Auswahlkriterien</InputLabel>
+                                    <OutlinedInput
+                                        notched={true}
+                                        label="Auswahlkriterien"
+                                        readOnly={true}
+                                        inputProps={{tabIndex: -1}}
+                                        startAdornment={(
+                                            <Stack
+                                                direction="row"
+                                                spacing={0.75}
+                                                useFlexGap={true}
+                                                flexWrap="wrap"
+                                                alignItems="center"
+                                            >
+                                                {normalizedMimeTypes.length > 0 && (
+                                                    <Chip
+                                                        size="small"
+                                                        variant="outlined"
+                                                        label={`Dateityp: ${mimeTypeFilterLabel}`}
+                                                    />
+                                                )}
+                                                {mode === 'public' && (
+                                                    <Chip
+                                                        size="small"
+                                                        variant="outlined"
+                                                        color="info"
+                                                        label="Öffentlicher Zugriff erforderlich"
+                                                    />
+                                                )}
+                                            </Stack>
+                                        )}
+                                        sx={{
+                                            minHeight: 40,
+                                            alignItems: 'center',
+                                            '& .MuiOutlinedInput-input': {
+                                                display: 'none',
+                                            },
+                                        }}
+                                    />
+                                </FormControl>
+                            </Grid>
+                        )}
+                    </Grid>
 
                     {isLoadingProviders && (
                         <Stack
@@ -330,7 +429,24 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                         </Stack>
                     )}
 
-                    {!isLoadingProviders && providers.length === 0 && (
+                    {!isLoadingProviders && hasProviderLoadError && (
+                        <Alert
+                            severity="error"
+                            action={(
+                                <Button
+                                    color="inherit"
+                                    size="small"
+                                    onClick={loadProviders}
+                                >
+                                    Erneut versuchen
+                                </Button>
+                            )}
+                        >
+                            Die Speicheranbieter konnten nicht geladen werden.
+                        </Alert>
+                    )}
+
+                    {!isLoadingProviders && !hasProviderLoadError && providers.length === 0 && (
                         <Alert severity="info">
                             Es sind keine Speicheranbieter konfiguriert. Gehen Sie zu{' '}
                             <Link to="/storage-providers"
@@ -353,6 +469,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
                                 providerId={selectedProviderId}
                                 onFileSelect={handleSelectFile}
                                 filterMimeTypes={normalizedMimeTypes}
+                                disableMissingFiles={true}
                                 showTopNavigationBar={true}
                                 minGridHeight={460}
                             />

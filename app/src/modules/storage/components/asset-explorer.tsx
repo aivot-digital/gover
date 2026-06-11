@@ -1,5 +1,6 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
+    Alert,
     Box,
     Breadcrumbs,
     Button,
@@ -12,15 +13,14 @@ import {
     Divider,
     Grid,
     IconButton,
-    InputAdornment,
     List,
     ListItemButton,
     ListItemIcon,
     ListItemText,
     Paper,
+    Skeleton,
     Stack,
     type SxProps,
-    TextField,
     type Theme,
     Tooltip,
     Typography,
@@ -32,13 +32,12 @@ import FolderOutlinedIcon from '@mui/icons-material/FolderOutlined';
 import DownloadOutlinedIcon from '@mui/icons-material/DownloadOutlined';
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ArrowUpwardOutlinedIcon from '@mui/icons-material/ArrowUpwardOutlined';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
-import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined';
 import ChevronRightOutlinedIcon from '@mui/icons-material/ChevronRightOutlined';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
 import ContentCopyOutlinedIcon from '@mui/icons-material/ContentCopyOutlined';
+import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import {type StorageIndexItem} from '../entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
@@ -48,6 +47,7 @@ import {humanizeFileSize} from '../../../utils/humanization-utils';
 import {Page} from '../../../models/dtos/page';
 import {AssetsApiService} from '../../assets/assets-api-service';
 import {StorageProvidersApiService} from '../storage-providers-api-service';
+import {SearchInput} from '../../../components/search-input/search-input';
 
 interface StorageExplorerProps {
     providerId: number;
@@ -58,6 +58,7 @@ interface StorageExplorerProps {
     showContainerBorder?: boolean;
     showTopNavigationBar?: boolean;
     minGridHeight?: number;
+    disableMissingFiles?: boolean;
     sx?: SxProps<Theme>;
 }
 
@@ -89,6 +90,14 @@ function isDirectory(item: StorageIndexItem): boolean {
 
 function isNonPublicAsset(item: StorageIndexItem): boolean {
     return !isDirectory(item) && item.assetIsPrivate === true;
+}
+
+function getDisabledFileReason(item: StorageIndexItem, disableMissingFiles: boolean): string | undefined {
+    if (!isDirectory(item) && disableMissingFiles && item.missing) {
+        return 'Diese Datei fehlt im Speicher und kann nicht ausgewählt werden.';
+    }
+
+    return undefined;
 }
 
 function formatDateTime(dateString: string): string {
@@ -219,6 +228,63 @@ function useSyncedColumnHeight(
     return height;
 }
 
+function AssetExplorerSkeleton(props: {
+    minGridHeight: number;
+    showTopNavigationBar: boolean;
+    sx?: SxProps<Theme>;
+}): ReactNode {
+    return (
+        <Stack
+            spacing={2}
+            sx={props.sx}
+        >
+            {props.showTopNavigationBar && (
+                <Skeleton
+                    variant="rectangular"
+                    height={42}
+                    sx={{borderRadius: 1}}
+                />
+            )}
+
+            <Grid container>
+                <Grid
+                    size={{xs: 12, md: 3}}
+                    sx={{pr: {xs: 0, md: 2}, mb: {xs: 2, md: 0}}}
+                >
+                    <Skeleton width={140}
+                              height={28}/>
+                    <Stack spacing={1}>
+                        {[0, 1, 2, 3, 4].map((item) => (
+                            <Skeleton
+                                key={item}
+                                variant="rectangular"
+                                height={40}
+                                sx={{borderRadius: 1}}
+                            />
+                        ))}
+                    </Stack>
+                </Grid>
+
+                <Grid
+                    size={{xs: 12, md: 9}}
+                    sx={{pl: {xs: 0, md: 2}}}
+                >
+                    <Skeleton
+                        variant="rectangular"
+                        height={40}
+                        sx={{borderRadius: 1, mb: 1.5}}
+                    />
+                    <Skeleton
+                        variant="rectangular"
+                        height={props.minGridHeight}
+                        sx={{borderRadius: 1}}
+                    />
+                </Grid>
+            </Grid>
+        </Stack>
+    );
+}
+
 export function AssetExplorer(props: StorageExplorerProps): ReactNode {
     const {
         providerId,
@@ -229,6 +295,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
         showContainerBorder = false,
         showTopNavigationBar = false,
         minGridHeight = 706,
+        disableMissingFiles = false,
         sx,
     } = props;
 
@@ -240,6 +307,12 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
 
     const [search, setSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isSearching, setIsSearching] = useState(false);
+    const [hasProviderLoadError, setHasProviderLoadError] = useState(false);
+    const [folderLoadError, setFolderLoadError] = useState(false);
+    const [searchLoadError, setSearchLoadError] = useState(false);
+    const [providerReloadCount, setProviderReloadCount] = useState(0);
+    const [folderReloadCount, setFolderReloadCount] = useState(0);
     const [isDownloading, setIsDownloading] = useState(false);
 
     // Keep content during close transition to avoid dialog flicker before unmount.
@@ -307,27 +380,50 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
     useEffect(() => {
         setCurrentPath(ROOT_PATH);
         setDialogItem(undefined);
+        setProvider(undefined);
+        setHasProviderLoadError(false);
         setFolderCache({});
         setExpandedPaths([ROOT_PATH]);
         setProbedPaths({});
         setSearch('');
 
+        let isActive = true;
+
         new StorageProvidersApiService()
             .retrieve(providerId)
             .then((loadedProvider) => {
+                if (!isActive) {
+                    return;
+                }
+
                 setProvider(loadedProvider);
             })
             .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
+                setHasProviderLoadError(true);
                 dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
             });
-    }, [providerId]);
+
+        return () => {
+            isActive = false;
+        };
+    }, [dispatch, providerId, providerReloadCount]);
 
     useEffect(() => {
         setIsLoading(true);
+        setFolderLoadError(false);
         const normalizedPath = normalizeDirectoryPath(currentPath);
+        let isActive = true;
 
         fetchFolderItems(normalizedPath)
             .then((items) => {
+                if (!isActive) {
+                    return;
+                }
+
                 setCurrentFolder(items);
                 setFolderCache((prev) => ({
                     ...prev,
@@ -335,12 +431,24 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                 }));
             })
             .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
+                setCurrentFolder([]);
+                setFolderLoadError(true);
                 dispatch(showApiErrorSnackbar(err, 'Beim Abrufen des Ordners ist ein Fehler aufgetreten.'));
             })
             .finally(() => {
-                setIsLoading(false);
+                if (isActive) {
+                    setIsLoading(false);
+                }
             });
-    }, [currentPath, fetchFolderItems]);
+
+        return () => {
+            isActive = false;
+        };
+    }, [currentPath, fetchFolderItems, folderReloadCount]);
 
     const filteredItems = currentFolder;
 
@@ -350,10 +458,14 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
 
         if (trimmedSearch.length === 0) {
             setSearchResults(undefined);
+            setIsSearching(false);
+            setSearchLoadError(false);
             return;
         }
 
         let isActive = true;
+        setIsSearching(true);
+        setSearchLoadError(false);
 
         new AssetsApiService()
             .search(providerId, trimmedSearch, {
@@ -375,7 +487,15 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                 }
 
                 setSearchResults(undefined);
+                setSearchLoadError(true);
                 dispatch(showApiErrorSnackbar(err, 'Bei der Suche ist ein Fehler aufgetreten.'));
+            })
+            .finally(() => {
+                if (!isActive) {
+                    return;
+                }
+
+                setIsSearching(false);
             });
 
         return () => {
@@ -387,8 +507,10 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
         return searchResults?.content ?? filteredItems;
     }, [searchResults, filteredItems]);
 
+    const hasActiveSearch = search.trim().length > 0;
     const folderCount = rows.filter((item) => isDirectory(item)).length;
     const fileCount = rows.length - folderCount;
+    const searchResultCount = searchResults?.page.totalElements ?? rows.length;
 
     const breadcrumbParts = useMemo(() => currentPath
         .split('/')
@@ -418,6 +540,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                 const item = params.row;
                 const itemIsDirectory = isDirectory(item);
                 const itemIsNonPublicAsset = isNonPublicAsset(item);
+                const disabledReason = getDisabledFileReason(item, disableMissingFiles);
 
                 return (
                     <Stack
@@ -452,20 +575,31 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                         </Typography>
 
                         {item.missing && (
-                            <Chip
-                                label="Fehlend"
-                                size="small"
-                                color="warning"
-                                variant="outlined"
-                            />
+                            <Tooltip
+                                title={disabledReason ?? 'Diese Datei fehlt im Speicher.'}
+                                arrow={true}
+                            >
+                                <Chip
+                                    label="Fehlend"
+                                    size="small"
+                                    color="warning"
+                                    variant="outlined"
+                                />
+                            </Tooltip>
                         )}
 
                         {itemIsNonPublicAsset && (
-                            <Chip
-                                label="Nicht öffentlich"
-                                size="small"
-                                variant="outlined"
-                            />
+                            <Tooltip
+                                title="Nicht öffentlich erreichbar. In öffentlichen Kontexten muss diese Datei freigegeben werden."
+                                arrow={true}
+                            >
+                                <Chip
+                                    icon={<LockOutlinedIcon/>}
+                                    label="Nicht öffentlich"
+                                    size="small"
+                                    variant="outlined"
+                                />
+                            </Tooltip>
                         )}
                     </Stack>
                 );
@@ -505,7 +639,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
             flex: 0.36,
             valueGetter: (_, row) => formatDateTime(row.updated),
         },
-    ], []);
+    ], [disableMissingFiles]);
 
     const metadataEntries = useMemo(() => {
         if (dialogItem?.metadata == null) {
@@ -749,6 +883,16 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
         '& .asset-explorer-row--non-public .MuiChip-root': {
             opacity: 1,
         },
+        '& .asset-explorer-row--disabled': {
+            cursor: 'not-allowed',
+            bgcolor: (theme: Theme) => alpha(theme.palette.warning.main, 0.04),
+        },
+        '& .asset-explorer-row--disabled .MuiDataGrid-cell': {
+            opacity: 0.62,
+        },
+        '& .asset-explorer-row--disabled .MuiChip-root': {
+            opacity: 1,
+        },
         '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
             borderBottom: '1px solid',
             borderBottomColor: 'divider',
@@ -765,7 +909,35 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
     }), [minGridHeight, treeItemHeightPx]);
 
     if (provider == null) {
-        return null;
+        if (hasProviderLoadError) {
+            return (
+                <Alert
+                    severity="error"
+                    action={(
+                        <Button
+                            color="inherit"
+                            size="small"
+                            onClick={() => {
+                                setProviderReloadCount((count) => count + 1);
+                            }}
+                        >
+                            Erneut versuchen
+                        </Button>
+                    )}
+                    sx={sx}
+                >
+                    Der Speicheranbieter konnte nicht geladen werden.
+                </Alert>
+            );
+        }
+
+        return (
+            <AssetExplorerSkeleton
+                minGridHeight={minGridHeight}
+                showTopNavigationBar={showTopNavigationBar}
+                sx={sx}
+            />
+        );
     }
 
     const content = (
@@ -989,47 +1161,56 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                             alignItems="center"
                             sx={{mb: 1.5}}
                         >
-                            <TextField
-                                size="small"
-                                placeholder="Dateien oder Ordner suchen"
+                            <SearchInput
+                                label="Dateien oder Ordner suchen"
+                                placeholder="Name der Datei oder des Ordners eingeben…"
                                 value={search}
-                                onChange={(event) => {
-                                    setSearch(event.target.value);
-                                }}
+                                onChange={setSearch}
+                                debounce={300}
+                                size="small"
                                 sx={{minWidth: 240, flexGrow: 1}}
-                                InputProps={{
-                                    startAdornment: (
-                                        <InputAdornment position="start">
-                                            <SearchOutlinedIcon fontSize="small"/>
-                                        </InputAdornment>
-                                    ),
-                                    endAdornment: search.trim().length > 0 ? (
-                                        <InputAdornment position="end">
-                                            <Tooltip
-                                                title="Suche leeren"
-                                                arrow={true}
-                                            >
-                                                <IconButton
-                                                    size="small"
-                                                    onClick={() => {
-                                                        setSearch('');
-                                                    }}
-                                                >
-                                                    <ClearOutlinedIcon fontSize="small"/>
-                                                </IconButton>
-                                            </Tooltip>
-                                        </InputAdornment>
-                                    ) : undefined,
-                                }}
                             />
                             <Typography
                                 variant="body2"
                                 color="text.secondary"
                                 sx={{whiteSpace: 'nowrap', pl: 1}}
                             >
-                                {folderCount} Ordner, {fileCount} Dateien
+                                {isSearching
+                                    ? 'Suche läuft…'
+                                    : hasActiveSearch
+                                        ? `${searchResultCount} Treffer`
+                                        : `${folderCount} Ordner, ${fileCount} Dateien`}
                             </Typography>
                         </Stack>
+
+                        {folderLoadError && (
+                            <Alert
+                                severity="error"
+                                action={(
+                                    <Button
+                                        color="inherit"
+                                        size="small"
+                                        onClick={() => {
+                                            setFolderReloadCount((count) => count + 1);
+                                        }}
+                                    >
+                                        Erneut versuchen
+                                    </Button>
+                                )}
+                                sx={{mb: 1.5}}
+                            >
+                                Der Ordner konnte nicht geladen werden.
+                            </Alert>
+                        )}
+
+                        {searchLoadError && (
+                            <Alert
+                                severity="error"
+                                sx={{mb: 1.5}}
+                            >
+                                Die Suche konnte nicht ausgeführt werden.
+                            </Alert>
+                        )}
 
                         <DataGrid
                             rows={rows}
@@ -1038,7 +1219,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                             disableRowSelectionOnClick={true}
                             disableColumnMenu={true}
                             density="standard"
-                            loading={isLoading}
+                            loading={isLoading || isSearching}
                             autoHeight={true}
                             columnHeaderHeight={treeItemHeightPx}
                             pageSizeOptions={[12, 24, 48, 96]}
@@ -1050,7 +1231,19 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                                     },
                                 },
                             }}
-                            getRowClassName={(params) => isNonPublicAsset(params.row) ? 'asset-explorer-row--non-public' : ''}
+                            getRowClassName={(params) => {
+                                const rowClasses: string[] = [];
+
+                                if (isNonPublicAsset(params.row)) {
+                                    rowClasses.push('asset-explorer-row--non-public');
+                                }
+
+                                if (getDisabledFileReason(params.row, disableMissingFiles) != null) {
+                                    rowClasses.push('asset-explorer-row--disabled');
+                                }
+
+                                return rowClasses.join(' ');
+                            }}
                             onRowClick={(params) => {
                                 const item = params.row;
 
@@ -1059,6 +1252,12 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                                     const pathFromRoot = normalizeDirectoryPath(item.pathFromRoot);
                                     setExpandedPaths((prev) => (prev.includes(pathFromRoot) ? prev : [...prev, pathFromRoot]));
                                     loadTreeChildren(item.pathFromRoot);
+                                    return;
+                                }
+
+                                const disabledReason = getDisabledFileReason(item, disableMissingFiles);
+                                if (disabledReason != null) {
+                                    dispatch(showErrorSnackbar(disabledReason));
                                     return;
                                 }
 
@@ -1083,7 +1282,9 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
                                             variant="body2"
                                             color="text.secondary"
                                         >
-                                            Dieser Ordner ist leer oder es gibt keine Treffer.
+                                            {hasActiveSearch
+                                                ? 'Keine Treffer für diese Suche.'
+                                                : 'Dieser Ordner ist leer.'}
                                         </Typography>
                                     </Stack>
                                 ),
