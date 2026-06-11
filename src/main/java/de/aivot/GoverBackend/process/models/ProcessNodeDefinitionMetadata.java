@@ -1,12 +1,23 @@
 package de.aivot.GoverBackend.process.models;
 
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
+import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
+import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public record ProcessNodeDefinitionMetadata(
         @Nonnull
@@ -99,6 +110,64 @@ public record ProcessNodeDefinitionMetadata(
 
     public ProcessNodeDefinitionMetadata addForwardedIdentity(ForwardedIdentity forwardedIdentity) {
         forwardedIdentities.add(forwardedIdentity);
+        return this;
+    }
+
+    public ProcessNodeDefinitionMetadata withLayout(@Nullable LayoutElement<?> layout, @Nonnull ProcessNodeEntity origin) {
+        if (layout == null) {
+            return this;
+        }
+
+        ElementStreamUtils.applyActionWithParents((BaseElement) layout, (parents, e) -> {
+            if (e instanceof BaseInputElement<?> i && StringUtils.isNotNullOrEmpty(i.getDestinationKey())) {
+                var parentDestinationKey = parents
+                        .stream()
+                        .filter(p -> p instanceof ReplicatingContainerLayoutElement)
+                        .map(p -> (ReplicatingContainerLayoutElement) p)
+                        .map(ReplicatingContainerLayoutElement::getDestinationKey)
+                        .filter(StringUtils::isNotNullOrEmpty)
+                        .collect(Collectors.joining(".*."));
+                if (StringUtils.isNotNullOrEmpty(parentDestinationKey)) {
+                    parentDestinationKey += ".*.";
+                }
+
+                this.addForwardedProcessDataKey(
+                        parentDestinationKey + i.getDestinationKey(),
+                        StringUtils.isNotNullOrEmpty(i.getLabel()) ? i.getLabel() : i.getId(),
+                        i.getHint(),
+                        origin
+                );
+            }
+
+            if (e instanceof FileUploadInputElement f && StringUtils.isNotNullOrEmpty(f.getSubmittedFileName())) {
+                // TODO: Try to guess the extensions
+                this.addForwardedAttachment(
+                        f.getSubmittedFileName(),
+                        f.getSubmittedFileName(),
+                        StringUtils.isNotNullOrEmpty(f.getLabel()) ? f.getLabel() : f.getId(),
+                        origin
+                );
+            }
+
+            if (e instanceof GenericStepElement s) {
+                var group = new GroupLayoutElement();
+                group.setId(s.getId());
+                var childCopy = new LinkedList<BaseFormElement>();
+                childCopy.add(
+                        new HeadlineContentElement()
+                                .setContent(s.getTitle())
+                );
+                childCopy.addAll(s.getChildren());
+                group.setChildren(childCopy);
+                this.addReusableUiDefinition(
+                        StringUtils.isNotNullOrEmpty(s.getTitle()) ? s.getTitle() : s.getId(),
+                        null,
+                        group,
+                        origin
+                );
+            }
+        });
+
         return this;
     }
 
