@@ -5,6 +5,8 @@ import Tooltip from '@mui/material/Tooltip';
 import Autocomplete from '@mui/material/Autocomplete';
 import {CopyToClipboardButton} from '../copy-to-clipboard-button/copy-to-clipboard-button';
 
+const COPY_VALUE_TEMPLATE_PLACEHOLDER = '{value}';
+
 // Utility function for number-to-word conversion
 function getCharacterCount(count: number): string {
     const words: { [key: number]: string } = {
@@ -281,9 +283,12 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
     const hasHelperTextContent = Boolean(helperMessage || showMaxCharacters || showMinCharacters || showSoftLimitWarning);
     const existingStartAdornment = props.muiPassTroughProps?.InputProps?.startAdornment;
     const existingEndAdornment = props.muiPassTroughProps?.InputProps?.endAdornment;
+    const copyValue = props.copyValueTemplate == null || props.copyValueTemplate.length === 0
+        ? inputValue
+        : props.copyValueTemplate.split(COPY_VALUE_TEMPLATE_PLACEHOLDER).join(inputValue);
     const copyButton = props.copyable ? (
         <CopyToClipboardButton
-            text={inputValue}
+            text={copyValue}
             ariaLabel={props.label ? `${props.label} kopieren` : 'Kopieren'}
             disabled={inputValue.length === 0}
             size="small"

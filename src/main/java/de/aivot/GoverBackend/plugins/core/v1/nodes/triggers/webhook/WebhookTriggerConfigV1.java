@@ -56,15 +56,6 @@ public class WebhookTriggerConfigV1 {
     public static final String COPY_TO_PROCESS_DATA_CONFIG_KEY = "copy_to_process_data";
 
     @Nullable
-    @InputElementPOJOBinding(id = SLUG_CONFIG_KEY, type = ElementType.Text, properties = {
-            @ElementPOJOBindingProperty(key = "label", strValue = "URL-Segment des Webhooks"),
-            @ElementPOJOBindingProperty(key = "hint", strValue = "Dieses Segment wird an den URL-Namespace des Prozesses angehängt. Der vollständige öffentliche API-Pfad lautet /api/public/webhook/{prozess-namespace}/{webhook-segment}/."),
-            @ElementPOJOBindingProperty(key = "required", boolValue = true),
-            @ElementPOJOBindingProperty(key = "destinationKey", strValue = WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
-    })
-    public String slug = "";
-
-    @Nullable
     @InputElementPOJOBinding(id = REQUEST_METHOD_CONFIG_KEY, type = ElementType.Select, properties = {
             @ElementPOJOBindingProperty(key = "label", strValue = "HTTP-Methode"),
             @ElementPOJOBindingProperty(key = "hint", strValue = "Die HTTP-Methode, die für den Webhook verwendet werden soll."),
@@ -74,6 +65,15 @@ public class WebhookTriggerConfigV1 {
 
     @Nullable
     public WebhookRequestBodyConfig requestBodyConfig;
+
+    @Nullable
+    @InputElementPOJOBinding(id = SLUG_CONFIG_KEY, type = ElementType.Text, properties = {
+            @ElementPOJOBindingProperty(key = "label", strValue = "URL-Segment des Webhooks"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Dieses Segment wird an den URL-Namespace des Prozesses angehängt. Der vollständige öffentliche API-Pfad lautet /api/public/webhook/{prozess-namespace}/{webhook-segment}/."),
+            @ElementPOJOBindingProperty(key = "required", boolValue = true),
+            @ElementPOJOBindingProperty(key = "destinationKey", strValue = WebhookTriggerConfigV1.SLUG_CONFIG_KEY),
+    })
+    public String slug = "";
 
     @Nullable
     @InputElementPOJOBinding(id = AUTH_REQUIRED_CONFIG_KEY, type = ElementType.Checkbox, properties = {

@@ -23,6 +23,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import de.aivot.GoverBackend.plugins.form.FormPlugin;
 import de.aivot.GoverBackend.plugins.form.v1.services.FormLayoutCleanerService;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
@@ -50,6 +51,7 @@ import java.util.*;
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";
+    private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
 
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
@@ -226,6 +228,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     field.setPattern(pattern);
 
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
+                    field.setCopyable(true);
+                    field.setCopyValueTemplate(createPublicFormCopyValueTemplate(context.processDefinition()));
                 });
 
         config
@@ -237,6 +241,13 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
 
         return config;
+    }
+
+    @Nonnull
+    private String createPublicFormCopyValueTemplate(@Nonnull ProcessEntity process) {
+        return publicUrlService
+                .createPublicFormUrl(process, COPY_VALUE_TEMPLATE_PATH_SEGMENT)
+                .replace(COPY_VALUE_TEMPLATE_PATH_SEGMENT, TextInputElement.COPY_VALUE_TEMPLATE_PLACEHOLDER);
     }
 
     @Nullable

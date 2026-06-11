@@ -24,6 +24,7 @@ export interface TextFieldComponentProps {
     onBlur?: (val: string | null) => void;
     endAction?: EndAction | Array<EndAction>;
     copyable?: boolean;
+    copyValueTemplate?: string | null;
     startIcon?: ReactNode;
     pattern?: {
         regex: string;

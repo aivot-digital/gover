@@ -320,6 +320,7 @@ const elementConstructors: {
         suggestions: undefined,
         prefix: undefined,
         copyable: false,
+        copyValueTemplate: undefined,
     }),
     [ElementType.Time]: (id) => ({
         ...makeInputBase(ElementType.Time, id),

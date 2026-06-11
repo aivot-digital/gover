@@ -9,6 +9,7 @@ describe('generateElementWithDefaultValues', () => {
         const element = generateElementWithDefaultValues(ElementType.Text) as TextFieldElement;
 
         expect(element.copyable).toBe(false);
+        expect(element.copyValueTemplate).toBeUndefined();
     });
 
     it('should initialize process attachment display elements with an empty file name', () => {

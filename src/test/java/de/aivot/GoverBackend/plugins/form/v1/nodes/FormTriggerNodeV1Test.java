@@ -1,8 +1,14 @@
 package de.aivot.GoverBackend.plugins.form.v1.nodes;
 
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.models.config.GoverConfig;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
+import de.aivot.GoverBackend.process.entities.ProcessVersionEntity;
+import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.services.PublicUrlService;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -57,6 +64,20 @@ class FormTriggerNodeV1Test {
         assertNotNull(output);
         assertEquals("Eingangszeitstempel", output.label());
         assertEquals("Der Zeitstempel des Dateneingangs an den Auslöser", output.description());
+    }
+
+    @Test
+    void getConfigurationLayout_ShouldExposeCopyableSlugUrlTemplate() throws Exception {
+        var publicUrlService = new PublicUrlService(goverConfig());
+        var node = new FormTriggerNodeV1(publicUrlService, processNodeRepository);
+
+        var layout = node.getConfigurationLayout(configurationLayoutContext());
+        var slugField = layout
+                .findChild(FormTriggerConfigV1.FORM_SLUG, TextInputElement.class)
+                .orElseThrow();
+
+        assertEquals(true, slugField.getCopyable());
+        assertEquals("https://example.test/form/antrag-prozess/{value}/", slugField.getCopyValueTemplate());
     }
 
     @Test
@@ -140,6 +161,40 @@ class FormTriggerNodeV1Test {
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(Map.of());
+    }
+
+    private static ProcessNodeDefinitionConfigurationLayoutContext configurationLayoutContext() {
+        return new ProcessNodeDefinitionConfigurationLayoutContext(
+                null,
+                process(),
+                processVersion(),
+                processNode()
+        );
+    }
+
+    private static ProcessEntity process() {
+        return new ProcessEntity()
+                .setId(PROCESS_ID)
+                .setInternalTitle("Antrag")
+                .setDepartmentId(1)
+                .setAccessKey(UUID.randomUUID())
+                .setSlug("antrag-prozess")
+                .setVersionCount(PROCESS_VERSION)
+                .setDraftedVersion(PROCESS_VERSION);
+    }
+
+    private static ProcessVersionEntity processVersion() {
+        return new ProcessVersionEntity()
+                .setProcessId(PROCESS_ID)
+                .setProcessVersion(PROCESS_VERSION)
+                .setStatus(ProcessVersionStatus.Drafted)
+                .setPublicTitle("Antrag");
+    }
+
+    private static GoverConfig goverConfig() {
+        var config = new GoverConfig();
+        config.setGoverHostname("https://example.test/");
+        return config;
     }
 
     private static Specification<ProcessNodeEntity> anySpecification() {

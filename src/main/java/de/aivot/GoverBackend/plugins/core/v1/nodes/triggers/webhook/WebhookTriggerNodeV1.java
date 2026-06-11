@@ -2,8 +2,10 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.triggers.webhook;
 
 import com.beust.jcommander.Strings;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.GoverBackend.elements.enums.OverrideFunctionType;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.elements.ElementOverrideFunctions;
 import de.aivot.GoverBackend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
@@ -13,6 +15,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElemen
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.nocode.models.NoCodeExpression;
 import de.aivot.GoverBackend.nocode.models.NoCodeReference;
@@ -51,6 +54,8 @@ import java.util.Map;
 public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTriggerConfigV1> {
     public static final String NODE_KEY = "webhook";
     private static final String PORT_NAME = "input";
+    private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
+    private static final String COPY_REQUEST_BODY_PATH_SEGMENT = "__request_body_path_segment__";
 
     public static final String INITIAL_DATA_KEY_PAYLOAD = "payload";
     public static final String INITIAL_DATA_KEY_ATTACHMENTS = "attachments";
@@ -164,6 +169,9 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                     field.setPattern(pattern);
 
                     field.setPrefix(publicUrlService.createProcessNamespaceDisplayPrefix());
+                    field.setCopyable(true);
+                    field.setCopyValueTemplate(createWebhookCopyValueTemplate(context.processDefinition()));
+                    field.setOverride(createWebhookCopyValueTemplateOverride(context.processDefinition()));
                 });
 
         // Add request method select options
@@ -324,6 +332,85 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                 });
 
         return configLayout;
+    }
+
+    @Nonnull
+    private String createWebhookCopyValueTemplate(@Nonnull ProcessEntity process) {
+        return publicUrlService
+                .createWebhookUrl(process, COPY_VALUE_TEMPLATE_PATH_SEGMENT)
+                .replace(COPY_VALUE_TEMPLATE_PATH_SEGMENT, TextInputElement.COPY_VALUE_TEMPLATE_PLACEHOLDER);
+    }
+
+    @Nonnull
+    private String createWebhookCopyValueTemplate(@Nonnull ProcessEntity process,
+                                                  @Nonnull String requestBodyPathSegment) {
+        return publicUrlService
+                .createWebhookUrl(process, COPY_VALUE_TEMPLATE_PATH_SEGMENT, requestBodyPathSegment)
+                .replace(COPY_VALUE_TEMPLATE_PATH_SEGMENT, TextInputElement.COPY_VALUE_TEMPLATE_PLACEHOLDER);
+    }
+
+    @Nonnull
+    private ElementOverrideFunctions createWebhookCopyValueTemplateOverride(@Nonnull ProcessEntity process) {
+        var bodylessTemplate = escapeJavascriptString(createWebhookCopyValueTemplate(process));
+        var requestBodyTemplate = escapeJavascriptString(createWebhookCopyValueTemplate(process, COPY_REQUEST_BODY_PATH_SEGMENT));
+
+        var override = new ElementOverrideFunctions();
+        override.setType(OverrideFunctionType.Javascript);
+        override.setJavascriptCode(JavascriptCode.of("""
+                (function() {
+                    const requestMethod = ctx.effectiveValues.%s || '%s';
+                    const requestBodyType = ctx.effectiveValues.%s;
+
+                    const requestMethodAllowsBody = requestMethod === '%s' ||
+                        requestMethod === '%s' ||
+                        requestMethod === '%s';
+
+                    let copyValueTemplate = '%s';
+                    if (requestMethodAllowsBody) {
+                        let requestBodyPathSegment = 'xml';
+                        if (requestBodyType === '%s') {
+                            requestBodyPathSegment = 'json';
+                        }
+                        if (requestBodyType === '%s') {
+                            requestBodyPathSegment = 'form-data';
+                        }
+
+                        copyValueTemplate = '%s'.replace('%s', requestBodyPathSegment);
+                    }
+
+                    return {
+                        ...element,
+                        copyValueTemplate,
+                    };
+                })()
+                """,
+                WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY,
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY,
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_POST,
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PATCH,
+                WebhookTriggerConfigV1.REQUEST_METHOD_OPTION_PUT,
+                bodylessTemplate,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_JSON,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM,
+                requestBodyTemplate,
+                COPY_REQUEST_BODY_PATH_SEGMENT
+        ));
+        override.setReferencedIds(List.of(
+                WebhookTriggerConfigV1.REQUEST_METHOD_CONFIG_KEY,
+                WebhookTriggerConfigV1.REQUEST_BODY_TYPE_CONFIG_KEY
+        ));
+
+        return override;
+    }
+
+    @Nonnull
+    private String escapeJavascriptString(@Nonnull String value) {
+        return value
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r");
     }
 
     @Nonnull

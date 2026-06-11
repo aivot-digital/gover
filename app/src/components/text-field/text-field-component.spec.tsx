@@ -88,6 +88,20 @@ describe('TextFieldComponent', () => {
         expect(screen.getByTestId('copy-button')).toHaveAttribute('data-text', 'draft-value');
     });
 
+    it('should copy the templated live input value when a copy value template is configured', () => {
+        render(
+            <TextFieldComponent
+                label="URL-Segment"
+                value="antrag"
+                onChange={jest.fn()}
+                copyable
+                copyValueTemplate="https://example.test/form/process/{value}/"
+            />,
+        );
+
+        expect(screen.getByTestId('copy-button')).toHaveAttribute('data-text', 'https://example.test/form/process/antrag/');
+    });
+
     it('should emit null when the user clears the value', () => {
         const onChange = jest.fn();
 

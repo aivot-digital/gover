@@ -31,6 +31,7 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         suggestions,
         prefix,
         copyable,
+        copyValueTemplate,
     } = element;
 
     const isDisabled = useMemo(() => {
@@ -65,7 +66,8 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         debounce: 1000,
         startIcon: isStringNullOrEmpty(prefix) ? undefined : prefix,
         copyable: copyable ?? false,
-    }), [label, autocomplete, placeholder, errors, hint, isMultiline, required, isDisabled, isBusy, maxCharacters, minCharacters, value, setValue, onBlur, element.id, prefix, copyable]);
+        copyValueTemplate: copyValueTemplate ?? undefined,
+    }), [label, autocomplete, placeholder, errors, hint, isMultiline, required, isDisabled, isBusy, maxCharacters, minCharacters, value, setValue, onBlur, element.id, prefix, copyable, copyValueTemplate]);
 
     if (suggestions != null) {
         return (
