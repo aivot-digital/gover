@@ -222,6 +222,16 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         );
     }
 
+    @Nonnull
+    @Override
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull ManualActionNodeConfig configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        return ProcessNodeDefinitionMetadata
+                .reuse(previousMetadata)
+                .withLayout(configuration.uiDefinition, processNodeEntity);
+    }
+
     @Override
     public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                                      @Nonnull ManualActionNodeConfig configuration) throws ResponseException {
@@ -579,7 +589,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Optional: Modellieren Sie eine Gover-UI, wenn zur Aufgabe Daten angezeigt oder erfasst werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
-        public Object uiDefinition;
+        public GroupLayoutElement uiDefinition;
 
         @InputElementPOJOBinding(id = ASSIGNMENT_CONTEXT_FIELD_ID, type = ElementType.AssignmentContext, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Verantwortlicher Personenkreis"),

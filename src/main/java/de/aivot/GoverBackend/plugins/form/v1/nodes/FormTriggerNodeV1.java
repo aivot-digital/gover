@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.enums.ElementDisplayContext;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
@@ -15,6 +16,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.UiDefinitionInp
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.utils.ElementStreamUtils;
@@ -42,10 +44,10 @@ import de.aivot.GoverBackend.process.services.PublicUrlService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.commonmark.node.Link;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Component
 public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfigV1>, PluginComponent {
@@ -148,46 +150,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                                                      @Nonnull FormTriggerConfigV1 configuration,
                                                      @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
         var pdm = ProcessNodeDefinitionMetadata
-                .empty();
-
-        ElementStreamUtils.applyAction(configuration.formLayout, (e) -> {
-            if (e instanceof BaseInputElement<?> i && StringUtils.isNotNullOrEmpty(i.getDestinationKey())) {
-                pdm.addForwardedProcessDataKey(
-                        i.getDestinationKey(),
-                        StringUtils.isNotNullOrEmpty(i.getLabel()) ? i.getLabel() : i.getId(),
-                        i.getHint(),
-                        processNodeEntity
-                );
-            }
-
-            if (e instanceof FileUploadInputElement f && StringUtils.isNotNullOrEmpty(f.getSubmittedFileName())) {
-                // TODO: Try to guess the extensions
-                pdm.addForwardedAttachment(
-                        f.getSubmittedFileName(),
-                        f.getSubmittedFileName(),
-                        StringUtils.isNotNullOrEmpty(f.getLabel()) ? f.getLabel() : f.getId(),
-                        processNodeEntity
-                );
-            }
-
-            if (e instanceof GenericStepElement s) {
-                var group = new GroupLayoutElement();
-                group.setId(s.getId());
-                var childCopy = new LinkedList<BaseFormElement>();
-                childCopy.add(
-                        new HeadlineContentElement()
-                                .setContent(s.getTitle())
-                );
-                childCopy.addAll(s.getChildren());
-                group.setChildren(childCopy);
-                pdm.addReusableUiDefinition(
-                        StringUtils.isNotNullOrEmpty(s.getTitle()) ? s.getTitle() : s.getId(),
-                        null,
-                        group,
-                        processNodeEntity
-                );
-            }
-        });
+                .reuse(previousMetadata)
+                .withLayout(configuration.formLayout, processNodeEntity);
 
         if (configuration.identities != null) {
             for (var identity : configuration.identities) {
@@ -203,7 +167,6 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 );
             }
         }
-
 
         return pdm;
     }

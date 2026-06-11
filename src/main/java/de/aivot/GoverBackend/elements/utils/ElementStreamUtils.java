@@ -2,14 +2,12 @@ package de.aivot.GoverBackend.elements.utils;
 
 import de.aivot.GoverBackend.elements.models.ComputedElementState;
 import de.aivot.GoverBackend.elements.models.ComputedElementStates;
-import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -20,6 +18,23 @@ public class ElementStreamUtils {
         if (element instanceof LayoutElement<?> layoutElement) {
             for (BaseElement child : layoutElement.getChildren()) {
                 applyAction(child, action);
+            }
+        }
+    }
+
+    public static void applyActionWithParents(BaseElement element, BiConsumer<List<BaseElement>, BaseElement> action) {
+        applyActionWithParents(new LinkedList<>(), element, action);
+    }
+
+    private static void applyActionWithParents(List<BaseElement> parents, BaseElement element, BiConsumer<List<BaseElement>, BaseElement> action) {
+        action.accept(parents, element);
+
+        if (element instanceof LayoutElement<?> layoutElement) {
+            var newParents = new LinkedList<>(parents);
+            newParents.add(element);
+
+            for (BaseElement child : layoutElement.getChildren()) {
+                applyActionWithParents(newParents, child, action);
             }
         }
     }

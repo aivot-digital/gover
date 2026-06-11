@@ -27,14 +27,12 @@ import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
+import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidAssignment;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
-import de.aivot.GoverBackend.process.models.ProcessNodePort;
-import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.*;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -211,6 +209,16 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                         "Der Zeitstempel der finalen Übernahme im ISO-Format."
                 )
         );
+    }
+
+    @Nonnull
+    @Override
+    public ProcessNodeDefinitionMetadata getMetadata(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                     @Nonnull DataChangeActionNodeConfig configuration,
+                                                     @Nonnull ProcessNodeDefinitionMetadata previousMetadata) {
+        return ProcessNodeDefinitionMetadata
+                .reuse(previousMetadata)
+                .withLayout(configuration.dataDefinition, processNodeEntity);
     }
 
     @Override
