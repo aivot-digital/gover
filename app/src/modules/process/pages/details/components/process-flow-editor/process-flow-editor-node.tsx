@@ -315,12 +315,11 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         return items;
     }, [associatedTask]);
 
-    // Connecting/disconnecting ports changes the effective handle geometry of the node. React Flow
-    // does not always pick that up from pure React re-renders, so force an internal recalculation
-    // whenever the port occupancy signature changes.
+    // Connecting/disconnecting ports and toggling the edit-mode action chip changes the effective
+    // handle geometry. React Flow does not always pick that up from pure React re-renders.
     useEffect(() => {
         updateNodeInternals(String(node.id));
-    }, [handleLayoutSignature, node.id, updateNodeInternals]);
+    }, [editable, handleLayoutSignature, node.id, updateNodeInternals]);
 
     const handleNodeContextMenu = useCallback((event: React.MouseEvent<HTMLElement>) => {
         if (!editable) {
