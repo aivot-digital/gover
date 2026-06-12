@@ -119,6 +119,9 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 // Object
                 new NoCodeObjectGetOperator(),
 
+                // Secrets
+                new NoCodeSecretsGetOperator(secretService),
+
                 // Text
                 new NoCodeBase64Operator(),
                 new NoCodeConcatOperator(),
