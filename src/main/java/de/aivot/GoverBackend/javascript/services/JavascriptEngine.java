@@ -71,9 +71,6 @@ public class JavascriptEngine implements AutoCloseable {
                 // Currently, the latest version is 2025.
                 .option("js.ecmascript-version", "2025")
 
-                // Enable text encoding
-                .option("js.text-encoding", "true")
-
                 // Remove warning that the engine is only in interpreter mode.
                 // TODO: Resolve this problem and remove this option.
                 .option("engine.WarnInterpreterOnly", "false")
