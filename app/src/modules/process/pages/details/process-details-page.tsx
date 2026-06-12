@@ -258,6 +258,10 @@ function getNodeProviderFromList(
     )) ?? null;
 }
 
+export function getProcessNodeEditURL(processId: number, processVersion: number, nodeId: number, searchParams?: URLSearchParams) {
+    return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}?${searchParams != null ? searchParams.toString() : ''}`;
+}
+
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
@@ -597,7 +601,7 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         handleExpandEditorPane();
-        navigate(`/processes/${processFlow.definition.id}/versions/${processFlow.version.processVersion}/nodes/${node.id}?${searchParams.toString()}`);
+        navigate(getProcessNodeEditURL(processFlow.definition.id, processFlow.version.processVersion, node.id, searchParams));
     }, [handleExpandEditorPane, navigate, processFlow, searchParams]);
 
     useEffect(() => {

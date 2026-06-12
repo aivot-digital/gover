@@ -8,6 +8,8 @@ import {useAppDispatch} from '../../../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../../../slices/snackbar-slice';
 import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
 import {withDelay} from '../../../../../../../utils/with-delay';
+import {useNavigate} from 'react-router-dom';
+import {getProcessNodeEditURL} from '../../../process-details-page';
 
 export function ProcessNodeEditorTestingTab(): ReactNode {
     const dispatch = useAppDispatch();
@@ -16,6 +18,8 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
         node,
         testClaim,
     } = useProcessNodeEditorContext();
+
+    const navigate = useNavigate();
 
     const [layout, setLayout] = useState<GroupLayout | null>(null);
     const [noTestingLayout, setNoTestingLayout] = useState<boolean>(false);
@@ -56,6 +60,12 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
             cancelled = true;
         };
     }, [dispatch, node.id, testClaim]);
+
+    useEffect(() => {
+        if (testClaim == null) {
+            navigate(getProcessNodeEditURL(node.processId, node.processVersion, node.id));
+        }
+    }, [testClaim]);
 
     return (
         <Box
