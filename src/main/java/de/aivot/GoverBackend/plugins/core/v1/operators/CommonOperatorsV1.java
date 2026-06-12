@@ -11,14 +11,15 @@ import de.aivot.GoverBackend.plugins.core.v1.operators.date.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.list.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.math.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.object.NoCodeObjectGetOperator;
-import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeConcatOperator;
-import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexExtractOperator;
-import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
-import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeSplitOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.secrets.NoCodeSecretsGetOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.text.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserEmailOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserFullNameOperator;
+import de.aivot.GoverBackend.secrets.services.SecretService;
 import de.aivot.GoverBackend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -26,10 +27,15 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
+    @Nullable
     private final UserRepository userRepository;
+    @Nullable
+    private final SecretService secretService;
 
-    public CommonOperatorsV1(UserRepository userRepository) {
+    @Autowired
+    public CommonOperatorsV1(@Nullable UserRepository userRepository, @Nullable SecretService secretService) {
         this.userRepository = userRepository;
+        this.secretService = secretService;
     }
 
     @Override
