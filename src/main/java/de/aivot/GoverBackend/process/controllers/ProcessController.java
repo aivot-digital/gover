@@ -598,10 +598,10 @@ public class ProcessController {
 
         if (
                 originalProcessVersion.getStatus() != ProcessVersionStatus.Published &&
-                        originalProcessVersion.getStatus() != ProcessVersionStatus.Drafted
+                        originalProcessVersion.getStatus() != ProcessVersionStatus.Revoked
         ) {
             throw ResponseException
-                    .conflict("Version %d des Prozesses ist ein Entwurf. Aus Entwürfen können keine neuen Entwürfe angelegt werden.", version);
+                    .conflict("Neue Entwürfe können nur aus veröffentlichten oder zurückgezogenen Versionen erstellt werden.", version);
         }
 
         var nextProcessVersionNumber = processDefinitionVersionRepository
