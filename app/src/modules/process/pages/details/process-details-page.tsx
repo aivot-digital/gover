@@ -261,7 +261,7 @@ function getNodeProviderFromList(
 export function ProcessDetailsPage(): ReactNode {
     const params = useParams();
     const [searchParams, setSearchParams] = useSearchParams();
-    const {state} = useLocation();
+    const {pathname, state} = useLocation();
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const confirm = useConfirm();
@@ -404,15 +404,69 @@ export function ProcessDetailsPage(): ReactNode {
     const {
         processId,
         processVersion,
+        processVersionParam,
     } = useMemo(() => {
-        const processId = params.processId;
-        const processVersion = params.processVersion;
+        const processId = parseInt(params.processId ?? '0', 10);
+        const processVersionParam = params.processVersion;
+        const processVersion = processVersionParam === 'latest' ?
+            0 :
+            parseInt(processVersionParam ?? '0', 10);
 
         return {
-            processId: parseInt(processId ?? '0'),
-            processVersion: parseInt(processVersion ?? '0'),
+            processId: Number.isNaN(processId) ? 0 : processId,
+            processVersion: Number.isNaN(processVersion) ? 0 : processVersion,
+            processVersionParam,
         };
     }, [params]);
+
+    useEffect(() => {
+        if (processId < 1 || processVersionParam !== 'latest') {
+            return;
+        }
+
+        let cancelled = false;
+        setProcessFlow(null);
+        setIsLoadingProcessFlow(true);
+
+        new ProcessDefinitionApiService()
+            .retrieve(processId)
+            .then((definition) => {
+                if (cancelled) {
+                    return;
+                }
+
+                const latestVersion = definition.draftedVersion ??
+                    definition.publishedVersion ??
+                    (definition.versionCount > 0 ? definition.versionCount : null);
+
+                if (latestVersion == null) {
+                    setIsLoadingProcessFlow(false);
+                    dispatch(showErrorSnackbar('Für diesen Prozess ist keine Version vorhanden.'));
+                    return;
+                }
+
+                const search = searchParams.toString();
+                navigate(
+                    `${pathname.replace(/\/versions\/latest(?=\/|$)/, `/versions/${latestVersion}`)}${search.length > 0 ? `?${search}` : ''}`,
+                    {
+                        replace: true,
+                        state,
+                    },
+                );
+            })
+            .catch((error) => {
+                if (cancelled) {
+                    return;
+                }
+
+                setIsLoadingProcessFlow(false);
+                dispatch(showApiErrorSnackbar(error, 'Die neueste Prozessversion konnte nicht geladen werden.'));
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, navigate, pathname, processId, processVersionParam, searchParams, state]);
 
     // Reset the versions dialog when the process id or process version change to compensate for process switching while the dialog is open
     useEffect(() => {
@@ -427,7 +481,7 @@ export function ProcessDetailsPage(): ReactNode {
     const showProcessExport = useProcessExport();
 
     useEffect(() => {
-        if (processFlow == null || processVersion == null) {
+        if (processFlow == null || processVersion < 1) {
             setProcessNodeProblems([]);
             return;
         }
@@ -556,9 +610,9 @@ export function ProcessDetailsPage(): ReactNode {
 
     // Load the process flow whenever the process id or version changes
     useEffect(() => {
-        if (processId == null || processVersion == null) {
+        if (processId < 1 || processVersion < 1 || processVersionParam === 'latest') {
             setProcessFlow(null);
-            setIsLoadingProcessFlow(false);
+            setIsLoadingProcessFlow(processVersionParam === 'latest');
             return;
         }
 
@@ -672,7 +726,7 @@ export function ProcessDetailsPage(): ReactNode {
         return () => {
             cancelled = true;
         };
-    }, [dispatch, processId, processVersion, user]);
+    }, [dispatch, processId, processVersion, processVersionParam, user]);
 
     useEffect(() => {
         if (requiredFlowNodeProviders.length === 0) {

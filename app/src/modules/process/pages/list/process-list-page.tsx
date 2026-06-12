@@ -25,7 +25,7 @@ import {NewProcessDialog} from '../../dialogs/new-process-dialog';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import Route from '@aivot/mui-material-symbols-400-outlined/dist/route/Route';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
-import {ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
+import {getFormStatus, ProcessStatusChipGroup} from '../../components/process-status/process-status-chip-group';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
@@ -77,11 +77,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                 isDrafted,
                 isPublished,
                 isRevoked,
-            } = {
-                isDrafted: params.row.draftedVersion != null,
-                isPublished: params.row.publishedVersion != null,
-                isRevoked: false,
-            };// getFormStatus(params.row);
+            } = getFormStatus(params.row);
 
             return (
                 <Box
@@ -101,7 +97,7 @@ const columns: GridColDef<ProcessListEntry>[] = [
                                 color: 'inherit',
                                 textDecoration: 'none',
                             }}
-                            to={`/processes/${params.row.id}/versions/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
+                            to={`/processes/${params.row.id}/versions/latest`}
                             title="Prozess bearbeiten"
                         >
                             {params.row.internalTitle}
@@ -343,9 +339,9 @@ export function ProcessListPage() {
         },
         {
             icon: <Visibility/>,
-            to: `/processes/${item.id}/versions/${item.publishedVersion}`,
+            to: `/processes/${item.id}/versions/latest`,
             tooltip: 'Prozess ansehen',
-            visible: item.draftedVersion === null,
+            visible: item.draftedVersion === null && item.versionCount > 0,
         },
         {
             icon: <NewWindow/>,
