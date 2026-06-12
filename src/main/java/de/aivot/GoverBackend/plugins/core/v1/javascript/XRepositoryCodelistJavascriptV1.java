@@ -107,7 +107,15 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
             return ProxyArray.fromArray();
         }
 
+        var items = codeList
+                .stream()
+                .map(option -> Map.of(
+                        "value", option.getValue(),
+                        "label", option.getLabel()
+                ))
+                .toList();
+
         return JavascriptEngine
-                .collectionToProxyArray(codeList);
+                .collectionToProxyArray(items);
     }
 }

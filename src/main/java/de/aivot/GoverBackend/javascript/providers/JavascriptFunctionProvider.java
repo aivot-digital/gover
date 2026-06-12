@@ -4,12 +4,15 @@ package de.aivot.GoverBackend.javascript.providers;
 import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
 import de.aivot.GoverBackend.plugin.models.PluginComponent;
 import jakarta.annotation.Nonnull;
+import org.graalvm.polyglot.Value;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
- * Interface for providing functions to the javascript context.
- * The functions will be available in the javascript context under the name returned by {@link #getObjectName}.
- * Your provider should be annotated with {@link org.graalvm.polyglot.HostAccess.Export} to make the functions available in the javascript context.
- * Please make sure, your provider is public.
+ * Interface for providing functions to the javascript context. The functions will be available in the javascript context under the name returned by {@link #getObjectName}. Your
+ * provider should be annotated with {@link org.graalvm.polyglot.HostAccess.Export} to make the functions available in the javascript context. Please make sure, your provider is
+ * public.
  */
 public interface JavascriptFunctionProvider extends PluginComponent {
     @Nonnull
@@ -28,8 +31,7 @@ public interface JavascriptFunctionProvider extends PluginComponent {
     }
 
     /**
-     * Returns the type definition of the object in the javascript context.
-     * This is used for documentation and intellisense purposes.
+     * Returns the type definition of the object in the javascript context. This is used for documentation and intellisense purposes.
      *
      * @return the type definition of the object in the javascript context
      */
@@ -57,11 +59,19 @@ public interface JavascriptFunctionProvider extends PluginComponent {
     }
 
     /**
-     * Returns additional method type definitions for the object in the javascript context.
-     * This is used for documentation and intellisense purposes.
-     * Each method definition should be a valid TypeScript method signature.
+     * Returns additional method type definitions for the object in the javascript context. This is used for documentation and intellisense purposes. Each method definition should
+     * be a valid TypeScript method signature.
      *
      * @return additional method type definitions for the object in the javascript context
      */
     String[] getMethodTypeDefinitions();
+
+    default Map<String, String> polyglotValueToMap(Value value) {
+        var map = new HashMap<String, String>();
+        for (var k : value.getMemberKeys()) {
+            var v = value.getMember(k);
+            map.put(k, v.toString());
+        }
+        return map;
+    }
 }

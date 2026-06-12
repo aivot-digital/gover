@@ -11,7 +11,6 @@ import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
-
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -74,6 +73,10 @@ public class JavascriptEngine implements AutoCloseable {
 
                 // Enable text encoding
                 .option("js.text-encoding", "true")
+
+                // Remove warning that the engine is only in interpreter mode.
+                // TODO: Resolve this problem and remove this option.
+                .option("engine.WarnInterpreterOnly", "false")
 
                 // Redirect the standard output and error streams to the given output streams.
                 .out(outStream)
