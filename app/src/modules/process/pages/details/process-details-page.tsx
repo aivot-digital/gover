@@ -1870,7 +1870,7 @@ export function ProcessDetailsPage(): ReactNode {
             {
                 label: 'Veröffentlichen',
                 tooltip: 'Prozessversion veröffentlichen',
-                disabledTooltip: 'Während des Tests kann der Status der Prozessversion nicht verändert werden.',
+                disabledTooltip: 'Vor der Veröffentlichung muss der laufende Test beendet werden.',
                 icon: null,
                 onClick: () => {
                     setShowPublishDialog(true);
@@ -1885,7 +1885,7 @@ export function ProcessDetailsPage(): ReactNode {
             {
                 label: 'Zurückziehen',
                 tooltip: 'Prozessversion zurückziehen',
-                disabledTooltip: 'Während des Tests kann der Status der Prozessversion nicht verändert werden.',
+                disabledTooltip: 'Vor dem Zurückziehen muss der laufende Test beendet werden.',
                 icon: null,
                 onClick: () => {
                     if (processFlow == null) {
