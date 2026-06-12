@@ -265,7 +265,7 @@ function buildCurrentValueLines(
     const hasDiff = diff !== undefined;
     const lines = buildPlainValueLines(value, indentLevel, prefix, isLast, hasDiff ? 'changed' : 'default');
 
-    if (hasDiff) {
+    if (hasDiff && diff !== null) {
         lines.push(...buildPlainValueLines(diff, indentLevel, prefix, true, 'previous'));
     }
 
