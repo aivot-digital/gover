@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.plugins.core.v1.operators;
 import de.aivot.GoverBackend.elements.models.ComputedElementStates;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeIsInvisibleOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeBase64Operator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeConcatOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.date.NoCodeCreateTimeOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.list.NoCodeListContainsOperator;
@@ -52,6 +53,17 @@ class OperatorHardeningTest {
         var result = operator.performEvaluation(data, "a.b.c", ".");
 
         assertEquals(List.of("a", "b", "c"), result.getValue());
+    }
+
+    @Test
+    void base64ShouldEncodeUtf8Text() throws NoCodeException {
+        var operator = new NoCodeBase64Operator();
+        var data = runtime();
+
+        var result = operator.performEvaluation(data, "Hallo München");
+
+        assertEquals("SGFsbG8gTcO8bmNoZW4=", result.getValue());
+        assertThrows(NoCodeException.class, () -> operator.performEvaluation(data));
     }
 
     @Test

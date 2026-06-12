@@ -120,6 +120,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeObjectGetOperator(),
 
                 // Text
+                new NoCodeBase64Operator(),
                 new NoCodeConcatOperator(),
                 new NoCodeRegexExtractOperator(),
                 new NoCodeRegexMatchOperator(),
