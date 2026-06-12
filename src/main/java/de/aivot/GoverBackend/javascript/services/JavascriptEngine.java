@@ -51,25 +51,33 @@ public class JavascriptEngine implements AutoCloseable {
                 // Create a new context builder for the javascript engine.
                 .newBuilder(JS_ENGINE_NAME)
 
-                // Specify the ecmascript version to use. This is necessary to use the latest features of javascript. Currently, the latest version is 2022.
-                .option("js.ecmascript-version", "2022")
+                // Set the Sandbox policy to ISOLATED for:
+                //   - Disallows native access.
+                //   - Disallows process creation.
+                //   - Disallows system exit, prohibiting the guest code from terminating the entire VM where this is supported by the language.
+                //   - Requires redirection of the standard output and error streams. This is to mitigate risks where external components, such as log processing, may be confused by unexpected writes to output streams by guest code.
+                //   - Disallows host file or socket access. Only custom polyglot file system implementations are allowed.
+                //   - Disallows environment access.
+                //   - Restricts host access:
+                //        - Disallows host class loading.
+                //        - Disallows access to all public host classes and methods by default.
+                //        - Disallows access inheritance.
+                //        - Disallows implementation of arbitrary host classes and interfaces.
+                //        - Disallows implementation of java.lang.FunctionalInterface.
+                //        - Disallows host object mappings of mutable target types. The HostAccess.CONSTRAINED host access policy is preconfigured to fulfill the requirements for the CONSTRAINED sandboxing policy.
+                .sandbox(SandboxPolicy.CONSTRAINED)
 
-                // Remove warning that the engine is only in interpreter mode. TODO: Resolve this problem and remove this option.
-                .option("engine.WarnInterpreterOnly", "false")
+                // Specify the ecmascript version to use.
+                // This is necessary to use the latest features of javascript.
+                // Currently, the latest version is 2025.
+                .option("js.ecmascript-version", "2025")
 
-                // Only allow access to explicitly exported functions and fields. This behavior does not affect the access to proxy objects.
-                .allowHostAccess(HostAccess.EXPLICIT)
+                // Enable text encoding
+                .option("js.text-encoding", "true")
 
                 // Redirect the standard output and error streams to the given output streams.
                 .out(outStream)
                 .err(errStream)
-
-                // Disable to the following host functions.
-                .allowCreateThread(false)
-                .allowCreateProcess(false)
-                .allowHostClassLookup(className -> false)
-                .allowHostClassLoading(false)
-                .allowPolyglotAccess(PolyglotAccess.NONE)
 
                 // Build the context.
                 .build();
