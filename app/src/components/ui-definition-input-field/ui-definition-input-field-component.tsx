@@ -368,7 +368,6 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     sx={{
                         ml: 'auto',
                     }}
-                    disabled={openOverride ? undefined : disabled}
                     onClick={openDialog}
                 >
                     {
@@ -610,6 +609,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             onChange(draftValue);
                             handleClose();
                         }}
+                        disabled={disabled}
                     >
                         Übernehmen
                     </Button>
