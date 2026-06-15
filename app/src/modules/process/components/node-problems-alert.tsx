@@ -8,6 +8,7 @@ import {SxProps} from '@mui/material';
 interface NodeProblemsAlertProps {
     problems: ProcessNodeProblems[];
     availableNodeProviders: ProcessNodeProvider[];
+    mode: 'test' | 'publish';
     sx?: SxProps;
 }
 
@@ -15,17 +16,31 @@ export function NodeProblemsAlert(props: NodeProblemsAlertProps) {
     const {
         problems,
         availableNodeProviders,
+        mode,
         sx,
     } = props;
 
     return (
         <AlertComponent
-            color="warning"
+            color={mode === 'test' ? 'warning' : 'error'}
             sx={sx}
         >
-            Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
-            Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der
-            ungültigen Konfiguration kommen.
+            {
+                mode === 'test' &&
+                <>
+                    Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
+                    Sie können den Test starten, es kann jedoch zu Ausführungsproblemen aufgrund der
+                    ungültigen Konfiguration kommen.
+                </>
+            }
+            {
+                mode === 'publish' &&
+                <>
+                    Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
+                    Sie können den Prozess <strong>nicht</strong> veröffentlichen, solange fehlerhafte Konfigurationen existieren.
+                    Bitte beheben Sie alle Probleme bevor Sie fortfahren.
+                </>
+            }
 
             <ul>
                 {

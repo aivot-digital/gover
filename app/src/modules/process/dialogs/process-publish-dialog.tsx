@@ -147,6 +147,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                     <NodeProblemsAlert
                         problems={allNodeProblems}
                         availableNodeProviders={availableNodeProviders}
+                        mode="publish"
                     />
                 }
 
