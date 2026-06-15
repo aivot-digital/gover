@@ -3,7 +3,7 @@ import {useEffect, useState} from 'react';
 import {ProcessNodeProblems} from '../entities/process-node-problems';
 import {ProcessEntity} from '../entities/process-entity';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
-import {Button, Dialog, DialogActions, DialogContent, Skeleton} from '@mui/material';
+import {Button, Dialog, DialogActions, DialogContent, Skeleton, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {ProcessDefinitionVersionApiService} from '../services/process-definition-version-api-service';
 import {useAppSelector} from '../../../hooks/use-app-selector';
@@ -16,6 +16,7 @@ import {AlertComponent} from '../../../components/alert/alert-component';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
 import {isApiError} from '../../../models/api-error';
+import {useConfirm} from '../../../providers/confirm-provider';
 
 interface ProcessPublishDialogProps {
     process: ProcessEntity;
@@ -35,13 +36,15 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
     } = props;
 
     const dispatch = useAppDispatch();
+    const showConfirm = useConfirm();
 
     const canPublish = useAppSelector(selectHasMemberships(process.departmentId, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL));
+    const replacesPublishedVersion = process.publishedVersion != null && process.publishedVersion !== version.processVersion;
 
     const [publishError, setPublishError] = useState<string>();
     useEffect(() => {
         setPublishError(undefined);
-    }, [open]);
+    }, [rest.open]);
 
     const [allNodeProblems, setAllNodeProblems] = useState<ProcessNodeProblems[]>([]);
     const [isValidating, setIsValidating] = useState<boolean>(false);
@@ -56,8 +59,25 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
             .finally(() => setIsValidating(false));
     }, [process.id, version.processVersion, rest.open]);
 
-    const handlePublish = () => {
+    const handlePublish = async () => {
         setPublishError(undefined);
+
+        if (replacesPublishedVersion) {
+            const confirmed = await showConfirm({
+                title: 'Veröffentlichte Version ersetzen?',
+                confirmButtonText: 'Ja, Version veröffentlichen',
+                children: (
+                    <Typography>
+                        Aktuell ist Version {process.publishedVersion} veröffentlicht. Wenn Sie Version {version.processVersion} veröffentlichen,
+                        wird Version {process.publishedVersion} zurückgezogen und Version {version.processVersion} veröffentlicht.
+                    </Typography>
+                ),
+            });
+
+            if (!confirmed) {
+                return;
+            }
+        }
 
         dispatch(setLoadingMessage({
             message: 'Prozess wird veröffentlicht',
@@ -107,6 +127,16 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                 }
 
                 {
+                    publishError != null &&
+                    <AlertComponent
+                        color="error"
+                        title="Prozess konnte nicht veröffentlicht werden"
+                        text={publishError}
+                        sx={{mb: 2}}
+                    />
+                }
+
+                {
                     isValidating &&
                     <Skeleton height={100}/>
                 }
@@ -123,6 +153,20 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                 {
                     !isValidating &&
                     allNodeProblems.length === 0 &&
+                    replacesPublishedVersion &&
+                    <AlertComponent
+                        color="warning"
+                        title="Veröffentlichte Version wird ersetzt"
+                    >
+                        Aktuell ist Version {process.publishedVersion} veröffentlicht. Wenn Sie Version {version.processVersion} veröffentlichen,
+                        wird Version {process.publishedVersion} zurückgezogen und Version {version.processVersion} veröffentlicht.
+                    </AlertComponent>
+                }
+
+                {
+                    !isValidating &&
+                    allNodeProblems.length === 0 &&
+                    !replacesPublishedVersion &&
                     <AlertComponent
                         color="success"
                         title="Prozess bereit zur Veröffentlichung"
@@ -134,7 +178,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
             <DialogActions>
                 <Button
                     variant="contained"
-                    disabled={!canPublish || allNodeProblems.length > 0}
+                    disabled={!canPublish || isValidating || allNodeProblems.length > 0}
                     onClick={handlePublish}
                 >
                     Jetzt veröffentlichen
