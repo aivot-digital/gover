@@ -428,11 +428,11 @@ export function FormNodeEditorPage() {
     const handleImportFromXDF = async () => {
         try {
             const conf = await confirm({
-                title: 'Import from XDF',
+                title: 'XDF-Import',
                 children: (
                     <>
                         <Typography>
-                            Sie können ein XDatenfeld-Schema importieren.
+                            Sie sind in Begriff ein XDatenfeld-Schema zu importieren.
                         </Typography>
                         <Typography>
                             Beim Import werden alle bestehenden Felder dieses Formulars vollständig überschrieben.
@@ -456,7 +456,7 @@ export function FormNodeEditorPage() {
             dispatch(setLoadingMessage({
                 blocking: true,
                 estimatedTime: 1000,
-                message: 'Import from XDF',
+                message: 'Importiere XDF',
             }));
 
             const transformed = await new XdfApiService().xdfTransform(xmlContent);
