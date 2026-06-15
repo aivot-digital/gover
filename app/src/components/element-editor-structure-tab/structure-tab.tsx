@@ -9,7 +9,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {IconButton} from '../icon-button/icon-button';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
-import {generateComponentTitle} from '../../utils/generate-component-title';
+import {generateComponentStructureFilename} from '../../utils/generate-component-structure-filename';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import {useConfirm} from '../../providers/confirm-provider';
 import {AlertComponent} from '../alert/alert-component';
@@ -80,7 +80,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
     };
 
     const handleDownload = (): void => {
-        downloadObjectFile(generateComponentTitle(props.elementModel) + '.uielement.gover.json', props.elementModel);
+        downloadObjectFile(generateComponentStructureFilename(props.elementModel), props.elementModel);
     };
 
     const handleUpload = (): void => {
