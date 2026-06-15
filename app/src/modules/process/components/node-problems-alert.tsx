@@ -37,8 +37,7 @@ export function NodeProblemsAlert(props: NodeProblemsAlertProps) {
                 mode === 'publish' &&
                 <>
                     Mindestens eins der Prozesselemente hat eine ungültige Konfiguration.
-                    Sie können den Prozess <strong>nicht</strong> veröffentlichen, solange fehlerhafte Konfigurationen existieren.
-                    Bitte beheben Sie alle Probleme bevor Sie fortfahren.
+                    Sie können den Prozess erst veröffentlichen, wenn die nachstehenden Fehler behoben wurden.
                 </>
             }
 
