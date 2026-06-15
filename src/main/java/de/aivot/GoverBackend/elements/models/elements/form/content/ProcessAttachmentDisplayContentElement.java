@@ -9,6 +9,8 @@ import java.util.Objects;
 public class ProcessAttachmentDisplayContentElement extends BaseFormElement {
     @Nullable
     private String fileName;
+    @Nullable
+    private String hint;
 
     public ProcessAttachmentDisplayContentElement() {
         super(ElementType.ProcessAttachmentDisplay);
@@ -20,13 +22,14 @@ public class ProcessAttachmentDisplayContentElement extends BaseFormElement {
         if (!super.equals(o)) return false;
 
         ProcessAttachmentDisplayContentElement that = (ProcessAttachmentDisplayContentElement) o;
-        return Objects.equals(fileName, that.fileName);
+        return Objects.equals(fileName, that.fileName) && Objects.equals(hint, that.hint);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(fileName);
+        result = 31 * result + Objects.hashCode(hint);
         return result;
     }
 
@@ -37,6 +40,16 @@ public class ProcessAttachmentDisplayContentElement extends BaseFormElement {
 
     public ProcessAttachmentDisplayContentElement setFileName(@Nullable String fileName) {
         this.fileName = fileName;
+        return this;
+    }
+
+    @Nullable
+    public String getHint() {
+        return hint;
+    }
+
+    public ProcessAttachmentDisplayContentElement setHint(@Nullable String hint) {
+        this.hint = hint;
         return this;
     }
 }

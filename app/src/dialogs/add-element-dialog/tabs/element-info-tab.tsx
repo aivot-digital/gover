@@ -53,6 +53,9 @@ import {FileUploadComponent} from '../../../components/file-upload-field/file-up
 import {SelectionDetailsPanel} from '../../../components/selection-dialog/selection-details-panel';
 import {TextFieldSummary} from '../../../summaries/text-field-summary';
 import {NumberSummary} from '../../../summaries/number-summary';
+import {
+    ProcessAttachmentDisplayComponent,
+} from '../../../components/process-attachment-display/process-attachment-display-component';
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -1332,7 +1335,28 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             />
         </Box>
     ),
-    [ElementType.ProcessAttachmentDisplay]: null,
+    [ElementType.ProcessAttachmentDisplay]: (
+        <Box>
+            <Typography>
+                Das Element zeigt alle Vorgangsanhänge an, deren Dateiname exakt mit dem festgelegten Dateinamen
+                übereinstimmt. Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen
+                werden. Ein optionaler Hinweis ergänzt die Darstellung um weitere Informationen.
+            </Typography>
+
+            <Divider sx={{my: 4}}>
+                Beispiel
+            </Divider>
+
+            <ProcessAttachmentDisplayComponent
+                items={[
+                    {
+                        key: 'example',
+                        fileName: 'Erfolgsbescheid.pdf',
+                    },
+                ]}
+            />
+        </Box>
+    ),
 };
 
 export function ElementInfoTab({

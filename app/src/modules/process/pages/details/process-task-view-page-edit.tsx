@@ -39,7 +39,7 @@ import {
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AuthService} from '../../../../services/auth-service';
-import {ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
+import type {ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
 import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
 import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-context';
 import {BaseApiService} from '../../../../services/base-api-service';
@@ -392,11 +392,37 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         }
     }, [dispatch]);
 
+    const handleViewAttachment = useCallback(async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
+        const previewWindow = window.open('', '_blank');
+        if (previewWindow == null) {
+            dispatch(showErrorSnackbar('Der Anhang konnte nicht geöffnet werden. Bitte erlauben Sie Pop-ups für diese Seite.'));
+            return;
+        }
+
+        previewWindow.opener = null;
+        previewWindow.document.title = attachment.fileName;
+        previewWindow.document.body.textContent = 'Anhang wird geladen...';
+
+        try {
+            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=false`);
+            const objectUrl = URL.createObjectURL(blob);
+            previewWindow.location.replace(objectUrl);
+
+            window.setTimeout(() => {
+                URL.revokeObjectURL(objectUrl);
+            }, 60_000);
+        } catch (error) {
+            previewWindow.close();
+            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht angezeigt werden.'));
+        }
+    }, [dispatch]);
+
     const taskViewAttachmentContextValue = useMemo(() => ({
         attachments: taskAttachments,
         isLoadingAttachments: isLoadingTaskAttachments,
+        viewAttachment: handleViewAttachment,
         downloadAttachment: handleDownloadAttachment,
-    }), [handleDownloadAttachment, isLoadingTaskAttachments, taskAttachments]);
+    }), [handleDownloadAttachment, handleViewAttachment, isLoadingTaskAttachments, taskAttachments]);
 
     const handleEventClick = async (evt: TaskViewEvent) => {
         if (item == null || taskView == null) {

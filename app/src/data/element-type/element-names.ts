@@ -49,7 +49,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.ProcessDataKeyInput]: 'Prozessdaten-Schlüssel',
     [ElementType.ProcessAttachmentNameChipInput]: 'Vorgangsanhänge',
     [ElementType.ProcessIdentityIdInput]: 'Prozessidentitäten',
-    [ElementType.ProcessAttachmentDisplay]: 'Anlage zum Vorgang',
+    [ElementType.ProcessAttachmentDisplay]: 'Anhang zum Vorgang',
 };
 
 export function getElementName(element: AnyElement): string {

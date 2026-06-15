@@ -1,90 +1,95 @@
-import {BaseViewProps} from './base-view';
-import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
-import {useMemo} from 'react';
+import type {BaseViewProps} from './base-view';
+import type {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
+import React, {useMemo} from 'react';
 import {useOptionalProcessTaskViewAttachmentContext} from '../modules/process/pages/details/process-task-view-attachment-context';
-import {Box, Chip, Stack, Typography} from '@mui/material';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import {ProcessAttachmentDisplayComponent} from '../components/process-attachment-display/process-attachment-display-component';
 
-export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachmentDisplayElement, void>) {
+export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachmentDisplayElement, void>): React.JSX.Element {
     const {
         element,
     } = props;
 
     const attachmentContext = useOptionalProcessTaskViewAttachmentContext();
+    const configuredFileName = element.fileName ?? '';
+    const hasConfiguredFileName = configuredFileName.trim().length > 0;
 
     const matchingAttachments = useMemo(() => {
-        if (attachmentContext == null || element.fileName == null || element.fileName.trim().length === 0) {
+        if (attachmentContext == null || !hasConfiguredFileName) {
             return [];
         }
 
-        return attachmentContext.attachments.filter((attachment) => attachment.fileName === element.fileName);
-    }, [attachmentContext, element.fileName]);
+        return attachmentContext.attachments.filter((attachment) => attachment.fileName === configuredFileName);
+    }, [
+        attachmentContext,
+        configuredFileName,
+        hasConfiguredFileName,
+    ]);
 
     if (attachmentContext == null) {
+        if (!hasConfiguredFileName) {
+            return (
+                <ProcessAttachmentDisplayComponent
+                    hintText={element.hint}
+                    statusText="Konfigurieren Sie einen Dateinamen, um passende Vorgangsanhänge anzuzeigen."
+                />
+            );
+        }
+
         return (
-            <Typography color="text.secondary">
-                {
-                    element.fileName == null || element.fileName.trim().length === 0 ?
-                        'Dateiname konfigurieren, um passende Anlagen anzuzeigen.' :
-                        `Anlagen mit dem Dateinamen "${element.fileName}" werden hier angezeigt.`
-                }
-            </Typography>
+            <ProcessAttachmentDisplayComponent
+                hintText={element.hint}
+                items={[
+                    {
+                        key: 'preview',
+                        fileName: configuredFileName,
+                    },
+                ]}
+                previewText="Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden."
+            />
         );
     }
 
     if (attachmentContext.isLoadingAttachments) {
         return (
-            <Typography color="text.secondary">
-                Lade Anlagen...
-            </Typography>
+            <ProcessAttachmentDisplayComponent
+                hintText={element.hint}
+                loading
+                statusText="Anhänge werden geladen..."
+            />
         );
     }
 
-    if (element.fileName == null || element.fileName.trim().length === 0) {
+    if (!hasConfiguredFileName) {
         return (
-            <Typography color="text.secondary">
-                Es ist kein Dateiname konfiguriert.
-            </Typography>
+            <ProcessAttachmentDisplayComponent
+                hintText={element.hint}
+                statusText="Es ist kein Dateiname für die anzuzeigenden Anhänge konfiguriert."
+            />
         );
     }
 
     if (matchingAttachments.length === 0) {
         return (
-            <Typography color="text.secondary">
-                Keine passenden Anlagen vorhanden.
-            </Typography>
+            <ProcessAttachmentDisplayComponent
+                hintText={element.hint}
+                statusText="Für den konfigurierten Dateinamen wurden keine Anhänge gefunden."
+            />
         );
     }
 
     return (
-        <Box>
-            <Stack
-                direction="row"
-                spacing={1}
-                useFlexGap
-                flexWrap="wrap"
-            >
-                {
-                    matchingAttachments.map((attachment) => (
-                        <Chip
-                            key={attachment.key}
-                            variant="outlined"
-                            label={attachment.fileName}
-                            onDelete={() => {
-                                void attachmentContext.downloadAttachment(attachment);
-                            }}
-                            deleteIcon={<Download color="primary" />}
-                            sx={{
-                                maxWidth: 320,
-                                '& .MuiChip-label': {
-                                    overflow: 'hidden',
-                                    textOverflow: 'ellipsis',
-                                },
-                            }}
-                        />
-                    ))
-                }
-            </Stack>
-        </Box>
+        <ProcessAttachmentDisplayComponent
+            hintText={element.hint}
+            items={matchingAttachments.map((attachment) => ({
+                key: attachment.key,
+                fileName: attachment.fileName,
+                onView: () => {
+                    void attachmentContext.viewAttachment(attachment);
+                },
+                onDownload: () => {
+                    void attachmentContext.downloadAttachment(attachment);
+                },
+            }))}
+        />
     );
 }
