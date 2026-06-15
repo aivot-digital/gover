@@ -62,7 +62,7 @@ export function useProcessExport() {
                 if (exp == null) {
                     return null;
                 }
-                downloadObjectFile(`${exp.process.internalTitle}.process.gover.json`, exp);
+                downloadObjectFile(`${exp.process.internalTitle ?? exp.version.publicTitle}.process.gover.json`, exp);
             })
             .catch((error) => {
                 dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht exportiert werden.'));
