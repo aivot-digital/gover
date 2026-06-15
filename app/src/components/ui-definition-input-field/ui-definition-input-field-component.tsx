@@ -373,7 +373,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     {
                         openOverride != null
                             ? 'Editor öffnen'
-                            : 'Bearbeiten'
+                            : (disabled ? ' Ansehen' : 'Bearbeiten')
                     }
                 </Button>
             </Box>
@@ -622,7 +622,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                             void requestClose();
                         }}
                     >
-                        Abbrechen
+                        {disabled ? 'Schließen' : 'Abbrechen'}
                     </Button>
                 </DialogActions>
             </Dialog>
