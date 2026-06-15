@@ -367,9 +367,9 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.
 
     @Nullable
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull HttpActionNodeConfig configuration) throws ResponseException {
-        var errors = new LinkedHashMap<String, String>();
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull HttpActionNodeConfig configuration) throws ResponseException {
+        var errors = new LinkedHashMap<String, List<String>>();
 
         var general = configuration.general != null ? configuration.general : new HttpActionNodeGeneralConfig();
         var outgoing = configuration.outgoing != null ? configuration.outgoing : new HttpActionNodeOutgoingConfig();
@@ -377,29 +377,29 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.
 
         var method = normalizeMethod(general.method);
         if (!SUPPORTED_METHODS.contains(method)) {
-            errors.put(METHOD_FIELD_ID, "Die HTTP-Methode ist ungültig.");
+            addValidationError(errors, METHOD_FIELD_ID, "Die HTTP-Methode ist ungültig.");
         }
 
         if (StringUtils.isNullOrEmpty(general.url)) {
-            errors.put(URL_FIELD_ID, "Die URL muss angegeben werden.");
+            addValidationError(errors, URL_FIELD_ID, "Die URL muss angegeben werden.");
         }
 
         var expectedStatusCode = parseExpectedStatusCode(incoming.expectedStatusCode);
         if (expectedStatusCode == null || expectedStatusCode < 100 || expectedStatusCode > 599) {
-            errors.put(EXPECTED_STATUS_CODE_FIELD_ID, "Der erwartete HTTP-Statuscode muss zwischen 100 und 599 liegen.");
+            addValidationError(errors, EXPECTED_STATUS_CODE_FIELD_ID, "Der erwartete HTTP-Statuscode muss zwischen 100 und 599 liegen.");
         }
 
         var responseType = normalizeResponseType(incoming.responseType);
         if (!RESPONSE_TYPES.contains(responseType)) {
-            errors.put(RESPONSE_TYPE_FIELD_ID, "Der erwartete Antworttyp ist ungültig.");
+            addValidationError(errors, RESPONSE_TYPE_FIELD_ID, "Der erwartete Antworttyp ist ungültig.");
         }
 
         if (RESPONSE_TYPE_FILE.equals(responseType)) {
             if (StringUtils.isNotNullOrEmpty(incoming.responseProcessorCode)) {
-                errors.put(RESPONSE_PROCESSOR_FIELD_ID, "Für Datei-Antworten darf keine Response-Verarbeitung konfiguriert werden.");
+                addValidationError(errors, RESPONSE_PROCESSOR_FIELD_ID, "Für Datei-Antworten darf keine Response-Verarbeitung konfiguriert werden.");
             }
             if (hasOutputMappings(processNodeEntity.getOutputMappings())) {
-                errors.put(RESPONSE_TYPE_FIELD_ID, "Bei Datei-Antworten dürfen keine Ausgabemappings in die Vorgangsdaten konfiguriert werden.");
+                addValidationError(errors, RESPONSE_TYPE_FIELD_ID, "Bei Datei-Antworten dürfen keine Ausgabemappings in die Vorgangsdaten konfiguriert werden.");
             }
         }
 
@@ -409,36 +409,36 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.
 
         var bodyType = normalizeBodyType(outgoing.bodyType);
         if (!BODY_TYPES.contains(bodyType)) {
-            errors.put(BODY_TYPE_FIELD_ID, "Der Datentyp für ausgehende Daten ist ungültig.");
+            addValidationError(errors, BODY_TYPE_FIELD_ID, "Der Datentyp für ausgehende Daten ist ungültig.");
             return errors.isEmpty() ? null : errors;
         }
 
         if (BODY_TYPE_MANUAL.equals(bodyType)) {
             if (StringUtils.isNullOrEmpty(outgoing.manualContentType)) {
-                errors.put(MANUAL_CONTENT_TYPE_FIELD_ID, "Für manuelle Bodies muss ein Content-Type angegeben werden.");
+                addValidationError(errors, MANUAL_CONTENT_TYPE_FIELD_ID, "Für manuelle Bodies muss ein Content-Type angegeben werden.");
             }
             if (StringUtils.isNullOrEmpty(outgoing.requestBodyCode)) {
-                errors.put(REQUEST_BODY_CODE_FIELD_ID, "Für manuelle Bodies muss Low-Code zur Erzeugung des Request-Bodys angegeben werden.");
+                addValidationError(errors, REQUEST_BODY_CODE_FIELD_ID, "Für manuelle Bodies muss Low-Code zur Erzeugung des Request-Bodys angegeben werden.");
             }
             return errors.isEmpty() ? null : errors;
         }
 
         var sourceMode = normalizeSourceMode(outgoing.sourceMode);
         if (!SOURCE_MODES.contains(sourceMode)) {
-            errors.put(SOURCE_MODE_FIELD_ID, "Der Modus für ausgehende Daten ist ungültig.");
+            addValidationError(errors, SOURCE_MODE_FIELD_ID, "Der Modus für ausgehende Daten ist ungültig.");
             return errors.isEmpty() ? null : errors;
         }
 
         if (SOURCE_MODE_SELECTED.equals(sourceMode) && BODY_TYPE_JSON.equals(bodyType)) {
             var selectedPaths = normalizeStringList(outgoing.jsonSelectedPaths);
             if (selectedPaths.isEmpty()) {
-                errors.put(JSON_SELECTED_PATHS_FIELD_ID, "Für ausgewählte JSON-Daten muss mindestens ein Pfad angegeben werden.");
+                addValidationError(errors, JSON_SELECTED_PATHS_FIELD_ID, "Für ausgewählte JSON-Daten muss mindestens ein Pfad angegeben werden.");
             } else {
                 for (var path : selectedPaths) {
                     try {
                         normalizeJsonSelectionPath(path);
                     } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                        errors.put(JSON_SELECTED_PATHS_FIELD_ID, e.getMessage());
+                        addValidationError(errors, JSON_SELECTED_PATHS_FIELD_ID, e.getMessage());
                         break;
                     }
                 }
@@ -447,19 +447,19 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.
 
         if (SOURCE_MODE_SELECTED.equals(sourceMode) && BODY_TYPE_MULTIPART.equals(bodyType)) {
             if (outgoing.multipartFields == null || outgoing.multipartFields.isEmpty()) {
-                errors.put(MULTIPART_FIELDS_FIELD_ID, "Für ausgewählte Multipart-Daten muss mindestens ein Feld angegeben werden.");
+                addValidationError(errors, MULTIPART_FIELDS_FIELD_ID, "Für ausgewählte Multipart-Daten muss mindestens ein Feld angegeben werden.");
             } else {
                 var rowIndex = 1;
                 for (var field : outgoing.multipartFields) {
                     if (field == null || StringUtils.isNullOrEmpty(field.name) || StringUtils.isNullOrEmpty(field.valueKey)) {
-                        errors.put(MULTIPART_FIELDS_FIELD_ID, "Jede Multipart-Zeile benötigt einen Feldnamen und einen Wertpfad.");
+                        addValidationError(errors, MULTIPART_FIELDS_FIELD_ID, "Jede Multipart-Zeile benötigt einen Feldnamen und einen Wertpfad.");
                         break;
                     }
 
                     try {
                         normalizeExecutionDataPath(field.valueKey);
                     } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                        errors.put(MULTIPART_FIELDS_FIELD_ID, "Ungültiger Wertpfad in Multipart-Zeile %d: %s".formatted(rowIndex, e.getMessage()));
+                        addValidationError(errors, MULTIPART_FIELDS_FIELD_ID, "Ungültiger Wertpfad in Multipart-Zeile %d: %s".formatted(rowIndex, e.getMessage()));
                         break;
                     }
                     rowIndex++;
@@ -468,10 +468,18 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1.
         }
 
         if (SOURCE_MODE_LOW_CODE.equals(sourceMode) && StringUtils.isNullOrEmpty(outgoing.requestBodyCode)) {
-            errors.put(REQUEST_BODY_CODE_FIELD_ID, "Für benutzerdefinierte Daten muss Low-Code angegeben werden.");
+            addValidationError(errors, REQUEST_BODY_CODE_FIELD_ID, "Für benutzerdefinierte Daten muss Low-Code angegeben werden.");
         }
 
         return errors.isEmpty() ? null : errors;
+    }
+
+    private static void addValidationError(@Nonnull Map<String, List<String>> errors,
+                                           @Nonnull String fieldId,
+                                           @Nonnull String message) {
+        errors
+                .computeIfAbsent(fieldId, ignored -> new LinkedList<>())
+                .add(message);
     }
 
     @Override

@@ -210,8 +210,8 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     }
 
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull NoCodeActionNodeConfiguration configuration) throws ResponseException {
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull NoCodeActionNodeConfiguration configuration) throws ResponseException {
         // TODO: Check validity of this node configuration.
         //       - All variables need to be unique.
         //       - No-Code expressions should be checked for syntax errors (if possible).

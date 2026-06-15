@@ -52,7 +52,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 /**
  * Sends the full process execution data to an AI model and replaces the process data root with the returned JSON object.
@@ -263,39 +262,39 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
 
     @Nullable
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AiProcessDataTransformationActionNodeConfig configuration) throws ResponseException {
-        var errors = new LinkedHashMap<String, String>();
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull AiProcessDataTransformationActionNodeConfig configuration) throws ResponseException {
+        var errors = new LinkedHashMap<String, List<String>>();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, "Die Endpoint-URL muss angegeben werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
         } else {
             try {
                 parseEndpointUri(configuration.endpointUrl);
             } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, e.getMessage());
+                errors.put(AiProcessDataTransformationActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of(e.getMessage()));
             }
         }
 
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das Secret für den API-Schlüssel muss ausgewählt werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
         } else {
             try {
                 var secretId = UUID.fromString(configuration.apiKeySecret.trim());
                 if (secretService.retrieve(secretId).isEmpty()) {
-                    errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden.");
+                    errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
                 }
             } catch (IllegalArgumentException e) {
-                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel ist ungültig.");
+                errors.put(AiProcessDataTransformationActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel ist ungültig."));
             }
         }
 
         if (StringUtils.isNullOrEmpty(configuration.model)) {
-            errors.put(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, "Das Modell muss angegeben werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.MODEL_FIELD_ID, List.of("Das Modell muss angegeben werden."));
         }
 
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, "Das Prompt muss angegeben werden.");
+            errors.put(AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
         } else {
             var diagnostics = templateRenderService.validateInterpolationSyntax(configuration.prompt);
             if (!diagnostics.isEmpty()) {
@@ -303,7 +302,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
                         AiProcessDataTransformationActionNodeConfig.PROMPT_FIELD_ID,
                         diagnostics.stream()
                                 .map(diagnostic -> "Zeile %d: %s".formatted(diagnostic.lineNumber(), diagnostic.message()))
-                                .collect(Collectors.joining("\n"))
+                                .toList()
                 );
             }
         }

@@ -17,7 +17,7 @@ import java.util.Map;
 public record ProcessNodeProblems(
         @Nonnull ProcessNodeEntity node,
         @Nonnull List<String> problems,
-        @Nonnull Map<String, String> commonErrors,
+        @Nonnull Map<String, List<String>> commonErrors,
         @Nonnull DerivedRuntimeElementData derivedRuntimeElementData
 ) {
     public static final String COMMON_ERROR_KEY_DATA_KEY = "dataKey";

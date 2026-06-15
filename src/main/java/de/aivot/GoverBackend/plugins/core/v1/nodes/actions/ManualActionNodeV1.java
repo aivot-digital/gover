@@ -233,8 +233,8 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     }
 
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull ManualActionNodeConfig configuration) throws ResponseException {
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull ManualActionNodeConfig configuration) throws ResponseException {
         return null;
     }
 

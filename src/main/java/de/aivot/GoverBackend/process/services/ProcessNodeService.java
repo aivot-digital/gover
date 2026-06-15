@@ -390,13 +390,18 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public <NodeConfig> Optional<ProcessNodeProblems> validate(@Nonnull ProcessNodeEntity node,
                                                                @Nonnull ProcessNodeDefinition<NodeConfig> provider,
                                                                @Nonnull Boolean checkPorts) throws ResponseException {
-        var commonErrors = new HashMap<String, String>();
+        var commonErrors = new LinkedHashMap<String, List<String>>();
         var problems = new LinkedList<String>();
 
         if (StringUtils.isNullOrEmpty(node.getDataKey())) {
             var commonErrorMessage = "Der Datenschlüssel darf nicht leer sein.";
-            commonErrors.put(ProcessNodeProblems.COMMON_ERROR_KEY_DATA_KEY, commonErrorMessage);
-            problems.add("Datenschlüssel: " + commonErrorMessage);
+            addCommonError(
+                    commonErrors,
+                    problems,
+                    ProcessNodeProblems.COMMON_ERROR_KEY_DATA_KEY,
+                    "Datenschlüssel",
+                    commonErrorMessage
+            );
         } else {
             var duplicateDataKeyFilter = ProcessNodeFilter
                     .create()
@@ -407,8 +412,13 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
             if (this.exists(duplicateDataKeyFilter)) {
                 var commonErrorMessage = "Es existiert mindestens ein weiterer Knoten mit dem selben Datenschlüssel. Datenschlüssel müssen eindeutig sein.";
-                commonErrors.put(ProcessNodeProblems.COMMON_ERROR_KEY_DATA_KEY, commonErrorMessage);
-                problems.add("Datenschlüssel: " + commonErrorMessage);
+                addCommonError(
+                        commonErrors,
+                        problems,
+                        ProcessNodeProblems.COMMON_ERROR_KEY_DATA_KEY,
+                        "Datenschlüssel",
+                        commonErrorMessage
+                );
             }
         }
 
@@ -441,10 +451,12 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
             if (validationErrors != null) {
                 for (var err : validationErrors.entrySet()) {
-                    layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
-                            element -> problems.add(element.getLabel() + ": " + err.getValue()),
-                            () -> problems.add("Element mit ID " + err.getKey() + ": " + err.getValue())
-                    );
+                    for (var validationError : err.getValue()) {
+                        layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
+                                element -> problems.add(element.getLabel() + ": " + validationError),
+                                () -> problems.add("Element mit ID " + err.getKey() + ": " + validationError)
+                        );
+                    }
                 }
             }
         }
@@ -471,6 +483,17 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             return Optional.of(new ProcessNodeProblems(node, problems, commonErrors,
                     derivedConfiguration != null ? derivedConfiguration.derivedRuntimeElementData : new DerivedRuntimeElementData()));
         }
+    }
+
+    private static void addCommonError(@Nonnull Map<String, List<String>> commonErrors,
+                                       @Nonnull List<String> problems,
+                                       @Nonnull String commonErrorKey,
+                                       @Nonnull String problemLabel,
+                                       @Nonnull String errorMessage) {
+        commonErrors
+                .computeIfAbsent(commonErrorKey, ignored -> new LinkedList<>())
+                .add(errorMessage);
+        problems.add(problemLabel + ": " + errorMessage);
     }
 
     public record ProcessConfigurationDetails<NodeConfig>(

@@ -128,12 +128,12 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      *
      * @param processNodeEntity The process definition node entity to be validated.
      * @param configuration     The configuration to be validated.
-     * @return A map of configuration field keys to an error messages for that field. If the configuration is valid, null is returned.
+     * @return A map of configuration field keys to error messages for that field. If the configuration is valid, null is returned.
      * @throws ResponseException If the configuration is invalid.
      */
     @Nullable
-    default Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                      @Nonnull NodeConfig configuration) throws ResponseException {
+    default Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                            @Nonnull NodeConfig configuration) throws ResponseException {
         return null;
     }
 

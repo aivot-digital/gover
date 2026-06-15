@@ -237,14 +237,15 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Nullable
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull FormTriggerConfigV1 configuration) throws ResponseException {
-        var errors = new LinkedHashMap<String, String>();
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull FormTriggerConfigV1 configuration) throws ResponseException {
+        var errors = new LinkedHashMap<String, List<String>>();
         var formSlug = configuration.formSlug;
 
         if (StringUtils.isNotNullOrEmpty(formSlug)) {
             if (!formSlug.matches("^[a-z0-9-]+$")) {
-                errors.put(
+                addValidationError(
+                        errors,
                         FormTriggerConfigV1.FORM_SLUG,
                         "Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
                 );
@@ -259,7 +260,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                     .addConfigEquals(FormTriggerConfigV1.FORM_SLUG, formSlug);
 
             if (processNodeRepository.exists(duplicateNodeFilter.build())) {
-                errors.putIfAbsent(
+                addValidationError(
+                        errors,
                         FormTriggerConfigV1.FORM_SLUG,
                         "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
                 );
@@ -268,10 +270,18 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
         var layoutErrors = validateLegacyPublishChecklistFields(configuration.formLayout);
         if (!layoutErrors.isEmpty()) {
-            errors.put(FormTriggerConfigV1.FORM_LAYOUT, String.join("\n", layoutErrors));
+            errors.put(FormTriggerConfigV1.FORM_LAYOUT, layoutErrors);
         }
 
         return errors.isEmpty() ? null : errors;
+    }
+
+    private static void addValidationError(@Nonnull Map<String, List<String>> errors,
+                                           @Nonnull String fieldId,
+                                           @Nonnull String message) {
+        errors
+                .computeIfAbsent(fieldId, ignored -> new LinkedList<>())
+                .add(message);
     }
 
     @Nonnull

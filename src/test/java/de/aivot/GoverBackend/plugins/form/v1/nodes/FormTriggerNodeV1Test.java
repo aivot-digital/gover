@@ -15,6 +15,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -113,7 +114,26 @@ class FormTriggerNodeV1Test {
 
         assertNotNull(errors);
         assertEquals(
-                "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet.",
+                List.of("Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."),
+                errors.get(FormTriggerConfigV1.FORM_SLUG)
+        );
+    }
+
+    @Test
+    void validateConfiguration_ShouldReturnMultipleSlugErrors() throws Exception {
+        when(processNodeRepository.exists(anySpecification())).thenReturn(true);
+
+        var errors = node.validateConfiguration(
+                processNode(),
+                configuration("Antrag Online", validFormLayout())
+        );
+
+        assertNotNull(errors);
+        assertEquals(
+                List.of(
+                        "Das URL-Segment des Formulars darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.",
+                        "Das URL-Segment des Formulars wird in dieser Prozessversion bereits von einem anderen Formulareingang verwendet."
+                ),
                 errors.get(FormTriggerConfigV1.FORM_SLUG)
         );
     }

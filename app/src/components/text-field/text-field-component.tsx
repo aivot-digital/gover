@@ -268,7 +268,28 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
         return new RegExp(props.pattern.regex).test(inputValue) ? undefined : props.pattern.message;
     }, [props.pattern, inputValue]);
 
-    const helperMessage = patternError ?? props.error ?? props.hint;
+    const errorMessages = useMemo(() => {
+        if (props.error == null) {
+            return [];
+        }
+
+        return (Array.isArray(props.error) ? props.error : [props.error])
+            .filter((errorMessage) => errorMessage.length > 0);
+    }, [props.error]);
+    const errorHelperMessage = errorMessages.length > 1 ? (
+        <Box
+            component="ul"
+            sx={{
+                m: 0,
+                pl: 2,
+            }}
+        >
+            {errorMessages.map((errorMessage, index) => (
+                <li key={index}>{errorMessage}</li>
+            ))}
+        </Box>
+    ) : errorMessages[0];
+    const helperMessage = patternError ?? errorHelperMessage ?? props.hint;
     const showMaxCharacters = Boolean(
         props.maxCharacters &&
         (!props.minCharacters || inputValue.length >= props.minCharacters),
@@ -305,7 +326,7 @@ export function TextFieldComponent(props: TextFieldComponentProps) {
             placeholder={props.placeholder}
             variant="outlined"
             fullWidth
-            error={!!props.error || !!patternError}
+            error={errorMessages.length > 0 || !!patternError}
             multiline={props.multiline}
             rows={props.multiline ? (props.rows ?? 4) : undefined}
             FormHelperTextProps={{component: 'div'}}

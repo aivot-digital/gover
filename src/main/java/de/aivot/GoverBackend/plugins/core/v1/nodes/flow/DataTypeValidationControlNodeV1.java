@@ -219,8 +219,8 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
     }
 
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull DataTypeValidationControlNodeConfig configuration) throws ResponseException {
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull DataTypeValidationControlNodeConfig configuration) throws ResponseException {
         // TODO: validate
         return null;
     }

@@ -55,7 +55,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Executes a prompt against the AI Completions API and exposes the response as node outputs.
@@ -238,39 +237,39 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
 
     @Nullable
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull AiCompletionActionNodeConfig configuration) throws ResponseException {
-        var errors = new LinkedHashMap<String, String>();
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull AiCompletionActionNodeConfig configuration) throws ResponseException {
+        var errors = new LinkedHashMap<String, List<String>>();
 
         if (StringUtils.isNullOrEmpty(configuration.endpointUrl)) {
-            errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, "Die Endpoint-URL muss angegeben werden.");
+            errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of("Die Endpoint-URL muss angegeben werden."));
         } else {
             try {
                 parseEndpointUri(configuration.endpointUrl);
             } catch (ProcessNodeExecutionExceptionInvalidConfiguration e) {
-                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, e.getMessage());
+                errors.put(AiCompletionActionNodeConfig.ENDPOINT_URL_FIELD_ID, List.of(e.getMessage()));
             }
         }
 
         if (StringUtils.isNullOrEmpty(configuration.apiKeySecret)) {
-            errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das Secret für den API-Schlüssel muss ausgewählt werden.");
+            errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das Secret für den API-Schlüssel muss ausgewählt werden."));
         } else {
             try {
                 var secretId = UUID.fromString(configuration.apiKeySecret.trim());
                 if (secretService.retrieve(secretId).isEmpty()) {
-                    errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden.");
+                    errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel wurde nicht gefunden."));
                 }
             } catch (IllegalArgumentException e) {
-                errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, "Das ausgewählte Secret für den API-Schlüssel ist ungültig.");
+                errors.put(AiCompletionActionNodeConfig.API_KEY_SECRET_FIELD_ID, List.of("Das ausgewählte Secret für den API-Schlüssel ist ungültig."));
             }
         }
 
         if (StringUtils.isNullOrEmpty(configuration.model)) {
-            errors.put(AiCompletionActionNodeConfig.MODEL_FIELD_ID, "Das Modell muss angegeben werden.");
+            errors.put(AiCompletionActionNodeConfig.MODEL_FIELD_ID, List.of("Das Modell muss angegeben werden."));
         }
 
         if (StringUtils.isNullOrEmpty(configuration.prompt)) {
-            errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, "Das Prompt muss angegeben werden.");
+            errors.put(AiCompletionActionNodeConfig.PROMPT_FIELD_ID, List.of("Das Prompt muss angegeben werden."));
         } else {
             var diagnostics = templateRenderService.validateInterpolationSyntax(configuration.prompt);
             if (!diagnostics.isEmpty()) {
@@ -278,7 +277,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
                         AiCompletionActionNodeConfig.PROMPT_FIELD_ID,
                         diagnostics.stream()
                                 .map(diagnostic -> "Zeile %d: %s".formatted(diagnostic.lineNumber(), diagnostic.message()))
-                                .collect(Collectors.joining("\n"))
+                                .toList()
                 );
             }
         }

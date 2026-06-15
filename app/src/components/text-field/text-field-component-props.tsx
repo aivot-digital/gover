@@ -12,7 +12,7 @@ export interface TextFieldComponentProps {
     display?: boolean;
     multiline?: boolean;
     value?: string | null | undefined;
-    error?: string;
+    error?: string | string[];
     hint?: string;
     maxCharacters?: number;
     minCharacters?: number;

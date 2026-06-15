@@ -421,14 +421,15 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
 
     @Nullable
     @Override
-    public Map<String, String> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
-                                                     @Nonnull WebhookTriggerConfigV1 configuration) throws ResponseException {
-        var errors = new LinkedHashMap<String, String>();
+    public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                           @Nonnull WebhookTriggerConfigV1 configuration) throws ResponseException {
+        var errors = new LinkedHashMap<String, List<String>>();
         var webhookSlug = configuration.slug;
 
         if (StringUtils.isNotNullOrEmpty(webhookSlug)) {
             if (!webhookSlug.matches("^[a-z0-9-]+$")) {
-                errors.put(
+                addValidationError(
+                        errors,
                         WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
                         "Das URL-Segment des Webhooks darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen."
                 );
@@ -443,7 +444,8 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
                     .addConfigEquals(WebhookTriggerConfigV1.SLUG_CONFIG_KEY, webhookSlug);
 
             if (processDefinitionNodeRepository.exists(duplicateNodeFilter.build())) {
-                errors.putIfAbsent(
+                addValidationError(
+                        errors,
                         WebhookTriggerConfigV1.SLUG_CONFIG_KEY,
                         "Das URL-Segment des Webhooks wird in dieser Prozessversion bereits von einem anderen Webhook verwendet."
                 );
@@ -451,6 +453,14 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         }
 
         return errors.isEmpty() ? null : errors;
+    }
+
+    private static void addValidationError(@Nonnull Map<String, List<String>> errors,
+                                           @Nonnull String fieldId,
+                                           @Nonnull String message) {
+        errors
+                .computeIfAbsent(fieldId, ignored -> new LinkedList<>())
+                .add(message);
     }
 
     @Nullable
