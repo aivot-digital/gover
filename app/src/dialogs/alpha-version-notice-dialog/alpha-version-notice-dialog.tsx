@@ -21,7 +21,7 @@ import {addDays} from 'date-fns/addDays'
 import {isBefore} from 'date-fns/isBefore'
 
 const alphaVersionRiskHints = [
-    'Funktionen können unvollständig sein, sich ändern oder nicht wie erwartet funktionieren.',
+    'Funktionen können unvollständig sein, sich ändern oder noch nicht wie erwartet funktionieren.',
     'Inhalte und Verhalten können sich in zukünftigen Versionen ohne Vorankündigung ändern.',
 ];
 
@@ -72,7 +72,7 @@ export function AlphaVersionNoticeDialog(): React.ReactElement {
             versionLabel: hasBuildVersion ? AppInfo.version : '5.x (DEV)',
             buildLabel: hasBuildNumber ? AppInfo.number : 'Entwicklungsbuild',
             buildDateLabel: hasBuildDate ?
-                `${format(parsedBuildDate, 'dd.MM.yyyy HH:mm')} Uhr` :
+                `${format(parsedBuildDate, 'dd.MM.yyyy')}` :
                 'Nicht im Build hinterlegt',
         };
     }, []);
@@ -185,7 +185,7 @@ export function AlphaVersionNoticeDialog(): React.ReactElement {
                     >
                         <Stack spacing={2}>
                             <Typography>
-                                Sie verwenden eine Vorabversion dieser Anwendung. Diese dient zu Test- und Evaluationszwecken und ist nicht für den produktiven Einsatz vorgesehen.
+                                Sie verwenden eine Vorabversion dieser Anwendung. Diese dient zu Test- und Evaluationszwecken und ist nicht für den produktiven Einsatz vorgesehen. Das bedeutet:
                             </Typography>
 
                             <Box
