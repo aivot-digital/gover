@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import de.aivot.GoverBackend.core.jackson.FallbackZoneInstantDeserializer;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
@@ -18,7 +20,7 @@ public class ObjectMapperFactory {
     public static ObjectMapper getInstance() {
         if (mapper == null) {
             mapper = new ObjectMapper()
-                    .registerModule(new JavaTimeModule())
+                    .registerModule(createJavaTimeModule())
                     .disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
                     .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                     .setSerializationInclusion(JsonInclude.Include.NON_NULL);
@@ -33,6 +35,12 @@ public class ObjectMapperFactory {
                     .setSerializationInclusion(JsonInclude.Include.ALWAYS);
         }
         return nullPreservingMapper;
+    }
+
+    private static JavaTimeModule createJavaTimeModule() {
+        var module = new JavaTimeModule();
+        module.addDeserializer(Instant.class, new FallbackZoneInstantDeserializer());
+        return module;
     }
 
     public static final class Utils {

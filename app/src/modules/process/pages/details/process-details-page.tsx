@@ -1372,6 +1372,7 @@ export function ProcessDetailsPage(): ReactNode {
                             <NodeProblemsAlert
                                 problems={problems}
                                 availableNodeProviders={availableNodeProviders}
+                                mode="test"
                                 sx={{
                                     marginTop: '1rem',
                                 }}
