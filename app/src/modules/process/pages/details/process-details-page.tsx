@@ -2549,6 +2549,7 @@ export function ProcessDetailsPage(): ReactNode {
             <ProcessVersionsDialog
                 open={showVersionsDialog}
                 process={processFlow.definition}
+                currentOpenVersion={processFlow.version.processVersion}
                 onClose={() => {
                     setShowVersionsDialog(false);
                 }}

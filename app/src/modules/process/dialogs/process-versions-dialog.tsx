@@ -36,6 +36,7 @@ import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slic
 interface ProcessVersionsDialogProps {
     open: boolean;
     process: ProcessEntity;
+    currentOpenVersion?: number;
     onClose: () => void;
     onNewDraft: (basis: {
         process: ProcessEntity;
@@ -49,6 +50,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
     const {
         open,
         process,
+        currentOpenVersion,
         onClose,
         onNewDraft,
         onDeleteVersion,
@@ -347,6 +349,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                                     <React.Fragment key={ver.processVersion}>
                                         <VersionListItem
                                             item={ver}
+                                            currentOpenVersion={currentOpenVersion}
                                             onMoreClick={(target, item) => {
                                                 setMoreMenuAnchorEl(target);
                                                 setMoreMenuProcess(item);
@@ -392,6 +395,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
 
 interface VersionListItemProps {
     item: ProcessVersionEntity;
+    currentOpenVersion?: number;
     onMoreClick: (target: HTMLButtonElement, item: ProcessVersionEntity) => void;
 }
 
@@ -399,6 +403,7 @@ interface VersionListItemProps {
 function VersionListItem(props: VersionListItemProps) {
     const {
         item,
+        currentOpenVersion,
         onMoreClick,
     } = props;
 
@@ -490,13 +495,13 @@ function VersionListItem(props: VersionListItemProps) {
                             icon: <Edit/>,
                             to: `/processes/${processId}/versions/${version}`,
                             tooltip: 'Version bearbeiten',
-                            visible: !item.published && !revoked,
+                            visible: !item.published && !revoked && item.processVersion !== currentOpenVersion,
                         },
                         {
                             icon: <Visibility/>,
                             to: `/processes/${processId}/versions/${version}`,
                             tooltip: 'Version ansehen',
-                            visible: !!(published || revoked),
+                            visible: !!(published || revoked) && item.processVersion !== currentOpenVersion,
                         },
                         {
                             icon: <MoreVertOutlinedIcon/>,
