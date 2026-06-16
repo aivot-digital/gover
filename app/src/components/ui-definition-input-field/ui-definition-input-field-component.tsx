@@ -34,6 +34,7 @@ import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Set
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import VisibilityOff from '@aivot/mui-material-symbols-400-outlined/dist/visibility-off/VisibilityOff';
 import {useNotImplemented} from '../../hooks/use-not-implemented';
+import {normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -606,7 +607,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     <Button
                         variant="contained"
                         onClick={() => {
-                            onChange(draftValue);
+                            onChange(normalizeUiDefinitionForStorage(draftValue));
                             handleClose();
                         }}
                         disabled={disabled}
