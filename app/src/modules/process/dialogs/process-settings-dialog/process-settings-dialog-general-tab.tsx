@@ -1,5 +1,5 @@
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
-import {Box, Button, CircularProgress, InputAdornment, Stack, TextField} from '@mui/material';
+import {Box, Button, CircularProgress, InputAdornment, Stack} from '@mui/material';
 import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
 import {ProcessEntity} from '../../entities/process-entity';
@@ -13,6 +13,7 @@ import {ElementEditorSectionHeader} from '../../../../components/element-editor-
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {MoveProcessToDepartmentDialog} from '../move-process-to-department-dialog';
 import {DepartmentSelectField} from '../../../departments/components/department-select-field';
+import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 
 interface ProcessSettingsDialogGeneralTabProps {
     open: boolean;
@@ -203,22 +204,20 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                     Diese Einstellungen gelten versionsunabhängig für den gesamten Prozess. Legen Sie fest, wie der Prozess intern bezeichnet wird und über welchen URL-Namespace seine öffentlichen Einstiegspunkte erreichbar sind.
                 </ElementEditorSectionHeader>
 
-                <TextField
+                <TextFieldComponent
                     label="Interner Titel"
                     value={draft.internalTitle}
-                    onChange={(event) => {
+                    onChange={(val) => {
                         setDraft({
                             ...draft,
-                            internalTitle: event.target.value,
+                            internalTitle: val ?? '',
                         });
                     }}
-                    fullWidth
                     required
-                    error={internalTitleError != null}
-                    helperText={internalTitleError ?? 'Nur intern sichtbar; dient zur Wiedererkennung des Prozesses in der Verwaltung.'}
-                    inputProps={{
-                        maxLength: 96,
-                    }}
+                    error={internalTitleError}
+                    minCharacters={3}
+                    maxCharacters={96}
+                    hint="Nur intern sichtbar; dient zur Wiedererkennung des Prozesses in der Verwaltung."
                 />
 
                 <Box
@@ -241,52 +240,55 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                             minWidth: 0,
                         }}
                     >
-                        <TextField
+                        <TextFieldComponent
                             label="URL-Namespace des Prozesses"
                             value={draft.slug}
-                            onChange={(event) => {
-                                const nextSlug = normalizeProcessSlugInput(event.target.value) ?? '';
+                            onChange={(val) => {
+                                const nextSlug = normalizeProcessSlugInput(val) ?? '';
                                 setDraft({
                                     ...draft,
                                     slug: nextSlug,
                                 });
                                 setSlugAvailabilityError(undefined);
                             }}
-                            fullWidth
                             required
-                            error={slugError != null}
-                            helperText={slugError ?? 'Wenn Sie den Namespace ändern, wird der bisherige Namespace automatisch umgeleitet, bis Sie die Historie leeren.'}
-                            inputProps={{
-                                maxLength: PROCESS_SLUG_MAX_LENGTH,
-                                pattern: '^[a-z0-9-]+$',
+                            error={slugError}
+                            minCharacters={3}
+                            maxCharacters={PROCESS_SLUG_MAX_LENGTH}
+                            hint="Wenn Sie den Namespace ändern, wird der bisherige Namespace automatisch umgeleitet, bis Sie die Historie leeren."
+                            pattern={{
+                                regex: '^[a-z0-9-]+$',
+                                message: 'Der URL-Namespace darf nur aus Kleinbuchstaben, Zahlen und Bindestrichen bestehen.',
                             }}
-                            InputProps={{
-                                startAdornment: (
-                                    <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                        <Box component="span" sx={{whiteSpace: 'nowrap'}}>
-                                            /element-typ/
-                                        </Box>
-                                    </InputAdornment>
-                                ),
-                                endAdornment: (
-                                    <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
-                                        <Box
-                                            component="span"
-                                            sx={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: 0.75,
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            {
-                                                isCheckingSlugAvailability &&
-                                                <CircularProgress size={16} color="inherit"/>
-                                            }
-                                            /element-slug
-                                        </Box>
-                                    </InputAdornment>
-                                ),
+                            muiPassTroughProps={{
+                                InputProps: {
+                                    startAdornment: (
+                                        <InputAdornment position="start" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                            <Box component="span" sx={{whiteSpace: 'nowrap'}}>
+                                                /element-typ/
+                                            </Box>
+                                        </InputAdornment>
+                                    ),
+                                    endAdornment: (
+                                        <InputAdornment position="end" sx={{whiteSpace: 'nowrap', flexShrink: 0}}>
+                                            <Box
+                                                component="span"
+                                                sx={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: 0.75,
+                                                    whiteSpace: 'nowrap',
+                                                }}
+                                            >
+                                                {
+                                                    isCheckingSlugAvailability &&
+                                                    <CircularProgress size={16} color="inherit"/>
+                                                }
+                                                /element-slug
+                                            </Box>
+                                        </InputAdornment>
+                                    ),
+                                },
                             }}
                         />
                     </Box>

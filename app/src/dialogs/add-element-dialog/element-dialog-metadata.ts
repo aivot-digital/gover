@@ -71,7 +71,7 @@ export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
     [ElementType.IdentityConfigElement]: ElementTypeGroups.Input,
     [ElementType.TabLayout]: null,
     [ElementType.SummaryLayout]: ElementTypeGroups.Display,
-    [ElementType.ProcessAttachmentDisplay]: ElementTypeGroups.Information,
+    [ElementType.ProcessAttachmentDisplay]: ElementTypeGroups.Display,
 };
 
 export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
@@ -111,6 +111,7 @@ export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
     [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',
     [ElementType.IdentityConfigElement]: 'Ermöglicht eine Identifizierung über Servicekonten oder alternativ die Eingabe einer E-Mail-Adresse.',
     [ElementType.SummaryLayout]: 'Fasst mehrere Elemente zu einer Übersicht zusammen.',
+    [ElementType.ProcessAttachmentDisplay]: 'Zeigt Vorgangsanhänge zur Ansicht und zum Download an.',
     [ElementType.SummaryStep]: 'Ein Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
     [ElementType.IntroductionStep]: 'Ein Abschnitt, der am Anfang eines mehrstufigen Formulars steht und zur Einführung in den Prozess oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',
     [ElementType.SubmitStep]: 'Ein Abschnitt, der am Ende eines mehrstufigen Formulars steht und die Möglichkeit bietet, das Formular abzusenden. Nutzer:innen müssen hier ein Captcha bestätigen um automatisierten Missbrauch zu verhindern.',

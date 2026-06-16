@@ -30,6 +30,7 @@ import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-dat
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
 import FunctionsOutlinedIcon from '@mui/icons-material/FunctionsOutlined';
+import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
 import {type SvgIcon} from '@mui/material';
 import {type AnyElement} from '../../models/elements/any-element';
@@ -86,7 +87,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.ProcessDataKeyInput]: DataObject,
     [ElementType.ProcessAttachmentNameChipInput]: LocalOfferOutlinedIcon,
     [ElementType.ProcessIdentityIdInput]: LocalOfferOutlinedIcon,
-    [ElementType.ProcessAttachmentDisplay]: DataObject,
+    [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): typeof SvgIcon {
