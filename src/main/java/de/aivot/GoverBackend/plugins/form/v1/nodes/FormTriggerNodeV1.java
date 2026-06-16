@@ -123,13 +123,13 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         return List.of(
                 new ProcessNodeOutput(
                         DATA_KEY_PAYLOAD,
-                        "Zugewiesene Formulardaten",
-                        "Alle Formulardaten, welche über einen Datenschlüssel zugewiesen wurden"
+                        "Zugeordnete Formulardaten",
+                        "Enthält alle Formulardaten welche über einen Datenschlüssel zugeordnet wurden."
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_UNMAPPED,
-                        "Alle Formulardaten",
-                        "Alle Formulardaten, unabhängig, ob diese über einen Datenschlüssel zugewiesen wurden oder nicht"
+                        "Formular-Rohdaten",
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
                 ),
                 new ProcessNodeOutput(
                         DATA_KEY_ATTACHMENTS,

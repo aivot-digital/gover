@@ -353,15 +353,14 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                 displayContext != ElementDisplayContext.DataObjectSchema &&
                 <>
                     <ElementEditorSectionHeader
-                        title="Prozess-Datenzuordnung"
+                        title="Datenzuordnung im Prozess"
                         sx={{mt: 8}}
                     >
-                        Legen Sie fest, unter welchem Prozess-Datenschlüssel der Wert dieses Feldes in die Vorgangsdaten
-                        geschrieben und aus vorhandenen Vorgangsdaten übernommen wird.
-                        Ohne eigenen Prozess-Schlüssel wird dieses Feld nicht in die Zugewiesenen Formulardaten des
-                        Formulareingangs geschrieben.
-                        Mit Punktnotation, wie beispielsweise „person.vorname“, können Sie Werte in verschachtelte
-                        Datenstrukturen schreiben und lesen.
+                        Legt fest, unter welchem Datenschlüssel der Wert dieses Feldes in den Vorgangsdaten gespeichert
+                        und ggfs. aus vorhandenen Vorgangsdaten vorbelegt wird. Ohne Datenschlüssel wird der Wert unter
+                        der ID des Feldes ausschließlich in den Elementdaten gespeichert. Werte können unter Nutzung
+                        einer Punktnotation in verschachtelte Datenstrukturen geschrieben und gelesen werden (z. B.
+                        „person.vorname“).
                     </ElementEditorSectionHeader>
 
                     <Grid
@@ -376,7 +375,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                             }}
                         >
                             <ProcessDataKeyInputComponent
-                                label="Prozess-Datenschlüssel"
+                                label="Datenschlüssel"
                                 value={currentElement.destinationKey}
                                 onChange={(val) => {
                                     onChangeCurrentElement({
@@ -384,7 +383,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                         destinationKey: val,
                                     } as T);
                                 }}
-                                hint="Optionaler Prozess-Datenschlüssel für die Zuordnung in den Datensatz. Ohne Schlüssel wird dieses Feld nicht in den zugeordneten Datensatz geschrieben."
                                 disabled={!editable}
                                 disableWildCards={true}
                                 prefix={replicatingParentDestinationKeyPrefix}
