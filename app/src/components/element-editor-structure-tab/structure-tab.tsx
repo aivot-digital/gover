@@ -38,7 +38,6 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
                             <AlertComponent color={"warning"}>
                                 <strong>Achtung:</strong> Diese Aktion kann zu unerwartetem Verhalten führen und sollte
                                 {" "}<strong>nur von erfahrenen Entwickler:innen</strong> durchgeführt werden.
-                                Änderungen können nicht automatisch rückgängig gemacht werden.
                             </AlertComponent>
                             Möchten Sie wirklich fortfahren?
                         </div>
