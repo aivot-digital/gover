@@ -44,6 +44,31 @@ interface ElementOption {
     description: string;
 }
 
+const elementSortOrdersByGroup: Partial<Record<ElementTypeGroups, Partial<Record<ElementType, number>>>> = {
+    // Add another group here when its options need a semantic order instead of alphabetic sorting.
+    // Example: [ElementTypeGroups.Information]: {[ElementType.Alert]: 0, [ElementType.RichText]: 1}
+    [ElementTypeGroups.Step]: {
+        [ElementType.Step]: 0,
+        [ElementType.IntroductionStep]: 1,
+        [ElementType.SummaryStep]: 2,
+        [ElementType.SubmitStep]: 3,
+    },
+};
+
+function compareElementOptions(left: ElementOption, right: ElementOption): number {
+    if (left.group === right.group) {
+        const sortOrder = elementSortOrdersByGroup[left.group];
+        const leftOrder = sortOrder?.[left.type] ?? Number.MAX_SAFE_INTEGER;
+        const rightOrder = sortOrder?.[right.type] ?? Number.MAX_SAFE_INTEGER;
+
+        if (leftOrder !== rightOrder) {
+            return leftOrder - rightOrder;
+        }
+    }
+
+    return left.name.localeCompare(right.name, 'de');
+}
+
 export function ElementTab({
                                parentType,
                                parentElement,
@@ -106,7 +131,7 @@ export function ElementTab({
     const filteredOptions = useMemo(() => {
         const trimmedSearch = search.trim();
         if (trimmedSearch.length === 0) {
-            return [...options].sort((left, right) => left.name.localeCompare(right.name, 'de'));
+            return [...options].sort(compareElementOptions);
         }
 
         const fuse = new Fuse(options, {
