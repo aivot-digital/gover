@@ -4,7 +4,7 @@
 
 <section class="avoid-break-inside">
     <th:block
-            th:if="${ base.isCitizenPrint && !#strings.isEmpty(form.rootElement?.offlineSubmissionText) }"
+            th:if="${ (base.isBlankPrint || base.isCitizenPrint) && !#strings.isEmpty(form.rootElement?.offlineSubmissionText) }"
     >
         <h2>Hinweise zur Einreichung des ausgefüllten Antrages</h2>
         <p>

@@ -424,11 +424,14 @@
 
         <section
                 th:if="${
-                    base.isBlankPrint &&
-                    form.rootElement.offlineSignatureNeeded != null &&
-                    form.rootElement.offlineSignatureNeeded ||
-                    base.isCitizenPrint &&
-                    !#strings.isEmpty(form.rootElement.offlineSubmissionText)
+                    (base.isBlankPrint || base.isCitizenPrint) &&
+                    (
+                        (
+                            form.rootElement.offlineSignatureNeeded != null &&
+                            form.rootElement.offlineSignatureNeeded
+                        ) ||
+                        !#strings.isEmpty(form.rootElement.offlineSubmissionText)
+                    )
                 }"
                 class="avoid-break-inside"
                 th:insert="./form-parts/einreichung.html"
