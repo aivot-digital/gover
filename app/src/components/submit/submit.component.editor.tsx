@@ -24,7 +24,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                 >
                     <RichTextInputComponent
                         value={props.element.textPreSubmit ?? ''}
-                        label="Text vor dem Absenden des Antrages"
+                        label="Text vor der Einreichung"
                         onChange={(val) => {
                             props.onPatch({
                                 textPreSubmit: val ?? undefined,
@@ -42,7 +42,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                 >
                     <RichTextInputComponent
                         value={props.element.textPostSubmit ?? ''}
-                        label="Text nach dem Absenden des Antrages"
+                        label="Text nach der Einreichung"
                         onChange={(val) => {
                             props.onPatch({
                                 textPostSubmit: val ?? undefined,
@@ -61,7 +61,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                 >
                     <TextFieldComponent
                         value={props.element.textProcessingTime ?? ''}
-                        label="Bearbeitungszeit des Antrages"
+                        label="Bearbeitungszeit"
                         hint="Ungefähre Bearbeitungszeit der zuständigen und/oder bewirtschaftenden Stelle."
                         multiline
                         rows={4}
@@ -81,7 +81,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                 >
                     <StringListInput
                         value={props.element.documentsToReceive ?? undefined}
-                        label="Dokumente die antragstellende Personen erhalten"
+                        label="Dokumente, die ausfüllende Personen erhalten"
                         onChange={(val) => {
                             props.onPatch({
                                 documentsToReceive: val,
@@ -101,7 +101,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                     sx={{mb: 2}}
                 >
                     <CheckboxFieldComponent
-                        label="Konfetti nach dem Absenden deaktivieren"
+                        label="Konfetti nach der Einreichung deaktivieren"
                         value={props.element.disableConfetti ?? false}
                         onChange={(val) => {
                             props.onPatch({
@@ -109,7 +109,7 @@ export function SubmitComponentEditor(props: BaseEditorProps<SubmitStepElement>)
                             });
                         }}
                         disabled={!props.editable}
-                        hint="Wenn aktiviert, wird nach erfolgreicher Antragseinreichung keine Konfetti-Animation angezeigt."
+                        hint="Wenn aktiviert, wird nach erfolgreicher Einreichung keine Konfetti-Animation angezeigt."
                     />
                 </Grid>
             </Grid>

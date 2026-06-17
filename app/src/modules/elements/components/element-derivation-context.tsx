@@ -186,18 +186,22 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
     useEffect(() => {
         const controller = new AbortController();
+        let isActive = true;
 
         setMode('busy');
         setSuppressedErrorElementIds([]);
         derive(authoredElementValues, undefined, controller.signal)
             .finally(() => {
-                setMode('idle');
+                if (isActive) {
+                    setMode('idle');
+                }
             });
 
         return () => {
+            isActive = false;
             controller.abort();
         };
-    }, [element]);
+    }, [element, disableValidation, disableVisibilities, renderMode]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
         const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, newData, derivedData);
@@ -317,19 +321,6 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
             main: () => derive(authoredElementValues, skipErrorsForElements, undefined),
         });
     };
-
-    // Derive all data if the disable visibilities flag is reset
-    const [previousVisFlag, setPreviousVisFlag] = useState<boolean>(false);
-    useEffect(() => {
-        if (previousVisFlag !== disableVisibilities) {
-            const controller = new AbortController();
-            derive(authoredElementValues, undefined, controller.signal);
-            setPreviousVisFlag(disableVisibilities);
-            return () => {
-                controller.abort();
-            }
-        }
-    }, [disableVisibilities]);
 
     return (
         <ElementDerivationContextProvider

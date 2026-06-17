@@ -405,7 +405,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                 });
                             }}
                             mimetype="text/html"
-
+                            disabled={!props.editable}
                         />
 
                         <Hint

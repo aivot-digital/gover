@@ -545,7 +545,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                 },
                                 'separator',
                                 {
-                                    tooltip: 'Wurzeleinstellungen öffnen',
+                                    tooltip: 'Einstellungen des Wurzelelements öffnen',
                                     icon: <Settings/>,
                                     onClick: () => {
                                         if (draftValue != null) {

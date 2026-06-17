@@ -316,7 +316,7 @@ export function GeneralInformationComponentEditor(props: BaseEditorProps<Introdu
                     >
                         Wenn Sie innerhalb der Informationen zum Datenschutz auf die Datenschutzerklärung verlinken möchten,
                         umschließen Sie den entsprechenden Text für den Link mit {'{privacy}'} und {'{/privacy}'}. Zum
-                        Beispiel wie im Standard-Text: <i>Hier finden Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</i>
+                        Beispiel wie im Standard-Text: <i>Bitte beachten Sie die {'{privacy}Hinweise zum Datenschutz{/privacy}'}.</i>
                     </Typography>
                 </Grid>
             </Grid>

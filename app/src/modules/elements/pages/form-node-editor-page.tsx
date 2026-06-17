@@ -437,7 +437,7 @@ export function FormNodeEditorPage() {
     };
 
     const handleSave = () => {
-        if (node == null || formLayout == null) {
+        if (node == null || formLayout == null || !isEditable) {
             return;
         }
 
@@ -477,6 +477,10 @@ export function FormNodeEditorPage() {
     const publicFormLink = createCustomerPath(`/form/${process?.slug}/${node?.configuration.formSlug}${testClaim != null ? `?test-claim=${testClaim.accessKey}` : ''}`);
 
     const handleImportFromXDF = async () => {
+        if (!isEditable) {
+            return;
+        }
+
         try {
             const conf = await confirm({
                 title: 'XDF-Import',
@@ -628,6 +632,10 @@ export function FormNodeEditorPage() {
     };
 
     const handlePatch = (element: FormLayoutElement) => {
+        if (!isEditable) {
+            return;
+        }
+
         if (formLayout != null) {
             setPastLoadedForm((currentPastLoadedForm) => [
                 ...currentPastLoadedForm,
@@ -765,6 +773,7 @@ export function FormNodeEditorPage() {
             label: 'XDatenfeld-Schema importieren',
             icon: <Code/>,
             onClick: handleImportFromXDF,
+            disabled: !isEditable,
         },
         'separator',
         {
@@ -873,7 +882,7 @@ export function FormNodeEditorPage() {
             onClick: handleSave,
             variant: 'contained' as const,
             activeStyle: {ml: 1},
-            disabled: !hasChanged,
+            disabled: !hasChanged || !isEditable,
         },
     ];
 

@@ -169,7 +169,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                             mt: 1,
                         }}
                     >
-                        Um Ihren Antrag bearbeiten zu können, ist eine Bezahlung von Gebühren erforderlich.
+                        Um Ihre Einreichung bearbeiten zu können, ist eine Bezahlung von Gebühren erforderlich.
                         Die Zahlung wird durch den
                         Dienstleister <strong>{costs.paymentProviderName}</strong> abgewickelt.
                         Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den
@@ -184,7 +184,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                         }}
                     >
                         <strong>Wichtig:</strong>
-                        &nbsp;Ihr Antrag wird erst nach erfolgter Zahlung bearbeitet.
+                        &nbsp;Ihre Einreichung wird erst nach erfolgter Zahlung bearbeitet.
                     </Typography>
 
                     <AlertComponent
@@ -193,7 +193,7 @@ export function SubmitComponentView(props: BaseViewProps<SubmitStepElement, any>
                             maxWidth: '660px',
                             mt: 3,
                         }}
-                        title="Für Ihren Antrag sind folgende Gebühren zu zahlen"
+                        title="Für Ihre Einreichung sind folgende Gebühren zu zahlen"
                     >
                         <ul style={{paddingLeft: '20px'}}>
                             {
