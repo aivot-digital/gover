@@ -1,5 +1,19 @@
 import React, {useCallback, useMemo, useRef, useState} from 'react';
-import {Box, Button, Dialog, DialogActions, DialogContent, Stack, Typography, useTheme} from '@mui/material';
+import {
+    Box,
+    Button,
+    Dialog,
+    DialogActions,
+    DialogContent,
+    ListItemIcon,
+    ListItemText,
+    Menu,
+    MenuItem,
+    Stack,
+    Switch,
+    Typography,
+    useTheme,
+} from '@mui/material';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {flattenElements} from '../../utils/flatten-elements';
@@ -34,6 +48,14 @@ import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Set
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import VisibilityOff from '@aivot/mui-material-symbols-400-outlined/dist/visibility-off/VisibilityOff';
 import {useNotImplemented} from '../../hooks/use-not-implemented';
+import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import TouchApp from '@aivot/mui-material-symbols-400-outlined/dist/touch-app/TouchApp';
+import {
+    selectDisableElementContextMenu,
+    toggleElementContextMenu,
+} from '../../slices/admin-settings-slice';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -68,6 +90,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const confirm = useConfirm();
     const dispatch = useAppDispatch();
     const notImplemented = useNotImplemented();
+    const disableElementContextMenu = useAppSelector(selectDisableElementContextMenu);
 
     const {
         label,
@@ -94,6 +117,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const [hoveredTreeElementId, setHoveredTreeElementId] = useState<string | null>(null);
     const [openRootAddElementSignal, setOpenRootAddElementSignal] = useState(0);
     const [disableVisibilities, setDisableVisibilities] = useState(false);
+    const [settingsMenuAnchorEl, setSettingsMenuAnchorEl] = useState<HTMLElement | null>(null);
     const draftValueRef = useRef<UiDefinitionInputFieldElementItem | null>(null);
 
     const {
@@ -347,6 +371,14 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         navigateToElementEditor(element.id, null);
     };
 
+    const handleSettingsMenuOpen = useCallback((event: React.MouseEvent<HTMLElement>) => {
+        setSettingsMenuAnchorEl(event.currentTarget);
+    }, []);
+
+    const handleSettingsMenuClose = useCallback(() => {
+        setSettingsMenuAnchorEl(null);
+    }, []);
+
     return (
         <>
             <Box
@@ -520,7 +552,21 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                     },
                                     disabled: draftValue == null,
                                 },
+                                {
+                                    tooltip: 'Weitere Optionen',
+                                    icon: <MoreVert/>,
+                                    onClick: handleSettingsMenuOpen,
+                                },
                             ]}
+                        />
+
+                        <UiDefinitionInputFieldSettingsMenu
+                            anchorEl={settingsMenuAnchorEl}
+                            elementContextMenuEnabled={!disableElementContextMenu}
+                            onToggleElementContextMenu={() => {
+                                dispatch(toggleElementContextMenu());
+                            }}
+                            onClose={handleSettingsMenuClose}
                         />
                     </Stack>
                 </DialogTitleWithClose>
@@ -566,6 +612,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                                                     onAuthoredElementValuesChange={setInputData}
                                                     highlightedElementId={hoveredTreeElementId}
                                                     disableVisibilities={disableVisibilities}
+                                                    mode={ViewDispatcherMode.Editor}
                                                 />
                                         }
                                     </ElementTreeInlineEditorContextProvider>
@@ -627,5 +674,79 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 </DialogActions>
             </Dialog>
         </>
+    );
+}
+
+interface UiDefinitionInputFieldSettingsMenuProps {
+    anchorEl: HTMLElement | null;
+    elementContextMenuEnabled: boolean;
+    onToggleElementContextMenu: () => void;
+    onClose: () => void;
+}
+
+function UiDefinitionInputFieldSettingsMenu(props: UiDefinitionInputFieldSettingsMenuProps) {
+    const {
+        anchorEl,
+        elementContextMenuEnabled,
+        onToggleElementContextMenu,
+        onClose,
+    } = props;
+
+    return (
+        <Menu
+            anchorEl={anchorEl}
+            open={anchorEl != null}
+            onClose={onClose}
+            anchorOrigin={{
+                horizontal: 'right',
+                vertical: 'bottom',
+            }}
+            transformOrigin={{
+                horizontal: 'right',
+                vertical: 'top',
+            }}
+            MenuListProps={{
+                sx: {
+                    py: 1,
+                },
+            }}
+        >
+            <MenuItem
+                onClick={onToggleElementContextMenu}
+                sx={{
+                    minHeight: 42,
+                    px: 1.5,
+                    py: 0,
+                    gap: 1,
+                }}
+            >
+                <ListItemIcon
+                    sx={{
+                        minWidth: 32,
+                        color: 'text.secondary',
+                    }}
+                >
+                    <TouchApp/>
+                </ListItemIcon>
+                <ListItemText
+                    primary="Element-Kontextmenü aktivieren"
+                    primaryTypographyProps={{
+                        noWrap: true,
+                    }}
+                />
+                <Switch
+                    edge="end"
+                    checked={elementContextMenuEnabled}
+                    onChange={onToggleElementContextMenu}
+                    onClick={(event) => {
+                        event.stopPropagation();
+                    }}
+                    sx={{
+                        ml: 1,
+                        flexShrink: 0,
+                    }}
+                />
+            </MenuItem>
+        </Menu>
     );
 }
