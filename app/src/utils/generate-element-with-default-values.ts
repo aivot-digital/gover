@@ -145,7 +145,6 @@ const elementConstructors: {
         headline: 'Ihr Neues\nOnline-Formular',
         tabTitle: undefined,
         children: [],
-        privacyText: 'Bitte beachten Sie die {privacy}Hinweise zum Datenschutz{/privacy}.',
         offlineSubmissionText: undefined,
         offlineSignatureNeeded: undefined,
         introductionStep: generateElementWithDefaultValues(ElementType.IntroductionStep) as IntroductionStepElement,
@@ -339,7 +338,7 @@ const elementConstructors: {
         documentsToAttach: undefined,
         expiring: undefined,
         expectedCosts: undefined,
-        privacyText: undefined,
+        privacyText: 'Bitte beachten Sie die {privacy}Hinweise zum Datenschutz{/privacy}.',
         children: [],
     }),
     [ElementType.SubmitStep]: (id) => ({
