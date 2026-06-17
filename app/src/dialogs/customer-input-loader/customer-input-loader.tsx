@@ -7,7 +7,6 @@ import DialogContent from '@mui/material/DialogContent';
 import DialogContentText from '@mui/material/DialogContentText';
 import DialogTitle from '@mui/material/DialogTitle';
 import Typography from '@mui/material/Typography';
-import {CustomerInputService} from '../../services/customer-input-service';
 import {format} from 'date-fns';
 import SettingsBackupRestoreOutlinedIcon from '@mui/icons-material/SettingsBackupRestoreOutlined';
 import {useSearchParams} from 'react-router-dom';
@@ -18,19 +17,16 @@ import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {canPrefillElement} from '../prefill-form-dialog/prefill-form-dialog';
 import {flattenElements} from '../../utils/flatten-elements';
-import {IdentityData} from '../../modules/identity/models/identity-data';
-import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {IdentityProviderInfo} from '../../modules/identity/models/identity-provider-info';
-import {prefillIdentityData} from '../../utils/prefill-elements';
-import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
-import {useApi} from '../../hooks/use-api';
-import {FormEntity} from '../../modules/forms/entities/form-entity';
-import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
+import {CustomerInputService} from '../../services/customer-input-service';
+import {FormLayoutElement} from '../../models/elements/form-layout-element';
 
-interface LoadUserInputDialogProps {
-    form: FormEntity;
-    version: FormVersionEntity;
+interface CustomerInputLoaderProps {
+    processSlug: string;
+    formSlug: string;
+    version: number;
+    rootElement: FormLayoutElement;
     onElementDataLoad: (elementData: AuthoredElementValues) => void;
+    onResolved: () => void;
     isBusy: boolean;
 }
 
@@ -39,292 +35,193 @@ interface LocalStorageData {
     data: AuthoredElementValues;
 }
 
-interface IdentityPreloadedData {
-    identity: IdentityData;
-    provider: IdentityProviderInfo;
-}
-
-export function CustomerInputLoader(props: LoadUserInputDialogProps) {
+export function CustomerInputLoader(props: CustomerInputLoaderProps) {
     const {
-        form,
+        processSlug,
+        formSlug,
         version,
+        rootElement,
         onElementDataLoad,
+        onResolved,
         isBusy,
     } = props;
-
-    const api = useApi();
 
     const [searchParams, setSearchParams] = useSearchParams();
 
     const [localStorageData, setLocalStorageData] = useState<LocalStorageData | null | undefined>(undefined);
-    const [urlPrefillData, setUrlPrefillData] = useState<Record<string, any> | null | undefined>(undefined);
-    const [identityData, setIdentityData] = useState<IdentityPreloadedData | string | null | undefined>(null);
+    const [urlPrefillData, setUrlPrefillData] = useState<AuthoredElementValues | null | undefined>(undefined);
 
     useEffect(() => {
-        initializeLocalStorageData(form, version, setLocalStorageData);
-        initializeUrlPrefillData(form, version, setUrlPrefillData, searchParams);
-       /* initializeIdentityData(api, form, version, setIdentityData, searchParams)
-            .catch((err) => {
-                console.error('Error initializing identity data:', err);
-                setIdentityData('Fehler beim Laden der Authentifizierungsdaten. Bitte versuchen Sie es erneut.');
-            });
-        */
-    }, [form]);
+        initializeLocalStorageData(
+            processSlug,
+            formSlug,
+            version,
+            setLocalStorageData,
+        );
+        initializeUrlPrefillData(
+            rootElement,
+            setUrlPrefillData,
+            searchParams,
+        );
+    }, [processSlug, formSlug, version, rootElement, searchParams]);
 
-    const dialogState: 'waiting' | 'load' | 'identity' | 'none' = useMemo(() => {
-        if (localStorageData === undefined || urlPrefillData === undefined || identityData === undefined) {
+    const dialogState: 'waiting' | 'load' | 'none' = useMemo(() => {
+        if (localStorageData === undefined || urlPrefillData === undefined) {
             return 'waiting';
-        }
-        if (identityData != null) {
-            return 'identity';
         }
         if (localStorageData != null) {
             return 'load';
         }
         return 'none';
-    }, [identityData, localStorageData]);
+    }, [localStorageData, urlPrefillData]);
+
+    const handleResolved = () => {
+        setLocalStorageData(null);
+        setUrlPrefillData(null);
+        clearConsumedSearchParams(searchParams, setSearchParams);
+        onResolved();
+    };
 
     const handleLoadData = () => {
         if (localStorageData != null) {
             onElementDataLoad(localStorageData.data);
         }
 
-        handleCleanup();
+        handleResolved();
     };
 
     const handleRestart = () => {
-        handleInsertUrlPrefillData();
-        CustomerInputService.cleanCustomerInput(form.slug, version.version);
-        handleCleanup();
-    };
-
-    const handleInsertUrlPrefillData = () => {
         if (urlPrefillData != null) {
-            const allElements = flattenElements(version.rootElement, true);
-
-            const cleanedPrefillData: AuthoredElementValues = {};
-
-            for (const key of Object.keys(urlPrefillData)) {
-                const value = urlPrefillData[key];
-
-                const elem = (allElements ?? [])
-                    .find(e => e.id === key);
-
-                if (elem != null && canPrefillElement(elem)) {
-                    cleanedPrefillData[key] = value;
-                }
-            }
-
-            onElementDataLoad(cleanedPrefillData);
+            onElementDataLoad(urlPrefillData);
         }
 
-        handleCleanup();
-    };
-
-    const handleContinueAfterIdentitySuccess = () => {
-        if (identityData != null && typeof identityData !== 'string') {
-            let prefilledData: AuthoredElementValues;
-            if (localStorageData != null) {
-                prefilledData = prefillIdentityData(version.rootElement, localStorageData.data, identityData.identity);
-            } else {
-                prefilledData = prefillIdentityData(version.rootElement, {}, identityData.identity);
-            }
-
-            prefilledData[IdentityCustomerInputKey] = identityData.identity;
-
-            onElementDataLoad(prefilledData);
-        }
-
-        handleCleanup();
-    };
-
-    const handleCleanup = () => {
-        setLocalStorageData(null);
-        setUrlPrefillData(null);
-        setIdentityData(null);
-
-        // Store the current hash and restore it after clearing the search params
-        const currentHash = window.location.hash;
-        // Clear all search params
-        setSearchParams({}, {
-            replace: true,
-        });
-        if (currentHash != null && currentHash.length > 1) {
-            // Restore the hash in the next tick to ensure it is set after the search params are cleared
-            setTimeout(() => {
-                window.location.hash = currentHash;
-            }, 0);
-        }
+        CustomerInputService.cleanCustomerInput(processSlug, formSlug, version);
+        handleResolved();
     };
 
     useEffect(() => {
-        if (dialogState === 'none') {
-            handleInsertUrlPrefillData();
+        if (dialogState !== 'none') {
+            return;
         }
+
+        if (urlPrefillData != null) {
+            onElementDataLoad(urlPrefillData);
+        }
+
+        handleResolved();
     }, [dialogState]);
 
     return (
-        <>
-            <Dialog
-                open={dialogState === 'load'}
-                disableEscapeKeyDown={true}
-            >
-                <DialogTitle>
-                    <Typography
-                        variant="h4"
-                        component="div"
-                    >
-                        Möchten Sie den existierenden Entwurf fortführen?
+        <Dialog
+            open={dialogState === 'load'}
+            disableEscapeKeyDown={true}
+        >
+            <DialogTitle>
+                <Typography
+                    variant="h4"
+                    component="div"
+                >
+                    Möchten Sie den existierenden Entwurf fortführen?
+                </Typography>
+            </DialogTitle>
+            <DialogContent tabIndex={0}>
+                <DialogContentText component="div">
+                    <Typography variant="body2">
+                        Auf Ihrem Gerät existiert ein zwischengespeicherter Entwurf für diesen Antrag. Möchten Sie
+                        diesen Entwurf verwenden und weiter bearbeiten?
                     </Typography>
-                </DialogTitle>
-                <DialogContent tabIndex={0}>
-                    <DialogContentText component="div">
-                        <Typography variant="body2">
-                            Auf Ihrem Gerät existiert ein zwischengespeicherter Entwurf für diesen Antrag. Möchten Sie
-                            diesen Entwurf verwenden und weiter bearbeiten?
-                        </Typography>
 
-                        <Box
-                            display="flex"
-                            justifyContent="center"
-                            alignItems={'center'}
-                            sx={{
-                                border: '1px solid #DFDFDF',
-                                px: 4,
-                                py: 2,
-                                mt: 3,
-                                mb: 3,
-                            }}
-                        >
-                            <Box>
-                                <RestorePageIcon
-                                    color={'primary'}
-                                    sx={{fontSize: 54}}
-                                />
-                            </Box>
-
-                            <Box sx={{ml: 2}}>
-                                <Typography
-                                    component={'p'}
-                                    variant="h6"
-                                    sx={{
-                                        color: '#16191F',
-                                        mt: -0.5,
-                                    }}
-                                >
-                                    Antrags-Entwurf aus Ihrem lokalen Speicher
-                                </Typography>
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        mt: -0.5,
-                                    }}
-                                >
-                                    {
-                                        localStorageData?.date != null && (
-                                            <span>
-                                                Zuletzt bearbeitet am {format(localStorageData.date, 'dd.MM.yyyy')} um {format(localStorageData.date, 'HH:mm')} Uhr
-                                            </span>
-                                        )
-                                    }
-                                </Typography>
-                            </Box>
+                    <Box
+                        display="flex"
+                        justifyContent="center"
+                        alignItems="center"
+                        sx={{
+                            border: '1px solid #DFDFDF',
+                            px: 4,
+                            py: 2,
+                            mt: 3,
+                            mb: 3,
+                        }}
+                    >
+                        <Box>
+                            <RestorePageIcon
+                                color="primary"
+                                sx={{fontSize: 54}}
+                            />
                         </Box>
 
-                        <Typography
-                            variant="body2"
-                            gutterBottom
-                        >
-                            Bitte beachten Sie, dass Sie aus Datenschutzgründen ggf. folgende Aktionen <b>erneut
-                            ausführen</b> müssen, da diese nicht gespeichert wurden:
-                        </Typography>
-                        <ul style={{margin: 0}}>
-                            <li>Anmeldung mit einem Nutzer- oder Unternehmenskonto</li>
-                            <li>Hinzufügen von Anlagen/Dateien</li>
-                        </ul>
-                    </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={handleLoadData}
-                        variant="contained"
-                        startIcon={
-                            <ArrowForwardOutlinedIcon />
-                        }
-                        disabled={isBusy}
-                    >
-                        Entwurf fortführen
-                    </Button>
-                    <Button
-                        onClick={handleRestart}
-                        startIcon={
-                            <SettingsBackupRestoreOutlinedIcon />
-                        }
-                        disabled={isBusy}
-                    >
-                        Neu beginnen
-                    </Button>
-                </DialogActions>
-            </Dialog>
+                        <Box sx={{ml: 2}}>
+                            <Typography
+                                component="p"
+                                variant="h6"
+                                sx={{
+                                    color: '#16191F',
+                                    mt: -0.5,
+                                }}
+                            >
+                                Antrags-Entwurf aus Ihrem lokalen Speicher
+                            </Typography>
+                            <Typography
+                                variant="body2"
+                                sx={{
+                                    mt: -0.5,
+                                }}
+                            >
+                                {
+                                    localStorageData?.date != null && (
+                                        <span>
+                                            Zuletzt bearbeitet am {format(localStorageData.date, 'dd.MM.yyyy')} um {format(localStorageData.date, 'HH:mm')} Uhr
+                                        </span>
+                                    )
+                                }
+                            </Typography>
+                        </Box>
+                    </Box>
 
-            <Dialog
-                onClose={() => setIdentityData(undefined)}
-                open={dialogState === 'identity'}
-                maxWidth="xs"
-            >
-                <DialogTitleWithClose
-                    onClose={() => setIdentityData(undefined)}
-                    closeTooltip="Schließen"
-                >
-                    {
-                        typeof identityData === 'string' ?
-                            'Authentifizierungsfehler' :
-                            'Authentifizierung erfolgreich'
-                    }
-                </DialogTitleWithClose>
-                <DialogContent className="content-without-margin-on-childs">
-                    {
-                        typeof identityData === 'string' ?
-                            <Box>
-                                <Typography>
-                                    Fehler bei der Authentifizierung.
-                                </Typography>
-                                <Typography>
-                                    {identityData}
-                                </Typography>
-                            </Box> :
-                            <Box>
-                                <Typography>
-                                    Sie haben sich erfolgreich mit dem Nutzerkonto <strong>„{identityData?.provider.name}“</strong> angemeldet.
-                                    Die Daten aus Ihrem Konto wurden automatisch in den Antrag übernommen.
-                                </Typography>
-                            </Box>
-                    }
-                </DialogContent>
-                <DialogActions>
-                    <Button
-                        onClick={handleContinueAfterIdentitySuccess}
-                        variant="contained"
-                        startIcon={
-                            <ArrowForwardOutlinedIcon />
-                        }
-                        disabled={isBusy}
+                    <Typography
+                        variant="body2"
+                        gutterBottom
                     >
-                        {
-                            typeof identityData === 'string' ?
-                                'Fortfahren und erneut versuchen' :
-                                'Mit Antrag fortfahren'
-                        }
-                    </Button>
-                </DialogActions>
-            </Dialog>
-        </>
+                        Bitte beachten Sie, dass Sie aus Datenschutzgründen ggf. folgende Aktionen <b>erneut
+                        ausführen</b> müssen, da diese nicht gespeichert wurden:
+                    </Typography>
+                    <ul style={{margin: 0}}>
+                        <li>Anmeldung mit einem Nutzer- oder Unternehmenskonto</li>
+                        <li>Hinzufügen von Anlagen/Dateien</li>
+                    </ul>
+                </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+                <Button
+                    onClick={handleLoadData}
+                    variant="contained"
+                    startIcon={
+                        <ArrowForwardOutlinedIcon />
+                    }
+                    disabled={isBusy}
+                >
+                    Entwurf fortführen
+                </Button>
+                <Button
+                    onClick={handleRestart}
+                    startIcon={
+                        <SettingsBackupRestoreOutlinedIcon />
+                    }
+                    disabled={isBusy}
+                >
+                    Neu beginnen
+                </Button>
+            </DialogActions>
+        </Dialog>
     );
 }
 
-function initializeLocalStorageData(form: FormEntity, version: FormVersionEntity, setLocalStorageData: (data: LocalStorageData | null) => void) {
-    const date = CustomerInputService.loadCustomerInputDate(form.slug, version.version);
-    const data = CustomerInputService.loadCustomerInputState(form.slug, version.version);
+function initializeLocalStorageData(processSlug: string,
+                                    formSlug: string,
+                                    version: number,
+                                    setLocalStorageData: (data: LocalStorageData | null) => void) {
+    const date = CustomerInputService.loadCustomerInputDate(processSlug, formSlug, version);
+    const data = CustomerInputService.loadCustomerInputState(processSlug, formSlug, version);
 
     if (date != null && data != null && hasAuthoredElementValuesSomeInput(data)) {
         setLocalStorageData({
@@ -336,12 +233,9 @@ function initializeLocalStorageData(form: FormEntity, version: FormVersionEntity
     }
 }
 
-function initializeUrlPrefillData(
-    form: FormEntity,
-    version: FormVersionEntity,
-    setUrlPrefillData: (data: Record<string, any> | null) => void,
-    searchParams: URLSearchParams,
-): void {
+function initializeUrlPrefillData(rootElement: FormLayoutElement,
+                                  setUrlPrefillData: (data: AuthoredElementValues | null) => void,
+                                  searchParams: URLSearchParams): void {
     const prefill = searchParams
         .get(prefillQueryParamKey);
 
@@ -350,21 +244,26 @@ function initializeUrlPrefillData(
         return;
     }
 
-    const prefillData = JSON.parse(decodeURIComponent(prefill));
-
-    if (prefillData == null || typeof prefillData !== 'object') {
+    let prefillData: unknown;
+    try {
+        prefillData = JSON.parse(decodeURIComponent(prefill));
+    } catch (error) {
+        console.error('Error parsing prefill data:', error);
         setUrlPrefillData(null);
         return;
     }
 
-    const allElements = flattenElements(version.rootElement, true);
+    if (prefillData == null || typeof prefillData !== 'object' || Array.isArray(prefillData)) {
+        setUrlPrefillData(null);
+        return;
+    }
 
-    const cleanedPrefillData: Record<string, any> = {};
+    const allElements = flattenElements(rootElement, true);
+    const cleanedPrefillData: AuthoredElementValues = {};
 
     for (const key of Object.keys(prefillData)) {
-        const value = prefillData[key];
-
-        const elem = (allElements ?? [])
+        const value = (prefillData as Record<string, unknown>)[key];
+        const elem = allElements
             .find(e => e.id === key);
 
         if (elem != null && canPrefillElement(elem)) {
@@ -372,66 +271,23 @@ function initializeUrlPrefillData(
         }
     }
 
-    setUrlPrefillData(cleanedPrefillData);
+    setUrlPrefillData(
+        hasAuthoredElementValuesSomeInput(cleanedPrefillData) ?
+            cleanedPrefillData :
+            null,
+    );
 }
 
-/*
-async function initializeIdentityData(
-    api: Api,
-    form: FormEntity,
-    version: FormVersionEntity,
-    setIdentityData: (data: IdentityPreloadedData | string | null) => void,
-    searchParams: URLSearchParams,
-): Promise<void> {
-    const identityId = searchParams.get(IdentityIdQueryParam);
-    if (identityId == null) {
-        setIdentityData(null);
+function clearConsumedSearchParams(searchParams: URLSearchParams,
+                                   setSearchParams: ReturnType<typeof useSearchParams>[1]): void {
+    if (!searchParams.has(prefillQueryParamKey)) {
         return;
     }
 
-    const stateStr = searchParams.get(IdentityStateQueryParam);
-    const state = stateStr != null ? parseInt(stateStr) : undefined;
-    if (state == null || isNaN(state)) {
-        setIdentityData('Ungültiger Authentifizierungsstatus. Bitte versuchen Sie es erneut.');
-        return;
-    }
+    const nextSearchParams = new URLSearchParams(searchParams);
+    nextSearchParams.delete(prefillQueryParamKey);
 
-    if (state !== IdentityResultState.Success) {
-        setIdentityData('Bei der Authentifizierung ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
-        return;
-    }
-
-    let identityResult: IdentityData;
-    try {
-        identityResult = await IdentityProvidersApiService
-            .fetchIdentity(identityId);
-    } catch (err) {
-        console.error('Error fetching identity data:', err);
-        setIdentityData('Beim Abruf der Authentifizierungsdaten ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
-        return;
-    }
-
-    let providerResults: Page<IdentityProviderInfo>;
-    try {
-        providerResults = await new FormApiService()
-            .getIdentityProviders(form.slug, version.version);
-    } catch (err) {
-        console.error('Error fetching identity providers:', err);
-        setIdentityData('Beim Abruf der Authentifizierungsanbieter ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.');
-        return;
-    }
-
-    const provider = providerResults.content
-        .find(p => p.key === identityResult.providerKey);
-
-    if (provider == null) {
-        setIdentityData('Der Authentifizierungsanbieter ist nicht verfügbar. Bitte versuchen Sie es erneut.');
-        return;
-    }
-
-    setIdentityData({
-        identity: identityResult,
-        provider: provider,
+    setSearchParams(nextSearchParams, {
+        replace: true,
     });
 }
-*/
