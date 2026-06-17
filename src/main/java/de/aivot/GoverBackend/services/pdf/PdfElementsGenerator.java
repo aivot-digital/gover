@@ -18,6 +18,7 @@ import jakarta.annotation.Nullable;
 import java.util.*;
 
 public class PdfElementsGenerator {
+    private static final int BLANK_PRINT_PLACEHOLDER_COUNT = 5;
 
     // TODO: Maybe remove customer input optional and decide based on the form state
     public static List<PdfElement> generatePdfElements(
@@ -112,7 +113,9 @@ public class PdfElementsGenerator {
         } else if (currentElement instanceof ReplicatingContainerLayoutElement replicatingContainerLayout) {
             if (customerInput == null) {
                 value = new LinkedList<DerivedRuntimeElementData>();
-                var amountOfPlaceholderDatasets = replicatingContainerLayout.getMaximumSets() != null ? replicatingContainerLayout.getMaximumSets() : 4;
+                var amountOfPlaceholderDatasets = replicatingContainerLayout.getMaximumSets() != null && replicatingContainerLayout.getMaximumSets() > 0
+                        ? replicatingContainerLayout.getMaximumSets()
+                        : BLANK_PRINT_PLACEHOLDER_COUNT;
                 if (replicatingContainerLayout.getMinimumRequiredSets() != null && replicatingContainerLayout.getMinimumRequiredSets() > amountOfPlaceholderDatasets) {
                     amountOfPlaceholderDatasets = replicatingContainerLayout.getMinimumRequiredSets();
                 }
@@ -161,16 +164,18 @@ public class PdfElementsGenerator {
             }
         } else {
             if (currentElement instanceof TableInputElement tableElement && customerInput == null) {
-                var placeholderRows = tableElement.getMaximumRows() != null ? tableElement.getMaximumRows() : (tableElement.getMinimumRequiredRows() != null ? tableElement.getMinimumRequiredRows() : 4);
-                if (placeholderRows <= 0) {
-                    placeholderRows = 4;
+                var placeholderRows = tableElement.getMaximumRows() != null && tableElement.getMaximumRows() > 0
+                        ? tableElement.getMaximumRows()
+                        : BLANK_PRINT_PLACEHOLDER_COUNT;
+                if (tableElement.getMinimumRequiredRows() != null && tableElement.getMinimumRequiredRows() > placeholderRows) {
+                    placeholderRows = tableElement.getMinimumRequiredRows();
                 }
 
                 var values = new LinkedList<Map<String, Object>>();
                 for (int i = 0; i < placeholderRows; i++) {
                     var row = new LinkedHashMap<String, Object>();
                     for (var field : tableElement.getFields()) {
-                        row.put(field.getLabel(), "");
+                        row.put(field.getKey(), "");
                     }
                     values.add(row);
                 }

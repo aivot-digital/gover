@@ -118,7 +118,7 @@
                                 <!--/* ***********************************************************************
                                 Gruppe
                                 *********************************************************************** */-->
-                                <th:block th:case="Group">
+                                <th:block th:case="GroupLayout">
                                     <div style="display: flex; flex-wrap: wrap;">
                                         <!--/* Referenziere das Fragment in dieser Datei */-->
                                         <th:block th:each="child: ${child.children}">
@@ -130,7 +130,7 @@
                                 <!--/* ***********************************************************************
                                 Replizierende Liste
                                 *********************************************************************** */-->
-                                <th:block th:case="ReplicatingContainer">
+                                <th:block th:case="ReplicatingContainerLayout">
                                     <div class="input-element replicating-element">
                                         <div class="label">
                                             <strong th:text="${ child.element.label }"></strong>
