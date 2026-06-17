@@ -25,6 +25,14 @@ import {ElementWidthSelector} from '../../element-width-selector/element-width-s
 import {normalizeElementWeight} from '../../../utils/element-widths';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {ProcessDataKeyInputComponent} from '../../../views/process-data-key-input-field-view';
+import {isGroupLayout} from '../../../models/elements/form/layout/group-layout';
+
+const summaryLayoutHiddenElementSpecificPropertyTypes = new Set<ElementType>([
+    ElementType.ChipInput,
+    ElementType.FileUpload,
+    ElementType.MapPoint,
+    ElementType.Text,
+]);
 
 export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const dispatch = useAppDispatch();
@@ -46,6 +54,8 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     const {
         type,
     } = currentElement;
+
+    const isRoot = root.id === currentElement.id;
 
     const hasSummaryLayoutParent = useMemo(() => {
         return parents.some(p => p.type === ElementType.SummaryLayout);
@@ -86,15 +96,31 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
     }, [currentElement, allElements]);
 
     const normalizedWeight = useMemo(() => {
+        if (isRoot) {
+            return undefined;
+        }
+
         if (!isAnyFormElement(currentElement)) {
             return undefined;
         }
 
         return normalizeElementWeight(currentElement.type, currentElement.weight);
-    }, [currentElement]);
+    }, [currentElement, isRoot]);
+
+    const showInternalNameField = !isRoot;
+    const showElementWidthSelector = isAnyFormElement(currentElement) && !isRoot && !hasSummaryLayoutParent;
+    const showInputTitleField = isAnyInputElement(currentElement);
+    const showInputHintField = isAnyInputElement(currentElement) && !hasSummaryLayoutParent;
+    const hasBasicProperties =
+        showInternalNameField ||
+        showElementWidthSelector ||
+        showInputTitleField ||
+        showInputHintField;
+    const hasElementSpecificProperties = hasAvailableElementSpecificProperties(currentElement, hasSummaryLayoutParent);
+    const showNoConfigurableRootPropertiesHint = isRoot && !hasBasicProperties && !hasElementSpecificProperties;
 
     useEffect(() => {
-        if (!isAnyFormElement(currentElement)) {
+        if (isRoot || !isAnyFormElement(currentElement)) {
             return;
         }
 
@@ -110,7 +136,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             ...currentElement,
             weight: normalizedWeight,
         });
-    }, [currentElement, normalizedWeight, onChangeCurrentElement]);
+    }, [currentElement, isRoot, normalizedWeight, onChangeCurrentElement]);
 
     return (
         <>
@@ -123,50 +149,51 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
 
             {
                 tabDescription.isElement &&
+                hasBasicProperties &&
                 <ElementEditorSectionHeader
                     title="Grundlegende Angaben"
                     variant="h5"
                 />
             }
 
-            <Grid
-                container
-                columnSpacing={4}
-            >
-                {
-                    root.id !== currentElement.id &&
-                    <Grid
-                        size={{
-                            xs: 12,
-                            lg: 6,
-                        }}
-                    >
-                        <TextFieldComponent
-                            label="Interner Name"
-                            value={currentElement.name}
-                            onChange={(val) => {
-                                onChangeCurrentElement({
-                                    ...currentElement,
-                                    name: val ?? '',
-                                });
+            {
+                hasBasicProperties &&
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    {
+                        showInternalNameField &&
+                        <Grid
+                            size={{
+                                xs: 12,
+                                lg: 6,
                             }}
-                            hint="Vergeben Sie einen internen Namen zur besseren Identifikation. Nur für Sie und Ihr Team sichtbar."
-                            maxCharacters={30}
-                            disabled={!editable}
-                        />
-                    </Grid>
-                }
+                        >
+                            <TextFieldComponent
+                                label="Interner Name"
+                                value={currentElement.name}
+                                onChange={(val) => {
+                                    onChangeCurrentElement({
+                                        ...currentElement,
+                                        name: val ?? '',
+                                    });
+                                }}
+                                hint="Vergeben Sie einen internen Namen zur besseren Identifikation. Nur für Sie und Ihr Team sichtbar."
+                                maxCharacters={30}
+                                disabled={!editable}
+                            />
+                        </Grid>
+                    }
 
-                {
-                    isAnyFormElement(currentElement) &&
-                    <Grid
-                        size={{
-                            xs: 12,
-                            lg: 6,
-                        }}
-                    >
-                        {
-                            !hasSummaryLayoutParent &&
+                    {
+                        showElementWidthSelector &&
+                        <Grid
+                            size={{
+                                xs: 12,
+                                lg: 6,
+                            }}
+                        >
                             <ElementWidthSelector
                                 label="Breite des Elements in der Darstellung"
                                 elementType={currentElement.type}
@@ -180,13 +207,11 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 hint="Legen Sie die Breite des Elements für Tablets & Desktops fest. Auf Mobilgeräten wird die volle Breite verwendet."
                                 disabled={!editable}
                             />
-                        }
-                    </Grid>
-                }
+                        </Grid>
+                    }
 
-                {
-                    isAnyInputElement(currentElement) &&
-                    <>
+                    {
+                        showInputTitleField &&
                         <Grid
                             size={{
                                 xs: 12,
@@ -208,42 +233,36 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 softLimitCharactersWarning={'Halten Sie das Label so kurz wie möglich (empfohlen max. 20 Zeichen), da es sonst auf kleinen Bildschirmen abgeschnitten werden kann.'}
                             />
                         </Grid>
+                    }
+
+                    {
+                        showInputHintField &&
                         <Grid
                             size={{
                                 xs: 12,
                                 lg: 6,
                             }}
                         >
-                            {
-                                !hasSummaryLayoutParent &&
-                                <TextFieldComponent
-                                    value={currentElement.hint}
-                                    label="Hinweis"
-                                    onChange={(val) => {
-                                        onChangeCurrentElement({
-                                            ...currentElement,
-                                            hint: val,
-                                        });
-                                    }}
-                                    hint="Geben Sie hier zusätzliche Hinweise zur Eingabe für Antragstellende an (optional, wird unter dem Eingabefeld angezeigt)."
-                                    disabled={!editable}
-                                />
-                            }
+                            <TextFieldComponent
+                                value={currentElement.hint}
+                                label="Hinweis"
+                                onChange={(val) => {
+                                    onChangeCurrentElement({
+                                        ...currentElement,
+                                        hint: val,
+                                    });
+                                }}
+                                hint="Geben Sie hier zusätzliche Hinweise zur Eingabe für Antragstellende an (optional, wird unter dem Eingabefeld angezeigt)."
+                                disabled={!editable}
+                            />
                         </Grid>
-                    </>
-                }
-            </Grid>
+                    }
+                </Grid>
+            }
 
             {
                 tabDescription.isElement &&
-                // elements without additional properties – should be replaced with a more generic check if element contains additional properties
-                editors[type] != null &&
-                !(hasSummaryLayoutParent && (
-                    type == ElementType.ChipInput ||
-                    type == ElementType.FileUpload ||
-                    type == ElementType.MapPoint ||
-                    type == ElementType.Text
-                )) &&
+                hasElementSpecificProperties &&
                 <ElementEditorSectionHeader
                     title="Elementspezifische Eigenschaften"
                     variant="h5"
@@ -251,18 +270,33 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             }
 
             {/* TODO: Replace this with a better EditorDispatcher */}
-            <EditorDispatcher
-                props={currentElement}
-                onPatch={(patch) => {
-                    onChangeCurrentElement({
-                        ...currentElement,
-                        ...patch,
-                    });
-                }}
-                editable={editable}
-                scope={'application' /* TODO: remove this */}
-                hasSummaryLayoutParent={hasSummaryLayoutParent}
-            />
+            {
+                hasElementSpecificProperties &&
+                <EditorDispatcher
+                    props={currentElement}
+                    onPatch={(patch) => {
+                        onChangeCurrentElement({
+                            ...currentElement,
+                            ...patch,
+                        });
+                    }}
+                    editable={editable}
+                    scope={'application' /* TODO: remove this */}
+                    hasSummaryLayoutParent={hasSummaryLayoutParent}
+                />
+            }
+
+            {
+                showNoConfigurableRootPropertiesHint &&
+                <AlertComponent
+                    title="Keine Eigenschaften verfügbar"
+                    color="info"
+                    sx={{mt: 4}}
+                >
+                    Für dieses Wurzelelement stehen keine grundlegenden oder elementspezifischen Einstellungen zur
+                    Verfügung.
+                </AlertComponent>
+            }
 
             {
                 isAnyInputElement(currentElement) &&
@@ -502,6 +536,21 @@ function getTabDescription(type: ElementType) {
     }
 }
 
+function hasAvailableElementSpecificProperties(element: AnyElement, hasSummaryLayoutParent: boolean): boolean {
+    if (editors[element.type] == null) {
+        return false;
+    }
+
+    if (isGroupLayout(element) && element.storeLink == null) {
+        return false;
+    }
+
+    // elements without additional properties – should be replaced with a more generic check if element contains additional properties
+    return !(
+        hasSummaryLayoutParent &&
+        summaryLayoutHiddenElementSpecificPropertyTypes.has(element.type)
+    );
+}
 
 function collectHttpMappingProblems(element: AnyInputElement, allElements: ElementWithParents[]): ReactNode[] {
     if (element.destinationKey == null || isStringNullOrEmpty(element.destinationKey)) {
