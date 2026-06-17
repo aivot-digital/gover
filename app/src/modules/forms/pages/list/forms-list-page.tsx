@@ -1,7 +1,7 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {Box} from '@mui/material';
+import {Box, type SxProps, type Theme} from '@mui/material';
 import React, {useCallback, useMemo, useRef, useState} from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
@@ -45,6 +45,24 @@ import {ProcessStatus} from '../../../process/enums/process-status';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 
+const shrinkableCellLinkSx: SxProps<Theme> = {
+    '& > span': {
+        minWidth: 0,
+    },
+    '& .cell-link-text::after': {
+        bottom: -2,
+    },
+};
+
+const ellipsizedCellTextSx: SxProps<Theme> = {
+    display: 'inline-block',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    verticalAlign: 'middle',
+};
+
 const columns: GenericListColDef<FormTriggerListItem>[] = [
     {
         field: 'name',
@@ -53,14 +71,24 @@ const columns: GenericListColDef<FormTriggerListItem>[] = [
         valueGetter: (_, row) => {
             return row.node.name ?? 'Formulareingang';
         },
-        renderCell: (params) => (
-            <CellLink
-                to={`/form-triggers/${params.row.node.id}`}
-                title="Formulareingang bearbeiten"
-            >
-                {params.row.node.name ?? 'Formulareingang'}
-            </CellLink>
-        ),
+        renderCell: (params) => {
+            const nodeName = params.row.node.name ?? 'Formulareingang';
+
+            return (
+                <CellLink
+                    to={`/form-triggers/${params.row.node.id}`}
+                    title={nodeName}
+                    sx={shrinkableCellLinkSx}
+                >
+                    <Box
+                        component="span"
+                        sx={ellipsizedCellTextSx}
+                    >
+                        {nodeName}
+                    </Box>
+                </CellLink>
+            );
+        },
     },
     {
         field: 'processId',
@@ -70,23 +98,34 @@ const columns: GenericListColDef<FormTriggerListItem>[] = [
         valueGetter: (_, row) => {
             return row.process.internalTitle;
         },
-        renderCell: (params) => (
-            <CellLink
-                to={`/processes/${params.row.process.id}/versions/${params.row.version.processVersion}`}
-                title="Prozess ansehen"
-            >
-                {params.row.process.internalTitle}
-                <Box
-                    component="span"
-                    sx={{
-                        color: 'text.secondary',
-                        ml: 0.5,
-                    }}
+        renderCell: (params) => {
+            const processTitle = params.row.process.internalTitle;
+            const processVersion = params.row.version.processVersion;
+
+            return (
+                <CellLink
+                    to={`/processes/${params.row.process.id}/versions/${processVersion}`}
+                    title={`${processTitle} (Version ${processVersion})`}
+                    sx={shrinkableCellLinkSx}
                 >
-                    (Version {params.row.version.processVersion})
-                </Box>
-            </CellLink>
-        ),
+                    <Box
+                        component="span"
+                        sx={ellipsizedCellTextSx}
+                    >
+                        {processTitle}
+                        <Box
+                            component="span"
+                            sx={{
+                                color: 'text.secondary',
+                                ml: 0.5,
+                            }}
+                        >
+                            (Version {processVersion})
+                        </Box>
+                    </Box>
+                </CellLink>
+            );
+        },
     },
     {
         field: 'status',
