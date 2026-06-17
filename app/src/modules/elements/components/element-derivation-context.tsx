@@ -4,6 +4,7 @@ import {
     clearDerivedErrorsRecursively,
     ComputedElementErrors,
     ComputedElementStates,
+    ComputedElementValueSource,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     hasAnyErrorRecursively,
@@ -12,6 +13,8 @@ import {AnyElement} from '../../../models/elements/any-element';
 import React, {createContext, RefObject, useContext, useEffect, useMemo, useState} from 'react';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
+import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
+import {isReplicatingContainerLayout} from '../../../models/elements/form/layout/replicating-container-layout';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
@@ -24,7 +27,6 @@ import {
 } from '../../../components/view-dispatcher/view-dispatcher.context';
 import {deepEquals} from '../../../utils/equality-utils';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
-import {extractValue} from '../../../utils/has-derivable-aspects';
 
 interface ElementDerivationContextProps {
     element: AnyElement;
@@ -198,6 +200,11 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [element]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
+        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, newData, derivedData);
+        setInternalDerivedData(patchedDerivedData);
+        onDerivedDataChange?.(patchedDerivedData);
+        onAuthoredElementValuesChange(newData);
+
         const changedElementIds = getChangedAuthoredElementIds(
             element,
             authoredElementValues,
@@ -216,15 +223,6 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
         const relevantIds: string[] = [];
         for (const id of triggeringElementIds) {
-            /*const triggeringElement = allElements.find((element) => element.id === id);
-            if (
-                triggeringElement != null &&
-                isAnyInputElement(triggeringElement) &&
-                extractValue(triggeringElement) != null
-            ) {
-                relevantIds.push(id);
-            }*/
-
             for (const element of allElements) {
                 if (checkElementReferencesId(element, id)) {
                     if (!relevantIds.includes(element.id)) {
@@ -235,7 +233,6 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         }
 
         if (relevantIds.length === 0) {
-            onAuthoredElementValuesChange(newData);
             return;
         }
 
@@ -285,7 +282,6 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
 
             setInternalDerivedData(derivedRuntimeElementData);
             onDerivedDataChange?.(derivedRuntimeElementData);
-            onAuthoredElementValuesChange(authoredElementValues);
 
             if (onDerivationFinished != null) {
                 onDerivationFinished(derivedRuntimeElementData);
@@ -465,4 +461,83 @@ function collectAuthoredValuesByElementId(
     });
 
     return valuesByElementId;
+}
+
+function patchDerivedDataWithAuthoredValues(
+    rootElement: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    derivedData: DerivedRuntimeElementData,
+): DerivedRuntimeElementData {
+    const effectiveValues = {
+        ...derivedData.effectiveValues,
+    };
+
+    const elementStates = patchComputedElementStatesWithAuthoredValues(
+        rootElement,
+        authoredElementValues,
+        derivedData.elementStates,
+        effectiveValues,
+    );
+
+    return createDerivedRuntimeElementData({
+        ...derivedData,
+        effectiveValues,
+        elementStates,
+    });
+}
+
+function patchComputedElementStatesWithAuthoredValues(
+    currentElement: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    currentElementStates: ComputedElementStates,
+    effectiveValues: AuthoredElementValues,
+): ComputedElementStates {
+    const hasAuthoredValue = Object.prototype.hasOwnProperty.call(authoredElementValues, currentElement.id);
+    const authoredValue = authoredElementValues[currentElement.id];
+    const currentElementState = currentElementStates[currentElement.id];
+    let nextElementStates = currentElementStates;
+
+    if (
+        isAnyInputElement(currentElement) &&
+        hasAuthoredValue &&
+        !currentElement.disabled &&
+        !currentElement.technical &&
+        currentElementState?.valueSource !== ComputedElementValueSource.Identity &&
+        currentElementState?.disabled !== true
+    ) {
+        nextElementStates = {
+            ...nextElementStates,
+            [currentElement.id]: {
+                ...(currentElementState ?? {}),
+                valueSource: ComputedElementValueSource.Authored,
+            },
+        };
+        effectiveValues[currentElement.id] = authoredValue;
+
+        if (isReplicatingContainerLayout(currentElement)) {
+            nextElementStates[currentElement.id] = {
+                ...nextElementStates[currentElement.id],
+                subStates: Array.isArray(authoredValue) ?
+                    authoredValue.map((_, index) => currentElementState?.subStates?.[index] ?? {}) :
+                    null,
+            };
+        }
+    }
+
+    if (isReplicatingContainerLayout(currentElement)) {
+        return nextElementStates;
+    }
+
+    if (isAnyElementWithChildren(currentElement)) {
+        for (const child of currentElement.children ?? []) {
+            nextElementStates = patchComputedElementStatesWithAuthoredValues(
+                child,
+                authoredElementValues,
+                nextElementStates,
+                effectiveValues,
+            );
+        }
+    }
+
+    return nextElementStates;
 }
