@@ -46,14 +46,25 @@ class FormTriggerUtilsControllerV1Test {
         var responsibleDepartment = new VDepartmentShadowedEntity()
                 .setId(200)
                 .setName("Responsible Department");
+        var managingDepartment = new VDepartmentShadowedEntity()
+                .setId(300)
+                .setName("Managing Department");
         var formLayout = baseFormLayout()
                 .setThemeId(formTheme.getId())
-                .setResponsibleDepartmentId(responsibleDepartment.getId());
+                .setResponsibleDepartmentId(responsibleDepartment.getId())
+                .setManagingDepartmentId(managingDepartment.getId());
         var fixture = createFixture(formLayout);
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
         when(fixture.departmentService().retrieve(responsibleDepartment.getId())).thenReturn(Optional.of(responsibleDepartment));
-        when(fixture.pdfService().generatePrintableForm(any(PrintableFormPdfData.class), eq(formTheme), eq(responsibleDepartment)))
+        when(fixture.departmentService().retrieve(managingDepartment.getId())).thenReturn(Optional.of(managingDepartment));
+        when(fixture.pdfService().generatePrintableForm(
+                any(PrintableFormPdfData.class),
+                eq(formTheme),
+                eq(responsibleDepartment),
+                eq(responsibleDepartment),
+                eq(managingDepartment)
+        ))
                 .thenReturn(new byte[]{1, 2, 3});
 
         var response = fixture.controller().printPdf(null, fixture.node().getId());
@@ -64,12 +75,17 @@ class FormTriggerUtilsControllerV1Test {
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
         var printableFormCaptor = ArgumentCaptor.forClass(PrintableFormPdfData.class);
-        verify(fixture.pdfService()).generatePrintableForm(printableFormCaptor.capture(), eq(formTheme), eq(responsibleDepartment));
+        verify(fixture.pdfService()).generatePrintableForm(
+                printableFormCaptor.capture(),
+                eq(formTheme),
+                eq(responsibleDepartment),
+                eq(responsibleDepartment),
+                eq(managingDepartment)
+        );
         var printableForm = printableFormCaptor.getValue();
-        assertEquals("/form/%s/%s/?version=%d".formatted(
+        assertEquals("/form/%s/%s/".formatted(
                 fixture.process().getSlug(),
-                fixture.formSlug(),
-                fixture.node().getProcessVersion()
+                fixture.formSlug()
         ), printableForm.getSlug());
         assertEquals(fixture.node().getName(), printableForm.getInternalTitle());
         assertEquals(fixture.node().getProcessVersion(), printableForm.getVersion());
@@ -94,7 +110,13 @@ class FormTriggerUtilsControllerV1Test {
 
         when(fixture.departmentService().retrieve(managingDepartment.getId())).thenReturn(Optional.of(managingDepartment));
         when(fixture.themeService().retrieve(managingTheme.getId())).thenReturn(Optional.of(managingTheme));
-        when(fixture.pdfService().generatePrintableForm(any(PrintableFormPdfData.class), eq(managingTheme), eq(managingDepartment)))
+        when(fixture.pdfService().generatePrintableForm(
+                any(PrintableFormPdfData.class),
+                eq(managingTheme),
+                eq(managingDepartment),
+                isNull(),
+                eq(managingDepartment)
+        ))
                 .thenReturn(new byte[]{4, 5, 6});
 
         var response = fixture.controller().printPdf(null, fixture.node().getId());
@@ -114,7 +136,13 @@ class FormTriggerUtilsControllerV1Test {
 
         when(fixture.departmentService().retrieve(processDepartment.getId())).thenReturn(Optional.of(processDepartment));
         when(fixture.systemService().retrieveDefaultTheme()).thenReturn(systemTheme);
-        when(fixture.pdfService().generatePrintableForm(any(PrintableFormPdfData.class), eq(systemTheme), eq(processDepartment)))
+        when(fixture.pdfService().generatePrintableForm(
+                any(PrintableFormPdfData.class),
+                eq(systemTheme),
+                eq(processDepartment),
+                isNull(),
+                isNull()
+        ))
                 .thenReturn(new byte[]{7, 8, 9});
 
         var response = fixture.controller().printPdf(null, fixture.node().getId());
@@ -133,7 +161,13 @@ class FormTriggerUtilsControllerV1Test {
         var error = assertThrows(ResponseException.class, () -> fixture.controller().printPdf(null, fixture.node().getId()));
 
         assertEquals(org.springframework.http.HttpStatus.BAD_REQUEST, error.getStatus());
-        verify(fixture.pdfService(), never()).generatePrintableForm(any(PrintableFormPdfData.class), any(ThemeEntity.class), any(VDepartmentShadowedEntity.class));
+        verify(fixture.pdfService(), never()).generatePrintableForm(
+                any(PrintableFormPdfData.class),
+                any(ThemeEntity.class),
+                any(VDepartmentShadowedEntity.class),
+                any(),
+                any()
+        );
     }
 
     private TestFixture createFixture(FormLayoutElement formLayout) throws Exception {
@@ -198,7 +232,13 @@ class FormTriggerUtilsControllerV1Test {
         when(systemService.retrieveDefaultTheme()).thenReturn(createTheme(1, "System Theme"));
 
         var pdfService = mock(PdfService.class);
-        when(pdfService.generatePrintableForm(any(PrintableFormPdfData.class), any(ThemeEntity.class), any(VDepartmentShadowedEntity.class)))
+        when(pdfService.generatePrintableForm(
+                any(PrintableFormPdfData.class),
+                any(ThemeEntity.class),
+                any(VDepartmentShadowedEntity.class),
+                any(),
+                any()
+        ))
                 .thenReturn(new byte[]{0});
 
         var controller = new FormTriggerUtilsControllerV1(

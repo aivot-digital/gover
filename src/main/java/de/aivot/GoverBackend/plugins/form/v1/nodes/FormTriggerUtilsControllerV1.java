@@ -47,6 +47,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/forms/v1/{nodeId}/")
@@ -124,11 +125,19 @@ public class FormTriggerUtilsControllerV1 {
         var config = resolveFormTriggerConfiguration(node, execUser);
         var printableForm = buildPrintableForm(process, node, config);
         var theme = getFormTheme(config.formLayout);
-        var department = getPrintableDepartment(config.formLayout, process);
+        var responsibleDepartment = getDepartment(config.formLayout.getResponsibleDepartmentId()).orElse(null);
+        var managingDepartment = getDepartment(config.formLayout.getManagingDepartmentId()).orElse(null);
+        var department = getPrintableDepartment(process, responsibleDepartment, managingDepartment);
 
         byte[] bytes;
         try {
-            bytes = pdfService.generatePrintableForm(printableForm, theme, department);
+            bytes = pdfService.generatePrintableForm(
+                    printableForm,
+                    theme,
+                    department,
+                    responsibleDepartment,
+                    managingDepartment
+            );
         } catch (IOException | URISyntaxException | InterruptedException | TemplateProcessingException e) {
             throw ResponseException.internalServerError("Fehler beim Erzeugen der PDF-Datei. Bitte versuchen Sie es später erneut.", e);
         }
@@ -185,7 +194,7 @@ public class FormTriggerUtilsControllerV1 {
                                                     @Nonnull ProcessNodeEntity node,
                                                     @Nonnull ResolvedFormTriggerConfiguration config) {
         return new PrintableFormPdfData()
-                .setSlug(createPublicFormPath(process, config.formSlug, node.getProcessVersion()))
+                .setSlug(createPublicFormPath(process, config.formSlug))
                 .setInternalTitle(node.resolveName(formTriggerNodeV1))
                 .setVersion(node.getProcessVersion())
                 .setPublicTitle(config.formLayout.getPublicTitle())
@@ -195,11 +204,9 @@ public class FormTriggerUtilsControllerV1 {
 
     @Nonnull
     private String createPublicFormPath(@Nonnull ProcessEntity process,
-                                        @Nonnull String formSlug,
-                                        @Nonnull Integer processVersion) {
+                                        @Nonnull String formSlug) {
         var publicUrl = publicUrlService.createPublicFormUrl(process, formSlug);
-        var rawPath = URI.create(publicUrl).getRawPath();
-        return rawPath + "?version=" + processVersion;
+        return URI.create(publicUrl).getRawPath();
     }
 
     @Nonnull
@@ -242,24 +249,28 @@ public class FormTriggerUtilsControllerV1 {
     }
 
     @Nonnull
-    private VDepartmentShadowedEntity getPrintableDepartment(@Nonnull FormLayoutElement formLayout,
-                                                             @Nonnull ProcessEntity process) throws ResponseException {
-        for (Integer departmentId : new Integer[]{
-                formLayout.getResponsibleDepartmentId(),
-                formLayout.getManagingDepartmentId(),
-                process.getDepartmentId()
-        }) {
-            if (departmentId == null) {
-                continue;
-            }
-
-            var department = vDepartmentShadowedService.retrieve(departmentId);
-            if (department.isPresent()) {
-                return department.get();
-            }
+    private VDepartmentShadowedEntity getPrintableDepartment(@Nonnull ProcessEntity process,
+                                                             @Nullable VDepartmentShadowedEntity responsibleDepartment,
+                                                             @Nullable VDepartmentShadowedEntity managingDepartment) throws ResponseException {
+        if (responsibleDepartment != null) {
+            return responsibleDepartment;
         }
 
-        throw ResponseException.internalServerError("Keine zuständige Organisationseinheit für den PDF-Druck gefunden.");
+        if (managingDepartment != null) {
+            return managingDepartment;
+        }
+
+        return getDepartment(process.getDepartmentId())
+                .orElseThrow(() -> ResponseException.internalServerError("Keine zuständige Organisationseinheit für den PDF-Druck gefunden."));
+    }
+
+    @Nonnull
+    private Optional<VDepartmentShadowedEntity> getDepartment(@Nullable Integer departmentId) {
+        if (departmentId == null) {
+            return Optional.empty();
+        }
+
+        return vDepartmentShadowedService.retrieve(departmentId);
     }
 
     private record ResolvedFormTriggerConfiguration(

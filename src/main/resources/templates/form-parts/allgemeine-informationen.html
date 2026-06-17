@@ -79,11 +79,14 @@
             Datenschutzhinweise
         </div>
 
-        <div th:if="${ base.isBlankPrint || base.isCitizenPrint || base.isDestinationPrint }">
+        <div
+                th:if="${ base.isBlankPrint || base.isCitizenPrint || base.isDestinationPrint }"
+                th:with="privacyUrl=${ base.createUrlWithQueryParameter(form.slug, 'dialog', 'privacy') }"
+        >
             <a
                     class="do-not-print-link"
-                    th:utext="${ base.createUrl(form.slug) + '&dialog=privacy' }"
-                    th:href="${ base.createUrl(form.slug) + '&dialog=privacy' }"
+                    th:utext="${ privacyUrl }"
+                    th:href="${ privacyUrl }"
                     target="_blank"
             >
                 Link zur Datenschutzerklärung

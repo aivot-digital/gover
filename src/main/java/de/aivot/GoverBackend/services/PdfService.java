@@ -131,6 +131,14 @@ public class PdfService {
     public byte[] generatePrintableForm(@Nonnull PrintableFormPdfData form,
                                         @Nonnull ThemeEntity theme,
                                         @Nonnull VDepartmentShadowedEntity department) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        return generatePrintableForm(form, theme, department, null, null);
+    }
+
+    public byte[] generatePrintableForm(@Nonnull PrintableFormPdfData form,
+                                        @Nonnull ThemeEntity theme,
+                                        @Nonnull VDepartmentShadowedEntity department,
+                                        @Nullable VDepartmentShadowedEntity responsibleDepartment,
+                                        @Nullable VDepartmentShadowedEntity managingDepartment) throws IOException, URISyntaxException, InterruptedException, ResponseException {
         var rootElement = form.getRootElement();
         if (rootElement == null) {
             throw new IllegalArgumentException("Printable form root element cannot be null.");
@@ -148,6 +156,8 @@ public class PdfService {
         dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
         dto.put("base", createBaseContext(theme, FormPdfScope.Blank));
         dto.put("department", department);
+        dto.put("responsibleDepartment", responsibleDepartment);
+        dto.put("managingDepartment", managingDepartment);
         dto.put("theme", theme);
 
         return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
@@ -235,9 +245,22 @@ public class PdfService {
                         .findById(form.getRelevantDepartmentId())
                         .orElseThrow(() -> new RuntimeException("Department not found"))
         );
+        dto.put("responsibleDepartment", findDepartment(form.getResponsibleDepartmentId()));
+        dto.put("managingDepartment", findDepartment(form.getManagingDepartmentId()));
         dto.put("theme", formTheme);
 
         return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
+    }
+
+    @Nullable
+    private VDepartmentShadowedEntity findDepartment(@Nullable Integer departmentId) {
+        if (departmentId == null) {
+            return null;
+        }
+
+        return vDepartmentShadowedRepository
+                .findById(departmentId)
+                .orElse(null);
     }
 
     private byte[] generateGotenbergPdf(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {

@@ -1,25 +1,49 @@
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
 <!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity"*/-->
+<!--/*@thymesVar id="responsibleDepartment" type="de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity"*/-->
+<!--/*@thymesVar id="managingDepartment" type="de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity"*/-->
 
 <header
         id="briefkopf"
         th:fragment="briefkopf"
 >
-    <div id="anschrift">
-        <p>
-            <!-- Der Name des Betreibers wird aus dem Basis-Kontext abgeleitet -->
-            <strong><span th:text="${ base.providerName }">Name der Kommune</span></strong>
-            <br />
+    <th:block
+            th:with="
+                hasResponsibleDepartmentAddress=${ responsibleDepartment != null && responsibleDepartment.address != null && !#strings.isEmpty(#strings.trim(responsibleDepartment.address)) },
+                hasManagingDepartmentAddress=${ managingDepartment != null && managingDepartment.address != null && !#strings.isEmpty(#strings.trim(managingDepartment.address)) }
+            "
+    >
+        <div
+                id="anschrift"
+                th:if="${ hasResponsibleDepartmentAddress || hasManagingDepartmentAddress }"
+        >
+            <section
+                    class="department-address"
+                    th:if="${ hasResponsibleDepartmentAddress }"
+            >
+                <h3>Zuständige Stelle</h3>
+                <p
+                        th:text="${ responsibleDepartment.address }"
+                        style="white-space: pre-line;"
+                >
+                    Adresse der zuständigen Stelle
+                </p>
+            </section>
 
-            <!-- Der Name der zuständigen Organisationseinheit wird aus dem Objekt der Organisationseinheit abgeleitet -->
-            <span th:text="${ department.name }">Name der zuständigen Organisationseinheit</span>
-            <br />
-
-            <!-- Die Adresse der zuständigen Organisationseinheit wird aus dem Objekt der Organisationseinheit abgeleitet.
-            Über white-space: pre-line werden vorhandene Zeilenumbrüche direkt als Umbrüche dargestellt -->
-            <span th:text="${ department.address }" style="white-space: pre-line;">Adresse der Organisationseinheit</span>
-        </p>
-    </div>
+            <section
+                    class="department-address"
+                    th:if="${ hasManagingDepartmentAddress }"
+            >
+                <h3>Bewirtschaftende Stelle</h3>
+                <p
+                        th:text="${ managingDepartment.address }"
+                        style="white-space: pre-line;"
+                >
+                    Adresse der bewirtschaftenden Stelle
+                </p>
+            </section>
+        </div>
+    </th:block>
 
     <div id="logo">
         <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->

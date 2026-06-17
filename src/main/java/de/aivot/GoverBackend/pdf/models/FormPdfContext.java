@@ -3,6 +3,9 @@ package de.aivot.GoverBackend.pdf.models;
 import de.aivot.GoverBackend.models.config.GoverConfig;
 import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+
 public record FormPdfContext(String providerName, String logoAssetKey, String logoAssetName, GoverConfig config, FormPdfScope scope) {
     public Boolean isStaffPrint() {
         return scope == FormPdfScope.Staff;
@@ -38,5 +41,15 @@ public record FormPdfContext(String providerName, String logoAssetKey, String lo
 
     public String createUrl(String suffix) {
         return config.createUrl(suffix);
+    }
+
+    public String createUrlWithQueryParameter(String suffix, String key, String value) {
+        var url = createUrl(suffix);
+        var separator = url.contains("?") ? "&" : "?";
+        return url + separator + encodeQueryParameter(key) + "=" + encodeQueryParameter(value);
+    }
+
+    private String encodeQueryParameter(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }
