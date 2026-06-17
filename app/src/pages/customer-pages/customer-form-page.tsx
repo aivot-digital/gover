@@ -1,5 +1,5 @@
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Button, Grid, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
@@ -7,7 +7,6 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {Theme} from '../../modules/themes/models/theme';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {selectIdentityId} from '../../slices/identity-slice';
 import {
     AuthoredElementValues,
     createDerivedRuntimeElementData,
@@ -18,6 +17,7 @@ import {clearLoadingMessage, setErrorMessage, setLoadingMessage} from '../../sli
 import {isApiError} from '../../models/api-error';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {BaseApiService} from '../../services/base-api-service';
+import {CustomerInputService} from '../../services/customer-input-service';
 import {SnackbarProvider} from 'notistack';
 import {MetaElement} from '../../components/meta-element/meta-element';
 import {setCurrentStep} from '../../slices/stepper-slice';
@@ -29,8 +29,6 @@ import {HelpDialog, HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {AccessibilityDialog, AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
-import {AnyElement} from '../../models/elements/any-element';
-import {flattenElements} from '../../utils/flatten-elements';
 import {RootComponentFooter} from '../../components/form/root-component-footer';
 import {ElementDerivationContext} from '../../modules/elements/components/element-derivation-context';
 import {SUBMIT_EVENT} from '../../components/form/root.component.view';
@@ -47,6 +45,7 @@ import {IdentityProviderType} from '../../modules/identity/enums/identity-provid
 import {RichtextComponent} from '../../components/richtext/richtext.component';
 import {IdentityButton} from '../../modules/identity/components/identity-button/identity-button';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -75,9 +74,8 @@ interface RetrieveResponse {
 export function CustomerFormPage() {
     const baseTheme = useTheme();
 
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
-    const currentSearch = searchParams.toString();
     const testClaimKey = useMemo(() => searchParams.get(TestClaimSearchParam), [searchParams]);
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
@@ -91,10 +89,7 @@ export function CustomerFormPage() {
 
     const dispatch = useAppDispatch();
 
-    const scrollContainerRef = useRef<HTMLDivElement>(null);
-
     const [data, setData] = useState<RetrieveResponse | null>(null);
-    const [allElements, setAllElements] = useState<AnyElement[] | null>(null);
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
@@ -106,7 +101,12 @@ export function CustomerFormPage() {
     } | null>(null);
 
     const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
-    const handledIdentityCallbackRef = useRef<string | null>(null);
+    const [dismissAuthentication, setDismissAuthentication] = useState(false);
+    const [customerInputLoaderResolved, setCustomerInputLoaderResolved] = useState(false);
+
+    useEffect(() => {
+        dispatch(showDialog(metaDialogName ?? undefined));
+    }, [dispatch, metaDialogName]);
 
     useEffect(() => {
         if (processSlug == null || formSlug == null) {
@@ -121,15 +121,20 @@ export function CustomerFormPage() {
             })
             .then((res) => {
                 if (res.process.slug !== processSlug) {
-                    navigate(`/form/${res.process.slug}/${formSlug}${currentSearch.length > 0 ? `?${currentSearch}` : ''}`, {
+                    navigate(`/form/${res.process.slug}/${formSlug}${window.location.search}`, {
                         replace: true,
                     });
                 }
 
                 setData(res);
-                setAllElements(flattenElements(res.layoutElement, false));
+                setAuthoredElementValues({});
                 setDerivedData(createDerivedRuntimeElementData());
                 setDerivedDataVersion(0);
+                setPendingStepRestore(null);
+                setStartedProcessAccessKey(null);
+                setDismissAuthentication(false);
+                setCustomerInputLoaderResolved(false);
+                dispatch(setCurrentStep(0));
             })
             .catch((err) => {
                 if (isApiError(err)) {
@@ -151,11 +156,10 @@ export function CustomerFormPage() {
                     }
                 }
             });
-    }, [processSlug, formSlug, testClaimKey, navigate, currentSearch]);
+    }, [processSlug, formSlug, testClaimKey, navigate, dispatch]);
 
     const metaDialog = useAppSelector((state) => state.app.showDialog);
     const provider = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.name));
-    const identityId = useAppSelector(selectIdentityId);
 
     const [theme, setTheme] = useState<Theme>();
 
@@ -207,7 +211,12 @@ export function CustomerFormPage() {
     }, [baseTheme, theme]);
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string) => {
-        if (event !== SUBMIT_EVENT || layoutElement == null || node == null) {
+        if (event !== SUBMIT_EVENT || layoutElement == null || node == null || process == null || version == null) {
+            return;
+        }
+
+        const resolvedFormSlug = node.configuration.formSlug ?? formSlug;
+        if (resolvedFormSlug == null) {
             return;
         }
 
@@ -238,7 +247,7 @@ export function CustomerFormPage() {
                 .postFormData<{
                     startedProcessAccessKey: string;
                 }>(
-                    `/api/public/form/${process?.slug}/${node.configuration.formSlug}/submit/`,
+                    `/api/public/form/${process.slug}/${resolvedFormSlug}/submit/`,
                     formData,
                     {
                         query: {
@@ -247,6 +256,7 @@ export function CustomerFormPage() {
                     },
                 );
 
+            CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
             setStartedProcessAccessKey(startRes.startedProcessAccessKey);
         } finally {
             dispatch(clearLoadingMessage());
@@ -254,8 +264,14 @@ export function CustomerFormPage() {
     };
 
     const handleDerive = (values: AuthoredElementValues, skipErrorsForElements: string[]) => {
+        const resolvedProcessSlug = process?.slug ?? processSlug;
+        const resolvedFormSlug = node?.configuration.formSlug ?? formSlug;
+        if (resolvedProcessSlug == null || resolvedFormSlug == null) {
+            return Promise.resolve(createDerivedRuntimeElementData());
+        }
+
         return new BaseApiService()
-            .post<AuthoredElementValues, ElementDerivationResponse>(`/api/public/form/${process?.slug ?? processSlug}/${formSlug}/derive/`, values, {
+            .post<AuthoredElementValues, ElementDerivationResponse>(`/api/public/form/${resolvedProcessSlug}/${resolvedFormSlug}/derive/`, values, {
                 query: {
                     'test-claim': testClaimKey,
                     skipErrorsFor: skipErrorsForElements,
@@ -269,9 +285,33 @@ export function CustomerFormPage() {
             });
     };
 
-    const [dismissAuthentication, setDismissAuthentication] = useState(false);
+    const handleAuthoredElementValuesChange = (nextAuthoredElementValues: AuthoredElementValues) => {
+        setAuthoredElementValues(nextAuthoredElementValues);
+
+        if (process == null || node == null || version == null || layoutElement == null) {
+            return;
+        }
+
+        const resolvedFormSlug = node.configuration.formSlug ?? formSlug;
+        if (resolvedFormSlug == null) {
+            return;
+        }
+
+        CustomerInputService.storeCustomerInput(
+            process.slug,
+            resolvedFormSlug,
+            version.processVersion,
+            layoutElement,
+            nextAuthoredElementValues,
+        );
+    };
 
     if (data == null || layoutElement == null || node == null || process == null || version == null) {
+        return null;
+    }
+
+    const resolvedFormSlug = node.configuration.formSlug ?? formSlug;
+    if (resolvedFormSlug == null) {
         return null;
     }
 
@@ -281,8 +321,8 @@ export function CustomerFormPage() {
     }
 
     const formAssetQuery = formAssetQueryParams.toString();
-    const formLogoUrl = `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${formAssetQuery}`;
-    const formFaviconUrl = `/api/public/form/${process.slug}/${node.configuration.formSlug}/favicon/?${formAssetQuery}`;
+    const formLogoUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${formAssetQuery}`;
+    const formFaviconUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/favicon/?${formAssetQuery}`;
 
     return (
         <ThemeProvider theme={resolvedTheme}>
@@ -297,7 +337,6 @@ export function CustomerFormPage() {
                     sx={{
                         backgroundColor: 'white',
                     }}
-                    ref={scrollContainerRef}
                 >
                     <FormHeaderComponent
                         form={layoutElement}
@@ -307,12 +346,14 @@ export function CustomerFormPage() {
                         logoUrl={formLogoUrl}
                         onDeleteFormData={() => {
                             dispatch(setCurrentStep(0));
+                            CustomerInputService.cleanCustomerInput(process.slug, resolvedFormSlug, version.processVersion);
                             setAuthoredElementValues({});
                             setDerivedData(createDerivedRuntimeElementData());
                             setDerivedDataVersion(0);
                             setPendingStepRestore(null);
                             setStartedProcessAccessKey(null);
                             setDismissAuthentication(false);
+                            setCustomerInputLoaderResolved(true);
                             IdentityProvidersApiService.clearIdentity(node.id);
                             setData((currentData) => {
                                 if (currentData == null) {
@@ -349,6 +390,24 @@ export function CustomerFormPage() {
                     {
                         (data.identitySlots.length === 0 || dismissAuthentication) &&
                         startedProcessAccessKey == null &&
+                        !customerInputLoaderResolved &&
+                        <CustomerInputLoader
+                            processSlug={process.slug}
+                            formSlug={resolvedFormSlug}
+                            version={version.processVersion}
+                            rootElement={layoutElement}
+                            onElementDataLoad={setAuthoredElementValues}
+                            onResolved={() => {
+                                setCustomerInputLoaderResolved(true);
+                            }}
+                            isBusy={false}
+                        />
+                    }
+
+                    {
+                        (data.identitySlots.length === 0 || dismissAuthentication) &&
+                        startedProcessAccessKey == null &&
+                        customerInputLoaderResolved &&
                         <ElementDerivationContext
                             element={layoutElement}
                             authoredElementValues={authoredElementValues}
@@ -357,7 +416,7 @@ export function CustomerFormPage() {
                                 setDerivedData(nextDerivedData);
                                 setDerivedDataVersion((current) => current + 1);
                             }}
-                            onAuthoredElementValuesChange={setAuthoredElementValues}
+                            onAuthoredElementValuesChange={handleAuthoredElementValuesChange}
                             onEvent={handleSubmitEvent}
                             onDeriveOverride={handleDerive}
                         />

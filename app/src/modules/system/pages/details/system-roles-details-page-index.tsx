@@ -460,7 +460,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 onChange={(next) => handleInputPatch({permissions: next})}
                 isBusy={isBusy}
                 isEditable={isEditable}
-                scope={PermissionScope.System}
+                scope={[PermissionScope.System, PermissionScope.Domain]}
             />
 
             <Box

@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
@@ -27,6 +28,7 @@ import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
@@ -47,6 +49,7 @@ import de.aivot.GoverBackend.user.services.UserService;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -57,7 +60,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 
@@ -219,6 +225,218 @@ class StaffProcessInstanceTaskViewControllerTest {
         assertNull(reloadedResponse.data().get("defaultField"));
     }
 
+    @Test
+    void update_WithKnownEventAndInvalidInputsRejectsBeforeDispatch() {
+        var provider = new EventValidatedStaffProcessNodeDefinition();
+        var elementDerivationService = new TestElementDerivationService();
+        elementDerivationService.result = new DerivedRuntimeElementData()
+                .putError("requiredField", "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.");
+        var fixture = createFixture(provider, elementDerivationService);
+
+        var ex = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().update(
+                        fixture.jwt(),
+                        fixture.instance().getId(),
+                        fixture.task().getId(),
+                        "{\"requiredField\":\"\"}",
+                        null,
+                        null,
+                        "complete",
+                        null
+                )
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        var details = assertInstanceOf(DerivedRuntimeElementData.class, ex.getDetails());
+        assertEquals(
+                "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.",
+                details.getElementStates().get("requiredField").getError()
+        );
+        assertEquals("staff-root", elementDerivationService.lastRequest.element().getId());
+        assertEquals("", elementDerivationService.lastRequest.authoredElementValues().get("requiredField"));
+        assertFalse(provider.eventInvoked);
+        assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+    }
+
+    @Test
+    void update_AutoSaveWithInvalidInputsPersistsDraftWithoutValidation() throws ResponseException {
+        var provider = new EventValidatedStaffProcessNodeDefinition();
+        var elementDerivationService = new TestElementDerivationService();
+        elementDerivationService.result = new DerivedRuntimeElementData()
+                .putError("requiredField", "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.");
+        var fixture = createFixture(provider, elementDerivationService);
+
+        var response = fixture.controller().update(
+                fixture.jwt(),
+                fixture.instance().getId(),
+                fixture.task().getId(),
+                "{\"requiredField\":\"\"}",
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertEquals("", response.data().get("requiredField"));
+        assertFalse(provider.eventInvoked);
+        assertNull(elementDerivationService.lastRequest);
+        var savedDraft = (Map<?, ?>) fixture.task().getRuntimeData().get(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY);
+        assertEquals("", savedDraft.get("requiredField"));
+    }
+
+    @Test
+    void update_WithUnknownEventIsRejectedAndDoesNotAutoSave() {
+        var provider = new EventValidatedStaffProcessNodeDefinition();
+        var elementDerivationService = new TestElementDerivationService();
+        var fixture = createFixture(provider, elementDerivationService);
+
+        var ex = assertThrows(
+                ResponseException.class,
+                () -> fixture.controller().update(
+                        fixture.jwt(),
+                        fixture.instance().getId(),
+                        fixture.task().getId(),
+                        "{\"requiredField\":\"value\"}",
+                        null,
+                        null,
+                        "unknown",
+                        null
+                )
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatus());
+        assertEquals("Invalid event: unknown", ex.getMessage());
+        assertFalse(provider.eventInvoked);
+        assertNull(elementDerivationService.lastRequest);
+        assertFalse(fixture.task().getRuntimeData().containsKey(ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY));
+    }
+
+    private static StaffTaskControllerFixture createFixture(ProcessNodeDefinition<AuthoredElementValues> provider,
+                                                            TestElementDerivationService elementDerivationService) {
+        var user = new UserEntity()
+                .setId("user-1")
+                .setFirstName("Ada")
+                .setLastName("Lovelace");
+        var now = Instant.now();
+
+        var jwt = new Jwt(
+                "token-value",
+                Instant.now(),
+                Instant.now().plusSeconds(60),
+                Map.of("alg", "none"),
+                Map.of("sub", user.getId())
+        );
+
+        var process = new ProcessEntity(
+                7,
+                "Test Process",
+                11,
+                UUID.randomUUID(),
+                1,
+                1,
+                1,
+                now,
+                now
+        );
+
+        var version = new ProcessVersionEntity(
+                process.getId(),
+                1,
+                ProcessVersionStatus.Published,
+                "Test Process",
+                null,
+                now,
+                now,
+                now,
+                null
+        );
+
+        var instance = new ProcessInstanceEntity(
+                42L,
+                null,
+                UUID.randomUUID(),
+                process.getId(),
+                version.getProcessVersion(),
+                ProcessInstanceStatus.Running,
+                null,
+                null,
+                List.of(),
+                new IdentityDataMap(),
+                now,
+                now,
+                null,
+                null,
+                Map.of(),
+                11,
+                null,
+                null
+        );
+
+        var task = new ProcessInstanceTaskEntity(
+                9L,
+                UUID.randomUUID(),
+                instance.getId(),
+                process.getId(),
+                version.getProcessVersion(),
+                11,
+                null,
+                null,
+                null,
+                ProcessTaskStatus.Running,
+                null,
+                now,
+                now,
+                null,
+                null,
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                Map.of(),
+                null,
+                null,
+                null,
+                null,
+                null
+        );
+
+        var node = new ProcessNodeEntity()
+                .setId(11)
+                .setProcessId(process.getId())
+                .setProcessVersion(version.getProcessVersion())
+                .setName("Staff node")
+                .setDataKey("staffNode")
+                .setProcessNodeDefinitionKey(provider.getKey())
+                .setProcessNodeDefinitionVersion(provider.getMajorVersion())
+                .setConfiguration(new AuthoredElementValues())
+                .setOutputMappings(Map.of());
+
+        var controller = new StaffProcessInstanceTaskViewController(
+                new TestProcessInstanceService(instance),
+                new TestProcessInstanceTaskService(task),
+                new ProcessNodeDefinitionService(List.of(provider)),
+                new TestProcessNodeService(node),
+                new ApplyingProcessNodeExecutionResultHandler(),
+                new TestUserService(user),
+                new TestProcessNodeExecutionLoggerFactory(),
+                elementDerivationService,
+                new TestProcessService(process),
+                new TestProcessVersionService(version),
+                new PassthroughTaskViewMultipartInputService(),
+                new TestProcessDataService()
+        );
+
+        return new StaffTaskControllerFixture(jwt, instance, task, controller);
+    }
+
+    private record StaffTaskControllerFixture(
+            Jwt jwt,
+            ProcessInstanceEntity instance,
+            ProcessInstanceTaskEntity task,
+            StaffProcessInstanceTaskViewController controller
+    ) {
+    }
+
     private static final class TestProcessInstanceService extends ProcessInstanceService {
         private final ProcessInstanceEntity instance;
 
@@ -367,6 +585,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class TestElementDerivationService extends ElementDerivationService {
         private ElementDerivationRequest lastRequest;
+        private DerivedRuntimeElementData result = new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
 
         private TestElementDerivationService() {
             super(null, null, null);
@@ -375,7 +594,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         @Override
         public DerivedRuntimeElementData derive(ElementDerivationRequest request) {
             lastRequest = request;
-            return new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
+            return result;
         }
 
         @Override
@@ -440,6 +659,91 @@ class StaffProcessInstanceTaskViewControllerTest {
         public ProcessExecutionData foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
                                                             Integer previousNodeId) {
             return new ProcessExecutionData();
+        }
+    }
+
+    private static final class EventValidatedStaffProcessNodeDefinition implements ProcessNodeDefinition<AuthoredElementValues> {
+        private boolean eventInvoked;
+
+        @Override
+        public String getParentPluginKey() {
+            return "test";
+        }
+
+        @Override
+        public String getComponentKey() {
+            return "staff-event-validation";
+        }
+
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Override
+        public String getName() {
+            return "Staff event validation";
+        }
+
+        @Override
+        public String getDescription() {
+            return "Staff task event validation test provider";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<AuthoredElementValues> context) {
+            throw new UnsupportedOperationException("Not used in this test");
+        }
+
+        @Nonnull
+        @Override
+        public GroupLayoutElement getStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            var requiredField = new TextInputElement();
+            requiredField.setId("requiredField");
+            requiredField.setLabel("Required field");
+            requiredField.setRequired(true);
+
+            var layout = new GroupLayoutElement();
+            layout.setId("staff-root");
+            layout.setChildren(List.of(requiredField));
+            return layout;
+        }
+
+        @Nonnull
+        @Override
+        public List<TaskViewEvent> getStaffTaskViewEvents(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context) {
+            return List.of(new TaskViewEvent("Complete", "complete"));
+        }
+
+        @Nonnull
+        @Override
+        public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<AuthoredElementValues> context,
+                                                                             @Nonnull AuthoredElementValues update,
+                                                                             @Nonnull String event) {
+            eventInvoked = true;
+            return new ProcessNodeExecutionResultTaskUpdated()
+                    .setRuntimeData(Map.of("event", event))
+                    .setNodeData(Map.of())
+                    .setProcessData(context.getThisTask().getProcessData())
+                    .asOptional();
+        }
+
+        @Nonnull
+        @Override
+        public Class<AuthoredElementValues> getNodeConfigurationClass() {
+            return AuthoredElementValues.class;
         }
     }
 

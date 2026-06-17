@@ -116,6 +116,7 @@ import {
 import IdentityPlatform from '@aivot/mui-material-symbols-400-outlined/dist/identity-platform/IdentityPlatform';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {IdentityButton} from '../../identity/components/identity-button/identity-button';
+import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
 
 export const DialogSearchParam = 'dialog';
 
@@ -161,8 +162,8 @@ export function FormNodeEditorPage() {
         dialog: changeBlockerDialog,
         hasChanged,
     } = useChangeBlocker({
-        original: node?.configuration[FormLayoutFieldKey],
-        edited: formLayout,
+        original: normalizeUiDefinitionForStorage(node?.configuration[FormLayoutFieldKey] as FormLayoutElement | null | undefined),
+        edited: normalizeUiDefinitionForStorage(formLayout),
     });
 
     useEffect(() => {
@@ -398,12 +399,14 @@ export function FormNodeEditorPage() {
             return;
         }
 
+        const formLayoutForStorage = normalizeUiDefinitionForStorage(formLayout);
+
         return new ProcessNodeApiService()
             .update(node.id, {
                 ...node,
                 configuration: {
                     ...node.configuration,
-                    [FormLayoutFieldKey]: formLayout,
+                    [FormLayoutFieldKey]: formLayoutForStorage,
                 },
             }, {
                 query: {
@@ -412,7 +415,10 @@ export function FormNodeEditorPage() {
             })
             .then((updated) => {
                 setNode(updated);
-                setFormLayout(updated.configuration[FormLayoutFieldKey]);
+                setFormLayout(
+                    updated.configuration[FormLayoutFieldKey] ??
+                    generateElementWithDefaultValues(ElementType.FormLayout) as FormLayoutElement
+                );
             });
     };
 

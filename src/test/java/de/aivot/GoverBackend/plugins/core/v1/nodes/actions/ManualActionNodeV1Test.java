@@ -3,16 +3,11 @@ package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
+import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.*;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
-import de.aivot.GoverBackend.elements.models.elements.form.content.RichTextContentElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
-import de.aivot.GoverBackend.elements.models.elements.form.input.DateInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.DateTimeInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
-import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.models.lib.DiffItem;
@@ -24,13 +19,13 @@ import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
-import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
-import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
+import de.aivot.GoverBackend.process.models.TaskViewEvent;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskAssigned;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
-import de.aivot.GoverBackend.process.models.TaskViewEvent;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.GoverBackend.process.repositories.VPotentialProcessInstanceAccessRepository;
@@ -43,19 +38,10 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
 import static de.aivot.GoverBackend.TestData.authored;
-import static de.aivot.GoverBackend.TestData.runtime;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ManualActionNodeV1Test {
     private static final Integer PROCESS_ID = 42;
@@ -280,8 +266,8 @@ class ManualActionNodeV1Test {
                         processNode(configuration()),
                         processInstance("process-owner"),
                         task(
-                        77,
-                        Map.of(
+                                77,
+                                Map.of(
                                         ProcessNodeDefinition.STAFF_TASK_VIEW_DATA_RUNTIME_KEY,
                                         authored(
                                                 "applicantName", "Draft",
@@ -375,6 +361,62 @@ class ManualActionNodeV1Test {
     }
 
     @Test
+    void onEventFromStaffTaskView_CompletePreservesExistingNullProcessDataEntries() throws Exception {
+        var firstArrayItem = new LinkedHashMap<String, Object>();
+        firstArrayItem.put("alter", null);
+        firstArrayItem.put("name", "Ada");
+
+        var person = new LinkedHashMap<String, Object>();
+        person.put("vorname", null);
+        person.put("arrtest", List.of(firstArrayItem));
+
+        var processData = new LinkedHashMap<String, Object>();
+        processData.put("key", null);
+        processData.put("person", person);
+        processData.put("dynamischerDatenschluessel", "vorher");
+
+        var configuration = configuration("dynamischerDatenschluessel");
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                processData
+                        ),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configuration),
+                        currentProcessData(processData)
+                ),
+                authored("applicantName", "reset"),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+        assertEquals("reset", completed.getProcessData().get("dynamischerDatenschluessel"));
+        assertTrue(completed.getProcessData().containsKey("key"));
+        assertNull(completed.getProcessData().get("key"));
+
+        @SuppressWarnings("unchecked")
+        var completedPerson = (Map<String, Object>) completed.getProcessData().get("person");
+        assertTrue(completedPerson.containsKey("vorname"));
+        assertNull(completedPerson.get("vorname"));
+
+        @SuppressWarnings("unchecked")
+        var arrtest = (List<Map<String, Object>>) completedPerson.get("arrtest");
+        assertTrue(arrtest.getFirst().containsKey("alter"));
+        assertNull(arrtest.getFirst().get("alter"));
+        assertEquals("Ada", arrtest.getFirst().get("name"));
+    }
+
+    @Test
     void onEventFromStaffTaskView_WithoutUiDefinitionCompletesWithoutDataChanges() throws Exception {
         var processData = Map.<String, Object>of("status", "open");
 
@@ -408,13 +450,17 @@ class ManualActionNodeV1Test {
     }
 
     private static AuthoredElementValues configuration() {
+        return configuration("applicant.name");
+    }
+
+    private static AuthoredElementValues configuration(String destinationKey) {
         var contentRoot = new GroupLayoutElement();
         contentRoot.setId("manual-action-root");
 
         var valueField = new TextInputElement();
         valueField.setId("applicantName");
         valueField.setLabel("Name");
-        valueField.setDestinationKey("applicant.name");
+        valueField.setDestinationKey(destinationKey);
         contentRoot.setChildren(List.of(valueField));
 
         return authored(

@@ -6,6 +6,7 @@ import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.HeadlineContentElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.FileUploadInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
@@ -17,6 +18,8 @@ import jakarta.annotation.Nullable;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public record ProcessNodeDefinitionMetadata(
@@ -29,6 +32,10 @@ public record ProcessNodeDefinitionMetadata(
         @Nonnull
         List<ForwardedIdentity> forwardedIdentities
 ) {
+    private static final String COMPLETE_FORM_LABEL = "Gesamtes Formular";
+    private static final String FALLBACK_UI_DEFINITION_LABEL = "UI-Definition";
+    private static final Pattern ELEMENT_ID_PATTERN = Pattern.compile("^[a-z][a-zA-Z0-9_]*$");
+
     public static ProcessNodeDefinitionMetadata empty() {
         return new ProcessNodeDefinitionMetadata(
                 new LinkedList<>(),
@@ -118,6 +125,12 @@ public record ProcessNodeDefinitionMetadata(
             return this;
         }
 
+        if (layout instanceof FormLayoutElement formLayout) {
+            addCompleteFormReusableUiDefinition(formLayout, origin);
+        } else if (layout instanceof GroupLayoutElement groupLayout) {
+            addRootGroupReusableUiDefinition(groupLayout, origin);
+        }
+
         ElementStreamUtils.applyActionWithParents((BaseElement) layout, (parents, e) -> {
             if (e instanceof BaseInputElement<?> i && StringUtils.isNotNullOrEmpty(i.getDestinationKey())) {
                 var parentDestinationKey = parents
@@ -150,25 +163,97 @@ public record ProcessNodeDefinitionMetadata(
             }
 
             if (e instanceof GenericStepElement s) {
-                var group = new GroupLayoutElement();
-                group.setId(s.getId());
-                var childCopy = new LinkedList<BaseFormElement>();
-                childCopy.add(
-                        new HeadlineContentElement()
-                                .setContent(s.getTitle())
-                );
-                childCopy.addAll(s.getChildren());
-                group.setChildren(childCopy);
                 this.addReusableUiDefinition(
-                        StringUtils.isNotNullOrEmpty(s.getTitle()) ? s.getTitle() : s.getId(),
+                        resolveStepTitle(s),
                         null,
-                        group,
+                        createReusableGroupForStep(s),
                         origin
                 );
             }
         });
 
         return this;
+    }
+
+    private void addCompleteFormReusableUiDefinition(@Nonnull FormLayoutElement formLayout,
+                                                     @Nonnull ProcessNodeEntity origin) {
+        var stepGroups = formLayout
+                .getChildren()
+                .stream()
+                .filter(GenericStepElement.class::isInstance)
+                .map(GenericStepElement.class::cast)
+                .map(ProcessNodeDefinitionMetadata::createReusableGroupForStep)
+                .map(BaseFormElement.class::cast)
+                .toList();
+
+        if (stepGroups.isEmpty()) {
+            return;
+        }
+
+        var group = new GroupLayoutElement();
+        group.setId(resolveElementId(formLayout.getId(), "gp"));
+        group.setName(COMPLETE_FORM_LABEL);
+        group.setChildren(new LinkedList<>(stepGroups));
+
+        this.addReusableUiDefinition(
+                COMPLETE_FORM_LABEL,
+                null,
+                group,
+                origin
+        );
+    }
+
+    private void addRootGroupReusableUiDefinition(@Nonnull GroupLayoutElement groupLayout,
+                                                  @Nonnull ProcessNodeEntity origin) {
+        if (groupLayout.getChildren().isEmpty()) {
+            return;
+        }
+
+        this.addReusableUiDefinition(
+                StringUtils.isNotNullOrEmpty(groupLayout.getName()) ? groupLayout.getName() : FALLBACK_UI_DEFINITION_LABEL,
+                null,
+                groupLayout,
+                origin
+        );
+    }
+
+    @Nonnull
+    private static GroupLayoutElement createReusableGroupForStep(@Nonnull GenericStepElement step) {
+        var title = resolveStepTitle(step);
+
+        var group = new GroupLayoutElement();
+        group.setId(resolveElementId(step.getId(), "gp"));
+        group.setName(title);
+
+        var headline = new HeadlineContentElement();
+        headline.setId(createElementId("hd"));
+        headline.setContent(title);
+
+        var children = new LinkedList<BaseFormElement>();
+        children.add(headline);
+        children.addAll(step.getChildren());
+        group.setChildren(children);
+
+        return group;
+    }
+
+    @Nonnull
+    private static String resolveStepTitle(@Nonnull GenericStepElement step) {
+        return step.getResolvedTitle();
+    }
+
+    @Nonnull
+    private static String resolveElementId(@Nullable String candidate, @Nonnull String prefix) {
+        if (candidate != null && ELEMENT_ID_PATTERN.matcher(candidate).matches()) {
+            return candidate;
+        }
+
+        return createElementId(prefix);
+    }
+
+    @Nonnull
+    private static String createElementId(@Nonnull String prefix) {
+        return prefix + "_" + UUID.randomUUID().toString().replace("-", "_");
     }
 
     public record ReusableUiDefinition(

@@ -494,7 +494,34 @@ export function ProcessDetailsPage(): ReactNode {
                 processDefinitionId: processId,
                 processDefinitionVersion: processVersion,
             })
-            .then(setProcessNodeProblems);
+            .then((problems) => {
+                setProcessNodeProblems(problems);
+
+                const problemNodeIds = new Set(problems.map((problem) => problem.node.id));
+                const savedWithErrorsNodeIds = processFlow.nodes
+                    .filter((node) => node.savedWithErrors && problemNodeIds.has(node.id))
+                    .map((node) => node.id);
+
+                if (savedWithErrorsNodeIds.length === 0) {
+                    return;
+                }
+
+                setShowProcessNodeProblemsForNodes((previousShownProblems) => {
+                    let hasChanged = false;
+                    const nextShownProblems = {
+                        ...previousShownProblems,
+                    };
+
+                    for (const nodeId of savedWithErrorsNodeIds) {
+                        if (nextShownProblems[nodeId] !== true) {
+                            nextShownProblems[nodeId] = true;
+                            hasChanged = true;
+                        }
+                    }
+
+                    return hasChanged ? nextShownProblems : previousShownProblems;
+                });
+            });
     }, [processId, processVersion, processFlow?.nodes, processFlow?.edges]);
 
     const instanceId = useMemo(() => {
@@ -2549,6 +2576,7 @@ export function ProcessDetailsPage(): ReactNode {
             <ProcessVersionsDialog
                 open={showVersionsDialog}
                 process={processFlow.definition}
+                currentOpenVersion={processFlow.version.processVersion}
                 onClose={() => {
                     setShowVersionsDialog(false);
                 }}

@@ -21,6 +21,55 @@ import {getElementIcon, getElementIconForType} from '../../data/element-type/ele
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {cloneElement} from '../../utils/clone-element';
+import {ElementChildOptions} from '../../data/element-type/element-child-options';
+import {stringOrDefault} from '../../utils/string-utils';
+import {
+    type ProcessNodeDefinitionMetadataReusableUiDefinition,
+} from '../../modules/process/entities/process-node-definition-metadata';
+
+
+function resolveAllowedChildTypes(props: AddElementDialogProps): Set<ElementType> {
+    let childOptionSet: Set<ElementType> | null = null;
+
+    if (props.allParents.length > 1) {
+        for (const par of props.allParents.slice(1)) {
+            const allowedChildOptionOfThisParent = ElementChildOptions[props.displayContext][par.type] ?? [];
+            const allowedChildOptionOfThisParentSet = new Set<ElementType>(allowedChildOptionOfThisParent);
+
+            if (childOptionSet == null) {
+                childOptionSet = allowedChildOptionOfThisParentSet;
+            } else {
+                const nextChildOptionSet = new Set<ElementType>();
+                childOptionSet.forEach((type: ElementType) => {
+                    if (allowedChildOptionOfThisParentSet.has(type)) {
+                        nextChildOptionSet.add(type);
+                    }
+                });
+                childOptionSet = nextChildOptionSet;
+            }
+        }
+    } else {
+        childOptionSet = new Set<ElementType>(ElementChildOptions[props.displayContext][props.parentType] ?? []);
+    }
+
+    return childOptionSet ?? new Set<ElementType>();
+}
+
+function filterReusableUiDefinitions(
+    props: AddElementDialogProps,
+    definitions: ProcessNodeDefinitionMetadataReusableUiDefinition[]
+): ProcessNodeDefinitionMetadataReusableUiDefinition[] {
+    const allowedChildTypes = resolveAllowedChildTypes(props);
+
+    return definitions.filter((def) => {
+        if (!allowedChildTypes.has(def.uiDefinition.type)) {
+            return false;
+        }
+
+        return props.limitElementTypes == null || props.limitElementTypes.includes(def.uiDefinition.type);
+    });
+}
 
 
 export function AddElementDialog(props: AddElementDialogProps) {
@@ -44,10 +93,13 @@ export function AddElementDialog(props: AddElementDialogProps) {
         if (opec == null || opec.incomingMetadata == null || opec.incomingMetadata.reusableUiDefinitions.length === 0) {
             return null;
         }
-        return opec
-            .incomingMetadata
-            .reusableUiDefinitions;
-    }, [opec]);
+        const reusableDefinitions = filterReusableUiDefinitions(
+            props,
+            opec.incomingMetadata.reusableUiDefinitions
+        );
+
+        return reusableDefinitions.length > 0 ? reusableDefinitions : null;
+    }, [opec, props]);
 
     const handleClose = () => {
         props.onClose();
@@ -67,7 +119,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                 {label: 'Vorlagen', value: 1, hidden: props.hidePresets === true, disabled: true},
                 {label: 'Gover Marktplatz', value: 2, hidden: props.hideGoverStore === true, disabled: true},
                 {
-                    label: 'Wiederverwendbare UI-Definitionen',
+                    label: 'UI-Definitionen',
                     value: 3,
                     hidden: reusableUiDefinitions == null,
                     disabled: false,
@@ -175,18 +227,21 @@ export function AddElementDialog(props: AddElementDialogProps) {
                         {
                             reusableUiDefinitions.map((def) => {
                                 const Icon = getElementIconForType(def.uiDefinition.type);
+                                const originName = stringOrDefault(def.origin.name, 'Unbenanntes Prozesselement');
+
                                 return (
                                     <SelectionListRow
+                                        key={`${def.origin.id}-${def.uiDefinition.id}`}
                                         icon={<Icon/>}
                                         title={def.label}
                                         description={
-                                            <span>Ein UI-Element aus Prozesselement <strong>{def.origin.name}</strong></span>
+                                            <span>Eine UI-Definition aus Prozesselement <strong>{originName}</strong></span>
                                         }
                                         primaryActionLabel="Kopieren und einfügen"
                                         primaryActionIcon={<ContentCopy/>}
                                         onPrimaryAction={() => {
-                                            handleAddElement(def.uiDefinition);
-                                            dispatch(showSuccessSnackbar('UI-Element wurde kopiert und eingefügt'));
+                                            handleAddElement(cloneElement(def.uiDefinition, true));
+                                            dispatch(showSuccessSnackbar('UI-Definition wurde erfolgreich eingefügt'));
                                         }}
                                     />
                                 );

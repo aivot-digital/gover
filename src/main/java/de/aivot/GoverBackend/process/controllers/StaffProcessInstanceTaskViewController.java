@@ -236,6 +236,10 @@ public class StaffProcessInstanceTaskViewController {
                 .map(TaskViewEvent::event)
                 .orElse(null);
 
+        if (rawEvent != null && cleanEvent == null) {
+            throw ResponseException.badRequest("Invalid event: " + rawEvent);
+        }
+
         AuthoredElementValues inputs;
         try {
             inputs = ObjectMapperFactory
@@ -253,6 +257,21 @@ public class StaffProcessInstanceTaskViewController {
                 taskViewData.task().getId(),
                 user.getId()
         ).inputs();
+
+        if (cleanEvent != null) {
+            var derivedElementData = elementDerivationService.derive(
+                    new ElementDerivationRequest(
+                            rootLayout,
+                            inputs,
+                            new ElementDerivationOptions(),
+                            processData
+                    )
+            );
+
+            if (derivedElementData.hasAnyError()) {
+                throw ResponseException.badRequest(derivedElementData);
+            }
+        }
 
         Optional<ProcessNodeExecutionResult> res;
         try {

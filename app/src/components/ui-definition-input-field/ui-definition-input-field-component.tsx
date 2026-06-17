@@ -56,6 +56,7 @@ import {
 } from '../../slices/admin-settings-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
+import {normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -654,7 +655,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                     <Button
                         variant="contained"
                         onClick={() => {
-                            onChange(draftValue);
+                            onChange(normalizeUiDefinitionForStorage(draftValue));
                             handleClose();
                         }}
                         disabled={disabled}
