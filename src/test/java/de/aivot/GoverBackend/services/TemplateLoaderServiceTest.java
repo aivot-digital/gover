@@ -10,10 +10,14 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.MapPointInputEl
 import de.aivot.GoverBackend.elements.models.elements.form.input.RangeInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TimeRangeInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import de.aivot.GoverBackend.department.entities.DepartmentEntity;
+import de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.GoverBackend.enums.DateType;
 import de.aivot.GoverBackend.enums.TimeType;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
@@ -22,6 +26,7 @@ import de.aivot.GoverBackend.pdf.enums.FormPdfScope;
 import de.aivot.GoverBackend.pdf.models.FormPdfContext;
 import de.aivot.GoverBackend.services.pdf.MarkdownDialect;
 import de.aivot.GoverBackend.services.pdf.PdfElement;
+import de.aivot.GoverBackend.services.pdf.PdfElementsGenerator;
 import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.Test;
 import org.thymeleaf.templatemode.TemplateMode;
@@ -105,6 +110,78 @@ class TemplateLoaderServiceTest {
         assertTrue(html.contains("Fussnote"));
         assertFalse(html.contains("| Spalte A |"));
         assertFalse(html.contains("[^1]"));
+    }
+
+    @Test
+    void briefkopfTemplate_RendersResponsibleAndManagingAddressesOnly() {
+        var responsibleDepartment = new VDepartmentShadowedEntity()
+                .setName("Responsible Department Name")
+                .setAddress("Responsible Street 1\n12345 Responsible City");
+        var managingDepartment = new VDepartmentShadowedEntity()
+                .setName("Managing Department Name")
+                .setAddress("Managing Street 2\n54321 Managing City");
+
+        var html = new TemplateLoaderService().processTemplate(
+                "form-parts/briefkopf.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "responsibleDepartment", responsibleDepartment,
+                        "managingDepartment", managingDepartment
+                ),
+                TemplateMode.HTML
+        );
+
+        assertTrue(html.contains("Zuständige Stelle"));
+        assertTrue(html.contains("Bewirtschaftende Stelle"));
+        assertTrue(html.contains("Responsible Street 1"));
+        assertTrue(html.contains("Managing Street 2"));
+        assertFalse(html.contains("Responsible Department Name"));
+        assertFalse(html.contains("Managing Department Name"));
+        assertFalse(html.contains("Name der Kommune"));
+    }
+
+    @Test
+    void formTemplate_BlankPrintDispatchesGroupLayoutAndReplicatingContainerLayout() {
+        var groupField = new TextInputElement();
+        groupField.setLabel("Feld in Gruppe");
+        var group = new GroupLayoutElement()
+                .setChildren(List.of(groupField));
+
+        var replicatingField = new TextInputElement();
+        replicatingField.setLabel("Feld in replizierender Liste");
+        var replicatingContainer = new ReplicatingContainerLayoutElement()
+                .setChildren(List.of(replicatingField));
+        replicatingContainer.setLabel("Replizierende Liste");
+
+        var rootElement = new FormLayoutElement()
+                .setChildren(List.of(
+                        new GenericStepElement()
+                                .setTitle("Abschnitt")
+                                .setChildren(List.of(group, replicatingContainer))
+                ));
+
+        var html = renderBlankForm(rootElement);
+
+        assertTrue(html.contains("Feld in Gruppe"));
+        assertTrue(html.contains("Replizierende Liste"));
+        assertEquals(5, countOccurrences(html, "Feld in replizierender Liste"));
+    }
+
+    @Test
+    void formTemplate_BlankPrintRendersOfflineSubmissionTextWithoutSignature() {
+        var rootElement = new FormLayoutElement()
+                .setOfflineSubmissionText("Bitte senden Sie den Antrag **postalisch** ein.")
+                .setOfflineSignatureNeeded(false)
+                .setChildren(List.of(
+                        new GenericStepElement()
+                                .setTitle("Abschnitt")
+                ));
+
+        var html = renderBlankForm(rootElement);
+
+        assertTrue(html.contains("Hinweise zur Einreichung des ausgefüllten Antrages"));
+        assertTrue(html.contains("<strong>postalisch</strong>"));
+        assertFalse(html.contains("Unterschrift"));
     }
 
     @Test
@@ -418,6 +495,28 @@ class TemplateLoaderServiceTest {
         }
 
         return count;
+    }
+
+    private String renderBlankForm(FormLayoutElement rootElement) {
+        var form = new VFormVersionWithDetailsEntity()
+                .setSlug("testformular")
+                .setPublicTitle("Testformular")
+                .setRootElement(rootElement);
+        var department = new DepartmentEntity()
+                .setName("Formularservice")
+                .setAddress("Musterstrasse 1");
+
+        return new TemplateLoaderService().processTemplate(
+                "form.html",
+                Map.of(
+                        "base", createBaseContext(FormPdfScope.Blank),
+                        "form", form,
+                        "department", department,
+                        "elements", PdfElementsGenerator.generatePdfElements(rootElement, null, true),
+                        "attachments", List.of()
+                ),
+                TemplateMode.HTML
+        );
     }
 
     private FormPdfContext createBaseContext(FormPdfScope scope) {
