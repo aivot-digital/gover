@@ -26,6 +26,18 @@ interface TimeFieldComponentProps {
     mode?: TimeFieldComponentModelMode;
 }
 
+function normalizeTimeForMode(date: Date, mode: TimeFieldComponentModelMode): Date {
+    const normalized = new Date(date);
+
+    if (mode === TimeFieldComponentModelMode.Second) {
+        normalized.setMilliseconds(0);
+    } else {
+        normalized.setSeconds(0, 0);
+    }
+
+    return normalized;
+}
+
 export function TimeFieldComponent(props: TimeFieldComponentProps) {
     const mode = props.mode ?? TimeFieldComponentModelMode.Minute;
     const dateValue = props.value ? new Date(props.value) : null;
@@ -59,7 +71,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         }
 
         if (date instanceof Date && !isNaN(date.getTime())) {
-            const iso = date.toISOString();
+            const iso = normalizeTimeForMode(date, mode).toISOString();
             props.onChange(iso);
             props.onBlur?.(iso);
         }

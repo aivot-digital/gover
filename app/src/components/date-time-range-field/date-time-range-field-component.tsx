@@ -2,6 +2,7 @@ import {FormHelperText, Grid, Typography} from '@mui/material';
 import {DateTimeFieldComponent} from '../date-time-field/date-time-field-component';
 import {DateTimeRangeValue} from '../../models/elements/form/input/date-time-range-field-element';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
+import {useCallback, useEffect, useRef} from 'react';
 
 interface DateTimeRangeFieldComponentProps {
     label: string;
@@ -32,6 +33,21 @@ function normalizeRange(value: DateTimeRangeValue): DateTimeRangeValue | null {
 
 export function DateTimeRangeFieldComponent(props: DateTimeRangeFieldComponentProps) {
     const helperText = props.error ?? props.hint;
+    const valueRef = useRef<DateTimeRangeValue | null>(props.value ?? null);
+
+    useEffect(() => {
+        valueRef.current = props.value ?? null;
+    }, [props.value]);
+
+    const updateRange = useCallback((patch: Partial<DateTimeRangeValue>) => {
+        const nextValue = normalizeRange({
+            start: valueRef.current?.start,
+            end: valueRef.current?.end,
+            ...patch,
+        });
+        valueRef.current = nextValue;
+        props.onChange(nextValue);
+    }, [props.onChange]);
 
     return (
         <Grid container rowSpacing={0.5}>
@@ -42,10 +58,7 @@ export function DateTimeRangeFieldComponent(props: DateTimeRangeFieldComponentPr
                             label={`${props.label} (Von)`}
                             value={props.value?.start ?? undefined}
                             onChange={(start) => {
-                                props.onChange(normalizeRange({
-                                    start,
-                                    end: props.value?.end,
-                                }));
+                                updateRange({start});
                             }}
                             required={props.required}
                             disabled={props.disabled}
@@ -77,10 +90,7 @@ export function DateTimeRangeFieldComponent(props: DateTimeRangeFieldComponentPr
                             label={`${props.label} (Bis)`}
                             value={props.value?.end ?? undefined}
                             onChange={(end) => {
-                                props.onChange(normalizeRange({
-                                    start: props.value?.start,
-                                    end,
-                                }));
+                                updateRange({end});
                             }}
                             required={props.required}
                             disabled={props.disabled}

@@ -2,6 +2,7 @@ import {FormHelperText, Grid, Typography} from '@mui/material';
 import {DateFieldComponent} from '../date-field/date-field-component';
 import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
 import {DateRangeValue} from '../../models/elements/form/input/date-range-field-element';
+import {useCallback, useEffect, useRef} from 'react';
 
 interface DateRangeFieldComponentProps {
     label: string;
@@ -32,6 +33,21 @@ function normalizeRange(value: DateRangeValue): DateRangeValue | null {
 export function DateRangeFieldComponent(props: DateRangeFieldComponentProps) {
     const mode = props.mode ?? DateFieldComponentModelMode.Day;
     const helperText = props.error ?? props.hint;
+    const valueRef = useRef<DateRangeValue | null>(props.value ?? null);
+
+    useEffect(() => {
+        valueRef.current = props.value ?? null;
+    }, [props.value]);
+
+    const updateRange = useCallback((patch: Partial<DateRangeValue>) => {
+        const nextValue = normalizeRange({
+            start: valueRef.current?.start,
+            end: valueRef.current?.end,
+            ...patch,
+        });
+        valueRef.current = nextValue;
+        props.onChange(nextValue);
+    }, [props.onChange]);
 
     return (
         <Grid container rowSpacing={0.5}>
@@ -42,10 +58,7 @@ export function DateRangeFieldComponent(props: DateRangeFieldComponentProps) {
                             label={`${props.label} (Von)`}
                             value={props.value?.start ?? undefined}
                             onChange={(start) => {
-                                props.onChange(normalizeRange({
-                                    start,
-                                    end: props.value?.end,
-                                }));
+                                updateRange({start});
                             }}
                             required={props.required}
                             disabled={props.disabled}
@@ -76,10 +89,7 @@ export function DateRangeFieldComponent(props: DateRangeFieldComponentProps) {
                             label={`${props.label} (Bis)`}
                             value={props.value?.end ?? undefined}
                             onChange={(end) => {
-                                props.onChange(normalizeRange({
-                                    start: props.value?.start,
-                                    end,
-                                }));
+                                updateRange({end});
                             }}
                             required={props.required}
                             disabled={props.disabled}

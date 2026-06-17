@@ -40,16 +40,21 @@ export function resolveValueForResolvedOverride(
     const elementState = resolveElementState(element, derivedData);
     const effectiveValue = derivedData.effectiveValues[element.id];
     const authoredValue = authoredElementValues[element.id];
+    const hasAuthoredValue = Object.prototype.hasOwnProperty.call(authoredElementValues, element.id);
 
     if (isAnyInputElement(element) && (element.disabled || element.technical)) {
         return effectiveValue;
     }
 
-    if (elementState?.valueSource === ComputedElementValueSource.Derived) {
+    if (elementState?.valueSource === ComputedElementValueSource.Identity) {
         return effectiveValue;
     }
 
-    if (elementState?.valueSource === ComputedElementValueSource.Identity) {
+    if (hasAuthoredValue) {
+        return authoredValue;
+    }
+
+    if (elementState?.valueSource === ComputedElementValueSource.Derived) {
         return effectiveValue;
     }
 

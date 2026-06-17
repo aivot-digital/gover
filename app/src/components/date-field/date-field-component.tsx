@@ -24,6 +24,19 @@ const viewsMap: {
     [DateFieldComponentModelMode.Year]: ['year'],
 };
 
+function normalizeDateForMode(date: Date, mode: DateFieldComponentModelMode): Date {
+    const normalized = new Date(date);
+
+    if (mode === DateFieldComponentModelMode.Year) {
+        normalized.setMonth(0, 1);
+    } else if (mode === DateFieldComponentModelMode.Month) {
+        normalized.setDate(1);
+    }
+
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+}
+
 export function DateFieldComponent({
                                        label,
                                        error,
@@ -94,7 +107,7 @@ export function DateFieldComponent({
         }
 
         if (date instanceof Date && !isNaN(date.getTime())) {
-            const iso = date.toISOString();
+            const iso = normalizeDateForMode(date, mode ?? DateFieldComponentModelMode.Day).toISOString();
             onChange(iso);
             onBlur?.(iso);
         }

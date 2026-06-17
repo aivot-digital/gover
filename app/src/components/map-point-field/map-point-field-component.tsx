@@ -13,6 +13,7 @@ import {
 import MyLocationOutlinedIcon from '@mui/icons-material/MyLocationOutlined';
 import NearMeOutlinedIcon from '@mui/icons-material/NearMeOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {MapPointValue} from '../../models/elements/form/input/map-point-field-element';
 import {AttributionControl, MapContainer, Marker, TileLayer, useMapEvents} from 'react-leaflet';
@@ -182,6 +183,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     const [addressResolveError, setAddressResolveError] = useState<string | undefined>(undefined);
     const mapRef = useRef<L.Map | null>(null);
     const reverseLookupRequestId = useRef(0);
+    const lastAppliedMapCenterRef = useRef<string | null>(null);
     const [latitudeInput, setLatitudeInput] = useState('');
     const [longitudeInput, setLongitudeInput] = useState('');
 
@@ -189,6 +191,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     const markerLat = props.value?.latitude ?? undefined;
     const markerLon = props.value?.longitude ?? undefined;
     const isMapDisabled = props.disabled === true || props.busy === true;
+    const hasPointValue = props.value != null && normalizePoint(props.value) != null;
 
     const configuredCenter = useMemo(() => {
         if (props.centerLatitude != null && props.centerLongitude != null) {
@@ -211,6 +214,23 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
 
         return configuredCenter;
     }, [configuredCenter, hasCoordinates, markerLat, markerLon]);
+
+    useEffect(() => {
+        const map = mapRef.current;
+        if (map == null) {
+            return;
+        }
+
+        const centerKey = `${mapCenter.lat}:${mapCenter.lon}:${zoom}`;
+        if (lastAppliedMapCenterRef.current === centerKey) {
+            return;
+        }
+
+        lastAppliedMapCenterRef.current = centerKey;
+        map.setView([mapCenter.lat, mapCenter.lon], zoom, {
+            animate: true,
+        });
+    }, [mapCenter.lat, mapCenter.lon, zoom]);
 
     useEffect(() => {
         setLatitudeInput(props.value?.latitude != null ? props.value.latitude.toFixed(6) : '');
@@ -401,6 +421,22 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
         });
     };
 
+    const handleClear = useCallback(() => {
+        reverseLookupRequestId.current += 1;
+        setIsResolvingAddress(false);
+        setAddressResolveError(undefined);
+        setSearchQuery('');
+        setLatitudeInput('');
+        setLongitudeInput('');
+        props.onChange(null);
+
+        if (mapRef.current != null) {
+            mapRef.current.setView([configuredCenter.lat, configuredCenter.lon], zoom, {
+                animate: true,
+            });
+        }
+    }, [configuredCenter.lat, configuredCenter.lon, props.onChange, zoom]);
+
     const markerEvents: LeafletEventHandlerFnMap = useMemo(() => ({
         dragend: (event) => {
             const marker = event.target as L.Marker;
@@ -588,6 +624,32 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                             </IconButton>
                         </span>
                     </Tooltip>
+                    {
+                        hasPointValue &&
+                        <Tooltip
+                            title="Kartenpunkt leeren"
+                            arrow
+                        >
+                            <span>
+                                <IconButton
+                                    size="small"
+                                    onClick={handleClear}
+                                    disabled={isMapDisabled}
+                                    sx={{
+                                        bgcolor: 'background.paper',
+                                        border: '1px solid',
+                                        borderColor: 'divider',
+                                        boxShadow: '0 1px 5px rgba(0, 0, 0, 0.65)',
+                                        '&:hover': {
+                                            bgcolor: 'background.paper',
+                                        },
+                                    }}
+                                >
+                                    <ClearOutlinedIcon fontSize="small" />
+                                </IconButton>
+                            </span>
+                        </Tooltip>
+                    }
                     {
                         inputMode === 'coordinates' &&
                         <Tooltip
