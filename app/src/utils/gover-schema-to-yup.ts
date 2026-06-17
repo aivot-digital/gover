@@ -266,7 +266,7 @@ function chipInputFieldToYup(elem: ChipInputFieldElement): Schema {
             .nullable();
     }
 
-    if ((elem.minItems ?? 0) > 0) {
+    if (elem.required === true && (elem.minItems ?? 0) > 0) {
         chipSchema = chipSchema
             .min(elem.minItems!, `Mindestens ${elem.minItems} Einträge erforderlich.`);
     }
