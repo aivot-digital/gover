@@ -8,8 +8,6 @@ import {
     toggleAutoScrollForSteps,
     toggleComponentTree,
     toggleElementContextMenu,
-    toggleValidation,
-    toggleVisibility,
 } from '../../../slices/admin-settings-slice';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
@@ -323,10 +321,15 @@ export function FormNodeEditorPage() {
 
     const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
     const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const [disableVisibility, setDisableVisibility] = useState(false);
+    const [disableValidation, setDisableValidation] = useState(false);
+
+    useEffect(() => {
+        setDisableVisibility(false);
+        setDisableValidation(false);
+    }, [nodeId]);
 
     const {
-        disableVisibility,
-        disableValidation,
         disableAutoScrollForSteps,
         disableElementContextMenu,
         hideComponentTree,
@@ -724,14 +727,14 @@ export function FormNodeEditorPage() {
             tooltip: disableValidation ? 'Validierungen aktivieren' : 'Validierungen deaktivieren',
             icon: disableValidation ? <DoneAllOutlinedIcon/> : <RemoveDoneOutlinedIcon/>,
             onClick: () => {
-                dispatch(toggleValidation());
+                setDisableValidation((current) => !current);
             },
         },
         {
             tooltip: disableVisibility ? 'Sichtbarkeiten aktivieren' : 'Sichtbarkeiten deaktivieren',
             icon: disableVisibility ? <VisibilityOutlinedIcon/> : <VisibilityOffOutlinedIcon/>,
             onClick: () => {
-                dispatch(toggleVisibility());
+                setDisableVisibility((current) => !current);
             },
         },
         'separator' as const,

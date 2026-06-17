@@ -3,8 +3,6 @@ import {RootState} from '../store.staff';
 import {AnyElement} from '../models/elements/any-element';
 
 export interface AdminSettingsState {
-    disableVisibility: boolean;
-    disableValidation: boolean;
     useIdsInComponentTree: boolean;
     hideComponentTree: boolean;
     useTestMode: boolean;
@@ -21,8 +19,6 @@ export interface AdminSettingsState {
 }
 
 const initialState: AdminSettingsState = {
-    disableVisibility: false,
-    disableValidation: false,
     useIdsInComponentTree: false,
     hideComponentTree: false,
     useTestMode: false,
@@ -39,12 +35,6 @@ const adminSettingsSlice = createSlice({
     name: 'adminSettings',
     initialState: {...initialState},
     reducers: {
-        toggleVisibility: (state) => {
-            state.disableVisibility = !state.disableVisibility;
-        },
-        toggleValidation: (state) => {
-            state.disableValidation = !state.disableValidation;
-        },
         toggleIdsInComponentTree: (state) => {
             state.useIdsInComponentTree = !state.useIdsInComponentTree;
         },
@@ -95,8 +85,6 @@ const adminSettingsSlice = createSlice({
 });
 
 export const {
-    toggleVisibility,
-    toggleValidation,
     toggleIdsInComponentTree,
     toggleComponentTree,
     setComponentTree,
@@ -112,7 +100,6 @@ export const {
     setDevToolsTab,
 } = adminSettingsSlice.actions;
 
-export const selectDisableVisibility = (state: RootState) => state.adminSettings.disableVisibility;
 export const selectUseIdsInComponentTree = (state: RootState) => state.adminSettings.useIdsInComponentTree;
 export const selectUseTestMode = (state: RootState) => state.adminSettings.useTestMode;
 export const selectIsDraggingTreeElement = (state: RootState) => state.adminSettings.draggingTreeElement != null;

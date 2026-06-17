@@ -188,6 +188,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         setFutureDraftValues([]);
         setInputData({});
         setHoveredTreeElementId(null);
+        setDisableVisibilities(false);
     }, [setCurrentDraftValue]);
 
     const handleClose = useCallback(() => {
