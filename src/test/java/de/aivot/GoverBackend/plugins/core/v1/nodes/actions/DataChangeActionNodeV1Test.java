@@ -44,6 +44,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -54,6 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -453,6 +455,62 @@ class DataChangeActionNodeV1Test {
         @SuppressWarnings("unchecked")
         var diff = (List<DiffItem>) completed.getNodeData().get("diff");
         assertEquals(List.of(), diff);
+    }
+
+    @Test
+    void onEventFromStaffTaskView_CompletePreservesExistingNullProcessDataEntries() throws Exception {
+        var firstArrayItem = new LinkedHashMap<String, Object>();
+        firstArrayItem.put("alter", null);
+        firstArrayItem.put("name", "Ada");
+
+        var person = new LinkedHashMap<String, Object>();
+        person.put("vorname", null);
+        person.put("arrtest", List.of(firstArrayItem));
+
+        var processData = new LinkedHashMap<String, Object>();
+        processData.put("key", null);
+        processData.put("person", person);
+        processData.put("dynamischerDatenschluessel", "vorher");
+
+        var configuration = configuration("dynamischerDatenschluessel", null);
+
+        var result = node.onEventFromStaffTaskView(
+                new ProcessNodeExecutionContextUIStaff(
+                        logger(),
+                        processNode(configuration),
+                        processInstance("process-owner"),
+                        task(
+                                77,
+                                Map.of(),
+                                Map.of(),
+                                processData
+                        ),
+                        null,
+                        user("staff-1"),
+                        nodeConfiguration(configuration),
+                        currentProcessData(processData)
+                ),
+                authored("applicantName", "reset"),
+                "complete"
+        );
+
+        assertTrue(result.isPresent());
+
+        var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
+        assertEquals("reset", completed.getProcessData().get("dynamischerDatenschluessel"));
+        assertTrue(completed.getProcessData().containsKey("key"));
+        assertNull(completed.getProcessData().get("key"));
+
+        @SuppressWarnings("unchecked")
+        var completedPerson = (Map<String, Object>) completed.getProcessData().get("person");
+        assertTrue(completedPerson.containsKey("vorname"));
+        assertNull(completedPerson.get("vorname"));
+
+        @SuppressWarnings("unchecked")
+        var arrtest = (List<Map<String, Object>>) completedPerson.get("arrtest");
+        assertTrue(arrtest.getFirst().containsKey("alter"));
+        assertNull(arrtest.getFirst().get("alter"));
+        assertEquals("Ada", arrtest.getFirst().get("name"));
     }
 
     private static AuthoredElementValues configuration() {

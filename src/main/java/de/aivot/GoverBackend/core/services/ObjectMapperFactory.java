@@ -62,5 +62,10 @@ public class ObjectMapperFactory {
             ObjectMapper om = getInstance();
             return om.convertValue(value, Map.class);
         }
+
+        public static Map<String, Object> convertToMapPreservingNulls(Object value) {
+            ObjectMapper om = getNullPreservingInstance();
+            return om.convertValue(value, Map.class);
+        }
     }
 }
