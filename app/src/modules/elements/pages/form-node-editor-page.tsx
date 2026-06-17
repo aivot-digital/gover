@@ -122,9 +122,51 @@ export const DialogSearchParam = 'dialog';
 
 const FormLayoutFieldKey = 'formLayout';
 const IdentitiesFieldKey = 'identities';
+const PrintablePdfFallbackFilenameBase = 'Formulareingang';
+const PrintablePdfFilenameBaseMaxLength = 120;
 
 function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
     return JSON.parse(JSON.stringify(element)) as T;
+}
+
+function sanitizePrintablePdfFilenameBase(value: string): string {
+    return value
+        .replace(/\.pdf$/i, '')
+        .replace(/[<>:"/\\|?*]/g, '')
+        .split('')
+        .filter((char) => char.charCodeAt(0) >= 32)
+        .join('')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .replace(/\.+$/g, '')
+        .slice(0, PrintablePdfFilenameBaseMaxLength)
+        .trim();
+}
+
+function resolvePrintablePdfFilename(layout: FormLayoutElement | null, node: ProcessNodeEntity): string {
+    const candidates = [
+        layout?.headline,
+        node.name,
+        PrintablePdfFallbackFilenameBase,
+    ];
+
+    for (const candidate of candidates) {
+        if (typeof candidate !== 'string') {
+            continue;
+        }
+
+        const filenameBase = sanitizePrintablePdfFilenameBase(candidate);
+        if (filenameBase.length > 0) {
+            return `${filenameBase}.pdf`;
+        }
+    }
+
+    return `${PrintablePdfFallbackFilenameBase}.pdf`;
+}
+
+function resolvePersistedFormLayout(node: ProcessNodeEntity): FormLayoutElement | null {
+    const persistedLayout = node.configuration[FormLayoutFieldKey];
+    return persistedLayout == null ? null : persistedLayout as FormLayoutElement;
 }
 
 export function FormNodeEditorPage() {
@@ -505,14 +547,12 @@ export function FormNodeEditorPage() {
         }
     };
 
-    const handleDownloadPdfFile = async () => {
+    const downloadPersistedPdfFile = async (filenameLayout: FormLayoutElement | null): Promise<void> => {
         if (node == null) {
             return;
         }
 
-        const formSlug = typeof node.configuration.formSlug === 'string' && node.configuration.formSlug.length > 0
-            ? node.configuration.formSlug
-            : `form-trigger-${node.id}`;
+        const filename = resolvePrintablePdfFilename(filenameLayout, node);
 
         dispatch(setLoadingMessage({
             blocking: false,
@@ -524,13 +564,67 @@ export function FormNodeEditorPage() {
             const blob = await new FormTriggerApiService()
                 .downloadPrintablePdf(node.id);
 
-            downloadBlobFile(`${formSlug}-${node.processVersion}.pdf`, blob);
+            downloadBlobFile(filename, blob);
         } catch (err) {
             console.error(err);
             dispatch(showApiErrorSnackbar(err, 'Fehler beim Generieren des Vordrucks'));
         } finally {
             dispatch(clearLoadingMessage());
         }
+    };
+
+    const handleDownloadPdfFile = async (): Promise<void> => {
+        if (node == null) {
+            return;
+        }
+
+        let filenameLayout = formLayout;
+
+        if (hasChanged) {
+            const saveNow = await confirm({
+                title: 'Ungespeicherte Änderungen',
+                children: (
+                    <Typography>
+                        Sie haben aktuell ungespeicherte Änderungen.
+                        Der Vordruck wird aus der gespeicherten Formularversion erzeugt.
+                        Ihre ungespeicherten Änderungen sind daher nicht im PDF enthalten.
+                        Sie können die Änderungen jetzt speichern und anschließend das PDF laden.
+                    </Typography>
+                ),
+                confirmButtonText: 'Jetzt speichern und PDF laden',
+            });
+
+            if (saveNow) {
+                try {
+                    await handleSave();
+                } catch (err) {
+                    console.error(err);
+                    dispatch(showApiErrorSnackbar(err, 'Fehler beim Speichern der Änderungen'));
+                    return;
+                }
+            } else {
+                filenameLayout = resolvePersistedFormLayout(node);
+
+                const downloadSavedVersion = await confirm({
+                    title: 'PDF ohne Speichern laden',
+                    children: (
+                        <Typography>
+                            Das PDF wird auf dem zuletzt gespeicherten Stand erzeugt.
+                            Ihre ungespeicherten Änderungen sind nicht im PDF enthalten.
+                            Möchten Sie das PDF trotzdem laden?
+                        </Typography>
+                    ),
+                    confirmButtonText: 'Ohne Speichern PDF laden',
+                });
+
+                if (!downloadSavedVersion) {
+                    dispatch(showWarningSnackbar('Der PDF-Export wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
+                    return;
+                }
+            }
+        }
+
+        await downloadPersistedPdfFile(filenameLayout);
     };
 
     const handlePatch = (element: FormLayoutElement) => {
@@ -655,7 +749,9 @@ export function FormNodeEditorPage() {
         {
             label: 'Vordruck exportieren (.pdf)',
             icon: <Contract/>,
-            onClick: handleDownloadPdfFile,
+            onClick: () => {
+                void handleDownloadPdfFile();
+            },
         },
         {
             label: 'Formular vorbefüllen',
