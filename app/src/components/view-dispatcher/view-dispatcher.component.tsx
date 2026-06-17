@@ -30,8 +30,25 @@ import {copyToClipboardText} from '../../utils/copy-to-clipboard';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {getPreviewHighlightStyles} from './preview-highlight-styles';
 import {isSectionElementType} from '../../models/elements/steps/step-element';
+import {ElementType} from '../../data/element-type/element-type';
 
 type Props<T extends AnyElement> = Omit<BaseViewProps<T, any>, 'value' | 'setValue' | 'onBlur' | 'errors' | 'errorDetails'>
+
+const ElementWrapperClassName = 'editor-element-wrapper';
+// Parent wrappers are still hovered when the pointer is over a child. Suppress the
+// parent's button in that case so only the innermost allowed element shows a menu.
+const ElementContextMenuHoverSelector = [
+    `&:hover:not(:has(.${ElementWrapperClassName}:hover)) > .editor-element-context-menu`,
+    `&:hover:not(:has(.${ElementWrapperClassName}:hover)) > .editor-element-context-menu-cutout`,
+].join(', ');
+// These larger structural elements either have awkward hit areas or can make child menus unreachable.
+const DeniedContextMenuElementTypes = new Set<ElementType>([
+    ElementType.Step,
+    ElementType.IntroductionStep,
+    ElementType.SubmitStep,
+    ElementType.SummaryStep,
+    ElementType.GroupLayout,
+]);
 
 export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
     const disableElementContextMenu = useAppSelector(selectDisableElementContextMenu);
@@ -150,12 +167,13 @@ export function ViewDispatcherComponent<T extends AnyElement>(props: Props<T>) {
 
     return (
         <Grid
+            className={ElementWrapperClassName}
             id={elementId}
             data-initial-id={elementId /* TODO: Remove here and where referenced */}
             data-resolved-id={elementId /* TODO: Remove here and where referenced */}
             sx={(theme) => ({
                 position: 'relative',
-                '&:hover > .editor-element-context-menu, &:hover > .editor-element-context-menu-cutout': {
+                [ElementContextMenuHoverSelector]: {
                     display: mode === ViewDispatcherMode.Editor && !disableElementContextMenu ? 'block' : 'none',
                 },
                 ...getPreviewHighlightStyles(theme, isHighlightedInPreview),
@@ -203,9 +221,17 @@ function ContextMenuButton(props: ContextMenuButtonProps) {
 
     const {
         mode,
+        rootElement,
     } = useViewDispatcherContext();
 
-    if (inlineEditorContext == null || mode !== ViewDispatcherMode.Editor || !isAnyInputElement(element)) {
+    const isRootDispatcherElement = element.id === rootElement.id;
+    const isContextMenuDeniedElement = DeniedContextMenuElementTypes.has(element.type);
+    const canShowContextMenu = inlineEditorContext != null &&
+        mode === ViewDispatcherMode.Editor &&
+        !isRootDispatcherElement &&
+        !isContextMenuDeniedElement;
+
+    if (!canShowContextMenu) {
         return null;
     }
 
