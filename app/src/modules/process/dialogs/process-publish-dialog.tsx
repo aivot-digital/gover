@@ -48,6 +48,8 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
 
     const [allNodeProblems, setAllNodeProblems] = useState<ProcessNodeProblems[]>([]);
     const [isValidating, setIsValidating] = useState<boolean>(false);
+    const isReadyToPublish = canPublish && !isValidating && allNodeProblems.length === 0;
+
     useEffect(() => {
         setIsValidating(true);
         new ProcessDefinitionVersionApiService()
@@ -152,8 +154,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                 }
 
                 {
-                    !isValidating &&
-                    allNodeProblems.length === 0 &&
+                    isReadyToPublish &&
                     replacesPublishedVersion &&
                     <AlertComponent
                         color="warning"
@@ -165,8 +166,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                 }
 
                 {
-                    !isValidating &&
-                    allNodeProblems.length === 0 &&
+                    isReadyToPublish &&
                     !replacesPublishedVersion &&
                     <AlertComponent
                         color="success"
