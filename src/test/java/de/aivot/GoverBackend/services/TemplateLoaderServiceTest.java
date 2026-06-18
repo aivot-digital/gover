@@ -419,7 +419,7 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
-    void formTemplate_BlankPrintDoesNotForcePageBreakBeforeFirstStepWithoutIntroductionStep() {
+    void formTemplate_BlankPrintDoesNotRenderPageBreakBeforeStepsWithoutIntroductionStep() {
         var firstStepElement = new GenericStepElement()
                 .setTitle("Erster Abschnitt");
         var secondStepElement = new GenericStepElement()
@@ -448,11 +448,12 @@ class TemplateLoaderServiceTest {
                 TemplateMode.HTML
         );
 
-        assertEquals(1, countOccurrences(html, "<section class=\"step page-break-before\">"));
+        assertEquals(2, countOccurrences(html, "class=\"step\""));
+        assertFalse(html.contains("page-break-before"));
     }
 
     @Test
-    void formTemplate_BlankPrintKeepsPageBreakBeforeFirstStepWhenIntroductionStepExists() {
+    void formTemplate_BlankPrintDoesNotRenderPageBreakBeforeStepsWhenIntroductionStepExists() {
         var introductionStep = new IntroductionStepElement();
         var firstStepElement = new GenericStepElement()
                 .setTitle("Erster Abschnitt");
@@ -482,7 +483,8 @@ class TemplateLoaderServiceTest {
                 TemplateMode.HTML
         );
 
-        assertEquals(2, countOccurrences(html, "<section class=\"step page-break-before\">"));
+        assertEquals(2, countOccurrences(html, "class=\"step\""));
+        assertFalse(html.contains("page-break-before"));
     }
 
     private int countOccurrences(String haystack, String needle) {
