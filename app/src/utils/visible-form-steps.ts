@@ -28,3 +28,27 @@ export function extractVisibleFormSteps(
 
     return visibleChildren;
 }
+
+// Keeps an index inside the currently visible step range; null means there is no step to render.
+export function resolveVisibleFormStepIndex(currentStep: number, totalStepCount: number): number | null {
+    if (totalStepCount <= 0) {
+        return null;
+    }
+
+    return Math.min(Math.max(currentStep, 0), totalStepCount - 1);
+}
+
+// Preserves the active step by id across insertions/deletions; if it was removed, falls back to a valid index.
+export function resolveVisibleFormStepIndexAfterChange(
+    currentStep: number,
+    visibleStepIds: string[],
+    previousActiveStepId: string | null | undefined,
+): number | null {
+    const retainedActiveStepIndex = previousActiveStepId == null ? -1 : visibleStepIds.indexOf(previousActiveStepId);
+
+    if (retainedActiveStepIndex !== -1) {
+        return retainedActiveStepIndex;
+    }
+
+    return resolveVisibleFormStepIndex(currentStep, visibleStepIds.length);
+}

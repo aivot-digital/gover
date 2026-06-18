@@ -1,4 +1,4 @@
-import React, {useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import Stepper from '@mui/material/Stepper';
@@ -7,7 +7,7 @@ import Chip from '@mui/material/Chip';
 import Tooltip from '@mui/material/Tooltip';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {nextStep, previousStep, selectCurrentStep, selectUpcomingStepDirection} from '../../slices/stepper-slice';
+import {nextStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {type FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {type BaseViewProps} from '../../views/base-view';
@@ -20,7 +20,12 @@ import {walkAuthoredElementValues} from '../../utils/element-data-utils';
 import {FormEntity} from '../../modules/forms/entities/form-entity';
 import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
-import {extractVisibleFormSteps, type VisibleFormStepElement} from '../../utils/visible-form-steps';
+import {
+    extractVisibleFormSteps,
+    resolveVisibleFormStepIndex,
+    resolveVisibleFormStepIndexAfterChange,
+    type VisibleFormStepElement,
+} from '../../utils/visible-form-steps';
 import {Stack, Typography, useTheme} from '@mui/material';
 import {useRootStructureActionsContext} from './root-structure-actions-context';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
@@ -34,6 +39,15 @@ function extractCurrentStep(currentStep: number, allVisibleSteps: VisibleFormSte
         return null;
     }
     return allVisibleSteps[currentStep];
+}
+
+// Compares the visible step order so we can detect structural changes without relying on array identity.
+function areStepIdsEqual(left: string[] | null | undefined, right: string[]): boolean {
+    if (left == null || left.length !== right.length) {
+        return false;
+    }
+
+    return left.every((id, index) => id === right[index]);
 }
 
 export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>) {
@@ -68,13 +82,33 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
     } = element;
 
     // Collecting all steps including the fixed steps
-    const allVisibleSteps = useMemo(() => extractVisibleFormSteps(children, derivedData), [children, derivedData]);
-
-    // Extract the current step based on the current step index and all visible steps
-    const currentStepElement = useMemo(() => extractCurrentStep(currentStep, allVisibleSteps), [currentStep, allVisibleSteps]);
+    const allVisibleSteps = useMemo(() => extractVisibleFormSteps(children, derivedData), [
+        children,
+        derivedData,
+    ]);
 
     // Determine the total number of steps
     const totalStepCount = useMemo(() => allVisibleSteps.length, [allVisibleSteps]);
+    const visibleStepIds = useMemo(() => allVisibleSteps.map((step) => step.id), [allVisibleSteps]);
+    const previousVisibleStepIdsRef = useRef<string[] | null>(null);
+    const previousActiveStepIdRef = useRef<string | null>(null);
+    const visibleStepIdsChanged = previousVisibleStepIdsRef.current != null &&
+        !areStepIdsEqual(previousVisibleStepIdsRef.current, visibleStepIds);
+    const activeStepIndex = visibleStepIdsChanged ?
+        resolveVisibleFormStepIndexAfterChange(currentStep, visibleStepIds, previousActiveStepIdRef.current) :
+        resolveVisibleFormStepIndex(currentStep, totalStepCount);
+
+    // Extract the current step based on the current step index and all visible steps
+    const currentStepElement = useMemo(() => {
+        if (activeStepIndex == null) {
+            return null;
+        }
+
+        return extractCurrentStep(activeStepIndex, allVisibleSteps);
+    }, [
+        activeStepIndex,
+        allVisibleSteps,
+    ]);
 
     // Create a ref for each step to allow scrolling to the step when it becomes active.
     const stepRefs = useRef(allVisibleSteps.map(() => React.createRef<HTMLDivElement>()));
@@ -82,9 +116,25 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
     const [isBusyNavigating, setIsBusyNavigating] = useState(false);
     const [hasSteppedOnce, setHasSteppedOnce] = useState(false);
 
+    useEffect(() => {
+        // Keep the persisted step index aligned with mutable editor structures.
+        // If the active step still exists, stay on it; otherwise fall back to the same index or the last available step.
+        if (activeStepIndex != null && activeStepIndex !== currentStep) {
+            dispatch(setCurrentStep(activeStepIndex));
+        }
+
+        previousVisibleStepIdsRef.current = visibleStepIds;
+        previousActiveStepIdRef.current = activeStepIndex == null ? null : visibleStepIds[activeStepIndex] ?? null;
+    }, [
+        activeStepIndex,
+        currentStep,
+        dispatch,
+        visibleStepIds,
+    ]);
+
     const handleNextStep = async () => {
         // Check if the form is loaded. If not, this handler should not run.
-        if (form == null) {
+        if (form == null || activeStepIndex == null || currentStepElement == null) {
             return;
         }
         setIsBusyNavigating(true);
@@ -92,8 +142,8 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
         // Check if the current step is valid
         const derivationData = await onDerive(
             authoredElementValues,
-            [currentStepElement?.id ?? ''],
-            (children ?? []).filter(step => step.id !== currentStepElement?.id).map(step => step.id),
+            [currentStepElement.id],
+            (children ?? []).filter((step) => step.id !== currentStepElement.id).map((step) => step.id),
         );
 
         const currentPageHasErrors = hasAnyErrorRecursively(derivationData.elementStates);
@@ -104,7 +154,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
         }
 
         // Check if submit step
-        if (currentStep === (totalStepCount - 1)) {
+        if (activeStepIndex === (totalStepCount - 1)) {
             await onEvent(authoredElementValues, SUBMIT_EVENT);
         }
 
@@ -118,7 +168,11 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
     };
 
     const handlePreviousStep = () => {
-        dispatch(previousStep());
+        if (activeStepIndex == null) {
+            return;
+        }
+
+        dispatch(setCurrentStep(activeStepIndex - 1));
         onResetErrors();
     };
 
@@ -190,7 +244,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
 
                 {
                     totalStepCount > 0 &&
-                    currentStep < totalStepCount &&
+                    activeStepIndex != null &&
                     <Stepper
                         sx={{
                             mt: 8,
@@ -202,14 +256,14 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                                 ml: 0,
                             },
                         }}
-                        activeStep={currentStep}
+                        activeStep={activeStepIndex}
                         orientation="vertical"
                     >
                         {
                             allVisibleSteps
                                 .map((step, index) => (
                                     <CustomStep
-                                        key={index}
+                                        key={step.id}
                                         step={step}
                                         stepIndex={index}
                                         isFirstStep={index === 0}
@@ -217,7 +271,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
                                         isSubmitStep={step.type === ElementType.SubmitStep}
                                         onNext={handleNextStep}
                                         onPrevious={handlePreviousStep}
-                                        active={currentStep === index}
+                                        active={activeStepIndex === index}
                                         navDirection={upcomingStepDirection}
                                         stepRefs={stepRefs}
                                         scrollContainerRef={scrollContainerRef}
@@ -248,7 +302,7 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
 
             {
                 totalStepCount > 0 &&
-                currentStep < totalStepCount &&
+                activeStepIndex != null &&
                 <Container
                     sx={{
                         textAlign: 'left',
