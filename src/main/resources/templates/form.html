@@ -64,7 +64,7 @@
         *********************************************************************** */-->
         <section
                 th:insert="./form-parts/zahlungsinformationen.html"
-                th:class="${ base.isCitizenPrint ? 'page-break-before' : '' }"
+                th:class="${ base.isCitizenPrint ? '' : '' }"
                 th:if="${ base.isNotBlankPrint && paymentTransaction != null }"
         ></section>
 
@@ -86,7 +86,7 @@
                 th:each="step, stepStat : ${ elements }"
                 th:if="${ step.element.type.name == 'Step' }"
         >
-            <section th:class="'step ' + ${ base.isBlankPrint && (form.rootElement?.introductionStep != null || !stepStat.first) ? 'page-break-before' : '' }">
+            <section th:class="'step ' + ${ base.isBlankPrint && (form.rootElement?.introductionStep != null || !stepStat.first) ? '' : '' }" style="margin-top: 1cm;">
                 <!--/* Überschriften von Abschnitten haben immer die größe H2 */-->
                 <h2
                         th:if="${ #strings.isEmpty(step.element.title) }"

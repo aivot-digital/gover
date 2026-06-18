@@ -8,7 +8,7 @@
 
 <section
         th:fragment="payment-information"
-        th:class="${ base.isCitizenPrint ? 'page-break-before' : '' }"
+        th:class="${ base.isCitizenPrint ? '' : '' }"
         th:if="${ base.isNotBlankPrint && paymentTransaction != null }"
 >
     <h2>Zahlungsinformationen</h2>
