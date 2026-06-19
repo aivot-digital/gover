@@ -17,8 +17,10 @@ import {useElementTreeEditorContext} from './element-tree-editor-context';
 const exampleOverrideCode = `(function(){
     // Hier kann der Code eingefügt werden, um die Struktur des Elements zu überschreiben.
     // Die Funktion muss eine gültige Elementstruktur zurückgeben.
+    // Die felder id, type und destinationKey können nicht überschrieben werden.
     return {
         ...element,
+        // Hier können Felder hinzugefügt oder überschrieben werden
     };
 })();`;
 
