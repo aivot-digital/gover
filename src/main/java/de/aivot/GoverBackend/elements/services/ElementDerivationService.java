@@ -406,6 +406,13 @@ public class ElementDerivationService {
                     throw new DerivationException(currentElement, "Das abgeleitete Element hat einen anderen Typ als das ursprüngliche Element");
                 }
 
+                // Overriding destination keys is not allowed for input elements, so we check if the destination keys match when both the current and the resolved element are input elements
+                if (currentElement instanceof BaseInputElement<?> i && resolvedElement instanceof BaseInputElement<?> r) {
+                    if (!Objects.equals(i.getDestinationKey(), r.getDestinationKey())) {
+                        throw new DerivationException(currentElement, "Das abgeleitete Element hat einen anderen Destination Key als das ursprüngliche Element");
+                    }
+                }
+
                 // Return the resolved element as the override
                 return resolvedElement;
             } else {
