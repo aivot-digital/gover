@@ -248,7 +248,7 @@ export class AssetsApiService extends BaseApiService {
         });
     }
 
-    public retrieveByKey(key: string): Promise<VStorageIndexItemWithAssetEntity> {
-        return this.get<VStorageIndexItemWithAssetEntity>(`/api/assets-by-key/${key}/`);
+    public retrieveByKey(key: string, options?: RequestOptions): Promise<VStorageIndexItemWithAssetEntity> {
+        return this.get<VStorageIndexItemWithAssetEntity>(`/api/assets-by-key/${key}/`, options);
     }
 }
