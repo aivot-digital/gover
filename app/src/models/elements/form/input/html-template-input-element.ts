@@ -7,7 +7,7 @@ export interface HtmlTemplateInputElement extends BaseInputElement<ElementType.H
 
 export interface HtmlTemplateInputValue {
     assetKey: string | null;
-    slots: Record<string, string | null>;
+    slots: Record<string, string | null> | null;
 }
 
 export function isHtmlTemplateInputElement(
