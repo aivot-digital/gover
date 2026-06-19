@@ -1,9 +1,10 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import de.aivot.GoverBackend.asset.entities.AssetEntity;
-import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
+import de.aivot.GoverBackend.elements.models.elements.form.input.HtmlTemplateInputElementResolver;
+import de.aivot.GoverBackend.elements.models.elements.form.input.HtmlTemplateInputElementValue;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
@@ -79,9 +80,11 @@ class PdfActionNodeV1Test {
 
     @Test
     void init_SplitsHtmlBlocksIntoContentHeaderAndFooter() throws Exception {
-        var html = "<html><body>::footer::<div>Footer</div></body></html>\n"
+        var html = "<html><body><div>Header</div></body></html>\n"
+                + "<!-- KOPFZEILE -->\n"
                 + "<html><body><main>Body</main></body></html>\n"
-                + "<html><body>::header::<div>Header</div></body></html>";
+                + "<!-- FUSSZEILE -->\n"
+                + "<html><body><div>Footer</div></body></html>";
 
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context(html)));
 
@@ -110,7 +113,8 @@ class PdfActionNodeV1Test {
     @Test
     void init_RendersAssetTemplateBeforeSplittingHtmlSections() throws Exception {
         var assetKey = UUID.randomUUID();
-        var html = "<html><head>{% useBlock sharedStyles %}</head><body>::header::<div>Header</div></body></html>"
+        var html = "<html><head>{% useBlock sharedStyles %}</head><body><div>Header</div></body></html>"
+                + "<!-- KOPFZEILE -->"
                 + "<html><head>{% useBlock sharedStyles %}</head><body><main>Body</main></body></html>"
                 + "{% block sharedStyles %}<style>.shared{color:red;}</style>{% endblock %}";
 
@@ -171,18 +175,24 @@ class PdfActionNodeV1Test {
         var configuration = new PdfActionNodeV1.PdfActionNodeConfig();
         configuration.fileName = "report";
         configuration.contentHtmlSource = PdfActionNodeV1.PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY;
-        configuration.contentHtmlAssetKey = assetKey.toString();
+        configuration.contentHtmlTemplate = new HtmlTemplateInputElementValue()
+                .setAssetKey(assetKey.toString())
+                .setSlots(Map.of());
         return configuration;
     }
 
     private PdfActionNodeV1 createNode(TemplateRenderService templateRenderService) {
+        var htmlTemplateInputElementResolver = new HtmlTemplateInputElementResolver(
+                assetService,
+                storageService,
+                templateRenderService
+        );
+
         return new PdfActionNodeV1(
                 pdfService,
                 templateRenderService,
                 processInstanceAttachmentService,
-                assetService,
-                mock(VStorageIndexItemWithAssetRepository.class),
-                storageService
+                htmlTemplateInputElementResolver
         );
     }
 

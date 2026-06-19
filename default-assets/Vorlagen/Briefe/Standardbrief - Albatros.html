@@ -1,11 +1,27 @@
-<!-- Das ist die Vorlage für die Kopfzeile der erzeugten PDF-Datei -->
-<html lang="de"
-      type="::header::">
+<html lang="de">
     <head>
         <title>
             Standardbrief - Albatros - Header
         </title>
+
         <style>
+            html {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
+                font-size: 12px;
+            }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
             #header {
                 width: 100%;
                 display: flex;
@@ -15,25 +31,29 @@
                 padding: 0.5cm;
             }
         </style>
-        {% useBlock sharedBaseStyles %}
     </head>
     <body>
         <div id="header">
-            <div>Standardbrief - Albatros</div>
+            <div
+                    data-slot="header_left"
+                    data-slot-type="text"
+                    data-slot-label="Titel des Briefs"
+                    data-slot-hint="Dieser Text wird in der Kopfzeile der PDF-Datei angezeigt. Er sollte den Titel des Briefs enthalten."
+            >
+                Standardbrief - Albatros
+            </div>
             <div>{{ _date_v1.today() }}</div>
         </div>
     </body>
 </html>
 
-<!-- Das ist die Vorlage für die konkreten Seiten der erzeugten PDF-Datei -->
-<html lang="de"
-      type="::content::">
+<!-- KOPFZEILE -->
+
+<html lang="de">
     <head>
         <title>
             Standardbrief - Albatros
         </title>
-
-        {% useBlock sharedBaseStyles %}
 
         <style>
             @font-face {
@@ -73,6 +93,19 @@
 
             html {
                 font-family: "Public Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
+                font-size: 12px;
+            }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+
+            * {
+                box-sizing: border-box;
             }
 
             #briefkopf .logo-container {
@@ -104,12 +137,22 @@
             #briefkopf .anschrift-absender-container .absender h2 {
                 margin-top: 0;
             }
+
+            #inhalt .betreff {
+                margin-bottom: 0.5cm;
+            }
+
+            #inhalt .nachricht {
+                margin-bottom: 2cm;
+            }
         </style>
     </head>
     <body>
         <div id="briefkopf">
             <div class="logo-container">
                 <img
+                        data-slot="logo"
+                        data-slot-type="image"
                         width="200"
                         src="/api/public/assets/1/files/Logos/Logo%20-%20Bad%20Musterstadt.png"
                         alt="Logo der Stadtverwaltung Bad Musterstadt"
@@ -117,16 +160,28 @@
             </div>
             <div class="anschrift-absender-container">
                 <div class="anschrift">
-                    <p class="overline">
-                        Stadverwaltung &bullet; Bad Musterstadt &bullet; Musterstraße 123 &bullet; 12345 Bad Musterstadt
+                    <p
+                            data-slot="absender_overline"
+                            data-slot-type="text"
+                            class="overline"
+                    >
+                        Stadtverwaltung &bullet; Bad Musterstadt &bullet; Musterstraße 123 &bullet; 12345 Bad
+                        Musterstadt
                     </p>
-                    <p>
+                    <div
+                            data-slot="anschrift"
+                            data-slot-type="richtext"
+                    >
                         {{ $.person.vorname }} {{ $.person.nachname }} <br/>
                         {{ $.anschrift.strasse }} {{ $.anschrift.hausnummer }} <br/>
                         {{ $.anschrift.plz }} {{ $.anschrift.ort }}
-                    </p>
+                    </div>
                 </div>
-                <div class="absender">
+                <div
+                        data-slot="absender"
+                        data-slot-type="richtext"
+                        class="absender"
+                >
                     <h2>Der Magistrat</h2>
                     <p>
                         Fachdienst 50 - Soziale Leistungen <br/>
@@ -149,34 +204,61 @@
             </div>
         </div>
         <div id="inhalt">
-            <h2>
+            <h2
+                    class="betreff"
+                    data-slot="betreff"
+                    data-slot-type="text"
+            >
                 Ihre Anfrage beim Sozialamt Bad Mustertstadt
             </h2>
 
-            <p>
-                Sehr geehrte/r {{ $.person.vorname }} {{ $.person.nachname }},
-            </p>
+            <div
+                    class="nachricht"
+                    data-slot="nachricht"
+                    data-slot-type="richtext"
+            >
+                Hallo {{ $.person.vorname }} {{ $.person.nachname }}, <br/><br/>
+                dies ist Ihre Nachricht
+            </div>
 
-            <p>
-                wir haben Ihren Antrag erhalten und bearbeiten ihn.
-            </p>
-
-            <p>
+            <div
+                    class="signatur"
+                    data-slot="signatur"
+                    data-slot-type="richtext"
+            >
                 Mit freundlichen Grüßen <br/>
-                Stadverwaltung - Bad Musterstadt
-            </p>
+                Stadtverwaltung - Bad Musterstadt
+            </div>
         </div>
     </body>
 </html>
 
-<!-- Das ist die Vorlage für die Fußzeile der erzeugten PDF-Datei -->
-<html lang="de"
-      type="::footer::">
+<!-- FUSSZEILE -->
+
+<html lang="de">
     <head>
         <title>
             Standardbrief - Albatros - Footer
         </title>
+
         <style>
+            html {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+                -webkit-font-smoothing: antialiased;
+                -moz-osx-font-smoothing: grayscale;
+                text-rendering: optimizeLegibility;
+                font-size: 12px;
+            }
+
+            html, body {
+                margin: 0;
+                padding: 0;
+            }
+
+            * {
+                box-sizing: border-box;
+            }
+
             #footer {
                 width: 100%;
                 display: flex;
@@ -186,32 +268,10 @@
                 padding: 0.5cm;
             }
         </style>
-        {% useBlock sharedBaseStyles %}
     </head>
     <body>
         <span id="footer">
-            Seite <span class="pageNumber"></span> &nbsp; von &nbsp; <span class="totalPages"></span>
+            Seite&nbsp;<span class="pageNumber">X</span>&nbsp;von&nbsp;<span class="totalPages">X</span>
         </span>
     </body>
 </html>
-
-{% block sharedBaseStyles %}
-<style>
-    html {
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
-        -webkit-font-smoothing: antialiased;
-        -moz-osx-font-smoothing: grayscale;
-        text-rendering: optimizeLegibility;
-        font-size: 12px;
-    }
-
-    html, body {
-        margin: 0;
-        padding: 0;
-    }
-
-    * {
-        box-sizing: border-box;
-    }
-</style>
-{% endblock %}

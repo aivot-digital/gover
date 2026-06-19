@@ -11,15 +11,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DefaultPdfTemplateTest {
+    private static final String HEADER_HTML_SECTION_SEPARATOR = "<!-- KOPFZEILE -->";
+    private static final String FOOTER_HTML_SECTION_SEPARATOR = "<!-- FUSSZEILE -->";
     private static final Path ALBATROS_TEMPLATE = Path.of(
             "default-assets",
             "Vorlagen",
             "Briefe",
             "Standardbrief - Albatros.html"
-    );
-    private static final Pattern HTML_DOCUMENT_BLOCK_PATTERN = Pattern.compile(
-            "<html\\b.*?</html>",
-            Pattern.CASE_INSENSITIVE | Pattern.DOTALL
     );
     private static final Pattern CSS_URL_PATTERN = Pattern.compile("url\\s*\\(", Pattern.CASE_INSENSITIVE);
     private static final Pattern NON_DATA_SRC_PATTERN = Pattern.compile(
@@ -30,26 +28,28 @@ class DefaultPdfTemplateTest {
     @Test
     void albatrosHeaderAndFooterAvoidExternalAssets() throws IOException {
         var template = Files.readString(ALBATROS_TEMPLATE);
-        var matcher = HTML_DOCUMENT_BLOCK_PATTERN.matcher(template);
-        var checkedSections = 0;
+        var headerSeparatorIndex = template.indexOf(HEADER_HTML_SECTION_SEPARATOR);
+        var footerSeparatorIndex = template.indexOf(FOOTER_HTML_SECTION_SEPARATOR);
 
-        while (matcher.find()) {
-            var htmlBlock = matcher.group();
-            if (!htmlBlock.contains("::header::") && !htmlBlock.contains("::footer::")) {
-                continue;
-            }
+        assertTrue(headerSeparatorIndex >= 0, "Expected a header section separator in the Albatros template.");
+        assertTrue(footerSeparatorIndex >= 0, "Expected a footer section separator in the Albatros template.");
+        assertTrue(
+                headerSeparatorIndex < footerSeparatorIndex,
+                "Expected the header section separator before the footer section separator."
+        );
 
-            checkedSections++;
-            assertFalse(
-                    CSS_URL_PATTERN.matcher(htmlBlock).find(),
-                    "Header/Footer HTML must not load external CSS assets, because Gotenberg times them out."
-            );
-            assertFalse(
-                    NON_DATA_SRC_PATTERN.matcher(htmlBlock).find(),
-                    "Header/Footer HTML must not reference external src assets, because Gotenberg times them out."
-            );
-        }
+        assertSectionAvoidsExternalAssets(template.substring(0, headerSeparatorIndex));
+        assertSectionAvoidsExternalAssets(template.substring(footerSeparatorIndex + FOOTER_HTML_SECTION_SEPARATOR.length()));
+    }
 
-        assertTrue(checkedSections >= 2, "Expected header and footer sections in the Albatros template.");
+    private static void assertSectionAvoidsExternalAssets(String htmlBlock) {
+        assertFalse(
+                CSS_URL_PATTERN.matcher(htmlBlock).find(),
+                "Header/Footer HTML must not load external CSS assets, because Gotenberg times them out."
+        );
+        assertFalse(
+                NON_DATA_SRC_PATTERN.matcher(htmlBlock).find(),
+                "Header/Footer HTML must not reference external src assets, because Gotenberg times them out."
+        );
     }
 }

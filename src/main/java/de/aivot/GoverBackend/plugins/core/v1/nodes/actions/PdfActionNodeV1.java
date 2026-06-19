@@ -1,8 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.asset.repositories.VStorageIndexItemWithAssetRepository;
-import de.aivot.GoverBackend.asset.services.AssetService;
 import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
@@ -37,17 +35,14 @@ import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionI
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
 import de.aivot.GoverBackend.services.PdfService;
-import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Component
@@ -62,8 +57,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     private static final String OUTPUT_NAME_ATTACHMENT_KEY = "attachmentKey";
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
-    private static final String HEADER_HTML_MARKER = "::header::";
-    private static final String FOOTER_HTML_MARKER = "::footer::";
+    private static final String HEADER_HTML_SECTION_SEPARATOR = "<!-- KOPFZEILE -->";
+    private static final String FOOTER_HTML_SECTION_SEPARATOR = "<!-- FUSSZEILE -->";
     private static final Pattern HTML_DOCUMENT_BLOCK_PATTERN = Pattern.compile(
             "<html\\b.*?</html>",
             Pattern.CASE_INSENSITIVE | Pattern.DOTALL
@@ -72,22 +67,16 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     private final PdfService pdfService;
     private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
-    private final AssetService assetService;
-    private final VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository;
-    private final StorageService storageService;
+    private final HtmlTemplateInputElementResolver htmlTemplateInputElementResolver;
 
     public PdfActionNodeV1(PdfService pdfService,
                            TemplateRenderService templateRenderService,
                            ProcessInstanceAttachmentService processInstanceAttachmentService,
-                           AssetService assetService,
-                           VStorageIndexItemWithAssetRepository vStorageIndexItemWithAssetRepository,
-                           StorageService storageService) {
+                           HtmlTemplateInputElementResolver htmlTemplateInputElementResolver) {
         this.pdfService = pdfService;
         this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
-        this.assetService = assetService;
-        this.vStorageIndexItemWithAssetRepository = vStorageIndexItemWithAssetRepository;
-        this.storageService = storageService;
+        this.htmlTemplateInputElementResolver = htmlTemplateInputElementResolver;
     }
 
     @Nonnull
@@ -162,7 +151,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 });
 
         layout
-                .findChild(PdfActionNodeConfig.CONTENT_HTML_ASSET_KEY_FIELD_ID, SelectInputElement.class)
+                .findChild(PdfActionNodeConfig.CONTENT_HTML_ASSET_KEY_FIELD_ID, HtmlTemplateInputElement.class)
                 .ifPresent(element -> {
                     element.setVisibility(ElementVisibilityFunctions.of(
                                     NoCodeExpression.of(
@@ -172,15 +161,6 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                                     )
                             )
                             .recalculateReferencedIds());
-
-                    element.setOptions(vStorageIndexItemWithAssetRepository
-                            .findAllByMimeType("text/html")
-                            .stream()
-                            .map((ass) -> SelectInputElementOption.of(
-                                    ass.getAssetKey().toString(),
-                                    ass.getPathFromRoot()
-                            ))
-                            .toList());
                 });
 
         return layout;
@@ -359,35 +339,30 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         }
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE.equals(contentSource)) {
-            return templateRenderService
+            var res = templateRenderService
                     .interpolate(context.getCurrentProcessExecutionData(), configuration.contentHtml);
+            if (StringUtils.isNullOrEmpty(res)) {
+                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                        "Der HTML-Inhalt für das PDF ist leer oder konnte nicht interpoliert werden."
+                );
+            }
+            return res;
         }
 
         if (PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY.equals(contentSource)) {
-            var assetKeyStr = templateRenderService
-                    .interpolate(context.getCurrentProcessExecutionData(), configuration.contentHtmlAssetKey);
-            if (StringUtils.isNullOrEmpty(assetKeyStr)) {
+            if (configuration.contentHtmlTemplate == null) {
                 throw new ProcessNodeExecutionExceptionMissingValue(
-                        "Der Asset-Schlüssel für die PDF-Vorlage wurde nicht angegeben."
+                        "Es muss eine Datei für die HTML-Vorlage ausgewählt sein."
                 );
             }
 
-            UUID assetKey;
-            try {
-                assetKey = UUID.fromString(assetKeyStr.trim());
-            } catch (IllegalArgumentException e) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        e,
-                        "Der Asset-Schlüssel für die PDF-Vorlage ist ungültig: %s",
-                        assetKeyStr
-                );
-            }
-
-            final var asset = retrieveAsset(assetKey);
-            var assetTemplate = loadAssetContentAsString(asset.getStorageProviderId(), asset.getStoragePathFromRoot());
+            var resolvedTemplate = htmlTemplateInputElementResolver.resolve(
+                    configuration.contentHtmlTemplate,
+                    context.getCurrentProcessExecutionData()
+            );
             // Render the full asset template before splitting the individual HTML documents so shared
             // blocks defined outside a specific <html> section remain available to all use sites.
-            return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), assetTemplate);
+            return templateRenderService.interpolate(context.getCurrentProcessExecutionData(), resolvedTemplate);
         }
 
         throw new ProcessNodeExecutionExceptionInvalidConfiguration(
@@ -398,66 +373,62 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
     @Nonnull
     private PdfHtmlSections splitHtmlSections(@Nonnull String resolvedHtml) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        var matcher = HTML_DOCUMENT_BLOCK_PATTERN.matcher(resolvedHtml);
-        if (!matcher.find()) {
-            return new PdfHtmlSections(resolvedHtml, "", "");
+        var headerSeparatorCount = countOccurrences(resolvedHtml, HEADER_HTML_SECTION_SEPARATOR);
+        var footerSeparatorCount = countOccurrences(resolvedHtml, FOOTER_HTML_SECTION_SEPARATOR);
+
+        if (headerSeparatorCount > 1) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die PDF-Vorlage enthält mehrere Abschnittstrenner %s.",
+                    StringUtils.quote(HEADER_HTML_SECTION_SEPARATOR)
+            );
+        }
+        if (footerSeparatorCount > 1) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die PDF-Vorlage enthält mehrere Abschnittstrenner %s.",
+                    StringUtils.quote(FOOTER_HTML_SECTION_SEPARATOR)
+            );
         }
 
-        matcher.reset();
-
-        String contentHtml = null;
-        String headerHtml = "";
-        String footerHtml = "";
-
-        while (matcher.find()) {
-            var htmlBlock = matcher.group();
-            var isHeaderBlock = htmlBlock.contains(HEADER_HTML_MARKER);
-            var isFooterBlock = htmlBlock.contains(FOOTER_HTML_MARKER);
-
-            if (isHeaderBlock && isFooterBlock) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Ein HTML-Block der PDF-Vorlage darf nicht gleichzeitig %s und %s enthalten.",
-                        StringUtils.quote(HEADER_HTML_MARKER),
-                        StringUtils.quote(FOOTER_HTML_MARKER)
-                );
-            }
-
-            var sanitizedHtmlBlock = sanitizeHtmlBlock(htmlBlock);
-
-            if (isHeaderBlock) {
-                if (StringUtils.isNotNullOrEmpty(headerHtml)) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Die PDF-Vorlage enthält mehrere Header-HTML-Blöcke mit %s.",
-                            StringUtils.quote(HEADER_HTML_MARKER)
-                    );
-                }
-                headerHtml = sanitizedHtmlBlock;
-                continue;
-            }
-
-            if (isFooterBlock) {
-                if (StringUtils.isNotNullOrEmpty(footerHtml)) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Die PDF-Vorlage enthält mehrere Footer-HTML-Blöcke mit %s.",
-                            StringUtils.quote(FOOTER_HTML_MARKER)
-                    );
-                }
-                footerHtml = sanitizedHtmlBlock;
-                continue;
-            }
-
-            if (StringUtils.isNotNullOrEmpty(contentHtml)) {
-                throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                        "Die PDF-Vorlage enthält mehrere HTML-Blöcke ohne Marker für den Dokumentinhalt."
-                );
-            }
-
-            contentHtml = sanitizedHtmlBlock;
+        if (headerSeparatorCount == 0 && footerSeparatorCount == 0) {
+            return splitSingleContentHtml(resolvedHtml);
         }
 
+        var headerSeparatorIndex = resolvedHtml.indexOf(HEADER_HTML_SECTION_SEPARATOR);
+        var footerSeparatorIndex = resolvedHtml.indexOf(FOOTER_HTML_SECTION_SEPARATOR);
+
+        if (headerSeparatorIndex >= 0 && footerSeparatorIndex >= 0 && footerSeparatorIndex < headerSeparatorIndex) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Der Abschnittstrenner %s muss nach %s stehen.",
+                    StringUtils.quote(FOOTER_HTML_SECTION_SEPARATOR),
+                    StringUtils.quote(HEADER_HTML_SECTION_SEPARATOR)
+            );
+        }
+
+        var headerHtml = "";
+        var contentAndFooterHtml = resolvedHtml;
+        if (headerSeparatorIndex >= 0) {
+            headerHtml = normalizeHtmlSection(
+                    resolvedHtml.substring(0, headerSeparatorIndex),
+                    "Kopfzeile"
+            );
+            contentAndFooterHtml = resolvedHtml.substring(headerSeparatorIndex + HEADER_HTML_SECTION_SEPARATOR.length());
+        }
+
+        var contentHtml = contentAndFooterHtml;
+        var footerHtml = "";
+        footerSeparatorIndex = contentAndFooterHtml.indexOf(FOOTER_HTML_SECTION_SEPARATOR);
+        if (footerSeparatorIndex >= 0) {
+            contentHtml = contentAndFooterHtml.substring(0, footerSeparatorIndex);
+            footerHtml = normalizeHtmlSection(
+                    contentAndFooterHtml.substring(footerSeparatorIndex + FOOTER_HTML_SECTION_SEPARATOR.length()),
+                    "Fußzeile"
+            );
+        }
+
+        contentHtml = normalizeHtmlSection(contentHtml, "Inhalt");
         if (StringUtils.isNullOrEmpty(contentHtml)) {
             throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Die PDF-Vorlage enthält keinen HTML-Block für den Dokumentinhalt."
+                    "Die PDF-Vorlage enthält keinen HTML-Abschnitt für den Dokumentinhalt."
             );
         }
 
@@ -465,42 +436,43 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     }
 
     @Nonnull
-    private String sanitizeHtmlBlock(@Nonnull String htmlBlock) {
-        return htmlBlock
-                .replace(HEADER_HTML_MARKER, "")
-                .replace(FOOTER_HTML_MARKER, "");
+    private PdfHtmlSections splitSingleContentHtml(@Nonnull String resolvedHtml) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var contentHtml = normalizeHtmlSection(resolvedHtml, "Inhalt");
+        if (StringUtils.isNullOrEmpty(contentHtml)) {
+            return new PdfHtmlSections(resolvedHtml, "", "");
+        }
+
+        return new PdfHtmlSections(contentHtml, "", "");
     }
 
     @Nonnull
-    private de.aivot.GoverBackend.asset.entities.AssetEntity retrieveAsset(@Nonnull UUID assetKey) throws ProcessNodeExecutionException {
-        try {
-            return assetService
-                    .retrieve(assetKey)
-                    .orElseThrow(() -> new ProcessNodeExecutionExceptionMissingValue(
-                            "Die PDF-Vorlage mit dem Schlüssel %s wurde nicht gefunden.",
-                            assetKey.toString()
-                    ));
-        } catch (ResponseException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(
-                    e,
-                    "Die PDF-Vorlage konnte nicht geladen werden: %s",
-                    e.getMessage()
+    private String normalizeHtmlSection(@Nonnull String htmlSection,
+                                        @Nonnull String sectionName) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var normalizedSection = htmlSection.trim();
+        if (StringUtils.isNullOrEmpty(normalizedSection)) {
+            return "";
+        }
+
+        var matcher = HTML_DOCUMENT_BLOCK_PATTERN.matcher(normalizedSection);
+        if (matcher.find() && matcher.find()) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Der Abschnitt %s der PDF-Vorlage enthält mehrere HTML-Blöcke.",
+                    StringUtils.quote(sectionName)
             );
         }
+
+        return normalizedSection;
     }
 
-    @Nonnull
-    private String loadAssetContentAsString(@Nonnull Integer storageProviderId,
-                                            @Nonnull String storagePathFromRoot) throws ProcessNodeExecutionException {
-        try (var content = storageService.getDocumentContent(storageProviderId, storagePathFromRoot)) {
-            return new String(content.readAllBytes(), StandardCharsets.UTF_8);
-        } catch (ResponseException | IOException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(
-                    e,
-                    "Der Inhalt der PDF-Vorlage konnte nicht geladen werden: %s",
-                    e.getMessage()
-            );
+    private int countOccurrences(@Nonnull String text,
+                                 @Nonnull String search) {
+        var count = 0;
+        var index = 0;
+        while ((index = text.indexOf(search, index)) >= 0) {
+            count++;
+            index += search.length();
         }
+        return count;
     }
 
     private static final class PdfHtmlSections {
@@ -554,11 +526,11 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         })
         public String contentHtml;
 
-        @InputElementPOJOBinding(id = CONTENT_HTML_ASSET_KEY_FIELD_ID, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "PDF-Vorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine zuvor hochgeladene PDF-Vorlage aus."),
+        @InputElementPOJOBinding(id = CONTENT_HTML_ASSET_KEY_FIELD_ID, type = ElementType.HtmlTemplateInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "HTML-Vorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine zuvor hochgeladene HTML-Vorlage aus."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
-        public String contentHtmlAssetKey;
+        public HtmlTemplateInputElementValue contentHtmlTemplate;
     }
 }
