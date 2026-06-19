@@ -49,6 +49,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.ProcessDataKeyInput]: 'Prozessdaten-Schlüssel',
     [ElementType.ProcessAttachmentNameChipInput]: 'Vorgangsanhänge',
     [ElementType.ProcessIdentityIdInput]: 'Prozessidentitäten',
+    [ElementType.HtmlTemplateInput]: 'HTML-Vorlage',
     [ElementType.ProcessAttachmentDisplay]: 'Anhang zum Vorgang',
 };
 

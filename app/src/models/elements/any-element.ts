@@ -43,6 +43,7 @@ import {IdentityConfigElement} from './form/input/identity-config-element';
 import {ProcessAttachmentDisplayElement} from './form/content/process-attachment-display-element';
 import {ProcessAttachmentNameChipInputElement} from './form/input/process-attachment-name-chip-input-element';
 import {ProcessIdentityIdInputElement} from './form/input/process-identity-id-input-element';
+import {HtmlTemplateInputElement} from './form/input/html-template-input-element';
 
 export type AnyElement =
     FormLayoutElement |
@@ -93,6 +94,7 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                             T extends ElementType.ProcessDataKeyInput ? ProcessDataKeyInputFieldElement :
                                                                                                                                                 T extends ElementType.ProcessAttachmentNameChipInput ? ProcessAttachmentNameChipInputElement :
                                                                                                                                                     T extends ElementType.ProcessIdentityIdInput ? ProcessIdentityIdInputElement :
+                                                                                                                                                        T extends ElementType.HtmlTemplateInput ? HtmlTemplateInputElement :
                                                                                                                                                 T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
                                                                                                                                             T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
                                                                                                                                                 T extends ElementType.IdentityConfigElement ? IdentityConfigElement :

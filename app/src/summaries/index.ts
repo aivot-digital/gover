@@ -32,6 +32,7 @@ import {CodeInputSummary} from './code-input-summary';
 import {NoCodeInputSummary} from './no-code-input-summary';
 import {UiDefinitionInputSummary} from './ui-definition-input-summary';
 import {SummaryLayoutSummary} from './summary-layout-summary';
+import {HtmlTemplateInputSummary} from './html-template-input-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -81,5 +82,6 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.ProcessDataKeyInput]: TextFieldSummary,
     [ElementType.ProcessAttachmentNameChipInput]: ChipInputFieldSummary,
     [ElementType.ProcessIdentityIdInput]: ChipInputFieldSummary,
+    [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
     [ElementType.ProcessAttachmentDisplay]: null,
 };

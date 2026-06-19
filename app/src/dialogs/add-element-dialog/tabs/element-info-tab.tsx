@@ -1216,6 +1216,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ProcessDataKeyInput]: null,
     [ElementType.ProcessAttachmentNameChipInput]: null,
     [ElementType.ProcessIdentityIdInput]: null,
+    [ElementType.HtmlTemplateInput]: null,
     [ElementType.CodeInput]: (
         <Box>
             <Typography>

@@ -30,6 +30,7 @@ import {IdentityConfigElement} from './identity-config-element';
 import {ProcessAttachmentNameChipInputElement} from './process-attachment-name-chip-input-element';
 import {ProcessIdentityIdInputElement} from './process-identity-id-input-element';
 import {ElementIsInput} from '../../../../data/element-type/element-is-input';
+import {HtmlTemplateInputElement} from './html-template-input-element';
 
 export type AnyInputElement = (
     CheckboxFieldElement |
@@ -59,6 +60,7 @@ export type AnyInputElement = (
     ProcessDataKeyInputFieldElement |
     ProcessAttachmentNameChipInputElement |
     ProcessIdentityIdInputElement |
+    HtmlTemplateInputElement |
     UiDefinitionInputFieldElement |
     IdentityConfigElement |
     NoCodeInputFieldElement |

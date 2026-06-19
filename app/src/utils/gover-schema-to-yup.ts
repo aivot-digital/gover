@@ -96,6 +96,7 @@ const YupSchemaMap: {
     [ElementType.DataObjectSelect]: dynamicSelectFieldToYup,
     [ElementType.ProcessDataKeyInput]: processDataKeyInputFieldToYup,
     [ElementType.NoCodeInput]: noCodeInputFieldToYup,
+    [ElementType.HtmlTemplateInput]: htmlTemplateInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
     [ElementType.ProcessAttachmentNameChipInput]: chipInputFieldToYup,
     [ElementType.ProcessIdentityIdInput]: chipInputFieldToYup,
@@ -107,6 +108,27 @@ function genericFieldToYup(elem: AnyInputElement): Schema {
     } else {
         return yup.mixed().nullable();
     }
+}
+
+function htmlTemplateInputFieldToYup(elem: AnyInputElement): Schema {
+    let schema: Schema = yup
+        .object()
+        .shape({
+            assetKey: yup.string().nullable(),
+            slots: yup.object().nullable(),
+        })
+        .nullable();
+
+    if (elem.required) {
+        schema = schema
+            .test(
+                'html-template-asset-key-required',
+                `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+                (value: any) => typeof value?.assetKey === 'string' && value.assetKey.trim().length > 0,
+            );
+    }
+
+    return schema;
 }
 
 function textFieldToYup(elem: TextFieldElement): Schema {

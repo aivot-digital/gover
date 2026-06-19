@@ -51,6 +51,7 @@ const typeMap: Record<ElementType, string> = {
     [ElementType.ProcessDataKeyInput]: 'string',
     [ElementType.ProcessAttachmentNameChipInput]: 'string[]',
     [ElementType.ProcessIdentityIdInput]: 'string[]',
+    [ElementType.HtmlTemplateInput]: '{assetKey: string | null; slots: Record<string, string | null>;}',
     [ElementType.ProcessAttachmentDisplay]: 'undefined',
 };
 

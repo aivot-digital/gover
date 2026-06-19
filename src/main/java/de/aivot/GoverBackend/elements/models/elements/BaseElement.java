@@ -75,6 +75,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = ProcessAttachmentDisplayContentElement.class, name = ElementType.ID_ProcessAttachmentDisplay),
         @JsonSubTypes.Type(value = ProcessAttachmentNameChipInputElement.class, name = ElementType.ID_ProcessAttachmentNameChipInput),
         @JsonSubTypes.Type(value = ProcessAttachmentNameChipInputElement.class, name = ElementType.ID_ProcessIdentityIdInput),
+        @JsonSubTypes.Type(value = HtmlTemplateInputElement.class, name = ElementType.ID_HtmlTemplateInput),
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull

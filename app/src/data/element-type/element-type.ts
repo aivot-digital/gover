@@ -47,4 +47,5 @@ export enum ElementType {
     ProcessAttachmentDisplay = 45,
     ProcessAttachmentNameChipInput = 46,
     ProcessIdentityIdInput = 47,
+    HtmlTemplateInput = 48,
 }

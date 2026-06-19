@@ -201,6 +201,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.ProcessDataKeyInput]: null,
     [ElementType.ProcessAttachmentNameChipInput]: null,
     [ElementType.ProcessIdentityIdInput]: null,
+    [ElementType.HtmlTemplateInput]: null,
     [ElementType.ProcessAttachmentDisplay]: null,
 };
 

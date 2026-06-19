@@ -55,6 +55,7 @@ import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/p
 import {ProcessAttachmentNameChipInputElement} from '../models/elements/form/input/process-attachment-name-chip-input-element';
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {getDefaultElementWeight} from './element-widths';
+import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -138,6 +139,7 @@ const elementConstructors: {
     [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
     [ElementType.ProcessAttachmentNameChipInput]: (id: string) => ProcessAttachmentNameChipInputElement;
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
+    [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
     [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
@@ -504,6 +506,10 @@ const elementConstructors: {
         minItems: undefined,
         maxItems: undefined,
         allowDuplicates: false,
+    }),
+    [ElementType.HtmlTemplateInput]: (id) => ({
+        ...makeInputBase(ElementType.HtmlTemplateInput, id),
+        label: 'HTML-Vorlage',
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),
