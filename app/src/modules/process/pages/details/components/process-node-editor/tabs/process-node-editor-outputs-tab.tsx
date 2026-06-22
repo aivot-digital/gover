@@ -46,8 +46,7 @@ export function ProcessNodeEditorOutputsTab() {
                         mt={1}
                         mb={2}
                         maxWidth={400}>
-                Über den eindeutigen Datenschlüssel kann auf die erzeugten Elementdaten dieses Prozesselementes zugegriffen werden.
-                Sie können alle verfügbaren Datenfelder in der {quoteString('Datenstruktur der Ausgangsdaten')} einsehen.
+                Über den eindeutigen Datenschlüssel kann auf die erzeugten Elementdaten dieses Prozesselementes zugegriffen werden (siehe {quoteString('Datenstruktur der Ausgangsdaten')} weiter unten).
             </Typography>
 
             <TextFieldComponent
