@@ -43,13 +43,11 @@ import {useElementSize} from '../../../utils/element-size';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
 import {PrefillFormDialog} from '../../../dialogs/prefill-form-dialog/prefill-form-dialog';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
-import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
 import {type Action} from '../../../components/actions/actions-props';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
-import Preview from '@aivot/mui-material-symbols-400-outlined/dist/preview/Preview';
 import Link from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
 import Contract from '@aivot/mui-material-symbols-400-outlined/dist/contract/Contract';
 import Draw from '@aivot/mui-material-symbols-400-outlined/dist/draw/Draw';
@@ -609,10 +607,6 @@ export function FormNodeEditorPage() {
         }
     };
 
-    const handleOpenPreview = () => {
-        window.open(publicFormLink, '_blank', 'noopener,noreferrer');
-    };
-
     const handleCopyPublicFormLink = async () => {
         try {
             const success = await copyToClipboardText(publicFormLink);
@@ -817,13 +811,6 @@ export function FormNodeEditorPage() {
     };
 
     const moreMenuItems: FormDetailsPageMoreMenuItem[] = [
-        {
-            label: 'Vorschau in neuem Tab öffnen',
-            icon: <Preview/>,
-            endIcon: <OpenInNew fontSize="small"/>,
-            onClick: handleOpenPreview,
-        },
-        'separator',
         {
             label: 'Öffentl. Link in Zwischenablage kopieren',
             icon: <Link/>,
