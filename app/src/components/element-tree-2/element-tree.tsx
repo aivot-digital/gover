@@ -23,6 +23,7 @@ import SearchOff from '@aivot/mui-material-symbols-400-outlined/dist/search-off/
 import {ElementTreeEditor} from './components/element-tree-editor';
 import {useElementEditorNavigation} from '../../hooks/use-element-editor-navigation';
 import {IdentityConfigElementSlotWithProviders} from '../../models/elements/form/input/identity-config-element';
+import {ElementType} from '../../data/element-type/element-type';
 
 export interface ElementTreeProps<T extends AnyElement> {
     value: T;
@@ -546,7 +547,7 @@ function canDropElementInTree(
     }
 
     const acceptedChildren = ElementChildOptions[displayContext][targetParent.type] ?? [];
-    if (!acceptedChildren.includes(sourceInfo.element.type)) {
+    if (tree.type !== ElementType.ConfigLayout && !acceptedChildren.includes(sourceInfo.element.type)) {
         return false;
     }
 
