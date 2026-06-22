@@ -33,20 +33,24 @@ function resolveAllowedChildTypes(props: AddElementDialogProps): Set<ElementType
     let childOptionSet: Set<ElementType> | null = null;
 
     if (props.allParents.length > 1) {
-        for (const par of props.allParents.slice(1)) {
-            const allowedChildOptionOfThisParent = ElementChildOptions[props.displayContext][par.type] ?? [];
-            const allowedChildOptionOfThisParentSet = new Set<ElementType>(allowedChildOptionOfThisParent);
+        if (props.allParents[0].type === ElementType.ConfigLayout) {
+            childOptionSet = new Set<ElementType>(ElementChildOptions[props.displayContext][ElementType.ConfigLayout] ?? []);
+        } else {
+            for (const par of props.allParents.slice(1)) {
+                const allowedChildOptionOfThisParent = ElementChildOptions[props.displayContext][par.type] ?? [];
+                const allowedChildOptionOfThisParentSet = new Set<ElementType>(allowedChildOptionOfThisParent);
 
-            if (childOptionSet == null) {
-                childOptionSet = allowedChildOptionOfThisParentSet;
-            } else {
-                const nextChildOptionSet = new Set<ElementType>();
-                childOptionSet.forEach((type: ElementType) => {
-                    if (allowedChildOptionOfThisParentSet.has(type)) {
-                        nextChildOptionSet.add(type);
-                    }
-                });
-                childOptionSet = nextChildOptionSet;
+                if (childOptionSet == null) {
+                    childOptionSet = allowedChildOptionOfThisParentSet;
+                } else {
+                    const nextChildOptionSet = new Set<ElementType>();
+                    childOptionSet.forEach((type: ElementType) => {
+                        if (allowedChildOptionOfThisParentSet.has(type)) {
+                            nextChildOptionSet.add(type);
+                        }
+                    });
+                    childOptionSet = nextChildOptionSet;
+                }
             }
         }
     } else {
