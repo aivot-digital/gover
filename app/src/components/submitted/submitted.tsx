@@ -1,4 +1,4 @@
-import {Box, Button, Divider, Grid, Link, Typography, useTheme} from '@mui/material';
+import {Box, Button, Container, Divider, Grid, Link, Typography, useTheme} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import {showDialog} from '../../slices/app-slice';
@@ -157,17 +157,12 @@ export function Submitted(props: SubmittedProps) {
     };
 
     return (
-        <Box
+        <Container
+            component="main"
+            role="main"
             sx={{
-                px: 24,
                 pt: 8,
                 pb: 16,
-                [theme.breakpoints.down('md')]: {
-                    px: 8,
-                },
-                [theme.breakpoints.down('sm')]: {
-                    px: 4,
-                },
             }}
         >
             <Box
@@ -324,7 +319,7 @@ export function Submitted(props: SubmittedProps) {
                 status != null &&
                 status.paymentProviderName != null &&
                 status.paymentProviderUrl != null &&
-                <Divider sx={{my: 8}}/>
+                <Divider sx={{my: 8, maxWidth: 800}}/>
             }
             {
                 submitStep?.textPostSubmit != null &&
@@ -344,13 +339,15 @@ export function Submitted(props: SubmittedProps) {
                 !status.accessExpired &&
                 <Grid
                     container
-                    spacing={6}
+                    columnSpacing={6}
+                    rowSpacing={6}
                     sx={{
                         mt: 4,
                     }}
                 >
                     <Grid
                         size={{
+                            xs: 12,
                             md: 6,
                         }}
                     >
@@ -387,6 +384,7 @@ export function Submitted(props: SubmittedProps) {
                     </Grid>
                     <Grid
                         size={{
+                            xs: 12,
                             md: 6,
                         }}
                     >
@@ -471,20 +469,17 @@ export function Submitted(props: SubmittedProps) {
                     </AlertComponent>
                 </Box>
             }
-            <Divider sx={{my: 8}}/>
+            <Divider sx={{my: 8, maxWidth: 800}}/>
             <Typography
                 component="h3"
                 variant="h5"
-                sx={{textAlign: 'center'}}
             >
                 Wie hat Ihnen dieser Prozess gefallen?
             </Typography>
             <Typography
                 sx={{
-                    textAlign: 'center',
                     mt: 1,
                     maxWidth: 500,
-                    mx: 'auto',
                 }}
                 variant={'body2'}
             >
@@ -494,7 +489,7 @@ export function Submitted(props: SubmittedProps) {
             <Box
                 sx={{
                     display: 'flex',
-                    justifyContent: 'center',
+                    justifyContent: 'flex-start',
                     mt: 4,
                 }}
             >
@@ -523,6 +518,6 @@ export function Submitted(props: SubmittedProps) {
                 Eine E-Mail mit dem eingereichten Antrag wurde an die
                 angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
             </InfoDialog>
-        </Box>
+        </Container>
     );
 }
