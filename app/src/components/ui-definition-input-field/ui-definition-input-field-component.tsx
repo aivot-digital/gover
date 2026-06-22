@@ -4,7 +4,7 @@ import {
     Button,
     Dialog,
     DialogActions,
-    DialogContent,
+    DialogContent, FormHelperText,
     ListItemIcon,
     ListItemText,
     Menu,
@@ -475,15 +475,14 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
 
             {
                 error != null &&
-                <Typography
+                <FormHelperText
+                    error
                     sx={{
-                        mt: 1,
-                        color: 'error.main',
+                        mx: 1.75,
                     }}
-                    variant="caption"
                 >
                     {error}
-                </Typography>
+                </FormHelperText>
             }
 
             <Dialog
