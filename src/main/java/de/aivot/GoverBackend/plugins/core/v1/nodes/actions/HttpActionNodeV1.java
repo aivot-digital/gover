@@ -326,9 +326,10 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
             if (!statusCodeAllowed) {
                 throw new ProcessNodeExecutionExceptionIO(
-                        "Der HTTP-Statuscode %d ist nicht in der Liste der erlaubten Statuscodes: %s",
+                        "Der HTTP-Statuscode %d ist nicht in der Liste der erlaubten Statuscodes: %s. Die Antwort des Servers war: %s",
                         statusCode,
-                        allowedStatusCodes.stream().map(String::valueOf).toList()
+                        allowedStatusCodes.stream().map(String::valueOf).toList(),
+                        decodeResponseBody(response)
                 );
             }
 
@@ -380,9 +381,10 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
         if (!statusCodeAllowed) {
             throw new ProcessNodeExecutionExceptionIO(
-                    "Der HTTP-Statuscode %d ist nicht in der Liste der erlaubten Statuscodes: %s",
+                    "Der HTTP-Statuscode %d ist nicht in der Liste der erlaubten Statuscodes: %s. Die Antwort des Servers war: %s",
                     statusCode,
-                    allowedStatusCodes.stream().map(String::valueOf).toList()
+                    allowedStatusCodes.stream().map(String::valueOf).toList(),
+                    rawBody
             );
         }
 
