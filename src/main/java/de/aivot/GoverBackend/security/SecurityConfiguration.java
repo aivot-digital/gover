@@ -54,6 +54,7 @@ public class SecurityConfiguration {
                                 .requestMatchers("/api/auth/refresh").permitAll()
                                 .requestMatchers("/api/auth/logout").permitAll()
                                 .requestMatchers("/api/auth/oidc-callback").permitAll()
+                                .requestMatchers("/api/error").permitAll()
                                 .anyRequest().authenticated()
                 )
 
