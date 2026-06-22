@@ -2,9 +2,9 @@ package de.aivot.GoverBackend.process.services;
 
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
+import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
-import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.process.entities.ProcessEdgeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -18,6 +18,7 @@ import de.aivot.GoverBackend.process.models.ProcessNodeOutput;
 import de.aivot.GoverBackend.process.models.ProcessNodePort;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.repositories.ProcessEdgeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
@@ -31,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -187,6 +189,33 @@ class ProcessNodeServiceTest {
         );
     }
 
+    @Test
+    void validate_ShouldApplyProviderValidationErrorsToDerivedRuntimeElementData() throws Exception {
+        var provider = new FieldValidationTestNodeDefinition();
+        var node = createNode(1, "a");
+
+        var result = service.validate(node, provider, false);
+
+        assertEquals(true, result.isPresent());
+        var problems = result.orElseThrow();
+
+        assertEquals(
+                List.of(
+                        "Validated field: First error.",
+                        "Validated field: Second error."
+                ),
+                problems.problems()
+        );
+        assertEquals(
+                "First error. Second error.",
+                problems
+                        .derivedRuntimeElementData()
+                        .getElementStates()
+                        .get(FieldValidationTestNodeDefinition.FIELD_ID)
+                        .getError()
+        );
+    }
+
     private ProcessEntity createProcess() {
         return new ProcessEntity()
                 .setId(PROCESS_ID)
@@ -299,6 +328,86 @@ class ProcessNodeServiceTest {
                             null,
                             processNodeEntity
                     );
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+        }
+    }
+
+    private static final class FieldValidationTestNodeDefinition implements ProcessNodeDefinition<FieldValidationTestNodeDefinition.TestNodeConfig> {
+        private static final String FIELD_ID = "validatedField";
+
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return "test.process";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "field-validation-node";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Field validation node";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test node definition for field validation errors.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Action;
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
+        }
+
+        @Nonnull
+        @Override
+        public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) {
+            var layout = new ConfigLayoutElement();
+            layout.setId(getKey() + "-config");
+
+            var field = new TextInputElement();
+            field.setId(FIELD_ID);
+            field.setLabel("Validated field");
+            layout.addChild(field);
+
+            return layout;
+        }
+
+        @Override
+        public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
+                                                               @Nonnull TestNodeConfig configuration) {
+            return Map.of(FIELD_ID, List.of("First error.", "Second error."));
         }
 
         @Override

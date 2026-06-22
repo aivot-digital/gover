@@ -451,6 +451,15 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
 
             if (validationErrors != null) {
                 for (var err : validationErrors.entrySet()) {
+                    // Mirror provider validation errors into element states so the editor can mark the field itself.
+                    var combinedValidationError = combineValidationErrors(err.getValue());
+                    if (StringUtils.isNotNullOrEmpty(combinedValidationError)) {
+                        derivedConfiguration.derivedRuntimeElementData.putError(
+                                err.getKey(),
+                                combinedValidationError
+                        );
+                    }
+
                     for (var validationError : err.getValue()) {
                         layout.findChild(err.getKey(), BaseInputElement.class).ifPresentOrElse(
                                 element -> problems.add(element.getLabel() + ": " + validationError),
@@ -483,6 +492,17 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
             return Optional.of(new ProcessNodeProblems(node, problems, commonErrors,
                     derivedConfiguration != null ? derivedConfiguration.derivedRuntimeElementData : new DerivedRuntimeElementData()));
         }
+    }
+
+    @Nonnull
+    private static String combineValidationErrors(@Nonnull List<String> validationErrors) {
+        var cleanedErrors = validationErrors
+                .stream()
+                .filter(StringUtils::isNotNullOrEmpty)
+                .distinct()
+                .toList();
+
+        return String.join(" ", cleanedErrors);
     }
 
     private static void addCommonError(@Nonnull Map<String, List<String>> commonErrors,
