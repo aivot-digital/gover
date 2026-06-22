@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {Box, Container, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography, useTheme} from '@mui/material';
 import {showDialog} from '../../slices/app-slice';
 import {Logo} from '../logo/logo';
@@ -24,7 +24,7 @@ interface FormHeaderComponentProps {
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
-    logoUrl: string;
+    logoUrl: string | null;
     onDeleteFormData: () => void;
 }
 
@@ -51,6 +51,10 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
     const hasManualLineBreaks = formTitle.includes('\n');
 
     const [logoStatus, setLogoStatus] = useState<'loading' | 'failed' | 'present'>('loading');
+
+    useEffect(() => {
+        setLogoStatus(logoUrl == null ? 'failed' : 'loading');
+    }, [logoUrl]);
 
     return (
         <Box
@@ -85,14 +89,17 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                                 },
                             }}
                         >
-                            <Logo
-                                key={'logo-' + (form.themeId ?? 'default')}
-                                updated={version.updated}
-                                src={logoUrl}
-                                width={200}
-                                height={100}
-                                onStatusChange={setLogoStatus}
-                            />
+                            {
+                                logoUrl != null &&
+                                <Logo
+                                    key={'logo-' + logoUrl}
+                                    updated={version.updated}
+                                    src={logoUrl}
+                                    width={200}
+                                    height={100}
+                                    onStatusChange={setLogoStatus}
+                                />
+                            }
 
                             <Box
                                 sx={{
@@ -215,4 +222,3 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
         </Box>
     );
 }
-

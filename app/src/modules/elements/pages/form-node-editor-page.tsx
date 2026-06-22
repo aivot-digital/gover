@@ -92,7 +92,7 @@ import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {FileUploadElementItem, isFileUploadElementItem} from '../../../models/elements/form/input/file-upload-element';
 import {Submitted} from '../../../components/submitted/submitted';
 import {setCurrentStep} from '../../../slices/stepper-slice';
-import {createCustomerPath} from '../../../utils/url-path-utils';
+import {createApiPath, createCustomerPath} from '../../../utils/url-path-utils';
 import {ProcessTestClaimEntity} from '../../process/entities/process-test-claim-entity';
 import {downloadQrCode} from '../../../utils/download-qrcode';
 import {downloadBlobFile, uploadTextFile} from '../../../utils/download-utils';
@@ -117,6 +117,10 @@ import IdentityPlatform from '@aivot/mui-material-symbols-400-outlined/dist/iden
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {IdentityButton} from '../../identity/components/identity-button/identity-button';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';
+import {useApi} from '../../../hooks/use-api';
+import {ThemesApiService} from '../../themes/themes-api-service';
+import {AssetsApiService} from '../../assets/assets-api-service';
+import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 
 export const DialogSearchParam = 'dialog';
 
@@ -181,6 +185,7 @@ export function FormNodeEditorPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
+    const api = useApi();
 
     const outerTheme = useTheme();
 
@@ -194,6 +199,7 @@ export function FormNodeEditorPage() {
     const [testClaim, setTestClaim] = useState<ProcessTestClaimEntity | null>(null);
     const testClaimRef = useRef<ProcessTestClaimEntity | null>(null);
     const [formTheme, setFormTheme] = useState<AppTheme>();
+    const [draftPreviewThemeChain, setDraftPreviewThemeChain] = useState<AppTheme[] | null>(null);
 
     const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
     const [showIdentityDialog, setShowIdentityDialog] = useState(false);
@@ -347,6 +353,74 @@ export function FormNodeEditorPage() {
         };
     }, [node, process, processVersion, testClaim]);
 
+    const hasFormLayout = formLayout != null;
+    const selectedFormThemeId = formLayout?.themeId ?? null;
+    const selectedResponsibleDepartmentId = formLayout?.responsibleDepartmentId ?? null;
+    const selectedManagingDepartmentId = formLayout?.managingDepartmentId ?? null;
+
+    useEffect(() => {
+        if (!hasFormLayout) {
+            setDraftPreviewThemeChain(null);
+            return;
+        }
+
+        let isCancelled = false;
+
+        // The public theme endpoint resolves the persisted form only. Resolve the draft chain here so
+        // unsaved theme changes, including clearing the explicit form theme, are reflected immediately.
+        setDraftPreviewThemeChain([]);
+
+        const themesApi = new ThemesApiService(api);
+        const departmentsApi = new VDepartmentShadowedApiService();
+
+        const appendTheme = async (themeChain: AppTheme[], themeId: number | null | undefined) => {
+            if (themeId == null) {
+                return;
+            }
+
+            try {
+                themeChain.push(await themesApi.retrieve(themeId));
+            } catch (error) {
+                console.error('Error loading draft form preview theme:', error);
+            }
+        };
+
+        const appendDepartmentTheme = async (themeChain: AppTheme[], departmentId: number | null | undefined) => {
+            if (departmentId == null) {
+                return;
+            }
+
+            try {
+                const department = await departmentsApi.retrieve(departmentId);
+                await appendTheme(themeChain, department.themeId);
+            } catch (error) {
+                console.error('Error loading draft form preview department theme:', error);
+            }
+        };
+
+        (async () => {
+            const themeChain: AppTheme[] = [];
+
+            await appendTheme(themeChain, selectedFormThemeId);
+            await appendDepartmentTheme(themeChain, selectedResponsibleDepartmentId);
+            await appendDepartmentTheme(themeChain, selectedManagingDepartmentId);
+
+            if (!isCancelled) {
+                setDraftPreviewThemeChain(themeChain);
+            }
+        })();
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [
+        api,
+        hasFormLayout,
+        selectedFormThemeId,
+        selectedResponsibleDepartmentId,
+        selectedManagingDepartmentId,
+    ]);
+
     const [searchParams] = useSearchParams();
     const metaDialogName = useMemo(() => searchParams.get(DialogSearchParam), [searchParams]);
 
@@ -390,12 +464,23 @@ export function FormNodeEditorPage() {
 
     const isEditable = processVersion?.status === ProcessStatus.Drafted;
     const previewTheme = useMemo(() => {
-        if (formTheme == null) {
+        const activeFormTheme = draftPreviewThemeChain?.[0] ?? (
+            draftPreviewThemeChain == null ?
+                formTheme :
+                undefined
+        );
+
+        if (activeFormTheme == null) {
             return outerTheme;
         }
 
-        return createAppTheme(formTheme, BaseTheme);
-    }, [formTheme, outerTheme]);
+        return createAppTheme(activeFormTheme, BaseTheme);
+    }, [draftPreviewThemeChain, formTheme, outerTheme]);
+    const previewThemeCssVariables = useMemo(() => ({
+        '--gover-theme-primary': previewTheme.palette.primary.main,
+        '--gover-theme-primary-dark': previewTheme.palette.primary.dark,
+        '--gover-theme-secondary': previewTheme.palette.secondary.main,
+    }), [previewTheme]);
 
     const {
         ref: containerRef,
@@ -893,11 +978,21 @@ export function FormNodeEditorPage() {
     const formAssetQueryParams = new URLSearchParams({
         version: processVersion.processVersion.toString(),
     });
+    formAssetQueryParams.set('theme-id', formLayout.themeId?.toString() ?? 'default');
     if (testClaim != null) {
         formAssetQueryParams.set('test-claim', testClaim.accessKey);
     }
 
-    const formLogoUrl = `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
+    // Use the locally resolved draft chain for logos as well. The public form logo endpoint is based
+    // on the persisted form and the system logo should only appear when no custom theme is resolved.
+    const draftLogoTheme = draftPreviewThemeChain?.find((theme) => theme.logoKey != null);
+    const formLogoUrl = draftLogoTheme?.logoKey != null ?
+        AssetsApiService.useAssetLink(draftLogoTheme.logoKey) :
+        draftPreviewThemeChain != null ?
+            draftPreviewThemeChain.length === 0 ?
+                createApiPath('/api/public/system/logo/') :
+                null :
+            `/api/public/form/${process.slug}/${node.configuration.formSlug}/logo/?${formAssetQueryParams.toString()}`;
 
     const handleSubmitEvent = async (values: AuthoredElementValues, event: string): Promise<void> => {
         if (event != SUBMIT_EVENT) {
@@ -1111,86 +1206,88 @@ export function FormNodeEditorPage() {
                                         ref={scrollContainerRef}
                                     >
                                         <ThemeProvider theme={previewTheme}>
-                                            <FormHeaderComponent
-                                                form={formLayout}
-                                                node={node}
-                                                process={process}
-                                                version={processVersion}
-                                                logoUrl={formLogoUrl}
-                                                onDeleteFormData={() => {
-                                                    dispatch(setCurrentStep(0));
-                                                    setAuthoredElementValues({});
-                                                    setStartedProcessAccessKey(null);
-                                                    IdentityProvidersApiService.clearIdentity(node.id);
-                                                }}
-                                            />
-
-                                            {
-                                                startedProcessAccessKey == null &&
-                                                <ElementTreeInlineEditorContextProvider
-                                                    value={{
-                                                        cloneElement: handleCloneElement,
-                                                        deleteElement: handleDeleteElement,
-                                                        navigateToElementEditor: handleOpenElement,
-                                                        highlightElementInTree: handleHighlightElementInTree,
-                                                        editable: isEditable,
-                                                    }}
-                                                >
-                                                    <ElementDerivationContext
-                                                        element={formLayout}
-                                                        authoredElementValues={authoredElementValues}
-                                                        onAuthoredElementValuesChange={setAuthoredElementValues}
-                                                        onEvent={handleSubmitEvent}
-                                                        onDerivedDataChange={setDerivedData}
-                                                        mode={ViewDispatcherMode.Editor}
-                                                        disableValidation={disableValidation}
-                                                        disableVisibilities={disableVisibility}
-                                                        highlightedElementId={hoveredTreeElementId}
-                                                    />
-                                                </ElementTreeInlineEditorContextProvider>
-                                            }
-                                            {
-                                                startedProcessAccessKey != null &&
-                                                <Submitted
-                                                    startedProcessAccessKey={startedProcessAccessKey}
-                                                    formElement={formLayout}
+                                            <Box sx={previewThemeCssVariables}>
+                                                <FormHeaderComponent
+                                                    form={formLayout}
                                                     node={node}
                                                     process={process}
                                                     version={processVersion}
+                                                    logoUrl={formLogoUrl}
+                                                    onDeleteFormData={() => {
+                                                        dispatch(setCurrentStep(0));
+                                                        setAuthoredElementValues({});
+                                                        setStartedProcessAccessKey(null);
+                                                        IdentityProvidersApiService.clearIdentity(node.id);
+                                                    }}
                                                 />
-                                            }
 
-                                            <RootComponentFooter
-                                                form={formLayout}
-                                                node={node}
-                                                process={process}
-                                                version={processVersion}
-                                                logoUrl={formLogoUrl}
-                                            />
+                                                {
+                                                    startedProcessAccessKey == null &&
+                                                    <ElementTreeInlineEditorContextProvider
+                                                        value={{
+                                                            cloneElement: handleCloneElement,
+                                                            deleteElement: handleDeleteElement,
+                                                            navigateToElementEditor: handleOpenElement,
+                                                            highlightElementInTree: handleHighlightElementInTree,
+                                                            editable: isEditable,
+                                                        }}
+                                                    >
+                                                        <ElementDerivationContext
+                                                            element={formLayout}
+                                                            authoredElementValues={authoredElementValues}
+                                                            onAuthoredElementValuesChange={setAuthoredElementValues}
+                                                            onEvent={handleSubmitEvent}
+                                                            onDerivedDataChange={setDerivedData}
+                                                            mode={ViewDispatcherMode.Editor}
+                                                            disableValidation={disableValidation}
+                                                            disableVisibilities={disableVisibility}
+                                                            highlightedElementId={hoveredTreeElementId}
+                                                        />
+                                                    </ElementTreeInlineEditorContextProvider>
+                                                }
+                                                {
+                                                    startedProcessAccessKey != null &&
+                                                    <Submitted
+                                                        startedProcessAccessKey={startedProcessAccessKey}
+                                                        formElement={formLayout}
+                                                        node={node}
+                                                        process={process}
+                                                        version={processVersion}
+                                                    />
+                                                }
 
-                                            <HelpDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === HelpDialogId}
-                                                form={formLayout}
-                                            />
+                                                <RootComponentFooter
+                                                    form={formLayout}
+                                                    node={node}
+                                                    process={process}
+                                                    version={processVersion}
+                                                    logoUrl={formLogoUrl}
+                                                />
 
-                                            <PrivacyDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === PrivacyDialogId}
-                                                form={formLayout}
-                                            />
+                                                <HelpDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === HelpDialogId}
+                                                    form={formLayout}
+                                                />
 
-                                            <ImprintDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === ImprintDialogId}
-                                                form={formLayout}
-                                            />
+                                                <PrivacyDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === PrivacyDialogId}
+                                                    form={formLayout}
+                                                />
 
-                                            <AccessibilityDialog
-                                                onHide={() => dispatch(showDialog(undefined))}
-                                                open={metaDialog === AccessibilityDialogId}
-                                                form={formLayout}
-                                            />
+                                                <ImprintDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === ImprintDialogId}
+                                                    form={formLayout}
+                                                />
+
+                                                <AccessibilityDialog
+                                                    onHide={() => dispatch(showDialog(undefined))}
+                                                    open={metaDialog === AccessibilityDialogId}
+                                                    form={formLayout}
+                                                />
+                                            </Box>
                                         </ThemeProvider>
                                     </Paper>
                                 </Box>

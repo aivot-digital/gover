@@ -353,7 +353,6 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                                 }}
                                 options={themes}
                                 disabled={!props.editable}
-                                hint={'Bitte speichern Sie das Formular nach Änderungen, damit das Erscheinungsbild in der Vorschau angewendet wird.'}
                             />
                         }
                         <Hint

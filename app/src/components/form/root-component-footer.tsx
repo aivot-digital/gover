@@ -31,7 +31,7 @@ interface RootComponentFooterProps {
     node: ProcessNodeEntity;
     process: ProcessEntity;
     version: ProcessVersionEntity;
-    logoUrl: string;
+    logoUrl: string | null;
 }
 
 export function RootComponentFooter(props: RootComponentFooterProps) {
@@ -73,13 +73,17 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                         },
                     }}
                 >
-                    <Logo
-                        key={'logo-' + (form.themeId ?? 'default')}
-                        updated={version.updated}
-                        src={logoUrl}
-                        width={200}
-                        height={100}
-                    />
+                    {
+                        logoUrl != null ?
+                            <Logo
+                                key={'logo-' + logoUrl}
+                                updated={version.updated}
+                                src={logoUrl}
+                                width={200}
+                                height={100}
+                            /> :
+                            <Box/>
+                    }
 
                     <Box
                         component="nav"
