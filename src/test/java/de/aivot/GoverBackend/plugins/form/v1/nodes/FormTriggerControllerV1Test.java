@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.oauth2.jwt.Jwt;
 
+import jakarta.servlet.http.HttpServletResponse;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -110,11 +111,21 @@ class FormTriggerControllerV1Test {
     }
 
     @Test
-    void getLogoShouldFallbackToDefaultLogoWhenNoThemeProvidesOne() throws Exception {
+    void getLogoShouldNotFallbackToDefaultLogoWhenCustomThemeChainProvidesNone() throws Exception {
         var formTheme = createTheme(11, "Form Theme", null, null);
         var fixture = createFixture(baseFormLayout().setThemeId(formTheme.getId()));
 
         when(fixture.themeService().retrieve(formTheme.getId())).thenReturn(Optional.of(formTheme));
+
+        var response = new MockHttpServletResponse();
+        fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, response);
+
+        assertEquals(HttpServletResponse.SC_NOT_FOUND, response.getStatus());
+    }
+
+    @Test
+    void getLogoShouldFallbackToDefaultLogoWhenNoCustomThemeIsResolved() throws Exception {
+        var fixture = createFixture(baseFormLayout());
 
         var response = new MockHttpServletResponse();
         fixture.controller().getLogo(null, fixture.processSlug(), fixture.formSlug(), null, null, response);

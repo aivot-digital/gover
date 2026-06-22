@@ -655,7 +655,7 @@ public class FormTriggerControllerV1 {
     @Operation(
             summary = "Get the logo for a form",
             description = "Get the logo image associated with the specified form. " +
-                    "If the form does not have a custom logo, a default logo URL will be provided."
+                    "If the form does not resolve to a custom theme, a default logo URL will be provided."
     )
     public void getLogo(@Nullable @AuthenticationPrincipal Jwt jwt,
                         @Nonnull @PathVariable String processSlug,
@@ -665,13 +665,16 @@ public class FormTriggerControllerV1 {
                         @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
         var context = resolveFormTriggerContext(jwt, processSlug, formSlug, testClaimAccessKey, processVersion);
-        var logoKey = getFormLogoKey(context.formLayout());
+        var logoResolution = getFormLogoResolution(context.formLayout());
 
         String redirectUrl;
-        if (logoKey == null) {
+        if (logoResolution.assetKey() == null && logoResolution.allowDefaultFallback()) {
             redirectUrl = goverConfig.getDefaultLogoUrl();
+        } else if (logoResolution.assetKey() == null) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
         } else {
-            redirectUrl = assetService.createUrl(logoKey);
+            redirectUrl = assetService.createUrl(logoResolution.assetKey());
         }
 
         response.sendRedirect(redirectUrl);
@@ -762,7 +765,7 @@ public class FormTriggerControllerV1 {
     }
 
     @Nonnull
-    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
+    private List<ThemeEntity> getCustomFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
         var themes = new ArrayList<ThemeEntity>();
 
         if (formLayout.getThemeId() != null) {
@@ -773,6 +776,13 @@ public class FormTriggerControllerV1 {
 
         addDepartmentTheme(themes, formLayout.getResponsibleDepartmentId());
         addDepartmentTheme(themes, formLayout.getManagingDepartmentId());
+
+        return themes;
+    }
+
+    @Nonnull
+    private List<ThemeEntity> getFormThemesInOrderOfImportance(@Nonnull FormLayoutElement formLayout) {
+        var themes = getCustomFormThemesInOrderOfImportance(formLayout);
         themes.add(systemService.retrieveDefaultTheme());
 
         return themes;
@@ -796,9 +806,7 @@ public class FormTriggerControllerV1 {
     }
 
     @Nullable
-    private UUID getFormLogoKey(@Nonnull FormLayoutElement formLayout) {
-        var themes = getFormThemesInOrderOfImportance(formLayout);
-
+    private UUID getFirstLogoKey(@Nonnull List<ThemeEntity> themes) {
         for (var theme : themes) {
             if (theme.getLogoKey() != null) {
                 return theme.getLogoKey();
@@ -806,6 +814,24 @@ public class FormTriggerControllerV1 {
         }
 
         return null;
+    }
+
+    @Nonnull
+    private LogoResolution getFormLogoResolution(@Nonnull FormLayoutElement formLayout) {
+        var customThemes = getCustomFormThemesInOrderOfImportance(formLayout);
+
+        // A resolved custom theme chain without a logo should stay logo-less instead of inheriting
+        // the system theme logo. Only forms without custom themes fall back to the system/default logo.
+        if (!customThemes.isEmpty()) {
+            return new LogoResolution(getFirstLogoKey(customThemes), false);
+        }
+
+        var systemTheme = systemService.retrieveDefaultTheme();
+        if (systemTheme.getLogoKey() != null) {
+            return new LogoResolution(systemTheme.getLogoKey(), true);
+        }
+
+        return new LogoResolution(null, true);
     }
 
     @Nullable
@@ -819,6 +845,9 @@ public class FormTriggerControllerV1 {
         }
 
         return null;
+    }
+
+    private record LogoResolution(@Nullable UUID assetKey, boolean allowDefaultFallback) {
     }
 
 
