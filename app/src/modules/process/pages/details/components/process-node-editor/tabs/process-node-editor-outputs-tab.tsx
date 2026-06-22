@@ -4,13 +4,15 @@ import {TextFieldComponent} from '../../../../../../../components/text-field/tex
 import Typography from '@mui/material/Typography';
 import {ProcessNodeOutputCard} from '../../../../../components/process-node-output-card';
 import {ProcessDataKeyInputComponent} from '../../../../../../../views/process-data-key-input-field-view';
+import {quoteString} from '../../../../../../../utils/string-utils';
 
 export function ProcessNodeEditorOutputsTab() {
     const {
-        node,
+        node: localNode,
         setNode,
         provider,
         isEditable,
+        problems,
     } = useProcessNodeEditorContext();
 
     if (provider.outputs.length === 0) {
@@ -38,6 +40,38 @@ export function ProcessNodeEditorOutputsTab() {
             }}
         >
             <Typography variant="h4">
+                Datenschlüssel
+            </Typography>
+            <Typography variant="body1"
+                        mt={1}
+                        mb={2}
+                        maxWidth={400}>
+                Über den eindeutigen Datenschlüssel kann auf die erzeugten Elementdaten dieses Prozesselementes zugegriffen werden.
+                Sie können alle verfügbaren Datenfelder in der {quoteString('Datenstruktur der Ausgangsdaten')} einsehen.
+            </Typography>
+
+            <TextFieldComponent
+                label="Datenschlüssel"
+                hint="Eindeutiger Schlüssel zur Identifikation dieses Elementes im Vorgang."
+                value={localNode.dataKey}
+                onChange={(val) => {
+                    setNode({
+                        ...localNode,
+                        dataKey: val ?? '',
+                    }, false);
+                }}
+                required={true}
+                maxCharacters={32}
+                error={problems?.commonErrors.dataKey}
+                disabled={!isEditable}
+            />
+
+            <Typography
+                variant="h4"
+                sx={{
+                    mt: 2,
+                }}
+            >
                 Ausgangsdaten
             </Typography>
             <Typography variant="body1"
@@ -54,12 +88,12 @@ export function ProcessNodeEditorOutputsTab() {
                         key={output.key}
                         label={output.label}
                         hint={output.description}
-                        value={node.outputMappings?.[output.key] ?? ''}
+                        value={localNode.outputMappings?.[output.key] ?? ''}
                         onChange={(val) => {
                             setNode({
-                                ...node,
+                                ...localNode,
                                 outputMappings: {
-                                    ...node.outputMappings,
+                                    ...localNode.outputMappings,
                                     [output.key]: val,
                                 },
                             }, false);
@@ -91,7 +125,7 @@ export function ProcessNodeEditorOutputsTab() {
                         <ProcessNodeOutputCard
                             key={output.key}
                             label={output.label}
-                            outputKey={`_.${node.dataKey}.${output.key}`}
+                            outputKey={`_.${localNode.dataKey}.${output.key}`}
                             description={output.description}
                             sx={{
                                 mb: 1,

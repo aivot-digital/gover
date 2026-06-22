@@ -57,22 +57,6 @@ export function ProcessNodeEditorConfigurationTab() {
             </Typography>
 
             <TextFieldComponent
-                label="Datenschlüssel"
-                hint="Eindeutiger Schlüssel zur Identifikation dieses Elementes im Vorgang."
-                value={localNode.dataKey}
-                onChange={(val) => {
-                    setLocalNode({
-                        ...localNode,
-                        dataKey: val ?? '',
-                    }, false);
-                }}
-                required={true}
-                maxCharacters={32}
-                error={problems?.commonErrors.dataKey}
-                disabled={!isEditable}
-            />
-
-            <TextFieldComponent
                 label="Name des Elementes"
                 hint="Wird im Vorgang und Prozess als Titel dieses Schrittes angezeigt."
                 value={localNode.name}
