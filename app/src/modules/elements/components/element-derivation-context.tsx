@@ -350,10 +350,10 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                             return clearDerivedErrorsRecursively(current);
                         });
                         setSuppressedErrorElementIds([]);
-                        return derive(authoredValues, skipErrorsForElements);
+                        return deriveWithMinimumVisibleDuration(authoredValues, skipErrorsForElements);
                     }}
                     onEvent={(data, event) => {
-                        return derive(data)
+                        return deriveWithMinimumVisibleDuration(data)
                             .then((derived) => {
                                 setInternalDerivedData(derived);
                                 if (!hasAnyErrorRecursively(derived.elementStates)) {
