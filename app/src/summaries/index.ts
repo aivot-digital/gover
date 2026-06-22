@@ -33,6 +33,7 @@ import {NoCodeInputSummary} from './no-code-input-summary';
 import {UiDefinitionInputSummary} from './ui-definition-input-summary';
 import {SummaryLayoutSummary} from './summary-layout-summary';
 import {HtmlTemplateInputSummary} from './html-template-input-summary';
+import {GeneralInformationComponentSummary} from '../components/general-information/general-information.component.summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -53,7 +54,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.Table]: TableFieldComponentSummary,
     [ElementType.Text]: TextFieldSummary,
     [ElementType.Time]: TimeFieldComponentSummary,
-    [ElementType.IntroductionStep]: null,
+    [ElementType.IntroductionStep]: GeneralInformationComponentSummary,
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
