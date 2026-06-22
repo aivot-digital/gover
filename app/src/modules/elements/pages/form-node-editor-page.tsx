@@ -119,6 +119,8 @@ import {useApi} from '../../../hooks/use-api';
 import {ThemesApiService} from '../../themes/themes-api-service';
 import {AssetsApiService} from '../../assets/assets-api-service';
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
+import {Chip} from '../../../components/chip/chip';
+import {quoteString} from '../../../utils/string-utils';
 
 export const DialogSearchParam = 'dialog';
 
@@ -126,6 +128,12 @@ const FormLayoutFieldKey = 'formLayout';
 const IdentitiesFieldKey = 'identities';
 const PrintablePdfFallbackFilenameBase = 'Formulareingang';
 const PrintablePdfFilenameBaseMaxLength = 120;
+
+function getIdentityDisplayName(identity: Pick<IdentityConfigElementSlot, 'title'>): string {
+    const title = identity.title?.trim();
+
+    return title != null && title.length > 0 ? title : 'Unbenannte Identität';
+}
 
 function cloneFormLayoutSnapshot<T extends FormLayoutElement>(element: T): T {
     return JSON.parse(JSON.stringify(element)) as T;
@@ -201,6 +209,15 @@ export function FormNodeEditorPage() {
 
     const [identityMappingInformation, setIdentityMappingInformation] = useState<IdentityConfigElementSlotWithProviders[]>([]);
     const [showIdentityDialog, setShowIdentityDialog] = useState(false);
+    const sortedIdentityMappingInformation = useMemo(() => {
+        return identityMappingInformation
+            .map((identity, index) => ({
+                identity,
+                index,
+            }))
+            .sort((a, b) => Number(a.identity.isOptional === true) - Number(b.identity.isOptional === true) || a.index - b.index)
+            .map(({identity}) => identity);
+    }, [identityMappingInformation]);
 
     const [startedProcessAccessKey, setStartedProcessAccessKey] = useState<string | null>(null);
 
@@ -1428,23 +1445,31 @@ export function FormNodeEditorPage() {
                         setShowIdentityDialog(false);
                     }}
                 >
-                    Mit Identitätsanbieter Anmelden
+                    Mit Identitätsanbieter anmelden
                 </DialogTitleWithClose>
                 <DialogContent>
                     <Typography
                         variant="body2"
                         component="div"
                         maxWidth={600}
+                    >
+                        Diese Anmeldung dient nur zum Testen im Formulareditor. Sie können das Formular damit in einem
+                        authentifizierten Zustand prüfen; Nutzer:innen sehen später die normale Anmeldeseite des
+                        Formulars, nicht diesen Dialog.
+                    </Typography>
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        maxWidth={600}
+                        marginTop={2}
                         marginBottom={4}
                     >
-                        Sie können sich zu Testzwecken für jede der Konfigurierten Identitäten mit einem
-                        Identitätsanbieter anmelden. Um Ihren Authentifizierungsstatus zurückzusetzen, können Sie das
-                        Formularspezifische Drei-Punkte-Menü verwenden
-                        und <strong>Alle Antragsdaten löschen</strong>auswählen.
+                        Um Ihren Authentifizierungsstatus zurückzusetzen, können Sie das formularspezifische
+                        Drei-Punkte-Menü verwenden und {quoteString('Alle Formulardaten löschen')} auswählen.
                     </Typography>
 
                     {
-                        identityMappingInformation
+                        sortedIdentityMappingInformation
                             .map((idm) => (
                                 <Box
                                     key={idm.id}
@@ -1452,14 +1477,41 @@ export function FormNodeEditorPage() {
                                         mb: 4,
                                     }}
                                 >
-                                    <Typography>
-                                        Identität <strong>{idm.title}</strong>
-                                    </Typography>
+                                    <Box sx={{mb: 2}}>
+                                        <Typography variant="caption">
+                                            Anmelden als
+                                        </Typography>
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                flexWrap: 'wrap',
+                                                columnGap: 1.25,
+                                                rowGap: 0.5,
+                                                mt: 0.25,
+                                            }}
+                                        >
+                                            <Typography
+                                                variant="h5"
+                                                component="h3"
+                                            >
+                                                {getIdentityDisplayName(idm)}
+                                            </Typography>
+
+                                            <Chip
+                                                mode="soft"
+                                                label={idm.isOptional ? 'Optional' : 'Verpflichtend'}
+                                                color={idm.isOptional ? 'info' : 'warning'}
+                                                size="small"
+                                            />
+                                        </Box>
+                                    </Box>
 
                                     {
                                         (idm.options ?? [])
                                             .map((opt) => (
                                                 <IdentityButton
+                                                    key={`${idm.id}-${opt.provider.key}`}
                                                     isAuthenticated={false}
                                                     relatedProcessNodeId={node.id}
                                                     identityId={idm.id ?? ''}

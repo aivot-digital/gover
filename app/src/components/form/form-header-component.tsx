@@ -215,7 +215,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                         <Delete />
                     </ListItemIcon>
                     <ListItemText>
-                        Alle Antragsdaten löschen
+                        Alle Formulardaten löschen
                     </ListItemText>
                 </MenuItem>
             </Menu>

@@ -9,12 +9,14 @@ import {
     ListItemText,
     Typography,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {useConfirm} from '../../providers/confirm-provider';
 import {deepEquals} from '../../utils/equality-utils';
 import {Actions} from '../actions/actions';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 
 export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
     item: T;
@@ -24,6 +26,7 @@ export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
 
 interface DialogListProps<T> {
     dialogTitle: string;
+    dialogViewTitle?: string;
     items: T[];
     getId: (item: T) => string;
     title: (item: T) => string;
@@ -37,6 +40,7 @@ interface DialogListProps<T> {
 export function DialogList<T>(props: DialogListProps<T>) {
     const {
         dialogTitle,
+        dialogViewTitle,
         items,
         getId,
         title,
@@ -47,6 +51,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
         disabled,
     } = props;
 
+    const isReadonly = disabled === true;
     const confirm = useConfirm();
 
     const [showDialog, setShowDialog] = useState(false);
@@ -79,7 +84,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
             return;
         }
 
-        if (!deepEquals(openForItem.original, openForItem.edited)) {
+        if (!isReadonly && !deepEquals(openForItem.original, openForItem.edited)) {
             const conf = await confirm({
                 title: 'Änderungen verwerfen',
                 children: (
@@ -108,7 +113,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
     const handleDelete = async (item: T) => {
         const conf = await confirm({
-            title: 'Eintrag Löschen',
+            title: 'Eintrag löschen',
             children: (
                 <Typography>
                     Soll der Eintrag wirklich gelöscht werden?
@@ -130,6 +135,16 @@ export function DialogList<T>(props: DialogListProps<T>) {
                     items.map((item) => (
                         <ListItemButton
                             key={getId(item)}
+                            sx={(theme) => ({
+                                mb: 1,
+                                border: '1px solid',
+                                borderColor: 'divider',
+                                borderRadius: 1,
+                                '&:hover': {
+                                    borderColor: theme.palette.primary.main,
+                                    backgroundColor: alpha(theme.palette.primary.main, 0.04),
+                                },
+                            })}
                             onClick={() => {
                                 handleDialogOpen(item);
                             }}
@@ -140,28 +155,40 @@ export function DialogList<T>(props: DialogListProps<T>) {
                             />
 
                             <Actions
-                                actions={[
-                                    {
-                                        icon: <Edit/>,
-                                        tooltip: 'Bearbeiten',
-                                        onClick: (evt) => {
-                                            evt.preventDefault();
-                                            evt.stopPropagation();
-                                            handleDialogOpen(item);
-                                        },
-                                        disabled: disabled,
-                                    },
-                                    {
-                                        icon: <Delete/>,
-                                        tooltip: 'Eintrag Löschen',
-                                        onClick: (evt) => {
-                                            evt.preventDefault();
-                                            evt.stopPropagation();
-                                            handleDelete(item);
-                                        },
-                                        disabled: disabled,
-                                    },
-                                ]}
+                                actions={
+                                    isReadonly
+                                        ? [
+                                            {
+                                                icon: <Visibility/>,
+                                                tooltip: 'Ansehen',
+                                                onClick: (evt) => {
+                                                    evt.preventDefault();
+                                                    evt.stopPropagation();
+                                                    handleDialogOpen(item);
+                                                },
+                                            },
+                                        ]
+                                        : [
+                                            {
+                                                icon: <Edit/>,
+                                                tooltip: 'Bearbeiten',
+                                                onClick: (evt) => {
+                                                    evt.preventDefault();
+                                                    evt.stopPropagation();
+                                                    handleDialogOpen(item);
+                                                },
+                                            },
+                                            {
+                                                icon: <Delete/>,
+                                                tooltip: 'Eintrag löschen',
+                                                onClick: (evt) => {
+                                                    evt.preventDefault();
+                                                    evt.stopPropagation();
+                                                    handleDelete(item);
+                                                },
+                                            },
+                                        ]
+                                }
                             />
                         </ListItemButton>
                     ))
@@ -177,7 +204,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
                 <DialogTitleWithClose
                     onClose={handleCancel}
                 >
-                    {dialogTitle}
+                    {isReadonly ? dialogViewTitle ?? dialogTitle : dialogTitle}
                 </DialogTitleWithClose>
 
                 <DialogContent>
@@ -199,20 +226,26 @@ export function DialogList<T>(props: DialogListProps<T>) {
                 <DialogActions
                     sx={{
                         justifyContent: 'flex-start',
+                        pt: 2,
                     }}
                 >
-                    <Button
-                        onClick={handleDialogSave}
-                        disabled={disabled}
-                    >
-                        Speichern
-                    </Button>
+                    {
+                        !isReadonly &&
+                        <Button
+                            variant="contained"
+                            onClick={handleDialogSave}
+                        >
+                            Übernehmen
+                        </Button>
+                    }
 
                     <Button
+                        sx={{
+                            ml: isReadonly ? 0 : 'auto',
+                        }}
                         onClick={handleCancel}
-                        disabled={disabled}
                     >
-                        Abbrechen
+                        {isReadonly ? 'Schließen' : 'Abbrechen'}
                     </Button>
                 </DialogActions>
             </Dialog>

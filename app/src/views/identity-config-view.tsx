@@ -1,4 +1,4 @@
-import {Box, Button, Divider, Grid, Stack, Tooltip, Typography} from '@mui/material';
+import {Box, Button, FormHelperText, Grid, Stack, Tooltip, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {alpha} from '@mui/material/styles';
 import {BaseViewProps} from './base-view';
@@ -18,6 +18,8 @@ import {SelectFieldComponent} from '../components/select-field-2/select-field-co
 import {BundIdAccessLevelOptions} from '../modules/identity/enums/bund-id-access-level';
 import {BayernIdAccessLevelOptions} from '../modules/identity/enums/bayern-id-access-level';
 import {ShIdAccessLevelOptions} from '../modules/identity/enums/sh-id-access-level';
+import {isStringNullOrEmpty} from '../utils/string-utils';
+import {ElementEditorSectionHeader} from '../components/element-editor-section-header/element-editor-section-header';
 
 export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, IdentityConfigElementSlot[]>) {
     const {
@@ -66,6 +68,12 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
     }, [providers]);
 
     const shouldShowEmptyState = (value?.length ?? 0) === 0;
+    const errorText = [
+        errors?.join(' '),
+        providersError,
+    ]
+        .filter((part) => part != null && part.length > 0)
+        .join(' ');
 
     const handleAddSlot = () => {
         setValue([
@@ -169,9 +177,11 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                 >
                     <DialogList
                         dialogTitle="Identität bearbeiten"
+                        dialogViewTitle="Identität ansehen"
                         getId={(i) => i.id ?? ''}
                         items={value ?? []}
-                        title={(i) => i.title ?? 'Unbenannte Identität'}
+                        title={getIdentityDisplayName}
+                        subTitle={(i) => getIdentityConfigSubtitle(i, isDisabled || isFieldBusy)}
                         dialogContentComponent={Component}
                         onDialogSave={handleSlotChanged}
                         onDelete={handleDelete}
@@ -181,17 +191,16 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
             }
 
             {
-                (errors != null || providersError != null) &&
-                <Typography
-                    variant="body2"
-                    color="error"
+                errorText.length > 0 &&
+                <FormHelperText
+                    error
+                    sx={{
+                        mx: 1.75,
+                        mt: -1,
+                    }}
                 >
-                    {
-                        errors != null &&
-                        errors.join(' ')
-                    }
-                    {providersError}
-                </Typography>
+                    {errorText}
+                </FormHelperText>
             }
         </Box>
     );
@@ -212,6 +221,25 @@ function wrapIdentityConfigSlot(providers: IdentityProviderListDTO[]): DialogLis
     );
 }
 
+function getIdentityConfigSubtitle(item: IdentityConfigElementSlot, isReadonly: boolean): string {
+    const optionCount = item.options?.length ?? 0;
+    const providerText = optionCount === 1 ? '1 Nutzerkontenanbieter' : `${optionCount} Nutzerkontenanbieter`;
+
+    return [
+        item.isOptional === true ? 'Optional' : 'Verpflichtend',
+        providerText,
+        isReadonly ? 'Zum Anzeigen öffnen' : undefined,
+    ]
+        .filter((part) => part != null)
+        .join(' · ');
+}
+
+function getIdentityDisplayName(identity: Pick<IdentityConfigElementSlot, 'title'>): string {
+    const title = identity.title?.trim();
+
+    return title != null && title.length > 0 ? title : 'Unbenannte Identität';
+}
+
 function IdentityConfigSlot(props: {
     item: IdentityConfigElementSlot;
     onChange: (value: IdentityConfigElementSlot) => void;
@@ -226,160 +254,199 @@ function IdentityConfigSlot(props: {
     } = props;
 
     return (
-        <>
-            <TextFieldComponent
-                label="Eindeutiger Schlüssel"
-                hint="Über diesen eindeutigen Schlüssel werden die Informationen zu dieser Identität im Prozess identifiziert."
-                value={item.id}
-                onChange={(val) => {
-                    onChange({
-                        ...item,
-                        id: val ?? '',
-                    });
-                }}
-                pattern={{
-                    regex: '[a-zA-Z0-9_]+',
-                    message: 'Der eindeutige Schlüssel darf nur Buchstaben (außer Umlaute), Zahlen, Unterstriche enthalten.',
-                }}
-                minCharacters={1}
-                maxCharacters={32}
-                muiPassTroughProps={{
-                    margin: 'none',
-                }}
-                sx={{
-                    mt: 1,
-                }}
-                required={true}
-                disabled={disabled}
-            />
-
-            <TextFieldComponent
-                label="Titel"
-                hint="Dieser Titel wird Nutzer:innen angezeigt."
-                value={item.title}
-                onChange={(val) => {
-                    onChange({
-                        ...item,
-                        title: val ?? '',
-                    });
-                }}
-                required={true}
-                disabled={disabled}
-            />
-
-            <RichTextInputComponent
-                label="Beschreibung"
-                hint="Diese Beschreibung wird Nutzer:innen angezeigt. Sie sollte erklären, warum eine Anmeldung mit dieser Identität notwendig ist."
-                value={item.description}
-                onChange={(val) => {
-                    onChange({
-                        ...item,
-                        description: val ?? '',
-                    });
-                }}
-                required={true}
-                disabled={disabled}
-                sx={{
-                    mb: 1,
-                }}
-            />
-
-            <Grid
-                container
-                spacing={2}
-            >
+        <Stack
+            spacing={3.5}
+            sx={{
+                pt: 1,
+            }}
+        >
+            <Box>
                 <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
+                    container
+                    spacing={2}
+                    alignItems="flex-start"
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            md: 6,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Eindeutiger Schlüssel"
+                            hint="Über diesen eindeutigen Schlüssel werden die Informationen zu dieser Identität im Prozess identifiziert."
+                            value={item.id}
+                            onChange={(val) => {
+                                onChange({
+                                    ...item,
+                                    id: val ?? '',
+                                });
+                            }}
+                            pattern={{
+                                regex: '[a-zA-Z0-9_]+',
+                                message: 'Der eindeutige Schlüssel darf nur Buchstaben (außer Umlaute), Zahlen, Unterstriche enthalten.',
+                            }}
+                            minCharacters={1}
+                            maxCharacters={32}
+                            muiPassTroughProps={{
+                                margin: 'none',
+                            }}
+                            required={true}
+                            disabled={disabled}
+                        />
+                    </Grid>
+
+                    <Grid
+                        size={{
+                            xs: 12,
+                            md: 6,
+                        }}
+                    >
+                        <TextFieldComponent
+                            label="Titel"
+                            hint="Dieser Titel wird Nutzer:innen angezeigt."
+                            value={item.title}
+                            onChange={(val) => {
+                                onChange({
+                                    ...item,
+                                    title: val ?? '',
+                                });
+                            }}
+                            required={true}
+                            disabled={disabled}
+                            muiPassTroughProps={{
+                                margin: 'none',
+                            }}
+                        />
+                    </Grid>
+
+                    <Grid size={{xs: 12}}>
+                        <RichTextInputComponent
+                            label="Beschreibung"
+                            hint="Optionale Beschreibung, die Nutzer:innen angezeigt wird. Sie kann erklären, warum eine Anmeldung mit dieser Identität sinnvoll oder notwendig ist."
+                            value={item.description}
+                            onChange={(val) => {
+                                onChange({
+                                    ...item,
+                                    description: isStringNullOrEmpty(val) ? null : val,
+                                });
+                            }}
+                            disabled={disabled}
+                            sx={{
+                                mb: 0,
+                            }}
+                        />
+                    </Grid>
+                </Grid>
+            </Box>
+
+            <Box>
+                <Typography
+                    variant="h5"
+                    component="div"
+                    sx={{
+                        mb: 2,
                     }}
                 >
-                    <CheckboxFieldComponent
-                        label="Optional"
-                        hint="Ist eine Identität optional, so muss diese nicht angegeben werden."
-                        variant="switch"
-                        value={item.isOptional ?? false}
-                        onChange={(val) => {
-                            onChange({
-                                ...item,
-                                isOptional: val,
-                            });
-                        }}
-                        sx={{
-                            my: 0,
-                        }}
-                        disabled={disabled}
-                    />
-                </Grid>
+                    Einstellungen
+                </Typography>
 
                 <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
+                    container
+                    spacing={2}
                 >
-                    <Tooltip title="Eine alternative Nutzung von E-Mail als Kommunikationskanal wird in einer zukünftigen Version ermöglicht.">
-                        <span>
-                            <CheckboxFieldComponent
-                                label="E-Mail"
-                                hint="Statt einer Anmeldung mittles Identitätsanbieter kann auch lediglich eine E-Mail-Adresse angegeben werden."
-                                variant="switch"
-                                value={item.allowsMail ?? false}
-                                onChange={(val) => {
-                                    onChange({
-                                        ...item,
-                                        allowsMail: val,
-                                    });
-                                }}
-                                sx={{
-                                    my: 0,
-                                }}
-                                disabled={true}
-                            />
-                        </span>
-                    </Tooltip>
-                </Grid>
-            </Grid>
+                    <Grid
+                        size={{
+                            xs: 12,
+                            md: 6,
+                        }}
+                    >
+                        <CheckboxFieldComponent
+                            label="Optional"
+                            hint="Ist eine Identität optional, muss sie nicht angegeben werden."
+                            variant="switch"
+                            value={item.isOptional ?? false}
+                            onChange={(val) => {
+                                onChange({
+                                    ...item,
+                                    isOptional: val,
+                                });
+                            }}
+                            sx={{
+                                my: 0,
+                            }}
+                            disabled={disabled}
+                        />
+                    </Grid>
 
-            <Divider
-                sx={{
-                    my: 2,
-                }}
-            />
-
-            <Typography
-                variant="h5"
-                component="div"
-            >
-                Aktive Nutzerkontenanbieter
-            </Typography>
-
-            <Grid
-                container
-                spacing={2}
-            >
-                {
-                    providers
-                        .map((providerOption, index) => (
-                            <Grid
-                                key={index}
-                                size={{
-                                    xs: 12,
-                                    lg: 6,
-                                }}
-                            >
-                                <ProviderOption
-                                    provider={providerOption}
-                                    item={item}
-                                    onChange={onChange}
-                                    disabled={disabled}
+                    <Grid
+                        size={{
+                            xs: 12,
+                            md: 6,
+                        }}
+                    >
+                        <Tooltip title="Eine alternative Nutzung von E-Mail als Kommunikationskanal wird in einer zukünftigen Version ermöglicht.">
+                            <span>
+                                <CheckboxFieldComponent
+                                    label="E-Mail"
+                                    hint="Statt einer Anmeldung mittels Identitätsanbieter kann auch lediglich eine E-Mail-Adresse angegeben werden."
+                                    variant="switch"
+                                    value={item.allowsMail ?? false}
+                                    onChange={(val) => {
+                                        onChange({
+                                            ...item,
+                                            allowsMail: val,
+                                        });
+                                    }}
+                                    sx={{
+                                        my: 0,
+                                    }}
+                                    disabled={true}
                                 />
-                            </Grid>
-                        ))
+                            </span>
+                        </Tooltip>
+                    </Grid>
+                </Grid>
+            </Box>
 
-                }
-            </Grid>
-        </>
+            <Box>
+                <ElementEditorSectionHeader
+                    title="Aktive Nutzerkontenanbieter"
+                    variant={"h5"}
+                    disableMarginTop
+                >
+                    Legen Sie fest, welche Anbieter für diese Identität angeboten werden und welches Vertrauensniveau
+                    mindestens erforderlich ist.
+                </ElementEditorSectionHeader>
+
+                <Grid
+                    container
+                    spacing={2}
+                    sx={{mt: 4}}
+                >
+                    {
+                        providers
+                            .map((providerOption, index) => (
+                                <Grid
+                                    key={index}
+                                    size={{
+                                        xs: 12,
+                                        md: 6,
+                                    }}
+                                >
+                                    <ProviderOption
+                                        provider={providerOption}
+                                        item={item}
+                                        onChange={onChange}
+                                        disabled={disabled}
+                                    />
+                                </Grid>
+                            ))
+
+                    }
+                </Grid>
+            </Box>
+        </Stack>
     );
 }
 
@@ -438,14 +505,18 @@ function ProviderOption(props: {
     return (
         <Stack
             direction="column"
-            justifyContent="space-between"
+            spacing={1.5}
             sx={{
                 height: '100%',
+                p: 1.5,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
             }}
         >
             <CheckboxFieldComponent
                 label={provider.name}
-                hint={provider.isTestProvider ? 'Es handelt sich im einen vor-produktiven Identitätsanbieter.' : undefined}
+                hint={provider.isTestProvider ? 'Es handelt sich um einen vor-produktiven Identitätsanbieter.' : undefined}
                 value={selected}
                 onChange={handleToggle}
                 variant="switch"

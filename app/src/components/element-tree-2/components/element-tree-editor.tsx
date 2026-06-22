@@ -271,7 +271,7 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
                             identityMappingInformation != null &&
                             identityMappingInformation.length > 0 &&
                             <Tab
-                                label="Identitätsdatenzuordnung"
+                                label="Identitätsdaten"
                                 value={DefaultTabs.metadata}
                             />
                         }

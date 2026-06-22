@@ -44,7 +44,7 @@ export function ElementTreeEditorContentDispatcher<T extends AnyElement>(props: 
                 />
             );
         case DefaultTabs.metadata:
-            return <ElementTreeEditorContentTabMetadata/>;
+            return <ElementTreeEditorContentTabMetadata editable={editable}/>;
         default:
             return null;
     }

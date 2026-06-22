@@ -1,6 +1,7 @@
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useState} from 'react';
-import {Box, Button, Grid, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {Box, Button, Container, Grid, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -46,6 +47,8 @@ import {RichtextComponent} from '../../components/richtext/richtext.component';
 import {IdentityButton} from '../../modules/identity/components/identity-button/identity-button';
 import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
+import {isStringNotNullOrEmpty} from '../../utils/string-utils';
+import {Chip} from '../../components/chip/chip';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -476,6 +479,12 @@ interface AuthPlaceholderProps {
     onDismiss: () => void;
 }
 
+function getIdentityDisplayName(identity: { title: string | null }): string {
+    const title = identity.title?.trim();
+
+    return title != null && title.length > 0 ? title : 'Unbenannte Identität';
+}
+
 function AuthPlaceholder(props: AuthPlaceholderProps) {
     const {
         identitySlots,
@@ -491,152 +500,264 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
         .every(slot => slot.isOptional || slot.isAuthenticated);
     const someAuthenticated = identitySlots
         .some(slot => slot.isAuthenticated);
+    const sortedIdentitySlots = useMemo(() => {
+        return identitySlots
+            .map((slot, index) => ({
+                slot,
+                index,
+            }))
+            .sort((a, b) => Number(b.slot.isRequired) - Number(a.slot.isRequired) || a.index - b.index)
+            .map(({slot}) => slot);
+    }, [identitySlots]);
 
     return (
-        <Box
+        <Container
+            maxWidth="lg"
             sx={{
-                px: 24,
-                pt: 8,
-                pb: 16,
-                [theme.breakpoints.down('md')]: {
-                    px: 8,
+                pt: {
+                    xs: 5,
+                    md: 8,
                 },
-                [theme.breakpoints.down('sm')]: {
-                    px: 4,
+                pb: {
+                    xs: 10,
+                    md: 16,
                 },
             }}
         >
-            <Box marginBottom={4}>
-                {
-                    authRequired &&
-                    <>
-                        <Typography
-                            variant="h2"
-                            component="div"
-                        >
-                            Anmeldung erforderlich
-                        </Typography>
-
-                        <Typography
-                            sx={{
-                                mt: 1,
-                                maxWidth: 600,
-                            }}
-                        >
-                            Sie müssen als mindestens einer der folgenden Identitäten anmelden.
-                            Nach einer erfolgreichen Authentifizierung können Sie mit dem Ausfüllen des Formulars
-                            fortfahren.
-                        </Typography>
-                    </>
-                }
-            </Box>
-
             <Grid
                 container
-                spacing={2}
+                spacing={3}
             >
+                <Grid size={{xs: 12, md: 10, lg: 8}} sx={{mb: 2}}>
+                    {
+                        authRequired &&
+                        <>
+                            <Typography
+                                variant="h2"
+                                component="div"
+                            >
+                                Anmeldung erforderlich
+                            </Typography>
+
+                            <Typography
+                                sx={{
+                                    mt: 1,
+                                    maxWidth: 680,
+                                }}
+                            >
+                                Sie müssen sich mit den nachfolgend als verpflichtend gekennzeichneten Identitäten anmelden.
+                                Nach einer erfolgreichen Authentifizierung können Sie mit dem Ausfüllen des Formulars
+                                fortfahren.
+                            </Typography>
+                        </>
+                    }
+                    {
+                        !authRequired &&
+                        <>
+                            <Typography
+                                variant="h2"
+                                component="div"
+                            >
+                                Anmeldung optional
+                            </Typography>
+
+                            <Typography
+                                sx={{
+                                    mt: 1,
+                                    maxWidth: 680,
+                                }}
+                            >
+                                Sie können sich optional mit einer der nachfolgenden Identitäten anmelden.
+                                Nach einer erfolgreichen Authentifizierung werden verfügbare Daten automatisch in das Formular
+                                übernommen. Sie können das Formular auch ohne Anmeldung ausfüllen.
+                            </Typography>
+                        </>
+                    }
+                </Grid>
+
                 {
-                    identitySlots
+                    sortedIdentitySlots
                         .map(slot => (
                             <Grid
                                 key={slot.id}
                                 size={{
                                     xs: 12,
-                                    xl: 6,
-                                }}
-                                component={Paper}
-                                variant="outlined"
-                                sx={{
-                                    p: 2,
+                                    md: 6,
                                 }}
                             >
-                                <Typography variant="caption">
-                                    Anmelden als
-                                </Typography>
-                                <Typography
-                                    variant="h4"
-                                    component="h2"
-                                >
-                                    {slot.title}
-                                </Typography>
-
-                                <RichtextComponent
-                                    content={slot.description}
+                                <Paper
+                                    variant="outlined"
                                     sx={{
-                                        mt: 1,
+                                        height: '100%',
+                                        p: {
+                                            xs: 2,
+                                            md: 2.5,
+                                        },
+                                        borderColor: slot.isAuthenticated
+                                            ? alpha(theme.palette.success.main, 0.45)
+                                            : slot.isRequired
+                                                ? alpha(theme.palette.warning.main, 0.5)
+                                                : alpha(theme.palette.text.primary, 0.16),
+                                        backgroundColor: slot.isAuthenticated
+                                            ? alpha(theme.palette.success.main, 0.0125)
+                                            : slot.isRequired
+                                                ? alpha(theme.palette.warning.main, 0.0125)
+                                                : undefined,
                                     }}
-                                />
-
-                                {
-                                    slot.isRequired &&
-                                    <Typography
-                                        variant="body2"
-                                        mt={2}
+                                >
+                                    <Box
+                                        sx={{
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            height: '100%',
+                                        }}
                                     >
-                                        Eine Authentifizierung mittels einem der nachfolgenden Konten
-                                        ist <strong>verpflichtend</strong>.
-                                        Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
-                                    </Typography>
-                                }
+                                        <Box>
+                                            <Typography variant="caption">
+                                                Anmelden als
+                                            </Typography>
+                                            <Box
+                                                sx={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    flexWrap: 'wrap',
+                                                    columnGap: 1.25,
+                                                    rowGap: 0.5,
+                                                    mt: 0.25,
+                                                }}
+                                            >
+                                                <Typography
+                                                    variant="h4"
+                                                    component="h2"
+                                                >
+                                                    {getIdentityDisplayName(slot)}
+                                                </Typography>
 
-                                {
-                                    slot.isOptional &&
-                                    <Typography
-                                        variant="body2"
-                                        mt={2}
-                                    >
-                                        Eine Authentifizierung mittels der nachfolgenden Konten
-                                        ist <strong>optional</strong> möglich.
-                                        Ihre Daten werden im Anschluss automatisch in den Antrag übernommen.
-                                    </Typography>
-                                }
+                                                <Chip
+                                                    mode="soft"
+                                                    label={slot.isRequired ? 'Verpflichtend' : 'Optional'}
+                                                    color={slot.isRequired ? 'warning' : 'info'}
+                                                    size="small"
+                                                />
+                                            </Box>
+                                        </Box>
 
-                                {
-                                    slot
-                                        .availableIdentityProviders
-                                        .map((idp) => (
-                                            <IdentityButton
-                                                relatedProcessNodeId={relatedProcessNodeId}
-                                                identityProviderKey={idp.identityProviderKey}
-                                                identityProviderName={idp.identityProviderName}
-                                                identityProviderType={idp.identityProviderType}
-                                                identityProviderAssetKey={idp.identityProviderAssetKey}
-                                                isAuthenticated={idp.isAuthenticatedWithThis}
-                                                identityId={slot.id}
-                                                additionalScopes={idp.additionalScopes}
+                                        {
+                                            isStringNotNullOrEmpty(slot.description) &&
+                                            <RichtextComponent
+                                                content={slot.description}
+                                                sx={{
+                                                    mt: 2,
+                                                }}
                                             />
-                                        ))
-                                }
+                                        }
+
+                                        {
+                                            slot.isRequired &&
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                mt={2}
+                                            >
+                                                Eine Authentifizierung mit einem der nachfolgenden Konten
+                                                ist verpflichtend.
+                                                Ihre Daten werden im Anschluss automatisch in das Formular übernommen.
+                                            </Typography>
+                                        }
+
+                                        {
+                                            slot.isOptional &&
+                                            <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                                mt={2}
+                                            >
+                                                Eine Authentifizierung mit einem der nachfolgenden Konten
+                                                ist optional möglich.
+                                                Ihre Daten werden im Anschluss automatisch in das Formular übernommen.
+                                            </Typography>
+                                        }
+
+                                        <Box
+                                            sx={{
+                                                mt: 2,
+                                            }}
+                                        >
+                                            {
+                                                slot.availableIdentityProviders.length === 0
+                                                    ? (
+                                                        <Box
+                                                            sx={(theme) => ({
+                                                                mt: 2,
+                                                                px: 2,
+                                                                py: 1.5,
+                                                                border: '1px dashed',
+                                                                borderColor: alpha(theme.palette.text.primary, 0.18),
+                                                                borderRadius: 1,
+                                                                backgroundColor: alpha(theme.palette.text.primary, 0.015),
+                                                            })}
+                                                        >
+                                                            <Typography
+                                                                variant="body2"
+                                                                color="text.secondary"
+                                                            >
+                                                                Für diese Identität steht aktuell keine Anmeldemöglichkeit zur Verfügung.
+                                                            </Typography>
+                                                        </Box>
+                                                    )
+                                                    : slot
+                                                        .availableIdentityProviders
+                                                        .map((idp) => (
+                                                            <IdentityButton
+                                                                key={`${slot.id}-${idp.identityProviderKey}`}
+                                                                relatedProcessNodeId={relatedProcessNodeId}
+                                                                identityProviderKey={idp.identityProviderKey}
+                                                                identityProviderName={idp.identityProviderName}
+                                                                identityProviderType={idp.identityProviderType}
+                                                                identityProviderAssetKey={idp.identityProviderAssetKey}
+                                                                isAuthenticated={idp.isAuthenticatedWithThis}
+                                                                identityId={slot.id}
+                                                                additionalScopes={idp.additionalScopes}
+                                                            />
+                                                        ))
+                                            }
+                                        </Box>
+                                    </Box>
+                                </Paper>
                             </Grid>
                         ))
                 }
-            </Grid>
 
-            <Box
-                marginTop={2}
-                textAlign="right"
-            >
-                {
-                    !authRequired &&
-                    !someAuthenticated &&
-                    <Button
-                        endIcon={<ArrowForward/>}
-                        onClick={onDismiss}
+                <Grid size={{xs: 12}}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                        }}
                     >
-                        Ohne Anmeldung fortfahren
-                    </Button>
-                }
-                {
-                    authRequired &&
-                    <Button
-                        endIcon={<ArrowForward/>}
-                        onClick={onDismiss}
-                        disabled={!allRequiredAuthenticated}
-                    >
-                        Mit Formular fortfahren
-                    </Button>
-                }
-            </Box>
-        </Box>
+                        {
+                            !authRequired &&
+                            !someAuthenticated &&
+                            <Button
+                                endIcon={<ArrowForward/>}
+                                onClick={onDismiss}
+                            >
+                                Ohne Anmeldung fortfahren
+                            </Button>
+                        }
+                        {
+                            authRequired &&
+                            <Button
+                                endIcon={<ArrowForward/>}
+                                onClick={onDismiss}
+                                disabled={!allRequiredAuthenticated}
+                            >
+                                Mit Formular fortfahren
+                            </Button>
+                        }
+                    </Box>
+                </Grid>
+            </Grid>
+        </Container>
     );
 }
