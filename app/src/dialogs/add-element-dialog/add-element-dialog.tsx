@@ -17,7 +17,7 @@ import {
     useOptionalProcessNodeEditorContext,
 } from '../../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
 import {SelectionListRow} from '../../components/selection-dialog/selection-list-row';
-import {getElementIcon, getElementIconForType} from '../../data/element-type/element-icons';
+import {getElementIconForType} from '../../data/element-type/element-icons';
 import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
@@ -58,7 +58,7 @@ function resolveAllowedChildTypes(props: AddElementDialogProps): Set<ElementType
 
 function filterReusableUiDefinitions(
     props: AddElementDialogProps,
-    definitions: ProcessNodeDefinitionMetadataReusableUiDefinition[]
+    definitions: ProcessNodeDefinitionMetadataReusableUiDefinition[],
 ): ProcessNodeDefinitionMetadataReusableUiDefinition[] {
     const allowedChildTypes = resolveAllowedChildTypes(props);
 
@@ -95,7 +95,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
         }
         const reusableDefinitions = filterReusableUiDefinitions(
             props,
-            opec.incomingMetadata.reusableUiDefinitions
+            opec.incomingMetadata.reusableUiDefinitions,
         );
 
         return reusableDefinitions.length > 0 ? reusableDefinitions : null;
