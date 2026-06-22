@@ -1,8 +1,5 @@
 import {useEffect, useState} from 'react';
 import {Box, Button, Stack} from '@mui/material';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import {renderToStaticMarkup} from 'react-dom/server';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
@@ -24,17 +21,6 @@ interface HtmlTemplateInputComponentProps {
     onChange: (value: HtmlTemplateInputValue | null) => void;
 }
 
-function renderRichTextMarkdown(markdown: string): string {
-    return renderToStaticMarkup(
-        <ReactMarkdown
-            remarkPlugins={[
-                remarkGfm,
-            ]}
-        >
-            {markdown}
-        </ReactMarkdown>,
-    );
-}
 
 export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProps) {
     const {

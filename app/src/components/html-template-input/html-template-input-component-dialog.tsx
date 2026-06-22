@@ -1,23 +1,10 @@
 import {ReactEventHandler, useCallback, useEffect, useState} from 'react';
-import {
-    Alert,
-    Box,
-    Button,
-    CircularProgress,
-    Dialog,
-    DialogActions,
-    DialogContent,
-    Grid,
-    Stack,
-    Typography,
-    useTheme,
-} from '@mui/material';
+import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {ImageSelector} from '../../modules/assets/components/image-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
-import {HtmlTemplateSlot, parseHtmlTemplateSlots} from './html-template-input-utils';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {RichTextInputComponent} from '../rich-text-input-component/rich-text-input-component';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
@@ -34,21 +21,11 @@ interface HtmlTemplateInputComponentDialogProps {
     onClose: () => void;
 }
 
-function renderRichTextMarkdown(markdown: string): string {
-    return renderToStaticMarkup(
-        <ReactMarkdown
-            remarkPlugins={[
-                remarkGfm,
-            ]}
-        >
-            {markdown}
-        </ReactMarkdown>,
-    );
-}
+type SlotType = 'text' | 'richtext' | 'image';
 
 interface SlotToEdit {
     key: string;
-    type: 'text' | 'richtext' | 'image';
+    type: SlotType;
     label: string;
     hint: string;
     defaultValue: string;
@@ -72,7 +49,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
 
     const [showSlotToEdit, setShowSlotToEdit] = useState(false);
     const [slotToEdit, setSlotToEdit] = useState<SlotToEdit | null>(null);
-    const [editedSlotValue, setEditedSlotValue] = useState<string | null>(null);
+    const [editedSlotValue, setEditedSlotValue] = useState<string | null | undefined>(undefined);
 
     useEffect(() => {
         // Reset the edited slot value if the slot to edit changes to prevent old value display.
@@ -150,18 +127,21 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
             .forEach((slotElement) => {
                 const elem = slotElement as HTMLElement;
                 const slotKey = elem.dataset.slot!;
+
                 _slotRefs[slotKey] = elem;
 
                 if (slots[slotKey] != null) {
-                    elem.textContent = slots[slotKey];
+                    setSlotContent(elem, slots[slotKey]);
                 }
 
                 elem.style.backgroundColor = theme.palette.grey[200];
                 elem.style.cursor = 'pointer';
                 elem.onclick = () => {
-                    const type = elem.dataset.slotType as 'text' | 'richtext' | 'image' ?? 'text';
+                    const type: SlotType = elem.dataset.slotType as SlotType ?? 'text';
                     let defaultValue = '';
-                    if (type === 'text' || type === 'richtext') {
+                    if (type === 'text') {
+                        defaultValue = collapseWhiteSpacesInText(elem.textContent ?? '');
+                    } else if (type === 'richtext') {
                         defaultValue = elem.textContent?.trim() ?? '';
                     } else if (type === 'image') {
                         defaultValue = elem.getAttribute('src')?.trim() ?? '';
@@ -193,13 +173,12 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
         if (slotToEdit != null) {
             onChangeSlots({
                 ...slots,
-                [slotToEdit.key]: editedSlotValue,
+                [slotToEdit.key]: editedSlotValue ?? null,
             });
 
             const slotNode = slotRefs[slotToEdit.key];
-            console.log('slotNode', slotNode);
             if (slotNode != null) {
-                slotNode.textContent = editedSlotValue;
+                setSlotContent(slotNode, editedSlotValue);
             }
         }
         handleCloseSlotToEdit();
@@ -211,6 +190,14 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
             setSlotToEdit(null);
         }, 300);
     };
+
+    const value = slotToEdit == null
+        ? undefined
+        : (
+            editedSlotValue === undefined
+                ? (slots[slotToEdit.key] ?? (isStringNotNullOrEmpty(slotToEdit.defaultValue) ? slotToEdit.defaultValue : null))
+                : editedSlotValue
+        );
 
     return (
         <>
@@ -302,7 +289,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                     <Button
                         onClick={handleClose}
                     >
-                        Schließen
+                        Übernehmen
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -339,7 +326,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                                 <TextFieldComponent
                                     label={slotToEdit.label}
                                     hint={slotToEdit.hint}
-                                    value={editedSlotValue ?? slots[slotToEdit.key] ?? (isStringNotNullOrEmpty(slotToEdit.defaultValue) ? slotToEdit.defaultValue : null)}
+                                    value={value}
                                     onChange={(val) => {
                                         setEditedSlotValue(val);
                                     }}
@@ -351,7 +338,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                                 <RichTextInputComponent
                                     label={slotToEdit.label}
                                     hint={slotToEdit.hint}
-                                    value={editedSlotValue ?? slots[slotToEdit.key] ?? (isStringNotNullOrEmpty(slotToEdit.defaultValue) ? slotToEdit.defaultValue : null)}
+                                    value={value}
                                     onChange={(val) => {
                                         setEditedSlotValue(val);
                                     }}
@@ -363,13 +350,14 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                                 <ImageSelector
                                     label={slotToEdit.label}
                                     hint={slotToEdit.hint}
-                                    value={editedSlotValue ?? slots[slotToEdit.key] ?? (isStringNotNullOrEmpty(slotToEdit.defaultValue) ? slotToEdit.defaultValue : null)}
+                                    value={value ?? null}
                                     onChange={(val) => {
+                                        console.log('image_VALUE', val);
                                         setEditedSlotValue(val);
                                     }}
                                     selectLabel="Datei auswählen"
                                     size={{
-                                        aspectRatio: 1
+                                        aspectRatio: 1,
                                     }}
                                 />
                             }
@@ -394,178 +382,38 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
     );
 }
 
-
-interface HtmlTemplateEditorDialogContentProps {
-    label: string;
-    disabled?: boolean;
-    isLoadingTemplate: boolean;
-    templateLoadError: string | null;
-    parsedTemplate: ReturnType<typeof parseHtmlTemplateSlots> | null;
-    previewHtml: string | null;
-    slots: Record<string, string | null>;
-    onSlotChange: (slotId: string, value: string | null) => void;
+function collapseWhiteSpacesInText(text: string): string {
+    return text.replace(/\s+/g, ' ').trim();
 }
 
-function HtmlTemplateEditorDialogContent(props: HtmlTemplateEditorDialogContentProps) {
-    const {
-        label,
-        disabled,
-        isLoadingTemplate,
-        templateLoadError,
-        parsedTemplate,
-        previewHtml,
-        slots,
-        onSlotChange,
-    } = props;
+function setSlotContent(slotNode: HTMLElement, value: string | null | undefined): void {
+    const slotType: SlotType = slotNode.dataset.slotType as SlotType ?? 'text';
 
-    return (
-        <Stack spacing={2}>
-            {
-                isLoadingTemplate &&
-                <Stack
-                    direction="row"
-                    spacing={1.5}
-                    alignItems="center"
-                    sx={{py: 1}}
-                >
-                    <CircularProgress size={18}/>
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
-                    >
-                        HTML-Vorlage wird geladen...
-                    </Typography>
-                </Stack>
+    switch (slotType) {
+        case 'text':
+            slotNode.textContent = value ?? '';
+            break;
+        case 'richtext':
+            slotNode.innerHTML = renderRichTextMarkdown(value ?? '');
+            break;
+        case 'image':
+            let link = '';
+            if (value != null && isStringNotNullOrEmpty(value)) {
+                link = AssetsApiService.useAssetLink(value);
             }
-
-            {
-                templateLoadError != null &&
-                <Alert severity="error">
-                    {templateLoadError}
-                </Alert>
-            }
-
-            {
-                parsedTemplate != null &&
-                parsedTemplate.unsupportedSlots.length > 0 &&
-                <Alert severity="warning">
-                    Nicht unterstützte Slots: {parsedTemplate.unsupportedSlots.map((slot) => slot.id).join(', ')}
-                </Alert>
-            }
-
-            {
-                parsedTemplate != null &&
-                !isLoadingTemplate &&
-                <Grid
-                    container
-                    spacing={2}
-                >
-                    <Grid size={{xs: 12, lg: 7}}>
-                        <Box
-                            sx={{
-                                border: '1px solid',
-                                borderColor: 'divider',
-                                borderRadius: 1,
-                                overflow: 'hidden',
-                                bgcolor: 'background.paper',
-                                aspectRatio: '210/297',
-                                p: 4,
-                            }}
-                        >
-                            <Box
-                                component="iframe"
-                                title={`${label} Vorschau`}
-                                srcDoc={previewHtml ?? ''}
-                                sandbox=""
-                                sx={{
-                                    display: 'block',
-                                    width: '100%',
-                                    height: {
-                                        xs: 420,
-                                        lg: 620,
-                                    },
-                                    border: 0,
-                                    bgcolor: 'white',
-                                }}
-                            />
-                        </Box>
-                    </Grid>
-
-                    <Grid size={{xs: 12, lg: 5}}>
-                        <Stack spacing={2}>
-                            {
-                                parsedTemplate.slots.length === 0 ?
-                                    <Alert severity="info">
-                                        Die ausgewählte HTML-Vorlage enthält keine unterstützten Slots.
-                                    </Alert> :
-                                    parsedTemplate.slots.map((slot) => (
-                                        <HtmlTemplateSlotInput
-                                            key={slot.id}
-                                            slot={slot}
-                                            value={slots[slot.id] ?? null}
-                                            disabled={disabled}
-                                            onChange={(nextSlotValue) => {
-                                                onSlotChange(slot.id, nextSlotValue);
-                                            }}
-                                        />
-                                    ))
-                            }
-                        </Stack>
-                    </Grid>
-                </Grid>
-            }
-        </Stack>
-    );
-}
-
-interface HtmlTemplateSlotInputProps {
-    slot: HtmlTemplateSlot;
-    value: string | null;
-    disabled?: boolean;
-    onChange: (value: string | null) => void;
-}
-
-function HtmlTemplateSlotInput(props: HtmlTemplateSlotInputProps) {
-    const {
-        slot,
-        value,
-        disabled,
-        onChange,
-    } = props;
-
-    if (slot.type === 'image') {
-        return (
-            <ImageSelector
-                label={slot.label}
-                hint=""
-                selectLabel={`${slot.label} auswählen`}
-                size={{aspectRatio: 3}}
-                value={value}
-                onChange={onChange}
-                disabled={disabled}
-            />
-        );
+            slotNode.setAttribute('src', link);
+            break;
     }
+}
 
-    if (slot.type === 'richtext') {
-        return (
-            <RichTextInputComponent
-                label={slot.label}
-                value={value}
-                onChange={onChange}
-                disabled={disabled}
-                reducedMode
-            />
-        );
-    }
-
-    return (
-        <TextFieldComponent
-            label={slot.label}
-            value={value}
-            onChange={onChange}
-            disabled={disabled}
-            placeholder={slot.defaultValue ?? undefined}
-        />
+function renderRichTextMarkdown(markdown: string): string {
+    return renderToStaticMarkup(
+        <ReactMarkdown
+            remarkPlugins={[
+                remarkGfm,
+            ]}
+        >
+            {markdown}
+        </ReactMarkdown>,
     );
 }
