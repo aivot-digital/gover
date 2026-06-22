@@ -87,7 +87,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
             <AssetSelector
                 label={label}
                 hint={hint ?? undefined}
-                error={error ?? undefined}
+                error={error ?? templateLoadError ?? undefined}
                 selectLabel="HTML-Vorlage auswählen"
                 value={assetKey}
                 onChange={(val) => {
@@ -96,7 +96,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                         slots: value?.slots ?? {},
                     });
                 }}
-                disabled={disabled}
+                disabled={disabled || isLoadingTemplate}
                 required={required ?? undefined}
                 mimetype="text/html"
                 placeholder="Keine HTML-Vorlage ausgewählt"
@@ -109,7 +109,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                     onClick={() => {
                         setShowEditorDialog(true);
                     }}
-                    disabled={disabled || assetKey == null || isStringNullOrEmpty(assetKey)}
+                    disabled={disabled || assetKey == null || isStringNullOrEmpty(assetKey) || isLoadingTemplate || templateLoadError != null}
                 >
                     Anpassen
                 </Button>

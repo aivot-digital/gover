@@ -29,6 +29,7 @@ import {systemRolesRoutes} from "../../modules/system/system-roles-routes";
 import {storageRoutes} from '../../modules/storage/storage-routes';
 import {auditRoutes} from '../../modules/audit/audit-routes';
 import {elementsRoutes} from '../../modules/elements/elements-routes';
+import {NodeConfigMaker} from '../../pages/staff-pages/node-config-maker/node-config-maker';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -70,6 +71,10 @@ const router = sentryCreateBrowserRouter(
                 {
                     path: '/testinghall',
                     element: <Testinghall />,
+                },
+                {
+                    path: '/node-config-maker',
+                    element: <NodeConfigMaker />,
                 },
                 {
                     path: '/organigram',

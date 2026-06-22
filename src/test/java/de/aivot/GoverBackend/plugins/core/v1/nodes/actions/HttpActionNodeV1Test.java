@@ -15,6 +15,9 @@ import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionI
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.GoverBackend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
+import de.aivot.GoverBackend.secrets.repositories.SecretRepository;
+import de.aivot.GoverBackend.secrets.services.SecretService;
+import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.utils.MultipartUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -53,23 +56,32 @@ class HttpActionNodeV1Test {
 
     private HttpService httpService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private StorageService storageService;
+    private SecretRepository secretRepository;
+    private SecretService secretService;
     private HttpActionNodeV1 node;
 
     @BeforeEach
     void setUp() {
         httpService = mock(HttpService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        storageService = mock(StorageService.class);
+        secretRepository = mock(SecretRepository.class);
+        secretService = mock(SecretService.class);
 
         node = new HttpActionNodeV1(
                 httpService,
                 new PassthroughTemplateRenderService(),
                 new JavascriptEngineFactoryService(List.of()),
-                processInstanceAttachmentService
+                processInstanceAttachmentService,
+                storageService,
+                secretRepository,
+                secretService
         );
     }
 
     @Test
-    void init_ShouldBuildMultipartFieldsFromNamedRows() throws Exception {
+    void init_ShouldBuildMultipartFieldsFromConfiguredRows() throws Exception {
         when(httpService.request(
                 eq(HttpMethod.POST),
                 any(),
@@ -77,16 +89,13 @@ class HttpActionNodeV1Test {
                 any()
         )).thenReturn(ResponseEntity.ok("ok".getBytes(StandardCharsets.UTF_8)));
 
-        var configuration = new HttpActionNodeV1.HttpActionNodeConfig();
-        configuration.general = generalConfig("POST", "https://gover.test/api");
-        configuration.outgoing = new HttpActionNodeV1.HttpActionNodeOutgoingConfig();
-        configuration.outgoing.bodyType = "multipart";
-        configuration.outgoing.sourceMode = "selected";
-        configuration.outgoing.multipartFields = List.of(
-                multipartField("firstName", "person.vorname"),
-                multipartField("status", "_.nodeA.status")
+        var configuration = baseConfig("POST", "https://gover.test/api", "text", "200");
+        configuration.requestData = new HttpActionNodeV1Config.RequestData();
+        configuration.requestData.requestContentType = HttpActionNodeV1Config.RequestData.REQUEST_CONTENT_TYPE_OPT_MULTIPARTFORMDATA;
+        configuration.requestData.requestFormFields = List.of(
+                Map.of("name", "firstName", "value", "Anna"),
+                Map.of("name", "status", "value", "done")
         );
-        configuration.incoming = incomingConfig("text", 200, null);
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
@@ -105,6 +114,30 @@ class HttpActionNodeV1Test {
     }
 
     @Test
+    void init_ShouldBuildJsonBodyFromProcessDataKey() throws Exception {
+        when(httpService.request(eq(HttpMethod.POST), any(), anyString(), any()))
+                .thenReturn(ResponseEntity.ok("ok".getBytes(StandardCharsets.UTF_8)));
+
+        var configuration = baseConfig("POST", "https://gover.test/api", "text", "200");
+        configuration.requestData = new HttpActionNodeV1Config.RequestData();
+        configuration.requestData.requestContentType = HttpActionNodeV1Config.RequestData.REQUEST_CONTENT_TYPE_OPT_JSON;
+        configuration.requestData.requestContentTypeJsonConfig = new HttpActionNodeV1Config.RequestData.RequestContentTypeJsonConfig();
+        configuration.requestData.requestContentTypeJsonConfig.requestJsonSource = HttpActionNodeV1Config.RequestData.RequestContentTypeJsonConfig.REQUEST_JSON_SOURCE_OPT_VORGANGSDATEN;
+        configuration.requestData.requestContentTypeJsonConfig.requestJsonProcessDataKey = "person";
+
+        var result = assertInstanceOf(
+                ProcessNodeExecutionResultTaskCompleted.class,
+                node.init(context(configuration))
+        );
+
+        assertEquals("success", result.getViaPort());
+
+        var bodyCaptor = ArgumentCaptor.forClass(String.class);
+        verify(httpService).request(eq(HttpMethod.POST), any(), bodyCaptor.capture(), any());
+        assertEquals("{\"vorname\":\"Anna\"}", bodyCaptor.getValue());
+    }
+
+    @Test
     void init_ShouldRouteUnexpectedStatusToErrorPort() throws Exception {
         when(httpService.request(eq(HttpMethod.GET), any(), any()))
                 .thenReturn(ResponseEntity
@@ -112,10 +145,7 @@ class HttpActionNodeV1Test {
                         .header("X-Error-Code", "unprocessable")
                         .body("invalid".getBytes(StandardCharsets.UTF_8)));
 
-        var configuration = new HttpActionNodeV1.HttpActionNodeConfig();
-        configuration.general = generalConfig("GET", "https://gover.test/api");
-        configuration.outgoing = new HttpActionNodeV1.HttpActionNodeOutgoingConfig();
-        configuration.incoming = incomingConfig("text", 200, null);
+        var configuration = baseConfig("GET", "https://gover.test/api", "text", "200");
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
@@ -133,27 +163,11 @@ class HttpActionNodeV1Test {
     }
 
     @Test
-    void validateConfiguration_ShouldRejectOutputMappingsForFileResponses() throws Exception {
-        var configuration = new HttpActionNodeV1.HttpActionNodeConfig();
-        configuration.general = generalConfig("GET", "https://gover.test/file");
-        configuration.outgoing = new HttpActionNodeV1.HttpActionNodeOutgoingConfig();
-        configuration.incoming = incomingConfig("file", 200, null);
-
-        var errors = node.validateConfiguration(
-                processNode(Map.of("fileName", "attachment.fileName")),
-                configuration
-        );
-
-        assertNotNull(errors);
-        assertTrue(errors.containsKey("responseType"));
-    }
-
-    @Test
     void init_ShouldStoreFileResponseAsAttachment() throws Exception {
         when(httpService.request(eq(HttpMethod.GET), any(), any()))
                 .thenReturn(ResponseEntity
                         .status(HttpStatus.OK)
-                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"document.pdf\"")
+                        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"fallback.pdf\"")
                         .header(HttpHeaders.CONTENT_TYPE, "application/pdf")
                         .body("pdf".getBytes(StandardCharsets.UTF_8)));
 
@@ -166,10 +180,8 @@ class HttpActionNodeV1Test {
                             .setStoragePathFromRoot("attachments/document.pdf");
                 });
 
-        var configuration = new HttpActionNodeV1.HttpActionNodeConfig();
-        configuration.general = generalConfig("GET", "https://gover.test/file");
-        configuration.outgoing = new HttpActionNodeV1.HttpActionNodeOutgoingConfig();
-        configuration.incoming = incomingConfig("file", 200, null);
+        var configuration = baseConfig("GET", "https://gover.test/file", "file", "200");
+        configuration.responseConfig.responseFileName = "document.pdf";
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
@@ -185,31 +197,20 @@ class HttpActionNodeV1Test {
         assertNotNull(result.getNodeData().get("attachmentKey"));
     }
 
-    private static HttpActionNodeV1.HttpActionNodeGeneralConfig generalConfig(String method, String url) {
-        var general = new HttpActionNodeV1.HttpActionNodeGeneralConfig();
-        general.method = method;
-        general.url = url;
-        return general;
+    private static HttpActionNodeV1Config baseConfig(String method,
+                                                     String url,
+                                                     String responseBodyType,
+                                                     String... allowedStatusCodes) {
+        var configuration = new HttpActionNodeV1Config();
+        configuration.httpMethod = method;
+        configuration.url = url;
+        configuration.responseConfig = new HttpActionNodeV1Config.ResponseConfig();
+        configuration.responseConfig.responseBodyType = responseBodyType;
+        configuration.responseConfig.responseStatusCode = List.of(allowedStatusCodes);
+        return configuration;
     }
 
-    private static HttpActionNodeV1.HttpActionNodeIncomingConfig incomingConfig(String responseType,
-                                                                                int expectedStatusCode,
-                                                                                String responseProcessorCode) {
-        var incoming = new HttpActionNodeV1.HttpActionNodeIncomingConfig();
-        incoming.responseType = responseType;
-        incoming.expectedStatusCode = expectedStatusCode;
-        incoming.responseProcessorCode = responseProcessorCode;
-        return incoming;
-    }
-
-    private static HttpActionNodeV1.HttpActionNodeMultipartFieldConfig multipartField(String name, String valueKey) {
-        var field = new HttpActionNodeV1.HttpActionNodeMultipartFieldConfig();
-        field.name = name;
-        field.valueKey = valueKey;
-        return field;
-    }
-
-    private static ProcessNodeExecutionInitContext<HttpActionNodeV1.HttpActionNodeConfig> context(HttpActionNodeV1.HttpActionNodeConfig configuration) {
+    private static ProcessNodeExecutionInitContext<HttpActionNodeV1Config> context(HttpActionNodeV1Config configuration) {
         var processData = new ProcessExecutionData();
         processData.put("$", Map.of(
                 "person", Map.of("vorname", "Anna")
@@ -221,7 +222,7 @@ class HttpActionNodeV1Test {
 
         return new ProcessNodeExecutionInitContext<>(
                 logger(),
-                processNode(Map.of()),
+                processNode(),
                 processInstance(),
                 task(),
                 null,
@@ -230,7 +231,7 @@ class HttpActionNodeV1Test {
         );
     }
 
-    private static ProcessNodeEntity processNode(Map<String, String> outputMappings) {
+    private static ProcessNodeEntity processNode() {
         return new ProcessNodeEntity()
                 .setId(NODE_ID)
                 .setProcessId(PROCESS_ID)
@@ -240,7 +241,7 @@ class HttpActionNodeV1Test {
                 .setProcessNodeDefinitionKey("de.aivot.core.http_request")
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(new de.aivot.GoverBackend.elements.models.AuthoredElementValues())
-                .setOutputMappings(outputMappings);
+                .setOutputMappings(Map.of());
     }
 
     private static ProcessInstanceEntity processInstance() {

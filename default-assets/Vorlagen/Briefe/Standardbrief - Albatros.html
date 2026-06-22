@@ -153,6 +153,8 @@
                 <img
                         data-slot="logo"
                         data-slot-type="image"
+                        data-slot-label="Logo der ausstellenden Organisation"
+                        data-slot-hint="Dieses Bild wird Briefkopf angezeigt. Es sollte das Logo der ausstellenden Organisation enthalten."
                         width="200"
                         src="/api/public/assets/1/files/Logos/Logo%20-%20Bad%20Musterstadt.png"
                         alt="Logo"
@@ -160,46 +162,51 @@
             </div>
             <div class="anschrift-absender-container">
                 <div class="anschrift">
-                    <p
+                    <div
                             data-slot="absender_overline"
                             data-slot-type="text"
                             class="overline"
                     >
                         Stadtverwaltung &bullet; Bad Musterstadt &bullet; Musterstraße 123 &bullet; 12345 Bad
                         Musterstadt
-                    </p>
+                    </div>
                     <div
                             data-slot="anschrift"
                             data-slot-type="richtext"
+                            data-slot-label="Anschrift des Empfängers"
+                            data-slot-hint="Diese Anschrift wird im Briefkopf der PDF-Datei angezeigt. Sie sollte die Anschrift des Empfängers enthalten."
                     >
                         {{ $.person.vorname }} {{ $.person.nachname }} <br/>
                         {{ $.anschrift.strasse }} {{ $.anschrift.hausnummer }} <br/>
                         {{ $.anschrift.plz }} {{ $.anschrift.ort }}
                     </div>
                 </div>
-                <div
-                        data-slot="absender"
-                        data-slot-type="richtext"
-                        class="absender"
-                >
-                    <h2>Der Magistrat</h2>
-                    <p>
-                        Fachdienst 50 - Soziale Leistungen <br/>
-                        Postfach 12, 12345 Bad Musterstadt
-                    </p>
-                    <p>
-                        Frau Mustersachbearbeiterin <br/>
-                        Musterstraße 12, 12345 Bad Musterstadt <br/>
-                        Tel.: 01234 5678 90 <br/>
-                        Fax.: 01234 5678 91 <br/>
-                        E-Mail: sozialamt@bad-musterstadt.de
-                    </p>
-                    <p>
-                        Aktenzeichen: {{ $$.accessKey }}
-                    </p>
-                    <p>
-                        Datum: {{ _date_v1.today() }}
-                    </p>
+                <div class="absender">
+                    <div
+                            data-slot="absender"
+                            data-slot-type="richtext"
+                            data-slot-label="Absender"
+                            data-slot-hint="Dieser Text wird im Briefkopf der PDF-Datei angezeigt. Er sollte die Kontaktdaten des Absenders enthalten."
+                    >
+                        <h2>Der Magistrat</h2>
+                        <p>
+                            Fachdienst 50 - Soziale Leistungen <br/>
+                            Postfach 12, 12345 Bad Musterstadt
+                        </p>
+                        <p>
+                            Frau Mustersachbearbeiterin <br/>
+                            Musterstraße 12, 12345 Bad Musterstadt <br/>
+                            Tel.: 01234 5678 90 <br/>
+                            Fax.: 01234 5678 91 <br/>
+                            E-Mail: sozialamt@bad-musterstadt.de
+                        </p>
+                    </div>
+                    <div>
+                        <p>
+                            Datum: {{ _date_v1.today() }} <br/>
+                            Aktenzeichen: {{ $$.accessKey }}
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>

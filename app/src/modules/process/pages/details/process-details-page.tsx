@@ -91,7 +91,7 @@ export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
 
 const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
-const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
+export const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
 const EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX = 24;
 
 interface RuntimeAttachment {

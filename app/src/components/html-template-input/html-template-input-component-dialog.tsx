@@ -53,7 +53,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
 
     useEffect(() => {
         // Reset the edited slot value if the slot to edit changes to prevent old value display.
-        setEditedSlotValue(null);
+        setEditedSlotValue(undefined);
     }, [slotToEdit]);
 
     useEffect(() => {
@@ -162,7 +162,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
             ...prev,
             ..._slotRefs,
         }));
-    }, []);
+    }, [slots]);
 
     const handleClose = () => {
         // TODO: Prevent
@@ -195,9 +195,19 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
         ? undefined
         : (
             editedSlotValue === undefined
-                ? (slots[slotToEdit.key] ?? (isStringNotNullOrEmpty(slotToEdit.defaultValue) ? slotToEdit.defaultValue : null))
+                ? (
+                    slots[slotToEdit.key] ?? (
+                        isStringNotNullOrEmpty(slotToEdit.defaultValue)
+                            ? slotToEdit.defaultValue
+                            : null
+                    )
+                )
                 : editedSlotValue
         );
+
+    useEffect(() => {
+        console.log('slots changed, updating iframes', slots);
+    }, [slots]);
 
     return (
         <>
@@ -298,7 +308,9 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                 open={showSlotToEdit}
                 onClose={handleCloseSlotToEdit}
                 fullWidth
-                maxWidth="lg"
+                maxWidth={
+                    slotToEdit?.type === 'image' ? 'sm' : 'md'
+                }
             >
                 <DialogTitleWithClose
                     onClose={handleCloseSlotToEdit}
@@ -350,9 +362,8 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                                 <ImageSelector
                                     label={slotToEdit.label}
                                     hint={slotToEdit.hint}
-                                    value={value ?? null}
+                                    value={value != null && value.startsWith('/') ? null : (value ?? null)}
                                     onChange={(val) => {
-                                        console.log('image_VALUE', val);
                                         setEditedSlotValue(val);
                                     }}
                                     selectLabel="Datei auswählen"

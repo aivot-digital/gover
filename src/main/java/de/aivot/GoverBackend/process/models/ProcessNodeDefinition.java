@@ -17,7 +17,9 @@ import de.aivot.GoverBackend.process.models.processContext.*;
 import de.aivot.GoverBackend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import org.springframework.core.io.Resource;
 
+import java.io.IOException;
 import java.util.*;
 
 /**
@@ -85,6 +87,32 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
     }
 
     /**
+     * Loads a configuration layout from a JSON resource.
+     *
+     * <p>This helper is intended for process nodes that keep their editor layout in a static resource instead of
+     * building it programmatically. The resource content must be a JSON representation of a {@link ConfigLayoutElement}.
+     * I/O and JSON conversion failures are wrapped in a {@link ResponseException} with an internal-server-error
+     * response.</p>
+     *
+     * @param configResource The resource containing the serialized configuration layout.
+     * @return The deserialized configuration layout.
+     * @throws ResponseException If the resource cannot be read or converted to a configuration layout.
+     */
+    default ConfigLayoutElement loadConfigLayoutFromResource(@Nonnull Resource configResource) throws ResponseException {
+        try {
+            return ObjectMapperFactory
+                    .getInstance()
+                    .readValue(configResource.getInputStream(), ConfigLayoutElement.class);
+        } catch (IOException e) {
+            throw ResponseException.internalServerError(
+                    e,
+                    "Fehler bei der Erstellung des Konfigurationslayouts: %s",
+                    e.getMessage()
+            );
+        }
+    }
+
+                                                             /**
      * Get the testing layout for nodes of this provider type. This layout is used to be displayed in the testing tab of the node during an active test claim. <br/> Use this to
      * display additional information for the user which is usefull for the testing.
      *
@@ -92,7 +120,7 @@ public interface ProcessNodeDefinition<NodeConfig> extends PluginComponent {
      * @return The testing layout, or null if not provided.
      * @throws ResponseException If an error occurs while generating the layout.
      */
-    @Nullable
+                                                             @Nullable
     default GroupLayoutElement getTestingLayout(@Nonnull ProcessNodeDefinitionTestingLayoutContext<NodeConfig> context) throws ResponseException {
         return null;
     }

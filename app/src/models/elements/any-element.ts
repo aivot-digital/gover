@@ -44,6 +44,7 @@ import {ProcessAttachmentDisplayElement} from './form/content/process-attachment
 import {ProcessAttachmentNameChipInputElement} from './form/input/process-attachment-name-chip-input-element';
 import {ProcessIdentityIdInputElement} from './form/input/process-identity-id-input-element';
 import {HtmlTemplateInputElement} from './form/input/html-template-input-element';
+import {ConfigLayoutElement} from './form/layout/config-layout-element';
 
 export type AnyElement =
     FormLayoutElement |
@@ -95,8 +96,9 @@ export type AnyElementType<T extends ElementType> =
                                                                                                                                                 T extends ElementType.ProcessAttachmentNameChipInput ? ProcessAttachmentNameChipInputElement :
                                                                                                                                                     T extends ElementType.ProcessIdentityIdInput ? ProcessIdentityIdInputElement :
                                                                                                                                                         T extends ElementType.HtmlTemplateInput ? HtmlTemplateInputElement :
-                                                                                                                                                T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
-                                                                                                                                            T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
-                                                                                                                                                T extends ElementType.IdentityConfigElement ? IdentityConfigElement :
-                                                                                                                                                T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
-                                                                                                                                                    T extends ElementType.SummaryLayout ? SummaryLayoutElement : never;
+                                                                                                                                                            T extends ElementType.ProcessAttachmentDisplay ? ProcessAttachmentDisplayElement :
+                                                                                                                                                                T extends ElementType.UiDefinitionInput ? UiDefinitionInputFieldElement :
+                                                                                                                                                                    T extends ElementType.IdentityConfigElement ? IdentityConfigElement :
+                                                                                                                                                                        T extends ElementType.NoCodeInput ? NoCodeInputFieldElement :
+                                                                                                                                                                            T extends ElementType.SummaryLayout ? SummaryLayoutElement :
+                                                                                                                                                                                T extends ElementType.ConfigLayout ? ConfigLayoutElement : never;
