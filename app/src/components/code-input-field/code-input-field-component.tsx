@@ -1,6 +1,10 @@
-import {Box, SxProps, Typography} from '@mui/material';
+import {Box, Dialog, DialogContent, SxProps, Typography} from '@mui/material';
+import {useState} from 'react';
+import OpenInFull from '@aivot/mui-material-symbols-400-outlined/dist/open-in-full/OpenInFull';
 import {CodeEditor} from '../code-editor/code-editor';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
+import {Actions} from '../actions/actions';
+import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 
 export interface CodeInputFieldComponentProps {
     label: string;
@@ -37,6 +41,31 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
 
     const sxArray = Array.isArray(sx) ? sx : [sx];
     const isReadOnly = Boolean(disabled) || Boolean(readOnly);
+    const displayLabel = `${label}${required ? ' *' : ''}`;
+    const [isDialogOpen, setIsDialogOpen] = useState(false);
+
+    const handleChange = (nextValue: string) => {
+        onChange(normalizeCodeInputValue(nextValue));
+    };
+
+    const handleBlur = onBlur != null ? (nextValue: string) => {
+        onBlur(normalizeCodeInputValue(nextValue));
+    } : undefined;
+
+    const renderEditor = (editorHeight: string | null | undefined) => (
+        <CodeEditor
+            value={value}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            disabled={disabled ?? false}
+            readOnly={isReadOnly}
+            wordWrap={wordWrap ?? undefined}
+            error={error != null}
+            language={language ?? undefined}
+            height={editorHeight ?? undefined}
+            actions={[]}
+        />
+    );
 
     return (
         <Box
@@ -47,41 +76,63 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
                 ...sxArray,
             ]}
         >
-            <Typography
+            <Box
                 sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 1,
                     marginBottom: 1,
-                    fontWeight: 'medium',
                 }}
             >
-                {label}{required ? ' *' : ''}
-            </Typography>
+                <Typography
+                    sx={{
+                        fontWeight: 'medium',
+                    }}
+                >
+                    {displayLabel}
+                </Typography>
 
-            <CodeEditor
-                value={value}
-                onChange={(nextValue) => {
-                    if (isStringNullOrEmpty(nextValue)) {
-                        onChange(null);
-                        return;
-                    }
+                <Actions
+                    dense
+                    size="small"
+                    sx={{ml: 'auto'}}
+                    actions={[
+                        {
+                            tooltip: 'In großem Editor öffnen',
+                            disabledTooltip: 'Der Editor ist deaktiviert.',
+                            ariaLabel: 'In großem Editor öffnen',
+                            icon: <OpenInFull fontSize="small"/>,
+                            disabled: disabled ?? false,
+                            onClick: () => {
+                                setIsDialogOpen(true);
+                            },
+                        },
+                    ]}
+                />
+            </Box>
 
-                    onChange(nextValue);
-                }}
-                onBlur={onBlur != null ? (nextValue) => {
-                    if (isStringNullOrEmpty(nextValue)) {
-                        onBlur(null);
-                        return;
-                    }
+            {
+                !isDialogOpen &&
+                renderEditor(height)
+            }
 
-                    onBlur(nextValue);
-                } : undefined}
-                disabled={disabled ?? false}
-                readOnly={isReadOnly}
-                wordWrap={wordWrap ?? undefined}
-                error={error != null}
-                language={language ?? undefined}
-                height={height ?? undefined}
-                actions={[]}
-            />
+            {
+                isDialogOpen &&
+                <Dialog
+                    open
+                    onClose={() => setIsDialogOpen(false)}
+                    fullWidth
+                    maxWidth="xl"
+                >
+                    <DialogTitleWithClose onClose={() => setIsDialogOpen(false)}>
+                        {displayLabel}
+                    </DialogTitleWithClose>
+
+                    <DialogContent>
+                        {renderEditor('calc(100vh - 220px)')}
+                    </DialogContent>
+                </Dialog>
+            }
 
             {
                 (error != null || hint != null) &&
@@ -97,4 +148,12 @@ export function CodeInputFieldComponent(props: CodeInputFieldComponentProps) {
             }
         </Box>
     );
+}
+
+function normalizeCodeInputValue(value: string): string | null {
+    if (isStringNullOrEmpty(value)) {
+        return null;
+    }
+
+    return value;
 }
