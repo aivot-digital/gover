@@ -164,7 +164,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
     }, [slots]);
 
     const handleClose = () => {
-        // TODO: Prevent
+        // TODO: Prevent close if changes exist. Use confirm dialog. If not confirmed do not close if confirmed revert changes.
         onClose();
     };
 
