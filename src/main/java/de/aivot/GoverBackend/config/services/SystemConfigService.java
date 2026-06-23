@@ -123,6 +123,38 @@ public class SystemConfigService {
                 });
     }
 
+    @Nullable
+    public Object getValue(@Nonnull String key) throws ResponseException {
+        var def = getDefinition(key)
+                .orElseThrow(() -> ResponseException
+                        .notFound(
+                                "Der Konfigurationsschlüssel %s ist nicht bekannt.",
+                                StringUtils.quote(key)
+                        ));
+
+        return getValue(def);
+    }
+
+    @Nullable
+    private <T> T getValue(@Nonnull SystemConfigDefinition<T> def) throws ResponseException {
+        var entity = configRepository
+                .findById(def.getKey());
+
+        if (entity.isEmpty()) {
+            return parseDefaultValue(def);
+        }
+
+        return def.parseValueFromDB(entity.get().getValue());
+    }
+
+    @Nullable
+    private static <T> T parseDefaultValue(@Nonnull SystemConfigDefinition<T> def) throws ResponseException {
+        String serializedValue = def
+                .serializeValueToDB(def.getDefaultValue());
+
+        return def.parseValueFromDB(serializedValue);
+    }
+
     private static <T> SystemConfigEntity getDefault(@Nonnull SystemConfigDefinition<T> def) throws ResponseException {
         String serializedValue = def
                 .serializeValueToDB(def.getDefaultValue());
