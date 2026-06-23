@@ -660,8 +660,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                                 mt={2}
                                             >
                                                 Eine Authentifizierung mit einem der nachfolgenden Konten
-                                                ist verpflichtend.
-                                                Ihre Daten werden im Anschluss automatisch in das Formular übernommen.
+                                                ist zwingend erforderlich.
                                             </Typography>
                                         }
 
@@ -674,7 +673,6 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                             >
                                                 Eine Authentifizierung mit einem der nachfolgenden Konten
                                                 ist optional möglich.
-                                                Ihre Daten werden im Anschluss automatisch in das Formular übernommen.
                                             </Typography>
                                         }
 
