@@ -8,6 +8,7 @@ import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
+import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionIO;
 import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import de.aivot.GoverBackend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -35,11 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -147,19 +144,10 @@ class HttpActionNodeV1Test {
 
         var configuration = baseConfig("GET", "https://gover.test/api", "text", "200");
 
-        var result = assertInstanceOf(
-                ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration))
+        assertThrows(
+                ProcessNodeExecutionExceptionIO.class,
+                () -> node.init(context(configuration))
         );
-
-        assertEquals("error", result.getViaPort());
-        assertEquals(422, result.getNodeData().get("statusCode"));
-        assertEquals("invalid", result.getNodeData().get("rawBody"));
-
-        @SuppressWarnings("unchecked")
-        var headers = (Map<String, Object>) result.getNodeData().get("headers");
-        assertNotNull(headers);
-        assertTrue(headers.containsKey("X-Error-Code"));
     }
 
     @Test
