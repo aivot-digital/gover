@@ -1,7 +1,5 @@
 import {ReactEventHandler, useCallback, useEffect, useState} from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {ImageSelector} from '../../modules/assets/components/image-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
@@ -12,6 +10,7 @@ import {VStorageIndexItemWithAssetEntity} from '../../modules/storage/entities/s
 import {DialogProps} from '@mui/material/Dialog';
 import {HtmlTemplateInputValue} from '../../models/elements/form/input/html-template-input-element';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
+import {MarkdownContent} from '../markdown-content/markdown-content';
 
 interface HtmlTemplateInputComponentDialogProps {
     label: string;
@@ -419,12 +418,8 @@ function setSlotContent(slotNode: HTMLElement, value: string | null | undefined)
 
 function renderRichTextMarkdown(markdown: string): string {
     return renderToStaticMarkup(
-        <ReactMarkdown
-            remarkPlugins={[
-                remarkGfm,
-            ]}
-        >
-            {markdown}
-        </ReactMarkdown>,
+        <MarkdownContent
+            markdown={markdown}
+        />,
     );
 }
