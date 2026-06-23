@@ -2,6 +2,7 @@ import React from 'react';
 import {Box, type SxProps, type Theme} from '@mui/material';
 import ReactMarkdown, {type Components} from 'react-markdown';
 import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks';
 
 interface MarkdownContentProps {
     markdown?: string | null;
@@ -115,6 +116,7 @@ export function MarkdownContent(props: MarkdownContentProps) {
                 }}
                 remarkPlugins={[
                     remarkGfm,
+                    remarkBreaks,
                 ]}
             >
                 {markdown ?? ''}
