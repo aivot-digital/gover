@@ -113,6 +113,13 @@ class TemplateLoaderServiceTest {
     }
 
     @Test
+    void markdownDialect_PreservesSoftLineBreaks() {
+        var html = new MarkdownDialect().render("Zeile 1\nZeile 2");
+
+        assertTrue(html.contains("<p>Zeile 1<br />\nZeile 2</p>"));
+    }
+
+    @Test
     void briefkopfTemplate_RendersResponsibleAndManagingAddressesOnly() {
         var responsibleDepartment = new VDepartmentShadowedEntity()
                 .setName("Responsible Department Name")

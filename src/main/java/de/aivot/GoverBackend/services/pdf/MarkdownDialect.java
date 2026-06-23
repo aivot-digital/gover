@@ -5,8 +5,8 @@ import jakarta.annotation.Nullable;
 import org.commonmark.Extension;
 import org.commonmark.ext.autolink.AutolinkExtension;
 import org.commonmark.ext.footnotes.FootnotesExtension;
-import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.ext.gfm.strikethrough.StrikethroughExtension;
+import org.commonmark.ext.gfm.tables.TablesExtension;
 import org.commonmark.ext.task.list.items.TaskListItemsExtension;
 import org.commonmark.parser.Parser;
 import org.commonmark.renderer.html.HtmlRenderer;
@@ -36,6 +36,7 @@ public class MarkdownDialect extends AbstractDialect implements IExpressionObjec
             .build();
     private static final HtmlRenderer RENDERER = HtmlRenderer.builder()
             .extensions(EXTENSIONS)
+            .softbreak("<br />\n")
             .escapeHtml(true)
             .sanitizeUrls(true)
             .build();
