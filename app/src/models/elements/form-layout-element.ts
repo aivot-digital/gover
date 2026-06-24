@@ -9,7 +9,6 @@ import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
 
 export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
-    headline: string | null | undefined;
     tabTitle: string | null | undefined;
     children: AnyElement[] | null | undefined;
 

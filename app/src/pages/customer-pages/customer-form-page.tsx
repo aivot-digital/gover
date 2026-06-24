@@ -332,7 +332,7 @@ export function CustomerFormPage() {
             <SnackbarProvider>
                 <MetaElement
                     faviconUrl={formFaviconUrl}
-                    title={layoutElement.tabTitle ?? layoutElement.headline ?? ''}
+                    title={layoutElement.tabTitle ?? layoutElement.publicTitle ?? ''}
                     titlePrefix={provider}
                 />
 
