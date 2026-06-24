@@ -261,6 +261,82 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             }
 
             {
+                isAnyInputElement(currentElement) &&
+                !hasSummaryLayoutParent &&
+                <Grid
+                    container
+                    columnSpacing={4}
+                >
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                            xl: 3,
+                        }}
+                    >
+                        <CheckboxFieldComponent
+                            label="Pflichtangabe"
+                            value={currentElement.required ?? undefined}
+                            onChange={(checked) => {
+                                onChangeCurrentElement({
+                                    ...currentElement,
+                                    required: checked,
+                                    disabled: false,
+                                    technical: false,
+                                });
+                            }}
+                            hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
+                            disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
+                        />
+                    </Grid>
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                            xl: 3,
+                        }}
+                    >
+                        <CheckboxFieldComponent
+                            label="Eingabe deaktiviert"
+                            value={currentElement.disabled ?? undefined}
+                            onChange={(checked) => {
+                                onChangeCurrentElement({
+                                    ...currentElement,
+                                    required: false,
+                                    disabled: checked,
+                                    technical: false,
+                                });
+                            }}
+                            hint="Deaktivierte Eingaben können nicht bearbeitet werden."
+                            disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.technical)}
+                        />
+                    </Grid>
+                    <Grid
+                        size={{
+                            xs: 12,
+                            lg: 6,
+                            xl: 3,
+                        }}
+                    >
+                        <CheckboxFieldComponent
+                            label="Technisches Feld"
+                            value={currentElement.technical ?? undefined}
+                            onChange={(checked) => {
+                                onChangeCurrentElement({
+                                    ...currentElement,
+                                    required: false,
+                                    disabled: false,
+                                    technical: checked,
+                                });
+                            }}
+                            hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
+                            disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled)}
+                        />
+                    </Grid>
+                </Grid>
+            }
+
+            {
                 tabDescription.isElement &&
                 hasElementSpecificProperties &&
                 <ElementEditorSectionHeader
@@ -296,90 +372,6 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     Für dieses Wurzelelement stehen keine grundlegenden oder elementspezifischen Einstellungen zur
                     Verfügung.
                 </AlertComponent>
-            }
-
-            {
-                isAnyInputElement(currentElement) &&
-                !hasSummaryLayoutParent &&
-                <>
-                    <ElementEditorSectionHeader
-                        title="Eingabeoptionen"
-                        variant="h5"
-                        disableMarginBottom
-                    />
-
-                    <Grid
-                        container
-                        columnSpacing={4}
-                    >
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                                xl: 3,
-                            }}
-                        >
-                            <CheckboxFieldComponent
-                                label="Pflichtangabe"
-                                value={currentElement.required ?? undefined}
-                                onChange={(checked) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        required: checked,
-                                        disabled: false,
-                                        technical: false,
-                                    });
-                                }}
-                                hint="Pflichtangaben müssen von den antragstellenden Personen ausgefüllt werden."
-                                disabled={!editable || Boolean(currentElement.disabled) || Boolean(currentElement.technical)}
-                            />
-                        </Grid>
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                                xl: 3,
-                            }}
-                        >
-                            <CheckboxFieldComponent
-                                label="Eingabe deaktiviert"
-                                value={currentElement.disabled ?? undefined}
-                                onChange={(checked) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        required: false,
-                                        disabled: checked,
-                                        technical: false,
-                                    });
-                                }}
-                                hint="Deaktivierte Eingaben können nicht bearbeitet werden."
-                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.technical)}
-                            />
-                        </Grid>
-                        <Grid
-                            size={{
-                                xs: 12,
-                                lg: 6,
-                                xl: 3,
-                            }}
-                        >
-                            <CheckboxFieldComponent
-                                label="Technisches Feld"
-                                value={currentElement.technical ?? undefined}
-                                onChange={(checked) => {
-                                    onChangeCurrentElement({
-                                        ...currentElement,
-                                        required: false,
-                                        disabled: false,
-                                        technical: checked,
-                                    });
-                                }}
-                                hint="Technische Felder sind für Antragstellende unsichtbar und nicht bearbeitbar."
-                                disabled={!editable || Boolean(currentElement.required) || Boolean(currentElement.disabled)}
-                            />
-                        </Grid>
-                    </Grid>
-                </>
             }
 
             {
