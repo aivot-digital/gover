@@ -391,7 +391,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                         sx={{mt: 8}}
                     >
                         Legt fest, unter welchem Datenschlüssel der Wert dieses Feldes in den Vorgangsdaten gespeichert
-                        und ggfs. aus vorhandenen Vorgangsdaten vorbelegt wird. Ohne Datenschlüssel wird der Wert unter
+                        und ggf. aus vorhandenen Vorgangsdaten vorbelegt wird. Ohne Datenschlüssel wird der Wert unter
                         der ID des Feldes ausschließlich in den Elementdaten gespeichert. Werte können unter Nutzung
                         einer Punktnotation in verschachtelte Datenstrukturen geschrieben und gelesen werden (z. B.
                         „person.vorname“).

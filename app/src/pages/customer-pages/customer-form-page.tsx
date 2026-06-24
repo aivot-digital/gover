@@ -546,8 +546,8 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                 }}
                             >
                                 Sie müssen sich mit den nachfolgend als verpflichtend gekennzeichneten Identitäten anmelden.
-                                Nach einer erfolgreichen Authentifizierung können Sie mit dem Ausfüllen des Formulars
-                                fortfahren.
+                                Nach einer erfolgreichen Authentifizierung werden ggf. verfügbare Daten automatisch in das Formular
+                                übernommen.
                             </Typography>
                         </>
                     }
@@ -568,7 +568,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                 }}
                             >
                                 Sie können sich optional mit einer der nachfolgenden Identitäten anmelden.
-                                Nach einer erfolgreichen Authentifizierung werden verfügbare Daten automatisch in das Formular
+                                Nach einer erfolgreichen Authentifizierung werden ggf. verfügbare Daten automatisch in das Formular
                                 übernommen. Sie können das Formular auch ohne Anmeldung ausfüllen.
                             </Typography>
                         </>
@@ -660,8 +660,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                                 mt={2}
                                             >
                                                 Eine Authentifizierung mit einem der nachfolgenden Konten
-                                                ist verpflichtend.
-                                                Ihre Daten werden im Anschluss automatisch in das Formular übernommen.
+                                                ist zwingend erforderlich.
                                             </Typography>
                                         }
 
@@ -674,7 +673,6 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                                             >
                                                 Eine Authentifizierung mit einem der nachfolgenden Konten
                                                 ist optional möglich.
-                                                Ihre Daten werden im Anschluss automatisch in das Formular übernommen.
                                             </Typography>
                                         }
 
