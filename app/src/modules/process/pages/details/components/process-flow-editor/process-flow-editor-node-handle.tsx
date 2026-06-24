@@ -146,7 +146,9 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                 </Box>
 
                 <Chip
-                    label={port.label}
+                    label={port.description ? (
+                        <span title={port.description}>{port.label}</span>
+                    ) : port.label}
                     size="small"
                     variant="outlined"
                     sx={{
