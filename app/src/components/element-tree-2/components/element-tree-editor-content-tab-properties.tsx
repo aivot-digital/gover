@@ -16,9 +16,8 @@ import {editors} from '../../../editors';
 import {EditorDispatcher} from '../../editor-dispatcher';
 import {CheckboxFieldComponent} from '../../checkbox-field/checkbox-field-component';
 import {AlertComponent} from '../../alert/alert-component';
-import {ElementWithParents} from '../../../utils/flatten-elements';
+import {ElementWithParents, generateElementNameWithParent} from '../../../utils/flatten-elements';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
-import {generateComponentTitle} from '../../../utils/generate-component-title';
 import {DefaultTabs} from '../../element-editor/default-tabs';
 import {createElementEditorNavigationLink} from '../../../hooks/use-element-editor-navigation';
 import {ElementWidthSelector} from '../../element-width-selector/element-width-selector';
@@ -70,7 +69,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
             return undefined;
         }
 
-        return 'Mindestens ein übergeordnetes Strukturiertes Listeneingabe-Element hat noch keinen Prozess-Datenschlüssel.';
+        return 'Mindestens ein übergeordnetes Strukturiertes Listeneingabe-Element hat noch keinen Datenschlüssel.';
     }, [replicatingParents]);
 
     const replicatingParentDestinationKeyPrefix = useMemo(() => {
@@ -420,7 +419,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                     {
                         httpKeyProblems.length > 0 &&
                         <AlertComponent
-                            title="Warnungen zu Ihrem gewählten Prozess-Datenschlüssel"
+                            title="Warnungen zu Ihrem gewählten Datenschlüssel"
                             color="warning"
                         >
                             <ul>
@@ -554,7 +553,6 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
     for (const ot of allElements) {
         const {
             element: otherElement,
-            parents: otherElementParents,
         } = ot;
 
         if (element.id === otherElement.id) {
@@ -570,17 +568,13 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
         }
 
         if (otherElement.destinationKey === element.destinationKey && element.destinationKey != null) {
-            const otherElementLabel = generateComponentTitle(otherElement);
-            const otherElementPath = otherElementParents
-                .map(e => generateComponentTitle(e))
-                .join(' > ');
+            const otherElementName = generateElementNameWithParent(ot);
 
             problems.push(
                 <>
                     <Typography>
-                        Der Prozess-Datenschlüssel <strong>„{element.destinationKey}”</strong> wird bereits von
-                        dem
-                        Formularelement <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.properties)}>„{otherElementPath} &gt; {otherElementLabel}”</a> verwendet.
+                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> wird bereits von
+                        dem Formularelement <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.properties)}>„{otherElementName}”</a> verwendet.
                         Dies führt dazu, dass die Daten gegebenenfalls überschrieben werden. Stellen Sie sicher, dass
                         dies ein beabsichtigtes Verhalten ist.
                     </Typography>
@@ -589,8 +583,7 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
         }
 
         if (otherElement.destinationKey.startsWith(element.destinationKey + '.') || element.destinationKey.startsWith(otherElement.destinationKey + '.')) {
-            const otherElementLabel = generateComponentTitle(otherElement);
-            const otherElementPath = otherElementParents.map(e => generateComponentTitle(e)).join(' > ');
+            const otherElementName = generateElementNameWithParent(ot);
 
             const otherElementWritesParent = otherElement
                 .destinationKey
@@ -599,9 +592,9 @@ function collectHttpMappingProblems(element: AnyInputElement, allElements: Eleme
             problems.push(
                 <>
                     <Typography gutterBottom>
-                        Der Prozess-Datenschlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich
-                        mit dem Prozess-Datenschlüssel <strong>„{otherElement.destinationKey}”</strong> des
-                        Formularelements <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementPath} &gt; {otherElementLabel}”</a>.
+                        Der Datenschlüssel <strong>„{element.destinationKey}”</strong> überschneidet sich
+                        mit dem Datenschlüssel <strong>„{otherElement.destinationKey}”</strong> des
+                        Formularelements <a href={createElementEditorNavigationLink(otherElement.id, DefaultTabs.metadata)}>„{otherElementName}”</a>.
                         {
                             otherElementWritesParent ?
                                 ' Das andere Element schreibt in ein Unterattribut des aktuellen Elements.' :
