@@ -178,11 +178,6 @@ function resolvePrintablePdfFilename(layout: FormLayoutElement | null, node: Pro
     return `${PrintablePdfFallbackFilenameBase}.pdf`;
 }
 
-function resolvePersistedFormLayout(node: ProcessNodeEntity): FormLayoutElement | null {
-    const persistedLayout = node.configuration[FormLayoutFieldKey];
-    return persistedLayout == null ? null : persistedLayout as FormLayoutElement;
-}
-
 export function FormNodeEditorPage() {
     const {
         nodeId = '',
@@ -691,11 +686,10 @@ export function FormNodeEditorPage() {
                     <Typography>
                         Sie haben aktuell ungespeicherte Änderungen.
                         Der Vordruck wird aus der gespeicherten Formularversion erzeugt.
-                        Ihre ungespeicherten Änderungen sind daher nicht im PDF enthalten.
-                        Sie können die Änderungen jetzt speichern und anschließend das PDF laden.
+                        Speichern Sie Ihre Änderungen, bevor Sie die PDF-Datei herunterladen.
                     </Typography>
                 ),
-                confirmButtonText: 'Jetzt speichern und PDF laden',
+                confirmButtonText: 'Speichern und Vordruck exportieren',
             });
 
             if (saveNow) {
@@ -707,24 +701,7 @@ export function FormNodeEditorPage() {
                     return;
                 }
             } else {
-                filenameLayout = resolvePersistedFormLayout(node);
-
-                const downloadSavedVersion = await confirm({
-                    title: 'PDF ohne Speichern laden',
-                    children: (
-                        <Typography>
-                            Das PDF wird auf dem zuletzt gespeicherten Stand erzeugt.
-                            Ihre ungespeicherten Änderungen sind nicht im PDF enthalten.
-                            Möchten Sie das PDF trotzdem laden?
-                        </Typography>
-                    ),
-                    confirmButtonText: 'Ohne Speichern PDF laden',
-                });
-
-                if (!downloadSavedVersion) {
-                    dispatch(showWarningSnackbar('Der PDF-Export wurde abgebrochen, da es ungespeicherte Änderungen gibt.'));
-                    return;
-                }
+                return;
             }
         }
 
