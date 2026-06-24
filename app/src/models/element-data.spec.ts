@@ -1,10 +1,12 @@
 import {
     applyComputedErrors,
-    ComputedElementErrors,
-    ComputedElementStates,
+    type ComputedElementErrors,
+    type ComputedElementStates,
     ComputedElementValueSource,
     hasAuthoredElementValuesSomeInput,
+    hasAnyErrorRecursivelyInParent,
 } from './element-data';
+import {ElementType} from '../data/element-type/element-type';
 
 describe('hasAuthoredElementValuesSomeInput', () => {
     it('should treat an explicit null as authored input', () => {
@@ -14,6 +16,111 @@ describe('hasAuthoredElementValuesSomeInput', () => {
     it('should ignore missing and undefined values', () => {
         expect(hasAuthoredElementValuesSomeInput({})).toBe(false);
         expect(hasAuthoredElementValuesSomeInput({field: undefined})).toBe(false);
+    });
+});
+
+describe('hasAnyErrorRecursivelyInParent', () => {
+    it('should detect an error on the parent itself', () => {
+        const parent = {
+            id: 'parent',
+            type: ElementType.Step,
+            children: [],
+        } as any;
+        const elementStates: ComputedElementStates = {
+            parent: {
+                error: 'Parent error',
+            },
+            sibling: {
+                error: 'Sibling error',
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(true);
+    });
+
+    it('should detect errors in regular descendants of the parent', () => {
+        const parent = {
+            id: 'parent',
+            type: ElementType.Step,
+            children: [
+                {
+                    id: 'group',
+                    type: ElementType.GroupLayout,
+                    children: [
+                        {
+                            id: 'field',
+                            type: ElementType.Text,
+                        },
+                    ],
+                },
+            ],
+        } as any;
+        const elementStates: ComputedElementStates = {
+            parent: {},
+            group: {},
+            field: {
+                error: 'Field error',
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(true);
+    });
+
+    it('should detect errors in replicated row descendants', () => {
+        const parent = {
+            id: 'parent',
+            type: ElementType.Step,
+            children: [
+                {
+                    id: 'list',
+                    type: ElementType.ReplicatingContainer,
+                    children: [
+                        {
+                            id: 'rowField',
+                            type: ElementType.Text,
+                        },
+                    ],
+                },
+            ],
+        } as any;
+        const elementStates: ComputedElementStates = {
+            parent: {},
+            list: {
+                subStates: [
+                    {
+                        rowField: {
+                            error: 'Row field error',
+                        },
+                    },
+                ],
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(true);
+    });
+
+    it('should ignore errors outside the parent element tree', () => {
+        const parent = {
+            id: 'parent',
+            type: ElementType.Step,
+            children: [
+                {
+                    id: 'field',
+                    type: ElementType.Text,
+                },
+            ],
+        } as any;
+        const elementStates: ComputedElementStates = {
+            parent: {},
+            field: {
+                error: '',
+            },
+            sibling: {
+                error: 'Sibling error',
+            },
+        };
+
+        expect(hasAnyErrorRecursivelyInParent(parent, elementStates)).toBe(false);
     });
 });
 
