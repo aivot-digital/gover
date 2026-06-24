@@ -222,7 +222,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                 },
             },
             ...(availableOutputPorts.length > 0 ? [{
-                label: 'Mit bestehendem Knoten verbinden',
+                label: 'Mit bestehendem Element verbinden',
                 icon: <Link/>,
                 onClick: () => {
                     onConnectNodeToExisting(node);

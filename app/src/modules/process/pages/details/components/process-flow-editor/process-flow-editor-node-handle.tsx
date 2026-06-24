@@ -247,7 +247,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                             <PortChipActionIcon tooltip="Verbindung aufheben">
                                 <LinkOffOutlinedIcon sx={{fontSize: PORT_CHIP_ACTION_ICON_SIZE}}/>
                             </PortChipActionIcon> :
-                            <PortChipActionIcon tooltip="Mit bestehendem Knoten verbinden">
+                            <PortChipActionIcon tooltip="Mit bestehendem Element verbinden">
                                 <Link sx={{fontSize: PORT_CHIP_ACTION_ICON_SIZE}}/>
                             </PortChipActionIcon>
                     ) : undefined}

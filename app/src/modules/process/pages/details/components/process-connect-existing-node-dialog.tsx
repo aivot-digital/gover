@@ -154,7 +154,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
             }}
         >
             <DialogTitleWithClose onClose={onClose}>
-                Mit bestehendem Knoten verbinden
+                Mit bestehendem Prozesselement verbinden
             </DialogTitleWithClose>
 
             <DialogContent
@@ -165,7 +165,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                 }}
             >
                 <Typography color="text.secondary">
-                    Verbinden Sie <strong>{sourceNodeName ?? 'dieses Prozesselement'}</strong> mit einem bereits vorhandenen Zielknoten.
+                    Verbinden Sie <strong>{sourceNodeName ?? 'dieses Prozesselement'}</strong> mit einem bereits vorhandenen Ziel-Prozesselement.
                 </Typography>
 
                 {
@@ -178,7 +178,7 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                 {
                     targetOptions.length === 0 &&
                     <Alert severity="info">
-                        Es steht aktuell kein geeigneter Zielknoten zur Auswahl.
+                        Es steht aktuell kein geeignetes Ziel-Prozesselement zur Auswahl.
                     </Alert>
                 }
 
@@ -244,8 +244,8 @@ export function ProcessConnectExistingNodeDialog(props: ConnectExistingNodeDialo
                     renderInput={(params) => (
                         <TextField
                             {...params}
-                            label="Zielknoten"
-                            placeholder="Knoten suchen"
+                            label="Ziel-Prozesselement"
+                            placeholder="Element suchen"
                         />
                     )}
                     disabled={targetOptions.length === 0}
