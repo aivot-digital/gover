@@ -664,6 +664,7 @@ export function FormNodeEditorPage() {
                 .downloadPrintablePdf(node.id);
 
             downloadBlobFile(filename, blob);
+            dispatch(showSuccessSnackbar('Der Vordruck wurde erfolgreich erstellt und der Download gestartet.'));
         } catch (err) {
             console.error(err);
             dispatch(showApiErrorSnackbar(err, 'Fehler beim Generieren des Vordrucks'));
