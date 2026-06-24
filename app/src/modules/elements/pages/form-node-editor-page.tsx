@@ -582,14 +582,14 @@ export function FormNodeEditorPage() {
 
         try {
             const conf = await confirm({
-                title: 'XDF-Import',
+                title: 'XDatenfeld-Schema importieren',
                 children: (
                     <>
                         <Typography>
-                            Sie sind in Begriff ein XDatenfeld-Schema zu importieren.
+                            Sie sind im Begriff, ein XDatenfeld-Schema zu importieren.
                         </Typography>
                         <Typography>
-                            Beim Import werden alle bestehenden Felder dieses Formulars vollständig überschrieben.
+                            Beim Import werden ggf. bereits bestehende Formularfelder im Editor durch die importierte Struktur ersetzt.
                             Möchten Sie den Vorgang wirklich fortsetzen?
                         </Typography>
                     </>
