@@ -1995,10 +1995,11 @@ export function ProcessDetailsPage(): ReactNode {
             blocking: true,
         }));
 
-        new ProcessDefinitionApiService()
+        return new ProcessDefinitionApiService()
             .addNewVersion(process, version)
             .then((createdVersion) => {
                 navigate(`/processes/${createdVersion.processId}/versions/${createdVersion.processVersion}`);
+                return createdVersion;
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Anlegen einer neuen Version'));
@@ -2006,7 +2007,7 @@ export function ProcessDetailsPage(): ReactNode {
             .finally(() => {
                 dispatch(clearLoadingMessage());
             });
-    }, []);
+    }, [dispatch, navigate]);
 
     if (processFlow == null) {
         if (showProcessDetailsPageSkeleton) {
@@ -2581,7 +2582,7 @@ export function ProcessDetailsPage(): ReactNode {
                     setShowVersionsDialog(false);
                 }}
                 onNewDraft={({process, version}) => {
-                    handleAddDraft(process.id, version.processVersion);
+                    return handleAddDraft(process.id, version.processVersion);
                 }}
                 onDeleteVersion={(process, version) => {
                     if (version == processVersion) {

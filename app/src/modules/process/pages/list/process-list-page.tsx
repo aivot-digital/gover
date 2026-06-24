@@ -209,12 +209,13 @@ export function ProcessListPage() {
             blocking: true,
         }));
 
-        new ProcessDefinitionApiService()
+        return new ProcessDefinitionApiService()
             .addNewVersion(process, version)
-            .then(() => {
+            .then((createdVersion) => {
                 if (listControlRef.current) {
                     listControlRef.current.refresh();
                 }
+                return createdVersion;
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Anlegen einer neuen Version'));
@@ -222,7 +223,7 @@ export function ProcessListPage() {
             .finally(() => {
                 dispatch(clearLoadingMessage());
             });
-    }, []);
+    }, [dispatch]);
 
     const header: GenericPageHeaderProps = useMemo(() => ({
         icon: <Route/>,
@@ -414,7 +415,7 @@ export function ProcessListPage() {
                         setShowVersionsDialogForProcess(null);
                     }}
                     onNewDraft={({process, version}) => {
-                        handleAddDraft(process.id, version.processVersion);
+                        return handleAddDraft(process.id, version.processVersion);
                     }}
                     onDeleteVersion={() => {
                         if (listControlRef.current) {

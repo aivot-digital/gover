@@ -41,7 +41,7 @@ interface ProcessVersionsDialogProps {
     onNewDraft: (basis: {
         process: ProcessEntity;
         version: ProcessVersionEntity;
-    }) => void;
+    }) => void | Promise<ProcessVersionEntity | void>;
     onDeleteVersion: (process: number, version: number) => void;
     onShouldReload?: (process: ProcessEntity) => void;
 }
@@ -74,6 +74,24 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
         return versions.find(v => v.status === ProcessStatus.Published)?.processVersion ?? null;
     }, [versions]);
 
+    const draftedVersion = useMemo(() => {
+        if (versions.length > 0) {
+            return versions.find(v => v.status === ProcessStatus.Drafted)?.processVersion ?? null;
+        }
+
+        return process.draftedVersion;
+    }, [process.draftedVersion, versions]);
+
+    // The parent process prop can be stale after dialog-local version changes, so derive version metadata from the loaded versions.
+    const effectiveProcess = useMemo(() => {
+        return {
+            ...process,
+            draftedVersion,
+            publishedVersion: versions.length > 0 ? publishedVersion : process.publishedVersion,
+            versionCount: versions.length > 0 ? versions.length : process.versionCount,
+        };
+    }, [draftedVersion, process, publishedVersion, versions.length]);
+
     const latestVersion = useMemo(() => {
         return versions.length > 0 ? versions[0].processVersion : null;
     }, [versions]);
@@ -88,38 +106,43 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
 
     const [versionToImport, setVersionToImport] = useState<ProcessExport | null>(null);
 
-    const loadVersions = () => {
+    const loadVersions = (): Promise<ProcessVersionEntity[]> => {
         return new ProcessDefinitionVersionApiService()
             .listAllOrdered('processVersion', 'DESC', {
                 processId: process.id,
             })
             .then(({content}) => {
                 setVersions(content);
+                return content;
             })
             .catch(error => {
                 dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Prozessversionen'));
+                return versions;
             });
     };
 
     async function loadVersion(version: number): Promise<ProcessVersionEntity> {
         setIsBusy(true);
-        await withDelay(loadVersions(), 500);
-        setIsBusy(false);
+        try {
+            const loadedVersions = await withDelay(loadVersions(), 500);
 
-        const item = versions
-            .find(v => v.processVersion === version);
+            const item = loadedVersions
+                .find(v => v.processVersion === version);
 
-        if (!item) {
-            const error: ApiError = {
-                status: 404,
-                message: 'Die ausgewählte Prozessversion wurde nicht gefunden.',
-                details: null,
-                displayableToUser: true,
-            };
-            throw error;
+            if (!item) {
+                const error: ApiError = {
+                    status: 404,
+                    message: 'Die ausgewählte Prozessversion wurde nicht gefunden.',
+                    details: null,
+                    displayableToUser: true,
+                };
+                throw error;
+            }
+
+            return item;
+        } finally {
+            setIsBusy(false);
         }
-
-        return item;
     }
 
     useEffect(() => {
@@ -129,6 +152,19 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                 setIsLoading(false);
             });
     }, [process]);
+
+    async function createDraftFromVersion(version: ProcessVersionEntity): Promise<void> {
+        setIsBusy(true);
+        try {
+            await onNewDraft({
+                process: effectiveProcess,
+                version,
+            });
+            await withDelay(loadVersions(), 500);
+        } finally {
+            setIsBusy(false);
+        }
+    }
 
     async function handleUseAsNewDraft(version: number): Promise<void> {
         let item: ProcessVersionEntity;
@@ -144,11 +180,8 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
             return;
         }
 
-        if (process.draftedVersion == null) {
-            onNewDraft({
-                process: process,
-                version: item,
-            });
+        if (effectiveProcess.draftedVersion == null) {
+            await createDraftFromVersion(item);
             return;
         }
 
@@ -156,7 +189,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
             title: 'Bestehenden Entwurf überschreiben?',
             children: (
                 <Typography>
-                    Für diesen Prozess existiert bereits eine Arbeitsversion (Version {process.draftedVersion}).
+                    Für diesen Prozess existiert bereits eine Arbeitsversion (Version {effectiveProcess.draftedVersion}).
                     Möchten Sie dennoch einen neuen Entwurf auf Basis dieser Version erstellen?
                     Die bestehende Arbeitsversion wird dabei überschrieben.
                 </Typography>
@@ -165,10 +198,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
         });
 
         if (confirmed) {
-            onNewDraft({
-                process: process,
-                version: item,
-            });
+            await createDraftFromVersion(item);
         }
     }
 
@@ -237,12 +267,12 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
             return;
         }
 
-        if (process.publishedVersion === item.processVersion) {
+        if (effectiveProcess.publishedVersion === item.processVersion) {
             dispatch(showErrorSnackbar('Die veröffentlichte Version kann nicht gelöscht werden.'));
             return;
         }
 
-        if (item.status === ProcessStatus.Drafted && process.versionCount < 2) {
+        if (item.status === ProcessStatus.Drafted && effectiveProcess.versionCount < 2) {
             showConfirm({
                 title: 'Prozessversion löschen',
                 hideCancelButton: true,
@@ -282,7 +312,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                         loadVersions();
                         handleCloseMoreMenu();
                         if (onShouldReload != null) {
-                            onShouldReload(process);
+                            onShouldReload(effectiveProcess);
                         }
                         onDeleteVersion(process.id, item.processVersion);
                     })
@@ -369,7 +399,7 @@ export function ProcessVersionsDialog(props: ProcessVersionsDialogProps) {
                 moreMenuProcess != null &&
                 <ProcessVersionsDialogRowMenu
                     anchorEl={moreMenuAnchorEl}
-                    process={process}
+                    process={effectiveProcess}
                     processVersion={moreMenuProcess}
                     onClose={handleCloseMoreMenu}
                     onReuseVersionAsDraft={handleUseAsNewDraft}
