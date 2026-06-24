@@ -64,6 +64,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
     const handlePublish = async () => {
         setPublishError(undefined);
 
+        /*
         if (replacesPublishedVersion) {
             const confirmed = await showConfirm({
                 title: 'Veröffentlichte Version ersetzen?',
@@ -80,6 +81,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
                 return;
             }
         }
+         */
 
         dispatch(setLoadingMessage({
             message: 'Prozess wird veröffentlicht',
