@@ -35,6 +35,7 @@ import {
     type FlowEdge,
     type FlowNode,
     layoutElements,
+    ProcessFlowLayoutError,
 } from './utils/layout-utils';
 import {Box, Tooltip, useTheme} from '@mui/material';
 import {alpha} from '@mui/material/styles';
@@ -56,6 +57,7 @@ import {
 } from './process-flow-editor-empty-state';
 
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
+import {AlertComponent} from '../../../../../../components/alert/alert-component';
 
 const FLOW_MIN_ZOOM = 0.25;
 const FLOW_MAX_ZOOM = 2;
@@ -281,6 +283,13 @@ interface FlowViewport {
     zoom: number;
 }
 
+interface ProcessFlowEditorLayoutError {
+    message: string;
+    details: string[];
+    causeHint: string;
+    recoveryHint: string;
+}
+
 function ProcessFlowEditorCanvasTriggerLaneHeader(props: ProcessFlowEditorCanvasTriggerLaneHeaderProps): ReactNode {
     const {
         label,
@@ -316,6 +325,92 @@ function ProcessFlowEditorCanvasTriggerLaneHeader(props: ProcessFlowEditorCanvas
             </Box>
         </ViewportPortal>
     );
+}
+
+function ProcessFlowEditorLayoutErrorPanel(props: {layoutError: ProcessFlowEditorLayoutError}): ReactNode {
+    const visibleDetails = props.layoutError.details.slice(0, 4);
+    const hiddenDetailsCount = props.layoutError.details.length - visibleDetails.length;
+
+    return (
+        <Panel
+            position="top-center"
+            className="process-flow-editor-layout-error-panel"
+        >
+            <AlertComponent
+                color="error"
+                colorVariant="prominent"
+                title="Prozessfluss kann nicht dargestellt werden"
+                text={props.layoutError.message}
+            >
+                {
+                    visibleDetails.length > 0 &&
+                    <Box
+                        component="ul"
+                        sx={{
+                            mt: 1,
+                            mb: 0,
+                            pl: 2.5,
+                        }}
+                    >
+                        {
+                            visibleDetails.map((detail, index) => (
+                                <li key={index}>
+                                    {detail}
+                                </li>
+                            ))
+                        }
+                    </Box>
+                }
+                {
+                    hiddenDetailsCount > 0 &&
+                    <Box
+                        component="p"
+                        sx={{mb: 0}}
+                    >
+                        {`Weitere ${hiddenDetailsCount} Einträge sind betroffen.`}
+                    </Box>
+                }
+                <Box
+                    component="p"
+                    sx={{
+                        mt: 2,
+                        mb: 0,
+                    }}
+                >
+                    <strong>Warum kann das passieren?</strong><br/>
+                    {props.layoutError.causeHint}
+                </Box>
+                <Box
+                    component="p"
+                    sx={{
+                        mt: 1,
+                        mb: 0,
+                    }}
+                >
+                    <strong>Wiederherstellung:</strong><br/>
+                    {props.layoutError.recoveryHint}
+                </Box>
+            </AlertComponent>
+        </Panel>
+    );
+}
+
+function createLayoutErrorState(error: unknown): ProcessFlowEditorLayoutError {
+    if (error instanceof ProcessFlowLayoutError) {
+        return {
+            message: error.message,
+            details: error.details,
+            causeHint: 'Das kann passieren, wenn eine Prozesselementdefinition aktualisiert wurde und bestehende Verbindungen noch auf entfernte Ausgänge oder nicht mehr vorhandene Prozesselemente zeigen.',
+            recoveryHint: 'Bitte wenden Sie sich mit den oben genannten Einträgen an den Support. Der Prozessfluss muss bereinigt oder auf eine passende Version des Prozesselements zurückgeführt werden.',
+        };
+    }
+
+    return {
+        message: 'Beim Berechnen der Prozessansicht ist ein Fehler aufgetreten.',
+        details: error instanceof Error ? [error.message] : [],
+        causeHint: 'Das kann durch inkonsistente Prozessdaten oder einen technischen Fehler beim Berechnen des Layouts passieren.',
+        recoveryHint: 'Bitte wenden Sie sich mit der angezeigten Fehlermeldung an den Support. Der Prozessfluss muss geprüft werden, bevor er wieder dargestellt werden kann.',
+    };
 }
 
 function areCanvasTriggerLaneHeaderPositionsEqual(
@@ -380,6 +475,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     const [isInitialViewportReady, setIsInitialViewportReady] = useState<boolean>(processFlow.nodes.length === 0);
     const [isViewportLocked, setIsViewportLocked] = useState<boolean>(false);
     const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
+    const [layoutError, setLayoutError] = useState<ProcessFlowEditorLayoutError | null>(null);
 
     const [nodes, setNodes, onNodesChange] = useNodesState<FlowNode>([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState<FlowEdge>([]);
@@ -514,12 +610,20 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
             setNodes([...laidOutNodes]);
             setEdges(prioritizeRuntimeEdges(laidOutEdges, runtimeDataRef.current));
+            setLayoutError(null);
         } catch (error) {
             if (layoutRequestIdRef.current !== layoutRequestId) {
                 return;
             }
 
             console.error('Failed to layout process flow', error);
+            setNodes([]);
+            setEdges([]);
+            setCanvasTriggerLaneHeaderPosition(null);
+            setNeedsMeasuredLayout(false);
+            setPendingInitialViewport(false);
+            setIsInitialViewportReady(true);
+            setLayoutError(createLayoutErrorState(error));
         }
     }, [hasAllNodeProviders, nodeProviders, processFlow.edges, processFlow.nodes, setEdges, setNodes]);
 
@@ -542,6 +646,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         setNodes([]);
         setEdges([]);
         setCanvasTriggerLaneHeaderPosition(null);
+        setLayoutError(null);
         resetInitialViewportState(!hasProcessNodes);
     }, [
         hasProcessNodes,
@@ -660,7 +765,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     '--process-flow-editor-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
                     '--process-flow-editor-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
                     '--process-flow-editor-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
-                    opacity: isInitialViewportReady ? 1 : 0,
+                    opacity: isInitialViewportReady || layoutError != null ? 1 : 0,
                     transition: 'opacity 120ms ease-out',
                 } as React.CSSProperties}
                 nodes={nodes}
@@ -741,6 +846,12 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                         label={canvasAddTriggerLabel}
                         onAddTrigger={handleAddTrigger}
                         position={canvasTriggerLaneHeaderPosition}
+                    />
+                }
+                {
+                    layoutError != null &&
+                    <ProcessFlowEditorLayoutErrorPanel
+                        layoutError={layoutError}
                     />
                 }
                 {

@@ -41,6 +41,11 @@
     margin: 0;
 }
 
+.process-flow-editor-layout-error-panel.react-flow__panel {
+    width: min(620px, calc(100% - 32px));
+    pointer-events: auto;
+}
+
 .process-flow-editor-empty-state-card {
     position: relative;
     width: min(360px, calc(100vw - 72px));

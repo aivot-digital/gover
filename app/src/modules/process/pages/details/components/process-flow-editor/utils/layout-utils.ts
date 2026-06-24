@@ -14,6 +14,7 @@ import {
 } from '../data/process-flow-constants';
 import {
     buildProcessFlowGraph,
+    getProcessNodeProviderKey,
     type ProcessFlowGraph,
     type ProcessFlowGraphEdge,
     type ProcessFlowGraphNode,
@@ -82,6 +83,17 @@ interface ResolvedLayoutNode {
     height: number;
 }
 
+export class ProcessFlowLayoutError extends Error {
+    public readonly details: string[];
+
+    public constructor(message: string, details: string[] = []) {
+        super(message);
+        this.name = 'ProcessFlowLayoutError';
+        this.details = details;
+        Object.setPrototypeOf(this, ProcessFlowLayoutError.prototype);
+    }
+}
+
 export function getFlowNodeWidth(provider: ProcessNodeProvider): number {
     return MIN_NODE_WIDTH + (Math.max(provider.ports.length - INCLUDED_PORTS_IN_MIN_WIDTH, 0) * ADDITIONAL_PORT_WIDTH);
 }
@@ -105,7 +117,9 @@ export async function layoutElements(
     flowNodes: FlowNode[];
     flowEdges: FlowEdge[];
 }> {
+    validateProcessFlowInput(nodes, edges, providers);
     const graph = buildProcessFlowGraph(nodes, edges, providers);
+    validateProcessFlowGraph(graph);
     const layoutMetaByNodeId = createLayoutMeta(graph, nodeMeasurements);
     const elkGraph = createElkGraph(graph, layoutMetaByNodeId);
     const laidOutGraph = await elk.layout(elkGraph);
@@ -115,6 +129,168 @@ export async function layoutElements(
         flowNodes: transformNodes(graph, resolvedLayoutNodes),
         flowEdges: transformEdges(graph, laidOutGraph.edges ?? [], resolvedLayoutNodes),
     };
+}
+
+function validateProcessFlowInput(
+    nodes: ProcessNodeEntity[],
+    edges: ProcessDefinitionEdgeEntity[],
+    providers: ProcessNodeProvider[],
+): void {
+    const validationMessages: string[] = [];
+    const nodeById = new Map(nodes.map((node) => [node.id, node]));
+    const providerByKey = new Map(providers.map((provider) => [
+        getProcessNodeProviderKey(provider.key, provider.majorVersion),
+        provider,
+    ]));
+
+    appendDuplicateIdValidationMessages(
+        validationMessages,
+        nodes.map((node) => node.id),
+        'Prozesselement-ID',
+    );
+    appendDuplicateIdValidationMessages(
+        validationMessages,
+        edges.map((edge) => edge.id),
+        'Verbindungs-ID',
+    );
+
+    nodes.forEach((node) => {
+        const provider = providerByKey.get(getProcessNodeProviderKey(
+            node.processNodeDefinitionKey,
+            node.processNodeDefinitionVersion,
+        ));
+
+        if (provider == null) {
+            validationMessages.push(
+                `${formatProcessNodeName(node)}: Die Prozesselementdefinition "${node.processNodeDefinitionKey}" Version ${node.processNodeDefinitionVersion} wurde nicht gefunden.`,
+            );
+        }
+    });
+
+    edges.forEach((edge) => {
+        const sourceNode = nodeById.get(edge.fromNodeId);
+        const targetNode = nodeById.get(edge.toNodeId);
+        const missingEndpointLabels = [
+            sourceNode == null ? `Quell-Prozesselement ${edge.fromNodeId}` : null,
+            targetNode == null ? `Ziel-Prozesselement ${edge.toNodeId}` : null,
+        ].filter((label): label is string => label != null);
+
+        if (missingEndpointLabels.length > 0) {
+            validationMessages.push(
+                `Verbindung ${edge.id}: ${formatProcessNodeReference(sourceNode, edge.fromNodeId)} -> ${formatProcessNodeReference(targetNode, edge.toNodeId)} verweist auf fehlende Prozesselemente (${missingEndpointLabels.join(', ')}).`,
+            );
+            return;
+        }
+
+        if (sourceNode == null) {
+            return;
+        }
+
+        const sourceProvider = providerByKey.get(getProcessNodeProviderKey(
+            sourceNode.processNodeDefinitionKey,
+            sourceNode.processNodeDefinitionVersion,
+        ));
+        if (sourceProvider == null) {
+            return;
+        }
+
+        const sourcePort = sourceProvider.ports.find((port) => port.key === edge.viaPort);
+        if (sourcePort != null) {
+            return;
+        }
+
+        validationMessages.push(
+            `Verbindung ${edge.id}: ${formatProcessNodeName(sourceNode)} -> ${formatProcessNodeReference(targetNode, edge.toNodeId)}: Der Ausgang "${edge.viaPort}" existiert nicht mehr. Verfügbare Ausgänge: ${formatProviderPorts(sourceProvider)}.`,
+        );
+    });
+
+    if (validationMessages.length === 0) {
+        return;
+    }
+
+    throw new ProcessFlowLayoutError(
+        validationMessages.length === 1
+            ? 'Der Prozessfluss enthält einen ungültigen Eintrag.'
+            : `Der Prozessfluss enthält ${validationMessages.length} ungültige Einträge.`,
+        validationMessages,
+    );
+}
+
+function appendDuplicateIdValidationMessages(
+    validationMessages: string[],
+    ids: number[],
+    label: string,
+): void {
+    const countsById = new Map<number, number>();
+    ids.forEach((id) => {
+        countsById.set(id, (countsById.get(id) ?? 0) + 1);
+    });
+
+    countsById.forEach((count, id) => {
+        if (count <= 1) {
+            return;
+        }
+
+        validationMessages.push(`${label} ${id} ist ${count}-mal vorhanden.`);
+    });
+}
+
+function validateProcessFlowGraph(graph: ProcessFlowGraph): void {
+    const graphNodeById = new Map(graph.nodes.map((graphNode) => [graphNode.node.id, graphNode]));
+    const edgesWithMissingSourcePort = graph.edges.filter((graphEdge) => graphEdge.port == null);
+
+    if (edgesWithMissingSourcePort.length === 0) {
+        return;
+    }
+
+    throw new ProcessFlowLayoutError(
+        edgesWithMissingSourcePort.length === 1
+            ? 'Eine Verbindung verweist auf einen Ausgang, den das Quell-Prozesselement nicht mehr anbietet.'
+            : `${edgesWithMissingSourcePort.length} Verbindungen verweisen auf Ausgänge, die ihre Quell-Prozesselemente nicht mehr anbieten.`,
+        edgesWithMissingSourcePort.map((graphEdge) => {
+            const sourceNode = graphNodeById.get(graphEdge.edge.fromNodeId);
+            const targetNode = graphNodeById.get(graphEdge.edge.toNodeId);
+
+            return [
+                `Verbindung ${graphEdge.edge.id}`,
+                `${formatGraphNodeName(sourceNode, graphEdge.edge.fromNodeId)} -> ${formatGraphNodeName(targetNode, graphEdge.edge.toNodeId)}`,
+                `Ausgang "${graphEdge.edge.viaPort}"`,
+                `verfügbare Ausgänge: ${formatAvailablePorts(sourceNode)}`,
+            ].join(': ');
+        }),
+    );
+}
+
+function formatProcessNodeReference(node: ProcessNodeEntity | undefined, fallbackNodeId: number): string {
+    return node == null ? `Prozesselement ${fallbackNodeId}` : formatProcessNodeName(node);
+}
+
+function formatProcessNodeName(node: ProcessNodeEntity): string {
+    return node.name != null && node.name.trim().length > 0 ? node.name : `Prozesselement ${node.id}`;
+}
+
+function formatGraphNodeName(graphNode: ProcessFlowGraphNode | undefined, fallbackNodeId: number): string {
+    if (graphNode == null) {
+        return `Prozesselement ${fallbackNodeId}`;
+    }
+
+    return graphNode.node.name ?? graphNode.provider.name ?? `Prozesselement ${fallbackNodeId}`;
+}
+
+function formatAvailablePorts(graphNode: ProcessFlowGraphNode | undefined): string {
+    if (graphNode == null) {
+        return 'unbekannt';
+    }
+
+    return formatProviderPorts(graphNode.provider);
+}
+
+function formatProviderPorts(provider: ProcessNodeProvider): string {
+    if (provider.ports.length === 0) {
+        return 'keine';
+    }
+
+    return provider.ports.map((port) => `"${port.label}" (${port.key})`).join(', ');
 }
 
 function createLayoutMeta(
@@ -147,7 +323,7 @@ function createElkGraph(
         children: graph.nodes.map((graphNode) => {
             const layoutNode = layoutMetaByNodeId.get(graphNode.node.id);
             if (layoutNode == null) {
-                throw new Error(`Missing layout meta for node ${graphNode.node.id}`);
+                throw new Error(`Layoutdaten für Prozesselement ${graphNode.node.id} fehlen.`);
             }
 
             return createElkNode(graphNode, layoutNode);
@@ -247,7 +423,7 @@ function transformNodes(
     return graph.nodes.map<FlowNode>((graphNode) => {
         const resolvedLayoutNode = resolvedLayoutNodes.get(graphNode.node.id);
         if (resolvedLayoutNode == null) {
-            throw new Error(`Missing resolved layout for node ${graphNode.node.id}`);
+            throw new Error(`Berechnetes Layout für Prozesselement ${graphNode.node.id} fehlt.`);
         }
 
         return {
