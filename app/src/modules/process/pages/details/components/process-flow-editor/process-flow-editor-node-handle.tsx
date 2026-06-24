@@ -25,6 +25,7 @@ const PORT_DOT_GAP = 6;
 const TOP_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + (PORT_DOT_SIZE / 2) + PORT_DOT_GAP;
 const CONNECTED_PORT_STEM_HEIGHT = 0;
 const CONNECTED_SOURCE_HANDLE_OFFSET = 5;
+const CONNECTED_SOURCE_HANDLE_TOP = ADD_BUTTON_DISTANCE + PORT_DOT_SIZE + PORT_DOT_GAP + CHIP_HEIGHT + CONNECTED_SOURCE_HANDLE_OFFSET;
 const CONNECTED_PORT_SPACER_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25) - CONNECTED_PORT_STEM_HEIGHT;
 const OPEN_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25);
 const ACTIVE_RUNTIME_DASH_ARRAY = '10 10';
@@ -34,7 +35,6 @@ interface ProcessFlowEditorNodeHandleProps {
     editable: boolean;
     isConnected: boolean;
     port: ProcessNodePort;
-    showLabel: boolean;
     onClick: () => void;
     onConnectToExisting: (port: ProcessNodePort) => void;
     onDeleteEdge: (port: ProcessNodePort) => void;
@@ -80,7 +80,6 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
         editable,
         isConnected,
         port,
-        showLabel,
         onClick,
         onConnectToExisting,
         onDeleteEdge,
@@ -88,13 +87,6 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
     } = props;
 
     const confirm = useConfirm();
-    const shouldRenderChip = showLabel || editable;
-    const chipHeight = shouldRenderChip ? CHIP_HEIGHT : 0;
-    const connectedSourceHandleTop = ADD_BUTTON_DISTANCE +
-        PORT_DOT_SIZE +
-        PORT_DOT_GAP +
-        chipHeight +
-        CONNECTED_SOURCE_HANDLE_OFFSET;
 
     const handleDeleteEdge = (): void => {
         void confirm({
@@ -153,47 +145,31 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     />
                 </Box>
 
-                {
-                    shouldRenderChip &&
-                    <Chip
-                        label={port.label}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                            bgcolor: 'background.paper',
-                            borderColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
-                            ...(!showLabel ? {
-                                width: CHIP_HEIGHT,
-                                minWidth: CHIP_HEIGHT,
-                                maxWidth: CHIP_HEIGHT,
-                                justifyContent: 'center',
-                                '& .MuiChip-label': {
-                                    display: 'none',
-                                    p: 0,
-                                },
-                                '& .MuiChip-deleteIcon': {
-                                    m: 0,
-                                },
-                            } : {}),
-                        }}
-                        deleteIcon={editable ? (
-                            isConnected ?
-                                <PortChipActionIcon tooltip="Verbindung aufheben">
-                                    <Close sx={{fontSize: 18}}/>
-                                </PortChipActionIcon> :
-                                <PortChipActionIcon tooltip="Mit Element verbinden">
-                                    <Link sx={{fontSize: 18}}/>
-                                </PortChipActionIcon>
-                        ) : undefined}
-                        onDelete={editable ? (
-                            isConnected ?
-                                handleDeleteEdge :
-                                () => {
-                                    onConnectToExisting(port);
-                                }
-                        ) : undefined}
-                    />
-                }
+                <Chip
+                    label={port.label}
+                    size="small"
+                    variant="outlined"
+                    sx={{
+                        bgcolor: 'background.paper',
+                        borderColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
+                    }}
+                    deleteIcon={editable ? (
+                        isConnected ?
+                            <PortChipActionIcon tooltip="Verbindung aufheben">
+                                <Close sx={{fontSize: 18}}/>
+                            </PortChipActionIcon> :
+                            <PortChipActionIcon tooltip="Mit bestehendem Knoten verbinden">
+                                <Link sx={{fontSize: 18}}/>
+                            </PortChipActionIcon>
+                    ) : undefined}
+                    onDelete={editable ? (
+                        isConnected ?
+                            handleDeleteEdge :
+                            () => {
+                                onConnectToExisting(port);
+                            }
+                    ) : undefined}
+                />
 
                 {
                     isConnected ?
@@ -290,7 +266,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     border: `${isConnected ? 0 : 2}px solid ${HANDLE_COLOR}`,
                     cursor: isConnected ? 'default' : 'crosshair',
                     ...(isConnected ? {
-                        top: `${connectedSourceHandleTop}px`,
+                        top: `${CONNECTED_SOURCE_HANDLE_TOP}px`,
                         bottom: 'auto',
                     } : {
                         bottom: `-${INTERACTIVE_HANDLE_SIZE / 2}px`,

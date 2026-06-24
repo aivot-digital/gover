@@ -1,5 +1,5 @@
 import {BaseEdge, EdgeLabelRenderer, type EdgeProps} from '@xyflow/react';
-import {Box, IconButton, Tooltip, useTheme} from '@mui/material';
+import {Box, IconButton, useTheme} from '@mui/material';
 import {Add} from '@mui/icons-material';
 import React, {type ReactNode, useMemo} from 'react';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
@@ -154,31 +154,29 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
                     {
                         editable &&
                         nextTaskForEdge == null &&
-                        <Tooltip title="Element einfügen" arrow>
-                            <IconButton
+                        <IconButton
+                            sx={{
+                                'cursor': 'pointer',
+                                'bgcolor': 'background.paper',
+                                'border': `${HANDLE_WIDTH}px solid`,
+                                'borderColor': HANDLE_COLOR,
+                                'padding': 0,
+                                'width': ADD_BUTTON_SIZE,
+                                'height': ADD_BUTTON_SIZE,
+                                '&:hover': {
+                                    bgcolor: '#efefef',
+                                },
+                            }}
+                            onClick={() => {
+                                onAddInbetweenNode(graphEdge.edge.id);
+                            }}
+                        >
+                            <Add
                                 sx={{
-                                    'cursor': 'pointer',
-                                    'bgcolor': 'background.paper',
-                                    'border': `${HANDLE_WIDTH}px solid`,
-                                    'borderColor': HANDLE_COLOR,
-                                    'padding': 0,
-                                    'width': ADD_BUTTON_SIZE,
-                                    'height': ADD_BUTTON_SIZE,
-                                    '&:hover': {
-                                        bgcolor: '#efefef',
-                                    },
+                                    fontSize: ADD_BUTTON_ICON_SIZE,
                                 }}
-                                onClick={() => {
-                                    onAddInbetweenNode(graphEdge.edge.id);
-                                }}
-                            >
-                                <Add
-                                    sx={{
-                                        fontSize: ADD_BUTTON_ICON_SIZE,
-                                    }}
-                                />
-                            </IconButton>
-                        </Tooltip>
+                            />
+                        </IconButton>
                     }
 
                     {
