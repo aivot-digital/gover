@@ -184,7 +184,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,
-                        "Weiter",
+                        "Aktion bestätigt",
                         "Der Prozess wird hier fortgesetzt, nachdem die manuelle Aktion bestätigt wurde."
                 )
         );

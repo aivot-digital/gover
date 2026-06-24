@@ -182,12 +182,12 @@ public class IfFlowControlNodeV1 implements ProcessNodeDefinition<IfFlowControlN
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME_TRUE,
-                        "Wahr",
+                        "Bedingung erfüllt",
                         "Der Prozessfluss wird hier fortgesetzt, wenn die Bedingung erfüllt ist."
                 ),
                 new ProcessNodePort(
                         PORT_NAME_FALSE,
-                        "Falsch",
+                        "Bedingung nicht erfüllt",
                         "Der Prozessfluss wird hier fortgesetzt, wenn die Bedingung nicht erfüllt ist."
                 )
         );

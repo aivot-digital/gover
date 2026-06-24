@@ -114,8 +114,8 @@ public class WebhookTriggerNodeV1 implements ProcessNodeDefinition<WebhookTrigge
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Dateneingang",
-                        "Es wurden Daten über den Webhook empfangen."
+                        "Webhook empfangen",
+                        "Der Prozess wird mit den empfangenen Webhook-Daten gestartet."
                 )
         );
     }

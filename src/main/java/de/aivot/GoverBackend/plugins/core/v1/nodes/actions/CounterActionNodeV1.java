@@ -122,8 +122,8 @@ public class CounterActionNodeV1 implements ProcessNodeDefinition<CounterActionN
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Weiter",
-                        "Der Prozess wird fortgesetzt, nachdem der Zähler erhöht wurde."
+                        "Zähler aktualisiert",
+                        "Der Prozess wird fortgesetzt, nachdem der Zählerstand aktualisiert wurde."
                 )
         );
     }

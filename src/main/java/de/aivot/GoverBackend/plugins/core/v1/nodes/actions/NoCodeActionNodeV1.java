@@ -152,7 +152,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Weiter",
+                        "Variablen berechnet",
                         "Der Prozess wird hier fortgesetzt, nachdem alle Einträge berechnet wurden."
                 )
         );

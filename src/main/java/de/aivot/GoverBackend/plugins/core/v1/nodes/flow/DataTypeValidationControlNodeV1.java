@@ -144,12 +144,12 @@ public class DataTypeValidationControlNodeV1 implements ProcessNodeDefinition<Da
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME_VALID,
-                        "Gültig",
+                        "Daten gültig",
                         "Der Prozess wird hier fortgesetzt, wenn alle Validierungsregeln erfüllt sind."
                 ),
                 new ProcessNodePort(
                         PORT_NAME_INVALID,
-                        "Ungültig",
+                        "Daten ungültig",
                         "Der Prozess wird hier fortgesetzt, wenn mindestens eine Validierungsregel verletzt ist."
                 )
         );

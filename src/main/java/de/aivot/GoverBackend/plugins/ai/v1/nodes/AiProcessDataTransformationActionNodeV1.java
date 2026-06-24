@@ -228,7 +228,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,
-                        "Weiter",
+                        "Vorgangsdaten transformiert",
                         "Der Prozess wird hier fortgesetzt, nachdem die Vorgangsdaten erfolgreich transformiert wurden."
                 )
         );

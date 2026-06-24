@@ -217,7 +217,7 @@ public class AiCompletionActionNodeV1 implements ProcessNodeDefinition<AiComplet
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,
-                        "Weiter",
+                        "KI-Antwort erhalten",
                         "Der Prozess wird hier fortgesetzt, nachdem die KI-Antwort erfolgreich abgerufen wurde."
                 )
         );

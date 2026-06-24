@@ -173,7 +173,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         return List.of(
                 new ProcessNodePort(
                         PORT_OUTPUT,
-                        "Weiter",
+                        "Datenänderung übernommen",
                         "Der Prozess wird hier fortgesetzt, nachdem die Datenänderung übernommen wurde."
                 )
         );

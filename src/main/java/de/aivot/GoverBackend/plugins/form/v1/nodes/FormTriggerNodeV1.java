@@ -111,8 +111,8 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Dateneingang",
-                        "Es wurden Daten von einem Formular empfangen."
+                        "Formular eingereicht",
+                        "Der Prozess wird mit den eingereichten Formulardaten gestartet."
                 )
         );
     }

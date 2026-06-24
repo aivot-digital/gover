@@ -179,7 +179,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Weiter",
+                        "PDF erstellt",
                         "Der Prozess wird hier fortgesetzt, nachdem das PDF erzeugt wurde."
                 )
         );

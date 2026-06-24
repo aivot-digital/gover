@@ -186,7 +186,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         return List.of(
                 new ProcessNodePort(
                         SUCCESS_PORT,
-                        "Erfolg",
+                        "HTTP erfolgreich",
                         "Der Prozess wird hier fortgesetzt, wenn die Antwort einen erlaubten HTTP-Statuscode liefert."
                 )
         );

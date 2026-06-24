@@ -184,12 +184,12 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         return List.of(
                 new ProcessNodePort(
                         PORT_APPROVED,
-                        "Freigegeben",
+                        "Freigabe erteilt",
                         "Der Prozess wird fortgesetzt, wenn die Freigabe erteilt wurde."
                 ),
                 new ProcessNodePort(
                         PORT_REJECTED,
-                        "Abgelehnt",
+                        "Freigabe abgelehnt",
                         "Der Prozess wird fortgesetzt, wenn die Freigabe abgelehnt wurde."
                 )
         );

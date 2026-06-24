@@ -100,8 +100,8 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionN
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Datenweitergabe",
-                        "Die verarbeiteten Daten werden hier weitergegeben."
+                        "JavaScript ausgeführt",
+                        "Der Prozess wird hier fortgesetzt, nachdem der JavaScript-Code ausgeführt wurde."
                 )
         );
     }

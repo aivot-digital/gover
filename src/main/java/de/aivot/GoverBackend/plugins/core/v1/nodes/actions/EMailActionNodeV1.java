@@ -200,7 +200,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Versendet",
+                        "E-Mail versendet",
                         "Der Prozess wird hier fortgesetzt, nachdem die E-Mail versendet wurde."
                 )
         );

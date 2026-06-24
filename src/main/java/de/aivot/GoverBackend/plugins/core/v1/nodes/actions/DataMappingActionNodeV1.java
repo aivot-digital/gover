@@ -120,8 +120,8 @@ public class DataMappingActionNodeV1 implements ProcessNodeDefinition<DataMappin
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Weiter",
-                        "Der Prozess wird hier fortgesetzt, nachdem die Daten abgebildet wurden."
+                        "Datenfelder verarbeitet",
+                        "Der Prozess wird hier fortgesetzt, nachdem die Abbildungsregeln ausgeführt wurden."
                 )
         );
     }
