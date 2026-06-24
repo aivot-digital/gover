@@ -1,5 +1,7 @@
-import {AnyElement} from './elements/any-element';
+import type {AnyElement} from './elements/any-element';
 import {isStringNotNullOrEmpty} from '../utils/string-utils';
+import {type AnyElementWithChildren, isAnyElementWithChildren} from './elements/any-element-with-children';
+import {isReplicatingContainerLayout} from './elements/form/layout/replicating-container-layout';
 
 export type AuthoredElementValues = Partial<Record<string, any>>;
 
@@ -93,16 +95,19 @@ export function hasAuthoredElementValuesSomeInput(authoredElementValues: Authore
  * The computed errors will be applied recursively to all sub-states of the computed element states.
  * Computed errors have a higher precedence than existing errors.
  *
- * @param computedErrors The computed errors.
- * @param computedElementStates The existing element states.
- * @returns The updated element states.
+ * @param {ComputedElementErrors} computedErrors The computed errors.
+ * @param {ComputedElementStates} computedElementStates The existing element states.
+ * @return {ComputedElementStates} The updated element states.
  */
 export function applyComputedErrors(computedErrors: ComputedElementErrors, computedElementStates: ComputedElementStates): ComputedElementStates {
     const nextComputedElementStates: ComputedElementStates = {
         ...computedElementStates,
     };
 
-    for (const [elementId, computedError] of Object.entries(computedErrors)) {
+    for (const [
+        elementId,
+        computedError,
+    ] of Object.entries(computedErrors)) {
         if (computedError == null) {
             continue;
         }
@@ -140,7 +145,10 @@ export function clearDerivedErrorsRecursively(derivedData: DerivedRuntimeElement
     return {
         ...derivedData,
         elementStates: Object.fromEntries(
-            Object.entries(derivedData.elementStates).map(([elementId, state]) => [
+            Object.entries(derivedData.elementStates).map(([
+                elementId,
+                state,
+            ]) => [
                 elementId,
                 {
                     ...state,
@@ -174,4 +182,28 @@ export function hasAnyErrorRecursively(elementStates: ComputedElementStates): bo
 
             return false;
         });
+}
+
+export function hasAnyErrorRecursivelyInParent(parent: AnyElementWithChildren, allElementStates: ComputedElementStates): boolean {
+    return hasAnyErrorRecursivelyInElement(parent, allElementStates);
+}
+
+function hasAnyErrorRecursivelyInElement(element: AnyElement, elementStates: ComputedElementStates): boolean {
+    const state = elementStates[element.id];
+
+    if (isStringNotNullOrEmpty(state?.error)) {
+        return true;
+    }
+
+    if (isReplicatingContainerLayout(element)) {
+        return state?.subStates?.some((subState) => {
+            return element.children?.some((child) => hasAnyErrorRecursivelyInElement(child, subState ?? {})) ?? false;
+        }) ?? false;
+    }
+
+    if (isAnyElementWithChildren(element)) {
+        return element.children?.some((child) => hasAnyErrorRecursivelyInElement(child, elementStates)) ?? false;
+    }
+
+    return false;
 }

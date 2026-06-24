@@ -155,15 +155,19 @@ function sanitizePrintablePdfFilenameBase(value: string): string {
 
 function resolvePrintablePdfFilename(layout: FormLayoutElement | null, node: ProcessNodeEntity): string {
     const candidates = [
-        layout?.headline,
+        layout?.publicTitle,
         node.name,
         PrintablePdfFallbackFilenameBase,
     ];
+
+
 
     for (const candidate of candidates) {
         if (typeof candidate !== 'string') {
             continue;
         }
+
+        console.log(layout, candidates);
 
         const filenameBase = sanitizePrintablePdfFilenameBase(candidate);
         if (filenameBase.length > 0) {

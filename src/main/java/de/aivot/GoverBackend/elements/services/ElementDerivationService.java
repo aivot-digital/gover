@@ -393,23 +393,35 @@ public class ElementDerivationService {
                         .resolve(resObject);
 
                 if (resolvedElement == null) {
-                    throw new DerivationException(currentElement, "Der erzeugte Datensatz entspricht keinem bekannten Elementtyp");
+                    throw new DerivationException(
+                            currentElement,
+                            "Der Datensatz für die dynamische Struktur des Elementes entspricht keinem bekannten Element."
+                    );
                 }
 
                 // Overriding ids is not allowed, so we check if the ids match
                 if (!Objects.equals(currentElement.getId(), resolvedElement.getId())) {
-                    throw new DerivationException(currentElement, "Das abgeleitete Element hat eine andere ID als das ursprüngliche Element");
+                    throw new DerivationException(
+                            currentElement,
+                            "Die ID (id) wird in der dynamischen Struktur des Elementes geändert. Dieses Verhalten wird nicht unterstützt."
+                    );
                 }
 
                 // Overriding types is not allowed, so we check if the types match
                 if (!Objects.equals(currentElement.getType(), resolvedElement.getType())) {
-                    throw new DerivationException(currentElement, "Das abgeleitete Element hat einen anderen Typ als das ursprüngliche Element");
+                    throw new DerivationException(
+                            currentElement,
+                            "Der Typ (type) wird in der dynamischen Struktur des Elementes geändert. Dieses Verhalten wird nicht unterstützt."
+                    );
                 }
 
                 // Overriding destination keys is not allowed for input elements, so we check if the destination keys match when both the current and the resolved element are input elements
                 if (currentElement instanceof BaseInputElement<?> i && resolvedElement instanceof BaseInputElement<?> r) {
                     if (!Objects.equals(i.getDestinationKey(), r.getDestinationKey())) {
-                        throw new DerivationException(currentElement, "Das abgeleitete Element hat einen anderen Destination Key als das ursprüngliche Element");
+                        throw new DerivationException(
+                                currentElement,
+                                "Der Datenschlüssel (destinationKey) wird in der dynamischen Struktur des Elementes geändert. Dieses Verhalten wird nicht unterstützt."
+                        );
                     }
                 }
 

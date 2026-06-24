@@ -71,7 +71,6 @@ describe('resolveSummaryStepIndex', () => {
             visibility: null,
             override: null,
             metadata: null,
-            headline: null,
             tabTitle: null,
             children: [intro, hiddenStep, visibleStep, summary],
             offlineSubmissionText: null,
