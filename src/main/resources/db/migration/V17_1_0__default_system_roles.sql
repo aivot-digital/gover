@@ -124,6 +124,7 @@ values (1,
             'process_instance.communication.internal',
             'process_instance.communication.external',
             'process_instance.edit_task',
+            'process_instance.migrate',
 
             'storage_provider.read',
             'storage_provider.update',
