@@ -4,10 +4,11 @@ import {Box, IconButton, Tooltip, useTheme} from '@mui/material';
 import Typography from '@mui/material/Typography';
 import {type ProcessNodePort} from '../../../../services/process-node-provider-api-service';
 import Chip from '@mui/material/Chip';
+import {alpha} from '@mui/material/styles';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {Add} from '@mui/icons-material';
-import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
 import Link from '@mui/icons-material/Link';
+import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
 import {
     ADD_BUTTON_DISTANCE,
     ADD_BUTTON_ICON_SIZE,
@@ -20,14 +21,18 @@ import {
 import './process-flow-editor-animations.css';
 
 const CHIP_HEIGHT = 24;
+const PORT_CHIP_ACTION_ICON_SIZE = 16;
+const PORT_CHIP_ACTION_SLOT_SIZE = 18;
+const PORT_CHIP_PATH_GAP = 6;
 const PORT_DOT_SIZE = 10;
 const PORT_DOT_GAP = 6;
-const TOP_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + (PORT_DOT_SIZE / 2) + PORT_DOT_GAP;
+const TOP_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + (PORT_DOT_SIZE / 2) + PORT_DOT_GAP - PORT_CHIP_PATH_GAP;
 const CONNECTED_PORT_STEM_HEIGHT = 0;
-const CONNECTED_SOURCE_HANDLE_OFFSET = 5;
+const CONNECTED_SOURCE_HANDLE_OFFSET = PORT_CHIP_PATH_GAP + 5;
 const CONNECTED_SOURCE_HANDLE_TOP = ADD_BUTTON_DISTANCE + PORT_DOT_SIZE + PORT_DOT_GAP + CHIP_HEIGHT + CONNECTED_SOURCE_HANDLE_OFFSET;
-const CONNECTED_PORT_SPACER_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25) - CONNECTED_PORT_STEM_HEIGHT;
-const OPEN_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25);
+const CONNECTED_PORT_SPACER_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25) - CONNECTED_PORT_STEM_HEIGHT - PORT_CHIP_PATH_GAP;
+const OPEN_PORT_ACTION_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE;
+const OPEN_PORT_CONNECTOR_HEIGHT = ADD_BUTTON_DISTANCE + ADD_BUTTON_SIZE + (ADD_BUTTON_DISTANCE * 1.25) - PORT_CHIP_PATH_GAP;
 const ACTIVE_RUNTIME_DASH_ARRAY = '10 10';
 const ACTIVE_RUNTIME_DASH_ANIMATION = 'active-edge-dash-scroll 2s linear infinite';
 
@@ -87,6 +92,22 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
     } = props;
 
     const confirm = useConfirm();
+    const portAccentColor = wasPerformed ? theme.palette.primary.main : theme.palette.text.secondary;
+    const portBackgroundColor = isConnected ?
+        theme.palette.background.default :
+        theme.palette.background.paper;
+    const portBorderColor = wasPerformed ?
+        alpha(theme.palette.primary.main, 0.42) :
+        isConnected ?
+            alpha(theme.palette.text.primary, 0.18) :
+            alpha(theme.palette.text.primary, 0.34);
+    const portBorderStyle = isConnected || wasPerformed ? 'solid' : 'dashed';
+    const portTextColor = wasPerformed ?
+        theme.palette.primary.dark :
+        theme.palette.text.secondary;
+    const portTitle = port.description ?
+        `${port.label}: ${port.description}` :
+        port.label;
 
     const handleDeleteEdge = (): void => {
         void confirm({
@@ -117,6 +138,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                 sx={{
                     display: 'flex',
                     height: '100%',
+                    width: '100%',
                     flexDirection: 'column',
                     alignItems: 'center',
                 }}
@@ -136,7 +158,7 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
 
                 <Box
                     sx={{
-                        height: `${TOP_PORT_CONNECTOR_HEIGHT}px`,
+                        height: TOP_PORT_CONNECTOR_HEIGHT,
                     }}
                 >
                     <PortConnector
@@ -145,23 +167,88 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                     />
                 </Box>
 
+                <Box
+                    sx={{
+                        height: PORT_CHIP_PATH_GAP,
+                    }}
+                />
+
                 <Chip
-                    label={port.description ? (
-                        <span title={port.description}>{port.label}</span>
-                    ) : port.label}
+                    label={
+                        <Box
+                            component="span"
+                            title={portTitle}
+                            sx={{
+                                display: 'block',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            {port.label}
+                        </Box>
+                    }
                     size="small"
                     variant="outlined"
                     sx={{
-                        bgcolor: 'background.paper',
-                        borderColor: wasPerformed ? theme.palette.primary.main : HANDLE_COLOR,
+                        height: CHIP_HEIGHT,
+                        maxWidth: 'calc(100% - 8px)',
+                        borderRadius: '999px',
+                        bgcolor: portBackgroundColor,
+                        borderColor: portBorderColor,
+                        borderStyle: portBorderStyle,
+                        color: portTextColor,
+                        boxShadow: 'none',
+                        cursor: 'default',
+                        transition: theme.transitions.create(
+                            ['background-color', 'border-color', 'color'],
+                            {
+                                duration: theme.transitions.duration.shortest,
+                            }
+                        ),
+                        '& .MuiChip-label': {
+                            minWidth: 0,
+                            pl: 1,
+                            pr: editable ? 0.5 : 1,
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                            lineHeight: 1.2,
+                            letterSpacing: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                        },
+                        '& .MuiChip-deleteIcon': {
+                            width: PORT_CHIP_ACTION_SLOT_SIZE,
+                            height: PORT_CHIP_ACTION_SLOT_SIZE,
+                            mr: 0.5,
+                            ml: -0.125,
+                            borderRadius: '999px',
+                            color: alpha(portAccentColor, isConnected ? 0.32 : 0.46),
+                            transition: theme.transitions.create(
+                                ['background-color', 'color'],
+                                {
+                                    duration: theme.transitions.duration.shortest,
+                                }
+                            ),
+                        },
+                        '& .MuiChip-deleteIcon:hover': {
+                            bgcolor: alpha(portAccentColor, 0.08),
+                            color: alpha(portAccentColor, 0.82),
+                        },
+                        '&:hover': {
+                            bgcolor: portBackgroundColor,
+                            borderColor: portBorderColor,
+                            color: portTextColor,
+                        },
                     }}
                     deleteIcon={editable ? (
                         isConnected ?
                             <PortChipActionIcon tooltip="Verbindung aufheben">
-                                <Close sx={{fontSize: 18}}/>
+                                <LinkOffOutlinedIcon sx={{fontSize: PORT_CHIP_ACTION_ICON_SIZE}}/>
                             </PortChipActionIcon> :
                             <PortChipActionIcon tooltip="Mit bestehendem Knoten verbinden">
-                                <Link sx={{fontSize: 18}}/>
+                                <Link sx={{fontSize: PORT_CHIP_ACTION_ICON_SIZE}}/>
                             </PortChipActionIcon>
                     ) : undefined}
                     onDelete={editable ? (
@@ -171,6 +258,12 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                                 onConnectToExisting(port);
                             }
                     ) : undefined}
+                />
+
+                <Box
+                    sx={{
+                        height: PORT_CHIP_PATH_GAP,
+                    }}
                 />
 
                 {
@@ -197,11 +290,11 @@ export function ProcessFlowEditorNodeHandle(props: ProcessFlowEditorNodeHandlePr
                             <>
                                 <Box
                                     sx={{
-                                        height: ADD_BUTTON_DISTANCE,
+                                        height: OPEN_PORT_ACTION_CONNECTOR_HEIGHT,
                                     }}
                                 >
                                     <PortConnector
-                                        height={ADD_BUTTON_DISTANCE}
+                                        height={OPEN_PORT_ACTION_CONNECTOR_HEIGHT}
                                         wasPerformed={wasPerformed}
                                     />
                                 </Box>
