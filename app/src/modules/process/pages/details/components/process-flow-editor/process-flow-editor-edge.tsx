@@ -21,7 +21,10 @@ const EDGE_ARROW_LENGTH = 8;
 const EDGE_ARROW_WIDTH = 12;
 // Keep insert controls slightly before downstream merge bends without changing segment selection.
 const EDGE_LABEL_SEGMENT_PROGRESS = 0.4;
+const EDGE_LABEL_POINT_CACHE_LIMIT = 1000;
 const FEEDBACK_EDGE_DASH_ARRAY = '8 6';
+// Edges can be unmounted by viewport virtualization; keep the first label point for a stable layout route.
+const edgeLabelPointCache = new Map<string, PathPoint>();
 
 function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     const theme = useTheme();
@@ -107,13 +110,33 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     } = useMemo(() => {
         const renderedRoutePoints = buildRenderedRoutePoints(routePoints, sourceX, sourceY, targetX, targetY);
         const trimmedRoutePoints = trimTerminalSegment(renderedRoutePoints, EDGE_ARROW_LENGTH);
+        const labelPointCacheKey = getEdgeLabelPointCacheKey(
+            graphEdge.edge.id,
+            graphEdge.edge.fromNodeId,
+            graphEdge.edge.toNodeId,
+            graphEdge.edge.viaPort,
+            routePoints,
+            renderedRoutePoints,
+            isFeedbackEdge,
+        );
 
         return {
             edgePath: buildOrthogonalPath(trimmedRoutePoints),
             arrowPath: buildArrowPath(renderedRoutePoints, EDGE_ARROW_LENGTH, EDGE_ARROW_WIDTH),
-            labelPoint: getPreferredLabelPoint(renderedRoutePoints, isFeedbackEdge),
+            labelPoint: getStablePreferredLabelPoint(labelPointCacheKey, renderedRoutePoints, isFeedbackEdge),
         };
-    }, [isFeedbackEdge, routePoints, sourceX, sourceY, targetX, targetY]);
+    }, [
+        graphEdge.edge.fromNodeId,
+        graphEdge.edge.id,
+        graphEdge.edge.toNodeId,
+        graphEdge.edge.viaPort,
+        isFeedbackEdge,
+        routePoints,
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+    ]);
     const edgeColor = wasPerformed ? theme.palette.primary.main : HANDLE_COLOR;
     const edgeDashArray = wasPerformed ? '10 10' : isFeedbackEdge ? FEEDBACK_EDGE_DASH_ARRAY : undefined;
 
@@ -431,6 +454,60 @@ function getPreferredLabelPoint(points: PathPoint[], isFeedbackEdge: boolean): P
     }
 
     return getSegmentProgressPoint(selectedSegment, EDGE_LABEL_SEGMENT_PROGRESS);
+}
+
+function getStablePreferredLabelPoint(
+    cacheKey: string,
+    points: PathPoint[],
+    isFeedbackEdge: boolean,
+): PathPoint {
+    const cachedPoint = edgeLabelPointCache.get(cacheKey);
+    if (cachedPoint != null) {
+        return cachedPoint;
+    }
+
+    const labelPoint = getPreferredLabelPoint(points, isFeedbackEdge);
+    edgeLabelPointCache.set(cacheKey, labelPoint);
+
+    if (edgeLabelPointCache.size > EDGE_LABEL_POINT_CACHE_LIMIT) {
+        const oldestCacheKey = edgeLabelPointCache.keys().next().value;
+        if (oldestCacheKey != null) {
+            edgeLabelPointCache.delete(oldestCacheKey);
+        }
+    }
+
+    return labelPoint;
+}
+
+function getEdgeLabelPointCacheKey(
+    edgeId: number,
+    fromNodeId: number,
+    toNodeId: number,
+    viaPort: string,
+    routePoints: FlowPathPoint[],
+    renderedRoutePoints: PathPoint[],
+    isFeedbackEdge: boolean,
+): string {
+    const stableRoutePoints = routePoints.length >= 2 ? routePoints : renderedRoutePoints;
+
+    return [
+        edgeId,
+        fromNodeId,
+        toNodeId,
+        viaPort,
+        isFeedbackEdge ? 'feedback' : 'forward',
+        getPointSignature(stableRoutePoints),
+    ].join(':');
+}
+
+function getPointSignature(points: Array<{x: number; y: number}>): string {
+    return points
+        .map((point) => `${formatPointCoordinate(point.x)},${formatPointCoordinate(point.y)}`)
+        .join('|');
+}
+
+function formatPointCoordinate(value: number): string {
+    return Number.isInteger(value) ? String(value) : value.toFixed(2);
 }
 
 function getSegmentProgressPoint(
