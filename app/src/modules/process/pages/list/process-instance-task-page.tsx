@@ -190,7 +190,7 @@ export function ProcessInstanceTaskListPage() {
         },
         {
             field: 'processDefinitionNodeId',
-            headerName: 'Knoten',
+            headerName: 'Element',
             flex: 1,
             renderCell: (params: any) => {
                 const node = params.row.node;

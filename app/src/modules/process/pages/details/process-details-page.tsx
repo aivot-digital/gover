@@ -400,7 +400,7 @@ export function ProcessDetailsPage(): ReactNode {
             .getNodeProviders()
             .then(setAvailableNodeProviders)
             .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Die verfügbaren Prozessknoten konnten nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(error, 'Die verfügbaren Prozesselemente konnten nicht geladen werden.'));
             });
     }, []);
 
@@ -807,7 +807,7 @@ export function ProcessDetailsPage(): ReactNode {
                 }
 
                 setHasFlowNodeProviderLoadError(true);
-                dispatch(showApiErrorSnackbar(error, 'Die für die Prozessansicht benötigten Knotendefinitionen konnten nicht geladen werden.'));
+                dispatch(showApiErrorSnackbar(error, 'Die für die Prozessansicht benötigten Prozesselementdefinitionen konnten nicht geladen werden.'));
             })
             .finally(() => {
                 if (cancelled) {
@@ -977,7 +977,7 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         dispatch(setLoadingMessage({
-            message: 'Füge Knoten hinzu',
+            message: 'Füge Prozesselement hinzu',
             blocking: false,
             estimatedTime: 1000,
         }));
@@ -1004,7 +1004,7 @@ export function ProcessDetailsPage(): ReactNode {
                     key: 'process-follow-up-node-missing-port',
                     type: SnackbarType.AutoHiding,
                     severity: SnackbarSeverity.Warning,
-                    message: 'Dieser Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
+                    message: 'Dieser Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
                 }));
                 dispatch(clearLoadingMessage());
                 return;
@@ -1126,7 +1126,7 @@ export function ProcessDetailsPage(): ReactNode {
         }
 
         dispatch(setLoadingMessage({
-            message: 'Füge Knoten hinzu',
+            message: 'Füge Prozesselement hinzu',
             blocking: false,
             estimatedTime: 1000,
         }));
@@ -1136,7 +1136,7 @@ export function ProcessDetailsPage(): ReactNode {
                 key: 'process-inbetween-node-missing-port',
                 type: SnackbarType.AutoHiding,
                 severity: SnackbarSeverity.Warning,
-                message: 'Dieser Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
+                message: 'Dieser Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.',
             }));
             dispatch(clearLoadingMessage());
             return;
@@ -1603,7 +1603,7 @@ export function ProcessDetailsPage(): ReactNode {
                 importedNodeExport.node.processNodeDefinitionVersion,
             );
             if (importedProvider == null) {
-                dispatch(showErrorSnackbar('Die Knotendefinition aus dem Import ist in dieser Instanz nicht verfügbar.'));
+                dispatch(showErrorSnackbar('Die Prozesselementdefinition aus dem Import ist in dieser Instanz nicht verfügbar.'));
                 return;
             }
 
@@ -1623,13 +1623,13 @@ export function ProcessDetailsPage(): ReactNode {
                     edge.viaPort === newNodeFor.viaPort
                 ));
                 if (requiresOutgoingPort && importedProvider.ports.length === 0) {
-                    dispatch(showErrorSnackbar('Dieser importierte Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
+                    dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
                     return;
                 }
             }
 
             if (context === 'in-between' && importedProvider.ports.length === 0) {
-                dispatch(showErrorSnackbar('Dieser importierte Knotentyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
+                dispatch(showErrorSnackbar('Dieser importierte Prozesselementtyp kann hier nicht eingefügt werden, da er keinen Ausgangsport besitzt.'));
                 return;
             }
 
@@ -1713,12 +1713,12 @@ export function ProcessDetailsPage(): ReactNode {
             node.processNodeDefinitionVersion,
         )];
         if (currentProvider == null) {
-            dispatch(showErrorSnackbar('Der aktuelle Knotentyp konnte nicht aufgelöst werden.'));
+            dispatch(showErrorSnackbar('Der aktuelle Prozesselementtyp konnte nicht aufgelöst werden.'));
             return;
         }
 
         if (!canReplaceNodeType(currentProvider.type, replacementProvider.type)) {
-            dispatch(showErrorSnackbar('Auslöser und Endelemente können nur durch denselben Knotentyp ersetzt werden.'));
+            dispatch(showErrorSnackbar('Auslöser und Endelemente können nur durch denselben Prozesselementtyp ersetzt werden.'));
             return;
         }
 
@@ -2272,10 +2272,10 @@ export function ProcessDetailsPage(): ReactNode {
                                             <Typography color="text.secondary">
                                                 {
                                                     hasFlowNodeProviderLoadError ?
-                                                        'Die versionierten Prozessknoten konnten nicht geladen werden.' :
+                                                        'Die versionierten Prozesselemente konnten nicht geladen werden.' :
                                                         isLoadingFlowNodeProviders ?
-                                                            'Lade versionierte Prozessknoten...' :
-                                                            'Bereite Prozessknoten vor...'
+                                                            'Lade versionierte Prozesselemente...' :
+                                                            'Bereite Prozesselemente vor...'
                                                 }
                                             </Typography>
                                         </Paper>

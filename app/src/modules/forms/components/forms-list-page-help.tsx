@@ -21,7 +21,7 @@ export function FormsListPageHelp() {
                 Neue Formulare fügen Sie hinzu, indem Sie in Ihren Prozessen ein neues Formulareingang-Prozesselement
                 anlegen. In dieser Liste können Sie alle Formulare nach ihren Formulareingang-Prozesselementen einsehen,
                 den Editor für das jeweilige Formular öffnen, direkt zum zugehörigen Prozess navigieren oder die
-                Einstellungen des jeweiligen Formulareingang-Prozesselement-Knotens aufrufen.
+                Einstellungen des jeweiligen Formulareingang-Prozesselements aufrufen.
             </Typography>
             <Typography
                 variant="body1"

@@ -98,7 +98,7 @@ export function ProcessNodeEditor(): ReactNode {
         dialog: changeBlockerDialog,
     } = useChangeBlocker({
         //customTitle: 'Ungespeicherte Konfiguration',
-        //customMessage: 'Die geöffnete Knotenkonfioguration (links) hat ungespeicherte Änderungen',
+        //customMessage: 'Die geöffnete Prozesselementkonfiguration (links) hat ungespeicherte Änderungen',
         original: originalNode,
         edited: editedNode,
         onConfirmNavigation: () => {
@@ -296,10 +296,10 @@ export function ProcessNodeEditor(): ReactNode {
                             problems: [],
                         });
                     } else {
-                        dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
+                        dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden, da die Konfiguration ungültig ist.'));
                     }
                 } else {
-                    dispatch(showApiErrorSnackbar(err, 'Der Knoten konnte nicht gespeichert werden.'));
+                    dispatch(showApiErrorSnackbar(err, 'Das Prozesselement konnte nicht gespeichert werden.'));
                 }
             });
     };

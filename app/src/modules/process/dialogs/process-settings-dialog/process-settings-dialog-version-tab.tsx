@@ -205,7 +205,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 error={publicTitleError}
                 minCharacters={3}
                 maxCharacters={96}
-                hint="Diese Bezeichnung wird öffentlich im Kontext der Prozessversion verwendet. Formulare können z. B. darauf zurückfallen, wenn der Formular-Knoten keine eigene öffentliche Bezeichnung hat."
+                hint="Diese Bezeichnung wird öffentlich im Kontext der Prozessversion verwendet. Formulare können z. B. darauf zurückfallen, wenn das Formular-Prozesselement keine eigene öffentliche Bezeichnung hat."
             />
 
             <ElementEditorSectionHeader

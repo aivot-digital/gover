@@ -29,7 +29,7 @@ export function ExtensionsPage() {
                                     paragraph
                                 >
                                     Auf dieser Seite finden Sie alle auf Ihrer Gover-Instanz installierten Erweiterungen.
-                                    Erweiterungen stellen zusätzliche Komponenten wie Prozessknoten, Operatoren,
+                                    Erweiterungen stellen zusätzliche Komponenten wie Prozesselemente, Operatoren,
                                     Speicheranbieter oder Integrationen bereit.
                                 </Typography>
                                 <Typography
