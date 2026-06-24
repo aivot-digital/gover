@@ -17,7 +17,7 @@ import {prefillQueryParamKey} from '../../data/prefill-query-param-key';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {canPrefillElement} from '../prefill-form-dialog/prefill-form-dialog';
 import {flattenElements} from '../../utils/flatten-elements';
-import {CustomerInputService} from '../../services/customer-input-service';
+import {type CustomerInputDraft, CustomerInputService} from '../../services/customer-input-service';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 
 interface CustomerInputLoaderProps {
@@ -28,11 +28,6 @@ interface CustomerInputLoaderProps {
     onElementDataLoad: (elementData: AuthoredElementValues) => void;
     onResolved: () => void;
     isBusy: boolean;
-}
-
-interface LocalStorageData {
-    date: Date;
-    data: AuthoredElementValues;
 }
 
 export function CustomerInputLoader(props: CustomerInputLoaderProps) {
@@ -48,7 +43,7 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
 
     const [searchParams, setSearchParams] = useSearchParams();
 
-    const [localStorageData, setLocalStorageData] = useState<LocalStorageData | null | undefined>(undefined);
+    const [customerInputDraft, setCustomerInputDraft] = useState<CustomerInputDraft | null | undefined>(undefined);
     const [urlPrefillData, setUrlPrefillData] = useState<AuthoredElementValues | null | undefined>(undefined);
 
     useEffect(() => {
@@ -56,7 +51,7 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
             processSlug,
             formSlug,
             version,
-            setLocalStorageData,
+            setCustomerInputDraft,
         );
         initializeUrlPrefillData(
             rootElement,
@@ -66,25 +61,25 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
     }, [processSlug, formSlug, version, rootElement, searchParams]);
 
     const dialogState: 'waiting' | 'load' | 'none' = useMemo(() => {
-        if (localStorageData === undefined || urlPrefillData === undefined) {
+        if (customerInputDraft === undefined || urlPrefillData === undefined) {
             return 'waiting';
         }
-        if (localStorageData != null) {
+        if (customerInputDraft != null) {
             return 'load';
         }
         return 'none';
-    }, [localStorageData, urlPrefillData]);
+    }, [customerInputDraft, urlPrefillData]);
 
     const handleResolved = () => {
-        setLocalStorageData(null);
+        setCustomerInputDraft(null);
         setUrlPrefillData(null);
         clearConsumedSearchParams(searchParams, setSearchParams);
         onResolved();
     };
 
     const handleLoadData = () => {
-        if (localStorageData != null) {
-            onElementDataLoad(localStorageData.data);
+        if (customerInputDraft != null) {
+            onElementDataLoad(customerInputDraft.data);
         }
 
         handleResolved();
@@ -127,7 +122,7 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
             <DialogContent tabIndex={0}>
                 <DialogContentText component="div">
                     <Typography variant="body2">
-                        Auf Ihrem Gerät existiert ein zwischengespeicherter Entwurf für diesen Antrag. Möchten Sie
+                        Auf Ihrem Gerät existiert ein zwischengespeicherter Entwurf für dieses Formular. Möchten Sie
                         diesen Entwurf verwenden und weiter bearbeiten?
                     </Typography>
 
@@ -159,7 +154,7 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                                     mt: -0.5,
                                 }}
                             >
-                                Antrags-Entwurf aus Ihrem lokalen Speicher
+                                Formular-Entwurf aus Ihrem lokalen Speicher
                             </Typography>
                             <Typography
                                 variant="body2"
@@ -168,9 +163,9 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                                 }}
                             >
                                 {
-                                    localStorageData?.date != null && (
+                                    customerInputDraft?.date != null && (
                                         <span>
-                                            Zuletzt bearbeitet am {format(localStorageData.date, 'dd.MM.yyyy')} um {format(localStorageData.date, 'HH:mm')} Uhr
+                                            Zuletzt bearbeitet am {format(customerInputDraft.date, 'dd.MM.yyyy')} um {format(customerInputDraft.date, 'HH:mm')} Uhr
                                         </span>
                                     )
                                 }
@@ -182,13 +177,9 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
                         variant="body2"
                         gutterBottom
                     >
-                        Bitte beachten Sie, dass Sie aus Datenschutzgründen ggf. folgende Aktionen <b>erneut
-                        ausführen</b> müssen, da diese nicht gespeichert wurden:
+                        Bitte beachten Sie, dass hinzugefügte Anlagen/Dateien aus Datenschutzgründen nicht
+                        gespeichert wurden und ggf. <b>erneut hinzugefügt</b> werden müssen.
                     </Typography>
-                    <ul style={{margin: 0}}>
-                        <li>Anmeldung mit einem Nutzer- oder Unternehmenskonto</li>
-                        <li>Hinzufügen von Anlagen/Dateien</li>
-                    </ul>
                 </DialogContentText>
             </DialogContent>
             <DialogActions>
@@ -219,18 +210,8 @@ export function CustomerInputLoader(props: CustomerInputLoaderProps) {
 function initializeLocalStorageData(processSlug: string,
                                     formSlug: string,
                                     version: number,
-                                    setLocalStorageData: (data: LocalStorageData | null) => void) {
-    const date = CustomerInputService.loadCustomerInputDate(processSlug, formSlug, version);
-    const data = CustomerInputService.loadCustomerInputState(processSlug, formSlug, version);
-
-    if (date != null && data != null && hasAuthoredElementValuesSomeInput(data)) {
-        setLocalStorageData({
-            date,
-            data,
-        });
-    } else {
-        setLocalStorageData(null);
-    }
+                                    setCustomerInputDraft: (data: CustomerInputDraft | null) => void) {
+    setCustomerInputDraft(CustomerInputService.loadCustomerInputDraft(processSlug, formSlug, version));
 }
 
 function initializeUrlPrefillData(rootElement: FormLayoutElement,

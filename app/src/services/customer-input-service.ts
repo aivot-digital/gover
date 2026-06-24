@@ -9,7 +9,26 @@ const MAJOR_VERSION = AppInfo.version.split('.')[0];
 const DATA_KEY = 'state';
 const DATE_KEY = 'date';
 
+export interface CustomerInputDraft {
+    date: Date;
+    data: AuthoredElementValues;
+}
+
 export class CustomerInputService {
+    public static loadCustomerInputDraft(processSlug: string, formSlug: string, version: number): CustomerInputDraft | null {
+        const date = this.loadCustomerInputDate(processSlug, formSlug, version);
+        const data = this.loadCustomerInputState(processSlug, formSlug, version);
+
+        if (date != null && data != null && hasAuthoredElementValuesSomeInput(data)) {
+            return {
+                date,
+                data,
+            };
+        }
+
+        return null;
+    }
+
     public static loadCustomerInputDate(processSlug: string, formSlug: string, version: number): Date | null {
         const rawDate = this
             .getKeys(processSlug, formSlug, version, DATE_KEY)
@@ -18,7 +37,8 @@ export class CustomerInputService {
 
         if (rawDate != null) {
             try {
-                return new Date(rawDate);
+                const date = new Date(rawDate);
+                return Number.isNaN(date.getTime()) ? null : date;
             } catch (e) {
                 return null;
             }

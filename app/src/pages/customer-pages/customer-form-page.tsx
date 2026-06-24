@@ -1,7 +1,22 @@
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import React, {useEffect, useMemo, useState} from 'react';
-import {Box, Button, Container, Grid, Paper, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {
+    Box,
+    Button,
+    Container,
+    Grid,
+    Paper,
+    Skeleton,
+    Step,
+    StepContent,
+    StepLabel,
+    Stepper,
+    ThemeProvider,
+    Typography,
+    useTheme,
+} from '@mui/material';
 import {alpha} from '@mui/material/styles';
+import {format} from 'date-fns';
 import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -49,6 +64,10 @@ import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-fo
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {Chip} from '../../components/chip/chip';
+import RestorePageIcon from '@mui/icons-material/RestorePage';
+import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -326,6 +345,8 @@ export function CustomerFormPage() {
     const formAssetQuery = formAssetQueryParams.toString();
     const formLogoUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/logo/?${formAssetQuery}`;
     const formFaviconUrl = `/api/public/form/${process.slug}/${resolvedFormSlug}/favicon/?${formAssetQuery}`;
+    const customerInputDraft = CustomerInputService.loadCustomerInputDraft(process.slug, resolvedFormSlug, version.processVersion);
+    const showFormFlow = data.identitySlots.length === 0 || dismissAuthentication;
 
     return (
         <ThemeProvider theme={resolvedTheme}>
@@ -384,6 +405,7 @@ export function CustomerFormPage() {
                         <AuthPlaceholder
                             relatedProcessNodeId={node.id}
                             identitySlots={data.identitySlots}
+                            customerInputDraftDate={customerInputDraft?.date ?? null}
                             onDismiss={() => {
                                 setDismissAuthentication(true);
                             }}
@@ -391,7 +413,15 @@ export function CustomerFormPage() {
                     }
 
                     {
-                        (data.identitySlots.length === 0 || dismissAuthentication) &&
+                        showFormFlow &&
+                        startedProcessAccessKey == null &&
+                        !customerInputLoaderResolved &&
+                        customerInputDraft != null &&
+                        <CustomerFormSkeleton />
+                    }
+
+                    {
+                        showFormFlow &&
                         startedProcessAccessKey == null &&
                         !customerInputLoaderResolved &&
                         <CustomerInputLoader
@@ -408,7 +438,7 @@ export function CustomerFormPage() {
                     }
 
                     {
-                        (data.identitySlots.length === 0 || dismissAuthentication) &&
+                        showFormFlow &&
                         startedProcessAccessKey == null &&
                         customerInputLoaderResolved &&
                         <ElementDerivationContext
@@ -425,7 +455,7 @@ export function CustomerFormPage() {
                         />
                     }
                     {
-                        (data.identitySlots.length === 0 || dismissAuthentication) &&
+                        showFormFlow &&
                         startedProcessAccessKey != null &&
                         <Submitted
                             startedProcessAccessKey={startedProcessAccessKey}
@@ -476,6 +506,7 @@ export function CustomerFormPage() {
 interface AuthPlaceholderProps {
     relatedProcessNodeId: number;
     identitySlots: RetrieveResponse['identitySlots'];
+    customerInputDraftDate: Date | null;
     onDismiss: () => void;
 }
 
@@ -487,6 +518,7 @@ function getIdentityDisplayName(identity: { title: string | null }): string {
 
 function AuthPlaceholder(props: AuthPlaceholderProps) {
     const {
+        customerInputDraftDate,
         identitySlots,
         onDismiss,
         relatedProcessNodeId,
@@ -726,29 +758,53 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                         ))
                 }
 
+                {
+                    customerInputDraftDate != null &&
+                    <Grid size={{xs: 12, md: 6}}>
+                        <CustomerInputDraftTeaser date={customerInputDraftDate} />
+                    </Grid>
+                }
+
                 <Grid size={{xs: 12}}>
                     <Box
                         sx={{
                             display: 'flex',
-                            justifyContent: 'flex-end',
+                            justifyContent: 'flex-start',
+                            flexWrap: 'wrap',
+                            gap: 1.5,
+                            mt: 4,
                         }}
                     >
                         {
                             !authRequired &&
                             !someAuthenticated &&
                             <Button
+                                variant="contained"
                                 endIcon={<ArrowForward/>}
                                 onClick={onDismiss}
+                                sx={{
+                                    width: {
+                                        xs: '100%',
+                                        sm: 'auto',
+                                    },
+                                }}
                             >
                                 Ohne Anmeldung fortfahren
                             </Button>
                         }
                         {
-                            authRequired &&
+                            (authRequired || someAuthenticated) &&
                             <Button
+                                variant="contained"
                                 endIcon={<ArrowForward/>}
                                 onClick={onDismiss}
                                 disabled={!allRequiredAuthenticated}
+                                sx={{
+                                    width: {
+                                        xs: '100%',
+                                        sm: 'auto',
+                                    },
+                                }}
                             >
                                 Mit Formular fortfahren
                             </Button>
@@ -757,5 +813,300 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
                 </Grid>
             </Grid>
         </Container>
+    );
+}
+
+function CustomerInputDraftTeaser(props: { date: Date }) {
+    const {
+        date,
+    } = props;
+
+    return (
+        <Paper
+            variant="outlined"
+            role="note"
+            sx={(theme) => ({
+                height: '100%',
+                p: {
+                    xs: 2,
+                    md: 2.5,
+                },
+                borderColor: alpha(theme.palette.text.primary, 0.16),
+                backgroundColor: alpha(theme.palette.text.primary, 0.025),
+            })}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    height: '100%',
+                    pt: .5,
+                }}
+            >
+                <Typography
+                    variant="caption"
+                    component="p"
+                >
+                    Lokaler Speicher
+                </Typography>
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                        columnGap: 1.25,
+                        rowGap: 0.5,
+                        mt: 0.25,
+                    }}
+                >
+                    <Typography
+                        variant="h4"
+                        component="h2"
+                    >
+                        Gespeicherter Entwurf vorhanden
+                    </Typography>
+
+                    <RestorePageIcon
+                        color="primary"
+                        sx={{
+                            fontSize: 32,
+                            flexShrink: 0,
+                        }}
+                    />
+                </Box>
+
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    mt={1.12}
+                >
+                    Sie können im nächsten Schritt entscheiden, ob Sie diesen Entwurf weiterbearbeiten oder neu
+                    beginnen möchten.
+                </Typography>
+
+                <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    sx={{
+                        mt: 'auto',
+                        pt: 2,
+                    }}
+                >
+                    Zuletzt bearbeitet: {format(date, 'dd.MM.yyyy')}, {format(date, 'HH:mm')} Uhr
+                </Typography>
+            </Box>
+        </Paper>
+    );
+}
+
+function CustomerFormSkeletonStepIcon(props: {
+    active: boolean;
+    Icon: React.ElementType;
+}) {
+    const {
+        active,
+        Icon,
+    } = props;
+    const theme = useTheme();
+
+    return (
+        <Icon
+            sx={{
+                fontSize: '2rem',
+                marginLeft: '4px',
+                color: active
+                    ? alpha(theme.palette.primary.main, 0.45)
+                    : alpha(theme.palette.text.primary, 0.38),
+            }}
+        />
+    );
+}
+
+function CustomerFormSkeleton() {
+    const theme = useTheme();
+    const skeletonSx = {
+        bgcolor: alpha(theme.palette.text.primary, 0.075),
+    };
+
+    const stepSkeletons = [
+        {
+            Icon: InfoOutlinedIcon,
+            width: 230,
+        },
+        {
+            Icon: AccountCircleOutlinedIcon,
+            width: 210,
+        },
+        {
+            Icon: ErrorOutlineOutlinedIcon,
+            width: 170,
+        },
+    ];
+
+    return (
+        <Box
+            component="main"
+            aria-hidden="true"
+        >
+            <Container
+                sx={{
+                    mt: 5,
+                    mb: 5,
+                    minHeight: '66vh',
+                }}
+            >
+                <Stepper
+                    activeStep={0}
+                    orientation="vertical"
+                    sx={{
+                        mt: 8,
+                        mb: 10,
+                        ml: '20px',
+                        [theme.breakpoints.down('md')]: {
+                            mt: 5,
+                            mb: 6,
+                            ml: 0,
+                        },
+                        '& .MuiStepConnector-line': {
+                            borderColor: alpha(theme.palette.text.primary, 0.16),
+                        },
+                    }}
+                >
+                    {
+                        stepSkeletons.map((step, index) => (
+                            <Step
+                                key={index}
+                                expanded={index === 0}
+                            >
+                                <StepLabel
+                                    StepIconComponent={() => (
+                                        <CustomerFormSkeletonStepIcon
+                                            active={index === 0}
+                                            Icon={step.Icon}
+                                        />
+                                    )}
+                                    sx={{
+                                        [theme.breakpoints.down('md')]: {
+                                            '.MuiStepLabel-label': {
+                                                ml: 1,
+                                            },
+                                        },
+                                        '.MuiStepLabel-label': {
+                                            pt: 0,
+                                        },
+                                    }}
+                                >
+                                    <Skeleton
+                                        animation={false}
+                                        variant="rounded"
+                                        width={step.width}
+                                        height={22}
+                                        sx={skeletonSx}
+                                    />
+                                </StepLabel>
+
+                                {
+                                    index === 0 &&
+                                    <StepContent
+                                        sx={{
+                                            [theme.breakpoints.down('md')]: {
+                                                pl: 4,
+                                            },
+                                        }}
+                                    >
+                                        <Grid
+                                            container
+                                            spacing={3}
+                                            sx={{pt: 1}}
+                                        >
+                                            {
+                                                [0, 1, 2, 3].map((fieldIndex) => (
+                                                    <Grid
+                                                        key={fieldIndex}
+                                                        size={{
+                                                            xs: 12,
+                                                            md: fieldIndex === 2 ? 12 : 8,
+                                                        }}
+                                                    >
+                                                        <Skeleton
+                                                            animation={false}
+                                                            variant="rounded"
+                                                            width={fieldIndex === 1 ? '28%' : '42%'}
+                                                            height={14}
+                                                            sx={skeletonSx}
+                                                        />
+                                                        <Skeleton
+                                                            animation={false}
+                                                            variant="rounded"
+                                                            width="100%"
+                                                            height={fieldIndex === 2 ? 88 : 48}
+                                                            sx={{
+                                                                ...skeletonSx,
+                                                                mt: 1,
+                                                            }}
+                                                        />
+                                                    </Grid>
+                                                ))
+                                            }
+                                        </Grid>
+
+                                        <Box
+                                            sx={{
+                                                display: 'flex',
+                                                justifyContent: 'space-between',
+                                                mt: {
+                                                    xs: 3,
+                                                    md: 6,
+                                                },
+                                                mb: {
+                                                    xs: 4,
+                                                    md: 7,
+                                                },
+                                                flexDirection: {
+                                                    xs: 'column',
+                                                    md: 'row',
+                                                },
+                                            }}
+                                        >
+                                            <Skeleton
+                                                animation={false}
+                                                variant="rounded"
+                                                width={118}
+                                                height={42}
+                                                sx={skeletonSx}
+                                            />
+                                        </Box>
+                                    </StepContent>
+                                }
+                            </Step>
+                        ))
+                    }
+                </Stepper>
+            </Container>
+
+            <Container
+                sx={{
+                    textAlign: 'left',
+                    marginTop: 0,
+                    mb: 8,
+                    [theme.breakpoints.up('md')]: {
+                        textAlign: 'right',
+                        marginTop: '-80px',
+                    },
+                }}
+            >
+                <Skeleton
+                    animation={false}
+                    variant="rounded"
+                    width={300}
+                    height={32}
+                    sx={{
+                        ...skeletonSx,
+                        display: 'inline-block',
+                    }}
+                />
+            </Container>
+        </Box>
     );
 }
