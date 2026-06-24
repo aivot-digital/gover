@@ -19,6 +19,8 @@ import {ExpandableJSONCodeBlock} from '../../../../../../components/expandable-c
 
 const EDGE_ARROW_LENGTH = 8;
 const EDGE_ARROW_WIDTH = 12;
+// Keep insert controls slightly before downstream merge bends without changing segment selection.
+const EDGE_LABEL_SEGMENT_PROGRESS = 0.4;
 const FEEDBACK_EDGE_DASH_ARRAY = '8 6';
 
 function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
@@ -428,9 +430,16 @@ function getPreferredLabelPoint(points: PathPoint[], isFeedbackEdge: boolean): P
         return getPolylineMidpoint(points);
     }
 
+    return getSegmentProgressPoint(selectedSegment, EDGE_LABEL_SEGMENT_PROGRESS);
+}
+
+function getSegmentProgressPoint(
+    segment: ReturnType<typeof getLineSegments>[number],
+    progress: number,
+): PathPoint {
     return {
-        x: (selectedSegment.start.x + selectedSegment.end.x) / 2,
-        y: (selectedSegment.start.y + selectedSegment.end.y) / 2,
+        x: segment.start.x + ((segment.end.x - segment.start.x) * progress),
+        y: segment.start.y + ((segment.end.y - segment.start.y) * progress),
     };
 }
 
