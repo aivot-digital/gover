@@ -449,16 +449,36 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                 showNodeProblemsForNodes[node.id] &&
                                 associatedProblem != null &&
                                 <Tooltip
+                                    arrow
                                     title={
-                                        <ul>
-                                            {
-                                                associatedProblem.problems.map((problem, index) => (
-                                                    <li key={index}>
-                                                        {problem}
-                                                    </li>
-                                                ))
-                                            }
-                                        </ul>
+                                        <Box>
+                                            <Typography
+                                                component="p"
+                                                sx={{
+                                                    fontSize: 'inherit',
+                                                    fontWeight: 600,
+                                                    mb: 0.75,
+                                                }}
+                                            >
+                                                Dieses Element enthält folgende Fehler:
+                                            </Typography>
+
+                                            <Box
+                                                component="ul"
+                                                sx={{
+                                                    m: 0,
+                                                    pl: 2,
+                                                }}
+                                            >
+                                                {
+                                                    associatedProblem.problems.map((problem, index) => (
+                                                        <li key={index}>
+                                                            {problem}
+                                                        </li>
+                                                    ))
+                                                }
+                                            </Box>
+                                        </Box>
                                     }
                                 >
                                     <Error
