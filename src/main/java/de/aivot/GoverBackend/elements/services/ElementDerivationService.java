@@ -53,6 +53,16 @@ public class ElementDerivationService {
     private final NoCodeEvaluationService noCodeEvaluationService;
     private final ElementDataTransformService elementDataTransformService;
 
+    @Nonnull
+    public DerivedRuntimeElementData derive(@Nonnull BaseElement element, @Nonnull AuthoredElementValues authoredElementValues) {
+        var edr = new ElementDerivationRequest(
+                element,
+                authoredElementValues
+        );
+
+        return derive(edr);
+    }
+
     /**
      * Wires the collaborators that execute dynamic expressions and expose the derived runtime state in the payload shape expected by those expressions.
      *
