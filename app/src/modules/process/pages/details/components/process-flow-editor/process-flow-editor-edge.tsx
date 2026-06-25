@@ -4,7 +4,13 @@ import {Add} from '@mui/icons-material';
 import React, {type ReactNode, useMemo} from 'react';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
 import {type FlowEdge, type FlowPathPoint} from './utils/layout-utils';
-import {ADD_BUTTON_ICON_SIZE, ADD_BUTTON_SIZE, HANDLE_COLOR, HANDLE_WIDTH} from './data/process-flow-constants';
+import {
+    ADD_BUTTON_DISTANCE,
+    ADD_BUTTON_ICON_SIZE,
+    ADD_BUTTON_SIZE,
+    HANDLE_COLOR,
+    HANDLE_WIDTH,
+} from './data/process-flow-constants';
 import './process-flow-editor-animations.css';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
 import Typography from '@mui/material/Typography';
@@ -19,12 +25,9 @@ import {ExpandableJSONCodeBlock} from '../../../../../../components/expandable-c
 
 const EDGE_ARROW_LENGTH = 8;
 const EDGE_ARROW_WIDTH = 12;
-// Keep insert controls slightly before downstream merge bends without changing segment selection.
-const EDGE_LABEL_SEGMENT_PROGRESS = 0.4;
-const EDGE_LABEL_POINT_CACHE_LIMIT = 1000;
+const EDGE_LABEL_SOURCE_ALIGNMENT_OFFSET = HANDLE_WIDTH / 2;
+const EDGE_LABEL_SOURCE_DISTANCE = ADD_BUTTON_DISTANCE + (ADD_BUTTON_SIZE / 2) - EDGE_LABEL_SOURCE_ALIGNMENT_OFFSET;
 const FEEDBACK_EDGE_DASH_ARRAY = '8 6';
-// Edges can be unmounted by viewport virtualization; keep the first label point for a stable layout route.
-const edgeLabelPointCache = new Map<string, PathPoint>();
 
 function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     const theme = useTheme();
@@ -110,27 +113,13 @@ function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     } = useMemo(() => {
         const renderedRoutePoints = buildRenderedRoutePoints(routePoints, sourceX, sourceY, targetX, targetY);
         const trimmedRoutePoints = trimTerminalSegment(renderedRoutePoints, EDGE_ARROW_LENGTH);
-        const labelPointCacheKey = getEdgeLabelPointCacheKey(
-            graphEdge.edge.id,
-            graphEdge.edge.fromNodeId,
-            graphEdge.edge.toNodeId,
-            graphEdge.edge.viaPort,
-            routePoints,
-            renderedRoutePoints,
-            isFeedbackEdge,
-        );
 
         return {
             edgePath: buildOrthogonalPath(trimmedRoutePoints),
             arrowPath: buildArrowPath(renderedRoutePoints, EDGE_ARROW_LENGTH, EDGE_ARROW_WIDTH),
-            labelPoint: getStablePreferredLabelPoint(labelPointCacheKey, renderedRoutePoints, isFeedbackEdge),
+            labelPoint: getSourceLabelPoint(renderedRoutePoints),
         };
     }, [
-        graphEdge.edge.fromNodeId,
-        graphEdge.edge.id,
-        graphEdge.edge.toNodeId,
-        graphEdge.edge.viaPort,
-        isFeedbackEdge,
         routePoints,
         sourceX,
         sourceY,
@@ -429,139 +418,85 @@ function getPolylineMidpoint(points: PathPoint[]): PathPoint {
     return points[points.length - 1];
 }
 
-function getPreferredLabelPoint(points: PathPoint[], isFeedbackEdge: boolean): PathPoint {
-    const segments = getLineSegments(points);
-    if (segments.length === 0) {
+function getSourceLabelPoint(points: PathPoint[]): PathPoint {
+    const sourceSegmentLabelPoint = getSourceSegmentLabelPoint(points);
+    if (sourceSegmentLabelPoint != null) {
+        return sourceSegmentLabelPoint;
+    }
+
+    const totalLength = getPolylineLength(points);
+    if (totalLength === 0) {
         return getPolylineMidpoint(points);
     }
 
-    const preferredSegments = segments.length > 2
-        ? segments.filter((segment) => !segment.isFirst && !segment.isLast)
-        : segments;
-    const candidateSegments = preferredSegments.length > 0 ? preferredSegments : segments;
-    const minimumSegmentLength = (ADD_BUTTON_SIZE * 2) + 10;
+    const labelDistance = totalLength < EDGE_LABEL_SOURCE_DISTANCE * 2 ?
+        totalLength / 2 :
+        EDGE_LABEL_SOURCE_DISTANCE;
 
-    const selectedSegment = [...candidateSegments]
-        .sort((a, b) => (
-            getSegmentPriorityScore(b, points, isFeedbackEdge) - getSegmentPriorityScore(a, points, isFeedbackEdge) ||
-            b.length - a.length ||
-            Math.abs(a.index - ((segments.length - 1) / 2)) - Math.abs(b.index - ((segments.length - 1) / 2))
-        ))
-        .find((segment) => segment.length >= minimumSegmentLength) ?? candidateSegments[0];
-
-    if (selectedSegment == null) {
-        return getPolylineMidpoint(points);
-    }
-
-    return getSegmentProgressPoint(selectedSegment, EDGE_LABEL_SEGMENT_PROGRESS);
+    return getPolylineDistancePoint(points, labelDistance);
 }
 
-function getStablePreferredLabelPoint(
-    cacheKey: string,
-    points: PathPoint[],
-    isFeedbackEdge: boolean,
-): PathPoint {
-    const cachedPoint = edgeLabelPointCache.get(cacheKey);
-    if (cachedPoint != null) {
-        return cachedPoint;
-    }
-
-    const labelPoint = getPreferredLabelPoint(points, isFeedbackEdge);
-    edgeLabelPointCache.set(cacheKey, labelPoint);
-
-    if (edgeLabelPointCache.size > EDGE_LABEL_POINT_CACHE_LIMIT) {
-        const oldestCacheKey = edgeLabelPointCache.keys().next().value;
-        if (oldestCacheKey != null) {
-            edgeLabelPointCache.delete(oldestCacheKey);
-        }
-    }
-
-    return labelPoint;
-}
-
-function getEdgeLabelPointCacheKey(
-    edgeId: number,
-    fromNodeId: number,
-    toNodeId: number,
-    viaPort: string,
-    routePoints: FlowPathPoint[],
-    renderedRoutePoints: PathPoint[],
-    isFeedbackEdge: boolean,
-): string {
-    const stableRoutePoints = routePoints.length >= 2 ? routePoints : renderedRoutePoints;
-
-    return [
-        edgeId,
-        fromNodeId,
-        toNodeId,
-        viaPort,
-        isFeedbackEdge ? 'feedback' : 'forward',
-        getPointSignature(stableRoutePoints),
-    ].join(':');
-}
-
-function getPointSignature(points: Array<{x: number; y: number}>): string {
-    return points
-        .map((point) => `${formatPointCoordinate(point.x)},${formatPointCoordinate(point.y)}`)
-        .join('|');
-}
-
-function formatPointCoordinate(value: number): string {
-    return Number.isInteger(value) ? String(value) : value.toFixed(2);
-}
-
-function getSegmentProgressPoint(
-    segment: ReturnType<typeof getLineSegments>[number],
-    progress: number,
-): PathPoint {
-    return {
-        x: segment.start.x + ((segment.end.x - segment.start.x) * progress),
-        y: segment.start.y + ((segment.end.y - segment.start.y) * progress),
-    };
-}
-
-function getSegmentPriorityScore(
-    segment: ReturnType<typeof getLineSegments>[number],
-    points: PathPoint[],
-    isFeedbackEdge: boolean,
-): number {
-    if (!isFeedbackEdge) {
-        return 0;
+function getSourceSegmentLabelPoint(points: PathPoint[]): PathPoint | null {
+    if (points.length < 2) {
+        return null;
     }
 
     const sourcePoint = points[0];
-    const targetPoint = points[points.length - 1];
-    const routeCenterX = (sourcePoint.x + targetPoint.x) / 2;
-    const segmentCenterX = (segment.start.x + segment.end.x) / 2;
-    const isVerticalSegment = segment.start.x === segment.end.x;
+    const nextPoint = points[1];
+    const sourceSegmentLength = getSegmentLength(sourcePoint, nextPoint);
 
-    return Math.abs(segmentCenterX - routeCenterX) + (isVerticalSegment ? 1000 : 0);
+    return sourceSegmentLength >= EDGE_LABEL_SOURCE_DISTANCE ?
+        movePointTowards(sourcePoint, nextPoint, EDGE_LABEL_SOURCE_DISTANCE) :
+        null;
+}
+
+function getPolylineDistancePoint(points: PathPoint[], distance: number): PathPoint {
+    if (points.length === 0) {
+        return {
+            x: 0,
+            y: 0,
+        };
+    }
+
+    if (points.length === 1) {
+        return points[0];
+    }
+
+    let travelledDistance = 0;
+
+    for (let index = 1; index < points.length; index += 1) {
+        const previousPoint = points[index - 1];
+        const currentPoint = points[index];
+        const segmentLength = getSegmentLength(previousPoint, currentPoint);
+
+        if (travelledDistance + segmentLength >= distance) {
+            const remainingDistance = distance - travelledDistance;
+            const progress = segmentLength === 0 ? 0 : remainingDistance / segmentLength;
+
+            return {
+                x: previousPoint.x + ((currentPoint.x - previousPoint.x) * progress),
+                y: previousPoint.y + ((currentPoint.y - previousPoint.y) * progress),
+            };
+        }
+
+        travelledDistance += segmentLength;
+    }
+
+    return points[points.length - 1];
+}
+
+function getPolylineLength(points: PathPoint[]): number {
+    return points.reduce((length, point, index) => {
+        if (index === 0) {
+            return length;
+        }
+
+        return length + getSegmentLength(points[index - 1], point);
+    }, 0);
 }
 
 function getSegmentLength(startPoint: PathPoint, endPoint: PathPoint): number {
     return Math.abs(endPoint.x - startPoint.x) + Math.abs(endPoint.y - startPoint.y);
-}
-
-function getLineSegments(points: PathPoint[]): Array<{
-    start: PathPoint;
-    end: PathPoint;
-    length: number;
-    index: number;
-    isFirst: boolean;
-    isLast: boolean;
-}> {
-    if (points.length < 2) {
-        return [];
-    }
-
-    return points.slice(1).map((point, index, array) => ({
-        start: points[index],
-        end: point,
-        length: getSegmentLength(points[index], point),
-        index,
-        isFirst: index === 0,
-        isLast: index === array.length - 1,
-    }));
 }
 
 function buildOrthogonalPath(points: PathPoint[]): string {
