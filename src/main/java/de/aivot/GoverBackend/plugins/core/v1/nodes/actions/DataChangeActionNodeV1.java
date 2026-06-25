@@ -70,6 +70,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     private static final String OUTPUT_REMARK = "remark";
     private static final String OUTPUT_PROCESSED_BY_USER_ID = "processedByUserId";
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
+    private static final String OUTPUT_UNMAPPED = "unmapped";
 
     private static final String TASK_VIEW_ROOT_ID = "data-change-task-view";
     private static final String TASK_VIEW_UI_HEADLINE_ID = "data-change-task-view-ui-headline";
@@ -207,6 +208,11 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
                         "Der Zeitstempel der finalen Übernahme im ISO-Format."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_UNMAPPED,
+                        "Formular-Rohdaten",
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
                 )
         );
     }
@@ -326,7 +332,7 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
     private ProcessNodeExecutionResultTaskCompleted completeTask(@Nonnull ProcessNodeExecutionContextUIStaff<DataChangeActionNodeConfig> context,
                                                                  @Nonnull DataChangeActionNodeConfig config,
                                                                  @Nonnull DerivedRuntimeElementData derivedRuntimeData,
-                                                                 @Nonnull AuthoredElementValues authoredUpdate) {
+                                                                 @Nonnull AuthoredElementValues authoredUpdate) throws ResponseException {
         var update = derivedRuntimeData.getEffectiveValues();
         var payloadUpdate = elementDataTransformService.buildPayload(
                 config.dataDefinition,
@@ -343,12 +349,25 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
         var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
 
+        // Retrieve the auto-saved staff task view data, or create a new instance if it doesn't exist
+        var savedStaffTaskViewData = getAutoSavedStaffTaskViewData(context);
+        if (savedStaffTaskViewData == null) {
+            savedStaffTaskViewData = new AuthoredElementValues();
+        }
+        // Derive the effective values based on the staff task view and the saved staff task view data to store the unmapped field values in the unmapped output field
+        var staffTaskView = getStaffTaskView(context);
+        var effectiveValues = elementDerivationService
+                .derive(staffTaskView, savedStaffTaskViewData)
+                .getEffectiveValues();
+
+
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);
         nodeData.put(OUTPUT_DIFF, diff);
         nodeData.put(OUTPUT_REMARK, remark);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, Instant.now());
+        nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
 
         var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
         result.setProcessData(updatedProcessData);
