@@ -349,25 +349,13 @@ public class DataChangeActionNodeV1 implements ProcessNodeDefinition<DataChangeA
         var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
         var remark = normalizeRemark(authoredUpdate.get(TASK_VIEW_REMARK_FIELD_ID));
 
-        // Retrieve the auto-saved staff task view data, or create a new instance if it doesn't exist
-        var savedStaffTaskViewData = getAutoSavedStaffTaskViewData(context);
-        if (savedStaffTaskViewData == null) {
-            savedStaffTaskViewData = new AuthoredElementValues();
-        }
-        // Derive the effective values based on the staff task view and the saved staff task view data to store the unmapped field values in the unmapped output field
-        var staffTaskView = getStaffTaskView(context);
-        var effectiveValues = elementDerivationService
-                .derive(staffTaskView, savedStaffTaskViewData)
-                .getEffectiveValues();
-
-
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);
         nodeData.put(OUTPUT_DIFF, diff);
         nodeData.put(OUTPUT_REMARK, remark);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, Instant.now());
-        nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
+        nodeData.put(OUTPUT_UNMAPPED, update);
 
         var result = ProcessNodeExecutionResultTaskCompleted.of(PORT_OUTPUT);
         result.setProcessData(updatedProcessData);

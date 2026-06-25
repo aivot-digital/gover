@@ -381,15 +381,10 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
             throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         }
 
-        // Retrieve the auto-saved staff task view data, or create a new instance if it doesn't exist
-        var savedStaffTaskViewData = getAutoSavedStaffTaskViewData(context);
-        if (savedStaffTaskViewData == null) {
-            savedStaffTaskViewData = new AuthoredElementValues();
-        }
         // Derive the effective values based on the staff task view and the saved staff task view data to store the unmapped field values in the unmapped output field
         var staffTaskView = getStaffTaskView(context);
         var effectiveValues = elementDerivationService
-                .derive(staffTaskView, savedStaffTaskViewData)
+                .derive(staffTaskView, update)
                 .getEffectiveValues();
 
         var nodeData = new HashMap<String, Object>();
