@@ -1,5 +1,5 @@
 import React, {type ReactNode} from 'react';
-import {Box, Button, Typography} from '@mui/material';
+import {Box, Button, Tooltip, Typography} from '@mui/material';
 
 interface SelectionDetailsPanelProps {
     icon: ReactNode;
@@ -13,6 +13,7 @@ interface SelectionDetailsPanelProps {
     onPrimaryAction: () => void;
     onClose: () => void;
     primaryActionDisabled?: boolean;
+    primaryActionDisabledTooltip?: string;
     iconBackgroundColor?: string;
     iconColor?: string;
 }
@@ -24,6 +25,17 @@ function getTitleAttribute(title: ReactNode): string | undefined {
 }
 
 export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactNode {
+    const primaryAction = (
+        <Button
+            variant="contained"
+            startIcon={props.primaryActionIcon}
+            onClick={props.onPrimaryAction}
+            disabled={props.primaryActionDisabled}
+        >
+            {props.primaryActionLabel}
+        </Button>
+    );
+
     return (
         <>
             <Box
@@ -133,14 +145,13 @@ export function SelectionDetailsPanel(props: SelectionDetailsPanelProps): ReactN
                     gap: 1,
                 }}
             >
-                <Button
-                    variant="contained"
-                    startIcon={props.primaryActionIcon}
-                    onClick={props.onPrimaryAction}
-                    disabled={props.primaryActionDisabled}
-                >
-                    {props.primaryActionLabel}
-                </Button>
+                {
+                    props.primaryActionDisabledTooltip != null ?
+                        <Tooltip title={props.primaryActionDisabledTooltip}>
+                            <span>{primaryAction}</span>
+                        </Tooltip> :
+                        primaryAction
+                }
                 <Button
                     variant="text"
                     onClick={props.onClose}

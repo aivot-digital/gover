@@ -25,6 +25,7 @@ import {
     getElementGroupForType,
 } from '../element-dialog-metadata';
 import {SelectionListRow} from '../../../components/selection-dialog/selection-list-row';
+import {getSingleUseSectionAddDisabledReason} from '../../../data/element-type/single-use-section-types';
 
 const defaultExpandedGroups: Record<ElementTypeGroups, boolean> = {
     [ElementTypeGroups.Display]: true,
@@ -126,7 +127,7 @@ export function ElementTab({
                     description: getElementDescriptionForType(type),
                 }];
             });
-    }, [limitElementTypes, parentType]);
+    }, [allParents, displayContext, limitElementTypes, parentType]);
 
     const filteredOptions = useMemo(() => {
         const trimmedSearch = search.trim();
@@ -174,6 +175,10 @@ export function ElementTab({
     ), [groupedOptions]);
 
     const handleAddElement = (type: ElementType): void => {
+        if (getSingleUseSectionAddDisabledReason(parentElement, type) != null) {
+            return;
+        }
+
         const newElement = generateElementWithDefaultValues(type, parentElement);
         if (newElement != null) {
             onAddElement(newElement);
@@ -181,32 +186,37 @@ export function ElementTab({
     };
 
     const renderOptionRows = (elementOptions: ElementOption[], showGroupLabel: boolean = false) => (
-        elementOptions.map((option, index) => (
-            <React.Fragment key={`${showGroupLabel ? 'recent' : 'group'}-${option.type}`}>
-                <ElementRow
-                    option={option}
-                    isSelected={highlightedElement === option.type}
-                    primaryActionLabel={primaryActionLabel}
-                    primaryActionIcon={primaryActionIcon}
-                    titleAdornment={
-                        showGroupLabel ?
-                            <Chip size="small"
-                                  label={elementTypeGroupLabels[option.group]}/> :
-                            undefined
+        elementOptions.map((option, index) => {
+            const disabledReason = getSingleUseSectionAddDisabledReason(parentElement, option.type);
+
+            return (
+                <React.Fragment key={`${showGroupLabel ? 'recent' : 'group'}-${option.type}`}>
+                    <ElementRow
+                        option={option}
+                        isSelected={highlightedElement === option.type}
+                        primaryActionLabel={primaryActionLabel}
+                        primaryActionIcon={primaryActionIcon}
+                        titleAdornment={
+                            showGroupLabel ?
+                                <Chip size="small"
+                                      label={elementTypeGroupLabels[option.group]}/> :
+                                undefined
+                        }
+                        disabledReason={disabledReason}
+                        onAdd={() => {
+                            handleAddElement(option.type);
+                        }}
+                        onShowDetails={() => {
+                            showElementInfo(option.type);
+                        }}
+                    />
+                    {
+                        index < elementOptions.length - 1 &&
+                        <Divider/>
                     }
-                    onAdd={() => {
-                        handleAddElement(option.type);
-                    }}
-                    onShowDetails={() => {
-                        showElementInfo(option.type);
-                    }}
-                />
-                {
-                    index < elementOptions.length - 1 &&
-                    <Divider/>
-                }
-            </React.Fragment>
-        ))
+                </React.Fragment>
+            );
+        })
     );
 
     return (
@@ -368,6 +378,7 @@ function ElementRow(props: {
     primaryActionLabel: string;
     primaryActionIcon: React.ReactNode;
     titleAdornment?: React.ReactNode;
+    disabledReason?: string;
     onAdd: () => void;
     onShowDetails: () => void;
 }) {
@@ -377,6 +388,7 @@ function ElementRow(props: {
         primaryActionLabel,
         primaryActionIcon,
         titleAdornment,
+        disabledReason,
         onAdd,
         onShowDetails,
     } = props;
@@ -392,6 +404,8 @@ function ElementRow(props: {
             selected={isSelected}
             primaryActionLabel={primaryActionLabel}
             primaryActionIcon={primaryActionIcon}
+            primaryActionDisabled={disabledReason != null}
+            primaryActionDisabledTooltip={disabledReason}
             onShowDetails={onShowDetails}
             onPrimaryAction={onAdd}
         />

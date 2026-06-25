@@ -27,6 +27,7 @@ import {stringOrDefault} from '../../utils/string-utils';
 import {
     type ProcessNodeDefinitionMetadataReusableUiDefinition,
 } from '../../modules/process/entities/process-node-definition-metadata';
+import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
 
 
 function resolveAllowedChildTypes(props: AddElementDialogProps): Set<ElementType> {
@@ -110,6 +111,10 @@ export function AddElementDialog(props: AddElementDialogProps) {
     };
 
     const handleAddElement = (element: AnyElement) => {
+        if (getSingleUseSectionAddDisabledReason(props.parentElement, element.type) != null) {
+            return;
+        }
+
         props.onAddElement(element);
     };
 
@@ -149,6 +154,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                         onAddElement={handleAddElement}
                         primaryActionLabel={renderPrimaryActionLabel}
                         primaryActionIcon={renderPrimaryActionIcon}
+                        primaryActionDisabledReason={getSingleUseSectionAddDisabledReason(props.parentElement, showElementInfo)}
                         onClose={() => {
                             setShowElementInfo(undefined);
                         }}
@@ -232,6 +238,7 @@ export function AddElementDialog(props: AddElementDialogProps) {
                             reusableUiDefinitions.map((def) => {
                                 const Icon = getElementIconForType(def.uiDefinition.type);
                                 const originName = stringOrDefault(def.origin.name, 'Unbenanntes Prozesselement');
+                                const disabledReason = getSingleUseSectionAddDisabledReason(props.parentElement, def.uiDefinition.type);
 
                                 return (
                                     <SelectionListRow
@@ -243,6 +250,8 @@ export function AddElementDialog(props: AddElementDialogProps) {
                                         }
                                         primaryActionLabel="Kopieren und einfügen"
                                         primaryActionIcon={<ContentCopy/>}
+                                        primaryActionDisabled={disabledReason != null}
+                                        primaryActionDisabledTooltip={disabledReason}
                                         onPrimaryAction={() => {
                                             handleAddElement(cloneElement(def.uiDefinition, true));
                                             dispatch(showSuccessSnackbar('UI-Definition wurde erfolgreich eingefügt'));
