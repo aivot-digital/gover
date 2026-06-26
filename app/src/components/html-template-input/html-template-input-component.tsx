@@ -109,6 +109,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                     onClick={() => {
                         setShowEditorDialog(true);
                     }}
+                    sx={{mt: 1.25}}
                     disabled={disabled || assetKey == null || isStringNullOrEmpty(assetKey) || isLoadingTemplate || templateLoadError != null}
                 >
                     Anpassen

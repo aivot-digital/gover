@@ -43,6 +43,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 @Component
@@ -106,13 +107,13 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     @Nonnull
     @Override
     public String getName() {
-        return "PDF erstellen";
+        return "Dokument erstellen (PDF)";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Erzeugt ein PDF-Dokument aus HTML-Inhalt über Gotenberg.";
+        return "Generiert ein PDF-Dokument basierend auf einem vordefinierten Template.";
     }
 
     @Nonnull
@@ -133,8 +134,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         layout
                 .findChild(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_ID, RadioInputElement.class)
                 .ifPresent(element -> element.setOptions(List.of(
-                        RadioInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Manuelle Eingabe (HTML)"),
-                        RadioInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "PDF-Vorlage (Dateien & Medien)")
+                        RadioInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_ASSET_KEY, "Gespeicherte Vorlage verwenden (Dateien & Medien)"),
+                        RadioInputElementOption.of(PdfActionNodeConfig.CONTENT_HTML_SOURCE_FIELD_OPTION_CODE, "Eigene Dokumentenvorlage als HTML hinterlegen")
                 )));
 
         layout
@@ -179,8 +180,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "PDF erstellt",
-                        "Der Prozess wird hier fortgesetzt, nachdem das PDF erzeugt wurde."
+                        "Dokument erstellt",
+                        "Der Prozess wird hier fortgesetzt, nachdem das PDF-Dokument erstellt wurde."
                 )
         );
     }
@@ -216,8 +217,8 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_NAME_SIZE_BYTES,
-                        "Dateigroesse in Bytes",
-                        "Die Groesse des erzeugten PDF-Dokuments in Bytes."
+                        "Dateigröße in Bytes",
+                        "Die Größe des erzeugten PDF-Dokuments in Bytes."
                 )
         );
     }
@@ -512,23 +513,23 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         public String fileName;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_SOURCE_FIELD_ID, type = ElementType.Radio, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Quelle für die PDF-Vorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie die Quelle für den HTML-Inhalt der PDF-Seiten."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentenvorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie aus, ob eine gespeicherte Dokumentenvorlage aus Dateien & Medien verwendet oder eine eigene Dokumentenvorlage als HTML hinterlegt werden soll."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public String contentHtmlSource;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_CODE_FIELD_ID, type = ElementType.CodeInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "HTML-Inhalt"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "HTML-Template für die PDF-Seiten."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Eigene Dokumentenvorlage als HTML"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Hinterlegen Sie das vollständige HTML für das PDF-Dokument."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "language", strValue = "html")
         })
         public String contentHtml;
 
         @InputElementPOJOBinding(id = CONTENT_HTML_ASSET_KEY_FIELD_ID, type = ElementType.HtmlTemplateInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "HTML-Vorlage"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine zuvor hochgeladene HTML-Vorlage aus."),
+                @ElementPOJOBindingProperty(key = "label", strValue = "Dokumentenvorlage"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wählen Sie eine gespeicherte HTML-Dokumentenvorlage aus Dateien & Medien aus."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
         })
         public HtmlTemplateInputElementValue contentHtmlTemplate;
