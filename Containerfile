@@ -4,7 +4,7 @@ FROM node:24.2.0-alpine3.21 AS build_mails
 WORKDIR /mails
 
 # Copy mail project files
-COPY mails .
+COPY backend/mails .
 
 # Install mail dependencies
 RUN npm install
@@ -50,10 +50,10 @@ ARG BUILD_DATE=2025-05-24T10:15:00Z
 WORKDIR /app
 
 # Copy backend project files
-COPY pom.xml pom.xml
+COPY backend/pom.xml pom.xml
 
 # Copy backend source files
-COPY src/main src/main
+COPY backend/src/main src/main
 
 # Set build version and date
 RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/main/resources/application.yml && \
@@ -97,8 +97,8 @@ ENV BUILD_DATE=$BUILD_DATE
 WORKDIR /app
 
 # Copy entrypoint and healthcheck scripts
-COPY docker/entrypoint.sh /app/entrypoint.sh
-COPY docker/healthcheck.sh /app/healthcheck.sh
+COPY container/entrypoint.sh /app/entrypoint.sh
+COPY container/healthcheck.sh /app/healthcheck.sh
 
 # Install locale, nginx, configure nginx and entrypoint script
 RUN apk upgrade --no-cache && \
@@ -107,13 +107,13 @@ RUN apk upgrade --no-cache && \
     mkdir -p /app/default-assets
 
 # Copy nginx configs
-COPY docker/nginx.conf /etc/nginx/http.d/default.conf
+COPY container/nginx.conf /etc/nginx/http.d/default.conf
 
 # Copy default assets
 COPY default-assets /app/default-assets
 
 # Copy app files
-COPY --from=build_server /app/target/gover-0.0.0.jar /app/gover.jar
+COPY --from=build_server /app/target/backend-${BUILD_VERSION}-exec.jar /app/gover.jar
 COPY --from=build_app /app/build/customer /app/www
 COPY --from=build_app /app/build/staff /app/www/staff
 
