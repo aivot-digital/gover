@@ -93,7 +93,7 @@ export function HtmlTemplateInputComponent(props: HtmlTemplateInputComponentProp
                 onChange={(val) => {
                     onChange({
                         assetKey: val,
-                        slots: value?.slots ?? {},
+                        slots: val == null ? {} : (value?.slots ?? {}),
                     });
                 }}
                 disabled={disabled || isLoadingTemplate}
