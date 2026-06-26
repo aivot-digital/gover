@@ -1,0 +1,112 @@
+package de.aivot.gover.backend.elements.models.elements.form.input;
+
+import de.aivot.gover.backend.elements.models.elements.BaseInputElement;
+import de.aivot.gover.backend.elements.models.elements.PrintableElement;
+import de.aivot.gover.backend.enums.ElementType;
+import de.aivot.gover.backend.exceptions.RequiredValidationException;
+import de.aivot.gover.backend.exceptions.ValidationException;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+import java.util.Objects;
+
+public class CodeInputElement extends BaseInputElement<String> implements PrintableElement<String> {
+    @Nullable
+    private String code;
+    @Nullable
+    private String language;
+    @Nullable
+    private Integer editorHeight;
+    @Nullable
+    private Boolean wordWrap;
+
+    public CodeInputElement() {
+        super(ElementType.CodeInput);
+    }
+
+    @Override
+    public String formatValue(Object value) {
+        return switch (value) {
+            case String sValue -> sValue;
+            case null, default -> null;
+        };
+    }
+
+    @Override
+    public void performValidation(String value) throws ValidationException {
+        if (value == null) {
+            if (Boolean.TRUE.equals(getRequired())) {
+                throw new RequiredValidationException(this);
+            }
+        }
+    }
+
+    @Nonnull
+    public String toDisplayValue(@Nullable String value) {
+        return value != null ? value : "Keine Angabe";
+    }
+
+    // region Hash & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        if (!super.equals(o)) return false;
+        CodeInputElement that = (CodeInputElement) o;
+        return Objects.equals(code, that.code)
+                && Objects.equals(language, that.language)
+                && Objects.equals(editorHeight, that.editorHeight)
+                && Objects.equals(wordWrap, that.wordWrap);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), code, language, editorHeight, wordWrap);
+    }
+
+    // endregion
+
+    // region Getters & Setters
+
+    @Nullable
+    public String getCode() {
+        return code;
+    }
+
+    public CodeInputElement setCode(@Nullable String code) {
+        this.code = code;
+        return this;
+    }
+
+    @Nullable
+    public String getLanguage() {
+        return language;
+    }
+
+    public CodeInputElement setLanguage(@Nullable String language) {
+        this.language = language;
+        return this;
+    }
+
+    @Nullable
+    public Integer getEditorHeight() {
+        return editorHeight;
+    }
+
+    public CodeInputElement setEditorHeight(@Nullable Integer editorHeight) {
+        this.editorHeight = editorHeight;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getWordWrap() {
+        return wordWrap;
+    }
+
+    public CodeInputElement setWordWrap(@Nullable Boolean wordWrap) {
+        this.wordWrap = wordWrap;
+        return this;
+    }
+
+    // endregion
+}

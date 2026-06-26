@@ -1,0 +1,105 @@
+package de.aivot.gover.backend.plugins.core.v1.operators.math;
+
+import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.gover.backend.nocode.enums.NoCodeDataType;
+import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
+import de.aivot.gover.backend.nocode.exceptions.NoCodeWrongArgumentCountException;
+import de.aivot.gover.backend.nocode.models.NoCodeOperator;
+import de.aivot.gover.backend.nocode.models.NoCodeParameter;
+import de.aivot.gover.backend.nocode.models.NoCodeResult;
+import de.aivot.gover.backend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
+
+public class NoCodeSubtractOperator extends NoCodeOperator {
+    @Override
+    public String getIdentifier() {
+        return "subtract";
+    }
+
+    @Override
+    public String getLabel() {
+        return "Subtrahiere";
+    }
+
+    @Override
+    public String getAbstract() {
+        return "Subtrahiert zwei Werte.";
+    }
+
+    @Override
+    public String getDescription() {
+        return """
+                # Beschreibung:
+                Der Operator **„Subtrahiere“** zieht einen numerischen Wert von einem anderen ab. \s
+                Das Ergebnis ist die Differenz der beiden Werte.
+                
+                # Anwendungsbeispiel:
+                Stellen Sie sich vor, Sie möchten die Differenz von zwei Zahlen berechnen.
+                
+                Mit dem Operator **„Subtrahiere“** wird diese Logik so formuliert: \s
+                `Subtrahiere Wert1 Wert2`
+                
+                Beispielwerte: \s
+                - **Wert1:** 10 \s
+                - **Wert2:** 3
+                
+                **Ergebnis:**
+                - **Rückgabewert:** 7
+                
+                # Wahrheitswerte für den „Subtrahiere“-Operator
+                - **Subtrahiere 10 2** → **8** \s
+                - **Subtrahiere 9 3** → **6** \s
+                - **Subtrahiere 5 10** → **-5**
+                
+                # Wann verwenden Sie den Operator „Subtrahiere“?
+                Verwenden Sie **„Subtrahiere“**, um die Differenz von zwei numerischen Werten zu berechnen. \s
+                Dieser Operator ist besonders hilfreich bei mathematischen Berechnungen, Finanzanalysen oder statistischen Auswertungen.
+                """;
+    }
+
+    @Override
+    public NoCodeSignatur[] getSignatures() {
+        return NoCodeSignatur.of(
+                NoCodeSignatur.of(
+                        NoCodeDataType.Number,
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Minuend",
+                                "Der Wert, von dem subtrahiert wird."
+                        ),
+                        new NoCodeParameter(
+                                NoCodeDataType.Number,
+                                "Subtrahend",
+                                "Der Wert, der subtrahiert wird."
+                        )
+                )
+        );
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "subtrahiere „#1“ von „#0“";
+    }
+
+    @Override
+    protected boolean supportsVariableArgumentCount() {
+        return true;
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
+        if (args.length < 2) {
+            throw new NoCodeWrongArgumentCountException(2, args.length);
+        }
+
+        var result = castToNumber(args[0]);
+
+        for (int i = 1; i < args.length; i++) {
+            var minuend = castToNumber(args[i]);
+            result = result.subtract(minuend);
+        }
+
+        return new NoCodeResult(result);
+    }
+}

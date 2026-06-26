@@ -1,0 +1,34 @@
+package de.aivot.gover.backend.payment.dtos;
+
+import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+
+public record PaymentProviderDefinitionResponseDTO(
+        @Nonnull
+        String key,
+        @Nonnull
+        Integer version,
+        @Nonnull
+        String name,
+        @Nonnull
+        String description,
+        @Nullable
+        GroupLayoutElement configLayout
+) {
+    @Nonnull
+    public static PaymentProviderDefinitionResponseDTO from(
+            @Nonnull
+            PaymentProviderDefinition definition
+    ) throws ResponseException {
+        return new PaymentProviderDefinitionResponseDTO(
+                definition.getKey(),
+                definition.getMajorVersion(),
+                definition.getProviderName(),
+                definition.getProviderDescription(),
+                definition.getPaymentConfigLayout()
+        );
+    }
+}

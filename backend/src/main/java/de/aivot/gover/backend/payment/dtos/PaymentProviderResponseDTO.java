@@ -1,0 +1,43 @@
+package de.aivot.gover.backend.payment.dtos;
+
+import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
+
+import jakarta.annotation.Nonnull;
+import java.util.UUID;
+
+public record PaymentProviderResponseDTO(
+        @Nonnull
+        UUID key,
+        @Nonnull
+        String name,
+        @Nonnull
+        String description,
+        @Nonnull
+        String providerKey,
+        @Nonnull
+        Integer providerVersion,
+        @Nonnull
+        Boolean isTestProvider,
+        @Nonnull
+        Boolean isEnabled,
+        @Nonnull
+        AuthoredElementValues config
+) {
+    @Nonnull
+    public static PaymentProviderResponseDTO fromEntity(
+            @Nonnull
+            PaymentProviderEntity entity
+    ) {
+        return new PaymentProviderResponseDTO(
+                entity.getKey(),
+                entity.getName(),
+                entity.getDescription(),
+                entity.getPaymentProviderDefinitionKey(),
+                entity.getPaymentProviderDefinitionVersion(),
+                entity.getTestProvider(),
+                entity.getIsEnabled(),
+                entity.getConfig()
+        );
+    }
+}

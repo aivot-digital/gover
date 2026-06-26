@@ -1,0 +1,425 @@
+package de.aivot.gover.backend.services;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.gover.backend.asset.entities.AssetEntity;
+import de.aivot.gover.backend.asset.repositories.AssetRepository;
+import de.aivot.gover.backend.config.services.SystemConfigService;
+import de.aivot.gover.backend.core.configs.ProviderNameSystemConfigDefinition;
+import de.aivot.gover.backend.core.exceptions.HttpConnectionException;
+import de.aivot.gover.backend.core.services.HttpService;
+import de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.gover.backend.department.repositories.VDepartmentShadowedRepository;
+import de.aivot.gover.backend.elements.models.ElementDerivationOptions;
+import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
+import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
+import de.aivot.gover.backend.elements.services.ElementDerivationService;
+import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
+import de.aivot.gover.backend.enums.ElementType;
+import de.aivot.gover.backend.form.entities.VFormVersionWithDetailsEntity;
+import de.aivot.gover.backend.form.services.FormVersionService;
+import de.aivot.gover.backend.identity.constants.IdentityValueKey;
+import de.aivot.gover.backend.identity.models.IdentityData;
+import de.aivot.gover.backend.identity.models.IdentityDataMap;
+import de.aivot.gover.backend.identity.repositories.IdentityProviderRepository;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.models.config.GotenbergConfig;
+import de.aivot.gover.backend.models.config.GoverConfig;
+import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.gover.backend.payment.repositories.PaymentTransactionRepository;
+import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
+import de.aivot.gover.backend.pdf.enums.FormPdfScope;
+import de.aivot.gover.backend.pdf.models.FormPdfContext;
+import de.aivot.gover.backend.pdf.models.PrintableFormPdfData;
+import de.aivot.gover.backend.services.pdf.PdfElementsGenerator;
+import de.aivot.gover.backend.submission.entities.Submission;
+import de.aivot.gover.backend.theme.entities.ThemeEntity;
+import de.aivot.gover.backend.utils.MultipartUtils;
+import de.aivot.gover.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+import org.springframework.web.util.HtmlUtils;
+import org.thymeleaf.templatemode.TemplateMode;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.http.HttpResponse;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+@Component
+public class PdfService {
+    private static final Logger logger = LoggerFactory.getLogger(PdfService.class);
+
+    private final GotenbergConfig gotenbergConfig;
+    private final SystemConfigService systemConfigService;
+    private final AssetRepository assetRepository;
+    private final GoverConfig goverConfig;
+    private final PaymentTransactionRepository paymentTransactionRepository;
+    private final IdentityProviderRepository identityProviderRepository;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
+    private final FormVersionService formVersionService;
+    private final HttpService httpService;
+    private final ElementDerivationService elementDerivationService;
+    private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
+
+    @Autowired
+    public PdfService(GotenbergConfig gotenbergConfig,
+                      SystemConfigService systemConfigService,
+                      VDepartmentShadowedRepository vDepartmentShadowedRepository,
+                      AssetRepository assetRepository,
+                      GoverConfig goverConfig,
+                      PaymentTransactionRepository paymentTransactionRepository,
+                      IdentityProviderRepository identityProviderRepository,
+                      PaymentProviderRepository paymentProviderRepository,
+                      PaymentProviderDefinitionsService paymentProviderDefinitionsService,
+                      FormVersionService formVersionService,
+                      HttpService httpService,
+                      ElementDerivationService elementDerivationService) {
+        this.gotenbergConfig = gotenbergConfig;
+        this.systemConfigService = systemConfigService;
+        this.assetRepository = assetRepository;
+        this.goverConfig = goverConfig;
+        this.paymentTransactionRepository = paymentTransactionRepository;
+        this.identityProviderRepository = identityProviderRepository;
+        this.paymentProviderRepository = paymentProviderRepository;
+        this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
+        this.formVersionService = formVersionService;
+        this.httpService = httpService;
+        this.elementDerivationService = elementDerivationService;
+        this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
+    }
+
+    public void testGotenbergConnection() throws IOException {
+        var healthUri = URI.create("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/health");
+
+        HttpResponse<String> response;
+        try {
+            response = httpService.get(healthUri);
+        } catch (HttpConnectionException e) {
+            throw new IOException("Failed to connect to Gotenberg.", e);
+        }
+
+        if (response.statusCode() != 200) {
+            throw new IOException("Failed to connect to Gotenberg. Status code: " + response.statusCode());
+        }
+    }
+
+    public byte[] generatePrintableForm(VFormVersionWithDetailsEntity form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var allElements = ElementFlattenUtils.flattenElements(form.getRootElement());
+
+        var dto = new HashMap<String, Object>();
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                form.getRootElement(),
+                null,
+                true
+        ));
+        dto.put("form", form);
+        dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
+
+        return generatePdf(form, dto, FormPdfScope.Blank);
+    }
+
+    public byte[] generatePrintableForm(@Nonnull PrintableFormPdfData form,
+                                        @Nonnull ThemeEntity theme,
+                                        @Nonnull VDepartmentShadowedEntity department) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        return generatePrintableForm(form, theme, department, null, null);
+    }
+
+    public byte[] generatePrintableForm(@Nonnull PrintableFormPdfData form,
+                                        @Nonnull ThemeEntity theme,
+                                        @Nonnull VDepartmentShadowedEntity department,
+                                        @Nullable VDepartmentShadowedEntity responsibleDepartment,
+                                        @Nullable VDepartmentShadowedEntity managingDepartment) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var rootElement = form.getRootElement();
+        if (rootElement == null) {
+            throw new IllegalArgumentException("Printable form root element cannot be null.");
+        }
+
+        var allElements = ElementFlattenUtils.flattenElements(rootElement);
+
+        var dto = new HashMap<String, Object>();
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                rootElement,
+                null,
+                true
+        ));
+        dto.put("form", form);
+        dto.put("attachments", allElements.stream().filter(e -> e.getType() == ElementType.FileUpload).toList());
+        dto.put("base", createBaseContext(theme, FormPdfScope.Blank));
+        dto.put("department", department);
+        dto.put("responsibleDepartment", responsibleDepartment);
+        dto.put("managingDepartment", managingDepartment);
+        dto.put("theme", theme);
+
+        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
+    }
+
+    public byte[] generateCustomerSummary(VFormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
+        var dto = new HashMap<String, Object>();
+        var derivedRuntimeElementData = elementDerivationService
+                .derive(
+                        new ElementDerivationRequest(
+                                form.getRootElement(),
+                                submission.getCustomerInput(),
+                                new ElementDerivationOptions()
+                                        .setSkipErrorsForElementIds(java.util.List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                        ),
+                        new IdentityDataMap(), // TODO: Load identities for this
+                        new ElementDerivationLogger()
+                );
+
+        dto.put("elements", PdfElementsGenerator.generatePdfElements(
+                form.getRootElement(),
+                derivedRuntimeElementData,
+                scope != FormPdfScope.Staff
+        ));
+        dto.put("form", form);
+        dto.put("submission", submission);
+
+        var authData = submission
+                .getCustomerInput()
+                .get(IdentityValueKey.IdCustomerInputKey);
+        if (authData != null) {
+            IdentityData identityData = null;
+            try {
+                identityData = new ObjectMapper()
+                        .convertValue(authData, IdentityData.class);
+            } catch (IllegalArgumentException e) {
+                logger.error("Failed to convert identity data to IdentityData", e);
+            }
+
+            if (identityData != null) {
+                var identityProvider = identityProviderRepository
+                        .findById(identityData.providerKey());
+
+                if (identityProvider.isPresent()) {
+                    dto.put("identityProvider", identityProvider.get());
+                    dto.put("identityData", identityData);
+                }
+            }
+        }
+
+        if (submission.getPaymentTransactionKey() != null) {
+            var paymentTransaction = paymentTransactionRepository
+                    .findById(submission.getPaymentTransactionKey())
+                    .orElseThrow(() -> new RuntimeException("Payment transaction not found"));
+
+            dto.put("paymentTransaction", paymentTransaction);
+
+            var paymentProvider = paymentProviderRepository
+                    .findById(paymentTransaction.getPaymentProviderKey())
+                    .orElseThrow(() -> new RuntimeException("Payment provider not found"));
+
+            dto.put("paymentProvider", paymentProvider);
+
+            var paymentProviderDefinition = paymentProviderDefinitionsService
+                    .getProviderDefinition(
+                            paymentProvider.getPaymentProviderDefinitionKey(),
+                            paymentProvider.getPaymentProviderDefinitionVersion()
+                    )
+                    .orElseThrow(() -> new RuntimeException("Payment provider definition not found"));
+
+            dto.put("paymentProviderDefinition", paymentProviderDefinition);
+        }
+
+        return generatePdf(form, dto, scope);
+    }
+
+    private byte[] generatePdf(VFormVersionWithDetailsEntity form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var formTheme = formVersionService
+                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
+                .getFirst();
+
+        dto.put("base", createBaseContext(formTheme, scope));
+        dto.put("department",
+                vDepartmentShadowedRepository
+                        .findById(form.getRelevantDepartmentId())
+                        .orElseThrow(() -> new RuntimeException("Department not found"))
+        );
+        dto.put("responsibleDepartment", findDepartment(form.getResponsibleDepartmentId()));
+        dto.put("managingDepartment", findDepartment(form.getManagingDepartmentId()));
+        dto.put("theme", formTheme);
+
+        return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
+    }
+
+    @Nullable
+    private VDepartmentShadowedEntity findDepartment(@Nullable Integer departmentId) {
+        if (departmentId == null) {
+            return null;
+        }
+
+        return vDepartmentShadowedRepository
+                .findById(departmentId)
+                .orElse(null);
+    }
+
+    private byte[] generateGotenbergPdf(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) throws IOException, InterruptedException, URISyntaxException {
+        String template = loadContentTemplate(pdfTemplateKey, dto);
+        String headerTemplate = loadTemplate("pp_form_header.html", dto);
+        String footerTemplate = loadTemplate("pp_form_footer.html", dto);
+
+        return generatePdfFromHtml(
+                template,
+                headerTemplate,
+                footerTemplate
+        );
+    }
+
+    private static final String GOTENBERG_ARG_FILE = "files";
+    private static final String GOTENBERG_ARG_INDEX = "index";
+    private static final String GOTENBERG_ARG_HEADER = "header";
+    private static final String GOTENBERG_ARG_FOOTER = "footer";
+    private static final String GOTENBERG_ARG_PAPER_HEIGHT = "paperHeight";
+    private static final String GOTENBERG_ARG_PAPER_WIDTH = "paperWidth";
+    private static final String GOTENBERG_ARG_MARGIN_TOP = "marginTop";
+    private static final String GOTENBERG_ARG_MARGIN_BOTTOM = "marginBottom";
+    private static final String GOTENBERG_ARG_MARGIN_LEFT = "marginLeft";
+    private static final String GOTENBERG_ARG_MARGIN_RIGHT = "marginRight";
+
+    private static final String GOTENBERG_VAL_INDEX = "index.html";
+    private static final String GOTENBERG_VAL_HEADER = "header.html";
+    private static final String GOTENBERG_VAL_FOOTER = "footer.html";
+    private static final String GOTENBERG_VAL_PAPER_HEIGHT = "29.7cm";
+    private static final String GOTENBERG_VAL_PAPER_WIDTH = "21.0cm";
+    private static final String GOTENBERG_VAL_MARGIN_TOP = "2.5cm";
+    private static final String GOTENBERG_VAL_MARGIN_BOTTOM = "2.5cm";
+    private static final String GOTENBERG_VAL_MARGIN_RIGHT = "2.0cm";
+    private static final String GOTENBERG_VAL_MARGIN_LEFT = "2.5cm";
+    private static final Pattern HTML_HEAD_TAG_PATTERN = Pattern.compile("<head\\b[^>]*>", Pattern.CASE_INSENSITIVE);
+    private static final Pattern HTML_BASE_TAG_PATTERN = Pattern.compile("<base\\b[^>]*>", Pattern.CASE_INSENSITIVE);
+
+    public byte[] generatePdfFromHtml(@Nonnull String contentHtml,
+                                      @Nullable String headerHtml,
+                                      @Nullable String footerHtml) throws IOException, InterruptedException, URISyntaxException {
+        contentHtml = injectBaseUrlIntoHTML(contentHtml);
+        headerHtml = injectBaseUrlIntoHTML(headerHtml);
+        footerHtml = injectBaseUrlIntoHTML(footerHtml);
+
+        if (contentHtml == null) {
+            throw new IllegalArgumentException("Content HTML cannot be null");
+        }
+
+        var multipart = new MultipartUtils.MultipartBodyPublisher()
+                .addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_INDEX, contentHtml)
+                .addPart(GOTENBERG_ARG_INDEX, GOTENBERG_VAL_INDEX)
+                .addPart(GOTENBERG_ARG_HEADER, GOTENBERG_VAL_HEADER)
+                .addPart(GOTENBERG_ARG_FOOTER, GOTENBERG_VAL_FOOTER)
+                .addPart(GOTENBERG_ARG_PAPER_HEIGHT, GOTENBERG_VAL_PAPER_HEIGHT)
+                .addPart(GOTENBERG_ARG_PAPER_WIDTH, GOTENBERG_VAL_PAPER_WIDTH)
+                .addPart(GOTENBERG_ARG_MARGIN_TOP, GOTENBERG_VAL_MARGIN_TOP)
+                .addPart(GOTENBERG_ARG_MARGIN_BOTTOM, GOTENBERG_VAL_MARGIN_BOTTOM)
+                .addPart(GOTENBERG_ARG_MARGIN_RIGHT, GOTENBERG_VAL_MARGIN_RIGHT)
+                .addPart(GOTENBERG_ARG_MARGIN_LEFT, GOTENBERG_VAL_MARGIN_LEFT);
+
+        if (StringUtils.isNotNullOrEmpty(headerHtml)) {
+            multipart.addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_HEADER, headerHtml);
+        }
+
+        if (StringUtils.isNotNullOrEmpty(footerHtml)) {
+            multipart.addPart(GOTENBERG_ARG_FILE, GOTENBERG_VAL_FOOTER, footerHtml);
+        }
+
+        var convertUri = new URI("http://" + gotenbergConfig.getHost() + ":" + gotenbergConfig.getPort() + "/forms/chromium/convert/html");
+
+        HttpResponse<byte[]> response;
+        try {
+            response = httpService.postMultipart(convertUri, multipart);
+        } catch (HttpConnectionException e) {
+            throw new IOException("Failed to generate PDF with Gotenberg.", e);
+        }
+
+        if (response.statusCode() != 200) {
+            throw new IOException("Failed to generate PDF with Gotenberg. Status: " + response.statusCode());
+        }
+
+        return response.body();
+    }
+
+    private String loadContentTemplate(@Nullable UUID pdfTemplateKey, Map<String, Object> dto) {
+        if (pdfTemplateKey != null) {
+            try {
+                var res = loadTemplate(pdfTemplateKey.toString(), dto);
+                if (StringUtils.isNotNullOrEmpty(res)) {
+                    return res;
+                }
+                return loadTemplate("form.html", dto);
+            } catch (Exception e) {
+                return loadTemplate("form.html", dto);
+            }
+        } else {
+            return loadTemplate("form.html", dto);
+        }
+    }
+
+    private String loadTemplate(String templateName, Map<String, Object> data) {
+        return new TemplateLoaderService()
+                .processTemplate(
+                        templateName,
+                        data,
+                        TemplateMode.HTML
+                );
+    }
+
+    // TODO: This is a copy from the MailService. Needs unification!
+    private FormPdfContext createBaseContext(ThemeEntity theme, FormPdfScope scope) throws ResponseException {
+        var providerName = systemConfigService
+                .retrieve(ProviderNameSystemConfigDefinition.KEY)
+                .getValue();
+
+        var logoAssetKey = theme.getLogoKey();
+        var logoAssetName = "";
+        try {
+            if (logoAssetKey != null) {
+                logoAssetName = assetRepository
+                        .findById(logoAssetKey)
+                        .map(AssetEntity::getKey)
+                        .map(UUID::toString)
+                        .orElse("");
+            }
+        } catch (Exception e) {
+            // Ignore
+        }
+
+        return new FormPdfContext(providerName, logoAssetKey != null ? logoAssetKey.toString() : "", logoAssetName, goverConfig, scope);
+    }
+
+    /**
+     * Injects the HTML-Tag {@code <base href="{GOVER_HOSTNAME}"/>} into the Head-Tag of the given HTML.
+     *
+     * @param originalHTML The original HTML content.
+     * @return The injected HTML content.
+     */
+    @Nullable
+    private String injectBaseUrlIntoHTML(@Nullable String originalHTML) {
+        if (StringUtils.isNullOrEmpty(originalHTML)) {
+            return originalHTML;
+        }
+
+        var baseUrl = URI.create(goverConfig.getGoverHostname()).toString();
+        var baseTag = "<base href=\"" + HtmlUtils.htmlEscape(baseUrl) + "\"/>";
+        var existingBaseTagMatcher = HTML_BASE_TAG_PATTERN.matcher(originalHTML);
+
+        if (existingBaseTagMatcher.find()) {
+            return existingBaseTagMatcher.replaceFirst(Matcher.quoteReplacement(baseTag));
+        }
+
+        var headTagMatcher = HTML_HEAD_TAG_PATTERN.matcher(originalHTML);
+        if (!headTagMatcher.find()) {
+            return originalHTML;
+        }
+
+        return new StringBuilder(originalHTML)
+                .insert(headTagMatcher.end(), baseTag)
+                .toString();
+    }
+}

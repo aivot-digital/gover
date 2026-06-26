@@ -1,0 +1,58 @@
+package de.aivot.gover.backend.payment.dtos;
+
+import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import org.hibernate.validator.constraints.Length;
+
+import jakarta.annotation.Nonnull;
+
+public record PaymentProviderRequestDTO(
+        @Nonnull
+        @NotNull(message = "Name is required")
+        @NotBlank(message = "Name cannot be blank")
+        @Length(max = 64, message = "Name cannot be longer than 64 characters")
+        String name,
+
+        @Nonnull
+        @NotNull(message = "Description is required")
+        @NotBlank(message = "Description cannot be blank")
+        @Length(max = 255, message = "Description cannot be longer than 255 characters")
+        String description,
+
+        @Nonnull
+        @NotNull(message = "Provider key is required")
+        @NotBlank(message = "Provider key cannot be blank")
+        String providerKey,
+
+        @Nonnull
+        @NotNull(message = "Provider version is required")
+        @Min(value = 1, message = "Provider version must be at least 1")
+        Integer providerVersion,
+
+        @Nonnull
+        @NotNull(message = "Is test provider is required")
+        Boolean isTestProvider,
+
+        @Nonnull
+        @NotNull(message = "Is enabled is required")
+        Boolean isEnabled,
+
+        @Nonnull
+        @NotNull(message = "Config is required")
+        AuthoredElementValues config
+) {
+    public PaymentProviderEntity toEntity() {
+        var entity = new PaymentProviderEntity();
+        entity.setName(name);
+        entity.setDescription(description);
+        entity.setPaymentProviderDefinitionKey(providerKey);
+        entity.setPaymentProviderDefinitionVersion(providerVersion);
+        entity.setTestProvider(isTestProvider);
+        entity.setIsEnabled(isEnabled);
+        entity.setConfig(config);
+        return entity;
+    }
+}

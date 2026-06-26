@@ -1,0 +1,102 @@
+package de.aivot.gover.backend.destination.services;
+
+import de.aivot.gover.backend.destination.entities.Destination;
+import de.aivot.gover.backend.destination.repositories.DestinationRepository;
+import de.aivot.gover.backend.form.filters.VFormVersionWithDetailsFilter;
+import de.aivot.gover.backend.form.repositories.VFormVersionWithDetailsRepository;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.lib.models.Filter;
+import de.aivot.gover.backend.lib.services.EntityService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.util.Optional;
+
+@Service
+public class DestinationService implements EntityService<Destination, Integer> {
+    private final DestinationRepository destinationRepository;
+    private final VFormVersionWithDetailsRepository formVersionWithDetailsRepository;
+
+    @Autowired
+    public DestinationService(DestinationRepository destinationRepository,
+                              VFormVersionWithDetailsRepository formVersionWithDetailsRepository) {
+        this.destinationRepository = destinationRepository;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
+    }
+
+    @Nonnull
+    @Override
+    public Destination create(@Nonnull Destination entity) throws ResponseException {
+        entity.setId(null);
+        return destinationRepository.save(entity);
+    }
+
+    @Nonnull
+    @Override
+    public Page<Destination> performList(@Nonnull Pageable pageable,
+                                         @Nullable Specification<Destination> specification,
+                                         @Nullable Filter<Destination> filter) {
+        return destinationRepository.findAll(specification, pageable);
+    }
+
+    @Nonnull
+    @Override
+    public Destination performUpdate(@Nonnull Integer id, @Nonnull Destination entity, @Nonnull Destination existingEntity) throws ResponseException {
+        existingEntity.setType(entity.getType());
+        existingEntity.setName(entity.getName());
+
+        existingEntity.setApiAddress(entity.getApiAddress());
+        existingEntity.setAuthorizationHeader(entity.getAuthorizationHeader());
+
+        existingEntity.setMailTo(entity.getMailTo());
+        existingEntity.setMailCC(entity.getMailCC());
+        existingEntity.setMailBCC(entity.getMailBCC());
+
+        existingEntity.setScript(entity.getScript());
+
+        existingEntity.setMaxAttachmentMegaBytes(entity.getMaxAttachmentMegaBytes());
+
+        return destinationRepository.save(existingEntity);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<Destination> retrieve(@Nonnull Integer id) {
+        return destinationRepository.findById(id);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<Destination> retrieve(@Nonnull Specification<Destination> specification) {
+        return destinationRepository.findOne(specification);
+    }
+
+    @Override
+    public boolean exists(@Nonnull Integer id) {
+        return destinationRepository.existsById(id);
+    }
+
+    @Override
+    public boolean exists(@Nonnull Specification<Destination> specification) {
+        return destinationRepository.exists(specification);
+    }
+
+    @Override
+    public void performDelete(@Nonnull Destination entity) throws ResponseException {
+        var spec = new VFormVersionWithDetailsFilter()
+                .setDestinationId(entity.getId())
+                .build();
+
+        if (formVersionWithDetailsRepository.exists(spec)) {
+            throw new ResponseException(HttpStatus.CONFLICT, "Die Schnittstelle wird noch von einem oder mehreren Formularen verwendet.");
+        }
+
+        destinationRepository.delete(entity);
+    }
+}

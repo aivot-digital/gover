@@ -1,0 +1,174 @@
+package de.aivot.gover.backend.submission.services;
+
+import de.aivot.gover.backend.destination.entities.Destination;
+import de.aivot.gover.backend.destination.services.DestinationService;
+import de.aivot.gover.backend.enums.SubmissionStatus;
+import de.aivot.gover.backend.enums.XBezahldienstStatus;
+import de.aivot.gover.backend.exceptions.NoValidUserEMailsInDepartmentException;
+import de.aivot.gover.backend.form.entities.VFormVersionWithDetailsEntityId;
+import de.aivot.gover.backend.form.repositories.FormRepository;
+import de.aivot.gover.backend.form.repositories.VFormVersionWithDetailsRepository;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.mail.services.ExceptionMailService;
+import de.aivot.gover.backend.mail.services.SubmissionMailService;
+import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
+import de.aivot.gover.backend.payment.models.PaymentTransactionChangeListener;
+import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
+import de.aivot.gover.backend.services.DestinationSubmitService;
+import de.aivot.gover.backend.submission.filters.SubmissionAttachmentFilter;
+import de.aivot.gover.backend.submission.filters.SubmissionFilter;
+import de.aivot.gover.backend.submission.repositories.SubmissionRepository;
+import jakarta.mail.MessagingException;
+import org.springframework.stereotype.Component;
+
+import java.io.IOException;
+
+/**
+ * @deprecated
+ */
+@Deprecated
+@Component
+public class SubmissionTransactionChangeListener implements PaymentTransactionChangeListener {
+    private final SubmissionRepository submissionRepository;
+    private final DestinationSubmitService destinationSubmitService;
+    private final DestinationService destinationService;
+    private final SubmissionAttachmentService submissionAttachmentService;
+    private final SubmissionMailService submissionMailService;
+    private final ExceptionMailService exceptionMailService;
+    private final PaymentProviderRepository paymentProviderRepository;
+    private final FormRepository formRepository;
+    private final VFormVersionWithDetailsRepository formVersionWithDetailsRepository;
+
+    public SubmissionTransactionChangeListener(
+            SubmissionRepository submissionRepository,
+            DestinationSubmitService destinationSubmitService,
+            DestinationService destinationService,
+            SubmissionAttachmentService submissionAttachmentService,
+            SubmissionMailService submissionMailService,
+            ExceptionMailService exceptionMailService,
+            PaymentProviderRepository paymentProviderRepository,
+            FormRepository formRepository,
+            VFormVersionWithDetailsRepository formVersionWithDetailsRepository) {
+        this.submissionRepository = submissionRepository;
+        this.destinationSubmitService = destinationSubmitService;
+        this.destinationService = destinationService;
+        this.submissionAttachmentService = submissionAttachmentService;
+        this.submissionMailService = submissionMailService;
+        this.exceptionMailService = exceptionMailService;
+        this.paymentProviderRepository = paymentProviderRepository;
+        this.formRepository = formRepository;
+        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
+    }
+
+    @Override
+    public void onChange(PaymentTransactionEntity paymentTransactionEntity) throws ResponseException {
+        var submissionSpec = SubmissionFilter
+                .create()
+                .setPaymentTransactionKey(paymentTransactionEntity.getKey())
+                .build();
+
+        var submission = submissionRepository
+                .findOne(submissionSpec)
+                .orElse(null);
+
+        if (submission == null) {
+            return;
+        }
+
+        var status = paymentTransactionEntity.getPaymentInformation().getStatus();
+
+        var form = formVersionWithDetailsRepository
+                .findById(new VFormVersionWithDetailsEntityId(submission.getFormId(), submission.getFormVersion()))
+                .orElseThrow(() -> ResponseException.internalServerError("Formular mit der ID " + submission.getFormId() + " konnte nicht gefunden werden."));
+
+        switch (status) {
+            case PAYED -> {
+                // Reset the copy status so the user can send the submission again after the payment
+                submission.setCopySent(false);
+                submission.setCopyTries(0);
+
+                Destination destination = null;
+                if (submission.getDestinationId() != null) {
+                    destination = destinationService
+                            .retrieve(submission.getDestinationId())
+                            .orElse(null);
+                }
+
+                if (destination == null) {
+                    submission.setStatus(SubmissionStatus.OpenForManualWork);
+                    submissionRepository.save(submission);
+
+                    try {
+                        submissionMailService
+                                .sendReceived(form, submission);
+                    } catch (MessagingException | NoValidUserEMailsInDepartmentException | IOException e) {
+                        throw ResponseException.internalServerError("E-Mail für Antragseingang konnte nicht versendet werden.", e);
+                    }
+                } else {
+                    var attachmentFilter = SubmissionAttachmentFilter
+                            .create()
+                            .setSubmissionId(submission.getId());
+
+                    var attachments = submissionAttachmentService
+                            .list(attachmentFilter)
+                            .getContent();
+
+                    destinationSubmitService
+                            .handleSubmit(destination, form, submission, attachments);
+
+                    if (!submission.getDestinationSuccess()) {
+                        try {
+                            submissionMailService.sendDestinationFailed(form, submission, destination);
+                        } catch (Exception e) {
+                            exceptionMailService.send(e);
+                        }
+                    } else {
+                        submission.setStatus(SubmissionStatus.Archived);
+                    }
+
+                    submissionRepository.save(submission);
+                }
+            }
+            case CANCELED, FAILED -> {
+                submission.setStatus(SubmissionStatus.HasPaymentError);
+                submission.setCopySent(false);
+                submission.setCopyTries(0);
+                submissionRepository.save(submission);
+
+                var paymentProvider = paymentProviderRepository
+                        .findById(paymentTransactionEntity.getPaymentProviderKey())
+                        .orElseThrow(() -> ResponseException.internalServerError("Zahlungsanbieter mit der ID " + paymentTransactionEntity.getPaymentProviderKey() + " konnte nicht gefunden werden."));
+
+                try {
+                    submissionMailService.sendPaymentFailed(form, submission, paymentTransactionEntity, paymentProvider);
+                } catch (MessagingException | NoValidUserEMailsInDepartmentException | IOException e) {
+                    throw ResponseException.internalServerError("E-Mail für Zahlungsfehler konnte nicht versendet werden.", e);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onDelete(PaymentTransactionEntity paymentTransactionEntity) throws ResponseException {
+        var submissionSpec = SubmissionFilter
+                .create()
+                .setPaymentTransactionKey(paymentTransactionEntity.getKey())
+                .build();
+
+        var submission = submissionRepository
+                .findOne(submissionSpec)
+                .orElse(null);
+
+        if (submission == null) {
+            return;
+        }
+
+        submission.setPaymentTransactionKey(null);
+
+        if (paymentTransactionEntity.getStatus() == XBezahldienstStatus.INITIAL) {
+            submission.setStatus(SubmissionStatus.HasPaymentError);
+        }
+
+        submissionRepository.save(submission);
+    }
+}

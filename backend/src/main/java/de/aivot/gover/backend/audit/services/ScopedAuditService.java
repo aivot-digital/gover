@@ -1,0 +1,143 @@
+package de.aivot.gover.backend.audit.services;
+
+import de.aivot.gover.backend.audit.entities.AuditLogEntity;
+import de.aivot.gover.backend.audit.models.AuditLogPayload;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
+
+import java.time.Instant;
+import java.util.HashMap;
+
+public class ScopedAuditService {
+    private final Logger logger;
+    private final String module;
+    private final String origin;
+    private final AuditLogService auditLogService;
+
+    public ScopedAuditService(@Nonnull Class<?> cls,
+                              @Nonnull String module,
+                              @Nonnull AuditLogService auditLogService) {
+        this.logger = LoggerFactory.getLogger(cls);
+        this.module = module;
+        this.origin = cls.getCanonicalName();
+        this.auditLogService = auditLogService;
+    }
+
+    public AuditLogPayload create() {
+        return AuditLogPayload.create(this);
+    }
+
+    public void addAuditEntry(@Nonnull AuditLogPayload payload) {
+        var request = getCurrentRequest();
+
+        var timestamp = payload.getTimestamp() != null ? payload.getTimestamp() : Instant.now();
+        var actorId = trimToNull(payload.getActorId());
+        var actorType = firstNonBlank(payload.getActorType(), actorId != null ? AuditLogPayload.ACTOR_TYPE_USER : AuditLogPayload.ACTOR_TYPE_SYSTEM);
+
+        var triggerType = firstNonBlank(payload.getTriggerType(), "Message");
+
+        var entityType = payload.getEntityType();
+        var entityRef = payload.getEntityRef();
+        var entityRefType = payload.getEntityRefType();
+
+        var message = firstNonBlank(payload.getMessage(), triggerType + " in " + module);
+        var diff = payload.getDiff();
+
+        var metadata = new HashMap<String, Object>();
+        if (payload.getMetadata() != null) {
+            metadata.putAll(payload.getMetadata());
+        }
+
+        var ipAddress = firstNonBlank(payload.getIpAddress(), extractIpAddress(request));
+
+        var auditLog = new AuditLogEntity()
+                .setTimestamp(timestamp)
+                .setActorType(actorType)
+                .setActorId(actorId)
+                .setOrigin(origin)
+                .setTriggerType(triggerType)
+                .setEntityType(entityType)
+                .setEntityRef(entityRef)
+                .setEntityRefType(entityRefType)
+                .setModule(module)
+                .setMessage(message)
+                .setDiff(diff)
+                .setMetadata(metadata)
+                .setIpAddress(ipAddress);
+
+        logger.atInfo()
+                .setMessage(message)
+                .addKeyValue("actorType", actorType)
+                .addKeyValue("actorId", actorId)
+                .addKeyValue("origin", origin)
+                .addKeyValue("triggerType", triggerType)
+                .addKeyValue("entityType", entityType)
+                .addKeyValue("entityRef", entityRef)
+                .addKeyValue("entityRefType", entityRefType)
+                .addKeyValue("module", module)
+                .log();
+
+        try {
+            auditLogService.create(auditLog);
+        } catch (Exception e) {
+            logger.atError()
+                    .setMessage("Failed to persist audit log")
+                    .setCause(e)
+                    .addKeyValue("module", module)
+                    .addKeyValue("triggerType", triggerType)
+                    .log();
+        }
+    }
+
+    @Nullable
+    private HttpServletRequest getCurrentRequest() {
+        var requestAttributes = RequestContextHolder.getRequestAttributes();
+        if (requestAttributes instanceof ServletRequestAttributes servletRequestAttributes) {
+            return servletRequestAttributes.getRequest();
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private String extractIpAddress(@Nullable HttpServletRequest request) {
+        if (request == null) {
+            return null;
+        }
+
+        var forwardedFor = request.getHeader("X-Forwarded-For");
+        if (forwardedFor != null && !forwardedFor.isBlank()) {
+            return forwardedFor.split(",")[0].trim();
+        }
+
+        return request.getRemoteAddr();
+    }
+
+    @Nonnull
+    private String firstNonBlank(@Nullable String first, @Nonnull String fallback) {
+        if (first == null || first.isBlank()) {
+            return fallback;
+        }
+
+        return first;
+    }
+
+    @Nullable
+    private String trimToNull(@Nullable String value) {
+        if (value == null) {
+            return null;
+        }
+
+        var trimmedValue = value.trim();
+        if (trimmedValue.isEmpty()) {
+            return null;
+        }
+
+        return trimmedValue;
+    }
+}

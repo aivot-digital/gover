@@ -1,0 +1,14 @@
+package de.aivot.gover.backend.models.pdf;
+
+import de.aivot.gover.backend.elements.models.elements.BaseElement;
+
+public class HeadlinePdfRowDto extends BasePdfRowDto {
+    public final String text;
+    public final int size;
+
+    public HeadlinePdfRowDto(String text, int size, BaseElement element) {
+        super(PdfRowDtoType.Headline, element);
+        this.text = text;
+        this.size = size;
+    }
+}

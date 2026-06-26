@@ -1,0 +1,175 @@
+package de.aivot.gover.backend.javascript.models;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import de.aivot.gover.backend.javascript.services.JavascriptEngine;
+import de.aivot.gover.backend.utils.StringUtils;
+
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+/**
+ * Represents a piece of Javascript code.
+ * This model should be used to encapsulate javascript code in e.g. form elements.
+ * The methods <code>equals</code> and <code>hashCode</code> should always be implemented to allow this class being stored in the database and not always being marked as dirty by hibernate.
+ */
+public class JavascriptCode implements Serializable {
+    private String code;
+
+    // region Utility Constructors
+
+    public static JavascriptCode of(@Nonnull String codeStr) {
+        return new JavascriptCode()
+                .setCode(codeStr);
+    }
+
+    public static JavascriptCode of(@Nonnull String codeStrTemplate, @Nonnull Object... args) {
+        String codeStr = String.format(codeStrTemplate, args);
+        return new JavascriptCode()
+                .setCode(codeStr);
+    }
+
+    public static JavascriptCode from(@Nullable Object object) {
+        if (object instanceof Map<?, ?> map) {
+            if (map.containsKey("code")) {
+                return new JavascriptCode()
+                        .setCode((String) map.get("code"));
+            }
+        }
+
+        return null;
+    }
+
+    // endregion
+
+    // region Utility Methods
+
+    /**
+     * Check if the code is empty.
+     * This might occur if the frontend sends an empty string.
+     *
+     * @return true if the code is empty, false otherwise
+     */
+    @JsonIgnore
+    public boolean isEmpty() {
+        return StringUtils.isNullOrEmpty(code);
+    }
+
+    /**
+     * Check if the code is not empty.
+     *
+     * @return true if the code is not empty, false otherwise
+     */
+    @JsonIgnore
+    public boolean isNotEmpty() {
+        return !isEmpty();
+    }
+
+    /**
+     * Get all ids that are referenced in the code.
+     *
+     * @return a set of all ids that are referenced in the code
+     */
+    @Nonnull
+    @JsonIgnore
+    public Set<String> getReferencedIds() {
+        if (code == null || StringUtils.isNullOrEmpty(code)) {
+            return new HashSet<>();
+        }
+
+        var expliciteReferencePattern = Pattern
+                .compile(">>>([a-zA-Z0-9_-]+)");
+
+        var implicitReferencePatterns = Set.of(
+                Pattern.compile(String.format(
+                        "%s\\.effectiveValues\\.([a-zA-Z0-9_-]+)",
+                        JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+                )),
+                Pattern.compile(String.format(
+                        "%s\\.elementStates\\.([a-zA-Z0-9_-]+)",
+                        JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+                ))
+        );
+
+        var ids = new HashSet<String>();
+
+        var matcher = expliciteReferencePattern.matcher(code);
+        while (matcher.find()) {
+            ids.add(matcher.group(1));
+        }
+
+        for (var implicitReferencePattern : implicitReferencePatterns) {
+            matcher = implicitReferencePattern.matcher(code);
+            while (matcher.find()) {
+                ids.add(matcher.group(1));
+            }
+        }
+
+        return ids;
+    }
+
+    /**
+     * Get all process data paths that are referenced through the process data root object.
+     *
+     * @return a set of all referenced process data paths
+     */
+    @Nonnull
+    @JsonIgnore
+    public Set<String> getReferencedProcessDataPaths() {
+        if (code == null || StringUtils.isNullOrEmpty(code)) {
+            return new HashSet<>();
+        }
+
+        var processDataReferencePattern = Pattern
+                .compile("(?<![$\\w])\\$((?:\\.[a-zA-Z_$][a-zA-Z0-9_$]*)+)");
+
+        var paths = new HashSet<String>();
+
+        var matcher = processDataReferencePattern.matcher(code);
+        while (matcher.find()) {
+            paths.add(matcher.group(1).substring(1));
+        }
+
+        return paths;
+    }
+
+    // endregion
+
+    // region Equals & HashCode
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        JavascriptCode that = (JavascriptCode) o;
+        return Objects.equals(code, that.code);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(code);
+    }
+
+    // endregion
+
+    // region Getters & Setters
+
+    @Nullable
+    public String getCode() {
+        return code;
+    }
+
+    @Nonnull
+    public JavascriptCode setCode(@Nullable String code) {
+        this.code = code;
+        return this;
+    }
+
+    // endregion
+}

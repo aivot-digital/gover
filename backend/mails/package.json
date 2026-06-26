@@ -1,0 +1,21 @@
+{
+  "name": "gover-mail-templates",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build:dev:mjml": "mjml -r ./templates/*.mjml -o ../src/main/resources/templates/mail --config.fonts={}",
+    "build:dev:text": "cp ./templates/*.txt ../src/main/resources/templates/mail",
+    "build:dev": "mkdir -p ../src/main/resources/templates/mail && npm run build:dev:mjml && npm run build:dev:text",
+
+    "build:prod:mjml": "mjml -r ./templates/*.mjml -o ./dist --config.fonts={}",
+    "build:prod:text": "cp ./templates/*.txt ./dist",
+    "build:prod": "mkdir -p ./dist && npm run build:prod:mjml && npm run build:prod:text"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "Sustainable Use License (see LICENSE file)",
+  "dependencies": {
+    "mjml": "^5.3.0"
+  }
+}

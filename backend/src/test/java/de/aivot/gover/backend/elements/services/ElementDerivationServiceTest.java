@@ -1,0 +1,506 @@
+package de.aivot.gover.backend.elements.services;
+
+import de.aivot.gover.backend.elements.enums.EffectiveValueSource;
+import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.gover.backend.elements.models.ElementDerivationOptions;
+import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
+import de.aivot.gover.backend.elements.models.elements.BaseFormElement;
+import de.aivot.gover.backend.elements.models.elements.ElementOverrideFunctions;
+import de.aivot.gover.backend.elements.models.elements.ElementValidationFunctions;
+import de.aivot.gover.backend.elements.models.elements.ElementValueFunctions;
+import de.aivot.gover.backend.elements.models.elements.ElementVisibilityFunctions;
+import de.aivot.gover.backend.elements.models.elements.ValidationNoCodeWrapper;
+import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.SummaryLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.steps.BaseStepElement;
+import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
+import de.aivot.gover.backend.elements.services.ElementDerivationService;
+import de.aivot.gover.backend.identity.models.IdentityDataMap;
+import de.aivot.gover.backend.javascript.models.JavascriptCode;
+import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.gover.backend.nocode.models.NoCodeReference;
+import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.gover.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.gover.backend.submission.services.ElementDataTransformService;
+import org.junit.jupiter.api.Test;
+
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class ElementDerivationServiceTest {
+    @Test
+    void shouldProjectAuthoredValuesIntoRuntimeData() {
+        var field = new TextInputElement();
+        field.setId("field");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("field", "hello");
+
+        var result = derive(
+                createRoot(List.of(field)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("hello", result.getEffectiveValues().get("field"));
+        assertNull(result.getEffectiveValues().get("root"));
+        assertNull(result.getEffectiveValues().get("step"));
+
+        var fieldState = result.getElementStates().get("field");
+        assertNotNull(fieldState);
+        assertTrue(fieldState.getVisible());
+        assertNull(fieldState.getError());
+        assertEquals(EffectiveValueSource.Authored, fieldState.getValueSource());
+    }
+
+    @Test
+    void shouldMarkComputedValuesAsDerived() {
+        var sourceField = new TextInputElement();
+        sourceField.setId("source");
+
+        var derivedField = new TextInputElement();
+        derivedField.setId("derived");
+        derivedField.setValue(new ElementValueFunctions().setNoCode(NoCodeReference.of("source")));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("source", "copied value");
+
+        var result = derive(
+                createRoot(List.of(sourceField, derivedField)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("copied value", result.getEffectiveValues().get("source"));
+        assertEquals("copied value", result.getEffectiveValues().get("derived"));
+        assertEquals(
+                EffectiveValueSource.Derived,
+                result.getElementStates().get("derived").getValueSource()
+        );
+    }
+
+    @Test
+    void shouldSkipValidationErrorsForTechnicalFieldsButKeepEffectiveValues() {
+        var technicalField = new TextInputElement();
+        technicalField.setId("technical");
+        technicalField.setTechnical(true);
+        technicalField.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("derived value")));
+        technicalField.setValidation(new ElementValidationFunctions().setNoCodeList(List.of(
+                new ValidationNoCodeWrapper()
+                        .setNoCode(NoCodeStaticValue.of(false))
+                        .setMessage("Technical validation should be skipped.")
+        )));
+
+        var result = derive(
+                createRoot(List.of(technicalField)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertEquals("derived value", result.getEffectiveValues().get("technical"));
+        assertNull(result.getElementStates().get("technical").getError());
+        assertEquals(
+                EffectiveValueSource.Derived,
+                result.getElementStates().get("technical").getValueSource()
+        );
+    }
+
+    @Test
+    void shouldTreatPresentNullAsAuthoredClearInsteadOfDerivingValue() {
+        var field = new TextInputElement();
+        field.setId("field");
+        field.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("derived value")));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("field", null);
+
+        var result = derive(
+                createRoot(List.of(field)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        assertTrue(result.getEffectiveValues().containsKey("field"));
+        assertNull(result.getEffectiveValues().get("field"));
+        assertEquals(
+                EffectiveValueSource.Authored,
+                result.getElementStates().get("field").getValueSource()
+        );
+    }
+
+    @Test
+    void shouldSkipVisibilitiesForSkippedElementsAndChildren() {
+        var child = new TextInputElement();
+        child.setId("child");
+        child.setVisibility(new ElementVisibilityFunctions().setNoCode(NoCodeStaticValue.of(false)));
+
+        var group = new GroupLayoutElement();
+        group.setId("group");
+        group.setVisibility(new ElementVisibilityFunctions().setNoCode(NoCodeStaticValue.of(false)));
+        group.setChildren(new LinkedList<>(List.of(child)));
+
+        var baselineResult = derive(
+                createRoot(List.of(group)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+        assertFalse(baselineResult.getElementStates().get("group").getVisible());
+        assertFalse(baselineResult.getElementStates().get("child").getVisible());
+
+        var skippedResult = derive(
+                createRoot(List.of(group)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions().setSkipVisibilitiesForElementIds(List.of("group"))
+        );
+
+        assertTrue(skippedResult.getElementStates().get("group").getVisible());
+        assertTrue(skippedResult.getElementStates().get("child").getVisible());
+    }
+
+    @Test
+    void shouldSkipOverridesForChildrenOfSkippedElements() {
+        var child = new TextInputElement();
+        child.setId("child");
+        child.setLabel("original");
+        child.setOverride(new ElementOverrideFunctions().setJavascriptCode(
+                JavascriptCode.of("({ type: element.type, id: element.id, label: 'overridden child' })")
+        ));
+
+        var group = new GroupLayoutElement();
+        group.setId("group");
+        group.setChildren(new LinkedList<>(List.of(child)));
+
+        var baselineResult = derive(
+                createRoot(List.of(group)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+        var overrideElement = assertInstanceOf(
+                TextInputElement.class,
+                baselineResult.getElementStates().get("child").getOverride()
+        );
+        assertEquals("overridden child", overrideElement.getLabel());
+
+        var skippedResult = derive(
+                createRoot(List.of(group)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions().setSkipOverridesForElementIds(List.of("group"))
+        );
+
+        assertNull(skippedResult.getElementStates().get("child").getOverride());
+    }
+
+    @Test
+    void shouldSkipValuesForChildrenOfSkippedElements() {
+        var child = new TextInputElement();
+        child.setId("child");
+        child.setDisabled(true);
+        child.setValue(new ElementValueFunctions().setNoCode(NoCodeStaticValue.of("derived value")));
+
+        var group = new GroupLayoutElement();
+        group.setId("group");
+        group.setChildren(new LinkedList<>(List.of(child)));
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("child", "authored value");
+
+        var baselineResult = derive(
+                createRoot(List.of(group)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+        assertEquals("derived value", baselineResult.getEffectiveValues().get("child"));
+
+        var skippedResult = derive(
+                createRoot(List.of(group)),
+                authoredValues,
+                new ElementDerivationOptions().setSkipValuesForElementIds(List.of("group"))
+        );
+
+        assertEquals("authored value", skippedResult.getEffectiveValues().get("child"));
+        assertEquals(
+                EffectiveValueSource.Authored,
+                skippedResult.getElementStates().get("child").getValueSource()
+        );
+    }
+
+    @Test
+    void shouldSkipErrorsForChildrenOfSkippedElements() {
+        var child = new TextInputElement();
+        child.setId("child");
+        child.setRequired(true);
+
+        var group = new GroupLayoutElement();
+        group.setId("group");
+        group.setChildren(new LinkedList<>(List.of(child)));
+
+        var baselineResult = derive(
+                createRoot(List.of(group)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+        assertEquals(
+                "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.",
+                baselineResult.getElementStates().get("child").getError()
+        );
+
+        var skippedResult = derive(
+                createRoot(List.of(group)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions().setSkipErrorsForElementIds(List.of("group"))
+        );
+
+        assertNull(skippedResult.getElementStates().get("child").getError());
+    }
+
+    @Test
+    void shouldSkipErrorsForChildrenInsideSummaryLayout() {
+        var summaryChild = new TextInputElement();
+        summaryChild.setId("summaryChild");
+        summaryChild.setRequired(true);
+
+        var summary = new SummaryLayoutElement();
+        summary.setId("summary");
+        summary.setChildren(List.of(summaryChild));
+
+        var regularChild = new TextInputElement();
+        regularChild.setId("regularChild");
+        regularChild.setRequired(true);
+
+        var result = derive(
+                createRoot(List.of(summary, regularChild)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertNull(result.getElementStates().get("summaryChild").getError());
+        assertEquals(
+                "Dieses Feld ist ein Pflichtfeld und darf nicht leer sein.",
+                result.getElementStates().get("regularChild").getError()
+        );
+    }
+
+    @Test
+    void shouldSkipErrorsForNestedSummaryLayoutDescendants() {
+        var nestedChild = new TextInputElement();
+        nestedChild.setId("nestedChild");
+        nestedChild.setRequired(true);
+
+        var group = new GroupLayoutElement();
+        group.setId("group");
+        group.setChildren(new LinkedList<>(List.of(nestedChild)));
+
+        var summary = new SummaryLayoutElement();
+        summary.setId("summary");
+        summary.setChildren(List.of(group));
+
+        var result = derive(
+                createRoot(List.of(summary)),
+                new AuthoredElementValues(),
+                new ElementDerivationOptions()
+        );
+
+        assertNull(result.getElementStates().get("nestedChild").getError());
+    }
+
+    @Test
+    void shouldClearDependentSelectValueWhenParentSelectIsInOuterScope() {
+        var parent = createGroupedSelect("parent", null, List.of(
+                SelectInputElementOption.of("group_a", "Gruppe A"),
+                SelectInputElementOption.of("group_b", "Gruppe B")
+        ));
+
+        var child = createGroupedSelect("child", "parent", List.of(
+                SelectInputElementOption.of("option_a", "Option A", "group_a"),
+                SelectInputElementOption.of("option_b", "Option B", "group_b")
+        ));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(child)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("child", "option_a");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("parent", "group_b");
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(parent, rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertEquals("group_b", result.getEffectiveValues().get("parent"));
+        assertNull(firstRow.get("child"));
+        assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("child").getError());
+    }
+
+    @Test
+    void shouldClearDependentSelectValueWhenParentSelectIsInCurrentReplicatingRow() {
+        var rowParent = createGroupedSelect("row_parent", null, List.of(
+                SelectInputElementOption.of("group_a", "Gruppe A"),
+                SelectInputElementOption.of("group_b", "Gruppe B")
+        ));
+
+        var rowChild = createGroupedSelect("row_child", "row_parent", List.of(
+                SelectInputElementOption.of("option_a", "Option A", "group_a"),
+                SelectInputElementOption.of("option_b", "Option B", "group_b")
+        ));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(rowParent, rowChild)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("row_parent", "group_b");
+        rowValues.put("row_child", "option_a");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertEquals("group_b", firstRow.get("row_parent"));
+        assertNull(firstRow.get("row_child"));
+        assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("row_child").getError());
+    }
+
+    @Test
+    void shouldNotFallBackToRootValueWhenReplicatingRowParentIsExplicitlyCleared() {
+        var rowParent = createGroupedSelect("row_parent", null, List.of(
+                SelectInputElementOption.of("group_a", "Gruppe A")
+        ));
+
+        var rowChild = createGroupedSelect("row_child", "row_parent", List.of(
+                SelectInputElementOption.of("option_a", "Option A", "group_a")
+        ));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(rowParent, rowChild)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("row_parent", null);
+        rowValues.put("row_child", "option_a");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("row_parent", "group_a");
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertNull(firstRow.get("row_parent"));
+        assertNull(firstRow.get("row_child"));
+    }
+
+    @Test
+    void shouldOmitHiddenReplicatingRowChildFromEffectiveValues() {
+        var visibleChild = new TextInputElement();
+        visibleChild.setId("visible_child");
+
+        var hiddenChild = new TextInputElement();
+        hiddenChild.setId("hidden_child");
+        hiddenChild.setVisibility(new ElementVisibilityFunctions().setNoCode(NoCodeStaticValue.of(false)));
+
+        var rows = new ReplicatingContainerLayoutElement();
+        rows.setId("rows");
+        rows.setChildren(new LinkedList<>(List.of(visibleChild, hiddenChild)));
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("visible_child", "visible value");
+        rowValues.put("hidden_child", "hidden value");
+
+        var authoredValues = new AuthoredElementValues();
+        authoredValues.put("rows", List.of(rowValues));
+
+        var result = derive(
+                createRoot(List.of(rows)),
+                authoredValues,
+                new ElementDerivationOptions()
+        );
+
+        var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
+        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+
+        assertEquals("visible value", firstRow.get("visible_child"));
+        assertFalse(firstRow.containsKey("hidden_child"));
+        assertFalse(result.getElementStates().get("rows").getSubStates().get(0).get("hidden_child").getVisible());
+    }
+
+    private static DerivedRuntimeElementData derive(
+            FormLayoutElement root,
+            AuthoredElementValues authoredValues,
+            ElementDerivationOptions options
+    ) {
+        return createService().derive(
+                new ElementDerivationRequest(root, authoredValues, options),
+                new IdentityDataMap(),
+                new ElementDerivationLogger()
+        );
+    }
+
+    private static ElementDerivationService createService() {
+        return new ElementDerivationService(
+                new JavascriptEngineFactoryService(List.of()),
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService()
+        );
+    }
+
+    private static SelectInputElement createGroupedSelect(
+            String id,
+            String dependsOnSelectFieldId,
+            List<SelectInputElementOption> options
+    ) {
+        var field = new SelectInputElement();
+        field.setId(id);
+        field.setOptions(options);
+        field.setDependsOnSelectFieldId(dependsOnSelectFieldId);
+        return field;
+    }
+
+    private static FormLayoutElement createRoot(List<BaseFormElement> stepChildren) {
+        var step = new GenericStepElement();
+        step.setId("step");
+        step.setChildren(new LinkedList<>(stepChildren));
+
+        var root = new FormLayoutElement();
+        root.setId("root");
+        root.setChildren(new LinkedList<BaseStepElement>(List.of(step)));
+        return root;
+    }
+}

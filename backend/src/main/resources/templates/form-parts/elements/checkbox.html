@@ -1,0 +1,33 @@
+<!--/*@thymesVar id="base" type="de.aivot.gover.backend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.gover.backend.elements.models.elements.form.input.CheckboxInputElement"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div
+        th:fragment="checkbox"
+        class="input-element checkbox-element"
+>
+    <div class="input">
+        <!--/* Checked-Icon */-->
+        <div
+                th:if="${value}"
+                class="checked"
+        ></div>
+
+        <!--/* Unchecked-Icon */-->
+        <div
+                th:unless="${value}"
+                class="unchecked"
+        ></div>
+
+        <!--/* Beschriftung der Checkbox */-->
+        <div class="label">
+            <span th:text="${element.label}"></span>
+            <span th:if="${element.required}">(Pflichtangabe)</span>
+        </div>
+    </div>
+
+    <!--/* Hinweis wird nur angezeigt bei einem ausfüllbaren Formular */-->
+    <div class="hint-wrapper">
+        <div th:insert="./form-parts/elements/_hint.html"></div>
+    </div>
+</div>
