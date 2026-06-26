@@ -9,7 +9,7 @@ class XBezahldiensteAddressTest {
 
     @Test
     /*
-     * Test method for {@link de.aivot.GoverBackend.models.xbezahldienst.Address#setStreet()}.
+     * Test method for {@link de.aivot.gover.backend.models.xbezahldienst.Address#setStreet()}.
      * Test if the street is set correctly with null, not allowed characters, and a string that is too long.
      */
     void setStreet() {
