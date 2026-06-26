@@ -70,7 +70,10 @@
     </div>
 
     <!-- /* Alle Kind-Elemente der Allgemeinen Informationen */ -->
-    <div style="display: flex; flex-wrap: wrap;">
+    <div
+            th:if="${ step.children != null && not step.children.isEmpty() }"
+            style="display: flex; flex-wrap: wrap; margin-top: 1rem;"
+    >
         <th:block
                 th:each="child : ${ step.children }"
                 th:insert="./form-parts/element-dispatcher.html"
