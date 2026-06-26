@@ -17,7 +17,6 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -213,7 +212,7 @@ class DataChangeActionNodeV1Test {
     }
 
     @Test
-    void onEventFromStaffTaskView_CompleteMergesProcessDataAndStoresDiff() throws Exception {
+    void onEventFromStaffTaskView_CompleteMergesProcessDataAndStoresNodeData() throws Exception {
         var processData = Map.<String, Object>of(
                 "applicant", Map.of("name", "Ada", "age", 33),
                 "untouched", "value"
@@ -259,13 +258,7 @@ class DataChangeActionNodeV1Test {
         @SuppressWarnings("unchecked")
         var changedData = (Map<String, Object>) completed.getNodeData().get("data");
         assertEquals(Map.of("name", "Grace"), changedData.get("applicant"));
-
-        @SuppressWarnings("unchecked")
-        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
-        assertEquals(1, diff.size());
-        assertEquals("applicant.name", diff.getFirst().field());
-        assertEquals("Ada", diff.getFirst().oldValue());
-        assertEquals("Grace", diff.getFirst().newValue());
+        assertFalse(completed.getNodeData().containsKey("diff"));
     }
 
     @Test
@@ -314,13 +307,7 @@ class DataChangeActionNodeV1Test {
         @SuppressWarnings("unchecked")
         var changedData = (Map<String, Object>) completed.getNodeData().get("data");
         assertEquals(List.of(Map.of("name", "Grace")), changedData.get("members"));
-
-        @SuppressWarnings("unchecked")
-        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
-        assertEquals(1, diff.size());
-        assertEquals("members[0].name", diff.getFirst().field());
-        assertEquals("Ada", diff.getFirst().oldValue());
-        assertEquals("Grace", diff.getFirst().newValue());
+        assertFalse(completed.getNodeData().containsKey("diff"));
     }
 
     @Test
@@ -404,17 +391,11 @@ class DataChangeActionNodeV1Test {
                 ),
                 changedData.get("members")
         );
-
-        @SuppressWarnings("unchecked")
-        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
-        assertEquals(1, diff.size());
-        assertEquals("members[0].name", diff.getFirst().field());
-        assertEquals("Ada", diff.getFirst().oldValue());
-        assertEquals("Grace", diff.getFirst().newValue());
+        assertFalse(completed.getNodeData().containsKey("diff"));
     }
 
     @Test
-    void onEventFromStaffTaskView_CompleteDoesNotCreateSpuriousDiffForEquivalentTemporalValues() throws Exception {
+    void onEventFromStaffTaskView_CompleteKeepsEquivalentTemporalValuesStable() throws Exception {
         var processData = Map.<String, Object>of(
                 "date", "2026-05-09T00:00:00+02:00",
                 "datetime", "2021-02-07T12:15:00+01:00"
@@ -451,10 +432,7 @@ class DataChangeActionNodeV1Test {
         var changedData = (Map<String, Object>) completed.getNodeData().get("data");
         assertEquals("2026-05-09T00:00:00+02:00", changedData.get("date"));
         assertEquals("2021-02-07T12:15:00+01:00", changedData.get("datetime"));
-
-        @SuppressWarnings("unchecked")
-        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
-        assertEquals(List.of(), diff);
+        assertFalse(completed.getNodeData().containsKey("diff"));
     }
 
     @Test

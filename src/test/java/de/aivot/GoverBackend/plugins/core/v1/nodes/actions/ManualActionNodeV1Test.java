@@ -10,7 +10,6 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
@@ -307,17 +306,11 @@ class ManualActionNodeV1Test {
         @SuppressWarnings("unchecked")
         var changedData = (Map<String, Object>) completed.getNodeData().get("data");
         assertEquals(Map.of("name", "Grace"), changedData.get("applicant"));
-
-        @SuppressWarnings("unchecked")
-        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
-        assertEquals(1, diff.size());
-        assertEquals("applicant.name", diff.getFirst().field());
-        assertEquals("Ada", diff.getFirst().oldValue());
-        assertEquals("Grace", diff.getFirst().newValue());
+        assertFalse(completed.getNodeData().containsKey("diff"));
     }
 
     @Test
-    void onEventFromStaffTaskView_CompleteDoesNotCreateSpuriousDiffForEquivalentTemporalValues() throws Exception {
+    void onEventFromStaffTaskView_CompleteKeepsEquivalentTemporalValuesStable() throws Exception {
         var processData = Map.<String, Object>of(
                 "date", "2026-05-09T00:00:00+02:00",
                 "datetime", "2021-02-07T12:15:00+01:00"
@@ -354,10 +347,7 @@ class ManualActionNodeV1Test {
         var changedData = (Map<String, Object>) completed.getNodeData().get("data");
         assertEquals("2026-05-09T00:00:00+02:00", changedData.get("date"));
         assertEquals("2021-02-07T12:15:00+01:00", changedData.get("datetime"));
-
-        @SuppressWarnings("unchecked")
-        var diff = (List<DiffItem>) completed.getNodeData().get("diff");
-        assertEquals(List.of(), diff);
+        assertFalse(completed.getNodeData().containsKey("diff"));
     }
 
     @Test
@@ -445,7 +435,7 @@ class ManualActionNodeV1Test {
         var completed = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, result.get());
         assertEquals(Map.of("status", "open"), completed.getProcessData());
         assertEquals(Map.of(), completed.getNodeData().get("data"));
-        assertEquals(List.of(), completed.getNodeData().get("diff"));
+        assertFalse(completed.getNodeData().containsKey("diff"));
         assertEquals("<p>Telefonisch bestätigt.</p>", completed.getNodeData().get("remark"));
     }
 

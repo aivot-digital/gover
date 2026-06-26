@@ -23,7 +23,6 @@ import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.models.lib.DiffItem;
 import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
@@ -40,11 +39,9 @@ import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionI
 import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.GoverBackend.process.services.TemplateRenderService;
-import de.aivot.GoverBackend.services.DiffService;
 import de.aivot.GoverBackend.submission.services.ElementDataTransformService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import org.json.JSONObject;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -59,11 +56,8 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     private static final String PORT_OUTPUT = "output";
     private static final String EVENT_COMPLETE = "complete";
-    private static final String DIFF_ROOT_ID = "__manual_action_root__";
-    private static final String DIFF_WRAPPER_KEY = "data";
 
     private static final String OUTPUT_DATA = "data";
-    private static final String OUTPUT_DIFF = "diff";
     private static final String OUTPUT_REMARK = "remark";
     private static final String OUTPUT_PROCESSED_BY_USER_ID = "processedByUserId";
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
@@ -199,11 +193,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                         OUTPUT_DATA,
                         "Erfasste Daten",
                         "Die über die optionale Gover-UI bestätigten oder erfassten Daten im Payload-Format."
-                ),
-                new ProcessNodeOutput(
-                        OUTPUT_DIFF,
-                        "Änderungen",
-                        "Die Liste aller Änderungen zwischen den ursprünglichen und den übernommenen Vorgangsdaten."
                 ),
                 new ProcessNodeOutput(
                         OUTPUT_REMARK,
@@ -459,7 +448,7 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
 
     @Nonnull
     private DerivedRuntimeElementData deriveUiUpdate(@Nonnull ResolvedConfiguration config,
-                                                    @Nonnull AuthoredElementValues update) {
+                                                     @Nonnull AuthoredElementValues update) {
         if (config.uiDefinition() == null) {
             return new DerivedRuntimeElementData();
         }
@@ -491,12 +480,10 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
                         ObjectMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData)
                 )
                 : ObjectMapperFactory.Utils.convertToMapPreservingNulls(originalProcessData);
-        var diff = createProcessDataDiff(originalProcessData, updatedProcessData);
         var remark = normalizeRemark(update.get(TASK_VIEW_REMARK_FIELD_ID));
 
         var nodeData = new LinkedHashMap<String, Object>();
         nodeData.put(OUTPUT_DATA, payloadUpdate);
-        nodeData.put(OUTPUT_DIFF, diff);
         nodeData.put(OUTPUT_REMARK, remark);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, Instant.now());
@@ -523,52 +510,6 @@ public class ManualActionNodeV1 implements ProcessNodeDefinition<ManualActionNod
     private static Map<String, Object> extractWorkingProcessData(@Nonnull ProcessExecutionData processData)
             throws ProcessNodeExecutionExceptionInvalidConfiguration {
         return new LinkedHashMap<>(processData.getProcessData());
-    }
-
-    @Nonnull
-    private static List<DiffItem> createProcessDataDiff(@Nonnull Map<String, Object> originalProcessData,
-                                                        @Nonnull Map<String, Object> updatedProcessData) {
-        var originalForDiff = Map.<String, Object>of(
-                "id", DIFF_ROOT_ID,
-                DIFF_WRAPPER_KEY, originalProcessData
-        );
-        var updatedForDiff = Map.<String, Object>of(
-                "id", DIFF_ROOT_ID,
-                DIFF_WRAPPER_KEY, updatedProcessData
-        );
-
-        return DiffService
-                .createDiff(new JSONObject(originalForDiff), new JSONObject(updatedForDiff))
-                .stream()
-                .filter(diffItem -> !"id".equals(diffItem.field()))
-                .map(diffItem -> {
-                    if (diffItem.field().equals(DIFF_WRAPPER_KEY)) {
-                        return new DiffItem(
-                                "",
-                                diffItem.oldValue(),
-                                diffItem.newValue()
-                        );
-                    }
-
-                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + ".")) {
-                        return new DiffItem(
-                                diffItem.field().substring(DIFF_WRAPPER_KEY.length() + 1),
-                                diffItem.oldValue(),
-                                diffItem.newValue()
-                        );
-                    }
-
-                    if (diffItem.field().startsWith(DIFF_WRAPPER_KEY + "[")) {
-                        return new DiffItem(
-                                diffItem.field().substring(DIFF_WRAPPER_KEY.length()),
-                                diffItem.oldValue(),
-                                diffItem.newValue()
-                        );
-                    }
-
-                    return diffItem;
-                })
-                .toList();
     }
 
     private record ResolvedConfiguration(
