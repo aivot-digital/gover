@@ -1,7 +1,7 @@
 package de.aivot.GoverBackend.captcha.services;
 
 import de.aivot.GoverBackend.captcha.properties.CaptchaConfigurationProperties;
-import org.altcha.altcha.Altcha;
+import org.altcha.altcha.v2.Altcha;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,14 +12,16 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class AltchaService {
+    private static final String ALGORITHM = "PBKDF2/SHA-256";
+
     /** HMAC key used for signing and verifying the challenge. */
     private final String hmacKey;
 
-    /** Proof‑of‑work difficulty (higher = more client CPU time). */
-    private static final long MAX_NUMBER = 200_000;
+    /** Proof-of-work difficulty (higher = more client CPU time). */
+    private static final int COST = 5_000;
 
     /** Challenge validity in seconds. */
-    private static final int EXPIRES_SEC = 300;  // 5 minutes
+    private static final int EXPIRES_SEC = 300;  // 5 minutes
 
     public AltchaService(CaptchaConfigurationProperties config) {
         this.hmacKey = config.getKey();
@@ -27,31 +29,31 @@ public class AltchaService {
 
     /**
      * Creates a new Altcha challenge.
-     * The challenge is a Base64‑encoded string that contains the proof‑of‑work difficulty and
-     * the expiration time.
+     * The challenge contains signed proof-of-work parameters and an expiration time.
      *
      * @return a new Altcha challenge
      * @throws Exception if an error occurs while creating the challenge
      */
     public Altcha.Challenge createChallenge() throws Exception {
-        var opts = new Altcha.ChallengeOptions()
-                .setHmacKey(hmacKey)
-                .setMaxNumber(MAX_NUMBER)
-                .setExpiresInSeconds(EXPIRES_SEC);
+        var opts = new Altcha.CreateChallengeOptions()
+                .algorithm(ALGORITHM)
+                .cost(COST)
+                .hmacSignatureSecret(hmacKey)
+                .expiresInSeconds(EXPIRES_SEC);
 
         return Altcha.createChallenge(opts);
     }
 
     /**
      * Verifies the Altcha solution.
-     * The solution is a Base64‑encoded string that contains the proof‑of‑work difficulty and
-     * the expiration time.
+     * The solution is a Base64-encoded JSON payload submitted by the widget.
      *
      * @param base64Payload the Base64‑encoded solution
      * @return true if the solution is valid, false otherwise
      * @throws Exception if an error occurs while verifying the solution
      */
     public boolean verify(String base64Payload) throws Exception {
-        return Altcha.verifySolution(base64Payload, hmacKey, true);
+        var result = Altcha.verifySolution(base64Payload, hmacKey, Altcha.kdf(ALGORITHM));
+        return result.verified();
     }
 }
