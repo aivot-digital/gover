@@ -1,4 +1,4 @@
-import {ReactEventHandler, useCallback, useEffect, useState} from 'react';
+import {ReactEventHandler, useCallback, useEffect, useRef, useState} from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, Typography, useTheme} from '@mui/material';
 import {renderToStaticMarkup} from 'react-dom/server';
 import {ImageSelector} from '../../modules/assets/components/image-selector';
@@ -49,6 +49,10 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
     const [showSlotToEdit, setShowSlotToEdit] = useState(false);
     const [slotToEdit, setSlotToEdit] = useState<SlotToEdit | null>(null);
     const [editedSlotValue, setEditedSlotValue] = useState<string | null | undefined>(undefined);
+
+    const headerRef = useRef<HTMLIFrameElement | null>(null);
+    const contentRef = useRef<HTMLIFrameElement | null>(null);
+    const footerRef = useRef<HTMLIFrameElement | null>(null);
 
     useEffect(() => {
         // Reset the edited slot value if the slot to edit changes to prevent old value display.
@@ -110,12 +114,6 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
             return;
         }
 
-        const height: number = iframe
-            .contentWindow
-            .document
-            .body
-            .scrollHeight ?? 0;
-        iframe.style.height = height + 'px';
 
         const _slotRefs: Record<string, HTMLElement> = {};
 
@@ -157,6 +155,8 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                 };
             });
 
+        updateIframeHeight(iframe);
+
         setSlotRefs((prev) => ({
             ...prev,
             ..._slotRefs,
@@ -178,6 +178,9 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
             const slotNode = slotRefs[slotToEdit.key];
             if (slotNode != null) {
                 setSlotContent(slotNode, editedSlotValue);
+                updateIframeHeight(headerRef.current);
+                updateIframeHeight(contentRef.current);
+                updateIframeHeight(footerRef.current);
             }
         }
         handleCloseSlotToEdit();
@@ -203,10 +206,6 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                 )
                 : editedSlotValue
         );
-
-    useEffect(() => {
-        console.log('slots changed, updating iframes', slots);
-    }, [slots]);
 
     return (
         <>
@@ -241,6 +240,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         {
                             originalHeader != null &&
                             <Box
+                                ref={headerRef}
                                 onLoad={handleIframeLoad}
                                 component="iframe"
                                 title={`${label} Vorschau`}
@@ -256,6 +256,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         {
                             originalContent != null &&
                             <Box
+                                ref={contentRef}
                                 onLoad={handleIframeLoad}
                                 component="iframe"
                                 title={`${label} Vorschau`}
@@ -273,6 +274,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         {
                             originalFooter != null &&
                             <Box
+                                ref={footerRef}
                                 onLoad={handleIframeLoad}
                                 component="iframe"
                                 title={`${label} Vorschau`}
@@ -296,9 +298,10 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                     }}
                 >
                     <Button
+                        variant="contained"
                         onClick={handleClose}
                     >
-                        Übernehmen
+                        Schließen
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -375,9 +378,15 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                     }
                 </DialogContent>
 
-                <DialogActions>
+                <DialogActions
+                    sx={{
+                        display: 'flex',
+                        justifyContent: 'flex-start',
+                    }}
+                >
                     <Button
                         onClick={handleApplySlotToEdit}
+                        variant="contained"
                     >
                         Übernehmen
                     </Button>
@@ -394,6 +403,20 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
 
 function collapseWhiteSpacesInText(text: string): string {
     return text.replace(/\s+/g, ' ').trim();
+}
+
+function updateIframeHeight(iframe: HTMLIFrameElement | null): void {
+    if (iframe == null) {
+        return;
+    }
+
+    const height: number = iframe
+        .contentWindow
+        ?.document
+        .body
+        .scrollHeight ?? 0;
+
+    iframe.style.height = height + 'px';
 }
 
 function setSlotContent(slotNode: HTMLElement, value: string | null | undefined): void {
