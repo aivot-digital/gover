@@ -3,6 +3,8 @@
 *.iws
 *.iml
 *.ipr
+/.agents/
+/.codex/
 
 ### Backend ###
 /backend/target/
