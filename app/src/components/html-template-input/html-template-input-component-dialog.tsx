@@ -12,6 +12,8 @@ import {HtmlTemplateInputValue} from '../../models/elements/form/input/html-temp
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {MarkdownContent} from '../markdown-content/markdown-content';
 
+const contentIframeId = 'html-template-input-component-dialog-content';
+
 interface HtmlTemplateInputComponentDialogProps {
     label: string;
     asset: VStorageIndexItemWithAssetEntity | null;
@@ -114,8 +116,16 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
             return;
         }
 
-
         const _slotRefs: Record<string, HTMLElement> = {};
+
+        if (iframe.id == contentIframeId) {
+            iframe
+                .contentWindow
+                .document
+                .body
+                .style
+                .padding = '2cm';
+        }
 
         iframe
             .contentWindow
@@ -240,6 +250,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         {
                             originalHeader != null &&
                             <Box
+                                id="html-template-input-component-dialog-header"
                                 ref={headerRef}
                                 onLoad={handleIframeLoad}
                                 component="iframe"
@@ -256,6 +267,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         {
                             originalContent != null &&
                             <Box
+                                id={contentIframeId}
                                 ref={contentRef}
                                 onLoad={handleIframeLoad}
                                 component="iframe"
@@ -266,7 +278,6 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                                     width: '100%',
                                     minHeight: '100%',
                                     border: 'none',
-                                    p: '2cm',
                                 }}
                             />
                         }
@@ -274,6 +285,7 @@ export function HtmlTemplateInputComponentDialog(props: DialogProps & HtmlTempla
                         {
                             originalFooter != null &&
                             <Box
+                                id="html-template-input-component-dialog-footer"
                                 ref={footerRef}
                                 onLoad={handleIframeLoad}
                                 component="iframe"
@@ -415,7 +427,7 @@ function updateIframeHeight(iframe: HTMLIFrameElement | null): void {
         ?.document
         .body
         .scrollHeight ?? 0;
-
+    console.log(`Updating iframe ${iframe.id} height to ${height}px`);
     iframe.style.height = height + 'px';
 }
 
