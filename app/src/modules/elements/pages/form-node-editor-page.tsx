@@ -67,6 +67,7 @@ import {cloneElement} from '../../../utils/clone-element';
 import {ProcessNodeEntity} from '../../process/entities/process-node-entity';
 import {ProcessNodeApiService} from '../../process/services/process-node-api-service';
 import {ElementType} from '../../../data/element-type/element-type';
+import {getSingleUseSectionAddDisabledReason} from '../../../data/element-type/single-use-section-types';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {
     FormDetailsPageMoreMenu,
@@ -726,6 +727,12 @@ export function FormNodeEditorPage() {
 
     const handleCloneElement = (element: AnyElement) => {
         if (formLayout == null) {
+            return;
+        }
+
+        const disabledReason = getSingleUseSectionAddDisabledReason(formLayout, element.type);
+        if (disabledReason != null) {
+            dispatch(showErrorSnackbar(disabledReason));
             return;
         }
 

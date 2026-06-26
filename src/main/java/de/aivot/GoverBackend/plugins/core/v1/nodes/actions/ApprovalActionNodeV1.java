@@ -18,6 +18,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.content.SpacerContent
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
@@ -77,15 +78,18 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
     private static final String OUTPUT_REMARK = "remark";
     private static final String OUTPUT_PROCESSED_BY_USER_ID = "processedByUserId";
     private static final String OUTPUT_PROCESSED_AT = "processedAt";
+    private static final String OUTPUT_UNMAPPED = "unmapped";
 
     private final AssignmentContextAssigneeResolverService assigneeResolverService;
     private final ElementDataTransformService elementDataTransformService;
     private final TemplateRenderService templateRenderService;
+    private final ElementDerivationService elementDerivationService;
 
-    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService, ElementDataTransformService elementDataTransformService, TemplateRenderService templateRenderService) {
+    public ApprovalActionNodeV1(AssignmentContextAssigneeResolverService assigneeResolverService, ElementDataTransformService elementDataTransformService, TemplateRenderService templateRenderService, ElementDerivationService elementDerivationService) {
         this.assigneeResolverService = assigneeResolverService;
         this.elementDataTransformService = elementDataTransformService;
         this.templateRenderService = templateRenderService;
+        this.elementDerivationService = elementDerivationService;
     }
 
     @Nonnull
@@ -218,6 +222,11 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
                         OUTPUT_PROCESSED_AT,
                         "Bearbeitet am",
                         "Der Zeitstempel der Entscheidung im ISO-Format."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_UNMAPPED,
+                        "Formular-Rohdaten",
+                        "Enthält alle Formulardaten unter der jeweiligen Element-ID des Feldes, unabhängig davon, ob ein Element über einen Datenschlüssel zugewiesen wurde oder nicht."
                 )
         );
     }
@@ -354,13 +363,6 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
 
     @Nonnull
     @Override
-    public Optional<ProcessNodeExecutionResult> onAutoSaveFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context,
-                                                                            @Nonnull AuthoredElementValues update) throws ResponseException, ProcessNodeExecutionException {
-        return ProcessNodeDefinition.super.onAutoSaveFromStaffTaskView(context, update);
-    }
-
-    @Nonnull
-    @Override
     public Optional<ProcessNodeExecutionResult> onEventFromStaffTaskView(@Nonnull ProcessNodeExecutionContextUIStaff<ApprovalConfiguration> context,
                                                                          @Nonnull AuthoredElementValues update,
                                                                          @Nonnull String event) throws ResponseException {
@@ -379,11 +381,18 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
             throw ResponseException.badRequest("Unbekannte Aktion: " + event);
         }
 
+        // Derive the effective values based on the staff task view and the saved staff task view data to store the unmapped field values in the unmapped output field
+        var staffTaskView = getStaffTaskView(context);
+        var effectiveValues = elementDerivationService
+                .derive(staffTaskView, update)
+                .getEffectiveValues();
+
         var nodeData = new HashMap<String, Object>();
         nodeData.put(OUTPUT_DECISION, decision);
         nodeData.put(OUTPUT_REMARK, remarkText);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
         nodeData.put(OUTPUT_PROCESSED_AT, IsoTimestampUtils.nowUtc());
+        nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
 
         var result = new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(port) // Set the desired output port

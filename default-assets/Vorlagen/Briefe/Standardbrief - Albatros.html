@@ -29,6 +29,12 @@
                 justify-content: space-between;
                 font-size: 10pt;
                 padding: 0.5cm;
+                gap: 0.25cm;
+            }
+
+            #date {
+                white-space: nowrap;
+                word-break: keep-all;
             }
         </style>
     </head>
@@ -38,11 +44,11 @@
                     data-slot="header_left"
                     data-slot-type="text"
                     data-slot-label="Titel des Briefs"
-                    data-slot-hint="Dieser Text wird in der Kopfzeile der PDF-Datei angezeigt. Er sollte den Titel des Briefs enthalten."
+                    data-slot-hint="Dieser Text wird in der Kopfzeile der PDF-Datei angezeigt. Die Kopfzeile wird auf jeder Seite der PDF-Datei angezeigt. Der Text sollte den Titel des Briefs enthalten."
             >
                 Standardbrief - Albatros
             </div>
-            <div>{{ _date_v1.today() }}</div>
+            <div id="date">{{ _date_v1.today() }}</div>
         </div>
     </body>
 </html>
@@ -134,7 +140,11 @@
                 flex: 2;
             }
 
-            #briefkopf .anschrift-absender-container .absender h2 {
+            #briefkopf .anschrift-absender-container .absender h2,
+            #briefkopf .anschrift-absender-container .absender h3,
+            #briefkopf .anschrift-absender-container .absender h4,
+            #briefkopf .anschrift-absender-container .absender h5,
+            #briefkopf .anschrift-absender-container .absender h6 {
                 margin-top: 0;
             }
 
@@ -153,8 +163,8 @@
                 <img
                         data-slot="logo"
                         data-slot-type="image"
-                        data-slot-label="Logo der ausstellenden Organisation"
-                        data-slot-hint="Dieses Bild wird Briefkopf angezeigt. Es sollte das Logo der ausstellenden Organisation enthalten."
+                        data-slot-label="Logo im Briefkopf"
+                        data-slot-hint="Dieses Bild wird im Briefkopf der ersten Seite der PDF-Datei angezeigt. Hier können Sie beispielsweise das Logo Ihrer Organisation einfügen."
                         width="200"
                         src="/api/public/assets/1/files/Logos/Logo%20-%20Bad%20Musterstadt.png"
                         alt="Logo"
@@ -165,6 +175,8 @@
                     <div
                             data-slot="absender_overline"
                             data-slot-type="text"
+                            data-slot-label="Absender im Briefkopf"
+                            data-slot-hint="Dieser Text wird im Briefkopf der ersten Seite der PDF-Datei angezeigt. Er sollte die Kontaktdaten des Absenders enthalten."
                             class="overline"
                     >
                         Stadtverwaltung &bullet; Bad Musterstadt &bullet; Musterstraße 123 &bullet; 12345 Bad
@@ -188,7 +200,9 @@
                             data-slot-label="Absender"
                             data-slot-hint="Dieser Text wird im Briefkopf der PDF-Datei angezeigt. Er sollte die Kontaktdaten des Absenders enthalten."
                     >
-                        <h2>Der Magistrat</h2>
+                        <p>
+                            Der Magistrat
+                        </p>
                         <p>
                             Fachdienst 50 - Soziale Leistungen <br/>
                             Postfach 12, 12345 Bad Musterstadt
@@ -197,7 +211,7 @@
                             Frau Mustersachbearbeiterin <br/>
                             Musterstraße 12, 12345 Bad Musterstadt <br/>
                             Tel.: 01234 5678 90 <br/>
-                            Fax.: 01234 5678 91 <br/>
+                            Fax: 01234 5678 91 <br/>
                             E-Mail: sozialamt@bad-musterstadt.de
                         </p>
                     </div>
@@ -215,26 +229,32 @@
                     class="betreff"
                     data-slot="betreff"
                     data-slot-type="text"
+                    data-slot-label="Betreff"
+                    data-slot-hint="Dieser Text wird vor dem Inhalt des Briefs angezeigt. Er sollte den Betreff des Briefs enthalten."
             >
-                Ihre Anfrage beim Sozialamt Bad Mustertstadt
+                Ihre Anfrage beim Sozialamt Bad Musterstadt
             </h2>
 
             <div
                     class="nachricht"
                     data-slot="nachricht"
                     data-slot-type="richtext"
+                    data-slot-label="Nachricht"
+                    data-slot-hint="Dieser Text wird als Nachricht im Brief angezeigt. Er sollte den Inhalt des Briefs enthalten."
             >
-                Hallo {{ $.person.vorname }} {{ $.person.nachname }}, <br/><br/>
-                dies ist Ihre Nachricht
+                Sehr geehrte/r {{ $.person.vorname }} {{ $.person.nachname }}, <br/><br/>
+                dies ist Ihre Nachricht.
             </div>
 
             <div
                     class="signatur"
                     data-slot="signatur"
                     data-slot-type="richtext"
+                    data-slot-label="Signatur"
+                    data-slot-hint="Dieser Text wird am Ende des Briefs angezeigt. Er sollte die Signatur des Absenders enthalten."
             >
                 Mit freundlichen Grüßen <br/>
-                Stadtverwaltung - Bad Musterstadt
+                Stadtverwaltung Bad Musterstadt
             </div>
         </div>
     </body>

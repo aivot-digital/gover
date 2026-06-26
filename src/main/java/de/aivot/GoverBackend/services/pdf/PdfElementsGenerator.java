@@ -12,6 +12,7 @@ import de.aivot.GoverBackend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -95,6 +96,14 @@ public class PdfElementsGenerator {
                     .toList();
             return new PdfElement(currentElement, null, children);
         } else if (currentElement instanceof GenericStepElement stepElement) {
+            var children = stepElement
+                    .getChildren()
+                    .stream()
+                    .map(child -> generatePdfElement(child, customerInput, skipTechnical))
+                    .filter(Objects::nonNull)
+                    .toList();
+            return new PdfElement(currentElement, null, children);
+        }  else if (currentElement instanceof IntroductionStepElement stepElement) {
             var children = stepElement
                     .getChildren()
                     .stream()

@@ -10,8 +10,9 @@ import {useTheme} from '@mui/material/styles';
 import {ELEMENT_TREE_LAYOUT} from '../element-tree-layout';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {showSuccessSnackbar} from '../../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {cloneElement} from '../../../utils/clone-element';
+import {getSingleUseSectionAddDisabledReason} from '../../../data/element-type/single-use-section-types';
 
 interface ElementTreeChildListProps<T extends AnyElement> {
     parents: Array<AnyElement>;
@@ -142,6 +143,12 @@ export function ElementTreeChildList<T extends AnyElement>(props: ElementTreeChi
                     onChange(updatedValue);
                 }}
                 onClone={(originalElement) => {
+                    const disabledReason = getSingleUseSectionAddDisabledReason(parents[parents.length - 1], originalElement.type);
+                    if (disabledReason != null) {
+                        dispatch(showErrorSnackbar(disabledReason));
+                        return;
+                    }
+
                     const updatedValue = [...value];
                     const clonedElement = cloneElement(originalElement);
                     updatedValue.splice(index + 1, 0, clonedElement);

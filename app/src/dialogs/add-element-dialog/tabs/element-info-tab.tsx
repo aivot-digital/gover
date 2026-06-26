@@ -1366,6 +1366,7 @@ export function ElementInfoTab({
                                    onAddElement,
                                    primaryActionLabel,
                                    primaryActionIcon,
+                                   primaryActionDisabledReason,
                                    onClose,
                                }: {
     type: ElementType,
@@ -1373,11 +1374,16 @@ export function ElementInfoTab({
     onAddElement: (element: AnyElement) => void,
     primaryActionLabel: string,
     primaryActionIcon: ReactNode,
+    primaryActionDisabledReason?: string,
     onClose: () => void,
 }) {
     const ElementIcon = getElementIconForType(type);
 
     const handleAddElement = () => {
+        if (primaryActionDisabledReason != null) {
+            return;
+        }
+
         const newElement = generateElementWithDefaultValues(type, parentElement);
         if (newElement != null) {
             onAddElement(newElement);
@@ -1393,6 +1399,8 @@ export function ElementInfoTab({
             primaryActionLabel={primaryActionLabel}
             primaryActionIcon={primaryActionIcon}
             onPrimaryAction={handleAddElement}
+            primaryActionDisabled={primaryActionDisabledReason != null}
+            primaryActionDisabledTooltip={primaryActionDisabledReason}
             onClose={onClose}
         >
             {elementDescriptions[type]}

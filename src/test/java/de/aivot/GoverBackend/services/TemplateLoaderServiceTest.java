@@ -202,7 +202,8 @@ class TemplateLoaderServiceTest {
                 "form-parts/allgemeine-informationen.html",
                 Map.of(
                         "base", createBaseContext(FormPdfScope.Blank),
-                        "form", form
+                        "form", form,
+                        "step", new PdfElement(introductionStep, null, List.of())
                 ),
                 TemplateMode.HTML
         );

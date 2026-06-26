@@ -1,5 +1,5 @@
 import React, {type ReactNode} from 'react';
-import {Box, Button, Typography} from '@mui/material';
+import {Box, Button, Tooltip, Typography} from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 
 interface SelectionListRowProps {
@@ -14,9 +14,23 @@ interface SelectionListRowProps {
     primaryActionLabel: string;
     primaryActionIcon: ReactNode;
     onPrimaryAction: () => void;
+    primaryActionDisabled?: boolean;
+    primaryActionDisabledTooltip?: string;
 }
 
 export function SelectionListRow(props: SelectionListRowProps): ReactNode {
+    const primaryAction = (
+        <Button
+            variant="contained"
+            size="small"
+            startIcon={props.primaryActionIcon}
+            onClick={props.onPrimaryAction}
+            disabled={props.primaryActionDisabled}
+        >
+            {props.primaryActionLabel}
+        </Button>
+    );
+
     return (
         <Box
             sx={{
@@ -26,6 +40,7 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                 px: 2.25,
                 py: 1.9,
                 bgcolor: props.selected ? 'action.hover' : 'transparent',
+                opacity: props.primaryActionDisabled === true ? 0.55 : 1,
             }}
         >
             <Box
@@ -104,14 +119,13 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                         {props.detailsLabel ?? 'Details'}
                     </Button>
                 }
-                <Button
-                    variant="contained"
-                    size="small"
-                    startIcon={props.primaryActionIcon}
-                    onClick={props.onPrimaryAction}
-                >
-                    {props.primaryActionLabel}
-                </Button>
+                {
+                    props.primaryActionDisabledTooltip != null ?
+                        <Tooltip title={props.primaryActionDisabledTooltip}>
+                            <span>{primaryAction}</span>
+                        </Tooltip> :
+                        primaryAction
+                }
             </Box>
         </Box>
     );

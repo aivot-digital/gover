@@ -69,6 +69,15 @@
         </div>
     </div>
 
+    <!-- /* Alle Kind-Elemente der Allgemeinen Informationen */ -->
+    <div style="display: flex; flex-wrap: wrap;">
+        <th:block
+                th:each="child : ${ step.children }"
+                th:insert="./form-parts/element-dispatcher.html"
+        >
+        </th:block>
+    </div>
+
     <!--/* Informationen zum Datenschutz */-->
     <div class="avoid-break-inside">
         <h3>

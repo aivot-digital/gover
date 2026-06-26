@@ -4,11 +4,14 @@ import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
 import de.aivot.GoverBackend.elements.models.elements.form.input.AssignmentContextInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.GoverBackend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.GoverBackend.nocode.services.NoCodeEvaluationService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
@@ -65,7 +68,8 @@ class ApprovalActionNodeV1Test {
         node = new ApprovalActionNodeV1(
                 assigneeResolverService,
                 new ElementDataTransformService(),
-                new PassthroughTemplateRenderService()
+                new PassthroughTemplateRenderService(),
+                derivationService()
         );
     }
 
@@ -240,6 +244,14 @@ class ApprovalActionNodeV1Test {
                 .setPreferPreviousTaskAssignee(false)
                 .setPreferUninvolvedUser(false)
                 .setPreferProcessInstanceAssignee(false);
+    }
+
+    private static ElementDerivationService derivationService() {
+        return new ElementDerivationService(
+                new JavascriptEngineFactoryService(List.of()),
+                new NoCodeEvaluationService(List.of()),
+                new ElementDataTransformService()
+        );
     }
 
     private static AuthoredElementValues configurationWithPreferenceOnlyAssignmentContext() {

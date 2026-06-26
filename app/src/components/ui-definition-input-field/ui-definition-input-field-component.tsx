@@ -35,7 +35,7 @@ import {generateComponentTitle} from '../../utils/generate-component-title';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {useConfirm} from '../../providers/confirm-provider';
 import {cloneElement} from '../../utils/clone-element';
-import {showSuccessSnackbar} from '../../slices/snackbar-slice';
+import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {isRootElement} from '../../models/elements/form-layout-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
@@ -57,6 +57,7 @@ import {
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {ViewDispatcherMode} from '../view-dispatcher/view-dispatcher.context';
 import {normalizeUiDefinitionForStorage} from '../../utils/ui-definition-utils';
+import {getSingleUseSectionAddDisabledReason} from '../../data/element-type/single-use-section-types';
 
 interface UiDefinitionInputFieldComponentProps {
     label: string;
@@ -325,6 +326,12 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const handleCloneElement = (element: AnyElement) => {
         const currentDraftValue = draftValueRef.current;
         if (currentDraftValue == null) {
+            return;
+        }
+
+        const disabledReason = getSingleUseSectionAddDisabledReason(currentDraftValue, element.type);
+        if (disabledReason != null) {
+            dispatch(showErrorSnackbar(disabledReason));
             return;
         }
 
