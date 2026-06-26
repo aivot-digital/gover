@@ -9,7 +9,7 @@ insert into themes (id,
                     warning,
                     error)
 values (1,
-        'VeSoz',
+        'VVSS',
         '#05378B',
         '#142D56',
         '#F8D27C',
