@@ -130,7 +130,7 @@ export function DialogList<T>(props: DialogListProps<T>) {
 
     return (
         <>
-            <List>
+            <List disablePadding>
                 {
                     items.map((item) => (
                         <ListItemButton

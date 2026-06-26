@@ -8,6 +8,7 @@ import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {IdentityProviderListDTO} from '../modules/identity/models/identity-provider-list-dto';
 import {isApiError} from '../models/api-error';
 import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
+import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
 import {generateId} from '../utils/id-utils';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
@@ -124,7 +125,6 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                 spacing={2}
                 alignItems="center"
                 justifyContent="space-between"
-                marginBottom={0.75}
             >
                 <Typography variant="subtitle2">
                     {element.label}{element.required ? ' *' : ''}
@@ -145,27 +145,48 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                 shouldShowEmptyState &&
                 <Box
                     sx={(theme) => ({
-                        my: 2,
-                        px: 3,
-                        py: 2.4,
+                        px: 1.5,
+                        py: 1.25,
+                        mt: 0.75,
+                        minHeight: 56,
+                        display: 'flex',
+                        alignItems: 'center',
                         borderRadius: 1,
-                        border: '1px dashed',
+                        border: errors != null || providersError != null
+                            ? '1px solid'
+                            : '1px dashed',
                         borderColor: errors != null || providersError != null
-                            ? alpha(theme.palette.error.main, 0.35)
+                            ? theme.palette.error.main
                             : alpha(theme.palette.text.primary, 0.18),
                         textAlign: 'left',
                     })}
                 >
-                    <Typography
-                        variant="body2"
-                        color="text.secondary"
+                    <Stack
+                        direction="row"
+                        spacing={1}
+                        alignItems="center"
                     >
-                        Keine Identitäten vorhanden.{' '}
-                        {
-                            element.required &&
-                            <>Mindestens eine Identität ist erforderlich.</>
-                        }
-                    </Typography>
+                        <AccountCircle
+                            sx={{
+                                flexShrink: 0,
+                                fontSize: 20,
+                                color: 'text.secondary',
+                            }}
+                        />
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                                minWidth: 0,
+                            }}
+                        >
+                            Keine Identitäten vorhanden.{' '}
+                            {
+                                element.required &&
+                                <>Mindestens eine Identität ist erforderlich.</>
+                            }
+                        </Typography>
+                    </Stack>
                 </Box>
             }
 
@@ -174,6 +195,9 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                 <Stack
                     direction="column"
                     spacing={2}
+                    sx={{
+                        mt: 0.75,
+                    }}
                 >
                     <DialogList
                         dialogTitle="Identität bearbeiten"
@@ -196,7 +220,7 @@ export function IdentityConfigView(props: BaseViewProps<IdentityConfigElement, I
                     error
                     sx={{
                         mx: 1.75,
-                        mt: -1,
+                        mt: shouldShowEmptyState ? 0.75 : -1,
                     }}
                 >
                     {errorText}

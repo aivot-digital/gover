@@ -4,7 +4,8 @@ import {
     Button,
     Dialog,
     DialogActions,
-    DialogContent, FormHelperText,
+    DialogContent,
+    FormHelperText,
     ListItemIcon,
     ListItemText,
     Menu,
@@ -14,7 +15,9 @@ import {
     Typography,
     useTheme,
 } from '@mui/material';
+import {alpha} from '@mui/material/styles';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import MobileLayout from '@aivot/mui-material-symbols-400-outlined/dist/mobile-layout/MobileLayout';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {flattenElements} from '../../utils/flatten-elements';
 import {getElementNameForType} from '../../data/element-type/element-names';
@@ -129,6 +132,7 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
     const summary = useMemo(() => {
         return buildSummary(value);
     }, [value]);
+    const shouldShowEmptyState = value == null;
 
     const expectedRootTypeLabel = useMemo(() => {
         if (expectedRootType == null) {
@@ -388,6 +392,21 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
         setSettingsMenuAnchorEl(null);
     }, []);
 
+    const expectedRootTypeHint = expectedRootTypeLabel == null ? null : (
+        <Hint
+            summary={`Modellieren Sie eine UI-Struktur mit einem Element vom Typ ${expectedRootTypeLabel} als Basis.`}
+            detailsTitle="UI-Definition"
+            details={
+                <Typography>
+                    Diese UI-Definition bildet ein Layout-Element vom
+                    Typ <strong>{expectedRootTypeLabel}</strong> ab.
+                    Über den Editor können Sie die Struktur der UI-Definition anpassen, um die
+                    gewünschte Benutzeroberfläche zu erstellen.
+                </Typography>
+            }
+        />
+    );
+
     return (
         <>
             <Box
@@ -419,76 +438,118 @@ export function UiDefinitionInputFieldComponent(props: UiDefinitionInputFieldCom
                 </Button>
             </Box>
 
-            <Box
-                sx={{
-                    border: '1px solid',
-                    borderColor: error != null ? 'error.main' : 'divider',
-                    borderRadius: 1,
-                    px: 1.5,
-                    py: 1.25,
-                    minHeight: 52,
-                    display: 'flex',
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    gap: 0.5,
-                }}
-            >
-                <Typography
-                    variant="body2"
-                    title={summary}
-                    sx={{
-                        color: value == null ? 'text.secondary' : 'text.primary',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical',
-                        overflow: 'hidden',
-                        lineHeight: 1.4,
-                    }}
-                >
-                    {summary}
-                </Typography>
-
-                {
-                    expectedRootTypeLabel != null &&
-                    <Hint
-                        summary={`Modellieren Sie eine UI-Struktur mit einem Element vom Typ ${expectedRootTypeLabel} als Basis.`}
-                        detailsTitle="UI-Definition"
-                        details={
-                            <Typography>
-                                Diese UI-Definition bildet ein Layout-Element vom
-                                Typ <strong>{expectedRootTypeLabel}</strong> ab.
-                                Über den Editor können Sie die Struktur der UI-Definition anpassen, um die
-                                gewünschte Benutzeroberfläche zu erstellen.
-                            </Typography>
-                        }
-                    />
-                }
-            </Box>
-
             {
-                error == null &&
-                hint != null &&
-                <Typography
-                    sx={{
-                        mt: 1,
-                        color: 'text.secondary',
-                    }}
-                    variant="caption"
-                >
-                    {hint}
-                </Typography>
+                shouldShowEmptyState ?
+                    <Box
+                        sx={(theme) => ({
+                            px: 1.5,
+                            py: 1.25,
+                            minHeight: 56,
+                            display: 'flex',
+                            alignItems: 'center',
+                            borderRadius: 1,
+                            border: error != null
+                                ? '1px solid'
+                                : '1px dashed',
+                            borderColor: error != null
+                                ? theme.palette.error.main
+                                : alpha(theme.palette.text.primary, 0.18),
+                            textAlign: 'left',
+                        })}
+                    >
+                        <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                            sx={{
+                                width: '100%',
+                            }}
+                        >
+                            <MobileLayout
+                                sx={{
+                                    flexShrink: 0,
+                                    fontSize: 20,
+                                    color: 'text.secondary',
+                                }}
+                            />
+                            <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                title={summary}
+                                sx={{
+                                    flexGrow: 1,
+                                    lineHeight: 1.4,
+                                    minWidth: 0,
+                                }}
+                            >
+                                {summary}
+                            </Typography>
+
+                            {
+                                expectedRootTypeHint != null &&
+                                <Box sx={{flexShrink: 0, ml: 'auto'}}>
+                                    {expectedRootTypeHint}
+                                </Box>
+                            }
+                        </Stack>
+                    </Box> :
+                    <Box
+                        sx={{
+                            border: '1px solid',
+                            borderColor: error != null ? 'error.main' : 'divider',
+                            borderRadius: 1,
+                            px: 1.5,
+                            py: 1.25,
+                            minHeight: 56,
+                            display: 'flex',
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: 1,
+                        }}
+                    >
+                        <MobileLayout
+                            sx={{
+                                flexShrink: 0,
+                                fontSize: 20,
+                                color: 'text.secondary',
+                            }}
+                        />
+                        <Typography
+                            variant="body2"
+                            title={summary}
+                            sx={{
+                                flexGrow: 1,
+                                color: 'text.primary',
+                                display: '-webkit-box',
+                                WebkitLineClamp: 2,
+                                WebkitBoxOrient: 'vertical',
+                                overflow: 'hidden',
+                                lineHeight: 1.4,
+                                minWidth: 0,
+                            }}
+                        >
+                            {summary}
+                        </Typography>
+
+                        {
+                            expectedRootTypeHint != null &&
+                            <Box sx={{flexShrink: 0, ml: 'auto'}}>
+                                {expectedRootTypeHint}
+                            </Box>
+                        }
+                    </Box>
             }
 
             {
-                error != null &&
+                (error != null || hint != null) &&
                 <FormHelperText
-                    error
+                    error={error != null}
                     sx={{
                         mx: 1.75,
+                        mt: 0.75,
                     }}
                 >
-                    {error}
+                    {error ?? hint}
                 </FormHelperText>
             }
 
