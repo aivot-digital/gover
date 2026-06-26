@@ -11,6 +11,8 @@ import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete'
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 import ApprovalDelegation from '@aivot/mui-material-symbols-400-outlined/dist/approval-delegation/ApprovalDelegation';
 import {FormEntity} from '../entities/form-entity';
+import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
+import {useNotImplemented} from '../../../hooks/use-not-implemented';
 
 interface FormsListRowMenuProps {
     anchorEl: HTMLElement | null;
@@ -33,17 +35,20 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
         onDeleteForm,
     } = props;
 
+    const notImplemented = useNotImplemented();
+
     const dispatch = useAppDispatch();
 
     const handleFormLinkCopy = async () => {
         try {
-            await navigator
-                .clipboard
-                .writeText(createCustomerPath(form.slug));
+            const success = await copyToClipboardText(createCustomerPath(form.slug));
+            if (!success) {
+                throw new Error('copy failed');
+            }
             dispatch(showSuccessSnackbar('Formularlink in Zwischenablage kopiert'));
         } catch (err) {
             console.error(err);
-            dispatch(showSuccessSnackbar('Formularlink konnte nicht kopiert werden'));
+            dispatch(showErrorSnackbar('Formularlink konnte nicht kopiert werden'));
         }
 
         onClose();
@@ -125,14 +130,15 @@ export function FormsListRowMenu(props: FormsListRowMenuProps) {
                     <MoveItem />
                 </ListItemIcon>
                 <ListItemText>
-                    Formular an Fachbereich übertragen
+                    Formular an Organisationseinheit übertragen
                 </ListItemText>
             </MenuItem>
 
             <MenuItem
                 onClick={() => {
-                    onManageAccess(form);
-                    onClose();
+                    notImplemented()
+                    //onManageAccess(form);
+                    //onClose();
                 }}
             >
                 <ListItemIcon>

@@ -7,8 +7,7 @@ import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
 
 import java.net.URI;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import java.time.Instant;
 
 public class GiroPaymentStartResponse {
     private int rc;
@@ -27,7 +26,7 @@ public class GiroPaymentStartResponse {
         xInfo.setTransactionRedirectUrl(URI.create(redirect));
         xInfo.setPaymentMethod(XBezahldienstPaymentMethod.GIROPAY);
         xInfo.setPaymentMethodDetail(null);
-        xInfo.setTransactionTimestamp(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
+        xInfo.setTransactionTimestamp(Instant.now().toString());
         xInfo.setTransactionUrl(URI.create(paymentProviderUrl));
 
         xTransaction.setPaymentRequest(xRequest);

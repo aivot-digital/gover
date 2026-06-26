@@ -3,9 +3,10 @@ package de.aivot.GoverBackend.identity.constants;
 public final class IdentityQueryParameterConstants {
     public static final String ORIGIN = "origin";
     public static final String ADDITIONAL_SCOPES = "additionalScopes";
+    public static final String RELATED_PROCESS_NODE_ID = "relatedProcessNodeId";
+    public static final String CLEAR = "clear";
 
     public static final String RESULT_STATE_CODE = "identity-state";
-    public static final String RESULT_IDENTITY_ID = "identity-id";
 
     public static final String AUTH_ENDPOINT_CLIENT_ID = "client_id";
     public static final String AUTH_ENDPOINT_CLIENT_SECRET = "client_secret";

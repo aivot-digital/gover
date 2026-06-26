@@ -6,10 +6,14 @@ import {NumberFieldComponent} from '../number-field/number-field-component';
 import {MultiCheckboxComponent} from '../multi-checkbox-field/multi-checkbox-component';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {SystemApiService} from '../../modules/system/system-api-service';
+import {TextFieldComponent} from '../text-field/text-field-component';
 
-export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, ElementTreeEntity>) {
+export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
+    const {
+        hasSummaryLayoutParent,
+    } = props;
+
     const dispatch = useAppDispatch();
     const [allowedExtensions, setAllowedExtensions] = useState<string[]>();
 
@@ -27,6 +31,10 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
         props.element.minFiles != null && props.element.minFiles > 0 &&
         props.element.maxFiles != null && props.element.maxFiles > 0 &&
         props.element.minFiles > props.element.maxFiles;
+
+    if (hasSummaryLayoutParent) {
+        return null;
+    }
 
     return (
         <Grid
@@ -104,6 +112,19 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement, Eleme
                     </Grid>
                 </>
             }
+            <Grid size={12}>
+                <TextFieldComponent
+                    label="Dateiname bei Einreichung"
+                    value={props.element.submittedFileName ?? undefined}
+                    onChange={(val) => {
+                        props.onPatch({
+                            submittedFileName: val,
+                        });
+                    }}
+                    hint="Optional. Wenn gesetzt, werden hochgeladene Dateien bei der Einreichung unter diesem Dateinamen gespeichert. Ohne Endung wird die Original-Endung übernommen."
+                    disabled={!props.editable}
+                />
+            </Grid>
             <Grid size={12}>
                 <MultiCheckboxComponent
                     label="Erlaubte Dateiendungen"

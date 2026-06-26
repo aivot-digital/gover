@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.permissions.entities;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.IdClass;
@@ -20,6 +21,18 @@ public class VUserDepartmentPermissionEntity {
     @Nonnull
     private Integer departmentId;
 
+    @Nullable
+    private Boolean isDirectMember;
+
+    @Nullable
+    private Boolean isIndirectMember;
+
+    @Nullable
+    private List<String> directSystemRolePermissions;
+
+    @Nullable
+    private List<String> indirectSystemRolePermissions;
+
     @Nonnull
     private List<String> systemRolePermissions;
 
@@ -29,6 +42,12 @@ public class VUserDepartmentPermissionEntity {
     @Nonnull
     private List<Integer> systemRoleIds;
 
+    @Nullable
+    private List<String> directDomainRolePermissions;
+
+    @Nullable
+    private List<String> indirectDomainRolePermissions;
+
     @Nonnull
     private List<String> domainRolePermissions;
 
@@ -37,6 +56,15 @@ public class VUserDepartmentPermissionEntity {
 
     @Nonnull
     private List<Integer> domainRoleIds;
+
+    @Nullable
+    private List<String> directPermissions;
+
+    @Nullable
+    private List<String> indirectPermissions;
+
+    @Nullable
+    private List<String> deputyForUserIds;
 
     @Nonnull
     private List<String> permissions;
@@ -58,6 +86,46 @@ public class VUserDepartmentPermissionEntity {
 
     public VUserDepartmentPermissionEntity setDepartmentId(@Nonnull Integer departmentId) {
         this.departmentId = departmentId;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getIsDirectMember() {
+        return isDirectMember;
+    }
+
+    public VUserDepartmentPermissionEntity setIsDirectMember(@Nullable Boolean isDirectMember) {
+        this.isDirectMember = isDirectMember;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getIsIndirectMember() {
+        return isIndirectMember;
+    }
+
+    public VUserDepartmentPermissionEntity setIsIndirectMember(@Nullable Boolean isIndirectMember) {
+        this.isIndirectMember = isIndirectMember;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getDirectSystemRolePermissions() {
+        return directSystemRolePermissions;
+    }
+
+    public VUserDepartmentPermissionEntity setDirectSystemRolePermissions(@Nullable List<String> directSystemRolePermissions) {
+        this.directSystemRolePermissions = directSystemRolePermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getIndirectSystemRolePermissions() {
+        return indirectSystemRolePermissions;
+    }
+
+    public VUserDepartmentPermissionEntity setIndirectSystemRolePermissions(@Nullable List<String> indirectSystemRolePermissions) {
+        this.indirectSystemRolePermissions = indirectSystemRolePermissions;
         return this;
     }
 
@@ -91,6 +159,26 @@ public class VUserDepartmentPermissionEntity {
         return this;
     }
 
+    @Nullable
+    public List<String> getDirectDomainRolePermissions() {
+        return directDomainRolePermissions;
+    }
+
+    public VUserDepartmentPermissionEntity setDirectDomainRolePermissions(@Nullable List<String> directDomainRolePermissions) {
+        this.directDomainRolePermissions = directDomainRolePermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getIndirectDomainRolePermissions() {
+        return indirectDomainRolePermissions;
+    }
+
+    public VUserDepartmentPermissionEntity setIndirectDomainRolePermissions(@Nullable List<String> indirectDomainRolePermissions) {
+        this.indirectDomainRolePermissions = indirectDomainRolePermissions;
+        return this;
+    }
+
     @Nonnull
     public List<String> getDomainRolePermissions() {
         return domainRolePermissions;
@@ -118,6 +206,36 @@ public class VUserDepartmentPermissionEntity {
 
     public VUserDepartmentPermissionEntity setDomainRoleIds(@Nonnull List<Integer> domainRoleIds) {
         this.domainRoleIds = domainRoleIds;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getDirectPermissions() {
+        return directPermissions;
+    }
+
+    public VUserDepartmentPermissionEntity setDirectPermissions(@Nullable List<String> directPermissions) {
+        this.directPermissions = directPermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getIndirectPermissions() {
+        return indirectPermissions;
+    }
+
+    public VUserDepartmentPermissionEntity setIndirectPermissions(@Nullable List<String> indirectPermissions) {
+        this.indirectPermissions = indirectPermissions;
+        return this;
+    }
+
+    @Nullable
+    public List<String> getDeputyForUserIds() {
+        return deputyForUserIds;
+    }
+
+    public VUserDepartmentPermissionEntity setDeputyForUserIds(@Nullable List<String> deputyForUserIds) {
+        this.deputyForUserIds = deputyForUserIds;
         return this;
     }
 

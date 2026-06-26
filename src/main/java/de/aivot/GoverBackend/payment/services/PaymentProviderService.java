@@ -19,7 +19,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.util.*;
 
@@ -48,8 +47,8 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     }
 
     @Nonnull
-    public Optional<PaymentProviderDefinition> getProviderDefinition(@Nonnull String providerKey) {
-        return paymentProviderDefinitionsService.getProviderDefinition(providerKey);
+    public Optional<PaymentProviderDefinition> getProviderDefinition(@Nonnull String providerKey, @Nonnull Integer providerVersion) {
+        return paymentProviderDefinitionsService.getProviderDefinition(providerKey, providerVersion);
     }
 
     @Nonnull
@@ -58,8 +57,14 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
             @Nonnull PaymentProviderEntity paymentProviderEntity
     ) throws ResponseException {
         // Retrieve the payment provider definition
-        getProviderDefinition(paymentProviderEntity.getPaymentProviderDefinitionKey())
-                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
+        getProviderDefinition(
+                paymentProviderEntity.getPaymentProviderDefinitionKey(),
+                paymentProviderEntity.getPaymentProviderDefinitionVersion()
+        ).orElseThrow(() -> new ResponseException(
+                HttpStatus.BAD_REQUEST,
+                "Der ausgewählte Zahlungsanbieter in Version %d ist nicht vorhanden"
+                        .formatted(paymentProviderEntity.getPaymentProviderDefinitionVersion())
+        ));
 
         // Create new key for the payment provider entity
         paymentProviderEntity.setKey(UUID.randomUUID());
@@ -114,19 +119,27 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
             @Nonnull PaymentProviderEntity existingEntity
     ) throws ResponseException {
         // Retrieve the payment provider definition
-        var providerDefinition = getProviderDefinition(entity.getPaymentProviderDefinitionKey())
-                .orElseThrow(() -> new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden"));
-
-        // Test if the provider key is valid
-        if (providerDefinition == null) {
-            throw new ResponseException(HttpStatus.BAD_REQUEST, "Der ausgewählte Zahlungsanbieter ist nicht vorhanden");
+        if (!Objects.equals(existingEntity.getPaymentProviderDefinitionKey(), entity.getPaymentProviderDefinitionKey()) ||
+                !Objects.equals(existingEntity.getPaymentProviderDefinitionVersion(), entity.getPaymentProviderDefinitionVersion())) {
+            throw new ResponseException(
+                    HttpStatus.BAD_REQUEST,
+                    "Der ausgewählte Zahlungsanbieter und seine Version können nach der Erstellung nicht mehr geändert werden"
+            );
         }
+
+        getProviderDefinition(
+                existingEntity.getPaymentProviderDefinitionKey(),
+                existingEntity.getPaymentProviderDefinitionVersion()
+        ).orElseThrow(() -> new ResponseException(
+                HttpStatus.BAD_REQUEST,
+                "Der ausgewählte Zahlungsanbieter in Version %d ist nicht vorhanden"
+                        .formatted(existingEntity.getPaymentProviderDefinitionVersion())
+        ));
 
         // Update the existing payment provider entity
         existingEntity.setName(entity.getName());
         existingEntity.setDescription(entity.getDescription());
-        // Do not update the provider key because changing the provider key can break existing transactions
-        // existingEntity.setProviderKey(entity.getProviderKey());
+        // Do not update the provider key or version because changing them can break existing transactions.
         existingEntity.setConfig(entity.getConfig());
         existingEntity.setIsEnabled(entity.getIsEnabled());
         existingEntity.setTestProvider(entity.getTestProvider());

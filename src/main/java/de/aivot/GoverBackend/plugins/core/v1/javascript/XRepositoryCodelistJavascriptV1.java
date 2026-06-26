@@ -4,7 +4,7 @@ import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputEleme
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngine;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.xrepository.services.XRepositoryCodeListService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -44,7 +44,7 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -107,7 +107,15 @@ public class XRepositoryCodelistJavascriptV1 implements JavascriptFunctionProvid
             return ProxyArray.fromArray();
         }
 
+        var items = codeList
+                .stream()
+                .map(option -> Map.of(
+                        "value", option.getValue(),
+                        "label", option.getLabel()
+                ))
+                .toList();
+
         return JavascriptEngine
-                .collectionToProxyArray(codeList);
+                .collectionToProxyArray(items);
     }
 }

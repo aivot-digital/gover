@@ -9,10 +9,15 @@ export enum ProcessNodeType {
 
 export interface ProcessNodeProvider {
     key: string;
-    version: number;
+    componentKey: string;
+    componentType: string;
+    componentVersion: string;
+    deprecationNotice: string | null;
+    majorVersion: number;
     type: ProcessNodeType;
     name: string;
     description: string;
+    parentPluginKey: string;
     ports: ProcessNodePort[];
     outputs: ProcessNodeOutput[];
 }

@@ -3,8 +3,8 @@ package de.aivot.GoverBackend.elements.models.elements.layout;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
+import de.aivot.GoverBackend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -14,21 +14,29 @@ import jakarta.annotation.Nullable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
+import java.util.UUID;
 
-public class FormLayoutElement extends BaseElement implements LayoutElement<StepElement> {
+public class FormLayoutElement extends BaseElement implements LayoutElement<BaseStepElement> {
     private String tabTitle;
-    private List<StepElement> children = new LinkedList<>();
-
-    private String expiring;
-
-    private String privacyText;
+    private List<BaseStepElement> children = new LinkedList<>();
 
     private String offlineSubmissionText;
     private Boolean offlineSignatureNeeded;
 
-    private IntroductionStepElement introductionStep;
-    private SummaryStepElement summaryStep;
-    private SubmitStepElement submitStep;
+    private String publicTitle;
+    private Boolean showOnFormIndexPage = true;
+
+    private Integer managingDepartmentId;
+    private Integer responsibleDepartmentId;
+    private Integer legalSupportDepartmentId;
+    private Integer technicalSupportDepartmentId;
+    private Integer imprintDepartmentId;
+    private Integer privacyDepartmentId;
+    private Integer accessibilityDepartmentId;
+
+    private Integer themeId;
+
+    private UUID pdfTemplateKey;
 
     public FormLayoutElement() {
         super(ElementType.FormLayout);
@@ -36,45 +44,30 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         FormLayoutElement that = (FormLayoutElement) o;
-
-        if (!Objects.equals(tabTitle, that.tabTitle)) return false;
-        if (!Objects.equals(children, that.children)) return false;
-        if (!Objects.equals(expiring, that.expiring)) return false;
-        if (!Objects.equals(privacyText, that.privacyText)) return false;
-        if (!Objects.equals(offlineSubmissionText, that.offlineSubmissionText)) return false;
-        if (!Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded)) return false;
-        if (!Objects.equals(introductionStep, that.introductionStep))
-            return false;
-        if (!Objects.equals(summaryStep, that.summaryStep)) return false;
-        return Objects.equals(submitStep, that.submitStep);
+        return Objects.equals(tabTitle, that.tabTitle) && Objects.equals(children, that.children) &&
+                Objects.equals(offlineSubmissionText, that.offlineSubmissionText) && Objects.equals(offlineSignatureNeeded, that.offlineSignatureNeeded) &&
+                Objects.equals(publicTitle, that.publicTitle) && Objects.equals(showOnFormIndexPage, that.showOnFormIndexPage) &&
+                Objects.equals(managingDepartmentId, that.managingDepartmentId) &&
+                Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) &&
+                Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) &&
+                Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) &&
+                Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + (tabTitle != null ? tabTitle.hashCode() : 0);
-        result = 31 * result + (children != null ? children.hashCode() : 0);
-        result = 31 * result + (expiring != null ? expiring.hashCode() : 0);
-        result = 31 * result + (privacyText != null ? privacyText.hashCode() : 0);
-        result = 31 * result + (offlineSubmissionText != null ? offlineSubmissionText.hashCode() : 0);
-        result = 31 * result + (offlineSignatureNeeded != null ? offlineSignatureNeeded.hashCode() : 0);
-        result = 31 * result + (introductionStep != null ? introductionStep.hashCode() : 0);
-        result = 31 * result + (summaryStep != null ? summaryStep.hashCode() : 0);
-        result = 31 * result + (submitStep != null ? submitStep.hashCode() : 0);
-        return result;
+        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, themeId, pdfTemplateKey);
     }
 
     @JsonIgnore
     public String getCleanedPrivacyText() {
-        if (privacyText == null) {
+        if (getPrivacyText() == null) {
             return null;
         }
-        return privacyText.replaceAll("\\{[^}]+}", "");
+        return getPrivacyText().replaceAll("\\{[^}]+}", "");
     }
 
     // region Getters & Setters
@@ -90,7 +83,7 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
 
     @Nonnull
     @Override
-    public List<StepElement> getChildren() {
+    public List<BaseStepElement> getChildren() {
         if (children == null) {
             children = new LinkedList<>();
         }
@@ -99,7 +92,7 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
 
     @Nonnull
     @Override
-    public FormLayoutElement setChildren(@Nullable List<StepElement> children) {
+    public FormLayoutElement setChildren(@Nullable List<BaseStepElement> children) {
         if (children == null) {
             children = new LinkedList<>();
         }
@@ -107,22 +100,12 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
         return this;
     }
 
-    public String getExpiring() {
-        return expiring;
-    }
-
-    public FormLayoutElement setExpiring(String expiring) {
-        this.expiring = expiring;
-        return this;
-    }
-
+    @JsonIgnore
     public String getPrivacyText() {
-        return privacyText;
-    }
-
-    public FormLayoutElement setPrivacyText(String privacyText) {
-        this.privacyText = privacyText;
-        return this;
+        return findChild(c -> c.getType() == ElementType.IntroductionStep)
+                .filter(IntroductionStepElement.class::isInstance)
+                .map(c -> ((IntroductionStepElement) c).getPrivacyText())
+                .orElse(null);
     }
 
     public String getOfflineSubmissionText() {
@@ -143,31 +126,132 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Step
         return this;
     }
 
+    public String getPublicTitle() {
+        return publicTitle;
+    }
+
+    public FormLayoutElement setPublicTitle(String publicTitle) {
+        this.publicTitle = publicTitle;
+        return this;
+    }
+
+    public Boolean getShowOnFormIndexPage() {
+        return showOnFormIndexPage;
+    }
+
+    public FormLayoutElement setShowOnFormIndexPage(Boolean showOnFormIndexPage) {
+        this.showOnFormIndexPage = showOnFormIndexPage;
+        return this;
+    }
+
+    public Integer getManagingDepartmentId() {
+        return managingDepartmentId;
+    }
+
+    public FormLayoutElement setManagingDepartmentId(Integer managingDepartmentId) {
+        this.managingDepartmentId = managingDepartmentId;
+        return this;
+    }
+
+    public Integer getResponsibleDepartmentId() {
+        return responsibleDepartmentId;
+    }
+
+    public FormLayoutElement setResponsibleDepartmentId(Integer responsibleDepartmentId) {
+        this.responsibleDepartmentId = responsibleDepartmentId;
+        return this;
+    }
+
+    public Integer getLegalSupportDepartmentId() {
+        return legalSupportDepartmentId;
+    }
+
+    public FormLayoutElement setLegalSupportDepartmentId(Integer legalSupportDepartmentId) {
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
+        return this;
+    }
+
+    public Integer getTechnicalSupportDepartmentId() {
+        return technicalSupportDepartmentId;
+    }
+
+    public FormLayoutElement setTechnicalSupportDepartmentId(Integer technicalSupportDepartmentId) {
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        return this;
+    }
+
+    public Integer getImprintDepartmentId() {
+        return imprintDepartmentId;
+    }
+
+    public FormLayoutElement setImprintDepartmentId(Integer imprintDepartmentId) {
+        this.imprintDepartmentId = imprintDepartmentId;
+        return this;
+    }
+
+    public Integer getPrivacyDepartmentId() {
+        return privacyDepartmentId;
+    }
+
+    public FormLayoutElement setPrivacyDepartmentId(Integer privacyDepartmentId) {
+        this.privacyDepartmentId = privacyDepartmentId;
+        return this;
+    }
+
+    public Integer getAccessibilityDepartmentId() {
+        return accessibilityDepartmentId;
+    }
+
+    public FormLayoutElement setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
+        return this;
+    }
+
+    public Integer getThemeId() {
+        return themeId;
+    }
+
+    public FormLayoutElement setThemeId(Integer themeId) {
+        this.themeId = themeId;
+        return this;
+    }
+
+    public UUID getPdfTemplateKey() {
+        return pdfTemplateKey;
+    }
+
+    public FormLayoutElement setPdfTemplateKey(UUID pdfTemplateKey) {
+        this.pdfTemplateKey = pdfTemplateKey;
+        return this;
+    }
+
+    // Compatibility getters keep legacy templates working after step consolidation into children.
+    @Nullable
+    @JsonIgnore
     public IntroductionStepElement getIntroductionStep() {
-        return introductionStep;
+        return getStep(IntroductionStepElement.class);
     }
 
-    public FormLayoutElement setIntroductionStep(IntroductionStepElement introductionStep) {
-        this.introductionStep = introductionStep;
-        return this;
-    }
-
+    @Nullable
+    @JsonIgnore
     public SummaryStepElement getSummaryStep() {
-        return summaryStep;
+        return getStep(SummaryStepElement.class);
     }
 
-    public FormLayoutElement setSummaryStep(SummaryStepElement summaryStep) {
-        this.summaryStep = summaryStep;
-        return this;
-    }
-
+    @Nullable
+    @JsonIgnore
     public SubmitStepElement getSubmitStep() {
-        return submitStep;
+        return getStep(SubmitStepElement.class);
     }
 
-    public FormLayoutElement setSubmitStep(SubmitStepElement submitStep) {
-        this.submitStep = submitStep;
-        return this;
+    @Nullable
+    private <T extends BaseStepElement> T getStep(Class<T> stepClass) {
+        return getChildren()
+                .stream()
+                .filter(stepClass::isInstance)
+                .map(stepClass::cast)
+                .findFirst()
+                .orElse(null);
     }
 
     // endregion

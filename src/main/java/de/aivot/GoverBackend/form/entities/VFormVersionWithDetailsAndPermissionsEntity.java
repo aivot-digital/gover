@@ -8,7 +8,7 @@ import de.aivot.GoverBackend.identity.models.IdentityProviderLink;
 import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -57,10 +57,10 @@ public class VFormVersionWithDetailsAndPermissionsEntity {
     @Column(columnDefinition = "jsonb")
     @Convert(converter = RootElementConverter.class)
     private FormLayoutElement rootElement;
-    private LocalDateTime created;
-    private LocalDateTime updated;
-    private LocalDateTime published;
-    private LocalDateTime revoked;
+    private Instant created;
+    private Instant updated;
+    private Instant published;
+    private Instant revoked;
     private String publicTitle;
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
@@ -377,38 +377,38 @@ public class VFormVersionWithDetailsAndPermissionsEntity {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public VFormVersionWithDetailsAndPermissionsEntity setCreated(LocalDateTime created) {
+    public VFormVersionWithDetailsAndPermissionsEntity setCreated(Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public VFormVersionWithDetailsAndPermissionsEntity setUpdated(LocalDateTime updated) {
+    public VFormVersionWithDetailsAndPermissionsEntity setUpdated(Instant updated) {
         this.updated = updated;
         return this;
     }
 
-    public LocalDateTime getPublished() {
+    public Instant getPublished() {
         return published;
     }
 
-    public VFormVersionWithDetailsAndPermissionsEntity setPublished(LocalDateTime published) {
+    public VFormVersionWithDetailsAndPermissionsEntity setPublished(Instant published) {
         this.published = published;
         return this;
     }
 
-    public LocalDateTime getRevoked() {
+    public Instant getRevoked() {
         return revoked;
     }
 
-    public VFormVersionWithDetailsAndPermissionsEntity setRevoked(LocalDateTime revoked) {
+    public VFormVersionWithDetailsAndPermissionsEntity setRevoked(Instant revoked) {
         this.revoked = revoked;
         return this;
     }

@@ -7,10 +7,10 @@ import de.aivot.GoverBackend.core.exceptions.HttpConnectionException;
 import de.aivot.GoverBackend.core.models.HttpServiceHeaders;
 import de.aivot.GoverBackend.core.services.HttpService;
 import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.enums.ElementType;
@@ -23,7 +23,7 @@ import de.aivot.GoverBackend.payment.exceptions.PaymentSerializationException;
 import de.aivot.GoverBackend.payment.models.PaymentProviderDefinition;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.GoverBackend.payment.models.XBezahldienstePaymentTransaction;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPayCallbackResponse;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPayPaymentRequest;
 import de.aivot.GoverBackend.plugins.core.v1.payment.models.GiroPaymentStartResponse;
@@ -55,7 +55,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
     @Autowired
     public GirocheckoutPaymentProviderDefinitionV1(AuditService auditService, SecretService secretService, HttpService httpService) {
-        this.auditService = auditService.createScopedAuditService(GirocheckoutPaymentProviderDefinitionV1.class);
+        this.auditService = auditService.createScopedAuditService(GirocheckoutPaymentProviderDefinitionV1.class, "Zahlungen");
         this.secretService = secretService;
         this.httpService = httpService;
     }
@@ -75,7 +75,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -134,10 +134,10 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         projectPasswordInput.setLabel("Projekt-Passwort");
         projectPasswordInput.setPlaceholder("Projekt-Passwort");
         projectPasswordInput.setHint("Das Projekt-Passwort finden Sie in Ihrem GiroCockpit. Es muss zuvor unter \"Geheimnisse\" hinterlegt werden, um hier auswählbar zu sein.");
-        List<RadioInputElementOption> clientSecretInputOptions = secretService
+        List<SelectInputElementOption> clientSecretInputOptions = secretService
                 .list()
                 .stream()
-                .map(secret -> new RadioInputElementOption()
+                .map(secret -> new SelectInputElementOption()
                         .setValue(secret.getKey().toString())
                         .setLabel(secret.getName())
                 )
@@ -146,7 +146,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
         list.add(projectPasswordInput);
 
         var group = new GroupLayoutElement();
-        group.setType(ElementType.Group);
+        group.setType(ElementType.GroupLayout);
         group.setId("giroCheckoutConfig");
         group.setChildren(list);
 
@@ -157,15 +157,17 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Override
     public XBezahldienstePaymentTransaction initiatePayment(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentRequest paymentRequest
     ) throws PaymentException {
-        var merchantId = (String) config.get(MERCHANT_ID_FIELD).getValue();
+        var effectiveValues = config.getEffectiveValues();
+
+        var merchantId = (String) effectiveValues.get(MERCHANT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(merchantId)) {
             throw new PaymentMissingDataException("Merchant ID", paymentProviderEntity);
         }
 
-        var projectId = (String) config.get(PROJECT_ID_FIELD).getValue();
+        var projectId = (String) effectiveValues.get(PROJECT_ID_FIELD);
         if (StringUtils.isNullOrEmpty(projectId)) {
             throw new PaymentMissingDataException("Project ID", paymentProviderEntity);
         }
@@ -181,7 +183,14 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
 
         var xFormUrlEncoded = giroPayPaymentRequest.toApplicationXWwwFormUrlEncoded();
 
-        auditService.logMessage("Payment Request to GiroCheckout: " + xFormUrlEncoded, Map.of());
+        auditService.create()
+                .withSystem()
+                .setMessage("Eine Zahlungsanfrage wurde an GiroCheckout übermittelt.")
+                .setMetadata(Map.of(
+                        "paymentProviderKey", String.valueOf(paymentProviderEntity.getKey()),
+                        "paymentProviderName", paymentProviderEntity.getName(),
+                        "requestBody", xFormUrlEncoded
+                )).log();
 
         HttpResponse<String> response;
         try {
@@ -233,7 +242,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPull(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentRequest
     ) throws PaymentException {
         // No implementation for checkPaymentStatus because GiroCheckout has no API for this
@@ -244,7 +253,7 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Override
     public XBezahldienstePaymentTransaction onPaymentResultPush(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config,
+            @Nonnull DerivedRuntimeElementData config,
             @Nonnull XBezahldienstePaymentTransaction paymentTransaction,
             @Nonnull Map<String, Object> callbackData
     ) throws PaymentException {
@@ -286,9 +295,9 @@ public class GirocheckoutPaymentProviderDefinitionV1 implements PaymentProviderD
     @Nonnull
     private String getPasswordSecret(
             @Nonnull PaymentProviderEntity paymentProviderEntity,
-            @Nonnull ElementData config
+            @Nonnull DerivedRuntimeElementData config
     ) throws PaymentMissingDataException {
-        var passwordSecretField = (String) config.get(PROJECT_PASSWORD_FIELD).getValue();
+        var passwordSecretField = (String) config.getEffectiveValues().get(PROJECT_PASSWORD_FIELD);
         if (StringUtils.isNullOrEmpty(passwordSecretField)) {
             throw new PaymentMissingDataException("Project password", paymentProviderEntity);
         }

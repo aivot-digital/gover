@@ -6,19 +6,20 @@ import de.aivot.GoverBackend.config.filters.UserConfigFilter;
 import de.aivot.GoverBackend.config.models.UserConfigDefinition;
 import de.aivot.GoverBackend.config.repositories.UserConfigRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import jakarta.annotation.Nonnull;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class UserConfigService {
     private final UserConfigRepository configRepository;
+    private final List<UserConfigDefinition> userConfigDefinitions;
     private final SortedMap<String, UserConfigDefinition> configDefinitions;
 
     @Autowired
@@ -27,6 +28,9 @@ public class UserConfigService {
             List<UserConfigDefinition> configDefinitions
     ) {
         this.configRepository = configRepository;
+
+        // Maintain a list of the user config definitions to serve them to the client
+        this.userConfigDefinitions = configDefinitions;
 
         // Collect all definitions into a map to make them easier to access later on
         this.configDefinitions = configDefinitions
@@ -50,7 +54,7 @@ public class UserConfigService {
                 .stream()
                 .filter(def -> (
                         (filter.getPublicConfig() == null || def.isPublicConfig() == filter.getPublicConfig()) &&
-                        (filter.getKey() == null || def.getKey().toLowerCase().contains(filter.getKey().toLowerCase()))
+                                (filter.getKey() == null || def.getKey().toLowerCase().contains(filter.getKey().toLowerCase()))
                 ))
                 .toList();
 
@@ -150,5 +154,9 @@ public class UserConfigService {
     public Optional<UserConfigDefinition> getDefinition(@Nonnull String key) {
         var res = configDefinitions.get(key);
         return Optional.ofNullable(res);
+    }
+
+    public List<UserConfigDefinition> getUserConfigDefinitions() {
+        return userConfigDefinitions;
     }
 }

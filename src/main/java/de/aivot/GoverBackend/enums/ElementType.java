@@ -6,8 +6,8 @@ import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.form.content.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.*;
 import de.aivot.GoverBackend.elements.models.elements.layout.*;
+import de.aivot.GoverBackend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.IntroductionStepElement;
-import de.aivot.GoverBackend.elements.models.elements.steps.StepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SubmitStepElement;
 import de.aivot.GoverBackend.elements.models.elements.steps.SummaryStepElement;
 import de.aivot.GoverBackend.lib.models.Identifiable;
@@ -20,13 +20,13 @@ public enum ElementType implements Identifiable<Integer> {
     FormLayout(0),
     Step(1),
     Alert(2),
-    Group(3),
+    GroupLayout(3),
     Checkbox(4),
     Date(5),
     Headline(6),
     MultiCheckbox(7),
     Number(8),
-    ReplicatingContainer(9),
+    ReplicatingContainerLayout(9),
     RichText(10),
     Radio(11),
     Select(12),
@@ -47,8 +47,25 @@ public enum ElementType implements Identifiable<Integer> {
     CodeInput(27),
     RichTextInput(28),
     UiDefinitionInput(29),
-    IdentityInput(30),
-    TabLayout(30),
+    IdentityConfig(30),
+    TabLayout(31),
+    ChipInput(32),
+    DateTime(33),
+    DateRange(34),
+    TimeRange(35),
+    DateTimeRange(36),
+    MapPoint(37),
+    DomainAndUserSelect(38),
+    AssignmentContext(39),
+    DataModelSelect(40),
+    DataObjectSelect(41),
+    NoCodeInput(42),
+    SummaryLayout(43),
+    ProcessDataKeyInput(44),
+    ProcessAttachmentDisplay(45),
+    ProcessAttachmentNameChipInput(46),
+    ProcessIdentityIdInput(47),
+    HtmlTemplateInput(48)
     ;
 
     public static final String ID_FormLayout = "0";
@@ -83,6 +100,23 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_UiDefinitionInput = "29";
     public static final String ID_IdentityInput = "30";
     public static final String ID_TabLayout = "31";
+    public static final String ID_ChipInput = "32";
+    public static final String ID_DateTime = "33";
+    public static final String ID_DateRange = "34";
+    public static final String ID_TimeRange = "35";
+    public static final String ID_DateTimeRange = "36";
+    public static final String ID_MapPoint = "37";
+    public static final String ID_DomainAndUserSelect = "38";
+    public static final String ID_AssignmentContext = "39";
+    public static final String ID_DataModelSelect = "40";
+    public static final String ID_DataObjectSelect = "41";
+    public static final String ID_NoCodeInput = "42";
+    public static final String ID_SummaryLayout = "43";
+    public static final String ID_ProcessDataKeyInput = "44";
+    public static final String ID_ProcessAttachmentDisplay = "45";
+    public static final String ID_ProcessAttachmentNameChipInput = "46";
+    public static final String ID_ProcessIdentityIdInput = "47";
+    public static final String ID_HtmlTemplateInput = "48";
 
     private final Integer key;
 
@@ -112,15 +146,15 @@ public enum ElementType implements Identifiable<Integer> {
     public static BaseElement getElementClass(ElementType type) throws ElementDataConversionException {
         return switch (type) {
             case FormLayout -> new FormLayoutElement();
-            case Step -> new StepElement();
+            case Step -> new GenericStepElement();
             case Alert -> new AlertContentElement();
-            case Group -> new GroupLayoutElement();
+            case GroupLayout -> new GroupLayoutElement();
             case Checkbox -> new CheckboxInputElement();
             case Date -> new DateInputElement();
             case Headline -> new HeadlineContentElement();
             case MultiCheckbox -> new MultiCheckboxInputElement();
             case Number -> new NumberInputElement();
-            case ReplicatingContainer -> new ReplicatingContainerLayoutElement();
+            case ReplicatingContainerLayout -> new ReplicatingContainerLayoutElement();
             case RichText -> new RichTextContentElement();
             case Radio -> new RadioInputElement();
             case Select -> new SelectInputElement();
@@ -142,8 +176,25 @@ public enum ElementType implements Identifiable<Integer> {
             case CodeInput -> new CodeInputElement();
             case RichTextInput -> new RichTextInputElement();
             case UiDefinitionInput -> new UiDefinitionInputElement();
-            case IdentityInput -> new IdentityInputElement();
+            case IdentityConfig -> new IdentityConfigElement();
             case TabLayout -> new TabLayoutElement();
+            case ChipInput -> new ChipInputElement();
+            case DateTime -> new DateTimeInputElement();
+            case DateRange -> new DateRangeInputElement();
+            case TimeRange -> new TimeRangeInputElement();
+            case DateTimeRange -> new DateTimeRangeInputElement();
+            case MapPoint -> new MapPointInputElement();
+            case DomainAndUserSelect -> new DomainAndUserSelectInputElement();
+            case AssignmentContext -> new AssignmentContextInputElement();
+            case DataModelSelect -> new DataModelSelectInputElement();
+            case DataObjectSelect -> new DataObjectSelectInputElement();
+            case NoCodeInput -> new NoCodeInputElement();
+            case SummaryLayout -> new SummaryLayoutElement();
+            case ProcessDataKeyInput -> new ProcessDataKeyInputElement();
+            case ProcessAttachmentDisplay -> new ProcessAttachmentDisplayContentElement();
+            case ProcessAttachmentNameChipInput -> new ProcessAttachmentNameChipInputElement();
+            case ProcessIdentityIdInput -> new ProcessIdentityIdInputElement();
+            case HtmlTemplateInput -> new HtmlTemplateInputElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

@@ -1,4 +1,3 @@
-import {type RootElement} from '../models/elements/root-element';
 import {type AnyElement} from '../models/elements/any-element';
 import {ElementType} from '../data/element-type/element-type';
 import ShortUniqueId from 'short-unique-id';
@@ -7,7 +6,7 @@ const uid = new ShortUniqueId();
 
 const idRegex = /^[a-z][a-zA-Z0-9_]*$/;
 
-export function checkId(root: RootElement, id?: string): string | null {
+export function checkId(root: AnyElement, id?: string): string | null {
     if (id == null || id.length === 0) {
         return 'Bitte geben Sie eine ID ein.';
     }
@@ -69,8 +68,25 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.CodeInput]: 'ci',
     [ElementType.RichTextInput]: 'ri',
     [ElementType.UiDefinitionInput]: 'ui',
-    [ElementType.IdentityInput]: 'ii',
+    [ElementType.IdentityConfigElement]: 'ii',
     [ElementType.TabLayout]: 'tl',
+    [ElementType.ChipInput]: 'ch',
+    [ElementType.DateTime]: 'zt',
+    [ElementType.DateRange]: 'zr',
+    [ElementType.TimeRange]: 'tr',
+    [ElementType.DateTimeRange]: 'dz',
+    [ElementType.MapPoint]: 'mp',
+    [ElementType.DomainAndUserSelect]: 'du',
+    [ElementType.AssignmentContext]: 'ac',
+    [ElementType.DataModelSelect]: 'dm',
+    [ElementType.DataObjectSelect]: 'do',
+    [ElementType.NoCodeInput]: 'nc',
+    [ElementType.SummaryLayout]: 'sy',
+    [ElementType.ProcessDataKeyInput]: 'pk',
+    [ElementType.ProcessAttachmentNameChipInput]: 'pn',
+    [ElementType.ProcessIdentityIdInput]: 'pi',
+    [ElementType.HtmlTemplateInput]: 'ht',
+    [ElementType.ProcessAttachmentDisplay]: 'pa',
 };
 
 export function generateElementIdForType(type: ElementType): string {

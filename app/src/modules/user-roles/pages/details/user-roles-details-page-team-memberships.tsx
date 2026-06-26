@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -10,16 +11,12 @@ import {
 import {UserRoleResponseDTO} from "../../dtos/user-role-response-dto";
 import {GenericDetailsSkeleton} from "../../../../components/generic-details-page/generic-details-skeleton";
 import {GenericList} from "../../../../components/generic-list/generic-list";
-import {
-    VTeamUserRoleAssignmentWithDetailsEntity
-} from "../../../teams/entities/v-team-user-role-assignment-with-details-entity";
-import {
-    VTeamUserRoleAssignmentWithDetailsApiService
-} from "../../../teams/services/v-team-user-role-assignment-with-details-api-service";
+import {VTeamMembershipWithDetailsService} from '../../../teams/services/v-team-membership-with-details-service';
+import {VTeamMembershipWithDetailsEntity} from '../../../teams/entities/v-team-membership-with-details-entity';
 
-const columns: Array<GridColDef<VTeamUserRoleAssignmentWithDetailsEntity>> = [
+const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
-        field: 'fullName',
+        field: 'userFullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
         renderCell: (params) => (
@@ -32,7 +29,7 @@ const columns: Array<GridColDef<VTeamUserRoleAssignmentWithDetailsEntity>> = [
         ),
     },
     {
-        field: 'name',
+        field: 'teamName',
         headerName: 'Team',
         flex: 1,
         renderCell: (params) => (
@@ -64,18 +61,18 @@ export function UserRolesDetailsPageTeamMemberships() {
                     variant="h5"
                     sx={{mb: 1}}
                 >
-                    Zuggeordnete Mitarbeiter:innen
+                    Zugeordnete Mitarbeiter:innen
                 </Typography>
 
                 <Typography sx={{
                     mb: 3,
                     maxWidth: 900,
                 }}>
-                    Eine Übersicht der Mitarbeiter:innen, die dieser Rolle in verschiedenen
-                    Organisationseinheiten zugewiesen sind.
+                    Eine Übersicht der Mitarbeiter:innen, denen diese Domänenrolle in verschiedenen
+                    Teams zugewiesen sind.
                 </Typography>
 
-                <GenericList<VTeamUserRoleAssignmentWithDetailsEntity>
+                <GenericList<VTeamMembershipWithDetailsEntity>
                     disableFullWidthToggle={true}
                     sx={{
                         mx: '-16px',
@@ -83,9 +80,9 @@ export function UserRolesDetailsPageTeamMemberships() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
-                        return new VTeamUserRoleAssignmentWithDetailsApiService()
+                        return new VTeamMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                userRoleId: userRole.id,
+                                domainRoleId: userRole.id,
                                 fullName: options.search,
                             });
                     }}
@@ -93,7 +90,12 @@ export function UserRolesDetailsPageTeamMemberships() {
                     searchLabel="Mitarbeiter:in suchen"
                     searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                     defaultSortField="userFullName"
-                    noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Mitarbeiter:innen zugeordnet"
+                            description="Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb eines Teams."
+                        />
+                    }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"
                     noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 />

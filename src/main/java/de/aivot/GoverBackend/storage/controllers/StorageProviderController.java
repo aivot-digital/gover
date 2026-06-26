@@ -10,13 +10,17 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.storage.entities.StorageIndexItemEntity;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.enums.StorageProviderStatus;
+import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.filters.StorageProviderFilter;
 import de.aivot.GoverBackend.storage.permissions.StoragePermissionProvider;
 import de.aivot.GoverBackend.storage.repositories.StorageIndexItemRepository;
+import de.aivot.GoverBackend.storage.services.StorageProviderConfigurationService;
+import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
 import de.aivot.GoverBackend.storage.services.StorageProviderService;
 import de.aivot.GoverBackend.storage.services.StorageService;
 import de.aivot.GoverBackend.storage.services.StorageSyncWorker;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -27,19 +31,13 @@ import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
-import org.springframework.http.InvalidMediaTypeException;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.io.IOException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -61,6 +59,8 @@ public class StorageProviderController {
     private final RabbitTemplate rabbitTemplate;
     private final StorageIndexItemRepository storageIndexItemRepository;
     private final StorageService storageService;
+    private final StorageProviderDefinitionService storageProviderDefinitionService;
+    private final StorageProviderConfigurationService storageProviderConfigurationService;
 
     @Autowired
     public StorageProviderController(AuditService auditService,
@@ -69,14 +69,18 @@ public class StorageProviderController {
                                      PermissionService permissionService,
                                      RabbitTemplate rabbitTemplate,
                                      StorageIndexItemRepository storageIndexItemRepository,
-                                     StorageService storageService) {
-        this.auditService = auditService.createScopedAuditService(StorageProviderController.class);
+                                     StorageService storageService,
+                                     StorageProviderDefinitionService storageProviderDefinitionService,
+                                     StorageProviderConfigurationService storageProviderConfigurationService) {
+        this.auditService = auditService.createScopedAuditService(StorageProviderController.class, "Speicheranbieter");
         this.userService = userService;
         this.storageProviderService = storageProviderService;
         this.permissionService = permissionService;
         this.rabbitTemplate = rabbitTemplate;
         this.storageIndexItemRepository = storageIndexItemRepository;
         this.storageService = storageService;
+        this.storageProviderDefinitionService = storageProviderDefinitionService;
+        this.storageProviderConfigurationService = storageProviderConfigurationService;
     }
 
     @GetMapping("")
@@ -113,11 +117,15 @@ public class StorageProviderController {
         var created = storageProviderService
                 .create(newStorageProvider);
 
-        auditService
-                .logAction(execUser, AuditAction.Create, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, StorageProviderEntity.class, created.getId(), "id", Map.of(
                         "id", created.getId(),
                         "name", created.getName()
-                ));
+                )).withMessage(
+                "Der Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(created.getName()),
+                StringUtils.quote(String.valueOf(created.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return created;
     }
@@ -157,11 +165,15 @@ public class StorageProviderController {
         var result = storageProviderService
                 .update(id, update);
 
-        auditService
-                .logAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, StorageProviderEntity.class, result.getId(), "id", Map.of(
                         "id", result.getId(),
                         "name", result.getName()
-                ));
+                )).withMessage(
+                "Der Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(result.getName()),
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -183,11 +195,15 @@ public class StorageProviderController {
         var deleted = storageProviderService
                 .delete(id);
 
-        auditService
-                .logAction(execUser, AuditAction.Delete, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, StorageProviderEntity.class, deleted.getId(), "id", Map.of(
                         "id", deleted.getId(),
                         "name", deleted.getName()
-                ));
+                )).withMessage(
+                "Der Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deleted.getName()),
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
     }
 
     @PutMapping("{id}/resync/")
@@ -215,12 +231,16 @@ public class StorageProviderController {
         rabbitTemplate
                 .convertAndSend(StorageSyncWorker.DO_WORK_ON_STORAGE_SYNC_QUEUE, id);
 
-        auditService
-                .logAction(execUser, AuditAction.Update, StorageProviderEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, StorageProviderEntity.class, updated.getId(), "id", Map.of(
                         "id", updated.getId(),
                         "name", updated.getName(),
                         "resynced", true
-                ));
+                )).withMessage(
+                "Für den Speicheranbieter %s mit der ID %s wurde von der Mitarbeiter:in %s eine Resynchronisierung gestartet.",
+                StringUtils.quote(updated.getName()),
+                StringUtils.quote(String.valueOf(updated.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return updated;
     }
@@ -247,64 +267,27 @@ public class StorageProviderController {
                 .listAllInFolder(id, "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
     }
 
-    @GetMapping(value = {
-            "{id}/files/",
-            "{id}/files/**",
-    })
+    @GetMapping("{id}/search/")
     @Operation(
-            summary = "Get Folder from Storage Provider",
-            description = "Retrieve a folder from the specified storage provider. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
+            summary = "Search Storage Provider Contents",
+            description = "Search files and folders in the specified storage provider by filename or path. Returns a paginated result list. Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + "."
     )
-    public ResponseEntity<Resource> getDocument(
-            @AuthenticationPrincipal Jwt jwt,
+    public Page<StorageIndexItemEntity> search(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id,
-            @RequestParam(defaultValue = "false") boolean download,
-            @Nonnull HttpServletRequest request
+            @Nonnull @ParameterObject @PageableDefault Pageable pageable,
+            @RequestParam(name = "search", defaultValue = "") String search,
+            @RequestParam(name = "includeMissing", defaultValue = "false") boolean includeMissing
     ) throws ResponseException {
         permissionService
                 .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
-        var normalizedPath = getNormalizedPath(request, false);
-
-        var storageItem = storageIndexItemRepository
-                .findByStorageProviderIdAndPathFromRootAndIsDirectoryIsFalse(
-                        id,
-                        normalizedPath
-                )
+        storageProviderService
+                .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var is = storageService
-                .getDocumentContent(id, storageItem.getPathFromRoot());
-
-        byte[] bytes;
-        try {
-            bytes = is.readAllBytes();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-
-        Resource resource = new ByteArrayResource(bytes);
-
-        MediaType mediaType;
-        try {
-            mediaType = MediaType.parseMediaType(storageItem.getMimeType());
-        } catch (InvalidMediaTypeException e) {
-            mediaType = MediaType.APPLICATION_OCTET_STREAM;
-        }
-
-        if (resource.exists() && resource.isReadable()) {
-            ResponseEntity.BodyBuilder responseBuilder = ResponseEntity
-                    .ok()
-                    .contentType(mediaType);
-
-            if (download) {
-                responseBuilder.header("Content-Disposition", "attachment; filename=\"" + storageItem.getFilename() + "\"");
-            }
-
-            return responseBuilder.body(resource);
-        }
-
-        throw ResponseException.notFound();
+        return storageService
+                .searchIndexItems(id, search, includeMissing, pageable);
     }
 
     @Nonnull
@@ -328,5 +311,59 @@ public class StorageProviderController {
         }
 
         return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+    }
+
+    @PostMapping("{id}/test/")
+    @Operation(
+            summary = "Test Storage Provider",
+            description = "Manually test the connection to a storage provider. Uses the same logic as the health check. Optionally checks for writability."
+    )
+    public Map<String, Object> testStorageProvider(
+            @AuthenticationPrincipal Jwt jwt,
+            @PathVariable Integer id,
+            @RequestParam(name = "writable", required = false, defaultValue = "false") boolean writable
+    ) throws ResponseException {
+        permissionService.testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+
+        var provider = storageProviderService.retrieve(id).orElseThrow(ResponseException::notFound);
+        var def = storageProviderDefinitionService
+                .retrieveProviderDefinition(
+                        provider.getStorageProviderDefinitionKey(),
+                        provider.getStorageProviderDefinitionVersion()
+                )
+                .orElse(null);
+
+        if (def == null) {
+            return Map.of(
+                    "success", false,
+                    "error", "Der Speicheranbieter referenziert eine nicht vorhandene Anbieterdefinition."
+            );
+        }
+
+        try {
+            testConnection(provider, def, writable);
+            return Map.of(
+                    "success", true
+            );
+        } catch (Exception e) {
+            return Map.of(
+                    "success", false,
+                    "error", e.getMessage()
+            );
+        }
+    }
+
+    private <T> void testConnection(StorageProviderEntity provider, de.aivot.GoverBackend.storage.models.StorageProviderDefinition<T> definition, boolean writable) throws StorageException {
+        T config;
+
+        try {
+            config = storageProviderConfigurationService
+                    .mapToConfig(provider, definition);
+        } catch (ResponseException e) {
+            throw new StorageException(e, "Fehler beim Konvertieren der Speicheranbieter-Konfiguration.");
+        }
+
+        // Test write only if requested, because this may include the writing of test files (S3) and we do not want to always write unnecessary files
+        definition.testConnection(config, writable);
     }
 }

@@ -6,6 +6,8 @@ import java.io.Serializable;
 import java.util.Objects;
 
 public class TextInputElementPattern implements Serializable {
+    public static final String URL_REGEX = "^(https?):\\/\\/([\\da-z.-]+)\\.([a-z.]{2,6})([\\/\\w .-]*)*\\/?$";
+
     @Nullable
     private String regex;
 

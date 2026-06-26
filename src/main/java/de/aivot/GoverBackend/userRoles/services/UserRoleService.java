@@ -27,6 +27,8 @@ public class UserRoleService implements EntityService<UserRoleEntity, Integer> {
     @Nonnull
     @Override
     public UserRoleEntity create(@Nonnull UserRoleEntity entity) throws ResponseException {
+        // Force the generation of a new id
+        entity.setId(null);
         // Directly save the entity
         return repository.save(entity);
     }

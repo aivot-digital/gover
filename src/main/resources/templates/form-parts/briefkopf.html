@@ -1,32 +1,56 @@
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
-<!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.DepartmentEntity"*/-->
+<!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity"*/-->
+<!--/*@thymesVar id="responsibleDepartment" type="de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity"*/-->
+<!--/*@thymesVar id="managingDepartment" type="de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity"*/-->
 
 <header
         id="briefkopf"
         th:fragment="briefkopf"
 >
-    <div id="anschrift">
-        <p>
-            <!-- Der Name des Betreibers wird aus dem Basis-Kontext abgeleitet -->
-            <strong><span th:text="${ base.providerName }">Name der Kommune</span></strong>
-            <br />
+    <th:block
+            th:with="
+                hasResponsibleDepartmentAddress=${ responsibleDepartment != null && responsibleDepartment.address != null && !#strings.isEmpty(#strings.trim(responsibleDepartment.address)) },
+                hasManagingDepartmentAddress=${ managingDepartment != null && managingDepartment.address != null && !#strings.isEmpty(#strings.trim(managingDepartment.address)) }
+            "
+    >
+        <div
+                id="anschrift"
+                th:if="${ hasResponsibleDepartmentAddress || hasManagingDepartmentAddress }"
+        >
+            <section
+                    class="department-address"
+                    th:if="${ hasResponsibleDepartmentAddress }"
+            >
+                <h3>Zuständige Stelle</h3>
+                <p
+                        th:text="${ responsibleDepartment.address }"
+                        style="white-space: pre-line;"
+                >
+                    Adresse der zuständigen Stelle
+                </p>
+            </section>
 
-            <!-- Der Name des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet -->
-            <span th:text="${ department.name }">Name des zuständigen Fachbereichs</span>
-            <br />
-
-            <!-- Der Adresse des zuständigen Fachbereichs wird aus dem Fachbereichsobjekt abgeleitet.
-            Über das #strings.replace Util werden alle Zeilenumbrüche mit dem HTML-Tag <br /> ersetzt -->
-            <span th:utext="${ #strings.replace(department.address, '\n', '&lt;br /&gt;') }">Adresse des Fachbereichs</span>
-        </p>
-    </div>
+            <section
+                    class="department-address"
+                    th:if="${ hasManagingDepartmentAddress }"
+            >
+                <h3>Bewirtschaftende Stelle</h3>
+                <p
+                        th:text="${ managingDepartment.address }"
+                        style="white-space: pre-line;"
+                >
+                    Adresse der bewirtschaftenden Stelle
+                </p>
+            </section>
+        </div>
+    </th:block>
 
     <div id="logo">
         <!-- Die URL des Logos des Betreibers wird aus dem Basis-Kontext abgeleitet und mit der createAssetUrl Methode des Basis-Kontextes abgeleitet -->
         <img
-                th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName)}"
+                th:src="${ base.createAssetUrl(base.logoAssetKey, base.logoAssetName) }"
                 th:alt="${ 'Logo ' + base.providerName }"
-                style="height: 100px; width: auto;"
+                style="height: 100px; width: auto; object-fit: contain;"
         />
     </div>
 </header>

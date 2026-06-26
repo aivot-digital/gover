@@ -1,6 +1,6 @@
 import {AnyElement} from '../models/elements/any-element';
 import {FunctionComponent} from 'react';
-import {ElementData} from '../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../models/element-data';
 
 // TODO: Make private
 export interface BaseSummaryProps<M extends AnyElement, V> {
@@ -8,7 +8,8 @@ export interface BaseSummaryProps<M extends AnyElement, V> {
     value: V;
     allowStepNavigation?: boolean;
     showTechnical?: boolean;
-    elementData: ElementData;
+    authoredElementValues: AuthoredElementValues;
+    derivedData: DerivedRuntimeElementData;
 }
 
 export type BaseSummary<M extends AnyElement, V> = FunctionComponent<BaseSummaryProps<M, V>>;

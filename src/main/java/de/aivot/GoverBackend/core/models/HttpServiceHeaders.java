@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.core.models;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiConsumer;
@@ -123,6 +124,19 @@ public class HttpServiceHeaders {
     @Nonnull
     public HttpServiceHeaders withAuthorizationBearer(@Nonnull String value) {
         return this.with("Authorization", "Bearer " + value);
+    }
+
+    /**
+     * Adds or replaces the "Authorization" header with Basic authentication credentials.
+     *
+     * @param username The username for the basic authentication
+     * @param password The password for the basic authentication
+     * @return this {@code HttpServiceHeaders} instance for method chaining
+     */
+    public HttpServiceHeaders withBasicAuth(@Nonnull String username, @Nonnull String password) {
+        String credentials = username + ":" + password;
+        String encodedCredentials = Base64.getEncoder().encodeToString(credentials.getBytes());
+        return this.with("Authorization", "Basic " + encodedCredentials);
     }
 
     /**

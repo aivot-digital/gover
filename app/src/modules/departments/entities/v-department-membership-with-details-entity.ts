@@ -40,5 +40,6 @@ export interface VDepartmentMembershipWithDetailsEntity {
     departmentParentIds: number[] | null;
 
     domainRoles: KeysToSnakeCase<UserRoleResponseDTO>[];
+    domainRoleAssignments: Record<string, any>[];
     domainRolePermissions: Permission[];
 }

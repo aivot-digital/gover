@@ -80,13 +80,18 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
         return null;
     }
 
+    const actionColor = action.color ?? color;
+
     // Determine the component to render, either a button or a link
-    const component = 'onClick' in action ? 'button' : ('to' in action ? Link : 'a');
+    const isHashLink = 'to' in action && action.to.startsWith('#');
+    const component = 'onClick' in action ? 'button' : ('to' in action ? (isHashLink ? 'a' : Link) : 'a');
 
     // Determine shared properties
     const href = 'href' in action ? action.href : undefined;
     const to = 'to' in action ? action.to : undefined;
+    const resolvedHref = isHashLink ? to : href;
     const target = 'href' in action ? '_blank' : undefined;
+    const rel = 'href' in action ? 'noopener noreferrer' : undefined;
     const onClick = 'onClick' in action ? action.onClick : undefined;
     const shouldDisable = action.ignoreBusy ? action.disabled : (action.disabled || isBusy);
     const activeStyle = 'activeStyle' in action ? action.activeStyle : undefined;
@@ -97,7 +102,7 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
         element = (
             <Button
                 size={size}
-                color={color}
+                color={actionColor}
                 sx={{
                     m: 0,
                     ...(activeStyle != null ? activeStyle : {}),
@@ -105,10 +110,13 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
                 variant={action.variant}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
-                endIcon={action.icon}
+                rel={rel}
+                aria-label={action.ariaLabel}
+                startIcon={action.iconPosition === 'start' ? action.icon : undefined}
+                endIcon={action.iconPosition === 'start' ? undefined : action.icon}
                 disabled={shouldDisable}
             >
                 {action.label}
@@ -118,16 +126,18 @@ function ToolbarActionDispatcher(props: ToolbarActionDispatcherProps): ReactNode
         element = (
             <IconButton
                 size={size}
-                color={color}
+                color={actionColor}
                 sx={{
                     m: 0,
                     ...(activeStyle != null ? activeStyle : {}),
                 }}
                 onClick={onClick}
                 component={component}
-                href={href}
-                to={to}
+                href={resolvedHref}
+                to={isHashLink ? undefined : to}
                 target={target}
+                rel={rel}
+                aria-label={action.ariaLabel}
                 disabled={shouldDisable}
                 edge={isFirst ? 'start' : isLast ? 'end' : false}
             >

@@ -20,11 +20,11 @@ export function AccountDetailsPageNotifications() {
         setIsBusy(true);
 
         Promise.all([
-            userConfigsApiService.listDefinitions(0, 999),
+            userConfigsApiService.listDefinitions(),
             userConfigsApiService.list(user?.id ?? 'self', 0, 999)
         ])
             .then(([definitionsRes, userConfigsRes]) => {
-                const filteredDefinitions = definitionsRes.content.filter(def => def.category === "Benachrichtigungen");
+                const filteredDefinitions = definitionsRes.filter(def => def.category === "Benachrichtigungen");
                 setDefinitions(filteredDefinitions);
 
                 const configMap: Record<string, string[]> = {};
@@ -76,12 +76,8 @@ export function AccountDetailsPageNotifications() {
                 Benachrichtigungen
             </Typography>
             <Typography sx={{ mb: 2, maxWidth: 900 }}>
-                Als Mitarbeiter:in und im Rahmen der Mitgliedschaft in Fachbereichen erhalten Sie Benachrichtigungen zu wichtigen Ereignissen und Aktivitäten in der Anwendung.
+                Als Mitarbeiter:in und im Rahmen Ihrer Mitgliedschaften in Organisationseinheiten erhalten Sie Benachrichtigungen zu wichtigen Ereignissen und Aktivitäten in der Anwendung.
                 Sie können den Erhalt dieser Benachrichtigungen individuell nach Ihren Bedürfnissen anpassen.
-            </Typography>
-            <Typography sx={{ mb: 4, maxWidth: 900 }}>
-                <b>Bitte beachten Sie:</b> Wenn eine Benachrichtigung an eine Fachbereichs-Mitgliedschaft gebunden ist, kann es vorkommen, dass Sie trotz aktivierter Benachrichtigungen keine E-Mail erhalten.
-                Dies ist der Fall, wenn für den betreffenden Fachbereich eine zentrale E-Mail-Adresse für Systembenachrichtigungen hinterlegt wurde.
             </Typography>
             {isBusy ? (
                 <Grid size={12}>
@@ -138,9 +134,6 @@ export function AccountDetailsPageNotifications() {
                     </Grid>
                 ))
             )}
-            <Typography sx={{ mt: 3, mb: 1, fontSize: "0.875rem", px: 2, color: "text.secondary" }}>
-                *¹ Benachrichtigt wird nur der ranghöchste im Formular konfigurierte Fachbereich in der Reihenfolge „bewirtschaftend → zuständig → entwickelnd“.
-            </Typography>
         </Box>
     );
 }

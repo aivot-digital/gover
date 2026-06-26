@@ -14,6 +14,10 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Service
 public class VDepartmentUserRoleAssignmentWithDetailsService implements ReadEntityService<VDepartmentUserRoleAssignmentWithDetailsEntity, Integer> {
     private final VDepartmentUserRoleAssignmentWithDetailsRepository vDepartmentMembershipWithDetailsRepository;

@@ -24,8 +24,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -86,14 +88,7 @@ public class KeyCloakApiService {
                             Void.class
                     );
         } catch (RestClientResponseException e) {
-                throw switch (e.getStatusCode()) {
-                    case HttpStatus.BAD_REQUEST ->  ResponseException
-                            .badRequest("Die Mitarbeiter:in konnte nicht erstellt werden. Ungültige Daten wurden übermittelt.", e);
-                    case HttpStatus.FORBIDDEN ->  ResponseException
-                            .badRequest("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu erstellen.", e);
-                    default -> ResponseException
-                            .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
-                };
+            throw mapUserModificationException("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
         }
 
         if (response.getStatusCode().isError()) {
@@ -215,7 +210,7 @@ public class KeyCloakApiService {
                     Void.class
             );
         } catch (RestClientResponseException e) {
-            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht aktualisiert werden.", e);
+            throw mapUserModificationException("Die Mitarbeiter:in konnte nicht aktualisiert werden.", e);
         }
 
         if (response.getStatusCode().isError()) {
@@ -261,6 +256,134 @@ public class KeyCloakApiService {
         if (response.getStatusCode().isError()) {
             throw ResponseException.internalServerError("Der Passwort-Reset kann nicht initiiert werden.", "Status-Code: " + response.getStatusCode());
         }
+    }
+
+    public void setUserPassword(String userId, String password, boolean temporary) throws ResponseException {
+        var mapper = ObjectMapperFactory
+                .getInstance();
+
+        String passwordJson;
+        try {
+            var payload = new LinkedHashMap<String, Object>();
+            payload.put("type", "password");
+            payload.put("temporary", temporary);
+            payload.put("value", password);
+            passwordJson = mapper.writeValueAsString(payload);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", e);
+        }
+
+        String accessToken;
+        try {
+            accessToken = getAccessToken();
+        } catch (URISyntaxException | IOException | HttpConnectionException e) {
+            throw ResponseException
+                    .internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden, da keine Anmeldung am Keycloak möglich war.", e);
+        }
+
+        URI uri;
+        try {
+            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/reset-password");
+        } catch (URISyntaxException e) {
+            throw ResponseException
+                    .internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden, da die Keycloak-URL ungültig ist.", e);
+        }
+
+        ResponseEntity<Void> response;
+        try {
+            response = httpService.put(
+                    uri,
+                    passwordJson,
+                    HttpServiceHeaders
+                            .create()
+                            .withContentType(MediaType.APPLICATION_JSON_VALUE)
+                            .withAuthorizationBearer(accessToken),
+                    Void.class
+            );
+        } catch (RestClientResponseException e) {
+            throw ResponseException.internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", e);
+        }
+
+        if (response.getStatusCode().isError()) {
+            throw ResponseException.internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden.", "Status-Code: " + response.getStatusCode());
+        }
+    }
+
+    private ResponseException mapUserModificationException(String defaultMessage, RestClientResponseException exception) {
+        return switch (exception.getStatusCode().value()) {
+            case 400 -> {
+                var body = exception.getResponseBodyAsString();
+                var validationError = parseUserValidationError(body)
+                        .map(error -> mapUserValidationMessage(defaultMessage, error))
+                        .orElse(defaultMessage + " Ungültige Daten wurden übermittelt.");
+
+                yield ResponseException.badRequest(validationError, body);
+            }
+            case 403 -> ResponseException
+                    .badRequest("Der Backend-Client hat keine Berechtigung, um Mitarbeiter:innen zu verwalten.", exception.getResponseBodyAsString());
+            default -> ResponseException
+                    .internalServerError(defaultMessage, exception);
+        };
+    }
+
+    private Optional<KeycloakUserValidationError> parseUserValidationError(String body) {
+        if (body == null || body.isBlank()) {
+            return Optional.empty();
+        }
+
+        try {
+            return Optional.ofNullable(
+                    ObjectMapperFactory
+                            .getInstance()
+                            .readValue(body, KeycloakUserValidationError.class)
+            );
+        } catch (JsonProcessingException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    private String mapUserValidationMessage(String defaultMessage, KeycloakUserValidationError error) {
+        var fieldName = resolveFieldLabel(error);
+
+        return switch (error.errorMessage()) {
+            case "error-person-name-invalid-character" ->
+                    String.format("Der eingegebene Wert für „%s“ enthält unzulässige Zeichen. Bitte entfernen Sie unzulässige Sonderzeichen und versuchen Sie es erneut.", fieldName);
+            case "error-person-name-invalid-length" ->
+                    String.format("Der eingegebene Wert für „%s“ ist zu kurz oder zu lang.", fieldName);
+            case "error-user-attribute-required" ->
+                    String.format("Bitte das Feld „%s“ ausfüllen.", fieldName);
+            case "error-invalid-email" ->
+                    "Bitte eine gültige E-Mail-Adresse angeben.";
+            case "error-email-exists", "error-username-exists", "error-user-attribute-duplicate-email" ->
+                    "Es existiert bereits eine Mitarbeiter:in mit dieser E-Mail-Adresse.";
+            default ->
+                    defaultMessage + " Bitte prüfen Sie die Eingaben und versuchen Sie es erneut.";
+        };
+    }
+
+    private String resolveFieldLabel(KeycloakUserValidationError error) {
+        var rawField = error.field();
+        if ((rawField == null || rawField.isBlank()) && error.params() != null && !error.params().isEmpty()) {
+            rawField = error.params().getFirst();
+        }
+
+        if (rawField == null || rawField.isBlank()) {
+            return "Eingabe";
+        }
+
+        return switch (rawField) {
+            case "firstName" -> "Vorname";
+            case "lastName" -> "Nachname";
+            case "email" -> "E-Mail-Adresse";
+            default -> rawField;
+        };
+    }
+
+    private record KeycloakUserValidationError(
+            String field,
+            String errorMessage,
+            List<String> params
+    ) {
     }
 
     public void deleteUser(String id) {
@@ -326,7 +449,7 @@ public class KeyCloakApiService {
     }
 
     private String accessKeyBuffer;
-    private LocalDateTime accessKeyBufferExpiry;
+    private Instant accessKeyBufferExpiry;
 
     /**
      * Retrieve the access token for the backend from the keycloak server
@@ -337,7 +460,7 @@ public class KeyCloakApiService {
      * @throws HttpConnectionException if the request is interrupted
      */
     private String getAccessToken() throws URISyntaxException, IOException, HttpConnectionException {
-        if (accessKeyBuffer != null && accessKeyBufferExpiry != null && LocalDateTime.now().isBefore(accessKeyBufferExpiry)) {
+        if (accessKeyBuffer != null && accessKeyBufferExpiry != null && Instant.now().isBefore(accessKeyBufferExpiry)) {
             return accessKeyBuffer;
         }
 
@@ -364,7 +487,7 @@ public class KeyCloakApiService {
         var jobject = new JSONObject(res.body());
 
         var expirySeconds = jobject.getInt("expires_in");
-        accessKeyBufferExpiry = LocalDateTime.now().plusSeconds(expirySeconds - 60); // Refresh the token 60 seconds before it expires
+        accessKeyBufferExpiry = Instant.now().plusSeconds(expirySeconds - 60); // Refresh the token 60 seconds before it expires
         accessKeyBuffer = jobject.getString("access_token");
         return accessKeyBuffer;
     }

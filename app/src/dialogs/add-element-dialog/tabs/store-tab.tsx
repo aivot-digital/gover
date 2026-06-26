@@ -33,6 +33,8 @@ export function StoreTab(props: BaseTabProps & {
                 },
             }}
             selectedModuleId={props.highlightedModuleId}
+            primaryActionLabel={props.primaryActionLabel}
+            primaryActionIcon={props.primaryActionIcon}
         />
     );
 }

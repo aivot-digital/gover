@@ -79,8 +79,8 @@ export function ShellSearchDialog() {
     }, [debouncedSearch, page]);
 
     const results = searchResults?.content ?? [];
-    const totalElements = searchResults?.totalElements ?? 0;
-    const totalPages = searchResults?.totalPages ?? 0;
+    const totalElements = searchResults?.page.totalElements ?? 0;
+    const totalPages = searchResults?.page.totalPages ?? 0;
     const historyCapped = entityHistory.slice(0, 10);
 
     const handlePageChange = (_event: React.ChangeEvent<unknown>, newPage: number) => {
@@ -132,7 +132,10 @@ export function ShellSearchDialog() {
                     <InputBase
                         placeholder="Suche…"
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) => {
+                            setSearch(e.target.value);
+                            setPage(0);
+                        }}
                         fullWidth
                         autoFocus
                         sx={{

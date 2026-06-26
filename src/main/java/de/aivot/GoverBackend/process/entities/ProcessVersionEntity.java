@@ -8,7 +8,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "process_versions")
@@ -35,17 +35,20 @@ public class ProcessVersionEntity {
     @Length(min=3, max = 96, message = "Der öffentliche Title der Prozessdefinition-Version muss zwischen 3 und 96 Zeichen lang sein.")
     private String publicTitle;
 
-    @Nonnull
-    private LocalDateTime created;
+    @Nullable
+    private String caseNumberTemplate;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant created;
+
+    @Nonnull
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime published;
+    private Instant published;
 
     @Nullable
-    private LocalDateTime revoked;
+    private Instant revoked;
 
     // region Constructors
 
@@ -58,14 +61,16 @@ public class ProcessVersionEntity {
                                 @Nonnull Integer processVersion,
                                 @Nonnull ProcessVersionStatus status,
                                 @Nonnull String publicTitle,
-                                @Nonnull LocalDateTime created,
-                                @Nonnull LocalDateTime updated,
-                                @Nullable LocalDateTime published,
-                                @Nullable LocalDateTime revoked) {
+                                @Nullable String caseNumberTemplate,
+                                @Nonnull Instant created,
+                                @Nonnull Instant updated,
+                                @Nullable Instant published,
+                                @Nullable Instant revoked) {
         this.processId = processId;
         this.processVersion = processVersion;
         this.status = status;
         this.publicTitle = publicTitle;
+        this.caseNumberTemplate = caseNumberTemplate;
         this.created = created;
         this.updated = updated;
         this.published = published;
@@ -78,13 +83,13 @@ public class ProcessVersionEntity {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -122,41 +127,41 @@ public class ProcessVersionEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public ProcessVersionEntity setCreated(@Nonnull LocalDateTime created) {
+    public ProcessVersionEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public ProcessVersionEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public ProcessVersionEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getPublished() {
+    public Instant getPublished() {
         return published;
     }
 
-    public ProcessVersionEntity setPublished(@Nullable LocalDateTime published) {
+    public ProcessVersionEntity setPublished(@Nullable Instant published) {
         this.published = published;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getRevoked() {
+    public Instant getRevoked() {
         return revoked;
     }
 
-    public ProcessVersionEntity setRevoked(@Nullable LocalDateTime revoked) {
+    public ProcessVersionEntity setRevoked(@Nullable Instant revoked) {
         this.revoked = revoked;
         return this;
     }
@@ -168,6 +173,16 @@ public class ProcessVersionEntity {
 
     public ProcessVersionEntity setPublicTitle(@Nonnull String publicTitle) {
         this.publicTitle = publicTitle;
+        return this;
+    }
+
+    @Nullable
+    public String getCaseNumberTemplate() {
+        return caseNumberTemplate;
+    }
+
+    public ProcessVersionEntity setCaseNumberTemplate(@Nullable String caseNumberTemplate) {
+        this.caseNumberTemplate = caseNumberTemplate;
         return this;
     }
 

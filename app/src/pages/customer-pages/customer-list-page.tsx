@@ -9,7 +9,7 @@ import {SystemConfigKeys} from '../../data/system-config-keys';
 import {ListHeader} from '../../components/list-header/list-header';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {resetStepper} from '../../slices/stepper-slice';
-import {clearLoadedForm, showDialog} from '../../slices/app-slice';
+import {showDialog} from '../../slices/app-slice';
 import {AlertComponent} from '../../components/alert/alert-component';
 import {EmptySearchDataListPlaceholder} from '../../components/empty-search-data-list-placeholder/empty-search-data-list-placeholder';
 import {PrivacyDialog, PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
@@ -22,7 +22,27 @@ import {CustomerListPageHeader} from './customer-list-page-header';
 import {CustomerListPageFooter} from './customer-list-page-footer';
 import {isApiError} from '../../models/api-error';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
+import {FormTriggerApiService, FormTriggerListItem} from '../../modules/forms/services/form-trigger-api-service';
+import {resolveFormNodeName} from '../../models/elements/form-layout-element';
+
+function mapPublicFormListItem(form: FormTriggerListItem): FormCitizenListResponseDTO | null {
+    const formLayout = form.node.configuration.formLayout;
+    if (formLayout?.showOnFormIndexPage === false) {
+        return null;
+    }
+
+    const formSlug = form.node.configuration.formSlug;
+    if (formSlug == null || formSlug.length === 0) {
+        return null;
+    }
+
+    return {
+        slug: `form/${form.process.slug}/${formSlug}`,
+        version: form.version.processVersion,
+        title: resolveFormNodeName(formLayout, form.version),
+        updated: form.version.updated,
+    };
+}
 
 export function CustomerListPage() {
     const dispatch = useAppDispatch();
@@ -36,8 +56,12 @@ export function CustomerListPage() {
     const metaDialog = useAppSelector((state) => state.app.showDialog);
 
     useEffect(() => {
-        new FormApiService()
-            .listAllCitizenForms()
+        new FormTriggerApiService()
+            .listPublicAll()
+            .then((page) => page.content
+                .map(mapPublicFormListItem)
+                .filter((form): form is FormCitizenListResponseDTO => form != null)
+                .sort((a, b) => a.title.localeCompare(b.title, 'de')))
             .then(setForms)
             .catch((err) => {
                 if (isApiError(err) && err.displayableToUser) {
@@ -51,7 +75,6 @@ export function CustomerListPage() {
             });
 
         dispatch(resetStepper());
-        dispatch(clearLoadedForm());
         dispatch(setIdentityId(undefined));
     }, []);
 
@@ -122,7 +145,8 @@ export function CustomerListPage() {
                                     title="Unsere Formulare"
                                     search={search}
                                     onSearchChange={setSearch}
-                                    searchPlaceholder="Formular suchen…"
+                                    searchLabel="Formular suchen"
+                                    searchPlaceholder="Titel des Formulars eingeben…"
                                     actions={[]}
                                 />
 
@@ -169,6 +193,7 @@ export function CustomerListPage() {
                 </main>
 
                 <PrivacyDialog
+                    form={{} as any}
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === PrivacyDialogId}
                     isListingPage
@@ -178,12 +203,14 @@ export function CustomerListPage() {
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === ImprintDialogId}
                     isListingPage
+                    form={{} as any}
                 />
 
                 <AccessibilityDialog
                     onHide={() => dispatch(showDialog(undefined))}
                     open={metaDialog === AccessibilityDialogId}
                     isListingPage
+                    form={{} as any}
                 />
             </Box>
         );

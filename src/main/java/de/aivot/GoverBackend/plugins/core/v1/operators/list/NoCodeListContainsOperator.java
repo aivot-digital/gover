@@ -1,12 +1,13 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.list;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.Objects;
 
@@ -64,7 +65,7 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
     public NoCodeSignatur[] getSignatures() {
         return NoCodeSignatur.of(
                 NoCodeSignatur.of(
-                        NoCodeDataType.Number,
+                        NoCodeDataType.Boolean,
                         new NoCodeParameter(
                                 NoCodeDataType.Runtime,
                                 "Liste",
@@ -79,12 +80,26 @@ public class NoCodeListContainsOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "„#0“ beinhaltet „#1“";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var list = castToList(args[0]);
         var value = args[1];
 
+        if (value == null) {
+            return new NoCodeResult(list.stream().anyMatch(Objects::isNull));
+        }
+
         for (Object item : list) {
+            if (item == null) {
+                continue;
+            }
+
             var castedItem = castToTypeOfReference(value, item);
             if (Objects.equals(castedItem, value)) {
                 return new NoCodeResult(true);

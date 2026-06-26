@@ -5,27 +5,33 @@ import de.aivot.GoverBackend.config.filters.SystemConfigFilter;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
 import de.aivot.GoverBackend.config.repositories.SystemConfigRepository;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nonnull;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 public class SystemConfigService {
     private final SystemConfigRepository configRepository;
-    private final SortedMap<String, SystemConfigDefinition> configDefinitions;
+    private final List<SystemConfigDefinition<?>> systemConfigDefinitions;
+    private final SortedMap<String, SystemConfigDefinition<?>> configDefinitions;
 
     @Autowired
     public SystemConfigService(
             SystemConfigRepository configRepository,
-            List<SystemConfigDefinition> configDefinitions
+            List<SystemConfigDefinition<?>> configDefinitions
     ) {
         this.configRepository = configRepository;
+
+        // Maintain a list of all system config definitions to serve them to the client
+        this.systemConfigDefinitions = configDefinitions;
 
         // Collect all definitions into a map to make them easier to access later on
         this.configDefinitions = configDefinitions
@@ -49,11 +55,11 @@ public class SystemConfigService {
                 .stream()
                 .filter(def -> (
                         (filter.getPublicConfig() == null || def.isPublicConfig() == filter.getPublicConfig()) &&
-                        (filter.getKey() == null || def.getKey().toLowerCase().contains(filter.getKey().toLowerCase()))
+                                (filter.getKey() == null || def.getKey().toLowerCase().contains(filter.getKey().toLowerCase()))
                 ))
                 .toList();
 
-        var entities = configRepository
+        Map<String, SystemConfigEntity> entities = configRepository
                 .findAll(filter.build())
                 .stream()
                 .collect(Collectors.toMap(SystemConfigEntity::getKey, entity -> entity));
@@ -71,53 +77,92 @@ public class SystemConfigService {
                         (int) sublistEnd
                 )
                 .stream()
-                .map(definition -> {
-                    var entity = entities
-                            .get(definition.getKey());
-
-                    if (entity != null) {
-                        return entity;
-                    }
-
-                    String defaultValue;
+                .map((SystemConfigDefinition<?> definition) -> {
                     try {
-                        defaultValue = definition.serializeValueToDB(definition.getDefaultValue());
+                        return entityOrDefault(definition, entities);
                     } catch (ResponseException e) {
                         throw new RuntimeException(e);
                     }
-
-                    return new SystemConfigEntity()
-                            .setKey(definition.getKey())
-                            .setPublicConfig(definition.isPublicConfig())
-                            .setValue(defaultValue);
                 })
                 .toList();
 
         return new PageImpl<>(slice, pageable, allDefinitions.size());
     }
 
+    private <T> SystemConfigEntity entityOrDefault(@Nonnull SystemConfigDefinition<T> definition,
+                                                   @Nonnull Map<String, SystemConfigEntity> entities) throws ResponseException {
+        var entity = entities
+                .get(definition.getKey());
+
+        if (entity != null) {
+            return entity;
+        }
+
+        return getDefault(definition);
+    }
+
     @Nonnull
     public SystemConfigEntity retrieve(
             @Nonnull String key
     ) throws ResponseException {
-        var def = getDefinition(key)
-                .orElseThrow(() -> ResponseException.notFound("Der Konfigurationsschlüssel \"" + key + "\" ist unbekannt."));
+        SystemConfigDefinition<?> def = getDefinition(key)
+                .orElseThrow(() -> ResponseException
+                        .notFound(
+                                "Der Konfigurationsschlüssel %s ist nicht bekannt.",
+                                StringUtils.quote(key)
+                        ));
 
         return configRepository
                 .findById(key)
                 .orElseGet(() -> {
-                    String serializedValue;
                     try {
-                        serializedValue = def.serializeValueToDB(def.getDefaultValue());
+                        return getDefault(def);
                     } catch (ResponseException e) {
                         throw new RuntimeException(e);
                     }
-
-                    return new SystemConfigEntity()
-                            .setKey(key)
-                            .setPublicConfig(def.isPublicConfig())
-                            .setValue(serializedValue);
                 });
+    }
+
+    @Nullable
+    public Object getValue(@Nonnull String key) throws ResponseException {
+        var def = getDefinition(key)
+                .orElseThrow(() -> ResponseException
+                        .notFound(
+                                "Der Konfigurationsschlüssel %s ist nicht bekannt.",
+                                StringUtils.quote(key)
+                        ));
+
+        return getValue(def);
+    }
+
+    @Nullable
+    private <T> T getValue(@Nonnull SystemConfigDefinition<T> def) throws ResponseException {
+        var entity = configRepository
+                .findById(def.getKey());
+
+        if (entity.isEmpty()) {
+            return parseDefaultValue(def);
+        }
+
+        return def.parseValueFromDB(entity.get().getValue());
+    }
+
+    @Nullable
+    private static <T> T parseDefaultValue(@Nonnull SystemConfigDefinition<T> def) throws ResponseException {
+        String serializedValue = def
+                .serializeValueToDB(def.getDefaultValue());
+
+        return def.parseValueFromDB(serializedValue);
+    }
+
+    private static <T> SystemConfigEntity getDefault(@Nonnull SystemConfigDefinition<T> def) throws ResponseException {
+        String serializedValue = def
+                .serializeValueToDB(def.getDefaultValue());
+
+        return new SystemConfigEntity()
+                .setKey(def.getKey())
+                .setPublicConfig(def.isPublicConfig())
+                .setValue(serializedValue);
     }
 
     @Nonnull
@@ -125,25 +170,48 @@ public class SystemConfigService {
             @Nonnull String key,
             @Nonnull SystemConfigEntity entity
     ) throws ResponseException {
-        var definition = getDefinition(key)
-                .orElseThrow(() -> ResponseException.notFound("Der Konfigurationsschlüssel \"" + key + "\" ist unbekannt."));
+        SystemConfigDefinition<?> def = getDefinition(key)
+                .orElseThrow(() -> ResponseException
+                        .notFound(
+                                "Der Konfigurationsschlüssel %s ist nicht bekannt.",
+                                StringUtils.quote(key)
+                        ));
 
-        definition.validate(entity);
+        validateValue(def, entity.getValue());
 
         entity.setKey(key);
-        entity.setPublicConfig(definition.isPublicConfig());
+        entity.setPublicConfig(def.isPublicConfig());
 
-        definition.beforeChange(entity);
         configRepository.save(entity);
-        definition.afterChange(entity);
 
         return entity;
     }
 
+    private <T> void validateValue(@Nonnull SystemConfigDefinition<T> def, @Nullable String val) throws ResponseException {
+        T value = def.parseValueFromDB(val);
+        def.validate(value);
+    }
+
     @Nonnull
-    public Optional<SystemConfigDefinition> getDefinition(@Nonnull String key) {
-        var res = configDefinitions.get(key);
+    public Optional<SystemConfigDefinition<?>> getDefinition(@Nonnull String key) {
+        SystemConfigDefinition<?> res = configDefinitions.get(key);
         return Optional.ofNullable(res);
+    }
+
+    @Nonnull
+    public Map<String, Object> getAllConfigsAsMap() throws ResponseException {
+        var publicConfigs = configRepository.findAll();
+
+        Map<String, Object> result = new HashMap<>();
+        for (var entity : publicConfigs) {
+            var def = getDefinition(entity.getKey())
+                    .orElseThrow(() -> ResponseException.internalServerError("Unbekannte Systemkonfiguration \"" + entity.getKey() + "\" gefunden."));
+
+            var value = def.parseValueFromDB(entity.getValue());
+            result.put(entity.getKey(), value);
+        }
+
+        return result;
     }
 
     @Nonnull
@@ -165,5 +233,9 @@ public class SystemConfigService {
         }
 
         return result;
+    }
+
+    public List<SystemConfigDefinition<?>> getSystemConfigDefinitions() {
+        return systemConfigDefinitions;
     }
 }

@@ -7,6 +7,8 @@ import {Alert, CircularProgress, Fade, GlobalStyles} from '@mui/material';
 import {useTheme} from '@mui/material/styles';
 import {selectMinimizeDrawer, selectSnackbarMessages, SnackbarSeverity, SnackbarType} from '../slices/shell-slice';
 
+const FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET = 52;
+
 // Default auto-hide durations for different severities
 const SNACKBAR_AUTO_HIDE_DURATION_MS: Record<SnackbarSeverity, number> = {
     [SnackbarSeverity.Error]: 7000,
@@ -143,6 +145,8 @@ const SnackbarConsumer = () => {
 
 export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
     const isDrawerMinimized = useAppSelector(selectMinimizeDrawer);
+    const snackbarLeftOffset = isDrawerMinimized ? 88 : 280;
+    const flowEditorSnackbarLeftOffset = snackbarLeftOffset + FLOW_EDITOR_SNACKBAR_EXTRA_LEFT_OFFSET;
 
     return (
         <>
@@ -161,7 +165,10 @@ export const SnackbarProvider = ({children}: { children: React.ReactNode }) => {
             <GlobalStyles
                 styles={{
                     '.notistack-SnackbarContainer': {
-                        left: isDrawerMinimized ? '88px' : '280px',
+                        left: `${snackbarLeftOffset}px`,
+                    },
+                    'body[data-has-flow-editor="true"] .notistack-SnackbarContainer': {
+                        left: `${flowEditorSnackbarLeftOffset}px`,
                     },
                 }}
             />

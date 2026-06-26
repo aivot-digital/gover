@@ -80,7 +80,7 @@ export function FunctionInputView(props: BaseViewProps<FunctionInputElement, Fun
             return (
                 <Box>
                     <CodeEditor
-                        value={value.code?.code ?? undefined}
+                        value={value.code?.code}
                         onChange={(val) => {
                             setValue({
                                 ...value,

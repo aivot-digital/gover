@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
@@ -54,7 +55,7 @@ export function SystemRolesDetailsPageMembers() {
                     mb: 3,
                     maxWidth: 900,
                 }}>
-                    Eine Übersicht der Mitarbeiter:innen, die dieser Rolle zugeordnet sind.
+                    Eine Übersicht der Mitarbeiter:innen, die dieser Systemrolle zugeordnet sind.
                 </Typography>
 
                 <GenericList<User>
@@ -67,7 +68,7 @@ export function SystemRolesDetailsPageMembers() {
                     fetch={(options) => {
                         return new UsersApiService()
                             .list(options.page, options.size, options.sort, options.order, {
-                                fullName: options.search,
+                                name: options.search,
                                 systemRoleId: systemRole.id,
                             });
                     }}
@@ -75,7 +76,12 @@ export function SystemRolesDetailsPageMembers() {
                     searchLabel="Mitarbeiter:in suchen"
                     searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                     defaultSortField="fullName"
-                    noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Mitarbeiter:innen zugeordnet"
+                            description="Diese Zuordnung vergibt globale Berechtigungen an Mitarbeiter:innen, unabhängig von Team oder Organisationseinheit."
+                        />
+                    }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"
                     noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 />

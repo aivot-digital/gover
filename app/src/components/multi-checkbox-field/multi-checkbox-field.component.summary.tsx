@@ -14,6 +14,7 @@ export function MultiCheckboxFieldComponentSummary(props: BaseSummaryProps<Multi
             return option;
         }
     });
+
     const values = (props.value ?? []).map((value) => {
         const option = options.find((option) => option.value === value);
         return option?.label ?? value;

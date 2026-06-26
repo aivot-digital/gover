@@ -9,4 +9,7 @@ import java.util.UUID;
 
 public interface ProcessInstanceAttachmentRepository extends JpaRepository<ProcessInstanceAttachmentEntity, UUID>, JpaSpecificationExecutor<ProcessInstanceAttachmentEntity> {
     List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceId(Long processInstanceId);
+
+    List<ProcessInstanceAttachmentEntity> findAllByProcessInstanceIdAndFileName(Long processInstanceId,
+                                                                                 String fileName);
 }

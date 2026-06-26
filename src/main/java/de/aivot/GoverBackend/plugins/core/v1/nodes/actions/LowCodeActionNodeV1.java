@@ -1,15 +1,26 @@
 package de.aivot.GoverBackend.plugins.core.v1.nodes.actions;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.elements.models.elements.form.input.CodeInputElement;
+import de.aivot.GoverBackend.elements.annotations.ElementPOJOBindingProperty;
+import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
+import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
+import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.services.JavascriptEngineFactoryService;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.process.enums.ProcessNodeType;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.GoverBackend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
-import de.aivot.GoverBackend.process.models.*;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodePort;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.GoverBackend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.GoverBackend.process.services.ProcessDataService;
 import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
@@ -18,7 +29,9 @@ import java.util.List;
 import java.util.Map;
 
 @Component
-public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
+public class LowCodeActionNodeV1 implements ProcessNodeDefinition<LowCodeActionNodeV1.LowCodeActionNodeConfig> {
+    public static final String NODE_KEY = "js";
+
     private static final String PORT_NAME = "output";
 
     private static final String CODE_FIELD_KEY = "js_code";
@@ -31,7 +44,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getComponentKey() {
-        return "js";
+        return NODE_KEY;
     }
 
     @Nonnull
@@ -43,7 +56,7 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -67,18 +80,18 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
     @Nonnull
     @Override
     @JsonIgnore
-    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionContextConfig context) {
-        var layout = new ConfigLayoutElement();
-        layout.setId(getKey() + "-config");
+    public ConfigLayoutElement getConfigurationLayout(@Nonnull ProcessNodeDefinitionConfigurationLayoutContext context) throws ResponseException {
+        try {
+            return ElementPOJOMapper.createFromPOJO(LowCodeActionNodeConfig.class);
+        } catch (ElementDataConversionException e) {
+            throw ResponseException.internalServerError(e, "Fehler bei der Erstellung des Konfigurationslayouts: %s", e.getMessage());
+        }
+    }
 
-        var codeField = new CodeInputElement();
-        codeField.setId(CODE_FIELD_KEY);
-        codeField.setLabel("Javascript-Code");
-        codeField.setHint("Geben Sie den benutzerdefinierten Javascript-Code ein, der zur Verarbeitung der Daten verwendet werden soll.");
-        codeField.setRequired(true);
-        layout.addChild(codeField);
-
-        return layout;
+    @Nonnull
+    @Override
+    public Class<LowCodeActionNodeConfig> getNodeConfigurationClass() {
+        return LowCodeActionNodeConfig.class;
     }
 
     @Nonnull
@@ -87,34 +100,27 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
         return List.of(
                 new ProcessNodePort(
                         PORT_NAME,
-                        "Datenweitergabe",
-                        "Die verarbeiteten Daten werden hier weitergegeben."
+                        "JavaScript ausgeführt",
+                        "Der Prozess wird hier fortgesetzt, nachdem der JavaScript-Code ausgeführt wurde."
                 )
         );
     }
 
     @Override
-    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionContextInit context) throws ProcessNodeExecutionException {
-        var configuration = context
-                .getThisNode()
-                .getConfiguration();
+    public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<LowCodeActionNodeConfig> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
 
-        var code = configuration
-                .get(CODE_FIELD_KEY)
-                .getOptionalValue()
-                .orElse("")
-                .toString();
+        var code = configuration.code == null ? "" : configuration.code;
 
         var jsCode = new JavascriptCode()
                 .setCode(code);
 
         try (var engine = javascriptEngineFactoryService.getEngine()) {
             ProcessDataService
-                    .fillJsEngineWithData(context.getProcessData(), engine);
+                    .fillJsEngineWithData(context.getCurrentProcessExecutionData(), engine);
 
             try {
                 var result = engine
-                        .registerGlobalObject("$", context.getProcessData().get("$"))
                         .evaluateCode(jsCode);
 
                 return new ProcessNodeExecutionResultTaskCompleted()
@@ -130,11 +136,25 @@ public class LowCodeActionNodeV1 implements ProcessNodeDefinition {
                         "Fehler bei der Ausführung des Low-Code-Skripts."
                 );
             }
+        } catch (ProcessNodeExecutionException e) {
+            throw e;
         } catch (Exception e) {
             throw new ProcessNodeExecutionExceptionUnknown(
                     e,
                     "Fehler beim Initialisieren der Javascript-Engine."
             );
         }
+    }
+
+    @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
+    public static class LowCodeActionNodeConfig {
+        public static final String CODE = CODE_FIELD_KEY;
+
+        @InputElementPOJOBinding(id = CODE, type = ElementType.CodeInput, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Javascript-Code"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Geben Sie den benutzerdefinierten Javascript-Code ein, der zur Verarbeitung der Daten verwendet werden soll."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+        })
+        public String code;
     }
 }

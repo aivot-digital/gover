@@ -7,7 +7,7 @@ export interface CheckboxFieldComponentProps {
     required?: boolean;
     disabled?: boolean;
     busy?: boolean;
-    value?: boolean;
+    value?: boolean | null;
     onChange: (val: boolean) => void;
     variant?: 'standard' | 'switch';
     sx?: SxProps;

@@ -1,19 +1,39 @@
-import {Alert, Box, Button, FormControl, FormHelperText, FormLabel, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableRow, TextField, Tooltip, Typography} from '@mui/material';
+import {
+    Alert,
+    Box,
+    Button,
+    FormControl,
+    FormHelperText,
+    FormLabel,
+    IconButton,
+    Paper,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableRow,
+    TextField,
+    Tooltip,
+    Typography,
+} from '@mui/material';
 import React, {useCallback, useMemo, useReducer, useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {type OptionListInputProps} from './option-list-input-props';
 import {TableVirtuoso} from 'react-virtuoso';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function OptionListInput(props: OptionListInputProps) {
     const [textInputMode, toggleTextInputMode] = useReducer((state: boolean) => !state, false);
     const [textInputBuffer, setTextInputBuffer] = useState<string>();
 
     const options = props.value ?? [];
+    const groupFieldEnabled = props.showGroupField === true;
+    const groupFieldLabel = `${props.groupLabel ?? 'Gruppe'} (optional)`;
     const isEditable = props.disabled !== true;
     const isRequired = !props.allowEmpty;
+    const isKeyFieldDisabled = props.disableKeyField === true;
 
     const hasNotEnoughItems = isRequired && options.length === 0;
     const hasEmptyField = options.some((option) => option.value.length === 0 || option.label.length === 0);
@@ -26,6 +46,7 @@ export function OptionListInput(props: OptionListInputProps) {
             {
                 label: '',
                 value: '',
+                group: groupFieldEnabled ? '' : undefined,
             },
         ]);
     };
@@ -40,17 +61,26 @@ export function OptionListInput(props: OptionListInputProps) {
 
     const TableComponents = useMemo(() => ({
         // @ts-ignore
-        Scroller: React.forwardRef((props, ref) => <TableContainer {...props} ref={ref} />),
+        Scroller: React.forwardRef((props, ref) => <TableContainer {...props} ref={ref}/>),
         // @ts-ignore
         Table: (props) => <Table {...props} size="small"
-                                 sx={{borderCollapse: 'separate', '& td': {border: 0}}}
+                                 sx={{
+                                     borderCollapse: 'separate',
+                                     '& td, & th': {
+                                         border: 0,
+                                         verticalAlign: 'top',
+                                     },
+                                 }}
         />,
         TableRow: TableRow,
         // @ts-ignore
-        TableBody: React.forwardRef((props, ref) => <TableBody {...props} ref={ref} />),
+        TableBody: React.forwardRef((props, ref) => <TableBody {...props} ref={ref}/>),
     }), []);
 
     const renderRow = useCallback((index: any, item: any) => {
+        const labelError = item.label.length === 0;
+        const valueError = !isKeyFieldDisabled && item.value.length === 0;
+
         return (
             <>
                 <TableCell>
@@ -62,9 +92,11 @@ export function OptionListInput(props: OptionListInputProps) {
                         value={item.label}
                         onChange={(event) => {
                             const updatedValue = [...options];
+                            const nextLabel = event.target.value ?? '';
                             updatedValue[index] = {
                                 ...item,
-                                label: event.target.value ?? '',
+                                label: nextLabel,
+                                value: isKeyFieldDisabled ? nextLabel : item.value,
                             };
                             handleChange(updatedValue);
                         }}
@@ -78,8 +110,8 @@ export function OptionListInput(props: OptionListInputProps) {
                                 handleChange(updatedValue);
                             }
                         }}
-                        error={item.label.length === 0}
-                        helperText={(item.label.length === 0) ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
+                        error={labelError}
+                        helperText={labelError ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
                         disabled={!isEditable}
                     />
                 </TableCell>
@@ -99,12 +131,34 @@ export function OptionListInput(props: OptionListInputProps) {
                             };
                             handleChange(updatedValue);
                         }}
-                        error={item.value.length === 0}
-                        helperText={(item.value.length === 0) ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
-                        disabled={!isEditable}
+                        error={valueError}
+                        helperText={valueError ? 'Bitte geben Sie einen Text ein, oder entfernen Sie diese Zeile.' : undefined}
+                        disabled={!isEditable || isKeyFieldDisabled}
                     />
                     {/* TODO: Check if other option has the same value */}
                 </TableCell>
+
+                {
+                    groupFieldEnabled &&
+                    <TableCell>
+                        <TextField
+                            fullWidth
+                            label={groupFieldLabel}
+                            size="small"
+                            margin="dense"
+                            value={item.group ?? ''}
+                            onChange={(event) => {
+                                const updatedValue = [...options];
+                                updatedValue[index] = {
+                                    ...item,
+                                    group: event.target.value ?? '',
+                                };
+                                handleChange(updatedValue);
+                            }}
+                            disabled={!isEditable}
+                        />
+                    </TableCell>
+                }
 
                 {
                     isEditable &&
@@ -115,15 +169,16 @@ export function OptionListInput(props: OptionListInputProps) {
                                 onClick={() => {
                                     handleRemove(index);
                                 }}
+                                sx={{mt: 0.8675}}
                             >
-                                <DeleteForeverOutlinedIcon />
+                                <Delete/>
                             </IconButton>
                         </Tooltip>
                     </TableCell>
                 }
             </>
         );
-    }, [options, handleChange]);
+    }, [groupFieldEnabled, handleChange, isEditable, isKeyFieldDisabled, options, props.groupLabel, props.keyLabel, props.labelLabel]);
 
 
     return (
@@ -153,7 +208,7 @@ export function OptionListInput(props: OptionListInputProps) {
                                 size="small"
                                 onClick={toggleTextInputMode}
                             >
-                                <SwapHorizOutlinedIcon />
+                                <SwapHorizOutlinedIcon/>
                             </IconButton>
                         </Tooltip>
                     }
@@ -172,7 +227,7 @@ export function OptionListInput(props: OptionListInputProps) {
                                 ml: 'auto',
                             }}
                             startIcon={
-                                <AddOutlinedIcon />
+                                <AddOutlinedIcon/>
                             }
                             onClick={handleAdd}
                         >
@@ -197,8 +252,24 @@ export function OptionListInput(props: OptionListInputProps) {
                     textInputMode &&
                     <TextFieldComponent
                         label="Einträge"
-                        placeholder={'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3'}
-                        value={textInputBuffer != null ? textInputBuffer : options.map((opt) => `${opt.label}|${opt.value}`).join('\n')}
+                        placeholder={isKeyFieldDisabled ?
+                            (groupFieldEnabled ?
+                                    'Beschriftung 1|Gruppe 1\nBeschriftung 2|Gruppe 2\nBeschriftung 3|' :
+                                    'Beschriftung 1\nBeschriftung 2\nBeschriftung 3'
+                            ) :
+                            (groupFieldEnabled ?
+                                'Beschriftung 1|Wert 1|Gruppe 1\nBeschriftung 2|Wert 2|Gruppe 2\nBeschriftung 3|Wert 3|' :
+                                'Beschriftung 1|Wert 1\nBeschriftung 2|Wert 2\nBeschriftung 3|Wert 3')}
+                        value={textInputBuffer != null ? textInputBuffer : options.map((opt) => (
+                            isKeyFieldDisabled ?
+                                (groupFieldEnabled ?
+                                        `${opt.label}|${opt.group ?? ''}` :
+                                        opt.label
+                                ) :
+                                groupFieldEnabled ?
+                                    `${opt.label}|${opt.value}|${opt.group ?? ''}` :
+                                    `${opt.label}|${opt.value}`
+                        )).join('\n')}
                         onChange={(val) => {
                             setTextInputBuffer(val ?? '');
                         }}
@@ -209,9 +280,11 @@ export function OptionListInput(props: OptionListInputProps) {
                                 const lines = val.split('\n');
                                 const values = lines.map((ln) => {
                                     const parts = ln.split('|');
+                                    const label = (parts[0] ?? '').trim();
                                     return {
-                                        value: (parts[1] ?? '').trim(),
-                                        label: (parts[0] ?? '').trim(),
+                                        value: isKeyFieldDisabled ? label : (parts[1] ?? '').trim(),
+                                        label,
+                                        group: groupFieldEnabled ? (isKeyFieldDisabled ? (parts[1] ?? '').trim() : (parts[2] ?? '').trim()) : undefined,
                                     };
                                 });
                                 props.onChange(values);
@@ -250,8 +323,8 @@ export function OptionListInput(props: OptionListInputProps) {
                     hasDuplicateLabels &&
                     !hasDuplicateValues &&
                     <FormHelperText sx={{mt: 2}}>
-                        Es gibt mindestens zwei Einträge mit der gleichen Beschriftung. Bitte ändern Sie die Beschriftungen
-                        so, dass sie eindeutig sind.
+                        Es gibt mindestens zwei Einträge mit der gleichen Beschriftung. Bitte ändern Sie die
+                        Beschriftungen so, dass sie eindeutig sind.
                     </FormHelperText>
                 }
 
@@ -272,8 +345,8 @@ export function OptionListInput(props: OptionListInputProps) {
                     hasDuplicateLabels &&
                     hasDuplicateValues &&
                     <FormHelperText sx={{mt: 2}}>
-                        Es gibt mindestens zwei Einträge mit dem gleichen Wert oder gleicher Beschriftung. Bitte ändern Sie
-                        die Werte und Beschriftungen so, dass sie eindeutig sind.
+                        Es gibt mindestens zwei Einträge mit dem gleichen Wert oder gleicher Beschriftung. Bitte ändern
+                        Sie die Werte und Beschriftungen so, dass sie eindeutig sind.
                     </FormHelperText>
                 }
 

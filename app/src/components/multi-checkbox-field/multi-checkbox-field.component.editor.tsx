@@ -2,11 +2,10 @@ import React from 'react';
 import {type MultiCheckboxFieldElement} from '../../models/elements/form/input/multi-checkbox-field-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
-import {type ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {OptionListInput} from '../option-list-input/option-list-input';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 
-export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement, ElementTreeEntity>) {
+export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement>) {
     const minRequiredError = (
         props.element.minimumRequiredOptions != null &&
         props.element.options != null &&
@@ -50,17 +49,20 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                 />
             }
 
-            <CheckboxFieldComponent
-                label="Optionen nebeneinander anzeigen"
-                value={props.element.displayInline ?? undefined}
-                onChange={(checked) => {
-                    props.onPatch({
-                        displayInline: checked,
-                    });
-                }}
-                disabled={!props.editable}
-                hint="Zeigt die Optionen nebeneinander anstatt untereinander an. Dies kann Platz sparen und die Übersichtlichkeit verbessern."
-            />
+            {
+                !props.hasSummaryLayoutParent &&
+                <CheckboxFieldComponent
+                    label="Optionen nebeneinander anzeigen"
+                    value={props.element.displayInline ?? undefined}
+                    onChange={(checked) => {
+                        props.onPatch({
+                            displayInline: checked,
+                        });
+                    }}
+                    disabled={!props.editable}
+                    hint="Zeigt die Optionen nebeneinander anstatt untereinander an. Dies kann Platz sparen und die Übersichtlichkeit verbessern."
+                />
+            }
         </>
     );
 }

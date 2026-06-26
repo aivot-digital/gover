@@ -3,11 +3,11 @@ import {NoCodeOperatorDetailsDTO} from '../../../../models/dtos/no-code-operator
 import {Box, Typography} from '@mui/material';
 import {Actions} from '../../../actions/actions';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline';
 import SwitchAccessShortcutAddIcon from '@mui/icons-material/SwitchAccessShortcutAdd';
 import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
 import React from 'react';
 import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface ExpressionHeaderProps {
     expression: NoCodeExpression;
@@ -80,7 +80,7 @@ export function ExpressionHeader(props: ExpressionHeaderProps) {
                         onClick: props.onShowSelect,
                     },
                     {
-                        icon: <DeleteOutlineIcon />,
+                        icon: <Delete />,
                         tooltip: 'Operator löschen',
                         onClick: () => {
                             props.onChange(null);

@@ -21,10 +21,23 @@ import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import ChecklistOutlinedIcon from '@mui/icons-material/ChecklistOutlined';
 import TitleOutlinedIcon from '@mui/icons-material/TitleOutlined';
 import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
+import CalendarClock from '@aivot/mui-material-symbols-400-outlined/dist/calendar-clock/CalendarClock';
+import PlaceOutlinedIcon from '@mui/icons-material/PlaceOutlined';
+import LocalOfferOutlinedIcon from '@mui/icons-material/LocalOfferOutlined';
+import GroupsOutlinedIcon from '@mui/icons-material/GroupsOutlined';
+import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
+import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
+import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
+import FunctionsOutlinedIcon from '@mui/icons-material/FunctionsOutlined';
+import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
 
 import {type SvgIcon} from '@mui/material';
 import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '@mui/icons-material';
+import Dashboard2 from '@aivot/mui-material-symbols-400-outlined/dist/dashboard-2/Dashboard2';
+import Segment from '@aivot/mui-material-symbols-400-outlined/dist/segment/Segment';
+import {getStepIcon} from '../step-icons';
 
 const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.Alert]: ErrorOutlineOutlinedIcon,
@@ -54,16 +67,42 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.StepperLayout]: UploadFileOutlinedIcon,
     [ElementType.ConfigLayout]: UploadFileOutlinedIcon,
     [ElementType.FunctionInput]: UploadFileOutlinedIcon,
-    [ElementType.CodeInput]: UploadFileOutlinedIcon,
+    [ElementType.CodeInput]: CodeOutlinedIcon,
     [ElementType.RichTextInput]: UploadFileOutlinedIcon,
-    [ElementType.UiDefinitionInput]: UploadFileOutlinedIcon,
-    [ElementType.IdentityInput]: UploadFileOutlinedIcon,
+    [ElementType.UiDefinitionInput]: Dashboard2,
+    [ElementType.IdentityConfigElement]: UploadFileOutlinedIcon,
     [ElementType.TabLayout]: UploadFileOutlinedIcon,
+    [ElementType.ChipInput]: LocalOfferOutlinedIcon,
+    [ElementType.DateTime]: CalendarClock,
+    [ElementType.DateRange]: CalendarMonthOutlinedIcon,
+    [ElementType.TimeRange]: AccessTimeOutlinedIcon,
+    [ElementType.DateTimeRange]: CalendarClock,
+    [ElementType.MapPoint]: PlaceOutlinedIcon,
+    [ElementType.DomainAndUserSelect]: GroupsOutlinedIcon,
+    [ElementType.AssignmentContext]: AssignmentIndOutlinedIcon,
+    [ElementType.DataModelSelect]: FolderData,
+    [ElementType.DataObjectSelect]: DataObject,
+    [ElementType.NoCodeInput]: FunctionsOutlinedIcon,
+    [ElementType.SummaryLayout]: Segment,
+    [ElementType.ProcessDataKeyInput]: DataObject,
+    [ElementType.ProcessAttachmentNameChipInput]: LocalOfferOutlinedIcon,
+    [ElementType.ProcessIdentityIdInput]: LocalOfferOutlinedIcon,
+    [ElementType.HtmlTemplateInput]: DescriptionOutlinedIcon,
+    [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): typeof SvgIcon {
     if (element.type === ElementType.GroupLayout && element.storeLink != null) {
         return ExtensionOutlinedIcon;
+    }
+
+    switch (element.type) {
+        case ElementType.Step:
+        case ElementType.IntroductionStep:
+        case ElementType.SummaryStep:
+        case ElementType.SubmitStep:
+        case ElementType.SubmittedStep:
+            return getStepIcon(element);
     }
 
     return getElementIconForType(element.type);

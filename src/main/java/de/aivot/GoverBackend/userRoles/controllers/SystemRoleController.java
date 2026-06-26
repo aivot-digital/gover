@@ -6,14 +6,14 @@ import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
-import de.aivot.GoverBackend.permissions.data.Permissions;
 import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.userRoles.dtos.DeleteSystemRoleResponseDto;
 import de.aivot.GoverBackend.userRoles.entities.SystemRoleEntity;
-import de.aivot.GoverBackend.userRoles.entities.UserRoleEntity;
 import de.aivot.GoverBackend.userRoles.filters.SystemRoleFilter;
+import de.aivot.GoverBackend.userRoles.permissions.SystemRolePermissionProvider;
 import de.aivot.GoverBackend.userRoles.services.SystemRoleService;
-import de.aivot.GoverBackend.userRoles.services.UserRoleService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -29,6 +29,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 @RestController
@@ -40,21 +41,18 @@ import java.util.Map;
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SystemRoleController {
     private final ScopedAuditService auditService;
-    private final UserRoleService userRoleService;
     private final UserService userService;
     private final SystemRoleService systemRoleService;
     private final PermissionService permissionService;
 
     @Autowired
     public SystemRoleController(AuditService auditService,
-                                UserRoleService userRoleService,
                                 UserService userService,
                                 SystemRoleService systemRoleService,
                                 PermissionService permissionService) {
         this.auditService = auditService
-                .createScopedAuditService(SystemRoleController.class);
+                .createScopedAuditService(SystemRoleController.class, "Rollen");
 
-        this.userRoleService = userRoleService;
         this.userService = userService;
         this.systemRoleService = systemRoleService;
         this.permissionService = permissionService;
@@ -64,7 +62,7 @@ public class SystemRoleController {
     @Operation(
             summary = "List System Roles",
             description = "Retrieve a paginated list of system roles. Supports filtering and pagination. " +
-                    "This requires the permission „" + Permissions.SYSTEM_ROLE_READ + "“."
+                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
     )
     public Page<SystemRoleEntity> list(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -76,7 +74,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_READ);
+                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .list(pageable, filter);
@@ -86,7 +84,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Create System Role",
             description = "Create a new system role. " +
-                    "This requires the permission „" + Permissions.SYSTEM_ROLE_CREATE + "“."
+                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_CREATE + "“."
     )
     public SystemRoleEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -97,16 +95,30 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_CREATE);
+                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_CREATE);
 
         var createdEntity = systemRoleService
                 .create(newEntity);
 
         auditService
-                .logAction(execUser, AuditAction.Create, SystemRoleEntity.class, Map.of(
-                        "id", createdEntity.getId(),
-                        "name", createdEntity.getName()
-                ));
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        SystemRoleEntity.class,
+                        createdEntity.getId(),
+                        "id",
+                        Map.of(
+                                "id", createdEntity.getId(),
+                                "name", createdEntity.getName()
+                        ))
+                .withMessage(
+                        "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(createdEntity.getName()),
+                        StringUtils.quote(String.valueOf(createdEntity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return createdEntity;
     }
@@ -115,7 +127,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Retrieve System Role",
             description = "Retrieve a system role by its ID. " +
-                    "This requires the permission „" + Permissions.SYSTEM_ROLE_READ + "“."
+                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_READ + "“."
     )
     public SystemRoleEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -126,7 +138,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_READ);
+                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .retrieve(id)
@@ -137,7 +149,7 @@ public class SystemRoleController {
     @Operation(
             summary = "Update System Role",
             description = "Update an existing system role. " +
-                    "This requires the permission „" + Permissions.SYSTEM_ROLE_UPDATE + "“."
+                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE + "“."
     )
     public SystemRoleEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -151,16 +163,30 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::noSuperAdminPermission);
 
         permissionService
-                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_UPDATE);
+                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE);
 
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
 
         auditService
-                .logAction(execUser, AuditAction.Update, SystemRoleEntity.class, Map.of(
-                        "id", updatedEntity.getId(),
-                        "name", updatedEntity.getName()
-                ));
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        SystemRoleEntity.class,
+                        updatedEntity.getId(),
+                        "id",
+                        Map.of(
+                                "id", updatedEntity.getId(),
+                                "name", updatedEntity.getName()
+                        ))
+                .withMessage(
+                        "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updatedEntity.getName()),
+                        StringUtils.quote(String.valueOf(updatedEntity.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return updatedEntity;
     }
@@ -169,11 +195,12 @@ public class SystemRoleController {
     @Operation(
             summary = "Delete System Role",
             description = "Delete a system role by its ID. " +
-                    "This requires the permission „" + Permissions.SYSTEM_ROLE_DELETE + "“."
+                    "This requires the permission „" + SystemRolePermissionProvider.SYSTEM_ROLE_DELETE + "“."
     )
-    public void destroy(
+    public DeleteSystemRoleResponseDto destroy(
             @AuthenticationPrincipal Jwt jwt,
-            @PathVariable Integer id
+            @PathVariable Integer id,
+            @Nullable @RequestParam(required = false) Integer replacementSystemRoleId
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -182,19 +209,80 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::noSuperAdminPermission);
 
         permissionService
-                .testSystemPermission(execUser.getId(), Permissions.SYSTEM_ROLE_DELETE);
+                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_DELETE);
 
-        var entity = userRoleService
+        var entity = systemRoleService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        userRoleService
-                .deleteEntity(entity);
+        var deleteResult = systemRoleService
+                .deleteAndMigrateUsers(entity, replacementSystemRoleId);
+
+        var auditMetadata = new LinkedHashMap<String, Object>();
+        auditMetadata.put("id", entity.getId());
+        auditMetadata.put("name", entity.getName());
+        auditMetadata.put("migratedUsersCount", deleteResult.migratedUsersCount());
+        auditMetadata.put(
+                "migratedUsers",
+                deleteResult.migratedUsers()
+                        .stream()
+                        .map(user -> {
+                            var migratedUserMetadata = new LinkedHashMap<String, Object>();
+                            migratedUserMetadata.put("id", user.id());
+                            migratedUserMetadata.put("fullName", user.fullName());
+                            migratedUserMetadata.put("email", user.email());
+                            return migratedUserMetadata;
+                        })
+                        .toList()
+        );
+        auditMetadata.put(
+                "defaultSystemRoleForAutomaticImportsUpdated",
+                deleteResult.defaultSystemRoleForAutomaticImportsUpdated()
+        );
+        if (deleteResult.replacementRole() != null) {
+            auditMetadata.put("replacementRoleId", deleteResult.replacementRole().getId());
+            auditMetadata.put("replacementRoleName", deleteResult.replacementRole().getName());
+        }
+        if (deleteResult.newDefaultSystemRoleId() != null) {
+            auditMetadata.put("newDefaultSystemRoleId", deleteResult.newDefaultSystemRoleId());
+        }
+
+        var auditMessage = new StringBuilder(String.format(
+                "Die Systemrolle %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(entity.getName()),
+                StringUtils.quote(String.valueOf(entity.getId())),
+                StringUtils.quote(execUser.getFullName())
+        ));
+        if (deleteResult.migratedUsersCount() > 0 && deleteResult.replacementRole() != null) {
+            auditMessage.append(String.format(
+                    " %s Mitarbeiter:innen wurden auf die Systemrolle %s migriert.",
+                    StringUtils.quote(String.valueOf(deleteResult.migratedUsersCount())),
+                    StringUtils.quote(deleteResult.replacementRole().getName())
+            ));
+        }
+        if (deleteResult.defaultSystemRoleForAutomaticImportsUpdated() && deleteResult.replacementRole() != null) {
+            auditMessage.append(String.format(
+                    " Die Standard-Systemrolle für automatische Benutzerimporte wurde auf %s gesetzt.",
+                    StringUtils.quote(deleteResult.replacementRole().getName())
+            ));
+        }
 
         auditService
-                .logAction(execUser, AuditAction.Delete, UserRoleEntity.class, Map.of(
-                        "id", entity.getId(),
-                        "name", entity.getName()
-                ));
+                .create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        SystemRoleEntity.class,
+                        entity.getId(),
+                        "id",
+                        auditMetadata)
+                .withMessage(auditMessage.toString())
+                .log();
+
+        return new DeleteSystemRoleResponseDto(
+                deleteResult.migratedUsersCount(),
+                deleteResult.defaultSystemRoleForAutomaticImportsUpdated(),
+                deleteResult.newDefaultSystemRoleId()
+        );
     }
 }

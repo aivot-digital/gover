@@ -489,7 +489,7 @@ export function FormResourceAccessControlDialog(props: FormResourceAccessControl
                                 label="Hinzufügen"
                                 value={addId}
                                 onChange={(val) => {
-                                    setAddId(val);
+                                    setAddId(val ?? undefined);
                                 }}
                                 options={targetOptionsWithoutAlreadyInAccessList}
                                 disabled={isGloballyLoading}

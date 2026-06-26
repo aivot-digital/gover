@@ -16,9 +16,14 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Map;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 @EnableScheduling
 public class CleanupService {
@@ -35,7 +40,7 @@ public class CleanupService {
                           SubmissionStorageService submissionStorageService,
                           ExceptionMailService exceptionMailService,
                           FormVersionService formVersionService) {
-        this.auditService = auditService.createScopedAuditService(CleanupService.class);
+        this.auditService = auditService.createScopedAuditService(CleanupService.class, "Systemwartung");
 
         this.submissionService = submissionService;
         this.submissionStorageService = submissionStorageService;
@@ -45,7 +50,7 @@ public class CleanupService {
 
     @Scheduled(
             cron = "0 0 * * * *",
-            zone = "Europe/Paris"
+            zone = "${gover.timezone}"
     )
     public void cleanSubmissions() {
         var archivedSubmissionSpec = SubmissionFilter
@@ -68,10 +73,17 @@ public class CleanupService {
                         .orElse(null);
 
                 if (form == null) {
-                    auditService.logError("Form with id " + submission.getFormId() + "not found for submission: " + submission.getId(), Map.of(
-                            "submissionId", submission.getId(),
-                            "formId", submission.getFormId()
-                    ));
+                    auditService.create()
+                            .setTriggerType("Error")
+                            .setMessage(
+                                    "Das Formular mit der ID " + submission.getFormId() +
+                                            " wurde für den archivierten Antrag mit der ID " + submission.getId() +
+                                            " nicht gefunden; der Löschlauf wurde für diesen Antrag übersprungen."
+                            )
+                            .setMetadata(Map.of(
+                                    "submissionId", submission.getId(),
+                                    "formId", submission.getFormId()
+                            )).log();
                     continue;
                 }
 
@@ -80,8 +92,8 @@ public class CleanupService {
                     deletionWeeks = 4;
                 }
 
-                var expirationDate = submission.getArchived().plusWeeks(deletionWeeks);
-                if (expirationDate.isBefore(LocalDateTime.now())) {
+                var expirationDate = submission.getArchived().plus(Duration.ofDays(deletionWeeks * 7L));
+                if (expirationDate.isBefore(Instant.now())) {
                     submissionStorageService
                             .deleteSubmission(submission);
                     submissionService

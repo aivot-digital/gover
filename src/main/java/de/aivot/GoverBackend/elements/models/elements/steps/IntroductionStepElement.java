@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.elements.models.elements.steps;
 
-import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.elements.PrintableElement;
+import de.aivot.GoverBackend.elements.models.elements.*;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.enums.ElementType;
 import de.aivot.GoverBackend.exceptions.ValidationException;
@@ -9,9 +8,14 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-public class IntroductionStepElement extends BaseInputElement<Boolean> implements PrintableElement<Boolean> {
+public class IntroductionStepElement extends BaseStepElement implements InputElement<Boolean>, PrintableElement<Boolean>, LayoutElement<BaseFormElement> {
+    private static final String PRIVACY_CONSENT_LABEL = "Datenschutzrechtliche Einwilligung";
+
     @Nullable
     private String initiativeName;
     @Nullable
@@ -29,7 +33,13 @@ public class IntroductionStepElement extends BaseInputElement<Boolean> implement
     @Nullable
     private Collection<String> documentsToAttach;
     @Nullable
+    private String expiring;
+    @Nullable
     private String expectedCosts;
+    @Nullable
+    private String privacyText;
+    @Nonnull
+    private List<BaseFormElement> children = new LinkedList<>();
 
     public IntroductionStepElement() {
         super(ElementType.IntroductionStep);
@@ -38,13 +48,40 @@ public class IntroductionStepElement extends BaseInputElement<Boolean> implement
     @Override
     public void performValidation(Boolean value) throws ValidationException {
         if (!Boolean.TRUE.equals(value)) {
-            throw new ValidationException(this, "Bitte akzeptieren Sie die Hinweise zum Datenschutz.");
+            throw new ValidationException(
+                    this,
+                    "Bitte akzeptieren Sie die Hinweise zum Datenschutz.",
+                    Map.of("label", PRIVACY_CONSENT_LABEL)
+            );
         }
+    }
+
+    @Override
+    public Boolean getRequired() {
+        return true;
     }
 
     @Override
     public Boolean formatValue(Object value) {
         return CheckboxInputElement._formatValue(value);
+    }
+
+    @Nullable
+    @Override
+    public ElementValueFunctions getValue() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public ElementValidationFunctions getValidation() {
+        return null;
+    }
+
+    @Nullable
+    @Override
+    public Boolean getDisabled() {
+        return false;
     }
 
     @Nonnull
@@ -59,24 +96,18 @@ public class IntroductionStepElement extends BaseInputElement<Boolean> implement
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         IntroductionStepElement that = (IntroductionStepElement) o;
-        return Objects.equals(initiativeName, that.initiativeName) && Objects.equals(initiativeLogoLink, that.initiativeLogoLink) && Objects.equals(initiativeLink, that.initiativeLink) && Objects.equals(teaserText, that.teaserText) && Objects.equals(organization, that.organization) && Objects.equals(eligiblePersons, that.eligiblePersons) && Objects.equals(supportingDocuments, that.supportingDocuments) && Objects.equals(documentsToAttach, that.documentsToAttach) && Objects.equals(expectedCosts, that.expectedCosts);
+        return Objects.equals(initiativeName, that.initiativeName) && Objects.equals(initiativeLogoLink, that.initiativeLogoLink) &&
+                Objects.equals(initiativeLink, that.initiativeLink) && Objects.equals(teaserText, that.teaserText) &&
+                Objects.equals(organization, that.organization) && Objects.equals(eligiblePersons, that.eligiblePersons) &&
+                Objects.equals(supportingDocuments, that.supportingDocuments) && Objects.equals(documentsToAttach, that.documentsToAttach) &&
+                Objects.equals(expiring, that.expiring) && Objects.equals(expectedCosts, that.expectedCosts) && Objects.equals(privacyText, that.privacyText) &&
+                Objects.equals(children, that.children);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(initiativeName);
-        result = 31 * result + Objects.hashCode(initiativeLogoLink);
-        result = 31 * result + Objects.hashCode(initiativeLink);
-        result = 31 * result + Objects.hashCode(teaserText);
-        result = 31 * result + Objects.hashCode(organization);
-        result = 31 * result + Objects.hashCode(eligiblePersons);
-        result = 31 * result + Objects.hashCode(supportingDocuments);
-        result = 31 * result + Objects.hashCode(documentsToAttach);
-        result = 31 * result + Objects.hashCode(expectedCosts);
-        return result;
+        return Objects.hash(super.hashCode(), initiativeName, initiativeLogoLink, initiativeLink, teaserText, organization, eligiblePersons, supportingDocuments, documentsToAttach, expiring, expectedCosts, privacyText, children);
     }
 
     // endregion
@@ -164,12 +195,45 @@ public class IntroductionStepElement extends BaseInputElement<Boolean> implement
     }
 
     @Nullable
+    public String getExpiring() {
+        return expiring;
+    }
+
+    public IntroductionStepElement setExpiring(@Nullable String expiring) {
+        this.expiring = expiring;
+        return this;
+    }
+
+    @Nullable
     public String getExpectedCosts() {
         return expectedCosts;
     }
 
     public IntroductionStepElement setExpectedCosts(@Nullable String expectedCosts) {
         this.expectedCosts = expectedCosts;
+        return this;
+    }
+
+    @Nullable
+    public String getPrivacyText() {
+        return privacyText;
+    }
+
+    public IntroductionStepElement setPrivacyText(@Nullable String privacyText) {
+        this.privacyText = privacyText;
+        return this;
+    }
+
+    @Override
+    @Nonnull
+    public List<BaseFormElement> getChildren() {
+        return children;
+    }
+
+    @Override
+    @Nonnull
+    public IntroductionStepElement setChildren(List<BaseFormElement> children) {
+        this.children = children;
         return this;
     }
 

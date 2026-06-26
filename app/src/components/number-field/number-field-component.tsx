@@ -1,6 +1,6 @@
 import {InputAdornment, TextField} from '@mui/material';
 import {ChangeEvent, useMemo, useRef, useState} from 'react';
-import {formatNumToGermanNum} from '../../utils/format-german-numbers';
+import {formatNumStringToGermanNum, formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {type NumberFieldComponentProps} from './number-field-component-props';
 import {parseGermanNumber} from '../../utils/parse-german-numbers';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
@@ -8,7 +8,7 @@ import {isStringNullOrEmpty} from '../../utils/string-utils';
 const AbsoluteMaxValue = Math.pow(2, 31);
 const AbsoluteMinValue = -AbsoluteMaxValue;
 
-function validateValue(inputValue: string | undefined, value: number | undefined, minValue: number | undefined, maxValue: number | undefined, decimalPlaces: number | undefined) {
+function validateValue(inputValue: string | undefined, value: number | null | undefined, minValue: number | undefined, maxValue: number | undefined, decimalPlaces: number | undefined) {
     const isEmpty = isStringNullOrEmpty(inputValue);
     const hasNoValue = value == null;
 
@@ -56,7 +56,11 @@ export function NumberFieldComponent({
     // The german string representation of the original value.
     const formattedOriginalValue = useMemo(() => {
         if (value != null) {
-            return formatNumToGermanNum(value, decimalPlaces);
+            if(typeof value as unknown === 'string'){
+                return formatNumStringToGermanNum(value, decimalPlaces);
+            } else {
+                return formatNumToGermanNum(value, decimalPlaces);
+            }
         }
         return '';
     }, [value, decimalPlaces]);
@@ -100,7 +104,7 @@ export function NumberFieldComponent({
                 setInputValue(undefined);
             }
         } else {
-            onChange(undefined);
+            onChange(null);
             if (formatAfter) {
                 setInputValue(undefined);
             }
@@ -121,7 +125,7 @@ export function NumberFieldComponent({
 
         if (onBlur) {
             const parsed = parseGermanNumber(inputValue);
-            const finalValue = !isNaN(parsed) ? parseFloat(parsed.toFixed(decimalPlaces)) : undefined;
+            const finalValue = !isNaN(parsed) ? parseFloat(parsed.toFixed(decimalPlaces)) : null;
             onBlur(finalValue);
         }
     };

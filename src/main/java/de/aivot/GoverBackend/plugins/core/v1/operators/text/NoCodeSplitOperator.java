@@ -1,6 +1,6 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.text;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
@@ -8,8 +8,10 @@ import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import jakarta.annotation.Nullable;
 
 import java.util.List;
+import java.util.regex.Pattern;
 
 public class NoCodeSplitOperator extends NoCodeOperator {
     @Override
@@ -77,8 +79,14 @@ public class NoCodeSplitOperator extends NoCodeOperator {
         );
     }
 
+    @Nullable
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public String getHumanReadableTemplate() {
+        return "teile „#0“ mit dem Separator „#1“ auf";
+    }
+
+    @Override
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (args.length != 2) {
             throw new NoCodeWrongArgumentCountException(2, args.length);
         }
@@ -86,6 +94,10 @@ public class NoCodeSplitOperator extends NoCodeOperator {
         var input = castToString(args[0]);
         var separator = castToString(args[1]);
 
-        return new NoCodeResult(List.of(input.split(separator)));
+        if (separator.isEmpty()) {
+            return new NoCodeResult(List.of(input));
+        }
+
+        return new NoCodeResult(List.of(input.split(Pattern.quote(separator))));
     }
 }

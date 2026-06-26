@@ -4,14 +4,104 @@ import de.aivot.GoverBackend.lib.models.Identifiable;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
+import java.lang.reflect.Array;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 
 public class MapUtils {
+    @Nonnull
+    public static <K> Map<K, Object> deepCopy(@Nullable Map<K, ?> source) {
+        var result = new LinkedHashMap<K, Object>();
+        if (source == null) {
+            return result;
+        }
+
+        for (var entry : source.entrySet()) {
+            result.put(entry.getKey(), deepCopyValue(entry.getValue()));
+        }
+
+        return result;
+    }
+
+    @Nullable
+    public static Object deepCopyValue(@Nullable Object value) {
+        if (value == null) {
+            return null;
+        }
+
+        if (value instanceof Map<?, ?> map) {
+            return deepCopy(map);
+        }
+
+        if (value instanceof List<?> list) {
+            var result = new ArrayList<>(list.size());
+            for (var item : list) {
+                result.add(deepCopyValue(item));
+            }
+            return result;
+        }
+
+        if (value instanceof Set<?> set) {
+            var result = new LinkedHashSet<>();
+            for (var item : set) {
+                result.add(deepCopyValue(item));
+            }
+            return result;
+        }
+
+        if (value instanceof Collection<?> collection) {
+            var result = new ArrayList<>(collection.size());
+            for (var item : collection) {
+                result.add(deepCopyValue(item));
+            }
+            return result;
+        }
+
+        if (value.getClass().isArray()) {
+            return deepCopyArray(value);
+        }
+
+        return value;
+    }
+
+    @Nonnull
+    private static Object deepCopyArray(@Nonnull Object array) {
+        var length = Array.getLength(array);
+        var componentType = array.getClass().getComponentType();
+
+        if (componentType.isPrimitive()) {
+            var result = Array.newInstance(componentType, length);
+            System.arraycopy(array, 0, result, 0, length);
+            return result;
+        }
+
+        var copiedItems = new Object[length];
+        var canPreserveComponentType = true;
+        for (var i = 0; i < length; i++) {
+            var copiedItem = deepCopyValue(Array.get(array, i));
+            copiedItems[i] = copiedItem;
+            if (copiedItem != null && !componentType.isInstance(copiedItem)) {
+                canPreserveComponentType = false;
+            }
+        }
+
+        var result = Array.newInstance(canPreserveComponentType ? componentType : Object.class, length);
+        for (var i = 0; i < length; i++) {
+            Array.set(result, i, copiedItems[i]);
+        }
+        return result;
+    }
+
     @Nullable
     public static <T> T get(Map<String, Object> map, String key, Class<T> cls) {
         return get(map, key, cls, null);

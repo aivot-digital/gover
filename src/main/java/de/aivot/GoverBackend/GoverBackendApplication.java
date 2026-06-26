@@ -4,10 +4,12 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.redis.repository.configuration.EnableRedisRepositories;
+import org.springframework.data.web.config.EnableSpringDataWebSupport;
 
 @SpringBootApplication
 @EnableJpaRepositories(basePackages = {
         "de.aivot.GoverBackend.asset.repositories",
+        "de.aivot.GoverBackend.audit.repositories",
         "de.aivot.GoverBackend.config.repositories",
         "de.aivot.GoverBackend.dataObject.repositories",
         "de.aivot.GoverBackend.department.repositories",
@@ -32,6 +34,7 @@ import org.springframework.data.redis.repository.configuration.EnableRedisReposi
         "de.aivot.GoverBackend.form.cache.repositories",
         "de.aivot.GoverBackend.identity.cache.repositories",
 })
+@EnableSpringDataWebSupport(pageSerializationMode = EnableSpringDataWebSupport.PageSerializationMode.VIA_DTO)
 public class GoverBackendApplication {
     public static void main(String[] args) {
         SpringApplication.run(GoverBackendApplication.class, args);

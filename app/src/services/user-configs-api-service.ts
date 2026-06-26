@@ -45,16 +45,12 @@ export class UserConfigsApiService {
         this.api = api;
     }
 
-    public async listDefinitions(page: number = 0, size: number = 10): Promise<PaginationResponse<UserConfigDefinition>> {
-        return await this.api.get<PaginationResponse<UserConfigDefinition>>(`user-config-definitions/?page=${page}&size=${size}`, {});
+    public async listDefinitions(): Promise<UserConfigDefinition[]> {
+        return await this.api.get<UserConfigDefinition[]>(`user-configs/definitions/`, {});
     }
 
     public async list(userId: string | 'self', page: number = 0, size: number = 10): Promise<PaginationResponse<UserConfig>> {
         return await this.api.get<PaginationResponse<UserConfig>>(`user-configs/${userId}/?page=${page}&size=${size}`, {});
-    }
-
-    public async retrieve(userId: string | 'self', key: string): Promise<UserConfig> {
-        return await this.api.get<UserConfig>(`user-configs/${userId}/${key}/`, {});
     }
 
     public async save(userId: string | 'self', key: string, value: string | boolean | string[]): Promise<UserConfig> {

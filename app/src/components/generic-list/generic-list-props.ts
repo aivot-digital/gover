@@ -21,6 +21,7 @@ export interface GenericListProps<ItemType extends GenericListRowModel> {
     sx?: SxProps;
 
     preSearchElements?: ReactNode[];
+    listContextElements?: ReactNode[];
     menuItems?: Array<{
         label: string;
         icon: ReactNode;

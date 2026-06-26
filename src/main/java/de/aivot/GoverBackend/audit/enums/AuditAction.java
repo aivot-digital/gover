@@ -5,5 +5,6 @@ public enum AuditAction {
     List,
     Retrieve,
     Update,
-    Delete
+    Delete,
+    Export,
 }

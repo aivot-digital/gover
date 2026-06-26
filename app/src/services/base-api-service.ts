@@ -1,9 +1,14 @@
 import {AuthService} from './auth-service';
-import {ApiError, createApiError} from '../models/api-error';
+import {
+    API_ERROR_REASON_NETWORK_UNREACHABLE,
+    API_ERROR_REASON_TIMEOUT,
+    ApiError,
+    createApiError,
+} from '../models/api-error';
 import {createApiPath} from '../utils/url-path-utils';
 import {isStringNotNullOrEmpty} from '../utils/string-utils';
 
-export type QueryParams = Record<string, string | number | boolean | string[] | undefined> | URLSearchParams;
+export type QueryParams = Record<string, string | number | boolean | string[] | undefined | null> | URLSearchParams;
 
 export interface RequestOptions {
     abort?: AbortSignal;
@@ -17,7 +22,7 @@ const DEFAULT_TIMEOUT = 1000 * 60; // 1 Minute
 export const API_EVENT_UNREACHABLE = 'api-event-unreachble';
 
 export class BaseApiService {
-    private readonly auth = new AuthService();
+    private readonly auth = AuthService;
 
     public async get<T>(path: string, options?: RequestOptions): Promise<T> {
         const response = await this.fetch('GET', path, undefined, options);
@@ -63,6 +68,17 @@ export class BaseApiService {
         return await response.json() as R;
     }
 
+    public async putFormData<R>(path: string, formData: FormData, options?: RequestOptions): Promise<R> {
+        const response = await this.fetch('PUT', path, formData,  {
+            ...options,
+            headers: {
+                ...options?.headers,
+                'Content-Type': null, // Let the browser set the correct Content-Type with boundary
+            },
+        });
+        return await response.json() as R;
+    }
+
     public async postFormUrlEncoded<R>(path: string, formData: URLSearchParams, options?: RequestOptions): Promise<R> {
         const response = await this.fetch('POST', path, formData.toString(), {
             ...options,
@@ -80,25 +96,41 @@ export class BaseApiService {
         return await response.json() as R;
     }
 
+    public async putWithoutResponse<T>(path: string, body: T, options?: RequestOptions): Promise<void> {
+        await this.fetch('PUT', path, JSON.stringify(body), options);
+    }
+
     public async delete(path: string, options?: RequestOptions): Promise<void> {
         await this.fetch('DELETE', path, undefined, options);
     }
 
-    private async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
-        const accessToken = await this
-            .auth
-            .getAccessToken(options?.abort, options?.skipAuthCheck !== true);
+    public async fetch(method: string, path: string, body?: any, options?: RequestOptions): Promise<Response> {
+        if (!this.auth.isAccessTokenValid() || (this.requiresCsrfProtection(method) && this.auth.getCsrfToken() == null)) {
+            try {
+                await this.auth.refresh();
+            } catch (error) {
+                // Ignore refresh errors
+            }
+        }
+
+        const defaultHeaders = this.createDefaultHeaders();
+        if (this.requiresCsrfProtection(method)) {
+            const csrfToken = this.auth.getCsrfToken();
+            if (csrfToken != null) {
+                defaultHeaders['X-CSRF-TOKEN'] = csrfToken;
+            }
+        }
 
         let response: Response;
         try {
             response = await fetch(this.combineUrl(path, options), {
                 method: method,
-                headers: this.combineHeaders(this.createDefaultHeaders(accessToken), options),
+                headers: this.combineHeaders(defaultHeaders, options),
                 signal: options?.abort ?? AbortSignal.timeout(DEFAULT_TIMEOUT),
                 body: body,
             });
         } catch (error: any) {
-            response = handleFetchError(error);
+            response = handleFetchError(error, options);
         }
 
         if (response.status >= 400) {
@@ -106,14 +138,15 @@ export class BaseApiService {
                 if (response.status === 401) {
                     this.auth.logout();
                 }
-                if (response.status > 500) {
-                    dispatchApiUnreachableEvent();
-                }
             }
             throw await createApiError(response);
         }
 
         return response;
+    }
+
+    private requiresCsrfProtection(method: string): boolean {
+        return !['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method.toUpperCase());
     }
 
     protected combineUrl(path: string, options?: RequestOptions): string {
@@ -167,28 +200,30 @@ export class BaseApiService {
         return headers;
     }
 
-    protected createDefaultHeaders(accessToken: string | undefined | null): Record<string, string> {
-        const headers: Record<string, string> = {
+    protected createDefaultHeaders(): Record<string, string> {
+        return {
             'Content-Type': 'application/json',
             'Accept': 'application/json',
         };
-
-        if (accessToken != null) {
-            headers['Authorization'] = `Bearer ${accessToken}`;
-        }
-
-        return headers;
     }
 }
 
-export function handleFetchError(error: any): Response {
-    console.log(error.message);
-    console.log(error.name);
-    console.log(JSON.stringify(error));
+export function handleFetchError(error: any, options?: RequestOptions): Response {
+    if (error.name === 'AbortError' && options?.abort?.aborted) {
+        console.log('Request aborted');
+    } else {
+        console.log(error.message);
+        console.log(error.name);
+        console.log(JSON.stringify(error));
+    }
+
     if (error.name === 'TimeoutError') {
         const payload: ApiError = {
             status: 504,
-            details: null,
+            details: {
+                reason: API_ERROR_REASON_TIMEOUT,
+                online: typeof navigator !== 'undefined' ? navigator.onLine : undefined,
+            },
             message: 'Die Anfrage hat zu lange gedauert und wurde abgebrochen. Versuchen Sie es später erneut.',
             displayableToUser: true,
         };
@@ -201,9 +236,14 @@ export function handleFetchError(error: any): Response {
     }
 
     if (error.name === 'TypeError') {
+        dispatchApiUnreachableEvent();
+
         const payload: ApiError = {
             status: 503,
-            details: null,
+            details: {
+                reason: API_ERROR_REASON_NETWORK_UNREACHABLE,
+                online: typeof navigator !== 'undefined' ? navigator.onLine : undefined,
+            },
             message: 'Der Server ist nicht erreichbar. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
             displayableToUser: true,
         };

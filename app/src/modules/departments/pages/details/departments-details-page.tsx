@@ -42,8 +42,8 @@ export function DepartmentsDetailsPage() {
                         isDisabled: (item) => !item?.id,
                     },
                     {
-                        path: '/departments/:id/forms',
-                        label: 'Formulare',
+                        path: '/departments/:id/processes',
+                        label: 'Prozesse',
                         isDisabled: (item) => !item?.id,
                     },
                 ]}
@@ -101,11 +101,11 @@ const HelpDialogContent: GenericPageHeaderPropsHelpDialog = {
     content: (
         <>
             <Typography>
-                Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
+                Eine Organisationseinheit ist eine zentrale Verwaltungseinheit in Gover und essenziell für den Betrieb der Anwendung. Sie speichert wichtige Stammdaten wie Adress- und Kontaktdaten sowie rechtliche Informationen (z.
                 B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden können.
             </Typography>
             <Typography sx={{mt: 2}}>
-                Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb des Fachbereichs definiert.
+                Einer Organisationseinheit sind Mitarbeiter:innen mit einer spezifischen Rolle zugeordnet, die deren Berechtigungen innerhalb der Organisationseinheit definiert.
             </Typography>
         </>
     ),

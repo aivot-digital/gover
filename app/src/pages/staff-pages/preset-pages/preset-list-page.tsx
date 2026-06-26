@@ -1,11 +1,12 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {CopyAllOutlined, EditOutlined} from '@mui/icons-material';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../slices/user-slice';
-import React, {useState} from 'react';
+import React, {useCallback, useMemo, useState} from 'react';
 import {CellLink} from '../../../components/cell-link/cell-link';
 import {Preset} from '../../../models/entities/preset';
 import {PresetsApiService} from '../../../modules/presets/presets-api-service';
@@ -17,6 +18,7 @@ import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog
 import {useNavigate} from 'react-router-dom';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {GenericListPropsFetchOptions} from '../../../components/generic-list/generic-list-props';
 
 const columns: Array<GridColDef<Preset>> = [
     {
@@ -65,9 +67,69 @@ export function PresetListPage() {
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
     const [showAddPresetDialog, setShowAddPresetDialog] = useState(false);
 
-    const navigateTo = (preset: Preset): void => {
+    const navigateTo = useCallback((preset: Preset): void => {
         navigate(`/presets/edit/${preset.key}/${preset.draftedVersion}`);
-    };
+    }, [navigate]);
+
+    const header = useMemo(() => ({
+        icon: <CopyAllOutlined />,
+        title: 'Vorlagen',
+        actions: [
+            {
+                label: 'Neue Vorlage',
+                icon: <AddOutlinedIcon />,
+                onClick: () => {
+                    setShowAddPresetDialog(true);
+                },
+                variant: 'contained' as const,
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Vorlagen',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography>
+                        Vorlagen dienen als Bausteine, die in Formularen verbaut werden können.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Mit Vorlagen können Sie Formularelemente kombinieren und als wiederverwendbare Vorlage abspeichern.
+                        So können Sie z.B. Standardtexte oder Formularabschnitte zentral verwalten und in mehreren Formularen verwenden.
+                    </Typography>
+                </>
+            ),
+        },
+    }), []);
+
+    const fetchPresets = useCallback((order: GenericListPropsFetchOptions<Preset>) => {
+        return new PresetsApiService(order.api)
+            .list(
+                order.page,
+                order.size,
+                order.sort,
+                order.order,
+                {
+                    title: order.search,
+                },
+            );
+    }, []);
+
+    const getRowIdentifier = useCallback((row: Preset) => row.key, []);
+
+    const rowActions = useCallback((item: Preset) => [
+        {
+            icon: <EditOutlined />,
+            to: `/presets/edit/${item.key}/${item.draftedVersion}`,
+            tooltip: 'Vorlage bearbeiten',
+            visible: item.draftedVersion != null,
+        },
+        {
+            icon: <Visibility />,
+            to: `/presets/edit/${item.key}/${item.publishedVersion}`,
+            tooltip: 'Vorlage ansehen',
+            visible: item.draftedVersion === null && item.publishedVersion != null,
+        },
+    ], []);
 
     return (
         <PageWrapper
@@ -76,68 +138,23 @@ export function PresetListPage() {
             background
         >
             <GenericListPage<Preset>
-                header={{
-                    icon: <CopyAllOutlined />,
-                    title: 'Vorlagen',
-                    actions: [
-                        {
-                            label: 'Neue Vorlage',
-                            icon: <AddOutlinedIcon />,
-                            onClick: () => {
-                                setShowAddPresetDialog(true);
-                            },
-                            variant: 'contained',
-                        },
-                    ],
-                    helpDialog: {
-                        title: 'Hilfe zu Vorlagen',
-                        tooltip: 'Hilfe anzeigen',
-                        content: (
-                            <>
-                                <Typography>
-                                    Vorlagen dienen als Bausteine, die in Formularen verbaut werden können.
-                                </Typography>
-                                <Typography sx={{mt: 2}}>
-                                    Mit Vorlagen können Sie Formularelemente kombinieren und als wiederverwendbare Vorlage abspeichern.
-                                    So können Sie z.B. Standardtexte oder Formularabschnitte zentral verwalten und in mehreren Formularen verwenden.
-                                </Typography>
-                            </>
-                        ),
-                    },
-                }}
+                header={header}
                 searchLabel="Vorlage suchen"
                 searchPlaceholder="Name der Vorlage eingeben…"
-                fetch={(order) => {
-                    return new PresetsApiService(order.api)
-                        .list(
-                            order.page,
-                            order.size,
-                            order.sort,
-                            order.order,
-                            {
-                                title: order.search,
-                            },
-                        );
-                }}
+                fetch={fetchPresets}
                 columnDefinitions={columns}
-                getRowIdentifier={row => row.key}
-                noDataPlaceholder="Keine Vorlagen angelegt"
+                getRowIdentifier={getRowIdentifier}
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Noch keine Vorlagen angelegt"
+                        description="Vorlagen bündeln wiederverwendbare Bausteine, damit Prozesse und Formulare schneller und einheitlicher erstellt werden können."
+                        addText="Neue Vorlage anlegen"
+                        onAdd={() => setShowAddPresetDialog(true)}
+                    />
+                }
                 noSearchResultsPlaceholder="Keine Vorlagen gefunden"
                 rowActionsCount={3}
-                rowActions={(item: Preset) => [
-                    {
-                        icon: <EditOutlined />,
-                        to: `/presets/edit/${item.key}/${item.draftedVersion}`,
-                        tooltip: 'Vorlage bearbeiten',
-                        visible: item.draftedVersion != null,
-                    },
-                    {
-                        icon: <Visibility />,
-                        to: `/presets/edit/${item.key}/${item.publishedVersion}`,
-                        tooltip: 'Vorlage ansehen',
-                        visible: item.draftedVersion === null && item.publishedVersion != null,
-                    },
-                ]}
+                rowActions={rowActions}
                 defaultSortField="title"
                 disableFullWidthToggle={true}
             />

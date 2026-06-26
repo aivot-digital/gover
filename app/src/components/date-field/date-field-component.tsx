@@ -16,12 +16,6 @@ const formatMap = {
     [DateFieldComponentModelMode.Year]: 'yyyy',
 };
 
-const formatReadableMap = {
-    [DateFieldComponentModelMode.Day]: 'TT.MM.JJJJ',
-    [DateFieldComponentModelMode.Month]: 'MM.JJJJ',
-    [DateFieldComponentModelMode.Year]: 'JJJJ',
-};
-
 const viewsMap: {
     [k in DateFieldComponentModelMode]: ('day' | 'month' | 'year')[];
 } = {
@@ -30,10 +24,24 @@ const viewsMap: {
     [DateFieldComponentModelMode.Year]: ['year'],
 };
 
+function normalizeDateForMode(date: Date, mode: DateFieldComponentModelMode): Date {
+    const normalized = new Date(date);
+
+    if (mode === DateFieldComponentModelMode.Year) {
+        normalized.setMonth(0, 1);
+    } else if (mode === DateFieldComponentModelMode.Month) {
+        normalized.setDate(1);
+    }
+
+    normalized.setHours(0, 0, 0, 0);
+    return normalized;
+}
+
 export function DateFieldComponent({
                                        label,
                                        error,
                                        hint,
+                                       hideHelperText,
                                        required,
                                        disabled,
                                        busy,
@@ -53,8 +61,11 @@ export function DateFieldComponent({
                                    }: DateFieldComponentProps) {
     const dateValue = value != null ? new Date(value) : null;
     const [localValue, setLocalValue] = useState<Date | null>(dateValue);
-    const [lastInputWasTyping, setLastInputWasTyping] = useState(false);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    // MUI fires picker changes for both popover selection and direct field edits.
+    // We track keyboard-driven edits separately so clearing the text field also
+    // propagates an explicit clear to the parent instead of only mutating local picker state.
+    const lastInputWasTypingRef = useRef(false);
     const lastPickerValueRef = useRef<Date | null>(dateValue);
 
     useEffect(() => {
@@ -63,11 +74,16 @@ export function DateFieldComponent({
         lastPickerValueRef.current = parsed;
     }, [value]);
 
+    useEffect(() => {
+        return () => {
+            if (debounceTimeoutRef.current) {
+                clearTimeout(debounceTimeoutRef.current);
+            }
+        };
+    }, []);
+
     const computedLabel = useMemo(() => {
         let computedLabel = label;
-        if (computedLabel) {
-            computedLabel += ` (${formatReadableMap[mode ?? DateFieldComponentModelMode.Day]})`;
-        }
         if (required) {
             if (computedLabel) {
                 computedLabel += ' *';
@@ -81,17 +97,17 @@ export function DateFieldComponent({
     const format = useMemo(() => formatMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
     const views = useMemo(() => viewsMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
     const opensTo = useMemo(() => mode ?? 'day', [mode]);
-    const helper = useMemo(() => error != null ? error : hint, [error, hint]);
+    const helper = useMemo(() => hideHelperText ? undefined : error != null ? error : hint, [error, hideHelperText, hint]);
 
     const triggerChange = (date: Date | null) => {
         if (date === null) {
-            onChange(undefined);
-            onBlur?.(undefined);
+            onChange(null);
+            onBlur?.(null);
             return;
         }
 
         if (date instanceof Date && !isNaN(date.getTime())) {
-            const iso = date.toISOString();
+            const iso = normalizeDateForMode(date, mode ?? DateFieldComponentModelMode.Day).toISOString();
             onChange(iso);
             onBlur?.(iso);
         }
@@ -101,7 +117,9 @@ export function DateFieldComponent({
         setLocalValue(newDate);
         lastPickerValueRef.current = newDate;
 
-        if (!lastInputWasTyping) {
+        // Popover interactions are committed on close. Text input changes must be
+        // forwarded immediately (or via blur/debounce) so manual clearing is persisted.
+        if (!lastInputWasTypingRef.current) {
             return;
         }
 
@@ -126,13 +144,13 @@ export function DateFieldComponent({
     };
 
     const handleBlur = () => {
-        if (lastInputWasTyping && bufferInputUntilBlur) {
+        if (lastInputWasTypingRef.current && bufferInputUntilBlur) {
             triggerChange(localValue);
         }
     };
 
     const handleClose = () => {
-        if (lastInputWasTyping) return;
+        if (lastInputWasTypingRef.current) return;
 
         const currentIso = value ?? null;
         const pickedIso = lastPickerValueRef.current?.toISOString() ?? null;
@@ -143,10 +161,20 @@ export function DateFieldComponent({
     };
 
     const handleOpen = () => {
-        setLastInputWasTyping(false);
+        lastInputWasTypingRef.current = false;
     };
 
-    const slotProps = useMemo(() => ({
+    const handleInputChange = () => {
+        lastInputWasTypingRef.current = true;
+    };
+
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        if (event.key.length === 1 || event.key === 'Backspace' || event.key === 'Delete') {
+            lastInputWasTypingRef.current = true;
+        }
+    };
+
+    const slotProps = {
         textField: {
             variant: 'outlined',
             error: error != null,
@@ -155,7 +183,9 @@ export function DateFieldComponent({
             InputLabelProps: {
                 title: computedLabel,
             },
-            onInput: () => setLastInputWasTyping(true),
+            onInput: handleInputChange,
+            onKeyDown: handleKeyDown,
+            onPaste: handleInputChange,
             onBlur: handleBlur,
             InputProps: {
                 startAdornment: startIcon && (
@@ -173,7 +203,7 @@ export function DateFieldComponent({
         actionBar: {
             actions: ['accept', 'cancel', 'clear'],
         },
-    }), [error, autocomplete, computedLabel, helper]);
+    };
 
     return (
         <LocalizationProvider
@@ -213,4 +243,3 @@ export function DateFieldComponent({
         </LocalizationProvider>
     );
 }
-

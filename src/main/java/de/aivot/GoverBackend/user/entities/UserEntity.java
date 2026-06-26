@@ -13,8 +13,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
-import jakarta.annotation.Nonnull;
-import java.util.List;
 import java.util.Optional;
 
 @Entity
@@ -84,10 +82,16 @@ public class UserEntity {
         return true;
     }
 
+    public boolean isArtificialUser() {
+        // Check if the user ID is a placeholder ID (e.g., "0000-000-0000", "0000-000-0001", etc.)
+        return id != null && id.matches("^[0-]+[0-9]{3}$");
+    }
+
     // endregion
 
     // region Transformers
 
+    @Deprecated
     public Optional<UserEntity> asSuperAdmin() {
         if (getIsSuperAdmin()) {
             return Optional.of(this);
@@ -96,6 +100,7 @@ public class UserEntity {
         }
     }
 
+    @Deprecated
     public Optional<UserEntity> asSystemAdmin() {
         if (getIsSystemAdmin() || getIsSuperAdmin()) {
             return Optional.of(this);

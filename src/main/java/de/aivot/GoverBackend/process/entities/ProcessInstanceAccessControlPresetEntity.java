@@ -4,7 +4,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Entity
@@ -28,25 +28,28 @@ public class ProcessInstanceAccessControlPresetEntity {
     private Integer targetProcessId;
 
     @Nonnull
+    private Integer targetProcessVersion;
+
+    @Nonnull
     private List<String> permissions;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     // region Signales
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -94,21 +97,21 @@ public class ProcessInstanceAccessControlPresetEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public ProcessInstanceAccessControlPresetEntity setCreated(@Nonnull LocalDateTime created) {
+    public ProcessInstanceAccessControlPresetEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public ProcessInstanceAccessControlPresetEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public ProcessInstanceAccessControlPresetEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }
@@ -120,6 +123,16 @@ public class ProcessInstanceAccessControlPresetEntity {
 
     public ProcessInstanceAccessControlPresetEntity setTargetProcessId(@Nonnull Integer targetProcessId) {
         this.targetProcessId = targetProcessId;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getTargetProcessVersion() {
+        return targetProcessVersion;
+    }
+
+    public ProcessInstanceAccessControlPresetEntity setTargetProcessVersion(@Nonnull Integer targetProcessVersion) {
+        this.targetProcessVersion = targetProcessVersion;
         return this;
     }
 

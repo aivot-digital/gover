@@ -1,18 +1,18 @@
 package de.aivot.GoverBackend.process.services;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.GoverBackend.config.services.SystemConfigService;
 import de.aivot.GoverBackend.core.configs.ProviderNameSystemConfigDefinition;
-import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.process.entities.*;
+import de.aivot.GoverBackend.process.enums.ProcessVersionStatus;
+import de.aivot.GoverBackend.process.filters.ProcessDefinitionEdgeFilter;
+import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
 import de.aivot.GoverBackend.system.properties.BuildProperties;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Service
@@ -45,28 +45,61 @@ public class ProcessExportService {
                 .retrieve(processId)
                 .orElseThrow(ResponseException::notFound);
 
+        cleanProcessDataForExport(processDefinition);
+
         var processVersion = processDefinitionVersionService
                 .retrieve(ProcessVersionEntityId.of(processId, version))
                 .orElseThrow(ResponseException::notFound);
 
+        cleanProcessVersionDataForExport(processVersion);
+
         var nodes = processDefinitionNodeService
-                .list()
+                .list(
+                        ProcessNodeFilter
+                                .create()
+                                .setProcessId(processId)
+                                .setProcessVersion(version)
+                )
                 .stream()
-                .peek((node) -> {
+                .map((node) -> {
                     var nodeProvider = processNodeProviderService
                             .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                             .orElseThrow(() -> new RuntimeException("Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ konnte nicht gefunden werden."
                                     .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())));
 
-                    var cleanedNodeData = nodeProvider
-                            .cleanConfigurationForExport(node.getConfiguration());
+                    var clonedConfiguration = node
+                            .getConfiguration()
+                            .clone();
 
-                    node.setConfiguration(cleanedNodeData);
+                    var cleanedConfiguration = nodeProvider
+                            .cleanConfigurationForExport(clonedConfiguration);
+
+                    return new ProcessNodeEntity(
+                            node.getId(), // id,
+                            node.getProcessId(), // processId
+                            node.getProcessVersion(), // processVersion
+                            node.getName(), // name
+                            node.getDescription(), // description
+                            node.getDataKey(), // dataKey
+                            node.getProcessNodeDefinitionKey(), // processNodeDefinitionKey
+                            node.getProcessNodeDefinitionVersion(), // processNodeDefinitionVersion
+                            cleanedConfiguration, // configuration
+                            node.getOutputMappings(), // outputMappings
+                            null, // timeLimitDays
+                            null, // requirements
+                            null, // notes
+                            false // savedWithErrors
+                    );
                 })
                 .toList();
 
         var edges = processDefinitionEdgeService
-                .list()
+                .list(
+                        ProcessDefinitionEdgeFilter
+                                .create()
+                                .setProcessDefinitionId(processId)
+                                .setProcessDefinitionVersion(version)
+                )
                 .stream()
                 .toList();
 
@@ -77,66 +110,40 @@ public class ProcessExportService {
             vendorName = "Unbekannt";
         }
 
-        var exportData = new ProcessExportData(
+        return new ProcessExport(
                 buildProperties.getBuildVersion(),
-                LocalDateTime.now(),
+                buildProperties.getBuildNumber(),
+                Instant.now(),
                 vendorName,
                 processDefinition,
                 processVersion,
                 nodes,
                 edges
         );
+    }
 
-        String exportDataString;
-        try {
-            exportDataString = exportData.toJSONString();
-        } catch (JsonProcessingException e) {
-            throw ResponseException.internalServerError("Failed to serialize process export data", e);
-        }
+    private static void cleanProcessVersionDataForExport(ProcessVersionEntity processVersion) {
+        processVersion.setPublished(null);
+        processVersion.setRevoked(null);
+        processVersion.setStatus(ProcessVersionStatus.Drafted);
+    }
 
-        /*
-        KeyPairGenerator kpg = KeyPairGenerator.getInstance("RSA");
-        kpg.initialize(1024);
-        return kpg.genKeyPair();
-
-        KeyPair keyPair = getKeyPair();
-
-        byte[] data = "test".getBytes("UTF8");
-
-        Signature sig = Signature.getInstance("SHA1WithRSA");
-        sig.initSign(keyPair.getPrivate());
-        sig.update(data);
-        byte[] signatureBytes = sig.sign();
-
-        var sig = new BASE64Encoder().encode(signatureBytes);
-
-        sig.initVerify(keyPair.getPublic());
-        sig.update(data);
-
-        System.out.println(sig.verify(signatureBytes));
-         */
-
-
-        return new ProcessExport(
-                exportData,
-                "TODO"
-        );
+    private static void cleanProcessDataForExport(ProcessEntity processDefinition) {
+        processDefinition.setAccessKey(null);
+        processDefinition.setDepartmentId(null);
+        processDefinition.setVersionCount(null);
+        processDefinition.setPublishedVersion(null);
+        processDefinition.setDraftedVersion(null);
+        processDefinition.setInternalTitle(null);
     }
 
     public record ProcessExport(
             @Nonnull
-            @NotNull
-            ProcessExportData data,
-            @Nullable
-            String signature
-    ) {
-    }
-
-    public record ProcessExportData(
-            @Nonnull
             String appVersion,
             @Nonnull
-            LocalDateTime exportTimestamp,
+            String appBuildNumber,
+            @Nonnull
+            Instant exportTimestamp,
             @Nonnull
             String createdByVendor,
             @NotNull
@@ -152,10 +159,5 @@ public class ProcessExportService {
             @Nonnull
             List<ProcessEdgeEntity> edges
     ) {
-        public String toJSONString() throws JsonProcessingException {
-            return ObjectMapperFactory
-                    .getInstance()
-                    .writeValueAsString(this);
-        }
     }
 }

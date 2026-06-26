@@ -3,22 +3,23 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import {type StepElement} from '../../models/elements/steps/step-element';
 import Tooltip from '@mui/material/Tooltip';
-import React from 'react';
+import React, {useMemo} from 'react';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {setCurrentStep} from '../../slices/stepper-slice';
-import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {getStepIcon} from '../../data/step-icons';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
 import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {resolveSummaryStepIndex} from '../../utils/resolve-summary-step-index';
 
 export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) {
     const {
         model,
         showTechnical,
         allowStepNavigation,
-        elementData,
+        authoredElementValues,
+        derivedData,
     } = props;
 
     const {
@@ -26,15 +27,22 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
     } = model;
 
     const dispatch = useAppDispatch();
-    const application = useAppSelector(selectLoadedForm);
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
-    // FIXME: This is no a good solution.
-    const index = application?.version.rootElement.children?.findIndex(step => step.id === model.id);
+    const stepIndex = useMemo(() => {
+        return resolveSummaryStepIndex(rootElement, derivedData, model.id);
+    }, [derivedData, model.id, rootElement]);
+
+    const canNavigateToStep = (allowStepNavigation == null || allowStepNavigation === true) && stepIndex !== -1;
 
     const handleNavigateToStep = () => {
-        if (index != null) {
-            dispatch(setCurrentStep(index + 1)); // Add 1 to skip general information page
+        if (stepIndex === -1) {
+            return;
         }
+
+        dispatch(setCurrentStep(stepIndex));
     };
 
     const Icon = getStepIcon(model);
@@ -65,7 +73,7 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
                     }
                 </Typography>
                 {
-                    (allowStepNavigation == null || allowStepNavigation === true) &&
+                    canNavigateToStep &&
                     <Tooltip
                         title="Diesen Abschnitt bearbeiten"
                         arrow
@@ -92,7 +100,8 @@ export function StepComponentSummary(props: BaseSummaryProps<StepElement, any>) 
                             element={model}
                             showTechnical={showTechnical}
                             allowStepNavigation={allowStepNavigation}
-                            elementData={elementData}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
                         />
                     ))
             }

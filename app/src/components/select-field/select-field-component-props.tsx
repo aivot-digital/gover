@@ -11,12 +11,13 @@ export interface SelectFieldComponentProps {
     readOnly?: boolean;
     required?: boolean;
     error?: string;
-    value?: string;
-    onChange: (val: string | undefined) => void;
+    value?: string | null;
+    onChange: (val: string | null) => void;
     options: SelectFieldComponentOption[];
     emptyStatePlaceholder?: string;
     sx?: SxProps<Theme>;
     startIcon?: React.ReactNode;
     endAction?: EndAction | Array<EndAction>;
     muiPassTroughProps?: TextFieldProps;
+    size?: 'small' | 'medium';
 }

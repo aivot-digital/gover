@@ -4,7 +4,7 @@ import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 
 export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.Assets]: 'Datei / Medieninhalt',
-    [ServerEntityType.Departments]: 'Fachbereich',
+    [ServerEntityType.Departments]: 'Organisationseinheiten',
     [ServerEntityType.DataObjectItems]: 'Datenobjekt',
     [ServerEntityType.DataObjectSchemas]: 'Datenmodell',
     [ServerEntityType.Destinations]: 'Schnittstelle',
@@ -15,16 +15,22 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.ProviderLinks]: 'Link',
     [ServerEntityType.Secrets]: 'Geheimnis',
     [ServerEntityType.Submissions]: 'Vorgang',
-    [ServerEntityType.Themes]: 'Farbschema',
+    [ServerEntityType.Teams]: 'Team',
+    [ServerEntityType.Themes]: 'Erscheinungsbild',
     [ServerEntityType.UserRoles]: 'Domänenrolle',
+    [ServerEntityType.DomainRoles]: 'Domänenrolle',
     [ServerEntityType.SystemRoles]: 'Systemrolle',
+    [ServerEntityType.StorageProviders]: 'Speicheranbieter',
+    [ServerEntityType.Processes]: 'Prozess',
+    [ServerEntityType.ProcessInstances]: 'Vorgang',
+    [ServerEntityType.ProcessNodes]: 'Formular',
 };
 
 export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
     [ServerEntityType.Assets]: ModuleIcons.assets,
-    [ServerEntityType.Departments]: ModuleIcons.dataObjects,
+    [ServerEntityType.Departments]: ModuleIcons.departments,
     [ServerEntityType.DataObjectItems]: ModuleIcons.dataObjects,
-    [ServerEntityType.DataObjectSchemas]: ModuleIcons.departments,
+    [ServerEntityType.DataObjectSchemas]: ModuleIcons.dataObjects,
     [ServerEntityType.Destinations]: ModuleIcons.destinations,
     [ServerEntityType.Forms]: ModuleIcons.forms,
     [ServerEntityType.IdentityProviders]: ModuleIcons.identity,
@@ -33,7 +39,13 @@ export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {
     [ServerEntityType.ProviderLinks]: ModuleIcons.providerLinks,
     [ServerEntityType.Secrets]: ModuleIcons.secrets,
     [ServerEntityType.Submissions]: ModuleIcons.submissions,
+    [ServerEntityType.Teams]: ModuleIcons.teams,
     [ServerEntityType.Themes]: ModuleIcons.themes,
     [ServerEntityType.UserRoles]: ModuleIcons.roles,
+    [ServerEntityType.DomainRoles]: ModuleIcons.roles,
     [ServerEntityType.SystemRoles]: ModuleIcons.roles,
+    [ServerEntityType.StorageProviders]: ModuleIcons.storage,
+    [ServerEntityType.Processes]: ModuleIcons.processes,
+    [ServerEntityType.ProcessInstances]: ModuleIcons.submissions,
+    [ServerEntityType.ProcessNodes]: ModuleIcons.forms,
 };

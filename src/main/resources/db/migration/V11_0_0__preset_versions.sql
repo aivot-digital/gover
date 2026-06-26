@@ -7,8 +7,8 @@
 alter table preset_versions
     add column int_version smallint default 1,
     add column status      smallint default 0,
-    add column published   timestamp,
-    add column revoked     timestamp;
+    add column published   timestamptz,
+    add column revoked     timestamptz;
 
 -- set the int_version column based on the version column
 update preset_versions as prs

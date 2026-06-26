@@ -1,17 +1,17 @@
 import {Box, Button, Paper, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useMemo} from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
 import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
 import {AuthService} from '../../../services/auth-service';
 import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
+import {useLocation} from 'react-router-dom';
 
 export function Login() {
-    const [loginUrl, setLoginUrl] = useState<string>('');
-    useEffect(() => {
-        new AuthService()
-            .getLoginUrl()
-            .then(setLoginUrl);
-    }, []);
+    const location = useLocation();
+
+    const loginUrl = useMemo(() => {
+        return AuthService.getLoginUrl(location);
+    }, [location]);
 
     return (
         <>
@@ -38,13 +38,17 @@ export function Login() {
                     }}
                 >
 
-                    <AccountCircle sx={{ fontSize: 64, mb: 1, color: 'primary.main' }} />
-                    <Typography variant="h2" sx={{ mb: 2 }} fontWeight={600}>
+                    <AccountCircle sx={{fontSize: 64, mb: 1, color: 'primary.main'}}/>
+                    <Typography variant="h2"
+                                sx={{mb: 2}}
+                                fontWeight={600}>
                         Anmeldung erforderlich
                     </Typography>
 
-                    <Typography variant="body1" sx={{ mt: 2 }}>
-                        Für die Nutzung dieser Anwendung benötigen Sie ein Mitarbeitenden-Konto. Bitte melden Sie sich über den Identity Provider (IDP) an.
+                    <Typography variant="body1"
+                                sx={{mt: 2}}>
+                        Für die Nutzung dieser Anwendung benötigen Sie ein Mitarbeitenden-Konto. Bitte melden Sie sich
+                        über den Identity Provider (IDP) an.
                     </Typography>
 
                     <Button
@@ -58,8 +62,9 @@ export function Login() {
                                 }}
                             />
                         }
-                        sx={{ mt: 4 }}
+                        sx={{mt: 4}}
                         href={loginUrl}
+                        disabled={loginUrl.length === 0}
                     >
                         Anmeldung via Identity Provider
                     </Button>

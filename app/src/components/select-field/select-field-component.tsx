@@ -1,5 +1,5 @@
 import React, {useMemo} from 'react';
-import {InputAdornment, ListItemIcon, ListItemText, MenuItem, TextField, Typography} from '@mui/material';
+import {InputAdornment, ListItemIcon, ListItemText, MenuItem, TextField} from '@mui/material';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type SelectFieldComponentProps} from './select-field-component-props';
 import {renderIconButton} from '../text-field/text-field-component';
@@ -7,21 +7,22 @@ import {renderIconButton} from '../text-field/text-field-component';
 export function SelectFieldComponent(props: SelectFieldComponentProps) {
     const {
         label,
-            autocomplete,
-            placeholder,
-            hint,
-            disabled,
-            readOnly,
-            required,
-            error,
-            value,
-            onChange,
-            options,
-            emptyStatePlaceholder,
-            startIcon,
-            endAction,
-            sx,
-            muiPassTroughProps,
+        autocomplete,
+        placeholder,
+        hint,
+        disabled,
+        readOnly,
+        required,
+        error,
+        value,
+        onChange,
+        options,
+        emptyStatePlaceholder,
+        startIcon,
+        endAction,
+        sx,
+        muiPassTroughProps,
+        size = 'medium',
     } = props;
 
     const val = value ?? '';
@@ -48,20 +49,24 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
             ));
     }, [options]);
 
+    const isValueInOptions = useMemo(() => {
+        return options.some((opt) => opt.value === value);
+    }, [value, options]);
+
     return (
         <TextField
             {...muiPassTroughProps}
             select
-            fullWidth
-            label={label + ((required ?? false) ? ' *' : '')}
+            label={label}
             autoComplete={autocomplete}
+            required={required}
             error={error != null}
             helperText={error != null ? error : hint}
             placeholder={placeholder}
-            value={val}
+            value={isValueInOptions ? val : ''}
             onChange={(event) => {
                 if (isStringNullOrEmpty(event.target.value)) {
-                    onChange(undefined);
+                    onChange(null);
                 } else {
                     onChange(event.target.value);
                 }
@@ -95,6 +100,8 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                     return option?.label ?? '';
                 },
             }}
+            size={size}
+            fullWidth
         >
             {
                 !(required ?? false) &&

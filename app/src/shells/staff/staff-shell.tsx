@@ -1,38 +1,31 @@
 import React, {type ReactNode, useEffect, useMemo} from 'react';
 import {type User} from '../../modules/users/models/user';
-import {type Page} from '../../models/dtos/page';
-import {setMemberships, setUser} from '../../slices/user-slice';
+import {setMemberships, setPermissions, setUser} from '../../slices/user-slice';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {type SystemConfigResponseDto} from '../../modules/configs/dtos/system-config-response-dto';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {
     addSnackbarMessage,
     type ErrorMessage,
     selectErrorMessage,
-    selectSetup,
     selectStatus,
     setErrorMessage,
-    setSetup,
     setStatus,
     ShellStatus,
     SnackbarSeverity,
     SnackbarType,
 } from '../../slices/shell-slice';
-import {SystemApiService} from '../../modules/system/system-api-service';
-import {type SystemSetupDTO} from '../../modules/system/dtos/system-setup-dto';
-import {setSystemConfigs, setSystemConfigsFromMap} from '../../slices/system-config-slice';
+import {setSystemConfigsFromMap} from '../../slices/system-config-slice';
 import {Login} from '../../pages/staff-pages/login/login';
 import Box from '@mui/material/Box';
 import {ShellDrawer} from './components/shell-drawer';
 import {ShellProgress} from './components/shell-progress';
 import {ShellSearchDialog} from './components/shell-search-dialog';
-import {API_EVENT_UNREACHABLE, BaseApiService} from '../../services/base-api-service';
+import {API_EVENT_UNREACHABLE} from '../../services/base-api-service';
 import {Outlet, useLocation, useRouteError} from 'react-router-dom';
 import {ShellSessionEndWarnPopup} from './components/shell-session-end-warn-popup';
 import {ShellLoader} from './components/shell-loader';
 import {AuthService} from '../../services/auth-service';
 import {ShellSessionExpiredDialog} from './components/shell-session-expired-dialog';
-import {isApiError} from '../../models/api-error';
 import {ShellOffline} from './components/shell-offline';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {ShellResolutionOverlay} from './components/shell-resolution-overlay';
@@ -46,11 +39,13 @@ import {
 import {UsersApiService} from '../../modules/users/users-api-service';
 import {PermissionApiService} from '../../modules/permissions/permission-api-service';
 import {PermissionSet} from '../../modules/permissions/models/permission-set';
+import {AlphaVersionNoticeDialog} from '../../dialogs/alpha-version-notice-dialog/alpha-version-notice-dialog';
+import {DuplicatePageWarning} from '../../components/duplicate-page-warning/duplicate-page-warning';
+import {isApiError} from '../../models/api-error';
 
 export function StaffShell(): ReactNode {
     const routerError = useRouteError();
     const dispatch = useAppDispatch();
-    const setup = useAppSelector(selectSetup);
     const status = useAppSelector(selectStatus);
     const appError = useAppSelector(selectErrorMessage);
 
@@ -58,7 +53,7 @@ export function StaffShell(): ReactNode {
 
     // Display a message if the API becomes unreachable.
     useEffect(() => {
-        window.addEventListener(API_EVENT_UNREACHABLE, function() {
+        window.addEventListener(API_EVENT_UNREACHABLE, function () {
             dispatch(addSnackbarMessage({
                 key: 'api-unreachable',
                 message: 'Die Verbindung zum Server wurde unterbrochen. Bitte überprüfen Sie Ihre Internetverbindung und versuchen Sie es erneut.',
@@ -68,57 +63,41 @@ export function StaffShell(): ReactNode {
         });
     }, []);
 
-    // Fetch the setup on mount to determine if the system is online, the theme, logo, etc.
-    useEffect(() => {
-        fetchSetup()
-            .then((setup) => {
-                dispatch(setSetup(setup));
-                dispatch(setSystemConfigsFromMap(setup.publicConfigs));
-            })
-            .catch((err) => {
-                if (isApiError(err) && err.status >= 500) {
-                    dispatch(setStatus(ShellStatus.Offline));
-                } else if ('status' in err && err.status >= 500) {
-                    dispatch(setStatus(ShellStatus.Offline));
-                } else {
-                    console.error(err);
-                }
-            });
-    }, []);
-
     // Fetch the auth state after the setup for a more consistent startup order.
     useEffect(() => {
-        if (setup == null) {
-            return;
-        }
-
         const search = new URLSearchParams(window.location.search);
         if (isStringNotNullOrEmpty(search.get('logout'))) {
-            new AuthService().logout();
+            AuthService.logout();
 
             dispatch(setUser(undefined));
             dispatch(setMemberships([]));
+            dispatch(setPermissions(undefined));
             dispatch(setStatus(ShellStatus.Login));
 
             return;
         }
 
-        authenticateWithOidcCode(search)
+        authenticateWithOidcCode()
             .then((res) => {
                 if (res != null) {
                     dispatch(setUser(res.user));
                     dispatch(setMemberships(res.memberships));
-                    dispatch(setSystemConfigs(res.configs));
+                    dispatch(setPermissions(res.permissionSet));
+                    dispatch(setSystemConfigsFromMap(res.configs));
                     dispatch(setStatus(ShellStatus.Ready));
                 } else {
                     dispatch(setStatus(ShellStatus.Login));
                 }
             })
             .catch((err) => {
+                if (isApiError(err) && err.status >= 501) {
+                    dispatch(setStatus(ShellStatus.Offline));
+                } else {
+                    dispatch(setStatus(ShellStatus.Login));
+                }
                 console.error(err);
-                dispatch(setStatus(ShellStatus.Login));
             });
-    }, [setup]);
+    }, []);
 
     const error: ErrorMessage | undefined = useMemo(() => {
         if (routerError == null && appError == null) {
@@ -155,10 +134,6 @@ export function StaffShell(): ReactNode {
         );
     }
 
-    if (setup == null) {
-        return null;
-    }
-
     return (
         <>
             {
@@ -182,6 +157,7 @@ export function StaffShell(): ReactNode {
                         <ShellDrawer/>
 
                         <Box
+                            data-confetti-container="staff-shell-content"
                             sx={{
                                 flex: 1,
                                 position: 'relative',
@@ -205,39 +181,21 @@ export function StaffShell(): ReactNode {
                     <ShellSessionEndWarnPopup/>
                     <ShellSessionExpiredDialog/>
                     <ShellResolutionOverlay/>
+                    <AlphaVersionNoticeDialog/>
+                    <DuplicatePageWarning/>
                 </>
             }
         </>
     );
 }
 
-async function fetchSetup(): Promise<SystemSetupDTO> {
-    return await new SystemApiService()
-        .fetchSetup();
-}
-
-async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<{
+async function authenticateWithOidcCode(): Promise<{
     user: User;
     memberships: VDepartmentMembershipWithDetailsEntity[];
-    configs: SystemConfigResponseDto[];
+    configs: Record<string, any>;
     permissionSet: PermissionSet;
 } | undefined> {
-    const authService = new AuthService();
-    const apiService = new BaseApiService();
-
-    if (!authService.isAuthenticated()) {
-        const iss = searchParams.get('iss');
-        const code = searchParams.get('code');
-
-        if (iss == null || code == null) {
-            return undefined;
-        }
-
-        await authService
-            .authenticate(code);
-
-        window.location.search = '';
-    }
+    await AuthService.refresh();
 
     const user = await new UsersApiService()
         .retrieveSelf();
@@ -251,12 +209,7 @@ async function authenticateWithOidcCode(searchParams: URLSearchParams): Promise<
     const permissionSet = await new PermissionApiService()
         .getPermissionSetForUser(user.id);
 
-    console.log(permissionSet);
-
-    const configsPage = await apiService
-        .get<Page<SystemConfigResponseDto>>('/api/system-configs/');
-
-    const configs = configsPage.content;
+    const configs = AppConfig.systemConfigs;
 
     return {
         user,

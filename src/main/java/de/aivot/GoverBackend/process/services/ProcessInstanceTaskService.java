@@ -14,7 +14,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
+import java.util.Collection;
 import java.util.Optional;
 
 @Service
@@ -76,7 +77,7 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
             entity.getStatus() == ProcessTaskStatus.Failed ||
             entity.getStatus() == ProcessTaskStatus.Aborted
         ) {
-            existingEntity.setFinished(LocalDateTime.now());
+            existingEntity.setFinished(Instant.now());
         }
 
         existingEntity.setRuntimeData(entity.getRuntimeData());
@@ -99,5 +100,24 @@ public class ProcessInstanceTaskService implements EntityService<ProcessInstance
     public void performDelete(@Nonnull ProcessInstanceTaskEntity entity) throws ResponseException {
         processInstanceTaskRepository.delete(entity);
     }
-}
 
+    public long countAssignedTasks(@Nonnull String assignedUserId,
+                                   @Nonnull Collection<ProcessTaskStatus> statuses) {
+        return processInstanceTaskRepository.countByAssignedUserIdAndStatusIn(assignedUserId, statuses);
+    }
+
+    public Optional<ProcessInstanceTaskEntity> retrieveLatestForInstanceIdAndNodeId(Long id, Integer previousProcessNodeId) {
+        return processInstanceTaskRepository
+                .findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc(id, previousProcessNodeId);
+    }
+
+    public Optional<ProcessInstanceTaskEntity> retrieveLatestForInstanceId(@Nonnull Long processInstanceId) {
+        return processInstanceTaskRepository
+                .findFirstByProcessInstanceIdOrderByStartedDescIdDesc(processInstanceId);
+    }
+
+    @Nonnull
+    public ProcessInstanceTaskEntity save(@Nonnull ProcessInstanceTaskEntity entity) {
+        return processInstanceTaskRepository.save(entity);
+    }
+}

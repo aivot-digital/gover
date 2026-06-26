@@ -9,9 +9,10 @@ import jakarta.annotation.Nullable;
 
 import java.lang.reflect.Array;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 
-public abstract class BaseInputElement<T> extends BaseFormElement {
+public abstract class BaseInputElement<T> extends BaseFormElement implements InputElement<T> {
     @Nullable
     private String label;
     @Nullable
@@ -73,48 +74,35 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
 
     @Override
     public void recalculateReferencedIds() {
-        super.recalculateReferencedIds();
+        recalculateReferencedIds(Map.of());
+    }
+
+    @Override
+    public void recalculateReferencedIds(@Nonnull Map<String, ? extends Collection<String>> destinationKeyIndex) {
+        super.recalculateReferencedIds(destinationKeyIndex);
         if (value != null) {
-            value.recalculateReferencedIds();
+            value.recalculateReferencedIds(destinationKeyIndex);
         }
         if (validation != null) {
-            validation.recalculateReferencedIds();
+            validation.recalculateReferencedIds(destinationKeyIndex);
         }
     }
 
     @Override
-    protected boolean testIfTechnicalApprovalNeeded() {
-        var superResult = super.testIfTechnicalApprovalNeeded();
+    public void removeInternalInformation() {
+        super.removeInternalInformation();
 
-        if (superResult) {
-            return true;
+        if (this.validation != null) {
+            this.validation = new ElementValidationFunctions()
+                    .setType(this.validation.getType())
+                    .setReferencedIds(this.validation.getReferencedIds());
         }
 
-        if (validation != null) {
-            if (validation.getJavascriptCode() != null && validation.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (validation.getNoCodeList() != null && !validation.getNoCodeList().isEmpty()) {
-                return true;
-            }
-
-            if (validation.getConditionSet() != null) {
-                return true;
-            }
+        if (this.value != null) {
+            this.value = new ElementValueFunctions()
+                    .setType(this.value.getType())
+                    .setReferencedIds(this.value.getReferencedIds());
         }
-
-        if (value != null) {
-            if (value.getJavascriptCode() != null && value.getJavascriptCode().isNotEmpty()) {
-                return true;
-            }
-
-            if (value.getNoCode() != null) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     // region Hash & Equals
@@ -123,23 +111,13 @@ public abstract class BaseInputElement<T> extends BaseFormElement {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         BaseInputElement<?> that = (BaseInputElement<?>) o;
         return Objects.equals(label, that.label) && Objects.equals(hint, that.hint) && Objects.equals(required, that.required) && Objects.equals(disabled, that.disabled) && Objects.equals(technical, that.technical) && Objects.equals(destinationKey, that.destinationKey) && Objects.equals(value, that.value) && Objects.equals(validation, that.validation);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(label);
-        result = 31 * result + Objects.hashCode(hint);
-        result = 31 * result + Objects.hashCode(required);
-        result = 31 * result + Objects.hashCode(disabled);
-        result = 31 * result + Objects.hashCode(technical);
-        result = 31 * result + Objects.hashCode(destinationKey);
-        result = 31 * result + Objects.hashCode(value);
-        result = 31 * result + Objects.hashCode(validation);
-        return result;
+        return Objects.hash(super.hashCode(), label, hint, required, disabled, technical, destinationKey, value, validation);
     }
 
     // endregion

@@ -30,12 +30,13 @@ export function CheckboxFieldView(props: BaseViewProps<CheckboxFieldElement, boo
         <CheckboxFieldComponent
             label={element.label ?? ''}
             onChange={setValue}
-            value={value ?? undefined}
+            value={value}
             error={errors?.join(', ') ?? undefined}
             hint={element.hint ?? undefined}
             disabled={isDisabled}
             required={element.required ?? false}
             busy={isBusy}
+            variant={element.variant ?? undefined}
         />
     );
 }

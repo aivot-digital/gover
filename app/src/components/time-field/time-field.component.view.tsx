@@ -3,6 +3,7 @@ import {useCallback, useMemo} from 'react';
 import {BaseViewProps} from '../../views/base-view';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {TimeFieldComponent} from './time-field-component';
+import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
 
 export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, string>) {
     const {
@@ -27,12 +28,12 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
     }, [isDeriving, element]);
 
     const dateValue = useMemo(() => {
-        if (value == null) return undefined;
+        if (value == null) return value;
         const date = new Date(value);
-        return isNaN(date.getTime()) ? undefined : value;
+        return isNaN(date.getTime()) ? null : value;
     }, [value]);
 
-    const handleChange = useCallback((changedValue: string | undefined) => {
+    const handleChange = useCallback((changedValue: string | null) => {
         setValue(changedValue);
     }, [setValue]);
 
@@ -48,6 +49,7 @@ export function TimeFieldComponentView(props: BaseViewProps<TimeFieldElement, st
             busy={isBusy}
             error={errors?.join(', ') ?? undefined}
             debounce={1000}
+            mode={element.mode ?? TimeFieldComponentModelMode.Minute}
         />
     );
 }

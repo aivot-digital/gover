@@ -4,6 +4,7 @@ import {NoCodeDataType, NoCodeDataTypeLabels} from '../../data/no-code-data-type
 import {SearchBaseDialog} from '../search-base-dialog/search-base-dialog';
 import {OperatorInfo} from '../../components/operator-info/operator-info';
 import {Box, Button, Typography} from '@mui/material';
+import {matchesDesiredNoCodeReturnType} from '../../models/dtos/no-code-operator-details-dto';
 
 export function SelectOperatorDialog(props: SelectOperatorDialogProps) {
     const [respectDesiredReturnType, setRespectDesiredReturnType] = useState(true);
@@ -16,13 +17,9 @@ export function SelectOperatorDialog(props: SelectOperatorDialogProps) {
         return props
             .operators
             .filter(op => {
-                return !respectDesiredReturnType || (
-                    props.desiredReturnType === NoCodeDataType.Runtime ||
-                    op.signatures[0].returnType === props.desiredReturnType ||
-                    op.signatures[0].returnType === NoCodeDataType.Runtime
-                );
+                return !respectDesiredReturnType || matchesDesiredNoCodeReturnType(op, props.desiredReturnType);
             });
-    }, [props.operators, respectDesiredReturnType]);
+    }, [props.operators, props.desiredReturnType, respectDesiredReturnType]);
 
     return (
         <SearchBaseDialog

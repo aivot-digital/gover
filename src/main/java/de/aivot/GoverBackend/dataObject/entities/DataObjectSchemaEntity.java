@@ -5,8 +5,9 @@ import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "data_object_schemas")
@@ -34,10 +35,10 @@ public class DataObjectSchemaEntity {
     private GroupLayoutElement schema;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Nonnull
     @Column(columnDefinition = "varchar(64)[]")
@@ -45,38 +46,30 @@ public class DataObjectSchemaEntity {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // region Equals & Hash
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
-
-        DataObjectSchemaEntity that = (DataObjectSchemaEntity) object;
-        return key.equals(that.key) && name.equals(that.name) && description.equals(that.description) && idGen.equals(that.idGen) && schema.equals(that.schema) && created.equals(that.created) && updated.equals(that.updated) && displayFields.equals(that.displayFields);
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        DataObjectSchemaEntity that = (DataObjectSchemaEntity) o;
+        return Objects.equals(key, that.key) && Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(idGen, that.idGen) &&
+                Objects.equals(schema, that.schema) && Objects.equals(created, that.created) && Objects.equals(updated, that.updated) &&
+                Objects.equals(displayFields, that.displayFields);
     }
 
     @Override
     public int hashCode() {
-        int result = key.hashCode();
-        result = 31 * result + name.hashCode();
-        result = 31 * result + description.hashCode();
-        result = 31 * result + idGen.hashCode();
-        result = 31 * result + schema.hashCode();
-        result = 31 * result + created.hashCode();
-        result = 31 * result + updated.hashCode();
-        result = 31 * result + displayFields.hashCode();
-        return result;
+        return Objects.hash(key, name, description, idGen, schema, created, updated, displayFields);
     }
-
 
     // endregion
 
@@ -133,21 +126,21 @@ public class DataObjectSchemaEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public DataObjectSchemaEntity setCreated(@Nonnull LocalDateTime created) {
+    public DataObjectSchemaEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public DataObjectSchemaEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public DataObjectSchemaEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

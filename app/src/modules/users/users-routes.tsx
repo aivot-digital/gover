@@ -6,6 +6,7 @@ import {UserDetailsPageIndex} from './pages/user/details/user-details-page-index
 import {UserDetailsPageDepartmentMemberships} from './pages/user/details/user-details-page-department-memberships';
 import {UserDetailsPageTeamMemberships} from "./pages/user/details/user-details-page-team-memberships";
 import {UserDetailsPageDeputies} from "./pages/user/details/user-details-page-deputies";
+import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const usersRoutes: RouteObject[] = [
     {
@@ -15,6 +16,7 @@ export const usersRoutes: RouteObject[] = [
     {
         path: '/users/:id',
         element: <UserDetailsPage />,
+        handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,

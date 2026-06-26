@@ -55,6 +55,11 @@ public class SpecificationBuilder<T> {
     }
 
     @Nonnull
+    public SpecificationBuilder<T> withJsonEqualsNull(@Nonnull String field, @Nonnull List<String> path) {
+        return with(new SpecificationBuilderJsonEqualsNull<>(field, path));
+    }
+
+    @Nonnull
     public SpecificationBuilder<T> withJsonNotEquals(@Nonnull String field, @Nonnull List<String> path, @Nullable String value) {
         if (value == null) {
             return this;

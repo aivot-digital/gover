@@ -1,0 +1,42 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.form.input.ChipInputElement"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div class="input-element text-element chip-input-element">
+    <div class="input">
+        <div class="label">
+            <strong th:text="${element.label}"></strong>
+            <span th:if="${base.isBlankPrint() && element.required != null && element.required}">(Pflichtangabe)</span>
+        </div>
+
+        <div
+                class="content"
+                th:text="${base.isBlankPrint() ? '' : element.toDisplayValue(value)}"
+                th:style="${(base.isBlankPrint() ? 'min-height: 3rem;' : '') + 'display: block; white-space: pre-wrap;'}"
+        ></div>
+    </div>
+
+    <div class="hint-wrapper">
+        <div th:insert="~{./form-parts/elements/_hint.html}"></div>
+        <div
+                class="hint"
+                th:if="${base.isBlankPrint()}"
+        >Mehrere Einträge bitte kommasepariert nacheinander notieren.</div>
+        <div
+                class="hint"
+                th:if="${base.isBlankPrint() && element.minItems != null && element.minItems > 0}"
+        >
+            Mindestens
+            <span th:text="${element.minItems}"></span>
+            Einträge
+        </div>
+        <div
+                class="hint"
+                th:if="${base.isBlankPrint() && element.maxItems != null && element.maxItems > 0}"
+        >
+            Maximal
+            <span th:text="${element.maxItems}"></span>
+            Einträge
+        </div>
+    </div>
+</div>

@@ -1,11 +1,10 @@
 import React from 'react';
-import {useSelector} from 'react-redux';
 import {SummaryStepElement} from '../../models/elements/steps/summary-step-element';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import {Box, Typography} from '@mui/material';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {BaseViewProps} from '../../views/base-view';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 
 export const SummaryUserInputKey = '__summary__'; // TODO: Remove
 export const SummaryAttachmentsTooLargeKey = '__summary_attachments__'; // TODO: Solve
@@ -15,16 +14,15 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
         isBusy,
         isDeriving,
         value,
-        elementData,
+        authoredElementValues,
+        derivedData,
         setValue,
         errors,
     } = props;
 
-    const form = useSelector(selectLoadedForm);
-
-    if (form == null) {
-        return null;
-    }
+    const {
+        rootElement,
+    } = useViewDispatcherContext();
 
     return (
         <>
@@ -35,17 +33,18 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                 }}
                 variant="body2"
             >
-                Bitte prüfen Sie die von Ihnen eingegebenen Daten sorgfältig, bevor Sie den Antrag einreichen. Durch
+                Bitte prüfen Sie die von Ihnen eingegebenen Daten sorgfältig, bevor Sie das Formular einreichen. Durch
                 einen Klick auf das jeweilige Datenfeld gelangen Sie zurück zu dem dazugehörigen Abschnitt um die
                 Eingabe zu ändern.
             </Typography>
 
             <SummaryDispatcherComponent
-                key={form.version.rootElement.id}
-                element={form.version.rootElement}
+                key={rootElement.id}
+                element={rootElement}
                 showTechnical={false}
                 allowStepNavigation={true}
-                elementData={elementData}
+                authoredElementValues={authoredElementValues}
+                derivedData={derivedData}
             />
 
             <Typography
@@ -63,14 +62,14 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                 }}
                 variant="body2"
             >
-                Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben Ihres Antrages geprüft haben.
-                Fehlerhafte Eingaben können zu einer Verzögerung bei der Bearbeitung Ihres Antrages durch
+                Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben geprüft haben.
+                Fehlerhafte Eingaben können zu einer Verzögerung bei der Bearbeitung durch
                 die zuständige und/oder bewirtschaftende Stelle führen.
             </Typography>
 
             <Box>
                 <CheckboxFieldComponent
-                    label="Ich habe die Zusammenfassung meines Antrages geprüft."
+                    label="Ich habe die Zusammenfassung meiner Angaben geprüft."
                     required={true}
                     value={value}
                     onChange={(checked) => {
@@ -83,4 +82,3 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
         </>
     );
 }
-

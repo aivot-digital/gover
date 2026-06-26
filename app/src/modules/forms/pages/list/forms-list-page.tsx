@@ -1,39 +1,33 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import {Box} from '@mui/material';
-import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import React, {useRef, useState} from 'react';
+import {Box, type SxProps, type Theme} from '@mui/material';
+import React, {useCallback, useMemo, useRef, useState} from 'react';
 import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
 import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectMemberships, selectUser} from '../../../../slices/user-slice';
+import {selectMemberships} from '../../../../slices/user-slice';
 import {AddFormDialog} from '../../dialogs/add-form-dialog';
 import {downloadFormExportFile} from '../../../../utils/download-utils';
-import {useApi} from '../../../../hooks/use-api';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {FormVersionsDialog} from '../../dialogs/form-versions-dialog';
-import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
-import {format} from 'date-fns/format';
-import {GridColDef} from '@mui/x-data-grid';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
-import {Link, useNavigate} from 'react-router-dom';
+import {useNavigate} from 'react-router-dom';
 import {FormsListPageHelp} from '../../components/forms-list-page-help';
-import {FormStatusChipGroup, getFormStatus} from '../../components/form-status-chip-group';
-import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
 import {FormsListRowMenu} from '../../components/forms-list-row-menu';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {MoveFormToDepartmentDialog} from '../../dialogs/move-form-to-department-dialog';
-import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
-import {Page} from '../../../../models/dtos/page';
+import {
+    GenericListColDef,
+    GenericListPropsFetchOptions,
+    ListControlRef,
+} from '../../../../components/generic-list/generic-list-props';
 import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
-import {FormResourceAccessControlDialog} from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
-import {DepartmentApiService} from '../../../departments/services/department-api-service';
+import {
+    FormResourceAccessControlDialog,
+} from '../../../resource-access-controls/dialogs/form-resource-access-control-dialog';
 import {FormEntity} from '../../entities/form-entity';
 import {FormApiService} from '../../services/form-api-service';
 import {FormVersionEntity} from '../../entities/form-version-entity';
@@ -41,142 +35,112 @@ import {FormVersionApiService} from '../../services/form-version-api-service';
 import {ExportFormDialog} from '../../dialogs/export-form-dialog';
 import {ImportFormDialog} from '../../dialogs/import-form-dialog';
 import {DeleteFormDialog} from '../../dialogs/delete-form-dialog';
+import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
+import {FormTriggerApiService, FormTriggerListItem} from '../../services/form-trigger-api-service';
+import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import {CellLink} from '../../../../components/cell-link/cell-link';
+import {ProcessStatusChip} from '../../../process/components/process-status/process-status-chip';
+import {Action} from '../../../../components/actions/actions-props';
+import {ProcessStatus} from '../../../process/enums/process-status';
+import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import {AlertComponent} from '../../../../components/alert/alert-component';
 
-const availableFilter = [
-    {
-        label: 'Alle Formulare',
-        value: 'all',
+const shrinkableCellLinkSx: SxProps<Theme> = {
+    '& > span': {
+        minWidth: 0,
     },
-    {
-        label: 'Entwürfe',
-        value: 'drafted',
+    '& .cell-link-text::after': {
+        bottom: -2,
     },
-    {
-        label: 'Veröffentlicht',
-        value: 'published',
-    },
-    {
-        label: 'Zurückgezogen',
-        value: 'revoked',
-    },
-];
+};
 
-interface FormListEntry extends FormEntity {
-    developingDepartmentName?: string;
-    lastEditorName?: string;
-}
+const ellipsizedCellTextSx: SxProps<Theme> = {
+    display: 'inline-block',
+    maxWidth: '100%',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    verticalAlign: 'middle',
+};
 
-const columns: GridColDef<FormListEntry>[] = [
+const columns: GenericListColDef<FormTriggerListItem>[] = [
     {
-        field: 'icon',
-        headerName: '',
-        renderCell: () => <CellContentWrapper sx={{alignItems: 'start', py: 2}}><DescriptionOutlinedIcon /></CellContentWrapper>,
-        disableColumnMenu: true,
-        width: 24,
-        sortable: false,
-    },
-    {
-        field: 'internalTitle',
-        headerName: 'Formular',
-        flex: 2,
+        field: 'name',
+        headerName: 'Name des Prozesselementes',
+        flex: 1.4,
+        valueGetter: (_, row) => {
+            return row.node.name ?? 'Formulareingang';
+        },
         renderCell: (params) => {
-            const {
-                isDrafted,
-                isPublished,
-                isRevoked,
-            } = getFormStatus(params.row);
+            const nodeName = params.row.node.name ?? 'Formulareingang';
 
             return (
-                <Box
-                    sx={{
-                        py: 2,
-                    }}
+                <CellLink
+                    to={`/form-triggers/${params.row.node.id}`}
+                    title={nodeName}
+                    sx={shrinkableCellLinkSx}
                 >
-                    <Typography
-                        variant="h5"
-                        sx={{
-                            mb: 0.5,
-                            fontSize: '1rem',
-                        }}
+                    <Box
+                        component="span"
+                        sx={ellipsizedCellTextSx}
                     >
-                        <Link
-                            style={{
-                                color: 'inherit',
-                                textDecoration: 'none',
-                            }}
-                            to={`/forms/${params.row.id}/${params.row.draftedVersion ?? params.row.publishedVersion ?? ''}`}
-                            title="Formular bearbeiten"
-                        >
-                            {params.row.internalTitle}
-                        </Link>
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            mt: -0.75,
-                            fontSize: '0.875rem',
-                            lineHeight: '1.5rem',
-                        }}
-                        color="textSecondary"
-                    >
-                        {
-                            isPublished ?
-                                <span>Veröffentlicht: Version {params.row.publishedVersion}</span> :
-                                <span>{isRevoked ? 'Zurückgezogen' : 'Noch nicht veröffentlicht'}</span>
-                        }
-                        {
-                            isDrafted &&
-                            <span> &bull; In Bearbeitung: Version {params.row.draftedVersion}</span>
-                        }
-                    </Typography>
-
-                    <Typography
-                        variant="body2"
-                        sx={{
-                            mt: -0.75,
-                            fontSize: '0.875rem',
-                            lineHeight: '1.5rem',
-                        }}
-                        color="textSecondary"
-                    >
-                        Entwickelt von: {params.row.developingDepartmentName ?? 'Unbekannt'}
-                    </Typography>
-                </Box>
+                        {nodeName}
+                    </Box>
+                </CellLink>
             );
         },
     },
     {
-        field: 'updated',
-        headerName: 'Zuletzt bearbeitet',
-        flex: 1,
-        renderCell: (params) => (
-            <Box
-                sx={{
-                    py: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
-            >
-                <Typography sx={{fontSize: '0.875rem'}}>
-                    {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
-                </Typography>
-                <Typography
-                    color="textSecondary"
-                    sx={{fontSize: '0.875rem'}}
+        field: 'processId',
+        headerName: 'Prozess',
+        flex: 1.4,
+        sortable: false,
+        valueGetter: (_, row) => {
+            return row.process.internalTitle;
+        },
+        renderCell: (params) => {
+            const processTitle = params.row.process.internalTitle;
+            const processVersion = params.row.version.processVersion;
+
+            return (
+                <CellLink
+                    to={`/processes/${params.row.process.id}/versions/${processVersion}`}
+                    title={`${processTitle} (Version ${processVersion})`}
+                    sx={shrinkableCellLinkSx}
                 >
-                    {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
-                </Typography>
-            </Box>
-        ),
+                    <Box
+                        component="span"
+                        sx={ellipsizedCellTextSx}
+                    >
+                        {processTitle}
+                        <Box
+                            component="span"
+                            sx={{
+                                color: 'text.secondary',
+                                ml: 0.5,
+                            }}
+                        >
+                            (Version {processVersion})
+                        </Box>
+                    </Box>
+                </CellLink>
+            );
+        },
     },
     {
-        field: 'publishedVersion',
+        field: 'status',
         headerName: 'Status',
         flex: 0.75,
         sortable: false,
+        valueGetter: (_, row) => {
+            return row.version.status;
+        },
         renderCell: (params) => (
-            <FormStatusChipGroup form={params.row} />
+            <ProcessStatusChip
+                status={params.row.version.status}
+                size="small"
+                variant="soft"
+            />
         ),
     },
 ];
@@ -184,10 +148,8 @@ const columns: GridColDef<FormListEntry>[] = [
 export function FormsListPage() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const api = useApi();
     const showConfirm = useConfirm();
 
-    const user = useAppSelector(selectUser);
     const memberships = useAppSelector(selectMemberships);
 
     const listControlRef = useRef<ListControlRef>(null);
@@ -293,7 +255,8 @@ export function FormsListPage() {
             children: (
                 <Box>
                     Für dieses Formular existiert derzeit kein aktiver Entwurf.
-                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für dieses Formular anlegen um diesen zu bearbeiten?
+                    Möchten Sie einen neuen Entwurf (Arbeitsversion) für dieses Formular anlegen um diesen zu
+                    bearbeiten?
                 </Box>
             ),
         }).then((confirmed) => {
@@ -303,6 +266,90 @@ export function FormsListPage() {
         });
     };
 
+    const header: GenericPageHeaderProps = useMemo(() => ({
+        icon: <DescriptionOutlinedIcon/>,
+        title: 'Formulare',
+        helpDialog: {
+            title: 'Hilfe zu Formularen',
+            tooltip: 'Hilfe anzeigen',
+            content: <FormsListPageHelp/>,
+        },
+    }), []);
+
+    const fetch = useCallback(async (options: GenericListPropsFetchOptions<FormTriggerListItem>) => {
+        return await new FormTriggerApiService()
+            .list(options.page, options.size, options.sort as any, options.order, {
+                name: options.search,
+            });
+    }, []);
+
+    const columnIcon = useMemo(() => <DescriptionOutlinedIcon/>, []);
+
+    const listContextElements = useMemo(() => [
+        <AlertComponent
+            color="info"
+            text="Diese Übersicht zeigt alle Formulareingänge, die in Prozessen verwendet werden. Jeder Eintrag entspricht einem Formulareingang-Prozesselement in einer konkreten Prozessversion und führt zum dort verwendeten Formular."
+        />,
+    ], []);
+
+    const noDataPlaceholder = useMemo(() => (
+        <Box
+            sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                textAlign: 'center',
+                p: 4,
+            }}
+        >
+            {
+                (memberships == null || memberships.length === 0) &&
+                <>
+                    <Typography
+                        variant="h5"
+                        component="h2"
+                    >
+                        Noch keiner Organisationseinheit zugeordnet
+                    </Typography>
+                    <Typography>
+                        Eine Administrator:in muss Sie einer Organisationseinheit zuordnen und Ihnen
+                        eine Domänenrolle zuweisen.
+                        Erst dann können Sie mit der Entwicklung von Formularen beginnen. Nach der
+                        Zuweisung müssen Sie diese Seite ggf. einmal neu laden.
+                    </Typography>
+                </>
+            }
+            {
+                memberships != null &&
+                memberships.length > 0 &&
+                <EmptyDataListPlaceholder
+                    title="Keine Formulareingänge vorhanden"
+                    description="Formulareingänge binden Formulare in Prozesse ein und übernehmen eingereichte Daten in den jeweiligen Vorgang."
+                />
+            }
+        </Box>
+    ), [memberships]);
+
+    const rowActions = useCallback((item: FormTriggerListItem): Action[] => [
+        {
+            icon: <Edit/>,
+            to: `/form-triggers/${item.node.id}`,
+            tooltip: 'Formular bearbeiten',
+            visible: item.version.status === ProcessStatus.Drafted,
+        },
+        {
+            icon: <ArrowForward/>,
+            to: `/form-triggers/${item.node.id}`,
+            tooltip: 'Formular ansehen',
+            visible: item.version.status !== ProcessStatus.Drafted,
+        },
+        {
+            icon: ModuleIcons.processes,
+            to: `/processes/${item.process.id}/versions/${item.version.processVersion}`,
+            tooltip: 'Prozess ansehen',
+        },
+    ], []);
+
     return (
         <>
             <PageWrapper
@@ -310,145 +357,22 @@ export function FormsListPage() {
                 fullWidth
                 background
             >
-                <GenericListPage<FormListEntry>
+                <GenericListPage<FormTriggerListItem>
                     controlRef={listControlRef}
-                    dynamicRowHeight={true}
-                    filters={availableFilter}
                     defaultFilter="all"
-                    header={{
-                        icon: <DescriptionOutlinedIcon />,
-                        title: 'Formulare',
-                        actions: [
-                            {
-                                icon: <CloudUploadOutlinedIcon />,
-                                onClick: () => {
-                                    setShowImportFormDialog(true);
-                                },
-                                variant: 'text',
-                                label: 'Importieren',
-                            },
-                            {
-                                label: 'Neues Formular',
-                                icon: <AddOutlinedIcon />,
-                                onClick: () => {
-                                    setNewForm({
-                                        form: FormApiService.initialize(),
-                                        version: FormVersionApiService.initialize(),
-                                    });
-                                },
-                                variant: 'contained',
-                            },
-                        ],
-                        helpDialog: {
-                            title: 'Hilfe zu Formularen',
-                            tooltip: 'Hilfe anzeigen',
-                            content: <FormsListPageHelp />,
-                        },
-                    }}
-                    searchLabel="Formular suchen"
-                    searchPlaceholder="Titel des Formulars eingeben…"
-                    fetch={async (options) => {
-                        const deps = (await new DepartmentApiService().listAll()).content;
-
-                        const formsPage = await new FormApiService()
-                            .list(options.page, options.size, options.sort as any, options.order, {
-                                internalTitle: options.search,
-                                isPublished: options.filter === 'published',
-                                isDrafted: options.filter === 'drafted',
-                                isRevoked: options.filter === 'revoked',
-                            });
-
-                        const formIds = formsPage.content.map(form => form.id);
-
-                        const editorsList = await new FormApiService()
-                            .listEditorsForForms(formIds);
-
-                        const extendedFormsPage: Page<FormListEntry> = {
-                            ...formsPage,
-                            content: formsPage.content.map(form => ({
-                                ...form,
-                                developingDepartmentName: deps.find(dep => dep.id === form.developingDepartmentId)?.name,
-                                lastEditorName: editorsList.find(editor => editor.formId === form.id)?.fullName,
-                            })),
-                        };
-
-                        return extendedFormsPage;
-                    }}
+                    header={header}
+                    searchLabel="Prozesselemente vom Typ „Formulareingang“ suchen"
+                    searchPlaceholder="Titel des Prozesselementes eingeben…"
+                    listContextElements={listContextElements}
+                    fetch={fetch}
+                    columnIcon={columnIcon}
                     columnDefinitions={columns}
-                    getRowIdentifier={row => row.id.toString()}
-                    noDataPlaceholder={
-                        <Box
-                            sx={{
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center',
-                                p: 4,
-                            }}
-                        >
-                            {
-                                (memberships == null ||
-                                    memberships.length === 0) &&
-                                <>
-                                    <Typography
-                                        variant="h5"
-                                        component="h2"
-                                    >
-                                        Noch keinem Fachbereich zugeordnet
-                                    </Typography>
-                                    <Typography>
-                                        Eine Administrator:in muss Sie noch einem Fachbereich zuordnen und Ihnen eine Rolle
-                                        zuweisen.
-                                        Erst dann können Sie mit der Entwicklung von Formularen loslegen.
-                                    </Typography>
-                                </>
-                            }
-                            {
-                                memberships != null &&
-                                memberships.length > 0 &&
-                                <Typography>
-                                    Sie haben aktuell keine Formulare. Starten Sie jetzt mit Ihrem ersten Formular!
-                                </Typography>
-                            }
-                        </Box>
-                    }
-                    noSearchResultsPlaceholder="Keine Formulare gefunden"
-                    rowActionsCount={4}
-                    rowActions={(item: FormListEntry) => [
-                        {
-                            icon: <Edit />,
-                            to: `/forms/${item.id}/${item.draftedVersion}`,
-                            tooltip: 'Formular bearbeiten',
-                            visible: item.draftedVersion != null,
-                        },
-                        {
-                            icon: <Visibility />,
-                            to: `/forms/${item.id}`,
-                            tooltip: 'Formular ansehen',
-                            visible: item.draftedVersion === null,
-                        },
-                        {
-                            icon: <NewWindow />,
-                            onClick: () => handleNewDraft(item),
-                            tooltip: 'Neuen Entwurf anlegen',
-                            visible: item.draftedVersion == null,
-                            disabled: item.publishedVersion == null && item.draftedVersion != null,
-                        },
-                        {
-                            icon: <HomeStorage />,
-                            onClick: () => setShowFormVersionsDialogFor(item),
-                            tooltip: 'Versionen anzeigen',
-                        },
-                        {
-                            icon: <MoreVertOutlinedIcon />,
-                            onClick: (event) => setRowMenu({
-                                target: event.currentTarget as HTMLElement,
-                                form: item,
-                            }),
-                            tooltip: 'Optionen',
-                        },
-                    ]}
-                    defaultSortField="internalTitle"
+                    getRowIdentifier={getRowIdentifier}
+                    noDataPlaceholder={noDataPlaceholder}
+                    noSearchResultsPlaceholder="Keine Formulareingänge gefunden"
+                    rowActionsCount={2}
+                    rowActions={rowActions}
+                    defaultSortField={'id' as any}
                     disableFullWidthToggle={true}
                 />
             </PageWrapper>
@@ -475,8 +399,8 @@ export function FormsListPage() {
                     onClose={() => {
                         setNewForm(undefined);
                     }}
-                    onSave={(created) => {
-                        navigate(`/forms/${created.id}/${created.draftedVersion}`);
+                    onSave={(createdForm, createdVersion) => {
+                        navigate(`/forms/${createdForm.id}/${createdVersion.version}`);
                     }}
                     open={true}
                     basis={newForm}
@@ -519,10 +443,16 @@ export function FormsListPage() {
                     onClose={() => {
                         setShowFormVersionsDialogFor(undefined);
                     }}
-                    onNewDraft={({form, version}) => {
+                    onNewDraft={({
+                                     form,
+                                     version,
+                                 }) => {
                         // TODO
                     }}
-                    onNewForm={({form, version}) => {
+                    onNewForm={({
+                                    form,
+                                    version,
+                                }) => {
                         setNewForm({
                             form,
                             version,
@@ -574,3 +504,6 @@ export function FormsListPage() {
     );
 }
 
+function getRowIdentifier(row: FormTriggerListItem): string {
+    return row.node.id.toString();
+}

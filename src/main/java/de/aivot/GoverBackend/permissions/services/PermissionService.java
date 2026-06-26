@@ -13,6 +13,8 @@ import jakarta.annotation.Nullable;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 public class PermissionService {
     private final VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository;
@@ -39,6 +41,14 @@ public class PermissionService {
     public boolean hasSystemPermission(@Nullable Jwt jwt,
                                        @Nonnull String permission) {
         return hasSystemPermission(UserService.getIdFromJWT(jwt), permission);
+    }
+
+    public boolean hasSystemPermission(@Nullable UserEntity user,
+                                       @Nonnull String permission) {
+        if (user == null) {
+            return false;
+        }
+        return hasSystemPermission(user.getId(), permission);
     }
 
     public void testSystemPermission(@Nullable String userId,
@@ -68,8 +78,14 @@ public class PermissionService {
     public boolean hasDepartmentPermission(@Nonnull String userId,
                                            @Nonnull Integer departmentId,
                                            @Nonnull String permission) {
+        return vUserDepartmentPermissionRepository.hasPermission(userId, departmentId, permission)
+                || vUserSystemPermissionRepository.hasPermission(userId, permission);
+    }
+
+    public List<Integer> getDepartmentsWithPermission(@Nonnull String userId,
+                                                      @Nonnull String permission) {
         return vUserDepartmentPermissionRepository
-                .hasPermission(userId, departmentId, permission);
+                .getDepartmentsWithPermission(userId, permission);
     }
 
     public void testDepartmentPermission(@Nonnull String userId,
@@ -83,7 +99,7 @@ public class PermissionService {
                     .orElse("mit der ID " + departmentId);
 
             throw ResponseException.forbidden(
-                    "Sie benötigen die Berechtigung %s für die Organisationseinheit %d.",
+                    "Sie benötigen die Berechtigung %s für die Organisationseinheit %s.",
                     StringUtils.quote(permission),
                     departmentName
             );
@@ -92,12 +108,12 @@ public class PermissionService {
 
     public boolean hasInAnyDepartmentPermission(@Nonnull String userId,
                                                 @Nonnull String permission) {
-        return vUserDepartmentPermissionRepository
-                .hasPermissionInAnyDepartment(userId, permission);
+        return vUserDepartmentPermissionRepository.hasPermissionInAnyDepartment(userId, permission)
+                || vUserSystemPermissionRepository.hasPermission(userId, permission);
     }
 
     public void testInAnyDepartmentPermission(@Nonnull String userId,
-                                               @Nonnull String permission) throws ResponseException {
+                                              @Nonnull String permission) throws ResponseException {
         if (!hasInAnyDepartmentPermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s in mindestens einer Organisationseinheit.",

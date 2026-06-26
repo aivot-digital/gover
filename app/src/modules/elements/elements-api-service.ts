@@ -1,6 +1,6 @@
-import {Api} from '../../hooks/use-api';
-import {ElementData, ElementDerivationResponse} from '../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {AnyElement} from '../../models/elements/any-element';
+import {BaseApiService, RequestOptions} from '../../services/base-api-service';
 
 interface ElementDerivationOptions {
     skipErrorsForElementIds: string[];
@@ -9,20 +9,25 @@ interface ElementDerivationOptions {
     skipValuesForElementIds: string[];
 }
 
-interface ElementDerivationRequest {
-    element: AnyElement;
-    elementData: ElementData;
-    options: ElementDerivationOptions;
+export interface ProcessExecutionData {
+    $: Record<string, any>;
+    $$: Record<string, any>;
+    _: Record<string, any>;
 }
 
-export class ElementsApiService {
-    private readonly api: Api;
+export interface ElementDerivationRequest {
+    element: AnyElement;
+    authoredElementValues: AuthoredElementValues;
+    derivationOptions: ElementDerivationOptions;
+    processExecutionData: ProcessExecutionData;
+}
 
-    public constructor(api: Api) {
-        this.api = api;
+export class ElementsApiService extends BaseApiService {
+    public async derive(request: ElementDerivationRequest, opt?: RequestOptions): Promise<DerivedRuntimeElementData> {
+        return await this.post<ElementDerivationRequest, DerivedRuntimeElementData>('/api/elements/derive/', request, opt);
     }
 
-    public async derive(request: ElementDerivationRequest): Promise<ElementDerivationResponse> {
-        return await this.api.post<ElementDerivationResponse>('elements/derive/', request);
+    public async recalculateReferencedIds<T extends AnyElement>(element: T): Promise<T> {
+        return await this.post<T, T>('/api/elements/recalculate-referenced-ids/', element);
     }
 }

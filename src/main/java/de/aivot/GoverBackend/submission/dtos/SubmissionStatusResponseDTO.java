@@ -1,14 +1,8 @@
 package de.aivot.GoverBackend.submission.dtos;
 
-import java.net.URI;
+import java.util.UUID;
 
 public record SubmissionStatusResponseDTO(
-        String submissionId,
-        String paymentProviderName,
-        URI paymentProviderUrl,
-        Boolean paymentDone,
-        Boolean paymentFailed,
-        Boolean accessExpired,
-        Boolean copySent
+        UUID startedProcessAccessKey
 ) {
 }

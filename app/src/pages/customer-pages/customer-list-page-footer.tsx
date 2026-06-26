@@ -6,7 +6,6 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import {Logo} from '../../components/logo/logo';
-import {selectSetup} from '../../slices/shell-slice';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 
@@ -23,7 +22,6 @@ interface CustomerListPageFooterProps {
 export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
-    const setup = useAppSelector(selectSetup);
 
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
@@ -119,7 +117,7 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                                     },
                                 }}
                             >
-                                {setup?.providerName} &bull; Alle Rechte vorbehalten.
+                                {AppConfig.providerName} &bull; Alle Rechte vorbehalten.
                             </Typography>
                         </Box>
                     </Box>
@@ -140,7 +138,8 @@ export function CustomerListPageFooter(props: CustomerListPageFooterProps) {
                     variant="caption"
                     color="#444444"
                 >
-                    Dieses Angebot wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot
+                    Dieses Angebot wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen
+                    von Aivot
                 </Typography>
             </Box>
         </Box>

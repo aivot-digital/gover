@@ -4,17 +4,21 @@ import {TextFieldComponent} from '../components/text-field/text-field-component'
 import {BaseEditorProps} from './base-editor';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
-import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 
-export function TextFieldEditor(props: BaseEditorProps<TextFieldElement, ElementTreeEntity>) {
+export function TextFieldEditor(props: BaseEditorProps<TextFieldElement>) {
     const {
         element,
         onPatch,
         editable,
         scope,
+        hasSummaryLayoutParent,
     } = props;
+
+    if (hasSummaryLayoutParent) {
+        return null;
+    }
 
     return (
         <>
@@ -114,6 +118,24 @@ export function TextFieldEditor(props: BaseEditorProps<TextFieldElement, Element
                         }}
                         disabled={!editable}
                         hint={'Ermöglicht die Eingabe mehrzeiliger Texte statt einer einzelnen Zeile.'}
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 4,
+                    }}
+                >
+                    <CheckboxFieldComponent
+                        label="Kopieren des Wertes in Zwischenablage ermöglichen"
+                        value={element.copyable ?? false}
+                        onChange={(checked) => {
+                            onPatch({
+                                copyable: checked,
+                            });
+                        }}
+                        disabled={!editable}
+                        hint={'Zeigt am Ende des Eingabefelds eine Schaltfläche zum einfachen Kopieren des aktuellen Wertes in die Zwischenablage ein.'}
                     />
                 </Grid>
             </Grid>

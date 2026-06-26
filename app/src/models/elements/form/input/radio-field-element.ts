@@ -9,4 +9,5 @@ export interface RadioFieldElementOption {
 export interface RadioFieldElement extends BaseInputElement<ElementType.Radio> {
     options: RadioFieldElementOption[] | null | undefined;
     displayInline: boolean | null | undefined;
+    toggleButtons?: boolean | null | undefined;
 }

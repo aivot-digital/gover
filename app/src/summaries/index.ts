@@ -5,7 +5,7 @@ import {TextFieldSummary} from './text-field-summary';
 import {CheckboxFieldSummary} from './checkbox-field-summary';
 import {DateFieldSummary} from './date-field-summary';
 import {
-    MultiCheckboxFieldComponentSummary
+    MultiCheckboxFieldComponentSummary,
 } from '../components/multi-checkbox-field/multi-checkbox-field.component.summary';
 import {NumberSummary} from './number-summary';
 import {SelectFieldSummary} from './select-field-summary';
@@ -17,6 +17,23 @@ import {FileUploadSummary} from '../components/file-upload-field/file-upload.sum
 import {StepComponentSummary} from '../components/step/step.component.summary';
 import {GroupSummary} from './group-summary';
 import {RootSummary} from './root-summary';
+import {ChipInputFieldSummary} from '../components/chip-input-field/chip-input-field.component.summary';
+import {DateTimeFieldSummary} from './date-time-field-summary';
+import {DateRangeFieldSummary} from './date-range-field-summary';
+import {TimeRangeFieldSummary} from './time-range-field-summary';
+import {DateTimeRangeFieldSummary} from './date-time-range-field-summary';
+import {MapPointFieldSummary} from './map-point-field-summary';
+import {DomainUserSelectFieldSummary} from './domain-user-select-field-summary';
+import {AssignmentContextFieldSummary} from './assignment-context-field-summary';
+import {DataModelSelectFieldSummary} from './data-model-select-field-summary';
+import {DataObjectSelectFieldSummary} from './data-object-select-field-summary';
+import {RichTextInputSummary} from './rich-text-input-summary';
+import {CodeInputSummary} from './code-input-summary';
+import {NoCodeInputSummary} from './no-code-input-summary';
+import {UiDefinitionInputSummary} from './ui-definition-input-summary';
+import {SummaryLayoutSummary} from './summary-layout-summary';
+import {HtmlTemplateInputSummary} from './html-template-input-summary';
+import {GeneralInformationComponentSummary} from '../components/general-information/general-information.component.summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -37,7 +54,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.Table]: TableFieldComponentSummary,
     [ElementType.Text]: TextFieldSummary,
     [ElementType.Time]: TimeFieldComponentSummary,
-    [ElementType.IntroductionStep]: null,
+    [ElementType.IntroductionStep]: GeneralInformationComponentSummary,
     [ElementType.SummaryStep]: null,
     [ElementType.SubmitStep]: null,
     [ElementType.SubmittedStep]: null,
@@ -46,10 +63,26 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
-    [ElementType.UiDefinitionInput]: null,
-    [ElementType.IdentityInput]: null,
+    [ElementType.CodeInput]: CodeInputSummary,
+    [ElementType.RichTextInput]: RichTextInputSummary,
+    [ElementType.UiDefinitionInput]: UiDefinitionInputSummary,
+    [ElementType.IdentityConfigElement]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: ChipInputFieldSummary,
+    [ElementType.DateTime]: DateTimeFieldSummary,
+    [ElementType.DateRange]: DateRangeFieldSummary,
+    [ElementType.TimeRange]: TimeRangeFieldSummary,
+    [ElementType.DateTimeRange]: DateTimeRangeFieldSummary,
+    [ElementType.MapPoint]: MapPointFieldSummary,
+    [ElementType.DomainAndUserSelect]: DomainUserSelectFieldSummary,
+    [ElementType.AssignmentContext]: AssignmentContextFieldSummary,
+    [ElementType.DataModelSelect]: DataModelSelectFieldSummary,
+    [ElementType.DataObjectSelect]: DataObjectSelectFieldSummary,
+    [ElementType.NoCodeInput]: NoCodeInputSummary,
+    [ElementType.SummaryLayout]: SummaryLayoutSummary,
+    [ElementType.ProcessDataKeyInput]: TextFieldSummary,
+    [ElementType.ProcessAttachmentNameChipInput]: ChipInputFieldSummary,
+    [ElementType.ProcessIdentityIdInput]: ChipInputFieldSummary,
+    [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
+    [ElementType.ProcessAttachmentDisplay]: null,
 };
-

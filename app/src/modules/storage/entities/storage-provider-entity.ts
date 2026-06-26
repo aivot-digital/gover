@@ -1,6 +1,12 @@
-import {type ElementData} from '../../../models/element-data';
+import {type AuthoredElementValues} from '../../../models/element-data';
 import {type StorageProviderStatus} from '../enums/storage-provider-status';
 import {type StorageProviderType} from '../enums/storage-provider-type';
+
+export interface StorageProviderMetadataAttribute {
+    label: string;
+    key: string;
+    description?: string;
+}
 
 export interface StorageProviderEntity {
     id: number;
@@ -11,7 +17,13 @@ export interface StorageProviderEntity {
     type: StorageProviderType;
     status: StorageProviderStatus;
     statusMessage?: string | null;
-    configuration: ElementData;
+    readOnlyStorage: boolean;
+    configuration: AuthoredElementValues;
+    maxFileSizeInBytes: number;
+    systemProvider: boolean;
+    testProvider: boolean;
+    metadataAttributes: StorageProviderMetadataAttribute[];
     created: string; // ISO date string
     updated: string; // ISO date string
+    lastSync?: string | null; // ISO date string
 }

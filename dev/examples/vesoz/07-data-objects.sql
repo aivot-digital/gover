@@ -84,10 +84,12 @@ values ('leistungserbringer',
           "children": [
             {
               "id": "leistungserbringer_id",
-              "type": 15,
+              "type": 41,
               "label": "Leistungserbringer",
               "required": true,
-              "weight": 12
+              "weight": 12,
+              "dataModelKey": "leistungserbringer",
+              "dataLabelAttributeKey": "name"
             },
             {
               "id": "bezeichner",
@@ -203,12 +205,12 @@ values ('leistungserbringer',
          {
            "bezeichner": "Küche",
            "stockwerk": "EG",
-           "flaeche_qm": "28"
+           "flaeche_qm": 28
          },
          {
            "bezeichner": "Gemeinschaftsraum",
            "stockwerk": "1. OG",
-           "flaeche_qm": "13"
+           "flaeche_qm": 13
          }
        ]
      }'),
@@ -225,12 +227,12 @@ values ('leistungserbringer',
             {
               "bezeichner": "Werkraum",
               "stockwerk": "EG",
-              "flaeche_qm": "59"
+              "flaeche_qm": 59
             },
             {
               "bezeichner": "Waschküche",
               "stockwerk": "EG",
-              "flaeche_qm": "9"
+              "flaeche_qm": 9
             }
           ]
         }')

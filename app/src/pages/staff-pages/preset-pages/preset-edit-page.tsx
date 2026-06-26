@@ -4,12 +4,15 @@ import Button from '@mui/material/Button';
 import Typography from '@mui/material/Typography';
 import {LoadingPlaceholder} from '../../../components/loading-placeholder/loading-placeholder';
 import {useNavigate, useParams} from 'react-router-dom';
-import {ViewDispatcherComponent} from '../../../components/view-dispatcher.component';
 import {NotFoundPage} from '../../../components/not-found-page/not-found-page';
 import {type Preset} from '../../../models/entities/preset';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {removeLoadingSnackbar, showErrorSnackbar, showLoadingSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
-import {ElementTree} from '../../../components/element-tree/element-tree';
+import {
+    removeLoadingSnackbar,
+    showErrorSnackbar,
+    showLoadingSnackbar,
+    showSuccessSnackbar,
+} from '../../../slices/snackbar-slice';
 import {flattenElements} from '../../../utils/flatten-elements';
 import {ConfirmDialog} from '../../../dialogs/confirm-dialog/confirm-dialog';
 import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
@@ -26,7 +29,12 @@ import {hideLoadingOverlay, showLoadingOverlay} from '../../../slices/loading-ov
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {IdentityProviderInfo} from '../../../modules/identity/models/identity-provider-info';
 import {IdentityProvidersApiService} from '../../../modules/identity/identity-providers-api-service';
-import {ElementData, ElementDerivationResponse} from '../../../models/element-data';
+import {
+    AuthoredElementValues,
+    createDerivedRuntimeElementData,
+    DerivedRuntimeElementData,
+    ElementDerivationResponse,
+} from '../../../models/element-data';
 import {FormStatus} from '../../../modules/forms/enums/form-status';
 import {useConfirm} from '../../../providers/confirm-provider';
 import {addDerivationLogItems} from '../../../slices/logging-slice';
@@ -41,6 +49,10 @@ import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import NewWindow from '@aivot/mui-material-symbols-400-outlined/dist/new-window/NewWindow';
 import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {collectErrors} from '../../../components/error-alert/error-alert';
+import {RootStructureActionsContextProvider} from '../../../components/form/root-structure-actions-context';
+import {ElementTree} from '../../../components/element-tree-2/element-tree';
+import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 
 export function PresetEditPage() {
     const api = useApi();
@@ -87,7 +99,15 @@ export function PresetEditPage() {
 
     const [showPresetVersions, setShowPresetVersions] = useState(false);
 
-    const [elementData, setElementData] = useState<ElementData>({});
+    const [authoredElementValues, setAuthoredElementValues] = useState<AuthoredElementValues>({});
+    const [derivedData, setDerivedData] = useState<DerivedRuntimeElementData>(createDerivedRuntimeElementData());
+    const [openAddSectionSignal, setOpenAddSectionSignal] = useState(0);
+    const rootStructureActions = useMemo(() => ({
+        canAddAtRoot: presetVersion?.status === FormStatus.Drafted,
+        openAddAtRootDialog: () => {
+            setOpenAddSectionSignal((prev) => prev + 1);
+        },
+    }), [presetVersion?.status]);
 
     const [toolbarHeight, setToolbarHeight] = useState<number>(0);
     const updateToolbarHeight = (height: number) => {
@@ -96,7 +116,7 @@ export function PresetEditPage() {
 
     // Fetch all available identity providers
     useEffect(() => {
-        new IdentityProvidersApiService(api)
+        new IdentityProvidersApiService()
             .listAll()
             .then(res => setIdentityProviders(res.content.map(idp => ({
                 key: idp.key,
@@ -158,12 +178,12 @@ export function PresetEditPage() {
         }
 
         presetsApiService
-            .determinePresetState(preset.key, presetVersion.version, elementData, {
+            .determinePresetState(preset.key, presetVersion.version, authoredElementValues, {
                 disableVisibilities: false,
                 disableValidation: true,
             })
             .then(({elementData, logItems}) => {
-                setElementData(elementData);
+                setDerivedData(elementData);
                 dispatch(addDerivationLogItems(logItems));
             })
             .catch(err => {
@@ -278,13 +298,13 @@ export function PresetEditPage() {
                 setIsDeriving(true);
 
                 return presetsApiService
-                    .determinePresetState(preset.key, presetVersion.version, elementData, {
+                    .determinePresetState(preset.key, presetVersion.version, authoredElementValues, {
                         disableVisibilities: false,
                         disableValidation: true,
                     });
             })
             .then(({elementData, logItems}) => {
-                setElementData(elementData);
+                setDerivedData(elementData);
                 dispatch(addDerivationLogItems(logItems));
             })
             .catch((err) => {
@@ -309,17 +329,16 @@ export function PresetEditPage() {
         setIsBusy(true);
 
         presetsApiService
-            .determinePresetState(preset.key, presetVersion.version, elementData, {
+            .determinePresetState(preset.key, presetVersion.version, authoredElementValues, {
                 disableValidation: false,
                 disableVisibilities: false,
             })
             .then(({elementData, logItems}) => {
-                setElementData(elementData);
+                setDerivedData(elementData);
 
                 dispatch(addDerivationLogItems(logItems));
 
-                // errors always contains 3 base errors from the form (can change if form will extend in the future)
-                if (elementData.errors && Object.keys(elementData.errors).length <= 3) {
+                if (collectErrors(presetVersion.rootElement, authoredElementValues, elementData).length === 0) {
                     dispatch(showSuccessSnackbar('Bei der Validierung sind keine Fehler aufgetreten.'));
                 }
             })
@@ -332,7 +351,7 @@ export function PresetEditPage() {
             });
     };
 
-    const handleValueChange = (elementData: ElementData) => {
+    const handleValueChange = (elementData: AuthoredElementValues) => {
         if (preset == null || presetVersion == null) {
             return;
         }
@@ -341,7 +360,7 @@ export function PresetEditPage() {
             return;
         }
 
-        setElementData(elementData);
+        setAuthoredElementValues(elementData);
 
         setIsDeriving(true);
         dispatch(showLoadingSnackbar('Berechnungen werden durchgeführt…'));
@@ -360,7 +379,7 @@ export function PresetEditPage() {
                 );
             },
         }).then(({elementData, logItems}) => {
-            setElementData(elementData);
+            setDerivedData(elementData);
             dispatch(addDerivationLogItems(logItems));
         }).catch((err) => {
             console.error(err);
@@ -399,7 +418,7 @@ export function PresetEditPage() {
     }
 
     if (preset == null || presetVersion == null) {
-        return <LoadingPlaceholder />;
+        return <LoadingPlaceholder/>;
     }
 
     const allElements = flattenElements(presetVersion.rootElement);
@@ -418,113 +437,132 @@ export function PresetEditPage() {
                 }}
             >
                 <Allotment vertical>
-                    <Allotment>
-                        <Allotment.Pane minSize={732}>
-                            {/* Working Area */}
-                            <Box
-                                sx={{
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    height: '100%',
-                                    px: 2,
-                                    pt: 2,
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <GenericPageHeader
-                                    title={`Vorlage: ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
-                                    badge={{
-                                        color: 'default',
-                                        label: `Version ${presetVersion.version}`,
-                                    }}
-                                    icon={ModuleIcons.presets}
-                                    actions={[
-                                        {
-                                            icon: <NewWindow />,
-                                            tooltip: 'Neuen Entwurf anlegen',
-                                            onClick: handleAddNewVersion,
-                                        },
-                                        {
-                                            icon: <HomeStorage />,
-                                            tooltip: 'Versionen anzeigen',
-                                            onClick: () => {
-                                                setShowPresetVersions(true);
-                                            },
-                                        },
-                                        {
-                                            icon: <DoneAllOutlinedIcon />,
-                                            tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
-                                            onClick: handleValidate,
-                                            disabled: isBusy,
-                                        },
-                                        {
-                                            icon: <Delete color={'error'} />,
-                                            tooltip: 'Version der Vorlage löschen',
-                                            onClick: () => {
-                                                setConfirmDelete(() => handleDelete);
-                                            },
-                                            visible: presetVersion.status != FormStatus.Published,
-                                        },
-                                    ]}
-                                />
-
-                                <Paper
+                    <RootStructureActionsContextProvider
+                        value={rootStructureActions}
+                    >
+                        <Allotment>
+                            <Allotment.Pane minSize={732}>
+                                {/* Working Area */}
+                                <Box
                                     sx={{
-                                        overflowY: 'auto',
-                                        flex: 1,
-                                        mt: 2,
-                                        p: 4,
-                                        minHeight: 0,
-                                        borderTopLeftRadius: 10,
-                                        borderTopRightRadius: 10,
-                                        borderBottomLeftRadius: 0,
-                                        borderBottomRightRadius: 0,
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        height: '100%',
+                                        px: 2,
+                                        pt: 2,
+                                        overflow: 'hidden',
                                     }}
                                 >
-                                    <ViewDispatcherComponent
-                                        rootElement={presetVersion.rootElement}
-                                        allElements={allElements}
-                                        element={presetVersion.rootElement}
-                                        scrollContainerRef={scrollContainerRef}
-                                        isBusy={false}
-                                        isDeriving={false}
-                                        mode="editor"
-                                        elementData={elementData}
-                                        onElementDataChange={setElementData}
-                                        onElementBlur={undefined}
-                                        derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view */}
-                                        disableVisibility={false}
+                                    <GenericPageHeader
+                                        title={`Vorlage: ${preset.title} - ${versionNumber ?? ''} (${determinePresetVersionDescriptor(preset, presetVersion)})`}
+                                        badge={{
+                                            color: 'default',
+                                            label: `Version ${presetVersion.version}`,
+                                        }}
+                                        icon={ModuleIcons.presets}
+                                        actions={[
+                                            {
+                                                icon: <NewWindow/>,
+                                                tooltip: 'Neuen Entwurf anlegen',
+                                                onClick: handleAddNewVersion,
+                                            },
+                                            {
+                                                icon: <HomeStorage/>,
+                                                tooltip: 'Versionen anzeigen',
+                                                onClick: () => {
+                                                    setShowPresetVersions(true);
+                                                },
+                                            },
+                                            {
+                                                icon: <DoneAllOutlinedIcon/>,
+                                                tooltip: isBusy ? 'Validierung läuft bereits' : 'Validierung durchführen',
+                                                onClick: handleValidate,
+                                                disabled: isBusy,
+                                            },
+                                            {
+                                                icon: <Delete color={'error'}/>,
+                                                tooltip: 'Version der Vorlage löschen',
+                                                onClick: () => {
+                                                    setConfirmDelete(() => handleDelete);
+                                                },
+                                                visible: presetVersion.status != FormStatus.Published,
+                                            },
+                                        ]}
+                                    />
+
+                                    <Paper
+                                        sx={{
+                                            overflowY: 'auto',
+                                            flex: 1,
+                                            mt: 2,
+                                            p: 4,
+                                            minHeight: 0,
+                                            borderTopLeftRadius: 10,
+                                            borderTopRightRadius: 10,
+                                            borderBottomLeftRadius: 0,
+                                            borderBottomRightRadius: 0,
+                                        }}
+                                    >
+                                        {
+                                            /* TODO: use ViewDispatcherContext
+                                        <ViewDispatcherComponent
+                                            rootElement={presetVersion.rootElement}
+                                            allElements={allElements}
+                                            element={presetVersion.rootElement}
+                                            scrollContainerRef={scrollContainerRef}
+                                            isBusy={false}
+                                            isDeriving={false}
+                                            mode="editor"
+                                            authoredElementValues={authoredElementValues}
+                                            derivedData={derivedData}
+                                            onAuthoredElementValuesChange={handleValueChange}
+                                            onDerivedDataChange={setDerivedData}
+                                            onElementBlur={undefined}
+                                            derivationTriggerIdQueue={[] /* Not necessary because this is kept internally by the root component view }
+                                            disableVisibility={false}
+                                            onDerive={() => {
+
+                                            }}
+                                        />
+                                        */
+                                        }
+                                    </Paper>
+                                </Box>
+                            </Allotment.Pane>
+
+                            <Allotment.Pane
+                                minSize={480}
+                                preferredSize={480}
+                            >
+                                {/* Element Tree */}
+                                <Paper
+                                    sx={{
+                                        px: 2,
+                                        boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
+                                        borderLeft: '1px solid #E0E7E0',
+                                        borderRadius: 0,
+                                        position: 'relative',
+                                        height: '100%',
+                                        overflow: 'hidden',
+                                    }}
+                                >
+                                    <ElementTree
+                                        value={presetVersion.rootElement}
+                                        onChange={(p) => {
+                                            handlePatch({
+                                                ...presetVersion,
+                                                rootElement: p as any,
+                                            });
+                                        }}
+                                        editable={presetVersion.status == FormStatus.Drafted}
+                                        openRootAddElementSignal={openAddSectionSignal}
+                                        displayContext={ElementDisplayContext.CitizenFacing}
+                                        allowElementIdEditing={false}
                                     />
                                 </Paper>
-                            </Box>
-                        </Allotment.Pane>
-
-                        <Allotment.Pane
-                            minSize={480}
-                            preferredSize={480}
-                        >
-                            {/* Element Tree */}
-                            <Paper
-                                sx={{
-                                    px: 2,
-                                    boxShadow: '0px 4px 15px rgba(0, 0, 0, 0.1)',
-                                    borderLeft: '1px solid #E0E7E0',
-                                    borderRadius: 0,
-                                    position: 'relative',
-                                    height: '100%',
-                                    overflow: 'hidden',
-                                }}
-                            >
-                                <ElementTree
-                                    entity={presetVersion}
-                                    onPatch={handlePatch}
-                                    editable={presetVersion.status == FormStatus.Drafted}
-                                    scope="preset"
-                                    enabledIdentityProviderInfos={identityProviders}
-                                />
-                            </Paper>
-                        </Allotment.Pane>
-                    </Allotment>
+                            </Allotment.Pane>
+                        </Allotment>
+                    </RootStructureActionsContextProvider>
                 </Allotment>
             </Box>
 
@@ -550,4 +588,3 @@ export function PresetEditPage() {
         </PageWrapper>
     );
 }
-

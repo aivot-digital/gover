@@ -3,7 +3,7 @@ package de.aivot.GoverBackend.providerLink.dtos;
 import de.aivot.GoverBackend.providerLink.entities.ProviderLink;
 
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record ProviderLinkResponseDTO(
         @Nonnull
@@ -13,9 +13,9 @@ public record ProviderLinkResponseDTO(
         @Nonnull
         String link,
         @Nonnull
-        LocalDateTime created,
+        Instant created,
         @Nonnull
-        LocalDateTime updated
+        Instant updated
 ) {
     public static ProviderLinkResponseDTO fromEntity(ProviderLink entity) {
         return new ProviderLinkResponseDTO(

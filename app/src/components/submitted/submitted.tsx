@@ -1,5 +1,5 @@
-import {Box, Button, Divider, Grid, Link, Typography} from '@mui/material';
-import React, {useCallback, useEffect, useRef, useState} from 'react';
+import {Box, Button, Container, Divider, Grid, Link, Typography, useTheme} from '@mui/material';
+import React, {useEffect, useState} from 'react';
 import {Preamble} from '../preamble/preamble';
 import {showDialog} from '../../slices/app-slice';
 import {validateEmail} from '../../utils/validate-email';
@@ -12,40 +12,34 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
 import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
 import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
+import CheckCircleTwoToneIcon from '@mui/icons-material/CheckCircleTwoTone';
 import {Rating} from '../rating/rating';
-import {useApi} from '../../hooks/use-api';
 import {AlertComponent} from '../alert/alert-component';
 import qrcode from 'qrcode';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
-import {SubmissionsApiService} from '../../modules/submissions/submissions-api-service';
-import {SubmissionListResponseDTO} from '../../modules/submissions/dtos/submission-list-response-dto';
 import {createApiPath} from '../../utils/url-path-utils';
-import confetti from 'canvas-confetti';
-import {FormEntity} from '../../modules/forms/entities/form-entity';
-import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
 import {FormApiService} from '../../modules/forms/services/form-api-service';
-
-const animationStartDelay = 200;
-const animationDuration = 2000;
-
-interface ConfettiAnimationSettings {
-    startVelocity: number;
-    particleCount: number;
-    angle: number;
-    spread: number;
-    origin: {
-        x: number;
-    };
-    colors: string[];
-    disableForReducedMotion: boolean;
-}
+import {ElementType} from '../../data/element-type/element-type';
+import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
+import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
+import {CanvasConfettiOverlay} from '../confetti/canvas-confetti-overlay';
+import {FormLayoutElement} from '../../models/elements/form-layout-element';
+import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
+import {ProcessEntity} from '../../modules/process/entities/process-entity';
+import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';
+import {FormDepartmentAddresses} from '../form-department-addresses/form-department-addresses';
 
 interface SubmittedProps {
-    submission: SubmissionListResponseDTO;
-    form: FormEntity;
-    version: FormVersionEntity;
+    startedProcessAccessKey: string;
+    formElement: FormLayoutElement;
+    node: ProcessNodeEntity;
+    process: ProcessEntity;
+    version: ProcessVersionEntity;
 }
+
+const submittedConfettiColors = ['#fcaa67', '#b0413e'];
+const handledConfettiAccessKeys = new Set<string>();
 
 const useSetMailErrorWithSnackbar = (setMailError: (message: string) => void) => {
     const dispatch = useAppDispatch();
@@ -66,139 +60,38 @@ const useSetPrivacyErrorWithSnackbar = (setPrivacyError: (message: string) => vo
 };
 
 export function Submitted(props: SubmittedProps) {
-    const api = useApi();
-    const submitStep = props.version.rootElement.submitStep;
+    const {
+        formElement,
+        startedProcessAccessKey,
+    } = props;
+
+    const theme = useTheme();
+
+    const submitStep = formElement.children?.find(c => c.type === ElementType.SubmitStep) as SubmitStepElement;
     const confettiDisabled = submitStep?.disableConfetti === true;
 
     const [status, setStatus] = useState<SubmissionStatusResponseDTO>();
 
     const [qrCode, setQrCode] = useState<string>();
-    const [shouldRenderConfetti, setShouldRenderConfetti] = useState(false);
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const animationInstance = useRef<ReturnType<typeof confetti.create> | null>(null);
-    const intervalId = useRef<ReturnType<typeof setInterval> | null>(null);
+    const [confettiPlayKey, setConfettiPlayKey] = useState<number | null>(null);
 
     useEffect(() => {
-        if (!shouldRenderConfetti || confettiDisabled) {
-            if (intervalId.current) {
-                clearInterval(intervalId.current);
-                intervalId.current = null;
-            }
-            animationInstance.current = null;
+        const trimmedAccessKey = startedProcessAccessKey.trim();
+
+        if (trimmedAccessKey.length === 0 || handledConfettiAccessKeys.has(trimmedAccessKey)) {
+            setConfettiPlayKey(null);
             return;
         }
 
-        if (canvasRef.current && !animationInstance.current) {
-            animationInstance.current = confetti.create(canvasRef.current, {
-                resize: true,
-                useWorker: true,
-            });
-        }
-    }, [shouldRenderConfetti, confettiDisabled]);
+        handledConfettiAccessKeys.add(trimmedAccessKey);
 
-    function getAnimationSettings(angle: number, originX: number): ConfettiAnimationSettings {
-        return {
-            startVelocity: 40,
-            spread: 80,
-            angle: 60,
-            particleCount: 20,
-            origin: {
-                x: 0,
-            },
-            colors: ['#fcaa67', '#b0413e'],
-            disableForReducedMotion: true,
-        };
-    }
-
-    const refAnimationInstance = useRef<null | ((settings: ConfettiAnimationSettings) => void)>(null);
-    const animationIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-    const animationStartTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const animationStopTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-    const getInstance = useCallback((instance: any) => {
-        refAnimationInstance.current = instance;
-    }, []);
-
-    const nextTickAnimation = useCallback(() => {
-        if (refAnimationInstance.current) {
-            refAnimationInstance.current(getAnimationSettings(60, 0));
-            refAnimationInstance.current(getAnimationSettings(120, 1));
-        }
-    }, []);
-
-    const startAnimation = useCallback(() => {
-        if (animationIntervalRef.current == null) {
-            animationIntervalRef.current = setInterval(nextTickAnimation, 16);
-        }
-    }, [nextTickAnimation]);
-
-    const pauseAnimation = useCallback(() => {
-        if (animationIntervalRef.current != null) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-        }
-    }, []);
-
-    /* TODO: This function will be used some time in the future. Do not remove or ask Daniel first.
-    const stopAnimation = useCallback(() => {
-        if (animationIntervalRef.current != null) {
-            clearInterval(animationIntervalRef.current);
-            animationIntervalRef.current = null;
-        }
-        // @ts-ignore
-        refAnimationInstance.current && refAnimationInstance.current.reset();
-    }, []);
-     */
-
-    useEffect(() => {
-        if (confettiDisabled || !shouldRenderConfetti) {
-            pauseAnimation();
+        if (confettiDisabled || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+            setConfettiPlayKey(null);
             return;
         }
 
-        const timeoutId = setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [confettiDisabled, shouldRenderConfetti, startAnimation, pauseAnimation]);
-
-    useEffect(() => {
-        if (confettiDisabled || !shouldRenderConfetti) {
-            return;
-        }
-
-        const timeoutId = setTimeout(() => {
-            pauseAnimation();
-        }, animationDuration);
-        return () => {
-            clearTimeout(timeoutId);
-        };
-    }, [confettiDisabled, shouldRenderConfetti, pauseAnimation]);
-
-    useEffect(() => {
-        if (confettiDisabled) {
-            setShouldRenderConfetti(false);
-            return;
-        }
-
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
-        const handleChange = () => {
-            setShouldRenderConfetti(mediaQuery.matches);
-        };
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, [confettiDisabled]);
-
-    useEffect(() => {
-        new SubmissionsApiService()
-            .getStatus(props.submission.id)
-            .then(setStatus);
-    }, [api, props.submission]);
+        setConfettiPlayKey((currentValue) => (currentValue ?? 0) + 1);
+    }, [confettiDisabled, startedProcessAccessKey]);
 
     useEffect(() => {
         if (
@@ -263,54 +156,47 @@ export function Submitted(props: SubmittedProps) {
         }
     };
 
-    useEffect(() => {
-        if (confettiDisabled || !shouldRenderConfetti) {
-            pauseAnimation();
-            return;
-        }
-
-        animationStartTimeoutRef.current = setTimeout(() => {
-            startAnimation();
-        }, animationStartDelay);
-
-        animationStopTimeoutRef.current = setTimeout(() => {
-            pauseAnimation();
-        }, animationDuration);
-
-        return () => {
-            if (animationStartTimeoutRef.current != null) {
-                clearTimeout(animationStartTimeoutRef.current);
-                animationStartTimeoutRef.current = null;
-            }
-
-            if (animationStopTimeoutRef.current != null) {
-                clearTimeout(animationStopTimeoutRef.current);
-                animationStopTimeoutRef.current = null;
-            }
-
-            pauseAnimation();
-        };
-    }, [confettiDisabled, pauseAnimation, shouldRenderConfetti, startAnimation]);
-
-    useEffect(() => {
-        if (confettiDisabled) {
-            setShouldRenderConfetti(false);
-            return;
-        }
-
-        const mediaQuery = window.matchMedia('(prefers-reduced-motion: no-preference)');
-        const handleChange = () => {
-            setShouldRenderConfetti(mediaQuery.matches);
-        };
-        handleChange();
-        mediaQuery.addEventListener('change', handleChange);
-        return () => {
-            mediaQuery.removeEventListener('change', handleChange);
-        };
-    }, [confettiDisabled]);
-
     return (
-        <>
+        <Container
+            component="main"
+            role="main"
+            sx={{
+                pt: 8,
+                pb: 16,
+            }}
+        >
+            <Box
+                sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    mb: 4,
+                }}
+            >
+                <Typography
+                    component="h2"
+                    sx={{
+                        fontFamily: theme.typography.h2.fontFamily,
+                        fontWeight: 500,
+                        fontSize: '1.3125rem',
+                        lineHeight: 1.2,
+                        color: 'text.primary',
+                        pt: '4px',
+                        m: 0,
+                    }}
+                >
+                    Angaben erfolgreich übermittelt
+                </Typography>
+                <CheckCircleTwoToneIcon
+                    sx={{
+                        color: theme.palette.primary.main,
+                        flexShrink: 0,
+                        mt: -0.75,
+                        ml: 0.75,
+                        transform: 'translateY(5px)',
+                    }}
+                />
+            </Box>
+
             {
                 status != null &&
                 status.paymentProviderName != null &&
@@ -334,8 +220,10 @@ export function Submitted(props: SubmittedProps) {
                             >
                                 <p>
                                     Um Ihren Antrag bearbeiten zu können, ist die Bezahlung der Gebühren erforderlich.
-                                    Die Zahlung wird durch den Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
-                                    Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben und den Bezahlvorgang vollständig abschließen.
+                                    Die Zahlung wird durch den
+                                    Dienstleister <strong>{status.paymentProviderName}</strong> abgewickelt.
+                                    Bitte achten Sie darauf, dass Sie die Zahlungs&shy;informationen korrekt eingeben
+                                    und den Bezahlvorgang vollständig abschließen.
                                 </p>
                                 <p>
                                     <strong>Wichtig:</strong>
@@ -405,7 +293,8 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 >
                     Sie haben Ihre Gebühren erfolgreich online bezahlt.
-                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb weniger Minuten) für die weitere Bearbeitung freigegeben.
+                    Der Antrag wird nach Bestätigung durch den Zahlungs&shy;dienstleister (in der Regel innerhalb
+                    weniger Minuten) für die weitere Bearbeitung freigegeben.
                     Vielen Dank!
                 </AlertComponent>
             }
@@ -421,37 +310,44 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 >
                     Die Bezahlung der Gebühren ist fehlgeschlagen. Bitte wenden Sie sich an die zuständige Dienststelle.
-                    <br />
-                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
+                    <br/>
+                    Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                    an: {status.submissionId}.
                 </AlertComponent>
             }
             {
                 status != null &&
                 status.paymentProviderName != null &&
                 status.paymentProviderUrl != null &&
-                <Divider sx={{my: 8}} />
+                <Divider sx={{my: 8, maxWidth: 800}}/>
             }
             {
                 submitStep?.textPostSubmit != null &&
                 !isStringNullOrEmpty(submitStep?.textPostSubmit) &&
                 <Preamble
                     text={submitStep?.textPostSubmit}
-                    logoLink={props.version.rootElement.introductionStep?.initiativeLogoLink ?? undefined}
-                    logoAlt={props.version.rootElement.introductionStep?.initiativeName ?? undefined}
+                    logoLink={(formElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeLogoLink ?? undefined}
+                    logoAlt={(formElement.children?.find(c => c.type === ElementType.IntroductionStep) as IntroductionStepElement)?.initiativeName ?? undefined}
                 />
             }
+            <FormDepartmentAddresses
+                formElement={formElement}
+                variant="grid"
+            />
             {
                 status != null &&
                 !status.accessExpired &&
                 <Grid
                     container
-                    spacing={6}
+                    columnSpacing={6}
+                    rowSpacing={6}
                     sx={{
                         mt: 4,
                     }}
                 >
                     <Grid
                         size={{
+                            xs: 12,
                             md: 6,
                         }}
                     >
@@ -488,6 +384,7 @@ export function Submitted(props: SubmittedProps) {
                     </Grid>
                     <Grid
                         size={{
+                            xs: 12,
                             md: 6,
                         }}
                     >
@@ -557,31 +454,32 @@ export function Submitted(props: SubmittedProps) {
                         color="warning"
                         title="Zugriff abgelaufen"
                     >
-                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen der Gebühren vergeht.
-                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
+                        Aus Sicherheitsgründen ist der Zugriff auf Ihren eingereichten Antrag nicht mehr möglich. Dies
+                        passiert im Regelfall, wenn zu viel Zeit zwischen der Einreichung des Antrages und dem Bezahlen
+                        der Gebühren vergeht.
+                        Sollten Sie die von Ihnen eingereichten Antragsunterlagen inklusive des Zahlungsbelegs für Ihre
+                        Unterlagen wünschen, wenden Sie sich bitte an den Fachlichen Support auf der <Link
                         onClick={() => {
                             dispatch(showDialog(HelpDialogId));
                         }}
                     >Hilfe-Seite</Link>.
-                        <br />
-                        Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung an: {status.submissionId}.
+                        <br/>
+                        Zur eindeutigen Identifizierung Ihrer Einreichung geben Sie bitte folgende Kennung
+                        an: {status.submissionId}.
                     </AlertComponent>
                 </Box>
             }
-            <Divider sx={{my: 8}} />
+            <Divider sx={{my: 8, maxWidth: 800}}/>
             <Typography
                 component="h3"
                 variant="h5"
-                sx={{textAlign: 'center'}}
             >
                 Wie hat Ihnen dieser Prozess gefallen?
             </Typography>
             <Typography
                 sx={{
-                    textAlign: 'center',
                     mt: 1,
                     maxWidth: 500,
-                    mx: 'auto',
                 }}
                 variant={'body2'}
             >
@@ -591,7 +489,7 @@ export function Submitted(props: SubmittedProps) {
             <Box
                 sx={{
                     display: 'flex',
-                    justifyContent: 'center',
+                    justifyContent: 'flex-start',
                     mt: 4,
                 }}
             >
@@ -604,23 +502,10 @@ export function Submitted(props: SubmittedProps) {
                     }}
                 />
             </Box>
-            {!confettiDisabled && shouldRenderConfetti && (
-                <canvas
-                    ref={canvasRef}
-                    style={{
-                        position: 'fixed',
-                        pointerEvents: 'none',
-                        width: '100%',
-                        height: '100%',
-                        top: 0,
-                        left: 0,
-                        zIndex: 9999,
-                        display: 'block',
-                        background: 'transparent',
-                    }}
-                    aria-hidden="true"
-                />
-            )}
+            <CanvasConfettiOverlay
+                playKey={confettiPlayKey}
+                colors={submittedConfettiColors}
+            />
 
             <InfoDialog
                 title="E-Mail versendet"
@@ -630,8 +515,9 @@ export function Submitted(props: SubmittedProps) {
                     setShowMailSentDialog(false);
                 }}
             >
-                Eine E-Mail mit dem eingereichten Antrag wurde an die angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
+                Eine E-Mail mit dem eingereichten Antrag wurde an die
+                angegebene <span style={{whiteSpace: 'nowrap'}}>E-Mail-Adresse</span> versendet.
             </InfoDialog>
-        </>
+        </Container>
     );
 }

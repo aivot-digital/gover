@@ -1,6 +1,7 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {VDepartmentMembershipWithDetailsEntity} from '../entities/v-department-membership-with-details-entity';
 import {SortOrder} from '../../../components/generic-list/generic-list-props';
+import {Page} from '../../../models/dtos/page';
 
 interface VDepartmentMembershipWithDetailsFilter {
     departmentId: number;
@@ -8,22 +9,23 @@ interface VDepartmentMembershipWithDetailsFilter {
     name: string;
     userId: string;
     userIds: string[];
-    userFullName: string;
+    fullName: string;
     email: string;
     enabled: boolean;
     verified: boolean;
     globalAdmin: boolean;
     deletedInIdp: boolean;
+    domainRoleId: number;
 }
 
-export interface ListDepartmentMembershipsWithRolesFilter {
+export type ListDepartmentMembershipsWithRolesFilter = Partial<{
     userId: string;
     departmentSearch: string;
     departmentId: number;
     userSearch: string;
     deletedUser: boolean;
     enabledUser: boolean;
-}
+}>;
 
 export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
     VDepartmentMembershipWithDetailsEntity,
@@ -64,6 +66,7 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
             departmentId: 0,
             departmentName: "",
             domainRolePermissions: [],
+            domainRoleAssignments: [],
             domainRoles: [],
             membershipId: 0,
             membershipHasDeputies: false,
@@ -81,7 +84,14 @@ export class VDepartmentMembershipWithDetailsService extends BaseCrudApiService<
         sort?: 'name' | 'fullName',
         order?: SortOrder,
         filters?: Partial<ListDepartmentMembershipsWithRolesFilter>,
-    ): Promise<any> {
-        return {};
+    ): Promise<Page<VDepartmentMembershipWithDetailsEntity>> {
+        return await this.list(page, limit, sort as any, order, {
+            userId: filters?.userId,
+            name: filters?.departmentSearch,
+            departmentId: filters?.departmentId,
+            fullName: filters?.userSearch,
+            deletedInIdp: filters?.deletedUser,
+            enabled: filters?.enabledUser,
+        });
     }
 }

@@ -2,7 +2,15 @@ import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {type ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
 
 interface ProcessInstanceEventFilter {
-    processInstanceId: number;
+    triggeringUserId?: string;
+    processInstanceId?: number;
+    processInstanceTaskId?: number;
+    level?: ProcessNodeExecutionLogLevel;
+    isTechnical?: boolean;
+    isNotTechnical?: boolean;
+    isAudit?: boolean;
+    isNotAudit?: boolean;
+    title?: string;
 }
 
 export class ProcessInstanceEventApiService extends BaseCrudApiService<

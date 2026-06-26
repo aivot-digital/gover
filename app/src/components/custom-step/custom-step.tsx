@@ -1,6 +1,17 @@
-import {Box, Button, CircularProgress, Collapse, Step, StepContent, StepLabel, type StepProps, useTheme} from '@mui/material';
+import {
+    Box,
+    Button,
+    CircularProgress,
+    Collapse,
+    Step,
+    StepContent,
+    StepLabel,
+    type StepProps,
+    useTheme,
+} from '@mui/material';
 import React, {useEffect, useRef} from 'react';
 import {getStepIcon} from '../../data/step-icons';
+import {ElementType} from '../../data/element-type/element-type';
 import {isStepElement} from '../../models/elements/steps/step-element';
 import {getElementNameForType} from '../../data/element-type/element-names';
 import CheckCircleTwoToneIcon from '@mui/icons-material/CheckCircleTwoTone';
@@ -10,25 +21,35 @@ import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
 import {type CustomStepProps} from './custom-step-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectDisableAutoScrollForSteps} from '../../slices/admin-settings-slice';
+import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
+import {getPreviewHighlightStyles} from '../view-dispatcher/preview-highlight-styles';
 
-export function CustomStep({
-                               stepIndex,
-                               isFirstStep,
-                               isLastStep,
-                               active,
-                               step,
-                               children,
-                               onNext,
-                               onPrevious,
-                               navDirection,
-                               stepRefs,
-                               scrollContainerRef,
-                               isBusy,
-                               isDeriving,
-                               ...passTroughProps
-                           }: CustomStepProps & StepProps) {
+export function CustomStep(props: CustomStepProps & StepProps) {
+    const {
+        stepIndex,
+        isFirstStep,
+        isLastStep,
+        isSubmitStep,
+        active,
+        step,
+        children,
+        onNext,
+        onPrevious,
+        navDirection,
+        stepRefs,
+        scrollContainerRef,
+        isBusy,
+        isDeriving,
+        ...passTroughProps
+    } = props;
+
     const theme = useTheme();
     const disableAutoScroll = useAppSelector(selectDisableAutoScrollForSteps);
+    const {
+        highlightedElementId,
+    } = useViewDispatcherContext();
+    const isIntroductionStep = step.type === ElementType.IntroductionStep;
+    const isHighlightedInPreview = highlightedElementId === step.id;
 
     const ref = useRef<HTMLDivElement>(null);
     const headingRef = useRef<HTMLDivElement>(null);
@@ -87,6 +108,10 @@ export function CustomStep({
         <Step
             {...passTroughProps}
             ref={ref}
+            sx={[
+                (theme) => getPreviewHighlightStyles(theme, isHighlightedInPreview),
+                ...(Array.isArray(passTroughProps.sx) ? passTroughProps.sx : [passTroughProps.sx]),
+            ]}
         >
             <StepLabel
                 StepIconComponent={(props) => (
@@ -165,7 +190,9 @@ export function CustomStep({
                     }}
                 >
                     {
-                        (onNext != null) &&
+                        onNext != null &&
+                        !isLastStep &&
+                        !isSubmitStep &&
                         <Button
                             variant="contained"
                             onClick={onNext}
@@ -175,19 +202,38 @@ export function CustomStep({
                             endIcon={(isBusy || isDeriving) ? <CircularProgress
                                 size="1em"
                                 color="inherit"
-                            /> : (isLastStep ? <SendOutlinedIcon /> : <ArrowForwardOutlinedIcon />)}
+                            /> : (isLastStep ? <SendOutlinedIcon/> : <ArrowForwardOutlinedIcon/>)}
                         >
                             {
                                 isDeriving && 'Berechne…'
                             }
                             {
-                                isFirstStep && !isDeriving && 'Antrag beginnen'
+                                isIntroductionStep && !isDeriving && 'Starten'
                             }
                             {
-                                isLastStep && !isDeriving && 'Antrag verbindlich einreichen'
+                                !isIntroductionStep && !isDeriving && 'Weiter'
+                            }
+                        </Button>
+                    }
+                    {
+                        onNext != null &&
+                        isLastStep &&
+                        <Button
+                            variant="contained"
+                            onClick={onNext}
+                            size="large"
+                            color="primary"
+                            disabled={isBusy || isDeriving}
+                            endIcon={(isBusy || isDeriving) ? <CircularProgress
+                                size="1em"
+                                color="inherit"
+                            /> : (isLastStep ? <SendOutlinedIcon/> : <ArrowForwardOutlinedIcon/>)}
+                        >
+                            {
+                                isDeriving && 'Berechne…'
                             }
                             {
-                                !isFirstStep && !isLastStep && !isDeriving && 'Weiter'
+                                isLastStep && !isDeriving && 'Verbindlich einreichen'
                             }
                         </Button>
                     }
@@ -201,7 +247,7 @@ export function CustomStep({
                             startIcon={(isBusy || isDeriving) ? <CircularProgress
                                 size="1em"
                                 color="inherit"
-                            /> : <ArrowBackOutlinedIcon />}
+                            /> : <ArrowBackOutlinedIcon/>}
                             sx={{
                                 mt: 2,
                                 [theme.breakpoints.up('md')]: {

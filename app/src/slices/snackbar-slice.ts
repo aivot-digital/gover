@@ -10,21 +10,30 @@ export const showSuccessSnackbar = (message: string) => {
     });
 };
 
-export const showErrorSnackbar = (message: string) => {
+export const showWarningSnackbar = (message: string) => {
     return addSnackbarMessage({
         key: new Date().getTime().toString(),
         message,
-        severity: SnackbarSeverity.Error,
+        severity: SnackbarSeverity.Warning,
         type: SnackbarType.AutoHiding,
     });
 };
 
-export const showApiErrorSnackbar = (error: any, defaultMessage: string) => {
+export const showErrorSnackbar = (message: string, persist: boolean = false) => {
+    return addSnackbarMessage({
+        key: new Date().getTime().toString(),
+        message,
+        severity: SnackbarSeverity.Error,
+        type: persist ? SnackbarType.Dismissable : SnackbarType.AutoHiding,
+    });
+};
+
+export const showApiErrorSnackbar = (error: any, defaultMessage: string, persist: boolean = false) => {
     if (isApiError(error) && error.displayableToUser) {
-        return showErrorSnackbar(error.message);
+        return showErrorSnackbar(error.message, persist);
     }
     console.error(error);
-    return showErrorSnackbar(defaultMessage);
+    return showErrorSnackbar(defaultMessage, persist);
 };
 
 export const LOADING_TOAST_SNACKBAR_KEY = 'loading-toast';

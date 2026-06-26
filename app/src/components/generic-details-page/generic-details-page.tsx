@@ -1,6 +1,6 @@
 import {GenericDetailsPageProps} from './generic-details-page-props';
 import {Box, Button, Container, Paper, Stack, Tab, Tabs, Typography} from '@mui/material';
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Api, useApi} from '../../hooks/use-api';
 import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, useParams} from 'react-router-dom';
@@ -58,10 +58,36 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const id = useMemo(() => {
         return params[ID_PARAM] as ID;
     }, [params]);
+    const isNewItem = id === NEW_ID_INDICATOR;
 
     const [isBusy, setIsBusy] = useState(false);
     const [item, setItem] = useState<ItemType>();
     const [additionalData, setAdditionalData] = useState<AdditionalData>();
+    const [refreshCounter, setRefreshCounter] = useState(0);
+    const propsRef = useRef(props);
+
+    useEffect(() => {
+        propsRef.current = props;
+    }, [props]);
+
+    const refresh = useCallback(() => {
+        setRefreshCounter(currentCounter => currentCounter + 1);
+    }, []);
+
+    useEffect(() => {
+        if (props.controlRef == null) {
+            return;
+        }
+
+        props.controlRef.current = {
+            refresh: refresh,
+        };
+    }, [props.controlRef, refresh]);
+
+    const resolvedPathParams = useMemo(() => ({
+        ...params,
+        [ID_PARAM]: id as string | undefined,
+    }), [params, ID_PARAM, id]);
 
     const resolvedTabs = useMemo(() => {
         if (typeof props.tabs === 'function') {
@@ -72,46 +98,89 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
 
     const currentTab: number = useMemo(() => {
         return resolvedTabs
-            .map(tab => generatePath(tab.path, {[ID_PARAM]: id}))
+            .map(tab => generatePath(tab.path, resolvedPathParams))
             .findIndex(path => matchPath(location.pathname, path) != null);
-    }, [id, location, resolvedTabs]);
+    }, [location, resolvedPathParams, resolvedTabs]);
+
+    const resolvedHeader = useMemo(() => {
+        if (typeof props.header === 'function') {
+            return props.header(item, isNewItem, notFound);
+        }
+        return props.header;
+    }, [props.header, item, isNewItem, notFound]);
 
     useEffect(() => {
+        const currentProps = propsRef.current;
+
         if (id == null) {
             setItem(undefined);
             setAdditionalData(undefined);
-            if (props.itemRef != null) {
-                props.itemRef.current = null;
+            if (currentProps.itemRef != null) {
+                currentProps.itemRef.current = null;
+            }
+            if (currentProps.onItemChange != null) {
+                currentProps.onItemChange(item ?? null);
+            }
+            if (currentProps.additionalDataRef != null) {
+                currentProps.additionalDataRef.current = null;
+            }
+            if (currentProps.onAdditionalDataChange != null) {
+                currentProps.onAdditionalDataChange(additionalData ?? null);
             }
             return;
         }
 
+        let isActive = true;
         setIsBusy(true);
-        fetchData<ItemType, ID, AdditionalData>(api, id, props)
+        fetchData<ItemType, ID, AdditionalData>(api, id, currentProps)
             .then(({item, additionalData}) => {
+                if (!isActive) {
+                    return;
+                }
                 setItem(item);
                 setAdditionalData(additionalData);
                 setNotFound(false);
-                if (props.itemRef != null) {
-                    props.itemRef.current = item;
+                if (currentProps.itemRef != null) {
+                    currentProps.itemRef.current = item;
+                }
+                if (currentProps.onItemChange != null) {
+                    currentProps.onItemChange(item ?? null);
+                }
+                if (currentProps.additionalDataRef != null) {
+                    currentProps.additionalDataRef.current = additionalData;
+                }
+                if (currentProps.onAdditionalDataChange != null) {
+                    currentProps.onAdditionalDataChange(additionalData ?? null);
                 }
             })
             .catch((error: ApiError) => {
+                if (!isActive) {
+                    return;
+                }
                 console.error(error);
                 setNotFound(true);
             })
-            .finally(() => setIsBusy(false));
-    }, [api, id]);
+            .finally(() => {
+                if (!isActive) {
+                    return;
+                }
+                setIsBusy(false);
+            });
+
+        return () => {
+            isActive = false;
+        };
+    }, [api, id, refreshCounter]);
 
     const headerTitle = useMemo(() => {
         if (props.getHeaderTitle) {
-            return props.getHeaderTitle(item, id === NEW_ID_INDICATOR, notFound);
+            return props.getHeaderTitle(item, isNewItem, notFound);
         }
-        return props.header.title ?? 'Resource bearbeiten'; // use static title as fallback, if defined
-    }, [item, id, notFound]);
+        return resolvedHeader.title ?? 'Resource bearbeiten';
+    }, [props.getHeaderTitle, item, isNewItem, notFound, resolvedHeader]);
 
     useEffect(() => {
-        if (id === NEW_ID_INDICATOR) {
+        if (isNewItem) {
             return;
         }
         if (entityType == null) {
@@ -127,7 +196,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     return (
         <>
             <Container>
-                <GenericPageHeader {...props.header} title={isBusy ? "Wird geladen…" : headerTitle} isBusy={isBusy} />
+                <GenericPageHeader {...resolvedHeader} title={isBusy ? "Wird geladen…" : headerTitle} isBusy={isBusy} />
 
                 <Paper
                     sx={{
@@ -150,7 +219,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                             value={currentTab}
                                             onChange={(_, index: number) => {
                                                 const tab = resolvedTabs[index];
-                                                navigate(generatePath(tab.path, {[ID_PARAM]: id}));
+                                                navigate(generatePath(tab.path, resolvedPathParams));
                                             }}
                                         >
                                             {
@@ -224,12 +293,13 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                     value={{
                                         item: item,
                                         setItem: setItem,
-                                        isNewItem: id === NEW_ID_INDICATOR,
-                                        isExistingItem: id !== NEW_ID_INDICATOR,
+                                        isNewItem: isNewItem,
+                                        isExistingItem: !isNewItem,
                                         additionalData: additionalData,
                                         setAdditionalData: setAdditionalData,
                                         isBusy: isBusy,
                                         setIsBusy: setIsBusy,
+                                        refresh: refresh,
                                         isEditable: isEditable != null ? isEditable(item) : true,
                                     }}
                                 >

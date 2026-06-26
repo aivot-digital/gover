@@ -7,7 +7,7 @@ import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigInteger;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -32,7 +32,7 @@ public class FormRevisionEntity {
     private String userId;
 
     @Nonnull
-    private LocalDateTime timestamp;
+    private Instant timestamp;
 
     @Nonnull
     @JdbcTypeCode(SqlTypes.JSON)
@@ -47,7 +47,7 @@ public class FormRevisionEntity {
                               @Nonnull Integer formId,
                               @Nonnull Integer formVersion,
                               @Nonnull String userId,
-                              @Nonnull LocalDateTime timestamp,
+                              @Nonnull Instant timestamp,
                               @Nonnull Collection<DiffItem> diff) {
         this.id = id;
         this.formId = formId;
@@ -125,11 +125,11 @@ public class FormRevisionEntity {
     }
 
     @Nonnull
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public FormRevisionEntity setTimestamp(@Nonnull LocalDateTime timestamp) {
+    public FormRevisionEntity setTimestamp(@Nonnull Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }

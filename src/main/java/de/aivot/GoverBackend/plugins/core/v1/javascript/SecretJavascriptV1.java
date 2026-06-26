@@ -1,10 +1,9 @@
 package de.aivot.GoverBackend.plugins.core.v1.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.secrets.services.SecretService;
 import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -12,8 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.UUID;
 
 /**
- * This class provides JavaScript functions for retrieving secrets.
- * The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
+ * This class provides JavaScript functions for retrieving secrets. The functions are exposed to the JavaScript environment through the GraalVM Polyglot API.
  */
 @Component
 public class SecretJavascriptV1 implements JavascriptFunctionProvider {
@@ -39,7 +37,7 @@ public class SecretJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -59,12 +57,6 @@ public class SecretJavascriptV1 implements JavascriptFunctionProvider {
         return new String[]{
                 "get(key: string): string;"
         };
-    }
-
-    @Nullable
-    @Override
-    public String getDeprecationNotice() {
-        return "Bitte verwenden Sie stattdessen die Version 2 dieser Komponente, da diese verbesserte Funktionen und Fehlerbehebungen enthält.";
     }
 
     /**

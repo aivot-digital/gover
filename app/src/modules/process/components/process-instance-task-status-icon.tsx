@@ -1,11 +1,12 @@
 import {ProcessTaskStatus} from '../enums/process-task-status';
 import React, {type ReactNode} from 'react';
-import {Icon, Tooltip} from '@mui/material';
+import {Tooltip} from '@mui/material';
 import AppBadging from '@aivot/mui-material-symbols-400-outlined/dist/app-badging/AppBadging';
 import PlayCircle from '@aivot/mui-material-symbols-400-outlined/dist/play-circle/PlayCircle';
 import PauseCircle from '@aivot/mui-material-symbols-400-outlined/dist/pause-circle/PauseCircle';
 import CheckCircle from '@aivot/mui-material-symbols-400-outlined/dist/check-circle/CheckCircle';
 import Cancel from '@aivot/mui-material-symbols-400-outlined/dist/cancel/Cancel';
+import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
 
 interface ProcessInstanceTaskStatusIconProps {
     status: ProcessTaskStatus;
@@ -60,6 +61,14 @@ export function ProcessInstanceTaskStatusIcon(props: ProcessInstanceTaskStatusIc
                     title="Fehlgeschlagen"
                 >
                     <Cancel color="error"/>
+                </Tooltip>
+            );
+        case ProcessTaskStatus.Restarted:
+            return (
+                <Tooltip
+                    title="Neu gestartet"
+                >
+                    <Replay color="warning"/>
                 </Tooltip>
             );
         default:

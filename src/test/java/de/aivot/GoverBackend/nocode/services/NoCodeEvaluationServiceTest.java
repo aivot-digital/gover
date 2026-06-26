@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.nocode.services;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.enums.ElementType;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.*;
@@ -12,13 +11,14 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Objects;
 
+import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class NoCodeEvaluationServiceTest {
 
     @Test
     void evaluate() {
-        var context = new ElementData();
+        var context = new DerivedRuntimeElementData();
 
         var testProvider = getNoCodeOperatorSPI();
 
@@ -35,9 +35,11 @@ class NoCodeEvaluationServiceTest {
 
         assertEquals(true, res.getValue());
 
-        context.putInputValue("a", ElementType.Checkbox, true);
-        context.putInputValue("b", ElementType.Checkbox, false);
-        context.putInputValue("c", ElementType.Checkbox, true);
+        context = runtime(
+                "a", true,
+                "b", false,
+                "c", true
+        );
 
         var result = evalService.evaluate(
                 new NoCodeExpression(
@@ -126,7 +128,7 @@ class NoCodeEvaluationServiceTest {
             }
 
             @Override
-            public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+            public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
                 return new NoCodeResult(Objects.equals(args[0], args[1]));
             }
         };

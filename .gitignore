@@ -9,6 +9,10 @@
 /data/
 /fakesmtp/
 /test-files/
+/data/assets/
+/data/attachments/
+/data/default/
+/plugins/
 
 ### App ###
 /app/node_modules/
@@ -24,3 +28,6 @@
 
 ### Dependencies ###
 /pg_data/
+
+### Local install ###
+/.env

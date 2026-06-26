@@ -1,0 +1,134 @@
+import {type ElementTypesMap} from '../../data/element-type/element-types-map';
+import {ElementType} from '../../data/element-type/element-type';
+
+export enum ElementTypeGroups {
+    Display,
+    Information,
+    Input,
+    DateTime,
+    Select,
+    Group,
+    Step,
+    Other,
+}
+
+export const elementTypeGroupLabels: Record<ElementTypeGroups, string> = {
+    [ElementTypeGroups.Display]: 'Darstellung',
+    [ElementTypeGroups.Information]: 'Informationen',
+    [ElementTypeGroups.Select]: 'Auswahl',
+    [ElementTypeGroups.Input]: 'Eingabe',
+    [ElementTypeGroups.DateTime]: 'Datum und Zeit',
+    [ElementTypeGroups.Group]: 'Gruppierung',
+    [ElementTypeGroups.Step]: 'Abschnitt',
+    [ElementTypeGroups.Other]: 'Sonstige',
+};
+
+export const elementGroupMap: ElementTypesMap<ElementTypeGroups | null> = {
+    [ElementType.Alert]: ElementTypeGroups.Information,
+    [ElementType.Image]: ElementTypeGroups.Information,
+    [ElementType.GroupLayout]: ElementTypeGroups.Display,
+    [ElementType.Step]: ElementTypeGroups.Step,
+    [ElementType.FormLayout]: null,
+    [ElementType.Checkbox]: ElementTypeGroups.Select,
+    [ElementType.Date]: ElementTypeGroups.DateTime,
+    [ElementType.Headline]: ElementTypeGroups.Information,
+    [ElementType.MultiCheckbox]: ElementTypeGroups.Select,
+    [ElementType.Number]: ElementTypeGroups.Input,
+    [ElementType.ReplicatingContainer]: ElementTypeGroups.Input,
+    [ElementType.RichText]: ElementTypeGroups.Information,
+    [ElementType.Radio]: ElementTypeGroups.Select,
+    [ElementType.Select]: ElementTypeGroups.Select,
+    [ElementType.Spacer]: ElementTypeGroups.Display,
+    [ElementType.Table]: ElementTypeGroups.Input,
+    [ElementType.Text]: ElementTypeGroups.Input,
+    [ElementType.ChipInput]: ElementTypeGroups.Input,
+    [ElementType.Time]: ElementTypeGroups.DateTime,
+    [ElementType.DateTime]: ElementTypeGroups.DateTime,
+    [ElementType.DateRange]: ElementTypeGroups.DateTime,
+    [ElementType.TimeRange]: ElementTypeGroups.DateTime,
+    [ElementType.DateTimeRange]: ElementTypeGroups.DateTime,
+    [ElementType.MapPoint]: ElementTypeGroups.Input,
+    [ElementType.DomainAndUserSelect]: ElementTypeGroups.Input,
+    [ElementType.AssignmentContext]: ElementTypeGroups.Input,
+    [ElementType.DataModelSelect]: ElementTypeGroups.Input,
+    [ElementType.DataObjectSelect]: ElementTypeGroups.Input,
+    [ElementType.NoCodeInput]: ElementTypeGroups.Input,
+    [ElementType.FileUpload]: ElementTypeGroups.Input,
+    [ElementType.RichTextInput]: ElementTypeGroups.Input,
+    [ElementType.ProcessDataKeyInput]: ElementTypeGroups.Input,
+    [ElementType.ProcessAttachmentNameChipInput]: ElementTypeGroups.Input,
+    [ElementType.ProcessIdentityIdInput]: ElementTypeGroups.Input,
+    [ElementType.HtmlTemplateInput]: ElementTypeGroups.Input,
+    [ElementType.IntroductionStep]: ElementTypeGroups.Step,
+    [ElementType.SummaryStep]: ElementTypeGroups.Step,
+    [ElementType.SubmitStep]: ElementTypeGroups.Step,
+    [ElementType.SubmittedStep]: ElementTypeGroups.Step,
+    [ElementType.DialogLayout]: null,
+    [ElementType.StepperLayout]: null,
+    [ElementType.ConfigLayout]: null,
+    [ElementType.FunctionInput]: null,
+    [ElementType.CodeInput]: ElementTypeGroups.Input,
+    [ElementType.UiDefinitionInput]: ElementTypeGroups.Input,
+    [ElementType.IdentityConfigElement]: ElementTypeGroups.Input,
+    [ElementType.TabLayout]: null,
+    [ElementType.SummaryLayout]: ElementTypeGroups.Display,
+    [ElementType.ProcessAttachmentDisplay]: ElementTypeGroups.Display,
+};
+
+export const elementTypeDescriptions: Partial<Record<ElementType, string>> = {
+    [ElementType.Alert]: 'Zeigt hervorgehobene Hinweise im Formular an.',
+    [ElementType.Image]: 'Bindet ein Bild in den Formularfluss ein.',
+    [ElementType.GroupLayout]: 'Fasst inhaltlich zusammengehörige Elemente zusammen.',
+    [ElementType.Checkbox]: 'Erfasst eine einzelne Ja-/Nein-Angabe.',
+    [ElementType.Date]: 'Erfasst ein einzelnes Datum.',
+    [ElementType.Headline]: 'Gliedert Inhalte mit einer Überschrift.',
+    [ElementType.MultiCheckbox]: 'Ermöglicht die Auswahl mehrerer Optionen.',
+    [ElementType.Number]: 'Erfasst Zahlenwerte und Mengenangaben.',
+    [ElementType.ReplicatingContainer]: 'Wiederholt eine Elementgruppe mehrfach.',
+    [ElementType.RichText]: 'Zeigt formatierten Fließtext an.',
+    [ElementType.Radio]: 'Ermöglicht genau eine Auswahl per Optionsfeld.',
+    [ElementType.Select]: 'Ermöglicht genau eine Auswahl im Dropdown.',
+    [ElementType.Spacer]: 'Erzeugt gezielten Abstand zwischen Inhalten.',
+    [ElementType.Table]: 'Erfasst strukturierte Daten in Tabellenform.',
+    [ElementType.Text]: 'Erfasst freie Texteingaben.',
+    [ElementType.Time]: 'Erfasst eine einzelne Uhrzeit.',
+    [ElementType.FileUpload]: 'Ermöglicht das Hochladen von Dateien.',
+    [ElementType.ChipInput]: 'Erfasst mehrere Stichworte als Liste.',
+    [ElementType.DateTime]: 'Erfasst Datum und Uhrzeit gemeinsam.',
+    [ElementType.DateRange]: 'Erfasst einen Datumsbereich.',
+    [ElementType.TimeRange]: 'Erfasst einen Uhrzeitbereich.',
+    [ElementType.DateTimeRange]: 'Erfasst einen kombinierten Zeitbereich.',
+    [ElementType.MapPoint]: 'Ermöglicht die Auswahl eines Punkts auf der Karte.',
+    [ElementType.DomainAndUserSelect]: 'Wählt Organisationseinheiten oder Mitarbeitende aus.',
+    [ElementType.AssignmentContext]: 'Definiert zuständige Personen oder Gruppen.',
+    [ElementType.DataModelSelect]: 'Wählt ein Datenmodell aus.',
+    [ElementType.DataObjectSelect]: 'Wählt ein konkretes Datenobjekt aus.',
+    [ElementType.NoCodeInput]: 'Erfasst Logik über einen No-Code-Ausdruck.',
+    [ElementType.ProcessDataKeyInput]: 'Erfasst einen Prozessdaten-Schlüssel und schlägt vorhandene Pfade vor.',
+    [ElementType.ProcessAttachmentNameChipInput]: 'Erfasst eine Liste von Vorgangsanhängen per Name oder Schlüssel.',
+    [ElementType.ProcessIdentityIdInput]: 'Erfasst eine Liste verfügbarer Prozessidentitäten.',
+    [ElementType.HtmlTemplateInput]: 'Befüllt Slots einer HTML-Vorlage mit Text, Rich-Text oder Bildern.',
+    [ElementType.CodeInput]: 'Erfasst technischen oder ausführbaren Code.',
+    [ElementType.RichTextInput]: 'Erfasst formatierte Texte in Markdown.',
+    [ElementType.UiDefinitionInput]: 'Definiert eine Benutzeroberfläche (UI) für z. B. Formulare oder Aufgaben.',
+    [ElementType.IdentityConfigElement]: 'Ermöglicht eine Identifizierung über Servicekonten oder alternativ die Eingabe einer E-Mail-Adresse.',
+    [ElementType.SummaryLayout]: 'Fasst mehrere Elemente zu einer Übersicht zusammen.',
+    [ElementType.ProcessAttachmentDisplay]: 'Zeigt Vorgangsanhänge zur Ansicht und zum Download an.',
+    [ElementType.SummaryStep]: 'Optionaler Abschnitt mit der Zusammenfassung aller eingegebenen Informationen und einer Bestätigung, dass die eingegebenen Daten korrekt sind.',
+    [ElementType.IntroductionStep]: 'Optionaler Abschnitt am Anfang eines mehrstufigen Formulars, der zur Einführung oder zur Erklärung des weiteren Ablaufs genutzt werden kann.',
+    [ElementType.SubmitStep]: 'Optionaler Abschnitt am Ende eines Formulars. Zeigt Hinweise vor der Einreichung an und schützt die Übermittlung mit einer Sicherheitsprüfung vor automatisierten Einreichungen (Captcha).',
+    [ElementType.Step]: 'Ein generischer Abschnitt für mehrstufige Formulare, der flexibel mit verschiedenen Elementen befüllt werden kann.',
+};
+
+export function getElementGroupForType(type: ElementType): ElementTypeGroups | null {
+    return elementGroupMap[type] ?? ElementTypeGroups.Other;
+}
+
+export function getElementGroupLabelForType(type: ElementType): string {
+    const group = getElementGroupForType(type);
+    return elementTypeGroupLabels[group ?? ElementTypeGroups.Other];
+}
+
+export function getElementDescriptionForType(type: ElementType): string {
+    return elementTypeDescriptions[type] ?? 'Dieses Element steht für den aktuellen Bereich zur Verfügung.';
+}

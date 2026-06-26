@@ -2,10 +2,9 @@ import {type HeadlineElement} from '../../models/elements/form/content/headline-
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement, ElementTreeEntity>) {
+export function HeadlineComponentEditor(props: BaseEditorProps<HeadlineElement>) {
     return (
         <>
             <Grid

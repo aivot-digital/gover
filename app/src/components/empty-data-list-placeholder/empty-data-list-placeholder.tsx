@@ -5,18 +5,56 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 
 export function EmptyDataListPlaceholder(props: EmptyDataListPlaceholderProps) {
     return (
-        <Box sx={{textAlign: 'center'}}>
-            <Typography>
-                {props.helperText}
-            </Typography>
-            <Button
-                sx={{mt: 2}}
-                endIcon={<AddOutlinedIcon/>}
-                variant="text"
-                onClick={props.onAdd}
-            >
-                {props.addText}
-            </Button>
+        <Box
+            sx={{
+                maxWidth: 600,
+                textAlign: 'center',
+                px: 3,
+                py: 3,
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+            }}
+        >
+            {
+                props.title != null &&
+                <Typography
+                    variant="h6"
+                    component="h2"
+                    sx={{
+                        lineHeight: 1.25,
+                    }}
+                >
+                    {props.title}
+                </Typography>
+            }
+
+            {
+                (props.description != null || props.helperText != null) &&
+                <Typography
+                    variant="body1"
+                    color="text.secondary"
+                    sx={{
+                        mt: props.title != null ? 1 : 0,
+                        lineHeight: 1.55,
+                    }}
+                >
+                    {props.description ?? props.helperText}
+                </Typography>
+            }
+
+            {
+                props.addText != null &&
+                props.onAdd != null &&
+                <Button
+                    sx={{mt: 2.5}}
+                    startIcon={<AddOutlinedIcon/>}
+                    variant="outlined"
+                    onClick={props.onAdd}
+                >
+                    {props.addText}
+                </Button>
+            }
         </Box>
     );
 }

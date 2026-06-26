@@ -5,10 +5,11 @@ import {Link, Typography} from '@mui/material';
 import {SummaryAttachmentsTooLargeKey} from '../summary/summary.component.view';
 import {ElementType} from '../../data/element-type/element-type';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import {ElementData, ElementDataObject} from '../../models/element-data';
+import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {generateComponentTitle} from '../../utils/generate-component-title';
 import {IdentityCustomerInputKey} from '../../modules/identity/constants/identity-customer-input-key';
+import {resolveElementState, resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 
 const noLinkKeys = [SummaryAttachmentsTooLargeKey];
 
@@ -19,7 +20,8 @@ const additionErrorKeys: Record<string, string> = {
 
 interface ErrorAlertProps {
     element: AnyElement;
-    elementData: ElementData;
+    authoredElementValues: AuthoredElementValues;
+    derivedData: DerivedRuntimeElementData;
 }
 
 interface CollectedError {
@@ -28,16 +30,30 @@ interface CollectedError {
     error: string;
 }
 
-export function collectErrors(element: AnyElement, elementData: ElementData): CollectedError[] {
-    const errs = _collectErrors(element, elementData);
+function resolveCollectedErrorLabel(element: AnyElement, errorDetails: Record<string, any> | null | undefined): string {
+    const customLabel = errorDetails?.label;
+
+    if (typeof customLabel === 'string' && customLabel.length > 0) {
+        return customLabel;
+    }
+
+    return generateComponentTitle(element, true);
+}
+
+export function collectErrors(
+    element: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    derivedData: DerivedRuntimeElementData,
+): CollectedError[] {
+    const errs = _collectErrors(element, authoredElementValues, derivedData);
 
     for (const key of Object.keys(additionErrorKeys)) {
-        const err = elementData[key]?.computedErrors;
+        const err = derivedData.elementStates[key]?.error;
         if (err != null && err.length > 0) {
             errs.push({
                 id: key,
                 label: additionErrorKeys[key],
-                error: err.join(', '),
+                error: err,
             });
         }
     }
@@ -45,33 +61,41 @@ export function collectErrors(element: AnyElement, elementData: ElementData): Co
     return errs;
 }
 
-export function _collectErrors(element: AnyElement, elementData: ElementData): CollectedError[] {
-    const elementObjectData: ElementDataObject | undefined = elementData[element.id];
+export function _collectErrors(
+    element: AnyElement,
+    authoredElementValues: AuthoredElementValues,
+    derivedData: DerivedRuntimeElementData,
+): CollectedError[] {
+    const elementState = resolveElementState(element, derivedData);
 
-    if (elementObjectData == null) {
+    if (elementState == null) {
         return [];
     }
 
     const col: CollectedError[] = [];
 
-    if (elementObjectData.computedErrors != null) {
-        elementObjectData.computedErrors.forEach((error) => {
-            col.push({
-                id: element.id,
-                label: generateComponentTitle(element),
-                error: error,
-            });
+    if (elementState.error != null) {
+        col.push({
+            id: element.id,
+            label: resolveCollectedErrorLabel(element, elementState.errorDetails),
+            error: elementState.error,
         });
     }
 
     if (isAnyElementWithChildren(element) && element.children != null) {
         if (element.type === ElementType.ReplicatingContainer) {
-            const childElementData = elementObjectData.inputValue;
+            const childElementValues = authoredElementValues[element.id];
 
-            if (Array.isArray(childElementData)) {
-                for (const cElementData of childElementData) {
+            if (Array.isArray(childElementValues)) {
+                for (let index = 0; index < childElementValues.length; index++) {
+                    const currentChildElementValues = childElementValues[index];
+                    if (currentChildElementValues == null || typeof currentChildElementValues !== 'object') {
+                        continue;
+                    }
+
+                    const childDerivedData = resolveReplicatingContainerItemDerivedData(element, derivedData, index);
                     for (const child of element.children) {
-                        const childErrors = collectErrors(child, cElementData as ElementData);
+                        const childErrors = _collectErrors(child, currentChildElementValues as AuthoredElementValues, childDerivedData);
                         if (childErrors.length > 0) {
                             col.push(...childErrors);
                         }
@@ -80,7 +104,7 @@ export function _collectErrors(element: AnyElement, elementData: ElementData): C
             }
         } else if (isAnyElementWithChildren(element)) {
             for (const child of element.children) {
-                const childErrors = collectErrors(child, elementData);
+                const childErrors = _collectErrors(child, authoredElementValues, derivedData);
                 if (childErrors.length > 0) {
                     col.push(...childErrors);
                 }
@@ -94,12 +118,13 @@ export function _collectErrors(element: AnyElement, elementData: ElementData): C
 export function ErrorAlert(props: ErrorAlertProps) {
     const {
         element,
-        elementData,
+        authoredElementValues,
+        derivedData,
     } = props;
 
     const errors: CollectedError[] = useMemo(() => {
-        return collectErrors(element, elementData);
-    }, [element, elementData]);
+        return collectErrors(element, authoredElementValues, derivedData);
+    }, [element, authoredElementValues, derivedData]);
 
     if (errors.length === 0) {
         return null;
@@ -109,6 +134,9 @@ export function ErrorAlert(props: ErrorAlertProps) {
         <AlertComponent
             title="Dieser Abschnitt enthält fehlerhafte oder fehlende Angaben"
             color="error"
+            sx={{
+                mt: 4
+            }}
         >
             <Typography>
                 Bitte korrigieren Sie Ihre Angaben und fahren Sie fort, damit diese erneut überprüft werden.
@@ -121,11 +149,11 @@ export function ErrorAlert(props: ErrorAlertProps) {
             >
                 {
                     errors
-                        .map(({id, label, error}) => {
+                        .map(({id, label, error}, index) => {
                             const isLinked = !noLinkKeys.includes(id);
 
                             return (
-                                <li key={id}>
+                                <li key={id + label + index}>
                                     {
                                         isLinked ? (
                                             <Link

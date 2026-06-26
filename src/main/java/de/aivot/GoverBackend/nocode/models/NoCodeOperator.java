@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.nocode.models;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 
@@ -10,13 +10,17 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
+import de.aivot.GoverBackend.utils.IsoTimestampUtils;
 
 /**
  * Represents an operator in the NoCode language.
@@ -86,7 +90,7 @@ public abstract class NoCodeOperator {
     public abstract NoCodeSignatur[] getSignatures();
 
     @Nonnull
-    public NoCodeResult evaluate(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult evaluate(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         if (data == null) {
             throw new NullPointerException("Data is null. Needs to be at least an empty map");
         }
@@ -95,11 +99,23 @@ public abstract class NoCodeOperator {
             throw new NullPointerException("Arguments are null. Needs to be at least an empty array");
         }
 
+        var signatures = getSignatures();
+        if (signatures == null || signatures.length == 0) {
+            throw new NoCodeWrongArgumentCountException(0, args.length);
+        }
+
         var actualParametersLength = args.length;
         var someMatch = false;
-        for (var signature : getSignatures()) {
+        var minimumExpectedParametersLength = Integer.MAX_VALUE;
+        for (var signature : signatures) {
             var expectedParametersLength = signature.parameters().length;
+            minimumExpectedParametersLength = Math.min(minimumExpectedParametersLength, expectedParametersLength);
             if (actualParametersLength == expectedParametersLength) {
+                someMatch = true;
+                break;
+            }
+
+            if (supportsVariableArgumentCount() && actualParametersLength > expectedParametersLength) {
                 someMatch = true;
                 break;
             }
@@ -107,7 +123,7 @@ public abstract class NoCodeOperator {
 
 
         if (!someMatch) {
-            throw new NoCodeWrongArgumentCountException(getSignatures()[0].parameters().length, actualParametersLength);
+            throw new NoCodeWrongArgumentCountException(minimumExpectedParametersLength, actualParametersLength);
         }
 
         return performEvaluation(data, args);
@@ -126,7 +142,7 @@ public abstract class NoCodeOperator {
      * @return the result of the evaluation.
      * @throws NoCodeException if an error occurs during the evaluation.
      */
-    protected abstract NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException;
+    protected abstract NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException;
 
     /**
      * Returns the message that should be displayed when the operator is deprecated.
@@ -136,6 +152,10 @@ public abstract class NoCodeOperator {
      */
     public String getDeprecatedMessage() {
         return null;
+    }
+
+    protected boolean supportsVariableArgumentCount() {
+        return false;
     }
 
     @Nullable
@@ -175,8 +195,11 @@ public abstract class NoCodeOperator {
             case ZonedDateTime zReferenceObject -> {
                 return castToDateTime(objectToCast);
             }
+            case Instant iReferenceObject -> {
+                return castToDateTime(objectToCast);
+            }
             case LocalDateTime lReferenceObject -> {
-                return castToDateTime(lReferenceObject);
+                return castToDateTime(objectToCast);
             }
             default -> {
                 return null;
@@ -237,6 +260,7 @@ public abstract class NoCodeOperator {
             }
             case List<?> lValue -> BigDecimal.valueOf(lValue.size());
             case Map<?, ?> mValue -> BigDecimal.valueOf(mValue.size());
+            case Instant iValue -> BigDecimal.valueOf(iValue.getEpochSecond());
             case LocalDateTime ldtValue -> BigDecimal.valueOf(ldtValue.toEpochSecond(ZoneOffset.UTC));
             case ZonedDateTime zdtValue -> BigDecimal.valueOf(zdtValue.toEpochSecond());
             default -> BigDecimal.ZERO;
@@ -273,15 +297,16 @@ public abstract class NoCodeOperator {
                     yield "";
                 }
             }
+            case Instant iValue -> iValue.toString();
             case LocalDateTime ldtValue -> ldtValue.format(DateTimeFormatter.ISO_DATE_TIME);
-            case ZonedDateTime zdtValue -> zdtValue.format(DateTimeFormatter.ISO_DATE_TIME);
+            case ZonedDateTime zdtValue -> zdtValue.toInstant().toString();
             default -> "";
         };
     }
 
     private boolean isDateTimeString(String sValue) {
         try {
-            ZonedDateTime.parse(sValue);
+            IsoTimestampUtils.parseIsoTimestamp(sValue, ZoneOffset.UTC);
             return true;
         } catch (Exception e) {
             return false;
@@ -294,17 +319,36 @@ public abstract class NoCodeOperator {
             return ZonedDateTime.now();
         }
 
+        var parsedValue = tryCastToDateTime(value);
+        return parsedValue != null ? parsedValue : ZonedDateTime.now();
+    }
+
+    @Nonnull
+    protected ZonedDateTime requireDateTime(@Nullable Object value,
+                                            @Nonnull String invalidValueMessage) throws NoCodeException {
+        var parsedValue = tryCastToDateTime(value);
+        if (parsedValue == null) {
+            throw new NoCodeException(invalidValueMessage);
+        }
+
+        return parsedValue;
+    }
+
+    @Nullable
+    private ZonedDateTime tryCastToDateTime(@Nullable Object value) {
         return switch (value) {
+            case null -> null;
+            case Instant iValue -> iValue.atZone(ZoneOffset.UTC);
             case LocalDateTime ldtValue -> ZonedDateTime.of(ldtValue, ZoneOffset.UTC);
             case ZonedDateTime zdtValue -> zdtValue;
             case String sValue -> {
                 try {
-                    yield ZonedDateTime.parse(sValue);
-                } catch (Exception e) {
-                    yield ZonedDateTime.now();
+                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, ZoneOffset.UTC).atZone(ZoneOffset.UTC);
+                } catch (DateTimeParseException ignored) {
+                    yield null;
                 }
             }
-            default -> ZonedDateTime.now();
+            default -> null;
         };
     }
 

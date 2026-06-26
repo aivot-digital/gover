@@ -16,8 +16,14 @@
     <body>
         <noscript>Bitte erlauben Sie JavaScript, um diese Seite aufzurufen.</noscript>
         <div id="root"></div>
+        <script>
+            // Dummy AppConfig
+            window.AppConfig = {
+                apiHostname: '/',
+            };
+        </script>
         <script
-                src="/app-config.js"
+                src="/../api/public/system/app-config.js"
         ></script>
         <script
                 type="module"

@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.department.controllers;
 import de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.GoverBackend.department.services.VDepartmentShadowedService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
@@ -15,11 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/public/departments/")
 @Tag(
-        name = "Departments",
-        description = "Departments are organisational units within the system. " +
-                      "They can represent different sub-organizations, departments, or divisions within an organisation. " +
-                      "Departments help in structuring users and managing permissions effectively. " +
-                      "They also own certain resources and can have specific settings that apply to all users within the department."
+        name = OpenApiConstants.Tags.DepartmentsName,
+        description = OpenApiConstants.Tags.DepartmentsDescription
 )
 public class PublicDepartmentController {
 

@@ -2,7 +2,6 @@ import React from 'react';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {Logo} from '../../components/logo/logo';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import {selectSetup} from '../../slices/shell-slice';
 import Accessibility from '@aivot/mui-material-symbols-400-outlined/dist/accessibility/Accessibility';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showDialog} from '../../slices/app-slice';
@@ -16,7 +15,6 @@ interface CustomerListPageHeaderProps {
 export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
     const theme = useTheme();
     const dispatch = useAppDispatch();
-    const setup = useAppSelector(selectSetup);
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
 
     return (
@@ -80,7 +78,7 @@ export function CustomerListPageHeader(props: CustomerListPageHeaderProps) {
                                     }}
                                 >
                                     Online-Antrags-Management <br />
-                                    {setup?.providerName}
+                                    {AppConfig.providerName}
                                 </Typography>
                             </Box>
                         </Box>

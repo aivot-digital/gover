@@ -19,4 +19,5 @@ export interface StatusTableProps {
     cardVariant?: 'outlined' | 'elevation';
     labelIcon?: React.ReactNode;
     items: StatusTablePropsItem[];
+    dense?: boolean;
 }

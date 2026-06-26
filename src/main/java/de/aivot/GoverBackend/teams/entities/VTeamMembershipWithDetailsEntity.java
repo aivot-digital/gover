@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.teams.entities;
 
 import de.aivot.GoverBackend.core.converters.JsonArrayConverter;
-import jakarta.annotation.Nonnull;
 import jakarta.persistence.*;
 
 import java.util.List;
@@ -11,50 +10,35 @@ import java.util.Map;
 @Table(name = "v_team_memberships_with_details")
 public class VTeamMembershipWithDetailsEntity {
     @Id
-    @Nonnull
     private Integer membershipId;
-
     private Boolean membershipHasDeputies;
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonArrayConverter.class)
     private List<Map<String, Object>> membershipDeputies;
-
-    @Nonnull
-    private Integer teamId;
-    @Nonnull
-    private String teamName;
-
-    @Nonnull
     private String userId;
-    @Nonnull
-    private String userFirstName;
-    @Nonnull
-    private String userLastName;
-    @Nonnull
-    private String userFullName;
-    @Nonnull
     private String userEmail;
-    @Nonnull
+    private String userFirstName;
+    private String userLastName;
+    private String userFullName;
     private Boolean userEnabled;
-    @Nonnull
     private Boolean userVerified;
-    @Nonnull
     private Boolean userDeletedInIdp;
-
+    private Integer userSystemRoleId;
+    private Integer teamId;
+    private String teamName;
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonArrayConverter.class)
     private List<Map<String, Object>> domainRoles;
-    @Nonnull
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = JsonArrayConverter.class)
+    private List<Map<String, Object>> domainRoleAssignments;
     private List<String> domainRolePermissions;
 
-    // region Getters and Setters
-
-    @Nonnull
     public Integer getMembershipId() {
         return membershipId;
     }
 
-    public VTeamMembershipWithDetailsEntity setMembershipId(@Nonnull Integer membershipId) {
+    public VTeamMembershipWithDetailsEntity setMembershipId(Integer membershipId) {
         this.membershipId = membershipId;
         return this;
     }
@@ -77,103 +61,102 @@ public class VTeamMembershipWithDetailsEntity {
         return this;
     }
 
-    @Nonnull
-    public Integer getTeamId() {
-        return teamId;
-    }
-
-    public VTeamMembershipWithDetailsEntity setTeamId(@Nonnull Integer teamId) {
-        this.teamId = teamId;
-        return this;
-    }
-
-    @Nonnull
-    public String getTeamName() {
-        return teamName;
-    }
-
-    public VTeamMembershipWithDetailsEntity setTeamName(@Nonnull String teamName) {
-        this.teamName = teamName;
-        return this;
-    }
-
-    @Nonnull
     public String getUserId() {
         return userId;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserId(@Nonnull String userId) {
+    public VTeamMembershipWithDetailsEntity setUserId(String userId) {
         this.userId = userId;
         return this;
     }
 
-    @Nonnull
-    public String getUserFirstName() {
-        return userFirstName;
-    }
-
-    public VTeamMembershipWithDetailsEntity setUserFirstName(@Nonnull String userFirstName) {
-        this.userFirstName = userFirstName;
-        return this;
-    }
-
-    @Nonnull
-    public String getUserLastName() {
-        return userLastName;
-    }
-
-    public VTeamMembershipWithDetailsEntity setUserLastName(@Nonnull String userLastName) {
-        this.userLastName = userLastName;
-        return this;
-    }
-
-    @Nonnull
-    public String getUserFullName() {
-        return userFullName;
-    }
-
-    public VTeamMembershipWithDetailsEntity setUserFullName(@Nonnull String userFullName) {
-        this.userFullName = userFullName;
-        return this;
-    }
-
-    @Nonnull
     public String getUserEmail() {
         return userEmail;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserEmail(@Nonnull String userEmail) {
+    public VTeamMembershipWithDetailsEntity setUserEmail(String userEmail) {
         this.userEmail = userEmail;
         return this;
     }
 
-    @Nonnull
+    public String getUserFirstName() {
+        return userFirstName;
+    }
+
+    public VTeamMembershipWithDetailsEntity setUserFirstName(String userFirstName) {
+        this.userFirstName = userFirstName;
+        return this;
+    }
+
+    public String getUserLastName() {
+        return userLastName;
+    }
+
+    public VTeamMembershipWithDetailsEntity setUserLastName(String userLastName) {
+        this.userLastName = userLastName;
+        return this;
+    }
+
+    public String getUserFullName() {
+        return userFullName;
+    }
+
+    public VTeamMembershipWithDetailsEntity setUserFullName(String userFullName) {
+        this.userFullName = userFullName;
+        return this;
+    }
+
     public Boolean getUserEnabled() {
         return userEnabled;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserEnabled(@Nonnull Boolean userEnabled) {
+    public VTeamMembershipWithDetailsEntity setUserEnabled(Boolean userEnabled) {
         this.userEnabled = userEnabled;
         return this;
     }
 
-    @Nonnull
     public Boolean getUserVerified() {
         return userVerified;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserVerified(@Nonnull Boolean userVerified) {
+    public VTeamMembershipWithDetailsEntity setUserVerified(Boolean userVerified) {
         this.userVerified = userVerified;
         return this;
     }
 
-    @Nonnull
     public Boolean getUserDeletedInIdp() {
         return userDeletedInIdp;
     }
 
-    public VTeamMembershipWithDetailsEntity setUserDeletedInIdp(@Nonnull Boolean userDeletedInIdp) {
+    public VTeamMembershipWithDetailsEntity setUserDeletedInIdp(Boolean userDeletedInIdp) {
         this.userDeletedInIdp = userDeletedInIdp;
+        return this;
+    }
+
+    public Integer getUserSystemRoleId() {
+        return userSystemRoleId;
+    }
+
+    public VTeamMembershipWithDetailsEntity setUserSystemRoleId(Integer userSystemRoleId) {
+        this.userSystemRoleId = userSystemRoleId;
+        return this;
+    }
+
+    public Integer getTeamId() {
+        return teamId;
+    }
+
+    public VTeamMembershipWithDetailsEntity setTeamId(Integer teamId) {
+        this.teamId = teamId;
+        return this;
+    }
+
+    public String getTeamName() {
+        return teamName;
+    }
+
+    public VTeamMembershipWithDetailsEntity setTeamName(String teamName) {
+        this.teamName = teamName;
         return this;
     }
 
@@ -186,16 +169,21 @@ public class VTeamMembershipWithDetailsEntity {
         return this;
     }
 
-    @Nonnull
     public List<String> getDomainRolePermissions() {
         return domainRolePermissions;
     }
 
-    public VTeamMembershipWithDetailsEntity setDomainRolePermissions(@Nonnull List<String> domainRolePermissions) {
+    public VTeamMembershipWithDetailsEntity setDomainRolePermissions(List<String> domainRolePermissions) {
         this.domainRolePermissions = domainRolePermissions;
         return this;
     }
 
+    public List<Map<String, Object>> getDomainRoleAssignments() {
+        return domainRoleAssignments;
+    }
 
-    // endregion
+    public VTeamMembershipWithDetailsEntity setDomainRoleAssignments(List<Map<String, Object>> domainRoleAssignments) {
+        this.domainRoleAssignments = domainRoleAssignments;
+        return this;
+    }
 }

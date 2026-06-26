@@ -9,8 +9,7 @@ import {
 } from '@mui/x-data-grid';
 import {Box, CircularProgress, Menu, MenuItem, styled, SxProps, Tab, Tabs} from '@mui/material';
 import React, {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react';
-import {TextFieldComponent} from '../text-field/text-field-component';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import {SearchInput} from '../search-input/search-input';
 import {IconButton} from '../icon-button/icon-button';
 import ZoomOutMapOutlinedIcon from '@mui/icons-material/ZoomOutMapOutlined';
 import ZoomInMapOutlinedIcon from '@mui/icons-material/ZoomInMapOutlined';
@@ -22,10 +21,11 @@ import {GenericListRowModel} from './generic-list-row-models';
 import {Actions} from '../actions/actions';
 import {withAsyncWrapper} from '../../utils/with-async-wrapper';
 import {GenericListProps} from './generic-list-props';
-import CloseIcon from '@mui/icons-material/Close';
 import {useSearchParams} from 'react-router-dom';
 import {GridSortItem} from '@mui/x-data-grid/models/gridSortModel';
 import {CellContentWrapper} from "../cell-content-wrapper/cell-content-wrapper";
+import WidthWide from '@aivot/mui-material-symbols-400-outlined/dist/width-wide/WidthWide';
+import FitPageWidth from '@aivot/mui-material-symbols-400-outlined/dist/fit-page-width/FitPageWidth';
 
 const UrlParamKeys = {
     search: 'search',
@@ -69,11 +69,11 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     // Establish the row count as a ref to avoid the data grid from resetting to page 0 if the total number of items is temporarily undefined
     const rowCountBuffer = useRef<number>(0);
     const rowCount = useMemo(() => {
-        if (items?.totalElements != null) {
-            rowCountBuffer.current = items.totalElements;
+        if (items?.page.totalElements != null) {
+            rowCountBuffer.current = items.page.totalElements;
         }
         return rowCountBuffer.current;
-    }, [items?.totalElements]);
+    }, [items?.page.totalElements]);
 
     // Ref to the current abort controller to cancel ongoing fetch requests when a new one is started
     const abortControllerRef = useRef<AbortController | null>(null);
@@ -282,7 +282,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     setIsBusy(false);
                 }
             });
-    }, [api, currentFilter, sortModel, paginationModel, search]);
+    }, [api, currentFilter, sortModel, paginationModel, search, props.fetch, props.defaultFilter, defaultSortField]);
 
     useEffect(() => {
         if (props.controlRef == null) {
@@ -384,6 +384,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
     ), [search, noSearchResultsPlaceholder, noDataPlaceholder]);
 
     const lastColIndex = columnDefinitions.length - 1;
+    const hasEmptyRows = (items?.content.length ?? 0) === 0;
 
     const style: SxProps = useMemo(() => ({
         width: '100%',
@@ -416,7 +417,30 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 display: 'none',
             },
         },
-    }), [lastColIndex]);
+        ...(hasEmptyRows
+            ? {
+                '& .MuiDataGrid-virtualScroller': {
+                    minHeight: 316,
+                },
+            }
+            : {}),
+        ...(dynamicRowHeight
+            ? {
+                // Let actual data rows grow with multiline/custom cell content instead of clipping.
+                // Exclude loading skeleton rows, otherwise their placeholder content gets top-aligned.
+                [`& .${gridClasses.row}:not(.${gridClasses.rowSkeleton}) .${gridClasses.cell}`]: {
+                    alignItems: 'flex-start',
+                    py: 0.75,
+                },
+                [`& .${gridClasses.row}:not(.${gridClasses.rowSkeleton}) .MuiDataGrid-cellContent`]: {
+                    whiteSpace: 'normal',
+                    overflow: 'visible',
+                    textOverflow: 'unset',
+                    lineHeight: 1.35,
+                },
+            }
+            : {}),
+    }), [lastColIndex, dynamicRowHeight, hasEmptyRows]);
 
     return (
         <Box
@@ -427,7 +451,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                 <Box
                     sx={{
                         display: 'flex',
-                        alignItems: 'flex-end',
+                        alignItems: 'center',
                         borderBottom: 1,
                         borderBottomColor: 'divider',
                     }}
@@ -460,18 +484,17 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                                 onClick: toggleIsFullWidth,
                                 sx: {
                                     marginLeft: 'auto',
-                                    marginRight: 1,
-                                    marginY: 1,
+                                    mr: 0.75
                                 },
                             }}
                             tooltipProps={{
-                                title: isFullWidth ? 'Vollbildmodus beenden' : 'Vollbildmodus aktivieren',
+                                title: isFullWidth ? 'Breite der Anzeige beschränken' : 'Volle Bildschirmbreite nutzen',
                             }}
                         >
                             {
                                 isFullWidth ?
-                                    <ZoomInMapOutlinedIcon/> :
-                                    <ZoomOutMapOutlinedIcon/>
+                                    <WidthWide/> :
+                                    <FitPageWidth/>
                             }
                         </IconButton>
                     }
@@ -492,6 +515,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                             key={index}
                             sx={{
                                 flex: 1,
+                                padding: '4px 0 12px 0',
                             }}
                         >
                             {element}
@@ -503,24 +527,14 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     <Box
                         sx={{
                             flex: 1,
-                            padding: '4px 0 12px 0',
+                            py: 2
                         }}
                     >
-                        <TextFieldComponent
+                        <SearchInput
                             label={props.searchLabel}
                             value={search}
                             onChange={handleSearchChange}
                             placeholder={props.searchPlaceholder}
-                            startIcon={<SearchOutlinedIcon/>}
-                            endAction={
-                                search
-                                    ? {
-                                        onClick: () => handleSearchChange(undefined),
-                                        tooltip: 'Suche zurücksetzen',
-                                        icon: <CloseIcon sx={{fontSize: 20}}/>,
-                                    }
-                                    : undefined
-                            }
                             debounce={1000}
                             size={'small'}
                         />
@@ -543,6 +557,28 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                     </Box>
                 }
             </Box>
+
+            {
+                props.listContextElements != null &&
+                props.listContextElements.length > 0 &&
+                <Box
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        paddingX: 2,
+                        paddingBottom: 2,
+                        gap: 1.5,
+                    }}
+                >
+                    {
+                        props.listContextElements.map((element, index) => (
+                            <Box key={index}>
+                                {element}
+                            </Box>
+                        ))
+                    }
+                </Box>
+            }
 
             <Box
                 sx={{
@@ -571,6 +607,7 @@ export function GenericList<ItemType extends GenericListRowModel, FilterOption e
                         noRowsOverlay: NoRowsOverlay,
                     }}
                     getRowHeight={dynamicRowHeight ? () => 'auto' : undefined}
+                    getEstimatedRowHeight={dynamicRowHeight ? () => 80 : undefined}
                 />
             </Box>
 

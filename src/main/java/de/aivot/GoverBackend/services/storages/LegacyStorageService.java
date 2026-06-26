@@ -20,6 +20,10 @@ import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 public class LegacyStorageService {
     private final Logger logger = LoggerFactory.getLogger(LegacyStorageService.class);

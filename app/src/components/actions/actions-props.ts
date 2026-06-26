@@ -9,10 +9,13 @@ interface ActionBase {
     label?: string;
     tooltip?: string;
     disabledTooltip?: string;
-    icon: ReactNode;
+    ariaLabel?: string;
+    icon?: ReactNode;
+    iconPosition?: 'start' | 'end';
     disabled?: boolean;
     visible?: boolean;
     variant?: 'text' | 'outlined' | 'contained';
+    color?: ActionColor;
     ignoreBusy?: boolean; // optional property to ignore the busy state (e.g. the help button should always be enabled)
     activeStyle?: SxProps; // custom style to apply when action is active
 }

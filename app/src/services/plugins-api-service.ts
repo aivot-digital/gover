@@ -21,7 +21,7 @@ export const PluginComponentTypeOptions: PluginComponentType[] = [
 export const PluginComponentTypeDisplayNames: Record<PluginComponentType, string> = {
     [PluginComponentType.JavascriptFunctionProvider]: 'JavaScript-Funktionsanbieter',
     [PluginComponentType.StorageProviderDefinition]: 'Speicheranbieter-Definition',
-    [PluginComponentType.ProcessNodeDefinition]: 'Prozessknoten-Definition',
+    [PluginComponentType.ProcessNodeDefinition]: 'Prozesselement-Definition',
     [PluginComponentType.PaymentProviderDefinition]: 'Zahlungsanbieter-Definition',
     [PluginComponentType.OperatorProvider]: 'Operator-Anbieter',
     [PluginComponentType.CommunicationProviderDefinition]: 'Kommunikationsanbieter-Definition',

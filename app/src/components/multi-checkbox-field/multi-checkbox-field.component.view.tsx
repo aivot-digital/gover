@@ -30,7 +30,7 @@ export function MultiCheckboxFieldComponentView(props: BaseViewProps<MultiCheckb
     return (
         <MultiCheckboxComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             options={options ?? []}
             disabled={isDisabled}

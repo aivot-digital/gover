@@ -5,6 +5,7 @@ export interface ProcessVersionEntity {
     processVersion: number;
     status: ProcessStatus;
     publicTitle: string;
+    caseNumberTemplate: string | null;
     crated: string;
     updated: string;
     published: string | null;

@@ -7,6 +7,7 @@ import jakarta.annotation.Nonnull;
 
 import java.io.Serializable;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Represents an operand in the NoCode language.
@@ -21,6 +22,9 @@ import java.util.Objects;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = NoCodeExpression.class, name = NoCodeExpression.TYPE_ID),
         @JsonSubTypes.Type(value = NoCodeReference.class, name = NoCodeReference.TYPE_ID),
+        @JsonSubTypes.Type(value = NoCodeProcessDataReference.class, name = NoCodeProcessDataReference.TYPE_ID),
+        @JsonSubTypes.Type(value = NoCodeInstanceDataReference.class, name = NoCodeInstanceDataReference.TYPE_ID),
+        @JsonSubTypes.Type(value = NoCodeNodeDataReference.class, name = NoCodeNodeDataReference.TYPE_ID),
         @JsonSubTypes.Type(value = NoCodeStaticValue.class, name = NoCodeStaticValue.TYPE_ID),
 })
 public abstract class NoCodeOperand implements Serializable {
@@ -38,6 +42,9 @@ public abstract class NoCodeOperand implements Serializable {
         NoCodeOperand that = (NoCodeOperand) o;
         return Objects.equals(type, that.type);
     }
+
+    @Nonnull
+    public abstract NoCodeOperandError validate();
 
     @Override
     public int hashCode() {

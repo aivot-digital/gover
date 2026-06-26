@@ -3,6 +3,8 @@ package de.aivot.GoverBackend.process.exceptions;
 import jakarta.annotation.Nonnull;
 
 public abstract class ProcessNodeExecutionException extends Exception {
+    private boolean alreadyLogged = false;
+
     public ProcessNodeExecutionException(@Nonnull String message) {
         super(message);
     }
@@ -21,5 +23,14 @@ public abstract class ProcessNodeExecutionException extends Exception {
 
     public ProcessNodeExecutionException(@Nonnull Throwable cause, @Nonnull String format, @Nonnull Object... args) {
         super(String.format(format, args), cause);
+    }
+
+    public boolean isAlreadyLogged() {
+        return alreadyLogged;
+    }
+
+    public ProcessNodeExecutionException setAlreadyLogged(boolean alreadyLogged) {
+        this.alreadyLogged = alreadyLogged;
+        return this;
     }
 }

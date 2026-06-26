@@ -7,7 +7,6 @@ import {useNavigate} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
-import DeleteOutlinedIcon from '@mui/icons-material/DeleteOutlined';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
@@ -19,6 +18,8 @@ import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 
 export const SecretSchema = yup.object({
     name: yup.string()
@@ -181,17 +182,13 @@ export function SecretsDetailsPageIndex() {
                             {
                                 icon: <ContentPasteOutlinedIcon />,
                                 tooltip: 'Schlüssel (ID) in Zwischenablage kopieren',
-                                onClick: () => {
-                                    navigator
-                                        .clipboard
-                                        .writeText(secret.key)
-                                        .then(() => {
-                                            dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
-                                        })
-                                        .catch((err) => {
-                                            console.error(err);
-                                            dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
-                                        });
+                                onClick: async () => {
+                                    const success = await copyToClipboardText(secret.key);
+                                    if (success) {
+                                        dispatch(showSuccessSnackbar('Link in Zwischenablage kopiert!'));
+                                    } else {
+                                        dispatch(showErrorSnackbar('Fehler beim Kopieren des Links!'));
+                                    }
                                 },
                             },
                         ]
@@ -274,7 +271,7 @@ export function SecretsDetailsPageIndex() {
                         sx={{
                             marginLeft: 'auto',
                         }}
-                        startIcon={<DeleteOutlinedIcon />}
+                        startIcon={<Delete />}
                     >
                         Löschen
                     </Button>

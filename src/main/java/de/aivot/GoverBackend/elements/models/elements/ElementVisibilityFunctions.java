@@ -5,10 +5,12 @@ import de.aivot.GoverBackend.elements.utils.ElementReferenceUtils;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.models.functions.conditions.ConditionSet;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperand;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;
+import java.util.Map;
 import java.util.Objects;
 
 public class ElementVisibilityFunctions implements Serializable {
@@ -26,11 +28,16 @@ public class ElementVisibilityFunctions implements Serializable {
     private Collection<String> referencedIds;
 
     public ElementVisibilityFunctions recalculateReferencedIds() {
+        return recalculateReferencedIds(Map.of());
+    }
+
+    public ElementVisibilityFunctions recalculateReferencedIds(@Nonnull Map<String, ? extends Collection<String>> destinationKeyIndex) {
         referencedIds = ElementReferenceUtils
                 .getReferencedIds(
                         javascriptCode,
                         noCode,
-                        conditionSet
+                        conditionSet,
+                        destinationKeyIndex
                 );
         return this;
     }
@@ -95,6 +102,9 @@ public class ElementVisibilityFunctions implements Serializable {
 
     public ElementVisibilityFunctions setConditionSet(@Nullable ConditionSet conditionSet) {
         this.conditionSet = conditionSet;
+        if (this.type == null && conditionSet != null) {
+            this.type = VisibilityFunctionType.ConditionSet;
+        }
         return this;
     }
 
@@ -105,6 +115,9 @@ public class ElementVisibilityFunctions implements Serializable {
 
     public ElementVisibilityFunctions setNoCode(@Nullable NoCodeOperand noCode) {
         this.noCode = noCode;
+        if (this.type == null && noCode != null) {
+            this.type = VisibilityFunctionType.NoCode;
+        }
         return this;
     }
 
@@ -115,6 +128,9 @@ public class ElementVisibilityFunctions implements Serializable {
 
     public ElementVisibilityFunctions setJavascriptCode(@Nullable JavascriptCode javascriptCode) {
         this.javascriptCode = javascriptCode;
+        if (this.type == null && javascriptCode != null) {
+            this.type = VisibilityFunctionType.Javascript;
+        }
         return this;
     }
 

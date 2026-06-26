@@ -1,13 +1,14 @@
 package de.aivot.GoverBackend.core;
 
 import de.aivot.GoverBackend.audit.enums.AuditAction;
+import de.aivot.GoverBackend.audit.models.AuditLogPayload;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
-import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
 import de.aivot.GoverBackend.user.entities.UserEntity;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -19,8 +20,6 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
 
 // TODO: Merge with GenericReadController?
 public abstract class GenericCrudController<T, I, F extends Filter<T>> {
@@ -96,10 +95,17 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
 
         var createdItem = performCreate(execUser, newItem);
 
-        auditService.logAction(execUser,
-                AuditAction.Create,
-                createdItem.getClass(),
-                Map.of(/* TODO: Create Data Map to Identify */));
+        
+        auditService.create()
+                        .withUser(execUser)
+                        .withAuditAction(
+                                AuditAction.Create,
+                                createdItem.getClass(),
+                                getIdForEntity(createdItem),
+                                "id"
+                        )
+        .withMessage(buildCreateAuditMessage(execUser, createdItem))
+        .log();
 
         return createdItem;
     }
@@ -113,6 +119,8 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                               @Nonnull T newItem) throws ResponseException {
         return service.create(newItem);
     }
+
+    abstract protected I getIdForEntity(T entity);
 
     @GetMapping("{itemId}/")
     @Operation(
@@ -160,12 +168,27 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
 
         checkUpdatePermission(execUser, id);
 
+        var before = service
+                .retrieve(id)
+                .orElse(null);
+
         var result = performUpdate(execUser, id, patchItem);
 
-        auditService.logAction(execUser,
-                AuditAction.Update,
-                result.getClass(),
-                Map.of(/* TODO: Create Data Map */));
+        var beforeMap = AuditLogPayload.toMap(before);
+        var resultMap = AuditLogPayload.toMap(result);
+
+        
+        auditService.create()
+                        .withUser(execUser)
+                        .withAuditAction(
+                                AuditAction.Update,
+                                result.getClass(),
+                                id,
+                                "id"
+                        )
+                        .withDiff(beforeMap, resultMap)
+        .withMessage(buildUpdateAuditMessage(execUser, id, result))
+        .log();
 
         return result;
     }
@@ -199,10 +222,17 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
 
         var deleted = performDelete(execUser, id);
 
-        auditService.logAction(execUser,
-                AuditAction.Delete,
-                deleted.getClass(),
-                Map.of(/* TODO: Create Data Map */));
+        
+        auditService.create()
+                        .withUser(execUser)
+                        .withAuditAction(
+                                AuditAction.Delete,
+                                deleted.getClass(),
+                                id,
+                                "id"
+                        )
+        .withMessage(buildDeleteAuditMessage(execUser, id, deleted))
+        .log();
     }
 
     protected void checkDeletePermission(@Nonnull UserEntity execUser,
@@ -214,5 +244,40 @@ public abstract class GenericCrudController<T, I, F extends Filter<T>> {
                               @Nonnull I itemId) throws ResponseException {
         return service
                 .delete(itemId);
+    }
+
+    @Nonnull
+    protected String buildCreateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull T createdItem) {
+        return String.format(
+                "Der Datensatz vom Typ %s mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(createdItem.getClass().getSimpleName()),
+                StringUtils.quote(String.valueOf(getIdForEntity(createdItem))),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Nonnull
+    protected String buildUpdateAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull I id,
+                                             @Nonnull T updatedItem) {
+        return String.format(
+                "Der Datensatz vom Typ %s mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(updatedItem.getClass().getSimpleName()),
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(execUser.getFullName())
+        );
+    }
+
+    @Nonnull
+    protected String buildDeleteAuditMessage(@Nonnull UserEntity execUser,
+                                             @Nonnull I id,
+                                             @Nonnull T deletedItem) {
+        return String.format(
+                "Der Datensatz vom Typ %s mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(deletedItem.getClass().getSimpleName()),
+                StringUtils.quote(String.valueOf(id)),
+                StringUtils.quote(execUser.getFullName())
+        );
     }
 }

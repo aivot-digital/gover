@@ -1,7 +1,10 @@
 package de.aivot.GoverBackend.nocode.models;
 
+import de.aivot.GoverBackend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
 import java.util.Objects;
 
 /**
@@ -20,6 +23,20 @@ public class NoCodeReference extends NoCodeOperand {
     public NoCodeReference(@Nullable String elementId) {
         super(TYPE_ID);
         this.elementId = elementId;
+    }
+
+    public static NoCodeReference of(@Nullable String elementId) {
+        return new NoCodeReference(elementId);
+    }
+
+    @Override
+    @Nonnull
+    public NoCodeOperandError validate() {
+        if (StringUtils.isNullOrEmpty(elementId)) {
+            return new  NoCodeOperandError(this, "Es muss ein Element ausgewählt sein", null);
+        }
+
+        return NoCodeOperandError.NO_ERROR(this);
     }
 
     // region Hash & Equals

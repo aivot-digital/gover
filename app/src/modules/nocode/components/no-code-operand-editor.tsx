@@ -1,4 +1,13 @@
-import {isNoCodeExpression, isNoCodeReference, isNoCodeStaticValue, NoCodeExpression, NoCodeOperand} from '../../../models/functions/no-code-expression';
+import {
+    isNoCodeExpression,
+    isNoCodeInstanceDataReference,
+    isNoCodeNodeDataReference,
+    isNoCodeProcessDataReference,
+    isNoCodeReference,
+    isNoCodeStaticValue,
+    NoCodeExpression,
+    NoCodeOperand, NoCodeOperandError,
+} from '../../../models/functions/no-code-expression';
 import {NoCodeOperatorDetailsDTO, NoCodeParameter} from '../../../models/dtos/no-code-operator-details-dto';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {useState} from 'react';
@@ -8,6 +17,9 @@ import {NoCodeOperandEditorSelector} from './no-code-operand-editor-selector';
 import {NoCodeOperandEditorStaticValue} from './no-code-operand-editor-static-value';
 import {NoCodeOperandEditorReference} from './no-code-operand-editor-reference';
 import {NoCodeOperandEditorExpression} from './no-code-operand-editor-expression';
+import {NoCodeOperandEditorProcessDataReference} from './no-code-operand-editor-process-data-reference';
+
+export type NoCodeOperandEditorContextType = 'BOTH' | 'FORM' | 'PROCESS';
 
 interface NoCodeOperandEditorProps {
     parameter: NoCodeParameter;
@@ -15,6 +27,8 @@ interface NoCodeOperandEditorProps {
     onChange: (operand: NoCodeOperand | undefined | null) => void;
     allOperators: NoCodeOperatorDetailsDTO[];
     allElements: ElementWithParents[];
+    contextType?: NoCodeOperandEditorContextType;
+    operandError?: NoCodeOperandError;
 }
 
 
@@ -25,6 +39,8 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
         allOperators,
         allElements,
         parameter,
+        contextType = 'BOTH',
+        operandError,
     } = props;
 
     const [showEnclosingOperatorPicker, setShowEnclosingOperatorPicker] = useState(false);
@@ -38,7 +54,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     label={parameter.label}
                     hint={parameter.description}
                     onChange={onChange}
-                    desiredType={parameter.type}
+                    contextType={contextType}
                 />
             }
 
@@ -54,6 +70,7 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                         setShowEnclosingOperatorPicker(true);
                     }}
                     options={parameter.options}
+                    operandError={operandError}
                 />
             }
 
@@ -69,6 +86,21 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}
+                    operandError={operandError}
+                />
+            }
+
+            {
+                (isNoCodeProcessDataReference(operand) || isNoCodeInstanceDataReference(operand) || isNoCodeNodeDataReference(operand)) &&
+                <NoCodeOperandEditorProcessDataReference
+                    label={parameter.label}
+                    hint={parameter.description ?? undefined}
+                    value={operand}
+                    onChange={onChange}
+                    onAddEnclosingExpression={() => {
+                        setShowEnclosingOperatorPicker(true);
+                    }}
+                    operandError={operandError}
                 />
             }
 
@@ -80,10 +112,11 @@ export function NoCodeOperandEditor(props: NoCodeOperandEditorProps) {
                     label={parameter.label}
                     value={operand}
                     onChange={onChange}
-                    desiredType={parameter.type}
+                    contextType={contextType}
                     onAddEnclosingExpression={() => {
                         setShowEnclosingOperatorPicker(true);
                     }}
+                    operandError={operandError}
                 />
             }
 

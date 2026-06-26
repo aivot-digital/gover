@@ -1,7 +1,6 @@
 package de.aivot.GoverBackend.models.functions.conditions;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
-import de.aivot.GoverBackend.elements.models.ElementDataObject;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.elements.models.elements.BaseInputElement;
 import de.aivot.GoverBackend.elements.models.elements.LayoutElement;
@@ -21,7 +20,7 @@ public class Condition implements Serializable {
 
     }
 
-    public String evaluate(LayoutElement<?> rootElement, ElementData elementData, BaseElement element) {
+    public String evaluate(LayoutElement<?> rootElement, DerivedRuntimeElementData elementData, BaseElement element) {
         // Prüfe, ob ein Operator angegeben wurde. Falls nicht, gib eine Fehlermeldung zurück.
         if (operator == null) {
             return "Auswertung fehlgeschlagen. Kein Operator angegeben.";
@@ -46,8 +45,8 @@ public class Condition implements Serializable {
         if (referencedBaseElement instanceof BaseInputElement<?> referencedElement) {
             // Hole den Wert des Referenz-Elements. Dieser kann NULL sein.
             var rawValA = elementData
-                    .getOrDefault(referencedElement.getId(), new ElementDataObject(referencedElement))
-                    .getValue();
+                    .getEffectiveValues()
+                    .getOrDefault(referencedElement.getId(), null);
 
             Object rawValB = null;
             if (!operator.getUnary()) {
@@ -63,8 +62,8 @@ public class Condition implements Serializable {
 
                     if (targetBaseElement instanceof BaseInputElement<?> targetElement) {
                         rawValB = elementData
-                                .getOrDefault(targetElement.getId(), new ElementDataObject(targetElement))
-                                .getValue();
+                                .getEffectiveValues()
+                                .getOrDefault(targetElement.getId(), null);
                     } else {
                         return "Auswertung fehlgeschlagen. Ziel-Element ist kein Eingabe-Element.";
                     }

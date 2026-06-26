@@ -1,15 +1,24 @@
 package de.aivot.GoverBackend.core.configs;
 
-import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
-import de.aivot.GoverBackend.data.SystemConfigKey;
+import de.aivot.GoverBackend.department.repositories.VDepartmentShadowedRepository;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ListingPageAccesibilitySystemConfigDefinition implements SystemConfigDefinition {
-    // TODO: Remove SystemConfigKey.PROVIDER__LISTINGPAGE__ACCESSIBILITYDEPARTMENTID and use the key directly
-    public static final String KEY = SystemConfigKey.PROVIDER__LISTINGPAGE__ACCESSIBILITYDEPARTMENTID.getKey();
+public class ListingPageAccesibilitySystemConfigDefinition implements SystemConfigDefinition<String> {
+    public static final String KEY = "ProviderListingPageAccessibilityDepartmentId";
+
+    private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
+
+    public ListingPageAccesibilitySystemConfigDefinition(VDepartmentShadowedRepository vDepartmentShadowedRepository) {
+        this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
+    }
 
     @Nonnull
     @Override
@@ -19,8 +28,18 @@ public class ListingPageAccesibilitySystemConfigDefinition implements SystemConf
 
     @Nonnull
     @Override
-    public ConfigType getType() {
-        return ConfigType.DEPARTMENT;
+    public BaseElement getConfigElement() {
+        return new SelectInputElement()
+                .setOptions(
+                        vDepartmentShadowedRepository
+                                .findAll()
+                                .stream()
+                                .map(dep -> SelectInputElementOption.of(dep.getId().toString(), dep.getName()))
+                                .toList()
+                )
+                .setLabel(getLabel())
+                .setHint(getDescription())
+                .setId(getKey());
     }
 
     @Nonnull
@@ -38,12 +57,23 @@ public class ListingPageAccesibilitySystemConfigDefinition implements SystemConf
     @Nonnull
     @Override
     public String getDescription() {
-        return "Der für die Barrierefreiheit zuständige Fachbereich.";
+        return "Die für die Barrierefreiheit zuständige Organisationseinheit.";
     }
 
     @Nonnull
     @Override
     public Boolean isPublicConfig() {
         return true;
+    }
+
+    @Nullable
+    @Override
+    public String parseValueFromDB(@Nonnull String value) throws ResponseException {
+        try {
+            Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            throw ResponseException.internalServerError("Ungültiger Wert für " + getLabel());
+        }
+        return value;
     }
 }

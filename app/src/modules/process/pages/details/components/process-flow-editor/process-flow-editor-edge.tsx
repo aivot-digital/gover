@@ -1,30 +1,43 @@
-import {BaseEdge, EdgeLabelRenderer, type EdgeProps, getSmoothStepPath} from '@xyflow/react';
-import {Box, IconButton, useTheme} from '@mui/material';
+import {BaseEdge, EdgeLabelRenderer, type EdgeProps} from '@xyflow/react';
+import {Box, IconButton, Tooltip, useTheme} from '@mui/material';
 import {Add} from '@mui/icons-material';
 import React, {type ReactNode, useMemo} from 'react';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
-import {type FlowEdge} from './utils/layout-utils';
-import {ADD_BUTTON_SIZE, HANDLE_COLOR, HANDLE_WIDTH} from './data/process-flow-constants';
+import {type FlowEdge, type FlowPathPoint} from './utils/layout-utils';
+import {
+    ADD_BUTTON_DISTANCE,
+    ADD_BUTTON_ICON_SIZE,
+    ADD_BUTTON_SIZE,
+    HANDLE_COLOR,
+    HANDLE_WIDTH,
+} from './data/process-flow-constants';
 import './process-flow-editor-animations.css';
 import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
-import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
-import Chip from '@mui/material/Chip';
 import Typography from '@mui/material/Typography';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
+import {
+    getLatestTaskForEdge,
+    getTransferredProcessDataDiffForEdge,
+    getTransferredProcessDataForEdge,
+} from './utils/runtime-task-utils';
+import {ExpandableJSONCodeBlock} from '../../../../../../components/expandable-code-block/expandable-json-code-block';
 
-export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
+const EDGE_ARROW_LENGTH = 8;
+const EDGE_ARROW_WIDTH = 12;
+const EDGE_LABEL_SOURCE_ALIGNMENT_OFFSET = HANDLE_WIDTH / 2;
+const EDGE_LABEL_SOURCE_DISTANCE = ADD_BUTTON_DISTANCE + (ADD_BUTTON_SIZE / 2) - EDGE_LABEL_SOURCE_ALIGNMENT_OFFSET;
+const FEEDBACK_EDGE_DASH_ARRAY = '8 6';
+
+function ProcessFlowEditorEdgeComponent(props: EdgeProps<FlowEdge>): ReactNode {
     const theme = useTheme();
     const confirm = useConfirm();
 
     const {
         sourceX,
         sourceY,
-        sourcePosition,
         targetX,
         targetY,
-        targetPosition,
-        markerEnd,
         style,
         data: optData,
     } = props;
@@ -33,20 +46,11 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
         editable,
         onAddInbetweenNode,
         runtimeData,
-        onDeleteEdge,
     } = useProcessFlowEditorContext();
 
-    const [edgePath, labelX, labelY] = getSmoothStepPath({
-        sourceX,
-        sourceY,
-        sourcePosition,
-        targetX,
-        targetY,
-        targetPosition,
-    });
-
     const {
-        treeEdge,
+        graphEdge,
+        routePoints,
     } = useMemo(() => {
         if (optData == null) {
             throw new Error('Edge data is required for ProcessFlowEditorEdge');
@@ -54,49 +58,102 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
         return optData;
     }, [optData]);
 
-    const associatedTask = useMemo(() => {
+    const transferredProcessDataDiff = useMemo(() => {
         if (runtimeData == null) {
             return null;
         }
 
-        return runtimeData
-            .tasks
-            .find((task) => (
-                task.processNodeId === treeEdge.edge.fromNodeId
-            )) ?? null;
-    }, [runtimeData, treeEdge]);
+        return getTransferredProcessDataDiffForEdge(
+            runtimeData.tasks,
+            graphEdge.edge.fromNodeId,
+            graphEdge.edge.toNodeId,
+            graphEdge.edge.viaPort,
+        );
+    }, [
+        graphEdge,
+        runtimeData,
+    ]);
+    const nextTaskForEdge = useMemo(() => {
+        if (runtimeData == null) {
+            return null;
+        }
 
-    const wasPerformed = associatedTask != null;
+        return getLatestTaskForEdge(
+            runtimeData.tasks,
+            graphEdge.edge.fromNodeId,
+            graphEdge.edge.toNodeId,
+            graphEdge.edge.viaPort,
+        );
+    }, [
+        graphEdge,
+        runtimeData,
+    ]);
+    const transferredProcessData = useMemo(() => {
+        if (runtimeData == null) {
+            return null;
+        }
 
-    const handleDeleteEdge = (): void => {
-        confirm({
-            title: 'Verbindung aufheben',
-            children: (
-                <Typography>
-                    Möchten Sie die Verbindung &quot;{treeEdge.port.label}&quot; wirklich aufheben?
-                </Typography>
-            ),
-        })
-            .then((confirmed) => {
-                if (confirmed) {
-                    onDeleteEdge(treeEdge.edge.id);
-                }
-            });
-    };
+        return getTransferredProcessDataForEdge(
+            runtimeData.tasks,
+            graphEdge.edge.fromNodeId,
+            graphEdge.edge.toNodeId,
+            graphEdge.edge.viaPort,
+        );
+    }, [
+        graphEdge,
+        runtimeData,
+    ]);
+    const isFeedbackEdge = graphEdge.isFeedbackEdge;
+
+    const wasPerformed = nextTaskForEdge != null;
+    const {
+        edgePath,
+        arrowPath,
+        labelPoint,
+    } = useMemo(() => {
+        const renderedRoutePoints = buildRenderedRoutePoints(routePoints, sourceX, sourceY, targetX, targetY);
+        const trimmedRoutePoints = trimTerminalSegment(renderedRoutePoints, EDGE_ARROW_LENGTH);
+
+        return {
+            edgePath: buildOrthogonalPath(trimmedRoutePoints),
+            arrowPath: buildArrowPath(renderedRoutePoints, EDGE_ARROW_LENGTH, EDGE_ARROW_WIDTH),
+            labelPoint: getSourceLabelPoint(renderedRoutePoints),
+        };
+    }, [
+        routePoints,
+        sourceX,
+        sourceY,
+        targetX,
+        targetY,
+    ]);
+    const edgeColor = wasPerformed ? theme.palette.primary.main : HANDLE_COLOR;
+    const edgeDashArray = wasPerformed ? '10 10' : isFeedbackEdge ? FEEDBACK_EDGE_DASH_ARRAY : undefined;
 
     return (
         <>
             <BaseEdge
                 path={edgePath}
-                markerEnd={markerEnd}
                 style={{
                     ...style,
                     strokeWidth: `${HANDLE_WIDTH}px`,
-                    stroke: wasPerformed ? theme.palette.primary.main : undefined,
-                    strokeDasharray: wasPerformed ? '10 10' : undefined,
+                    strokeLinecap: 'round',
+                    strokeLinejoin: 'round',
+                    stroke: edgeColor,
+                    strokeDasharray: edgeDashArray,
                     animation: wasPerformed ? 'active-edge-dash-scroll 2s linear infinite' : undefined,
                 }}
             />
+            {
+                arrowPath !== '' &&
+                <path
+                    d={arrowPath}
+                    fill={edgeColor}
+                    stroke={edgeColor}
+                    strokeWidth={HANDLE_WIDTH}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                />
+            }
 
             <EdgeLabelRenderer>
                 <Box
@@ -104,75 +161,57 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                         position: 'absolute',
                         pointerEvents: 'all',
                         transformOrigin: 'center',
-                        transform: `translate(-50%, 20%) translate(${sourceX}px,${sourceY}px)`,
-                        zIndex: 100,
-                    }}
-                >
-                    <Chip
-                        label={treeEdge.port.label}
-                        size="small"
-                        variant="outlined"
-                        sx={{
-                            bgcolor: 'background.paper',
-                            borderColor: HANDLE_COLOR,
-                        }}
-                        deleteIcon={editable ? <Close/> : undefined}
-                        onDelete={editable ? handleDeleteEdge : undefined}
-                    />
-                </Box>
-
-                <Box
-                    sx={{
-                        position: 'absolute',
-                        pointerEvents: 'all',
-                        transformOrigin: 'center',
-                        transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
+                        transform: `translate(-50%, -50%) translate(${labelPoint.x}px,${labelPoint.y}px)`,
                         zIndex: 100,
                     }}
                 >
                     {
                         editable &&
-                        associatedTask == null &&
-                        <IconButton
-                            sx={{
-                                cursor: 'pointer',
-                                bgcolor: 'background.paper',
-                                border: `${HANDLE_WIDTH}px solid`,
-                                borderColor: HANDLE_COLOR,
-                                width: ADD_BUTTON_SIZE,
-                                height: ADD_BUTTON_SIZE,
-                                '&:hover': {
-                                    bgcolor: '#efefef',
-                                },
-                            }}
-                            onClick={() => {
-                                onAddInbetweenNode(treeEdge.edge.id);
-                            }}
-                        >
-                            <Add
+                        nextTaskForEdge == null &&
+                        <Tooltip title="Element einfügen" arrow>
+                            <IconButton
                                 sx={{
-                                    fontSize: ADD_BUTTON_SIZE - 2,
+                                    'cursor': 'pointer',
+                                    'bgcolor': 'background.paper',
+                                    'border': `${HANDLE_WIDTH}px solid`,
+                                    'borderColor': HANDLE_COLOR,
+                                    'padding': 0,
+                                    'width': ADD_BUTTON_SIZE,
+                                    'height': ADD_BUTTON_SIZE,
+                                    '&:hover': {
+                                        bgcolor: '#efefef',
+                                    },
                                 }}
-                            />
-                        </IconButton>
+                                onClick={() => {
+                                    onAddInbetweenNode(graphEdge.edge.id);
+                                }}
+                            >
+                                <Add
+                                    sx={{
+                                        fontSize: ADD_BUTTON_ICON_SIZE,
+                                    }}
+                                />
+                            </IconButton>
+                        </Tooltip>
                     }
 
                     {
-                        associatedTask != null &&
+                        nextTaskForEdge != null &&
                         <IconButton
                             sx={{
-                                cursor: 'pointer',
-                                bgcolor: 'background.paper',
-                                border: `${HANDLE_WIDTH}px solid`,
-                                borderColor: theme.palette.primary.main,
-                                width: ADD_BUTTON_SIZE,
-                                height: ADD_BUTTON_SIZE,
+                                'cursor': 'pointer',
+                                'bgcolor': 'background.paper',
+                                'border': `${HANDLE_WIDTH}px solid`,
+                                'borderColor': theme.palette.primary.main,
+                                'padding': 0,
+                                'width': ADD_BUTTON_SIZE,
+                                'height': ADD_BUTTON_SIZE,
                                 '&:hover': {
                                     bgcolor: '#efefef',
                                 },
                             }}
                             onClick={() => {
-                                confirm({
+                                void confirm({
                                     title: 'Vorgangsdatenebene',
                                     width: 'md',
                                     hideCancelButton: true,
@@ -182,8 +221,9 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                                             <Typography variant="h6">
                                                 Die weitergereichte Vorgangsdatenebene
                                             </Typography>
-                                            <ExpandableCodeBlock
-                                                value={JSON.stringify(associatedTask?.processData, null, 2)}
+                                            <ExpandableJSONCodeBlock
+                                                value={transferredProcessData ?? {}}
+                                                diff={transferredProcessDataDiff ?? {}}
                                             />
                                         </>
                                     ),
@@ -193,7 +233,7 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
                             <DataObject
                                 sx={{
                                     color: theme.palette.primary.main,
-                                    fontSize: ADD_BUTTON_SIZE - 2,
+                                    fontSize: ADD_BUTTON_ICON_SIZE,
                                 }}
                             />
                         </IconButton>
@@ -202,4 +242,366 @@ export function ProcessFlowEditorEdge(props: EdgeProps<FlowEdge>): ReactNode {
             </EdgeLabelRenderer>
         </>
     );
+}
+
+export const ProcessFlowEditorEdge = React.memo(ProcessFlowEditorEdgeComponent);
+ProcessFlowEditorEdge.displayName = 'ProcessFlowEditorEdge';
+
+interface PathPoint {
+    x: number;
+    y: number;
+}
+
+function buildRenderedRoutePoints(
+    routePoints: FlowPathPoint[],
+    sourceX: number,
+    sourceY: number,
+    targetX: number,
+    targetY: number,
+): PathPoint[] {
+    const rawPoints = routePoints.length > 0
+        ? routePoints.map((point) => ({...point}))
+        : [
+            {
+                x: sourceX,
+                y: sourceY,
+            },
+            {
+                x: targetX,
+                y: targetY,
+            },
+        ];
+
+    if (rawPoints.length === 1) {
+        rawPoints.push({
+            x: targetX,
+            y: targetY,
+        });
+    }
+
+    rawPoints[0] = {
+        x: sourceX,
+        y: sourceY,
+    };
+    rawPoints[rawPoints.length - 1] = {
+        x: targetX,
+        y: targetY,
+    };
+
+    return normalizeOrthogonalPoints(rawPoints);
+}
+
+function normalizeOrthogonalPoints(points: PathPoint[]): PathPoint[] {
+    const normalizedPoints: PathPoint[] = [];
+
+    points.forEach((point, index) => {
+        if (normalizedPoints.length === 0) {
+            pushPoint(normalizedPoints, point);
+            return;
+        }
+
+        const previousPoint = normalizedPoints[normalizedPoints.length - 1];
+        const isLastInputPoint = index === points.length - 1;
+        const isFirstSegment = normalizedPoints.length === 1;
+
+        if (previousPoint.x !== point.x && previousPoint.y !== point.y) {
+            if (isFirstSegment && isLastInputPoint) {
+                const bendY = previousPoint.y + ((point.y - previousPoint.y) / 2);
+                pushPoint(normalizedPoints, {
+                    x: previousPoint.x,
+                    y: bendY,
+                });
+                pushPoint(normalizedPoints, {
+                    x: point.x,
+                    y: bendY,
+                });
+            } else if (isFirstSegment) {
+                pushPoint(normalizedPoints, {
+                    x: previousPoint.x,
+                    y: point.y,
+                });
+            } else {
+                pushPoint(normalizedPoints, {
+                    x: point.x,
+                    y: previousPoint.y,
+                });
+            }
+        }
+
+        pushPoint(normalizedPoints, point);
+    });
+
+    return collapseCollinearPoints(normalizedPoints);
+}
+
+function pushPoint(points: PathPoint[], point: PathPoint): void {
+    const previousPoint = points[points.length - 1];
+    if (previousPoint != null && previousPoint.x === point.x && previousPoint.y === point.y) {
+        return;
+    }
+
+    points.push(point);
+}
+
+function collapseCollinearPoints(points: PathPoint[]): PathPoint[] {
+    if (points.length <= 2) {
+        return points;
+    }
+
+    const collapsedPoints: PathPoint[] = [points[0]];
+
+    for (let index = 1; index < points.length - 1; index += 1) {
+        const previousPoint = collapsedPoints[collapsedPoints.length - 1];
+        const currentPoint = points[index];
+        const nextPoint = points[index + 1];
+
+        if (
+            (previousPoint.x === currentPoint.x && currentPoint.x === nextPoint.x) ||
+            (previousPoint.y === currentPoint.y && currentPoint.y === nextPoint.y)
+        ) {
+            continue;
+        }
+
+        collapsedPoints.push(currentPoint);
+    }
+
+    collapsedPoints.push(points[points.length - 1]);
+    return collapsedPoints;
+}
+
+function getPolylineMidpoint(points: PathPoint[]): PathPoint {
+    if (points.length === 0) {
+        return {
+            x: 0,
+            y: 0,
+        };
+    }
+
+    if (points.length === 1) {
+        return points[0];
+    }
+
+    const totalLength = points.reduce((length, point, index) => {
+        if (index === 0) {
+            return length;
+        }
+
+        const previousPoint = points[index - 1];
+        return length + getSegmentLength(previousPoint, point);
+    }, 0);
+
+    if (totalLength === 0) {
+        return points[0];
+    }
+
+    const midpointDistance = totalLength / 2;
+    let travelledDistance = 0;
+
+    for (let index = 1; index < points.length; index += 1) {
+        const previousPoint = points[index - 1];
+        const currentPoint = points[index];
+        const segmentLength = getSegmentLength(previousPoint, currentPoint);
+
+        if (travelledDistance + segmentLength >= midpointDistance) {
+            const remainingDistance = midpointDistance - travelledDistance;
+            const progress = segmentLength === 0 ? 0 : remainingDistance / segmentLength;
+
+            return {
+                x: previousPoint.x + ((currentPoint.x - previousPoint.x) * progress),
+                y: previousPoint.y + ((currentPoint.y - previousPoint.y) * progress),
+            };
+        }
+
+        travelledDistance += segmentLength;
+    }
+
+    return points[points.length - 1];
+}
+
+function getSourceLabelPoint(points: PathPoint[]): PathPoint {
+    const sourceSegmentLabelPoint = getSourceSegmentLabelPoint(points);
+    if (sourceSegmentLabelPoint != null) {
+        return sourceSegmentLabelPoint;
+    }
+
+    const totalLength = getPolylineLength(points);
+    if (totalLength === 0) {
+        return getPolylineMidpoint(points);
+    }
+
+    const labelDistance = totalLength < EDGE_LABEL_SOURCE_DISTANCE * 2 ?
+        totalLength / 2 :
+        EDGE_LABEL_SOURCE_DISTANCE;
+
+    return getPolylineDistancePoint(points, labelDistance);
+}
+
+function getSourceSegmentLabelPoint(points: PathPoint[]): PathPoint | null {
+    if (points.length < 2) {
+        return null;
+    }
+
+    const sourcePoint = points[0];
+    const nextPoint = points[1];
+    const sourceSegmentLength = getSegmentLength(sourcePoint, nextPoint);
+
+    return sourceSegmentLength >= EDGE_LABEL_SOURCE_DISTANCE ?
+        movePointTowards(sourcePoint, nextPoint, EDGE_LABEL_SOURCE_DISTANCE) :
+        null;
+}
+
+function getPolylineDistancePoint(points: PathPoint[], distance: number): PathPoint {
+    if (points.length === 0) {
+        return {
+            x: 0,
+            y: 0,
+        };
+    }
+
+    if (points.length === 1) {
+        return points[0];
+    }
+
+    let travelledDistance = 0;
+
+    for (let index = 1; index < points.length; index += 1) {
+        const previousPoint = points[index - 1];
+        const currentPoint = points[index];
+        const segmentLength = getSegmentLength(previousPoint, currentPoint);
+
+        if (travelledDistance + segmentLength >= distance) {
+            const remainingDistance = distance - travelledDistance;
+            const progress = segmentLength === 0 ? 0 : remainingDistance / segmentLength;
+
+            return {
+                x: previousPoint.x + ((currentPoint.x - previousPoint.x) * progress),
+                y: previousPoint.y + ((currentPoint.y - previousPoint.y) * progress),
+            };
+        }
+
+        travelledDistance += segmentLength;
+    }
+
+    return points[points.length - 1];
+}
+
+function getPolylineLength(points: PathPoint[]): number {
+    return points.reduce((length, point, index) => {
+        if (index === 0) {
+            return length;
+        }
+
+        return length + getSegmentLength(points[index - 1], point);
+    }, 0);
+}
+
+function getSegmentLength(startPoint: PathPoint, endPoint: PathPoint): number {
+    return Math.abs(endPoint.x - startPoint.x) + Math.abs(endPoint.y - startPoint.y);
+}
+
+function buildOrthogonalPath(points: PathPoint[]): string {
+    const normalizedPoints = points.filter((point, index) => (
+        index === 0 ||
+        point.x !== points[index - 1].x ||
+        point.y !== points[index - 1].y
+    ));
+
+    if (normalizedPoints.length === 0) {
+        return '';
+    }
+
+    if (normalizedPoints.length === 1) {
+        return `M ${normalizedPoints[0].x} ${normalizedPoints[0].y}`;
+    }
+
+    const radius = 14;
+    let path = `M ${normalizedPoints[0].x} ${normalizedPoints[0].y}`;
+
+    for (let index = 1; index < normalizedPoints.length; index += 1) {
+        const previousPoint = normalizedPoints[index - 1];
+        const currentPoint = normalizedPoints[index];
+        const nextPoint = normalizedPoints[index + 1];
+
+        if (nextPoint == null) {
+            path += ` L ${currentPoint.x} ${currentPoint.y}`;
+            continue;
+        }
+
+        const previousSegmentLength = Math.abs(currentPoint.x - previousPoint.x) + Math.abs(currentPoint.y - previousPoint.y);
+        const nextSegmentLength = Math.abs(nextPoint.x - currentPoint.x) + Math.abs(nextPoint.y - currentPoint.y);
+        const entryDistance = Math.min(radius, previousSegmentLength / 2);
+        const exitDistance = Math.min(radius, nextSegmentLength / 2);
+
+        const entryPoint = {
+            x: currentPoint.x - (Math.sign(currentPoint.x - previousPoint.x) * entryDistance),
+            y: currentPoint.y - (Math.sign(currentPoint.y - previousPoint.y) * entryDistance),
+        };
+        const exitPoint = {
+            x: currentPoint.x + (Math.sign(nextPoint.x - currentPoint.x) * exitDistance),
+            y: currentPoint.y + (Math.sign(nextPoint.y - currentPoint.y) * exitDistance),
+        };
+
+        path += ` L ${entryPoint.x} ${entryPoint.y}`;
+        path += ` Q ${currentPoint.x} ${currentPoint.y} ${exitPoint.x} ${exitPoint.y}`;
+    }
+
+    return path;
+}
+
+function trimTerminalSegment(points: PathPoint[], distance: number): PathPoint[] {
+    if (points.length < 2 || distance <= 0) {
+        return points;
+    }
+
+    const trimmedPoints = [...points];
+    const targetPoint = trimmedPoints[trimmedPoints.length - 1];
+    const previousPoint = trimmedPoints[trimmedPoints.length - 2];
+    const segmentLength = getSegmentLength(previousPoint, targetPoint);
+
+    if (segmentLength <= distance) {
+        return points;
+    }
+
+    trimmedPoints[trimmedPoints.length - 1] = movePointTowards(previousPoint, targetPoint, segmentLength - distance);
+    return trimmedPoints;
+}
+
+function buildArrowPath(points: PathPoint[], length: number, width: number): string {
+    if (points.length < 2) {
+        return '';
+    }
+
+    const tipPoint = points[points.length - 1];
+    const previousPoint = points[points.length - 2];
+    const segmentLength = getSegmentLength(previousPoint, tipPoint);
+
+    if (segmentLength === 0) {
+        return '';
+    }
+
+    const usableLength = Math.min(length, segmentLength);
+    const basePoint = movePointTowards(previousPoint, tipPoint, Math.max(segmentLength - usableLength, 0));
+    const halfWidth = width / 2;
+
+    if (previousPoint.x === tipPoint.x) {
+        return `M ${tipPoint.x} ${tipPoint.y} L ${tipPoint.x - halfWidth} ${basePoint.y} L ${tipPoint.x + halfWidth} ${basePoint.y} Z`;
+    }
+
+    return `M ${tipPoint.x} ${tipPoint.y} L ${basePoint.x} ${tipPoint.y - halfWidth} L ${basePoint.x} ${tipPoint.y + halfWidth} Z`;
+}
+
+function movePointTowards(startPoint: PathPoint, endPoint: PathPoint, distance: number): PathPoint {
+    const segmentLength = getSegmentLength(startPoint, endPoint);
+    if (segmentLength === 0) {
+        return {
+            ...startPoint,
+        };
+    }
+
+    const progress = distance / segmentLength;
+
+    return {
+        x: startPoint.x + ((endPoint.x - startPoint.x) * progress),
+        y: startPoint.y + ((endPoint.y - startPoint.y) * progress),
+    };
 }

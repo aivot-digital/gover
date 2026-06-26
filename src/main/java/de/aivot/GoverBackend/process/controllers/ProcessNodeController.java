@@ -1,24 +1,29 @@
 package de.aivot.GoverBackend.process.controllers;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.openApi.OpenApiConstants;
+import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessNodeEntity;
 import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.filters.ProcessNodeFilter;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextConfig;
-import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionContextTesting;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinition;
+import de.aivot.GoverBackend.process.models.ProcessNodeDefinitionMetadata;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
+import de.aivot.GoverBackend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
+import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
+import de.aivot.GoverBackend.process.repositories.ProcessNodeRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessTestClaimRepository;
-import de.aivot.GoverBackend.process.services.ProcessNodeService;
-import de.aivot.GoverBackend.process.services.ProcessService;
-import de.aivot.GoverBackend.process.services.ProcessVersionService;
-import de.aivot.GoverBackend.process.services.ProcessNodeDefinitionService;
+import de.aivot.GoverBackend.process.services.*;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -30,11 +35,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/process-nodes/")
@@ -48,24 +57,62 @@ public class ProcessNodeController {
     private final UserService userService;
     private final ProcessNodeService processDefinitionNodeService;
     private final ProcessService processDefinitionService;
+    private final PermissionService permissionService;
     private final ProcessNodeDefinitionService processNodeProviderService;
+    private final ProcessNodeExportService processNodeExportService;
     private final ProcessVersionService processDefinitionVersionService;
     private final ProcessTestClaimRepository processTestClaimRepository;
+    private final ObjectMapper objectMapper;
+    private final ProcessNodeRepository processNodeRepository;
+
+    @Nonnull
+    private static String createAvailableDataKey(@Nonnull String requestedDataKey,
+                                                 @Nonnull Set<String> occupiedDataKeys) {
+        if (!occupiedDataKeys.contains(requestedDataKey)) {
+            return requestedDataKey;
+        }
+
+        var normalizedBase = requestedDataKey.length() > 27
+                ? requestedDataKey.substring(0, 27)
+                : requestedDataKey;
+
+        for (var copyIndex = 2; copyIndex < 10_000; copyIndex++) {
+            var suffix = "-%d".formatted(copyIndex);
+            var truncatedBase = normalizedBase.length() > 32 - suffix.length()
+                    ? normalizedBase.substring(0, 32 - suffix.length())
+                    : normalizedBase;
+            var candidate = truncatedBase + suffix;
+
+            if (!occupiedDataKeys.contains(candidate)) {
+                return candidate;
+            }
+        }
+
+        throw new IllegalStateException("Kein freier Datenschlüssel verfügbar.");
+    }
 
     @Autowired
     public ProcessNodeController(AuditService auditService,
                                  UserService userService,
                                  ProcessNodeService processDefinitionNodeService,
                                  ProcessService processDefinitionService,
+                                 PermissionService permissionService,
                                  ProcessNodeDefinitionService processNodeProviderService,
-                                 ProcessVersionService processDefinitionVersionService, ProcessTestClaimRepository processTestClaimRepository) {
-        this.auditService = auditService.createScopedAuditService(ProcessNodeController.class);
+                                 ProcessNodeExportService processNodeExportService,
+                                 ProcessVersionService processDefinitionVersionService,
+                                 ProcessTestClaimRepository processTestClaimRepository,
+                                 ObjectMapper objectMapper, ProcessNodeRepository processNodeRepository) {
+        this.auditService = auditService.createScopedAuditService(ProcessNodeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processDefinitionService = processDefinitionService;
+        this.permissionService = permissionService;
         this.processNodeProviderService = processNodeProviderService;
+        this.processNodeExportService = processNodeExportService;
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.processTestClaimRepository = processTestClaimRepository;
+        this.objectMapper = objectMapper;
+        this.processNodeRepository = processNodeRepository;
     }
 
     @GetMapping("")
@@ -97,11 +144,16 @@ public class ProcessNodeController {
         var result = processDefinitionNodeService
                 .create(newNode);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessNodeEntity.class, Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Create, ProcessNodeEntity.class,
+                        result.getId(),
+                        "id"
+                ).withMessage(
+                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -127,7 +179,9 @@ public class ProcessNodeController {
     public ProcessNodeEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id,
-            @Nonnull @RequestBody @Valid ProcessNodeEntity updateDTO
+            @Nonnull @RequestBody @Valid ProcessNodeEntity updateDTO,
+            @Nullable @RequestParam(required = false) List<String> onlyConfigSave,
+            @Nullable @RequestParam(required = false) List<String> omitConfigSave
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -137,16 +191,57 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        if (processNodeRepository.existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
+                updateDTO.getDataKey(),
+                existing.getId(),
+                existing.getProcessId(),
+                existing.getProcessVersion()
+        )) {
+            throw ResponseException.badRequest(
+                    String.format(
+                            "Der Datenschlüssel %s wird innerhalb dieses Prozesses bereits verwendet. Bitte vergeben Sie einen eindeutigen Datenschlüssel.",
+                            StringUtils.quote(updateDTO.getDataKey())
+                    ));
+        }
+
+        var existingMap = objectMapper
+                .convertValue(existing, Map.class);
+
         updateDTO.setId(existing.getId());
+
+        if (onlyConfigSave != null) {
+            var conf = new AuthoredElementValues();
+            conf.putAll(existing.getConfiguration());
+            for (String key : onlyConfigSave) {
+                conf.put(key, updateDTO.getConfiguration().get(key));
+            }
+            updateDTO = existing;
+            updateDTO.setConfiguration(conf);
+        }
+
+        if (omitConfigSave != null) {
+            for (var key : omitConfigSave) {
+                updateDTO.getConfiguration().put(key, existing.getConfiguration().get(key));
+            }
+        }
 
         var result = processDefinitionNodeService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessNodeEntity.class, Map.of(
-                "id", result.getId(),
-                "processDefinitionId", result.getProcessId(),
-                "processDefinitionVersion", result.getProcessVersion()
-        ));
+        var updatedMap = objectMapper
+                .convertValue(result, Map.class);
+
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Update, ProcessNodeEntity.class,
+                        result.getId(),
+                        "id"
+                )
+                .withDiff(existingMap, updatedMap).withMessage(
+                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(String.valueOf(result.getId())),
+                        StringUtils.quote(execUser.getFullName())
+                ).log();
 
         return result;
     }
@@ -169,11 +264,145 @@ public class ProcessNodeController {
         var deleted = processDefinitionNodeService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessNodeEntity.class, Map.of(
-                "id", deleted.getId(),
-                "processDefinitionId", deleted.getProcessId(),
-                "processDefinitionVersion", deleted.getProcessVersion()
-        ));
+        auditService.create()
+                .withUser(user)
+                .withAuditAction(AuditAction.Delete, ProcessNodeEntity.class,
+                        deleted.getId(),
+                        "id"
+                ).withMessage(
+                        "Der Prozessknoten mit der ID %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(String.valueOf(deleted.getId())),
+                        StringUtils.quote(user.getFullName())
+                ).log();
+    }
+
+    @GetMapping("{id}/export/")
+    @Operation(
+            summary = "Export Process Definition Node",
+            description = "Export a process definition node including its cleaned configuration. " +
+                    "Requires read permissions for the owning process definition."
+    )
+    public ProcessNodeExportService.ProcessNodeExport export(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existingNode = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var existingProcess = processDefinitionService
+                .retrieve(existingNode.getProcessId())
+                .orElseThrow(ResponseException::badRequest);
+
+        permissionService.testDepartmentPermission(
+                execUser.getId(),
+                existingProcess.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
+        var result = processNodeExportService
+                .export(id);
+
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Export, ProcessNodeEntity.class,
+                        existingNode.getId(),
+                        "id"
+                )
+                .withMessage("Das Prozesselement %s (%d) wurde von der Mitarbeiter:in %s exportiert."
+                        .formatted(
+                                StringUtils.quote(existingNode.getDataKey()),
+                                existingNode.getId(),
+                                StringUtils.quote(execUser.getFullName())
+                        )
+                )
+                .log();
+
+        return result;
+    }
+
+    @PostMapping("import/{processId}/{processVersion}/")
+    @Operation(
+            summary = "Import Process Definition Node",
+            description = "Import a process definition node into a specific process version. " +
+                    "Requires edit permissions for the target process definition."
+    )
+    public ProcessNodeEntity importNode(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer processId,
+            @Nonnull @PathVariable Integer processVersion,
+            @Nonnull @RequestBody @Valid ProcessNodeExportService.ProcessNodeExport exportData
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var targetProcess = processDefinitionService
+                .retrieve(processId)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.testDepartmentPermission(
+                execUser.getId(),
+                targetProcess.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
+
+        processDefinitionVersionService
+                .retrieve(ProcessVersionEntityId.of(processId, processVersion))
+                .orElseThrow(ResponseException::badRequest);
+
+        var sourceNode = exportData.node();
+        var occupiedDataKeys = processDefinitionNodeService
+                .getAllUsedDataKeys(processId, processVersion);
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(
+                        sourceNode.getProcessNodeDefinitionKey(),
+                        sourceNode.getProcessNodeDefinitionVersion()
+                )
+                .orElseThrow(() -> ResponseException.badRequest(
+                        "Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ ist nicht verfügbar."
+                                .formatted(sourceNode.getProcessNodeDefinitionKey(), sourceNode.getProcessNodeDefinitionVersion())
+                ));
+
+        var importedNode = processDefinitionNodeService
+                .create(new ProcessNodeEntity()
+                        .setProcessId(processId)
+                        .setProcessVersion(processVersion)
+                        .setName(sourceNode.getName())
+                        .setDescription(sourceNode.getDescription())
+                        .setDataKey(createAvailableDataKey(sourceNode.getDataKey(), occupiedDataKeys))
+                        .setProcessNodeDefinitionKey(sourceNode.getProcessNodeDefinitionKey())
+                        .setProcessNodeDefinitionVersion(sourceNode.getProcessNodeDefinitionVersion())
+                        .setConfiguration(provider.prefillConfigurationOnImport(sourceNode.getConfiguration()))
+                        .setOutputMappings(sourceNode.getOutputMappings())
+                        .setTimeLimitDays(sourceNode.getTimeLimitDays())
+                        .setRequirements(sourceNode.getRequirements())
+                        .setNotes(sourceNode.getNotes())
+                );
+
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(AuditAction.Create, ProcessNodeEntity.class,
+                        importedNode.getId(),
+                        "id",
+                        Map.of(
+                                "imported", true
+                        )
+                )
+                .withMessage(
+                        "Das Prozesselement mit der ID %s wurde von der Mitarbeiter:in %s aus einem Import in den Prozess %s (Version %s) erstellt.",
+                        StringUtils.quote(String.valueOf(importedNode.getId())),
+                        StringUtils.quote(execUser.getFullName()),
+                        StringUtils.quote(String.valueOf(processId)),
+                        StringUtils.quote(String.valueOf(processVersion))
+                ).log();
+
+        return importedNode;
     }
 
 
@@ -206,7 +435,7 @@ public class ProcessNodeController {
                 .retrieve(ProcessVersionEntityId.of(processDefinition.getId(), node.getProcessVersion()))
                 .orElseThrow(ResponseException::badRequest);
 
-        var context = new ProcessNodeDefinitionContextConfig(
+        var context = new ProcessNodeDefinitionConfigurationLayoutContext(
                 user,
                 processDefinition,
                 processVersion,
@@ -217,12 +446,12 @@ public class ProcessNodeController {
                 .getConfigurationLayout(context);
     }
 
-    @GetMapping("{id}/testing/")
+    @GetMapping("{id}/incoming-metadata/")
     @Operation(
-            summary = "Retrieve Process Definition Node Testing Layout",
-            description = "Retrieve the testing layout of a process definition node by its ID."
+            summary = "Retrieve Incoming Process Definition Node Metadata",
+            description = "Retrieve the aggregated process node metadata available before a process definition node is executed."
     )
-    public GroupLayoutElement testing(
+    public ProcessNodeDefinitionMetadata incomingMetadata(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
@@ -234,7 +463,38 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var provider = processNodeProviderService
+        var processDefinition = processDefinitionService
+                .retrieve(node.getProcessId())
+                .orElseThrow(ResponseException::badRequest);
+
+        permissionService.testDepartmentPermission(
+                user.getId(),
+                processDefinition.getDepartmentId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
+        return processDefinitionNodeService
+                .getProcessDataKeyHintResponses(node);
+    }
+
+    @GetMapping("{id}/testing/")
+    @Operation(
+            summary = "Retrieve Process Definition Node Testing Layout",
+            description = "Retrieve the testing layout of a process definition node by its ID."
+    )
+    public <NodeConfig> GroupLayoutElement testing(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var node = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        ProcessNodeDefinition<NodeConfig> provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
 
@@ -250,16 +510,46 @@ public class ProcessNodeController {
                 .findByProcessIdAndProcessVersion(node.getProcessId(), node.getProcessVersion())
                 .orElseThrow(ResponseException::badRequest);
 
-        var context = new ProcessNodeDefinitionContextTesting(
+        var configuration = processDefinitionNodeService
+                .deriveConfiguration(node, provider, user, false);
+
+        var context = new ProcessNodeDefinitionTestingLayoutContext<NodeConfig>(
                 user,
                 processDefinition,
                 processVersion,
                 node,
-                testClaim
+                testClaim,
+                configuration.configuration()
         );
 
         return provider
                 .getTestingLayout(context);
     }
-}
 
+    @GetMapping("{id}/problems/")
+    @Operation(
+            summary = "Retrieve Process Definition Node Testing Layout",
+            description = "Retrieve the testing layout of a process definition node by its ID."
+    )
+    public Object problems(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer id
+    ) throws ResponseException {
+        var node = processNodeRepository
+                .findById(id)
+                .orElseThrow(ResponseException::notFound);
+
+        var provider = processNodeProviderService
+                .getProcessNodeDefinition(node)
+                .orElseThrow(ResponseException::badRequest);
+
+        var res = processDefinitionNodeService
+                .validate(node, provider, false);
+
+        if (res.isPresent()) {
+            return res.get();
+        }
+
+        return new ResponseEntity<Void>(HttpStatus.NO_CONTENT);
+    }
+}

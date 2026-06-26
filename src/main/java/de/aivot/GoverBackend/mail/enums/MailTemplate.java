@@ -19,6 +19,9 @@ public enum MailTemplate implements Identifiable<String> {
     FormRevoked("form-revoked", FormNotificationRevokedFormUserConfigDefinition.KEY),
 
     SmtpTest("smtp-test", null),
+    StaffAccountCredentials("staff-account-credentials", null),
+
+    ProcessTaskAssigned("process-task-assigned", ProcessNotificationTaskAssignedUserConfigDefinition.KEY),
 
     SubmissionArchived("submission-archived", SubmissionNotificationArchivedUserConfigDefinition.KEY),
     SubmissionAssigned("submission-assigned", SubmissionNotificationAssignedUserConfigDefinition.KEY),

@@ -19,7 +19,7 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
     private GroupLayoutStoreLink storeLink;
 
     public GroupLayoutElement() {
-        super(ElementType.Group);
+        super(ElementType.GroupLayout);
     }
 
     // region Hash & Equals
@@ -28,17 +28,13 @@ public class GroupLayoutElement extends BaseFormElement implements LayoutElement
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
-
         GroupLayoutElement that = (GroupLayoutElement) o;
         return Objects.equals(children, that.children) && Objects.equals(storeLink, that.storeLink);
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + Objects.hashCode(children);
-        result = 31 * result + Objects.hashCode(storeLink);
-        return result;
+        return Objects.hash(super.hashCode(), children, storeLink);
     }
 
     // endregion

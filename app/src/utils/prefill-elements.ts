@@ -1,39 +1,28 @@
 import {AnyElement} from '../models/elements/any-element';
-import {ElementData, ElementDataObject} from '../models/element-data';
+import {AuthoredElementValues} from '../models/element-data';
 import {IdentityData} from '../modules/identity/models/identity-data';
-import {mapElementData} from './element-data-utils';
+import {mapAuthoredElementValues} from './element-data-utils';
 import {isStringNullOrEmpty} from './string-utils';
 
 export function prefillIdentityData(
     element: AnyElement,
-    elementData: ElementData,
+    elementData: AuthoredElementValues,
     identityData: IdentityData,
-): ElementData {
-    const {
-        metadataIdentifier,
-        attributes,
-    } = identityData;
+): AuthoredElementValues {
+    const {metadataIdentifier, attributes} = identityData;
 
-    const updatedElementData = mapElementData(element, elementData, (element, elementDataObject) => {
-        if (elementDataObject == null) {
-            return null;
-        }
-
+    const updatedElementData = mapAuthoredElementValues(element, elementData, (element, value) => {
         const identityMapping = getMetadataMapping(element, metadataIdentifier);
         if (identityMapping == null) {
-            return elementDataObject;
+            return value;
         }
 
         const identityValue = attributes[identityMapping];
         if (identityValue == null) {
-            return elementDataObject;
+            return value;
         }
 
-        return {
-            ...elementDataObject,
-            isPrefilled: true,
-            inputValue: identityValue,
-        } as ElementDataObject;
+        return identityValue;
     });
 
     return updatedElementData;

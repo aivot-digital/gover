@@ -2,6 +2,7 @@ import {Grid, Typography} from '@mui/material';
 import {TimeFieldElement} from '../../models/elements/form/input/time-field-element';
 import {format} from 'date-fns';
 import {BaseSummaryProps} from '../../summaries/base-summary';
+import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
 
 export function TimeFieldComponentSummary({
                                               model,
@@ -30,7 +31,7 @@ export function TimeFieldComponentSummary({
             <Grid size={8}>
                 <Typography variant={"body2"}>
                     {
-                        date ? format(date, 'HH:mm') + ' Uhr' : 'Keine Angabe'
+                        date ? format(date, (model.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm') + ' Uhr' : 'Keine Angabe'
                     }
                 </Typography>
             </Grid>

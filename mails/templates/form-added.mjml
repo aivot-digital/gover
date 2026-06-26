@@ -23,7 +23,7 @@
                         Version: <b th:text="${form.version}">1.2.3</b>
                         <br/>
                         <span>
-                            Entwickelnder Fachbereich:
+                            Entwickelnde Organisationseinheit:
                             <b th:text="${developingDepartment.name}">—</b>
                         </span>
                         <br/>

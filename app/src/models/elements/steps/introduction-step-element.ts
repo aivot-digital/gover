@@ -1,5 +1,6 @@
 import {BaseElement} from '../base-element';
 import {ElementType} from '../../../data/element-type/element-type';
+import {AnyFormElement} from '../form/any-form-element';
 
 export interface IntroductionStepElement extends BaseElement<ElementType.IntroductionStep> {
     initiativeName: string | null | undefined;
@@ -10,5 +11,8 @@ export interface IntroductionStepElement extends BaseElement<ElementType.Introdu
     eligiblePersons: string[] | null | undefined;
     supportingDocuments: string[] | null | undefined;
     documentsToAttach: string[] | null | undefined;
+    expiring: string | null | undefined;
     expectedCosts: string | null | undefined;
+    privacyText: string | null | undefined;
+    children: AnyFormElement[] | null | undefined;
 }

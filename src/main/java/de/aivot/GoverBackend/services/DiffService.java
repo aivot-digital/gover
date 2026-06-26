@@ -79,10 +79,10 @@ public class DiffService {
                 var oldValue = oldMap.get(key);
                 var newValue = newMap.get(key);
 
-                var childDiffs = createDiff(oldValue, newValue, currentPath + "/" + key);
+                var childDiffs = createDiff(oldValue, newValue, appendMapPath(currentPath, key));
                 diffItems.addAll(childDiffs);
             } else {
-                diffItems.add(new DiffItem(currentPath + "/" + key, oldMap.get(key), null));
+                diffItems.add(new DiffItem(appendMapPath(currentPath, key), oldMap.get(key), null));
             }
         }
 
@@ -91,7 +91,7 @@ public class DiffService {
                 continue;
             }
 
-            diffItems.add(new DiffItem(currentPath + "/" + key, null, newMap.get(key)));
+            diffItems.add(new DiffItem(appendMapPath(currentPath, key), null, newMap.get(key)));
         }
 
         return diffItems;
@@ -110,7 +110,7 @@ public class DiffService {
             var oldChild = oldList.get(i);
             var newChild = newList.get(i);
 
-            var childDiffs = createDiff(oldChild, newChild, currentPath + "/" + i);
+            var childDiffs = createDiff(oldChild, newChild, appendListPath(currentPath, i));
             diffItems.addAll(childDiffs);
         }
 
@@ -118,36 +118,44 @@ public class DiffService {
     }
 
     public static JSONObject rollBackDiff(JSONObject targetObject, DiffItem diffItem) {
-        var path = List.of(diffItem.field().split("/"));
-        path = path.subList(1, path.size());
+        var path = parsePath(diffItem.field());
+        if (path.isEmpty()) {
+            applyRootDiff(targetObject, diffItem.oldValue());
+            return targetObject;
+        }
+
         rollBackDiff(targetObject, diffItem, path);
         return targetObject;
     }
 
-    private static void rollBackDiff(Object targetObject, DiffItem diffToApply, List<String> remainingPath) {
+    private static void rollBackDiff(Object targetObject, DiffItem diffToApply, List<PathSegment> remainingPath) {
+        var currentSegment = remainingPath.getFirst();
+
         switch (targetObject) {
             case JSONObject jsonObject:
+                var jsonObjectKey = currentSegment.asKey();
                 if (remainingPath.size() == 1) {
-                    jsonObject.put(remainingPath.getFirst(), diffToApply.oldValue());
+                    jsonObject.put(jsonObjectKey, diffToApply.oldValue());
                 } else {
-                    Object childObj = jsonObject.get(remainingPath.getFirst());
+                    Object childObj = jsonObject.get(jsonObjectKey);
                     rollBackDiff(childObj, diffToApply, remainingPath.subList(1, remainingPath.size()));
                 }
                 break;
 
             case Map<?, ?> _map:
                 var map = (Map<String, Object>) _map;
+                var mapKey = currentSegment.asKey();
 
                 if (remainingPath.size() == 1) {
-                    map.put(remainingPath.getFirst(), diffToApply.oldValue());
+                    map.put(mapKey, diffToApply.oldValue());
                 } else {
-                    Object childObj = map.get(remainingPath.getFirst());
+                    Object childObj = map.get(mapKey);
                     rollBackDiff(childObj, diffToApply, remainingPath.subList(1, remainingPath.size()));
                 }
                 break;
 
             case JSONArray jsonArray:
-                var jsonArrayIndex = Integer.parseInt(remainingPath.getFirst());
+                var jsonArrayIndex = currentSegment.asIndex();
                 if (remainingPath.size() == 1) {
                     jsonArray.put(jsonArrayIndex, diffToApply.oldValue());
                 } else {
@@ -158,7 +166,7 @@ public class DiffService {
 
             case List<?> _list:
                 var list = (List<Object>) _list;
-                var listIndex = Integer.parseInt(remainingPath.getFirst());
+                var listIndex = currentSegment.asIndex();
                 if (remainingPath.size() == 1) {
                     list.set(listIndex, diffToApply.oldValue());
                 } else {
@@ -169,6 +177,130 @@ public class DiffService {
 
             default:
                 throw new IllegalArgumentException("Unknown object type. Expected JSONObject, JSONArray, List or Map but got " + targetObject.getClass().getName());
+        }
+    }
+
+    private static String appendMapPath(String currentPath, Object key) {
+        var pathSegment = key.toString();
+        if (currentPath.isEmpty()) {
+            return pathSegment;
+        }
+
+        return currentPath + "." + pathSegment;
+    }
+
+    private static String appendListPath(String currentPath, int index) {
+        return currentPath + "[" + index + "]";
+    }
+
+    private static List<PathSegment> parsePath(String field) {
+        if (field == null || field.isBlank() || "/".equals(field)) {
+            return Collections.emptyList();
+        }
+
+        if (field.contains("/")) {
+            return Arrays.stream(field.split("/"))
+                    .filter(segment -> !segment.isBlank())
+                    .map(PathSegment::key)
+                    .toList();
+        }
+
+        var pathSegments = new ArrayList<PathSegment>();
+        var currentToken = new StringBuilder();
+
+        for (int i = 0; i < field.length(); i++) {
+            var currentChar = field.charAt(i);
+            switch (currentChar) {
+                case '.' -> flushCurrentToken(pathSegments, currentToken);
+                case '[' -> {
+                    flushCurrentToken(pathSegments, currentToken);
+
+                    var closingBracketIndex = field.indexOf(']', i);
+                    if (closingBracketIndex < 0) {
+                        throw new IllegalArgumentException("Invalid diff path: " + field);
+                    }
+
+                    var indexToken = field.substring(i + 1, closingBracketIndex);
+                    try {
+                        pathSegments.add(PathSegment.index(Integer.parseInt(indexToken)));
+                    } catch (NumberFormatException ex) {
+                        throw new IllegalArgumentException("Invalid diff path: " + field, ex);
+                    }
+
+                    i = closingBracketIndex;
+                }
+                default -> currentToken.append(currentChar);
+            }
+        }
+
+        flushCurrentToken(pathSegments, currentToken);
+
+        return pathSegments;
+    }
+
+    private static void flushCurrentToken(List<PathSegment> pathSegments, StringBuilder currentToken) {
+        if (currentToken.isEmpty()) {
+            return;
+        }
+
+        pathSegments.add(PathSegment.key(currentToken.toString()));
+        currentToken.setLength(0);
+    }
+
+    private static void applyRootDiff(JSONObject targetObject, @Nullable Object oldValue) {
+        var existingKeys = new ArrayList<>(targetObject.keySet());
+        for (var existingKey : existingKeys) {
+            targetObject.remove(existingKey);
+        }
+
+        if (oldValue == null) {
+            return;
+        }
+
+        if (oldValue instanceof JSONObject oldJsonObject) {
+            for (var key : oldJsonObject.keySet()) {
+                targetObject.put(key, oldJsonObject.get(key));
+            }
+            return;
+        }
+
+        if (oldValue instanceof Map<?, ?> oldMap) {
+            for (var entry : oldMap.entrySet()) {
+                targetObject.put(entry.getKey().toString(), entry.getValue());
+            }
+            return;
+        }
+
+        throw new IllegalArgumentException("Cannot apply root diff with value type " + oldValue.getClass().getName());
+    }
+
+    private record PathSegment(@Nullable String key, @Nullable Integer index) {
+        private static PathSegment key(String key) {
+            return new PathSegment(key, null);
+        }
+
+        private static PathSegment index(int index) {
+            return new PathSegment(null, index);
+        }
+
+        private String asKey() {
+            if (key == null) {
+                throw new IllegalArgumentException("Expected object key path segment but got array index");
+            }
+
+            return key;
+        }
+
+        private int asIndex() {
+            if (index != null) {
+                return index;
+            }
+
+            if (key == null) {
+                throw new IllegalArgumentException("Missing path segment");
+            }
+
+            return Integer.parseInt(key);
         }
     }
 }

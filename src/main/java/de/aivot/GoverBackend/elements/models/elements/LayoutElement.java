@@ -78,4 +78,28 @@ public interface LayoutElement<T extends BaseElement> {
         }
         return Optional.empty();
     }
+
+    default LayoutElement<T> insertChildBefore(@Nonnull T child, @Nonnull String beforeChildId) {
+        var newChildren = new LinkedList<T>();
+        for (var c : getChildren()) {
+            if (Objects.equals(c.getId(), beforeChildId)) {
+                newChildren.add(child);
+            }
+            newChildren.add(c);
+        }
+        setChildren(newChildren);
+        return this;
+    }
+
+    default LayoutElement<T> insertChildAfter(@Nonnull T child, @Nonnull String afterChildId) {
+        var newChildren = new LinkedList<T>();
+        for (var c : getChildren()) {
+            newChildren.add(c);
+            if (Objects.equals(c.getId(), afterChildId)) {
+                newChildren.add(child);
+            }
+        }
+        setChildren(newChildren);
+        return this;
+    }
 }

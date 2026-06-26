@@ -21,14 +21,11 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 
 public abstract class GenericReadController<T, I, F extends Filter<T>> {
-    private final ScopedAuditService auditService;
     private final UserService userService;
     private final ReadEntityService<T, I> service;
 
-    public GenericReadController(ScopedAuditService auditService,
-                                 UserService userService,
+    public GenericReadController(UserService userService,
                                  ReadEntityService<T, I> service) {
-        this.auditService = auditService;
         this.userService = userService;
         this.service = service;
     }

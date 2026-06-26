@@ -5,6 +5,9 @@ export interface ApiError {
     displayableToUser: boolean;
 }
 
+export const API_ERROR_REASON_NETWORK_UNREACHABLE = 'network_unreachable';
+export const API_ERROR_REASON_TIMEOUT = 'timeout';
+
 export async function createApiError(response: Response): Promise<ApiError> {
     // Try to parse the error response as json
     let details: any = null;
@@ -47,4 +50,29 @@ export function isApiError(error: any): error is ApiError {
         typeof error.message === 'string' &&
         typeof error.displayableToUser === 'boolean'
     );
+}
+
+function hasApiErrorReason(error: any, reason: string): boolean {
+    return (
+        isApiError(error) &&
+        error.details != null &&
+        typeof error.details === 'object' &&
+        !Array.isArray(error.details) &&
+        error.details.reason === reason
+    );
+}
+
+export function isApiUnreachableError(error: any): boolean {
+    return hasApiErrorReason(error, API_ERROR_REASON_NETWORK_UNREACHABLE);
+}
+
+export function isOfflineApiError(error: any): boolean {
+    if (!isApiUnreachableError(error)) {
+        return false;
+    }
+
+    const offlineAtErrorTime = error.details?.online === false;
+    const offlineNow = typeof navigator !== 'undefined' && navigator.onLine === false;
+
+    return offlineAtErrorTime || offlineNow;
 }

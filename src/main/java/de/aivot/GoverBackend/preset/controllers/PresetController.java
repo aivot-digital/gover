@@ -11,6 +11,7 @@ import de.aivot.GoverBackend.preset.repositories.PresetRepository;
 import de.aivot.GoverBackend.preset.repositories.PresetVersionRepository;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -28,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -51,7 +52,7 @@ public class PresetController {
                             AuditService auditService,
                             PresetVersionRepository presetVersionRepository, UserService userService) {
         this.presetRepository = presetRepository;
-        this.auditService = auditService.createScopedAuditService(PresetController.class);
+        this.auditService = auditService.createScopedAuditService(PresetController.class, "Vorlagen");
         this.presetVersionRepository = presetVersionRepository;
         this.userService = userService;
     }
@@ -95,17 +96,17 @@ public class PresetController {
         var savedVersion = presetVersionRepository
                 .save(newVersion);
 
-        auditService
-                .logAction(
-                        user,
-                        AuditAction.Create,
-                        PresetEntity.class,
-                        Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Create, PresetEntity.class, savedEntity.getKey(), "key", Map.of(
                                 "key", savedEntity.getKey(),
                                 "title", savedEntity.getTitle(),
                                 "version", savedVersion.getVersion()
-                        )
-                );
+                        )).withMessage(
+                "Die Vorlage %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt (Version %s).",
+                StringUtils.quote(savedEntity.getTitle()),
+                StringUtils.quote(String.valueOf(savedEntity.getKey())),
+                StringUtils.quote(user.getFullName()),
+                StringUtils.quote(String.valueOf(savedVersion.getVersion()))
+        ).log();
 
         return presetRepository
                 .findById(savedEntity.getKey())
@@ -152,7 +153,7 @@ public class PresetController {
                 .orElseThrow(ResponseException::notFound);
 
         preset.setTitle(updatedPresetEntity.getTitle());
-        preset.setUpdated(LocalDateTime.now());
+        preset.setUpdated(Instant.now());
 
         var savePreset = presetRepository.save(preset);
 
@@ -160,12 +161,12 @@ public class PresetController {
         auditData.put("key", savePreset.getKey());
         auditData.put("title", savePreset.getTitle());
 
-        auditService.logAction(
-                user,
-                AuditAction.Update,
-                PresetEntity.class,
-                auditData
-        );
+        auditService.create().withUser(user).withAuditAction(AuditAction.Update, PresetEntity.class, savePreset.getKey(), "key", auditData).withMessage(
+                "Die Vorlage %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(savePreset.getTitle()),
+                StringUtils.quote(String.valueOf(savePreset.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
 
         return savePreset;
     }
@@ -196,14 +197,14 @@ public class PresetController {
 
         presetRepository.delete(preset);
 
-        auditService.logAction(
-                user,
-                AuditAction.Delete,
-                PresetEntity.class,
-                Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, PresetEntity.class, preset.getKey(), "key", Map.of(
                         "key", preset.getKey(),
                         "title", preset.getTitle()
-                )
-        );
+                )).withMessage(
+                "Die Vorlage %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(preset.getTitle()),
+                StringUtils.quote(String.valueOf(preset.getKey())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 }

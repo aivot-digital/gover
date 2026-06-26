@@ -2,7 +2,6 @@ import {BaseEditorProps} from './base-editor';
 import {DateFieldComponentModelMode, type DateFieldElement} from '../models/elements/form/input/date-field-element';
 import {type SelectFieldComponentOption} from '../components/select-field/select-field-component-option';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 import {AutocompleteSelect} from '../components/autocomple-select/autocomplete-select';
 import React from 'react';
@@ -22,12 +21,13 @@ const modes: SelectFieldComponentOption[] = [
     },
 ];
 
-export function DateFieldEditor(props: BaseEditorProps<DateFieldElement, ElementTreeEntity>) {
+export function DateFieldEditor(props: BaseEditorProps<DateFieldElement>) {
     const {
         element,
         onPatch,
         editable,
         scope,
+        hasSummaryLayoutParent,
     } = props;
 
     return (
@@ -63,6 +63,7 @@ export function DateFieldEditor(props: BaseEditorProps<DateFieldElement, Element
                 >
                     {
                         scope !== 'data_modelling' &&
+                        !hasSummaryLayoutParent &&
                         <AutocompleteSelect
                             type={element.type}
                             value={element.autocomplete}

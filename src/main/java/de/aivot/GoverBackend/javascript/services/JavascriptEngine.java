@@ -1,17 +1,16 @@
 package de.aivot.GoverBackend.javascript.services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.elements.models.elements.BaseElement;
 import de.aivot.GoverBackend.javascript.exceptions.JavascriptException;
 import de.aivot.GoverBackend.javascript.models.JavascriptCode;
 import de.aivot.GoverBackend.javascript.models.JavascriptResult;
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
+import de.aivot.GoverBackend.process.models.ProcessExecutionData;
 import org.graalvm.polyglot.*;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.graalvm.polyglot.proxy.ProxyObject;
-
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -19,12 +18,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
- * Class for executing javascript code.
- * This class should be used, when executing javascript code in the backend.
- * See {@link JavascriptFunctionProvider} for more information.
- * Use the method {@link #registerGlobalObject} to add objects to the javascript context.
- * The objects will be available in the javascript context under the given object name.
- * Use the method {@link #evaluateCode} to evaluate javascript code.
+ * Class for executing javascript code. This class should be used, when executing javascript code in the backend. See {@link JavascriptFunctionProvider} for more information. Use
+ * the method {@link #registerGlobalObject} to add objects to the javascript context. The objects will be available in the javascript context under the given object name. Use the
+ * method {@link #evaluateCode} to evaluate javascript code.
  */
 public class JavascriptEngine implements AutoCloseable {
     public static final String JS_CONTEXT_OBJECT_NAME = "ctx";
@@ -54,25 +50,34 @@ public class JavascriptEngine implements AutoCloseable {
                 // Create a new context builder for the javascript engine.
                 .newBuilder(JS_ENGINE_NAME)
 
-                // Specify the ecmascript version to use. This is necessary to use the latest features of javascript. Currently, the latest version is 2022.
-                .option("js.ecmascript-version", "2022")
+                // Set the Sandbox policy to ISOLATED for:
+                //   - Disallows native access.
+                //   - Disallows process creation.
+                //   - Disallows system exit, prohibiting the guest code from terminating the entire VM where this is supported by the language.
+                //   - Requires redirection of the standard output and error streams. This is to mitigate risks where external components, such as log processing, may be confused by unexpected writes to output streams by guest code.
+                //   - Disallows host file or socket access. Only custom polyglot file system implementations are allowed.
+                //   - Disallows environment access.
+                //   - Restricts host access:
+                //        - Disallows host class loading.
+                //        - Disallows access to all public host classes and methods by default.
+                //        - Disallows access inheritance.
+                //        - Disallows implementation of arbitrary host classes and interfaces.
+                //        - Disallows implementation of java.lang.FunctionalInterface.
+                //        - Disallows host object mappings of mutable target types. The HostAccess.CONSTRAINED host access policy is preconfigured to fulfill the requirements for the CONSTRAINED sandboxing policy.
+                .sandbox(SandboxPolicy.CONSTRAINED)
 
-                // Remove warning that the engine is only in interpreter mode. TODO: Resolve this problem and remove this option.
+                // Specify the ecmascript version to use.
+                // This is necessary to use the latest features of javascript.
+                // Currently, the latest version is 2025.
+                .option("js.ecmascript-version", "2025")
+
+                // Remove warning that the engine is only in interpreter mode.
+                // TODO: Resolve this problem and remove this option.
                 .option("engine.WarnInterpreterOnly", "false")
-
-                // Only allow access to explicitly exported functions and fields. This behavior does not affect the access to proxy objects.
-                .allowHostAccess(HostAccess.EXPLICIT)
 
                 // Redirect the standard output and error streams to the given output streams.
                 .out(outStream)
                 .err(errStream)
-
-                // Disable to the following host functions.
-                .allowCreateThread(false)
-                .allowCreateProcess(false)
-                .allowHostClassLookup(className -> false)
-                .allowHostClassLoading(false)
-                .allowPolyglotAccess(PolyglotAccess.NONE)
 
                 // Build the context.
                 .build();
@@ -119,18 +124,26 @@ public class JavascriptEngine implements AutoCloseable {
         return registerGlobalObject(JS_ELEMENT_OBJECT_NAME, element);
     }
 
+    public JavascriptEngine registerProcessExecutionData(ProcessExecutionData processExecutionData) {
+        for (var key : ProcessExecutionData.PROCESS_EXEC_DATA_KEYS) {
+            if (processExecutionData.containsKey(key)) {
+                this.registerGlobalObject(key, processExecutionData.get(key));
+            }
+        }
+        return this;
+    }
+
     /**
-     * Adds a global object to the javascript context by inserting the given object under the given object name.
-     * E.g. if the name is "test" and the object has the key "key", the value of the key "key" in the object will be available as test.key.
-     * The given object is recursively converted to a proxy object.
+     * Adds a global object to the javascript context by inserting the given object under the given object name. E.g. if the name is "test" and the object has the key "key", the
+     * value of the key "key" in the object will be available as test.key. The given object is recursively converted to a proxy object.
      *
      * @param objectName the name of the object in the javascript context.
      * @param object     the object to add to the javascript context.
      * @return this service instance.
      */
     public JavascriptEngine registerGlobalObject(String objectName, Object object) {
-        var map = new ObjectMapper()
-                .registerModule(new JavaTimeModule())
+        var map = ObjectMapperFactory
+                .getInstance()
                 .convertValue(object, new TypeReference<Map<String, Object>>() {
                 });
 

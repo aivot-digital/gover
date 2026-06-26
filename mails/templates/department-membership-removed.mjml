@@ -3,7 +3,7 @@
         <mj-include path="../partials/head.mjml" />
 
         <mj-preview>
-            Benachrichtigung über das Ende einer Fachbereichszugehörigkeit
+            Benachrichtigung über das Ende einer Zugehörigkeit zu einer Organisationseinheit
         </mj-preview>
     </mj-head>
     <mj-body>
@@ -15,9 +15,9 @@
                     <p>
                         Hallo,
                         <br/>
-                        Sie wurden in Gover aus einem Fachbereich entfernt.
+                        Sie wurden in Gover aus einer Organisationseinheit entfernt.
                         <br/>
-                        Fachbereich: <b th:text="${department.name}">Beispiel-Fachbereich</b>
+                        Organisationseinheit: <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
                         <br/>
                         Entfernt durch: <b th:text="${admin.getFullName()}">Max Mustermann</b>
                     </p>

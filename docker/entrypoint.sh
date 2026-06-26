@@ -1,37 +1,28 @@
 #!/bin/sh
 
+export GOVER_TIMEZONE="${GOVER_TIMEZONE:-Europe/Berlin}"
+export TZ="${GOVER_TIMEZONE}"
+
 echo "Starting Gover version ${BUILD_VERSION} build ${BUILD_NUMBER}"
+echo "Using runtime timezone ${TZ}"
 
 if [ "$1" = "serve" ]; then
-  echo "Waiting for IDP to be available at ${GOVER_HOSTNAME}/idp/realms/staff…"
+  echo "serve" > /app/runtime-mode
+  echo "Waiting for IDP to be available at ${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff…"
 
-  until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/idp/realms/staff/"; do
+  until curl --output /dev/null --silent --head --fail "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff/"; do
       sleep 5
   done
 
   echo "IDP is available, starting api…"
 
-  java -jar /app/gover.jar
+  java \
+    -cp /app/gover.jar \
+    -Dloader.path=/app/plugins/ \
+    -Duser.timezone="${TZ}" \
+    org.springframework.boot.loader.launch.PropertiesLauncher
 else
-  cat > /app/app-config.js <<EOF
-window.AppConfig = {
-    oidc: {
-        realm: '$GOVER_KEYCLOAK_OIDC_REALM',
-        client: '$GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID',
-        hostname: '$GOVER_KEYCLOAK_OIDC_HOSTNAME',
-        idp_hint: '$GOVER_KEYCLOAK_OIDC_IDP_HINT',
-    },
-    api: {
-        hostname: '$GOVER_HOSTNAME',
-    },
-    sentry: {
-        dsn: '$GOVER_SENTRY_WEB_APP',
-    },
-};
-EOF
-
-  cp /app/app-config.js /app/www/app-config.js
-  cp /app/app-config.js /app/www/staff/app-config.js
+  echo "app" > /app/runtime-mode
 
   echo "Waiting for the API to be available at ${GOVER_HOSTNAME}/api/actuator/health…"
   until curl --output /dev/null --silent --head --fail "${GOVER_HOSTNAME}/api/actuator/health"; do

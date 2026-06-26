@@ -1,34 +1,38 @@
 import {Link} from 'react-router-dom';
 import {ReactNode} from 'react';
-import {Box} from '@mui/material';
+import {Box, type SxProps, type Theme} from '@mui/material';
 
 interface CellLinkProps {
     to: string;
     title?: string;
     children: ReactNode;
+    sx?: SxProps<Theme>;
 }
 
-export function CellLink({ to, title, children }: CellLinkProps) {
+export function CellLink({ to, title, children, sx }: CellLinkProps) {
     return (
         <Box
             component={Link}
             to={to}
             title={title}
-            sx={{
-                textDecoration: "none",
-                color: "inherit",
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                position: "relative",
+            sx={[
+                {
+                    textDecoration: "none",
+                    color: "inherit",
+                    width: "100%",
+                    height: "100%",
+                    display: "flex",
+                    alignItems: "center",
+                    position: "relative",
 
-                "&:hover .cell-link-text": {
-                    "&::after": {
-                        backgroundColor: "#ccc",
+                    "&:hover .cell-link-text": {
+                        "&::after": {
+                            backgroundColor: "#ccc",
+                        }
                     }
-                }
-            }}
+                },
+                ...(Array.isArray(sx) ? sx : [sx]),
+            ]}
         >
             <Box component={'span'}>
                 <Box

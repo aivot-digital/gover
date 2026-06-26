@@ -16,6 +16,7 @@ public record IdentityProviderListDTO(
         @Nullable String pkceMethod,
         @Nonnull String name,
         @Nonnull String description,
+        @Nullable UUID iconAssetKey,
         @Nonnull List<IdentityAttributeMapping> attributes,
         @Nonnull Boolean isEnabled,
         @Nonnull Boolean isTestProvider
@@ -28,6 +29,7 @@ public record IdentityProviderListDTO(
                 entity.getPkceMethod(),
                 entity.getName(),
                 entity.getDescription(),
+                entity.getIconAssetKey(),
                 entity.getAttributes(),
                 entity.getIsEnabled(),
                 entity.getIsTestProvider()

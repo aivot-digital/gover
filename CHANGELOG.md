@@ -20,6 +20,7 @@
 * **Build-System:** Create separate workflow to build "next" images.
 * **System:** Add new prototype for processes.
 * **System:** Improve plugin system for better extensibility and maintainability.
+* **System:** Add generic storage provider functionality.
 
 ## [4.6.2](https://github.com/aivot-digital/gover/compare/v4.6.1...v4.6.2) (2026-05-05)
 
@@ -417,7 +418,7 @@ Reconfiguration is necessary, potentially causing approximately 2 days of downti
 
 ### Bug Fixes
 
-* **Project:** Fix CORS settings for local development
+* **Project:** Fix local development settings
 
 
 ## [2.0.0](https://github.com/aivot-digital/gover/compare/v1.0.6...v2.0.0) (2023-01-05)

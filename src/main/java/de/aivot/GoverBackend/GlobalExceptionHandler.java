@@ -7,7 +7,6 @@ import de.aivot.GoverBackend.models.dtos.ApiErrorDto;
 import de.aivot.GoverBackend.mail.services.ExceptionMailService;
 import io.sentry.Sentry;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.rest.webmvc.ResourceNotFoundException;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
@@ -37,7 +36,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> exception(Exception ex, WebRequest request) throws Exception {
-        if (!(ex instanceof ResourceNotFoundException || ex instanceof ResponseStatusException || ex instanceof AccessDeniedException)) {
+        if (!(ex instanceof ResponseStatusException || ex instanceof AccessDeniedException)) {
             if (goverConfig.getSentryServer() != null && !goverConfig.getSentryServer().isEmpty()) {
                 Sentry.captureException(ex);
             } else {
@@ -88,7 +87,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             errors.add(error.getObjectName() + ": " + error.getDefaultMessage());
         }
 
-        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, "bad request", errors, false);
+        final String message;
+        if (errors.isEmpty()) {
+            message = "Die Anfrage enthält ungültige Daten.";
+        } else {
+            message = errors.getFirst();
+        }
+
+        final ApiErrorDto apiError = new ApiErrorDto(HttpStatus.BAD_REQUEST, message, errors, true);
 
         return handleExceptionInternal(ex, apiError, headers, apiError.getHttpStatus(), request);
     }

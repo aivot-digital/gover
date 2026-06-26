@@ -1,11 +1,11 @@
 package de.aivot.GoverBackend.nocode.operators.common;
 
 import de.aivot.GoverBackend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
-import de.aivot.GoverBackend.elements.models.ElementData;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeWrongArgumentCountException;
 import org.junit.jupiter.api.Test;
 
+import static de.aivot.GoverBackend.TestData.runtime;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -14,7 +14,7 @@ class NoCodeEqualsOperatorTest {
     @Test
     void performEvaluation() throws NoCodeException {
         var operator = new NoCodeEqualsOperator();
-        var data = ElementData.of("a", "a", "b", "b");
+        var data = runtime("a", "a", "b", "b");
 
         // Test equal values
         assertEquals(Boolean.TRUE, operator.performEvaluation(data, "a", "a").getValue());

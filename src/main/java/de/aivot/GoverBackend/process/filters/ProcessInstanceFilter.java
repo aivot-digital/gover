@@ -1,16 +1,14 @@
 package de.aivot.GoverBackend.process.filters;
 
+import de.aivot.GoverBackend.lib.models.EntityFilter;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
-import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.process.enums.ProcessInstanceStatus;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
-import org.springframework.data.jpa.domain.Specification;
-
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
+
 import java.util.UUID;
 
-public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
+public class ProcessInstanceFilter extends EntityFilter<ProcessInstanceEntity> {
     private UUID accessKey;
     private Integer processId;
     private ProcessInstanceStatus status;
@@ -25,8 +23,8 @@ public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
 
     @Nonnull
     @Override
-    public Specification<ProcessInstanceEntity> build() {
-        var builder = SpecificationBuilder
+    public SpecificationBuilder<ProcessInstanceEntity> createSpecBuilder() {
+        return SpecificationBuilder
                 .create(ProcessInstanceEntity.class)
                 .withEquals("accessKey", accessKey)
                 .withEquals("processId", processId)
@@ -35,8 +33,6 @@ public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
                 .withEquals("statusOverride", statusOverride)
                 .withArrayContains("assignedFileNumbers", assignedFileNumber)
                 .withEquals("createdForTestClaimId", createdForTestClaimId);
-
-        return builder.build();
     }
 
     public UUID getAccessKey() {
@@ -102,4 +98,3 @@ public class ProcessInstanceFilter implements Filter<ProcessInstanceEntity> {
         return this;
     }
 }
-

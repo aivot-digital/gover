@@ -20,6 +20,10 @@ import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.util.Optional;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Service
 public class SubmissionAttachmentService implements ReadEntityService<SubmissionAttachment, String>, DeleteEntityService<SubmissionAttachment, String> {
     private final SubmissionAttachmentRepository repository;

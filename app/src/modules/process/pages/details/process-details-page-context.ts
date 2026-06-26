@@ -1,10 +1,23 @@
 import React, {createContext} from 'react';
 import {type ProcessNodeEntity} from '../../entities/process-node-entity';
 
+import {ProcessNodeProblems} from '../../entities/process-node-problems';
+import {ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
+import {RequestOptions} from '../../../../services/base-api-service';
+
 export interface ProcessDetailsPageContextType {
     editable: boolean;
-    onSave: (node: ProcessNodeEntity) => Promise<void>;
+    structureEditable: boolean;
+    onSave: (node: ProcessNodeEntity, options?: RequestOptions) => Promise<ProcessNodeEntity>;
     onDelete: (node: ProcessNodeEntity) => Promise<void>;
+    onStartReplaceNode: (node: ProcessNodeEntity) => void;
+    nodeRefreshSignal: {
+        nodeId: number | null;
+        version: number;
+    };
+    testClaim: ProcessTestClaimEntity | null;
+    nodeProblems: ProcessNodeProblems[];
+    showNodeProblemsForNodes: Record<number, boolean>;
 }
 
 export const ProcessDetailsPageContext = createContext<ProcessDetailsPageContextType | null>(null);

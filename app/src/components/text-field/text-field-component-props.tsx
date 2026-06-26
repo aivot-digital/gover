@@ -12,7 +12,7 @@ export interface TextFieldComponentProps {
     display?: boolean;
     multiline?: boolean;
     value?: string | null | undefined;
-    error?: string;
+    error?: string | string[];
     hint?: string;
     maxCharacters?: number;
     minCharacters?: number;
@@ -20,9 +20,11 @@ export interface TextFieldComponentProps {
     softLimitCharactersWarning?: string;
     rows?: number;
     type?: string;
-    onChange: (val: string | undefined) => void;
-    onBlur?: (val: string | undefined) => void;
+    onChange: (val: string | null) => void;
+    onBlur?: (val: string | null) => void;
     endAction?: EndAction | Array<EndAction>;
+    copyable?: boolean;
+    copyValueTemplate?: string | null;
     startIcon?: ReactNode;
     pattern?: {
         regex: string;

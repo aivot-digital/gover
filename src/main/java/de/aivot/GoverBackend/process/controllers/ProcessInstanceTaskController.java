@@ -11,11 +11,12 @@ import de.aivot.GoverBackend.permissions.services.PermissionService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.GoverBackend.process.enums.ProcessTaskStatus;
 import de.aivot.GoverBackend.process.filters.ProcessInstanceTaskFilter;
+import de.aivot.GoverBackend.process.permissions.ProcessPermissionProvider;
 import de.aivot.GoverBackend.process.services.ProcessInstanceTaskService;
 import de.aivot.GoverBackend.process.services.ProcessService;
 import de.aivot.GoverBackend.process.workers.ProcessWorker;
 import de.aivot.GoverBackend.user.services.UserService;
-import de.aivot.GoverBackend.userRoles.data.PermissionLabels;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -32,6 +33,8 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -58,7 +61,7 @@ public class ProcessInstanceTaskController {
                                          ProcessService processDefinitionService,
                                          RabbitTemplate rabbitTemplate,
                                          PermissionService permissionService) {
-        this.auditService = auditService.createScopedAuditService(ProcessInstanceTaskController.class);
+        this.auditService = auditService.createScopedAuditService(ProcessInstanceTaskController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceTaskService = processInstanceTaskService;
         this.departmentService = departmentService;
@@ -78,6 +81,27 @@ public class ProcessInstanceTaskController {
     ) throws ResponseException {
         return processInstanceTaskService
                 .list(pageable, filter);
+    }
+
+    @GetMapping("assigned-count/")
+    @Operation(
+            summary = "Count Assigned Process Instance Tasks",
+            description = "Returns the number of currently assigned running tasks for the authenticated user."
+    )
+    public Map<String, Long> countAssignedTasks(
+            @Nullable @AuthenticationPrincipal Jwt jwt
+    ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        return Map.of(
+                "count",
+                processInstanceTaskService.countAssignedTasks(
+                        execUser.getId(),
+                        List.of(ProcessTaskStatus.Running)
+                )
+        );
     }
 
     @PostMapping("")
@@ -102,21 +126,28 @@ public class ProcessInstanceTaskController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         var result = processInstanceTaskService
                 .create(newTask);
 
-        auditService.logAction(execUser, AuditAction.Create, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessInstanceTaskEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )).withMessage(
+                "Die Instanzaufgabe mit der ID %s für die Prozessinstanz %s (Prozess %s, Version %s) wurde von der Mitarbeiter:in %s erstellt.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessInstanceId())),
+                StringUtils.quote(String.valueOf(result.getProcessId())),
+                StringUtils.quote(String.valueOf(result.getProcessVersion())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -161,10 +192,10 @@ public class ProcessInstanceTaskController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermissionThrows(
+                .testDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
-                        PermissionLabels.ProcessPermissionCreate
+                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
                 );
 
         updateDTO.setId(existing.getId());
@@ -172,12 +203,19 @@ public class ProcessInstanceTaskController {
         var result = processInstanceTaskService
                 .update(id, updateDTO);
 
-        auditService.logAction(execUser, AuditAction.Update, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, ProcessInstanceTaskEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "processInstanceId", result.getProcessInstanceId(),
                 "processDefinitionId", result.getProcessId(),
                 "processDefinitionVersion", result.getProcessVersion()
-        ));
+        )).withMessage(
+                "Die Instanzaufgabe mit der ID %s für die Prozessinstanz %s (Prozess %s, Version %s) wurde von der Mitarbeiter:in %s aktualisiert.",
+                StringUtils.quote(String.valueOf(result.getId())),
+                StringUtils.quote(String.valueOf(result.getProcessInstanceId())),
+                StringUtils.quote(String.valueOf(result.getProcessId())),
+                StringUtils.quote(String.valueOf(result.getProcessVersion())),
+                StringUtils.quote(execUser.getFullName())
+        ).log();
 
         return result;
     }
@@ -200,12 +238,19 @@ public class ProcessInstanceTaskController {
         var deleted = processInstanceTaskService
                 .delete(id);
 
-        auditService.logAction(user, AuditAction.Delete, ProcessInstanceTaskEntity.class, Map.of(
+        auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProcessInstanceTaskEntity.class, deleted.getId(), "id", Map.of(
                 "id", deleted.getId(),
                 "processInstanceId", deleted.getProcessInstanceId(),
                 "processDefinitionId", deleted.getProcessId(),
                 "processDefinitionVersion", deleted.getProcessVersion()
-        ));
+        )).withMessage(
+                "Die Instanzaufgabe mit der ID %s für die Prozessinstanz %s (Prozess %s, Version %s) wurde von der Mitarbeiter:in %s gelöscht.",
+                StringUtils.quote(String.valueOf(deleted.getId())),
+                StringUtils.quote(String.valueOf(deleted.getProcessInstanceId())),
+                StringUtils.quote(String.valueOf(deleted.getProcessId())),
+                StringUtils.quote(String.valueOf(deleted.getProcessVersion())),
+                StringUtils.quote(user.getFullName())
+        ).log();
     }
 
     @PutMapping("{id}/rerun-failed/")
@@ -231,9 +276,18 @@ public class ProcessInstanceTaskController {
                 .asSuperAdmin()
                 .orElseThrow(ResponseException::noSuperAdminPermission);
 
+        taskEntity
+                .setStatus(ProcessTaskStatus.Restarted)
+                .setUpdated(Instant.now());
+
+        taskEntity = processInstanceTaskService
+                .update(taskEntity.getId(), taskEntity);
+
         var payload = new ProcessWorker.WorkerPayload(
                 taskEntity.getProcessInstanceId(),
+                taskEntity.getPreviousProcessInstanceTaskId(),
                 taskEntity.getPreviousProcessNodeId(),
+                taskEntity.getPreviousProcessNodePortKey(),
                 taskEntity.getProcessNodeId()
         );
 
@@ -242,5 +296,3 @@ public class ProcessInstanceTaskController {
         return taskEntity;
     }
 }
-
-

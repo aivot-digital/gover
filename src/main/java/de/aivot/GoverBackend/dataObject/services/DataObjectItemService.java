@@ -1,18 +1,19 @@
 package de.aivot.GoverBackend.dataObject.services;
 
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntityId;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectItemRepository;
 import de.aivot.GoverBackend.dataObject.repositories.DataObjectSchemaRepository;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.elements.models.ElementDerivationOptions;
 import de.aivot.GoverBackend.elements.models.ElementDerivationRequest;
-import de.aivot.GoverBackend.elements.services.ElementDerivationLogger;
 import de.aivot.GoverBackend.elements.services.ElementDerivationService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,8 +22,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.time.ZoneId;
+import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.Map;
 import java.util.Optional;
@@ -85,7 +85,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
                 id = String.valueOf(_id);
             }
             default -> {
-                var now = ZonedDateTime.now(ZoneId.of("Europe/Berlin"));
+                var now = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
 
                 var startMatcher = ID_GEN_INC_START_PATTERN.matcher(schema.getIdGen());
                 var endMatcher = ID_GEN_INC_END_PATTERN.matcher(schema.getIdGen());
@@ -159,7 +159,7 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
 
     @Override
     public void performDelete(@Nonnull DataObjectItemEntity entity) throws ResponseException {
-        entity.setDeleted(LocalDateTime.now());
+        entity.setDeleted(Instant.now());
         dataObjectItemRepository.save(entity);
     }
 
@@ -200,22 +200,23 @@ public class DataObjectItemService implements EntityService<DataObjectItemEntity
     @Nonnull
     private Map<String, Object> deriveDataObjectItemData(@Nonnull DataObjectItemEntity entity,
                                                          @Nonnull DataObjectSchemaEntity schema) throws ResponseException {
-        var entityElementData = ElementData
-                .fromValueMap(schema.getSchema(), entity.getData());
+        var entityElementData = ObjectMapperFactory
+                .getInstance()
+                .convertValue(entity.getData(), AuthoredElementValues.class);
         var edo = new ElementDerivationOptions();
-        var edr = new ElementDerivationRequest()
-                .setElement(schema.getSchema())
-                .setElementData(entityElementData)
-                .setOptions(edo);
-        var dummyLogger = new ElementDerivationLogger();
-        var derivedData = elementDerivationService.derive(edr, dummyLogger);
+        var edr = new ElementDerivationRequest(
+                schema.getSchema(),
+                entityElementData,
+                edo
+        );
+        var derivedData = elementDerivationService.derive(edr);
 
         if (derivedData.hasAnyError()) {
             throw ResponseException
                     .badRequest(derivedData);
         }
 
-        return ElementData.toValueMap(schema.getSchema(), derivedData);
+        return entityElementData;
     }
 
     @Nonnull

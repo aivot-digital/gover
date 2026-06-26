@@ -1,15 +1,18 @@
 package de.aivot.GoverBackend.core.configs;
 
-import de.aivot.GoverBackend.config.enums.ConfigType;
 import de.aivot.GoverBackend.config.models.SystemConfigDefinition;
-import de.aivot.GoverBackend.data.SystemConfigKey;
+import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.util.Objects;
+
 @Component
-public class ListingPageDisabledSystemConfigDefinition implements SystemConfigDefinition {
-    // TODO: Remove SystemConfigKey.PROVIDER__LISTINGPAGE__DISABLE and use the key directly
-    public static final String KEY = SystemConfigKey.PROVIDER__LISTINGPAGE__DISABLE.getKey();
+public class ListingPageDisabledSystemConfigDefinition implements SystemConfigDefinition<Boolean> {
+    public static final String KEY = "ProviderListingPageDisablePublicListingPage";
 
     @Nonnull
     @Override
@@ -19,8 +22,12 @@ public class ListingPageDisabledSystemConfigDefinition implements SystemConfigDe
 
     @Nonnull
     @Override
-    public ConfigType getType() {
-        return ConfigType.FLAG;
+    public BaseElement getConfigElement() {
+        return new CheckboxInputElement()
+                .setVariant(CheckboxInputElement.VARIANT_SWITCH)
+                .setLabel(getLabel())
+                .setHint(getDescription())
+                .setId(getKey());
     }
 
     @Nonnull
@@ -45,5 +52,19 @@ public class ListingPageDisabledSystemConfigDefinition implements SystemConfigDe
     @Override
     public Boolean isPublicConfig() {
         return true;
+    }
+
+    @Nonnull
+    @Override
+    public String serializeValueToDB(@Nullable Boolean value) throws ResponseException {
+        return Objects
+                .requireNonNullElse(value, Boolean.FALSE)
+                .toString();
+    }
+
+    @Nullable
+    @Override
+    public Boolean parseValueFromDB(@Nonnull String value) throws ResponseException {
+        return Boolean.parseBoolean(value);
     }
 }

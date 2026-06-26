@@ -12,11 +12,13 @@ import {StaffShellRouter} from './shells/staff/staff-shell-router';
 
 const rootElement = document.getElementById('root')!;
 const root = createRoot(rootElement);
-root.render(<StaffShellRouter />);
+root.render(
+        <StaffShellRouter/>
+);
 
-if (isStringNotNullOrEmpty(AppConfig.sentry.dsn)) {
+if (isStringNotNullOrEmpty(AppConfig.sentryDsn)) {
     Sentry.init({
-        dsn: AppConfig.sentry.dsn,
+        dsn: AppConfig.sentryDsn,
         integrations: [
             Sentry.reactRouterV7BrowserTracingIntegration({
                 useEffect: React.useEffect,

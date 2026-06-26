@@ -14,4 +14,10 @@ export enum ServerEntityType {
     Themes = 'themes',
     UserRoles = 'user_roles',
     SystemRoles = 'system_roles',
+    StorageProviders = 'storage_providers',
+    Teams = 'teams',
+    DomainRoles = 'domain_roles',
+    Processes = 'processes',
+    ProcessInstances = 'process_instances',
+    ProcessNodes = 'process_nodes',
 }

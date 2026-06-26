@@ -6,11 +6,11 @@ import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity> {
     private Long id;
-    private LocalDateTime timestamp;
+    private Instant timestamp;
     private String userId;
     private Integer processDefinitionId;
     private Integer processDefinitionVersion;
@@ -50,11 +50,11 @@ public class ProcessDefinitionChangeFilter implements Filter<ProcessChangeEntity
         return this;
     }
 
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public ProcessDefinitionChangeFilter setTimestamp(LocalDateTime timestamp) {
+    public ProcessDefinitionChangeFilter setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }

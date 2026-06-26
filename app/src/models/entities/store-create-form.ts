@@ -1,4 +1,4 @@
-import {RootElement} from '../elements/root-element';
+import {FormLayoutElement} from '../elements/form-layout-element';
 
 export interface StoreCreateForm {
     version: string;
@@ -7,5 +7,5 @@ export interface StoreCreateForm {
     description_short: string;
     is_public: boolean;
     leika_ids: string[];
-    gover_root: RootElement;
+    gover_root: FormLayoutElement;
 }

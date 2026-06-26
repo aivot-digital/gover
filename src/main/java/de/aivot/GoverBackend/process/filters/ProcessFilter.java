@@ -1,16 +1,23 @@
 package de.aivot.GoverBackend.process.filters;
 
-import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.lib.models.Filter;
+import de.aivot.GoverBackend.process.entities.ProcessEntity;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
+import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
-import jakarta.annotation.Nonnull;
+import java.util.UUID;
 
 public class ProcessFilter implements Filter<ProcessEntity> {
     private String internalTitle;
     private Integer departmentId;
     private Integer departmentIdNot;
+    private UUID accessKey;
+    private String slug;
+
+    private Boolean isDrafted;
+    private Boolean isPublished;
+    private Boolean isRevoked;
 
     public static ProcessFilter create() {
         return new ProcessFilter();
@@ -23,7 +30,22 @@ public class ProcessFilter implements Filter<ProcessEntity> {
                 .create(ProcessEntity.class)
                 .withContains("internalTitle", internalTitle)
                 .withEquals("departmentId", departmentId)
-                .withNotEquals("departmentId", departmentIdNot);
+                .withNotEquals("departmentId", departmentIdNot)
+                .withEquals("accessKey", accessKey)
+                .withEquals("slug", slug);
+
+        if (Boolean.TRUE.equals(isDrafted)) {
+            builder.withNotNull("draftedVersion");
+        }
+
+        if (Boolean.TRUE.equals(isPublished)) {
+            builder.withNotNull("publishedVersion");
+        }
+
+        if (Boolean.TRUE.equals(isRevoked)) {
+            builder.withNull("draftedVersion");
+            builder.withNull("publishedVersion");
+        }
 
         return builder.build();
     }
@@ -54,5 +76,29 @@ public class ProcessFilter implements Filter<ProcessEntity> {
         this.departmentIdNot = departmentIdNot;
         return this;
     }
-}
 
+    public ProcessFilter setAccessKey(UUID accessKey) {
+        this.accessKey = accessKey;
+        return this;
+    }
+
+    public ProcessFilter setSlug(String slug) {
+        this.slug = slug;
+        return this;
+    }
+
+    public ProcessFilter setIsDrafted(Boolean drafted) {
+        isDrafted = drafted;
+        return this;
+    }
+
+    public ProcessFilter setIsPublished(Boolean published) {
+        isPublished = published;
+        return this;
+    }
+
+    public ProcessFilter setIsRevoked(Boolean revoked) {
+        isRevoked = revoked;
+        return this;
+    }
+}

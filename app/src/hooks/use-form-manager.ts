@@ -2,15 +2,17 @@ import {useMemo, useState} from 'react';
 import {ObjectSchema, ValidationError} from 'yup';
 import {deepEquals, shallowEquals} from '../utils/equality-utils';
 
+export type FormManagerErrors = Partial<Record<string, string>>;
+
 interface FormManager<T> {
     currentItem: T | undefined | null;
-    errors: Partial<Record<keyof T, string>>;
+    errors: FormManagerErrors;
     hasNotChanged: boolean;
 
     handleInputPatch: (patch: Partial<T>) => void;
-    handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
-    handleInputChangeWithValidation: <K extends keyof T>(field: K) => (value: T[K] | undefined) => void;
-    handleInputBlur: (field: keyof T) => (value?: T[keyof T]) => void;
+    handleInputChange: <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => void;
+    handleInputChangeWithValidation: <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => void;
+    handleInputBlur: (field: keyof T) => (value?: T[keyof T] | null) => void;
 
     validate: () => boolean;
     reset: () => void;
@@ -20,7 +22,7 @@ interface FormManager<T> {
 export function useFormManager<T extends { [key: string]: any }>(originalItem: T | undefined | null, schema: ObjectSchema<T>, useDeepEquals: boolean = true): FormManager<T> {
     const [editedItem, setEditedItem] = useState<T>();
     const [touchedFields, setTouchedFields] = useState<Partial<Record<keyof T, boolean>>>({});
-    const [errors, setErrors] = useState<Partial<Record<keyof T, string>>>({});
+    const [errors, setErrors] = useState<FormManagerErrors>({});
 
     const currentItem = useMemo(() => {
         return editedItem ?? originalItem;
@@ -48,7 +50,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         });
     }
 
-    const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+    const handleInputChange = <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => {
         if (currentItem == null) {
             return;
         }
@@ -61,7 +63,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         validateField(field, value);
     };
 
-    const handleInputChangeWithValidation = <K extends keyof T>(field: K) => (value: T[K] | undefined) => {
+    const handleInputChangeWithValidation = <K extends keyof T>(field: K) => (value: T[K] | null | undefined) => {
         if (currentItem == null) {
             return;
         }
@@ -79,7 +81,7 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
         validateField(field, value, true);
     };
 
-    const handleInputBlur = (field: keyof T) => (value?: T[keyof T]) => {
+    const handleInputBlur = (field: keyof T) => (value?: T[keyof T] | null) => {
         if (currentItem == null) {
             return;
         }
@@ -89,10 +91,10 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             [field]: true,
         });
 
-        validateField(field, value ?? currentItem[field], true);
+        validateField(field, value === undefined ? currentItem[field] : value, true);
     };
 
-    const validateField = (field: keyof T, value: T[keyof T] | undefined, validateUntouchedField: boolean = false) => {
+    const validateField = (field: keyof T, value: T[keyof T] | null | undefined, validateUntouchedField: boolean = false) => {
         if (!validateUntouchedField && !touchedFields[field]) {
             // Do nothing if the field hasn't been touched or is not forced to validate
             return;
@@ -125,10 +127,10 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
             return true;
         } catch (error) {
             if (isYupError(error)) {
-                const validationErrors: Partial<Record<keyof T, string>> = {};
+                const validationErrors: FormManagerErrors = {};
                 error.inner.forEach(err => {
                     if (err.path) {
-                        validationErrors[err.path as keyof T] = err.message;
+                        validationErrors[err.path] = err.message;
                     }
                 });
                 setErrors(validationErrors);

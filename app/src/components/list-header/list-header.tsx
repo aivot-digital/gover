@@ -56,7 +56,14 @@ export function ListHeader(props: ListHeaderProps) {
                     <SearchInput
                         value={props.search}
                         onChange={props.onSearchChange}
-                        placeholder={props.searchPlaceholder}
+                        label={props.searchLabel}
+                        placeholder={props.searchPlaceholder ?? 'Suchen…'}
+                        fullWidth={false}
+                        sx={{
+                            ml: {
+                                sm: 1,
+                            },
+                        }}
                     />
                 }
 
@@ -128,4 +135,3 @@ export function ListHeader(props: ListHeaderProps) {
         </Box>
     );
 }
-

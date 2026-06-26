@@ -82,20 +82,23 @@ public class FormService implements EntityService<FormEntity, Integer> {
     @Override
     public FormEntity performUpdate(@Nonnull Integer id, @Nonnull FormEntity updatedForm, @Nonnull FormEntity existingForm) throws ResponseException {
         var cleanedForm = cleanForm(existingForm, updatedForm);
+        var previousSlug = existingForm.getSlug();
+        var updatedSlug = cleanedForm.getSlug();
 
-        existingForm.setSlug(updatedForm.getSlug());
-        existingForm.setInternalTitle(cleanedForm.getInternalTitle().strip());
+        if (!Objects.equals(previousSlug, updatedSlug)) {
+            if (formSlugHistoryRepository.existsById(updatedSlug)) {
+                formSlugHistoryRepository.deleteById(updatedSlug);
+            }
 
-        existingForm.setDevelopingDepartmentId(cleanedForm.getDevelopingDepartmentId());
-
-        if (formSlugHistoryRepository.existsById(existingForm.getSlug())) {
-            formSlugHistoryRepository.deleteById(existingForm.getSlug());
-        } else {
             var historyEntry = new FormSlugHistoryEntity();
-            historyEntry.setSlug(existingForm.getSlug());
+            historyEntry.setSlug(previousSlug);
             historyEntry.setFormId(existingForm.getId());
             formSlugHistoryRepository.save(historyEntry);
         }
+
+        existingForm.setSlug(updatedSlug);
+        existingForm.setInternalTitle(cleanedForm.getInternalTitle().strip());
+        existingForm.setDevelopingDepartmentId(cleanedForm.getDevelopingDepartmentId());
 
         return repository.save(existingForm);
     }
@@ -140,7 +143,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
                         setter.accept(updatedDepartmentId);
                         return true;
                     } else {
-                        throw ResponseException.badRequest("Der Fachbereich mit der ID " + updatedDepartmentId + " existiert nicht");
+                        throw ResponseException.badRequest("Die Organisationseinheit mit der ID " + updatedDepartmentId + " existiert nicht");
                     }
                 }
             }
@@ -148,7 +151,7 @@ public class FormService implements EntityService<FormEntity, Integer> {
 
         var notNull = checkDepartment.apply(FormEntity::getDevelopingDepartmentId, updated::setDevelopingDepartmentId);
         if (!notNull) {
-            throw ResponseException.badRequest("Der entwickelnde Fachbereich ist erforderlich");
+            throw ResponseException.badRequest("Die entwickelnde Organisationseinheit ist erforderlich");
         }
 
         if (prev == null) {

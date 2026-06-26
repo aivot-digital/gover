@@ -9,7 +9,7 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {IconButton} from '../icon-button/icon-button';
 import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import {downloadObjectFile, uploadObjectFile} from '../../utils/download-utils';
-import {generateComponentTitle} from '../../utils/generate-component-title';
+import {generateComponentStructureFilename} from '../../utils/generate-component-structure-filename';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
 import {useConfirm} from '../../providers/confirm-provider';
 import {AlertComponent} from '../alert/alert-component';
@@ -38,7 +38,6 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
                             <AlertComponent color={"warning"}>
                                 <strong>Achtung:</strong> Diese Aktion kann zu unerwartetem Verhalten führen und sollte
                                 {" "}<strong>nur von erfahrenen Entwickler:innen</strong> durchgeführt werden.
-                                Änderungen können nicht automatisch rückgängig gemacht werden.
                             </AlertComponent>
                             Möchten Sie wirklich fortfahren?
                         </div>
@@ -80,7 +79,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
     };
 
     const handleDownload = (): void => {
-        downloadObjectFile(generateComponentTitle(props.elementModel) + '.json', props.elementModel);
+        downloadObjectFile(generateComponentStructureFilename(props.elementModel), props.elementModel);
     };
 
     const handleUpload = (): void => {
@@ -93,7 +92,7 @@ export function StructureTab<T extends AnyElement>(props: StructureTabProps<T>) 
     };
 
     return (
-        <Box sx={{p: 4}}>
+        <Box>
             <ElementEditorSectionHeader
                 title="Elementstruktur"
                 disableMarginTop

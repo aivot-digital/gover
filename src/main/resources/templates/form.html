@@ -3,7 +3,7 @@
 <!--/*@thymesVar id="paymentTransaction" type="de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity"*/-->
 <!--/*@thymesVar id="paymentProvider" type="de.aivot.GoverBackend.payment.entities.PaymentProviderEntity"*/-->
 <!--/*@thymesVar id="theme" type="de.aivot.GoverBackend.theme.entities.ThemeEntity"*/-->
-<!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.DepartmentEntity"*/-->
+<!--/*@thymesVar id="department" type="de.aivot.GoverBackend.department.entities.VDepartmentShadowedEntity"*/-->
 <!--/*@thymesVar id="elements" type="java.util.Collection<de.aivot.GoverBackend.services.pdf.PdfElement>"*/-->
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
 <!--/*@thymesVar id="identityProvider" type="de.aivot.GoverBackend.identity.entities.IdentityProviderEntity"*/-->
@@ -12,6 +12,7 @@
 <!--/*@thymesVar id="paymentProviderDefinition" type="de.aivot.GoverBackend.payment.models.PaymentProviderDefinition"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
 <!--/*@thymesVar id="#numberformat" type="de.aivot.GoverBackend.services.pdf.NumberFormatDialect"*/-->
+<!--/*@thymesVar id="#markdown" type="de.aivot.GoverBackend.services.pdf.MarkdownDialect"*/-->
 
 <!DOCTYPE html>
 <html
@@ -21,7 +22,7 @@
     <head>
         <title th:text="${ form.publicTitle }">Gover PDF-Dokument</title>
 
-        <meta charset="UTF-8" />
+        <meta charset="UTF-8"/>
 
         <style th:insert="./form-parts/style.html"></style>
     </head>
@@ -46,16 +47,6 @@
         </h1>
 
         <!--/* ***********************************************************************
-        Bereich für die "Allgemeinen Informationen".
-
-        Der Bereich für die "Allgemeinen Informationen" wird nur auf ausfüllbaren Formularen und von Bürger:innen ausgefüllten Formularen angezeigt
-        *********************************************************************** */-->
-        <section
-                th:insert="./form-parts/allgemeine-informationen.html"
-                th:if="${ form.rootElement?.introductionStep != null && (base.isBlankPrint || base.isCitizenPrint) }"
-        ></section>
-
-        <!--/* ***********************************************************************
         Bereich für die "Zahlungsinformationen".
 
         Wird nur angezeigt, wenn Zahlungsinformationen sowie ein Zahlungslink im
@@ -63,7 +54,7 @@
         *********************************************************************** */-->
         <section
                 th:insert="./form-parts/zahlungsinformationen.html"
-                th:class="${ base.isCitizenPrint ? 'page-break-before' : '' }"
+                th:class="${ base.isCitizenPrint ? '' : '' }"
                 th:if="${ base.isNotBlankPrint && paymentTransaction != null }"
         ></section>
 
@@ -81,264 +72,50 @@
         Bereich für Elemente des Formulars.
         *********************************************************************** */-->
         <!--/* Iteriere über jeden Abschnitt des Formulars, dass gerendert werden soll */-->
-        <th:block th:each="step : ${ elements }">
-            <section th:class="'step ' + ${ base.isBlankPrint ? 'page-break-before' : '' }">
-                <!--/* Überschriften von Abschnitten haben immer die größe H2 */-->
-                <h2
-                        th:if="${ #strings.isEmpty(step.element.title) }"
-                        th:style="${ base.isBlankPrint ? 'margin-top: 0;' : '' }"
-                >
-                    Unbenannter Abschnitt
-                </h2>
-                <h2
-                        th:unless="${ #strings.isEmpty(step.element.title) }"
-                        th:text="${ step.element.title }"
-                        th:style="${ base.isBlankPrint ? 'margin-top: 0;' : '' }"
-                >
-                    Titel des Abschnitts
-                </h2>
+        <th:block
+                th:each="step : ${ elements }"
+        >
+            <section
+                    class="step"
+                    style="margin-top: 1cm;"
+            >
+                <!--/* ***********************************************************************
+                Bereich für die "Allgemeinen Informationen".
 
-                <!--/* Erzeuge einen Container, der die Kinder und Kindes-Kinder des Abschnittes beinhaltet. */-->
-                <div style="display: flex; flex-wrap: wrap;">
-                    <!--/* Iteriere über alle Kinder des Abschnittes */-->
-                    <th:block
-                            th:each="child : ${ step.children }"
+                Der Bereich für die "Allgemeinen Informationen" wird nur auf ausfüllbaren Formularen und von Bürger:innen ausgefüllten Formularen angezeigt
+                *********************************************************************** */-->
+                <th:block
+                        th:insert="./form-parts/allgemeine-informationen.html"
+                        th:if="${ step.element.type.name == 'IntroductionStep' }"
+                >
+                </th:block>
+
+                <th:block th:if="${ step.element.type.name == 'Step' }">
+                    <!--/* Überschriften von Abschnitten haben immer die größe H2 */-->
+                    <h2
+                            th:if="${ #strings.isEmpty(step.element.title) }"
+                            th:style="${ base.isBlankPrint ? 'margin-top: 0;' : '' }"
                     >
-                        <!--/* Erzeuge einen Container für das Kind-Element. Dieser Container ist ein Fragment, das später für z.B. das Gruppen-Layout und die Replizierende Liste wiederverwendet wird. */-->
-                        <div
-                                th:fragment="dispatcher"
-                                th:class="'element-wrapper element-wrapper-' + ${ child.element.type.name.toLowerCase() }"
-                                th:style="'width: ' + ${child.element.weight == null ? 100 : (child.element.weight / 12 * 100)} + '%'"
+                        Unbenannter Abschnitt
+                    </h2>
+                    <h2
+                            th:unless="${ #strings.isEmpty(step.element.title) }"
+                            th:text="${ step.element.title }"
+                            th:style="${ base.isBlankPrint ? 'margin-top: 0;' : '' }"
+                    >
+                        Titel des Abschnitts
+                    </h2>
+
+                    <!--/* Erzeuge einen Container, der die Kinder und Kindes-Kinder des Abschnittes beinhaltet. */-->
+                    <div style="display: flex; flex-wrap: wrap;">
+                        <!--/* Iteriere über alle Kinder des Abschnittes */-->
+                        <th:block
+                                th:each="child : ${ step.children }"
+                                th:insert="./form-parts/element-dispatcher.html"
                         >
-                            <th:block th:switch="${ child.element.type.name }">
-                                <!--/* ***********************************************************************
-                                Gruppe
-                                *********************************************************************** */-->
-                                <th:block th:case="Group">
-                                    <div style="display: flex; flex-wrap: wrap;">
-                                        <!--/* Referenziere das Fragment in dieser Datei */-->
-                                        <th:block th:each="child: ${child.children}">
-                                            <th:block th:replace="~{::dispatcher}"></th:block>
-                                        </th:block>
-                                    </div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Replizierende Liste
-                                *********************************************************************** */-->
-                                <th:block th:case="ReplicatingContainer">
-                                    <div class="input-element replicating-element">
-                                        <div class="label">
-                                            <strong th:text="${ child.element.label }"></strong>
-                                            <span th:if="${ base.isBlankPrint && child.element.required != null && child.element.required && (child.element.minimumRequiredSets == null || child.element.minimumRequiredSets == 0)}">
-                                                (Pflichtangabe, mindestens einen Datensatz ausfüllen)
-                                            </span>
-                                            <span th:if="${ base.isBlankPrint && child.element.minimumRequiredSets != null && child.element.minimumRequiredSets > 0 }">
-                                                (Pflichtangabe, mindestens
-                                                <span th:text="${child.element.minimumRequiredSets > 1 ? child.element.minimumRequiredSets + ' Datensätze' : 'einen Datensatz'}"></span> ausfüllen)
-                                            </span>
-                                        </div>
-
-                                        <div class="hint-wrapper">
-                                            <div
-                                                    class="hint"
-                                                    th:if="${base.isBlankPrint()}"
-                                                    th:text="${child.element.hint}"
-                                            ></div>
-                                        </div>
-
-                                        <div
-                                                class="content"
-                                                th:if="${child.value == null || child.value.isEmpty()}"
-                                        >
-                                            Keine Angaben
-                                        </div>
-
-                                        <div
-                                                class="content"
-                                                th:unless="${child.value == null || child.value.isEmpty()}"
-                                                th:with="parent=${child.element}"
-                                        >
-                                            <div
-                                                    th:each="child: ${child.children}"
-                                                    class="child"
-                                            >
-                                                <h4 th:text="${parent.getResolvedHeadline(child.value())}"></h4>
-
-                                                <!--/* Referenziere das Fragment in dieser Datei */-->
-                                                <th:block th:replace="~{::dispatcher}">
-                                                </th:block>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Überschrift
-                                *********************************************************************** */-->
-                                <th:block th:case="Headline">
-                                    <div
-                                            th:insert="./form-parts/elements/headline.html"
-                                            th:with="element=${child.element}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                RichText
-                                *********************************************************************** */-->
-                                <th:block
-                                        th:case="Richtext"
-                                        th:if="${ base.isNotStaffPrint }"
-                                >
-                                    <div
-                                            class="richtext"
-                                            th:utext="${ child.element.content }"
-                                    >
-                                    </div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Image
-                                *********************************************************************** */-->
-                                <th:block
-                                        th:case="Image"
-                                        th:if="${ base.isNotStaffPrint }"
-                                >
-                                    <div style="margin-top: 1rem; margin-bottom: 1rem;">
-                                        <img
-                                                th:src="${ child.element.src }"
-                                                th:alt="${ child.element.alt }"
-                                        />
-                                        <div
-                                                style="font-size: 0.85rem; margin-top: 0.25rem; margin-bottom: 0.25rem;"
-                                                th:unless="${ #strings.isEmpty(child.element.caption) }"
-                                                th:text="${ child.element.caption }"
-                                        >
-                                            Caption des Bildes
-                                        </div>
-                                    </div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Alert
-                                *********************************************************************** */-->
-                                <th:block
-                                        th:case="Alert"
-                                        th:if="${ child.element.alertType.name == 'Info' && base.isNotStaffPrint }"
-                                >
-                                    <div style="margin-top: 1rem; margin-bottom: 1rem;">
-                                        <strong th:text="${ child.element.title }"></strong>
-                                        <div
-                                                class="alert-title"
-                                                th:utext="${ child.element.text }"
-                                        ></div>
-                                    </div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Checkbox
-                                *********************************************************************** */-->
-                                <th:block th:case="Checkbox">
-                                    <div
-                                            th:insert="./form-parts/elements/checkbox.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                TextInput
-                                *********************************************************************** */-->
-                                <th:block th:case="Text">
-                                    <div
-                                            th:insert="./form-parts/elements/text-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-
-                                <!--/* ***********************************************************************
-                                NumberInput
-                                *********************************************************************** */-->
-                                <th:block th:case="Number">
-                                    <div
-                                            th:insert="./form-parts/elements/number-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                DateInput
-                                *********************************************************************** */-->
-                                <th:block th:case="Date">
-                                    <div
-                                            th:insert="./form-parts/elements/date-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                TimeInput
-                                *********************************************************************** */-->
-                                <th:block th:case="Time">
-                                    <div
-                                            th:insert="./form-parts/elements/time-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Select
-                                *********************************************************************** */-->
-                                <th:block th:case="Select">
-                                    <div
-                                            th:insert="./form-parts/elements/select-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Radio
-                                *********************************************************************** */-->
-                                <th:block th:case="Radio">
-                                    <div
-                                            th:insert="./form-parts/elements/radio-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Multi-Checkbox
-                                *********************************************************************** */-->
-                                <th:block th:case="MultiCheckbox">
-                                    <div
-                                            th:insert="./form-parts/elements/multi-checkbox-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                Table
-                                *********************************************************************** */-->
-                                <th:block th:case="Table">
-                                    <div
-                                            th:insert="./form-parts/elements/table-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-
-                                <!--/* ***********************************************************************
-                                FileUploadField
-                                *********************************************************************** */-->
-                                <th:block th:case="FileUpload">
-                                    <div
-                                            th:insert="./form-parts/elements/file-upload-field.html"
-                                            th:with="element=${child.element}, value=${child.value}, hasValue=${child.hasValue()}"
-                                    ></div>
-                                </th:block>
-                            </th:block>
-                        </div>
-                    </th:block>
-                </div>
+                        </th:block>
+                    </div>
+                </th:block>
             </section>
         </th:block>
 
@@ -350,11 +127,14 @@
 
         <section
                 th:if="${
-                    base.isBlankPrint &&
-                    form.rootElement.offlineSignatureNeeded != null &&
-                    form.rootElement.offlineSignatureNeeded ||
-                    base.isCitizenPrint &&
-                    !#strings.isEmpty(form.rootElement.offlineSubmissionText)
+                    (base.isBlankPrint || base.isCitizenPrint) &&
+                    (
+                        (
+                            form.rootElement.offlineSignatureNeeded != null &&
+                            form.rootElement.offlineSignatureNeeded
+                        ) ||
+                        !#strings.isEmpty(form.rootElement.offlineSubmissionText)
+                    )
                 }"
                 class="avoid-break-inside"
                 th:insert="./form-parts/einreichung.html"

@@ -7,6 +7,7 @@ interface ProcessInstanceFilter {
     accessKey: string;
     processId: number;
     processVersion: number;
+    createdForTestClaimId: number;
     status: ProcessInstanceStatus;
     statusIsNot: ProcessInstanceStatus;
     statusOverride: string;
@@ -28,6 +29,7 @@ export class ProcessInstanceApiService extends BaseCrudApiService<
 
     initialize(): ProcessInstanceEntity {
         return {
+            caseNumber: '',
             assignedUserId: null,
             createdForTestClaimId: null,
             keepUntil: null,
@@ -46,5 +48,9 @@ export class ProcessInstanceApiService extends BaseCrudApiService<
             updated: new Date().toISOString(),
             id: 0,
         };
+    }
+
+    public restartFailedInstance(id: number): Promise<ProcessInstanceEntity> {
+        return this.put<any, ProcessInstanceEntity>(this.buildPath(id) + 'restart-failed/', {});
     }
 }

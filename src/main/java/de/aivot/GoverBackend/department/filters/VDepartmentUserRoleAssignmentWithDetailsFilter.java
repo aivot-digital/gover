@@ -5,7 +5,10 @@ import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
-
+/**
+ * @deprecated
+ */
+@Deprecated
 public class VDepartmentUserRoleAssignmentWithDetailsFilter implements Filter<VDepartmentUserRoleAssignmentWithDetailsEntity> {
     private Integer id;
     private Integer departmentId;

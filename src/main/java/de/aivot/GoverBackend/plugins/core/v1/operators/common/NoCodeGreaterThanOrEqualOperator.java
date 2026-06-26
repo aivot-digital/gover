@@ -1,12 +1,13 @@
 package de.aivot.GoverBackend.plugins.core.v1.operators.common;
 
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.DerivedRuntimeElementData;
 import de.aivot.GoverBackend.nocode.enums.NoCodeDataType;
 import de.aivot.GoverBackend.nocode.exceptions.NoCodeException;
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.models.NoCodeParameter;
 import de.aivot.GoverBackend.nocode.models.NoCodeResult;
 import de.aivot.GoverBackend.nocode.models.NoCodeSignatur;
+import org.jetbrains.annotations.Nullable;
 
 public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
     @Override
@@ -76,10 +77,16 @@ public class NoCodeGreaterThanOrEqualOperator extends NoCodeOperator {
     }
 
     @Override
-    public NoCodeResult performEvaluation(ElementData data, Object... args) throws NoCodeException {
+    public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
         var arg0 = castToNumber(args[0]);
         var arg1 = castToNumber(args[1]);
 
         return new NoCodeResult(arg0.compareTo(arg1) >= 0);
+    }
+
+    @Nullable
+    @Override
+    public String getHumanReadableTemplate() {
+        return "„#0“ ist größer als „#1“ oder gleich „#1“";
     }
 }

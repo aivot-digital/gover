@@ -8,9 +8,15 @@ create table storage_providers
     type                                smallint     not null,
     status                              smallint     not null default 0,
     status_message                      text         null,
-    configuration                       jsonb        not null,
-    created                             timestamp    not null default now(),
-    updated                             timestamp    not null default now()
+    read_only_storage                   boolean      not null default false,
+    configuration                       jsonb        not null default '{}',
+    max_file_size_in_bytes              bigint       not null default 0,
+    system_provider                     boolean      not null default false,
+    test_provider                       boolean      not null default false,
+    metadata_attributes                 jsonb        not null default '[]'::jsonb,
+    last_sync                           timestamptz  null,
+    created                             timestamptz  not null default now(),
+    updated                             timestamptz  not null default now()
 );
 
 create table storage_index_items
@@ -18,11 +24,13 @@ create table storage_index_items
     storage_provider_id   integer      not null references storage_providers (id) on delete cascade,
     storage_provider_type smallint     not null,
     path_from_root        text         not null,
-    is_directory          boolean      not null,
+    directory             boolean      not null,
     filename              varchar(255) not null,
     mime_type             varchar(255) null,
-    is_missing            boolean      not null default false,
-    created               timestamp    not null default now(),
-    updated               timestamp    not null default now(),
+    size_in_bytes         bigint       not null default 0,
+    missing               boolean      not null default false,
+    metadata              jsonb        not null,
+    created               timestamptz  not null default now(),
+    updated               timestamptz  not null default now(),
     primary key (storage_provider_id, path_from_root)
 );

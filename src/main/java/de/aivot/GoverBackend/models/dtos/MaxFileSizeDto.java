@@ -1,13 +1,13 @@
 package de.aivot.GoverBackend.models.dtos;
 
 public class MaxFileSizeDto {
-    private Integer maxFileSize;
+    private Long maxFileSize;
 
-    public Integer getMaxFileSize() {
+    public Long getMaxFileSize() {
         return maxFileSize;
     }
 
-    public void setMaxFileSize(Integer maxFileSize) {
+    public void setMaxFileSize(Long maxFileSize) {
         this.maxFileSize = maxFileSize;
     }
 }

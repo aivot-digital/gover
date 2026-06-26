@@ -22,6 +22,7 @@ services:
       POSTGRES_USER: "{{ GOVER_DB_USERNAME }}" # Setzen Sie den Benutzernamen für die Gover-Datenbank. Passen Sie diesen Benutzernamen unbedingt an.
       POSTGRES_DB: gover
       PGDATA: /var/lib/postgresql/data/pgdata
+      PGTZ: "{{ GOVER_TIMEZONE }}" # Setzen Sie die Zeitzone für PostgreSQL-Clients der Gover-Datenbank, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit GOVER_TIMEZONE der Gover-Anwendung übereinstimmen.
     volumes:
       - gover_database_data:/var/lib/postgresql/data
     networks:
@@ -122,7 +123,7 @@ services:
 
 
   keycloak_sidecar:
-    image: "ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.6"
+    image: "ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.18"
     restart: on-failure
     depends_on:
       - keycloak
@@ -186,6 +187,7 @@ services:
       GOVER_ENVIRONMENT: "{{ SENTRY_ENVIRONMENT }}" # Setzen Sie die Umgebung für Sentry. Diese wird verwendet, um Fehlermeldungen in Sentry zu gruppieren. Passen Sie diese Umgebung unbedingt an. Entfernen Sie diesen Wert, um Sentry zu deaktivieren.
 
       GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
+      GOVER_TIMEZONE: "{{ GOVER_TIMEZONE }}" # Setzen Sie die fachliche Zeitzone der Gover-Anwendung, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PGTZ der Gover-Datenbank übereinstimmen.
       GOVER_SECRETS_KEY: "{{ GOVER_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.
       GOVER_CAPTCHA_KEY: "{{ GOVER_CAPTCHA_KEY }}" # Setzen Sie den geheimen Schlüssel zur Erzeugung und Verifizierung von Captcha-Challenges. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein (z. B. 32‑Byte‑Hex).
 

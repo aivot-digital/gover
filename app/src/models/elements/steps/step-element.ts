@@ -11,3 +11,11 @@ export interface StepElement extends BaseElement<ElementType.Step> {
 export function isStepElement(obj: any): obj is StepElement {
     return obj.type === ElementType.Step;
 }
+
+export function isSectionElementType(type: ElementType): boolean {
+    return type === ElementType.Step ||
+        type === ElementType.IntroductionStep ||
+        type === ElementType.SummaryStep ||
+        type === ElementType.SubmitStep ||
+        type === ElementType.SubmittedStep;
+}

@@ -29,12 +29,5 @@
     <!--/* Hinweis wird nur angezeigt bei einem ausfüllbaren Formular */-->
     <div class="hint-wrapper">
         <div th:insert="./form-parts/elements/_hint.html"></div>
-
-        <div
-                class="hint"
-                th:fragment="hint"
-                th:if="${base.isBlankPrint() && not #strings.isEmpty(element.hint)}"
-                th:text="${element.hint}"
-        ></div>
     </div>
 </div>

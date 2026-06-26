@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
 import jakarta.annotation.Nullable;
+
 import java.util.Objects;
 import java.util.Optional;
 
@@ -37,21 +38,21 @@ public class SystemConfigEntity {
     @ColumnDefault("FALSE")
     private Boolean publicConfig;
 
-    @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
+    // region HashCode & Equals
 
-        SystemConfigEntity that = (SystemConfigEntity) object;
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        SystemConfigEntity that = (SystemConfigEntity) o;
         return Objects.equals(key, that.key) && Objects.equals(value, that.value) && Objects.equals(publicConfig, that.publicConfig);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hashCode(key);
-        result = 31 * result + Objects.hashCode(value);
-        result = 31 * result + Objects.hashCode(publicConfig);
-        return result;
+        return Objects.hash(key, value, publicConfig);
     }
+
+    // endregion
 
     @JsonIgnore
     public Optional<String> getValueAsString() {

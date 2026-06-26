@@ -4,6 +4,7 @@ export enum ProcessTaskStatus {
     Completed = 'Completed',
     Aborted = 'Aborted',
     Failed = 'Failed',
+    Restarted = 'Restarted',
 }
 
 export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
@@ -12,4 +13,5 @@ export const ProcessTaskStatusLabels: Record<ProcessTaskStatus, string> = {
     [ProcessTaskStatus.Completed]: 'Abgeschlossen',
     [ProcessTaskStatus.Aborted]: 'Abgebrochen',
     [ProcessTaskStatus.Failed]: 'Fehlgeschlagen',
+    [ProcessTaskStatus.Restarted]: 'Neu gestartet',
 };

@@ -6,4 +6,5 @@ export interface StorageProviderDefinition {
     name: string;
     description: string;
     providerConfigLayout: AnyLayoutElement | null;
+    supportsMetadataAttributes: boolean;
 }

@@ -16,12 +16,7 @@ export function CommonSettingsPage() {
                 icon={ModuleIcons.configs}
             />
 
-            <Paper
-                sx={{
-                    marginTop: 3.5,
-                    padding: 2,
-                }}
-            >
+            <Paper>
                 <ApplicationSettings />
             </Paper>
         </PageWrapper>

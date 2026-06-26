@@ -4,9 +4,13 @@ import {editor} from 'monaco-editor';
 
 export interface CodeEditorProps {
     label?: string;
-    value?: string;
+    value?: string | null;
     onChange: (value: string) => void;
+    onBlur?: (value: string) => void;
     disabled?: boolean;
+    readOnly?: boolean;
+    error?: boolean;
+    wordWrap?: boolean;
     height?: string;
     sx?: SxProps;
     language?: string;

@@ -10,7 +10,7 @@ import de.aivot.GoverBackend.models.payment.PaymentProduct;
 import de.aivot.GoverBackend.payment.converters.PaymentProductsConverter;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -61,13 +61,91 @@ public class VFormVersionWithDetailsEntity implements Cloneable {
     @Column(columnDefinition = "jsonb")
     @Convert(converter = RootElementConverter.class)
     private FormLayoutElement rootElement;
-    private LocalDateTime created;
-    private LocalDateTime updated;
-    private LocalDateTime published;
-    private LocalDateTime revoked;
+    private Instant created;
+    private Instant updated;
+    private Instant published;
+    private Instant revoked;
     private String publicTitle;
     private Integer managingDepartmentId;
     private Integer responsibleDepartmentId;
+
+    // Empty constructor for JPA
+    public VFormVersionWithDetailsEntity() {
+
+    }
+
+    // Full constructor
+    public VFormVersionWithDetailsEntity(Integer id,
+                                         String slug,
+                                         String internalTitle,
+                                         Integer developingDepartmentId,
+                                         Integer publishedVersion,
+                                         Integer draftedVersion,
+                                         Integer versionCount,
+                                         Integer formId,
+                                         Integer version,
+                                         FormStatus status,
+                                         FormType type,
+                                         Integer legalSupportDepartmentId,
+                                         Integer technicalSupportDepartmentId,
+                                         Integer imprintDepartmentId,
+                                         Integer privacyDepartmentId,
+                                         Integer accessibilityDepartmentId,
+                                         Integer destinationId,
+                                         Integer themeId,
+                                         UUID pdfTemplateKey,
+                                         UUID paymentProviderKey,
+                                         String paymentPurpose,
+                                         String paymentDescription,
+                                         List<PaymentProduct> paymentProducts,
+                                         List<IdentityProviderLink> identityProviders,
+                                         Boolean identityVerificationRequired,
+                                         Integer customerAccessHours,
+                                         Integer submissionRetentionWeeks,
+                                         FormLayoutElement rootElement,
+                                         Instant created,
+                                         Instant updated,
+                                         Instant published,
+                                         Instant revoked,
+                                         String publicTitle,
+                                         Integer managingDepartmentId,
+                                         Integer responsibleDepartmentId) {
+        this.id = id;
+        this.slug = slug;
+        this.internalTitle = internalTitle;
+        this.developingDepartmentId = developingDepartmentId;
+        this.publishedVersion = publishedVersion;
+        this.draftedVersion = draftedVersion;
+        this.versionCount = versionCount;
+        this.formId = formId;
+        this.version = version;
+        this.status = status;
+        this.type = type;
+        this.legalSupportDepartmentId = legalSupportDepartmentId;
+        this.technicalSupportDepartmentId = technicalSupportDepartmentId;
+        this.imprintDepartmentId = imprintDepartmentId;
+        this.privacyDepartmentId = privacyDepartmentId;
+        this.accessibilityDepartmentId = accessibilityDepartmentId;
+        this.destinationId = destinationId;
+        this.themeId = themeId;
+        this.pdfTemplateKey = pdfTemplateKey;
+        this.paymentProviderKey = paymentProviderKey;
+        this.paymentPurpose = paymentPurpose;
+        this.paymentDescription = paymentDescription;
+        this.paymentProducts = paymentProducts;
+        this.identityProviders = identityProviders;
+        this.identityVerificationRequired = identityVerificationRequired;
+        this.customerAccessHours = customerAccessHours;
+        this.submissionRetentionWeeks = submissionRetentionWeeks;
+        this.rootElement = rootElement;
+        this.created = created;
+        this.updated = updated;
+        this.published = published;
+        this.revoked = revoked;
+        this.publicTitle = publicTitle;
+        this.managingDepartmentId = managingDepartmentId;
+        this.responsibleDepartmentId = responsibleDepartmentId;
+    }
 
     public FormEntity toFormEntity() {
         return new FormEntity(
@@ -118,7 +196,10 @@ public class VFormVersionWithDetailsEntity implements Cloneable {
 
     public VFormVersionWithDetailsEntity clone() {
         try {
-            return (VFormVersionWithDetailsEntity) super.clone();
+            return ((VFormVersionWithDetailsEntity) super.clone());
+                    //.setId(0)
+                    //.setFormId(0)
+                    //.setVersion(0);
         } catch (CloneNotSupportedException e) {
             throw new RuntimeException("Failed to clone VFormVersionWithDetailsEntity", e);
         }
@@ -388,38 +469,38 @@ public class VFormVersionWithDetailsEntity implements Cloneable {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public VFormVersionWithDetailsEntity setCreated(LocalDateTime created) {
+    public VFormVersionWithDetailsEntity setCreated(Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public VFormVersionWithDetailsEntity setUpdated(LocalDateTime updated) {
+    public VFormVersionWithDetailsEntity setUpdated(Instant updated) {
         this.updated = updated;
         return this;
     }
 
-    public LocalDateTime getPublished() {
+    public Instant getPublished() {
         return published;
     }
 
-    public VFormVersionWithDetailsEntity setPublished(LocalDateTime published) {
+    public VFormVersionWithDetailsEntity setPublished(Instant published) {
         this.published = published;
         return this;
     }
 
-    public LocalDateTime getRevoked() {
+    public Instant getRevoked() {
         return revoked;
     }
 
-    public VFormVersionWithDetailsEntity setRevoked(LocalDateTime revoked) {
+    public VFormVersionWithDetailsEntity setRevoked(Instant revoked) {
         this.revoked = revoked;
         return this;
     }

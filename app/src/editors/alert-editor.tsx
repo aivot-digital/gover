@@ -4,8 +4,7 @@ import {type AlertElement} from '../models/elements/form/content/alert-element';
 import {type BaseEditor} from './base-editor';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {SelectFieldComponent} from '../components/select-field/select-field-component';
-import {ElementTreeEntity} from '../components/element-tree/element-tree-entity';
-import {RichTextEditorComponentView} from '../components/richt-text-editor/rich-text-editor.component.view';
+import {RichTextInputComponent} from '../components/rich-text-input-component/rich-text-input-component';
 
 const colors = [
     ['success', 'Erfolg'],
@@ -14,11 +13,11 @@ const colors = [
     ['error', 'Fehler'],
 ];
 
-export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
-                                                                             element,
-                                                                             onPatch,
-                                                                             editable,
-                                                                         }) => {
+export const AlertEditor: BaseEditor<AlertElement> = ({
+                                                          element,
+                                                          onPatch,
+                                                          editable,
+                                                      }) => {
     return (
         <>
             <Grid
@@ -28,7 +27,7 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
+                        lg: 6,
                     }}>
                     <TextFieldComponent
                         value={element.title}
@@ -44,7 +43,7 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
+                        lg: 6,
                     }}>
                     <SelectFieldComponent
                         label="Hinweistyp"
@@ -64,12 +63,13 @@ export const AlertEditor: BaseEditor<AlertElement, ElementTreeEntity> = ({
                 <Grid
                     size={{
                         xs: 12,
-                        lg: 6
+                        lg: 6,
                     }}>
-                    <RichTextEditorComponentView
+                    <RichTextInputComponent
                         value={element.text ?? ''}
+                        label="Text"
                         onChange={(value) => {
-                            onPatch({text: value});
+                            onPatch({text: value ?? undefined});
                         }}
                         disabled={!editable}
                     />

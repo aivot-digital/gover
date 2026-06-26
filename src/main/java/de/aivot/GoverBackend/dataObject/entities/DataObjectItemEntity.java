@@ -5,7 +5,7 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
@@ -29,44 +29,38 @@ public class DataObjectItemEntity {
     private Map<String, Object> data;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime deleted;
+    private Instant deleted;
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // region Equals & Hash
 
     @Override
-    public boolean equals(Object object) {
-        if (object == null || getClass() != object.getClass()) return false;
-
-        DataObjectItemEntity that = (DataObjectItemEntity) object;
-        return schemaKey.equals(that.schemaKey) && id.equals(that.id) && data.equals(that.data) && created.equals(that.created) && updated.equals(that.updated) && Objects.equals(deleted, that.deleted);
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        DataObjectItemEntity that = (DataObjectItemEntity) o;
+        return Objects.equals(schemaKey, that.schemaKey) && Objects.equals(id, that.id) && Objects.equals(data, that.data) && Objects.equals(created, that.created) &&
+                Objects.equals(updated, that.updated) && Objects.equals(deleted, that.deleted);
     }
 
     @Override
     public int hashCode() {
-        int result = schemaKey.hashCode();
-        result = 31 * result + id.hashCode();
-        result = 31 * result + data.hashCode();
-        result = 31 * result + created.hashCode();
-        result = 31 * result + updated.hashCode();
-        result = 31 * result + Objects.hashCode(deleted);
-        return result;
+        return Objects.hash(schemaKey, id, data, created, updated, deleted);
     }
 
     // endregion
@@ -104,31 +98,31 @@ public class DataObjectItemEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public DataObjectItemEntity setCreated(@Nonnull LocalDateTime created) {
+    public DataObjectItemEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public DataObjectItemEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public DataObjectItemEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getDeleted() {
+    public Instant getDeleted() {
         return deleted;
     }
 
-    public DataObjectItemEntity setDeleted(@Nullable LocalDateTime deleted) {
+    public DataObjectItemEntity setDeleted(@Nullable Instant deleted) {
         this.deleted = deleted;
         return this;
     }

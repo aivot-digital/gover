@@ -6,7 +6,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -45,10 +45,10 @@ public class FormEntity {
     private Integer versionCount;
 
     @Nonnull
-    private LocalDateTime created;
+    private Instant created;
 
     @Nonnull
-    private LocalDateTime updated;
+    private Instant updated;
 
     // region constructors
 
@@ -61,8 +61,8 @@ public class FormEntity {
                       @Nonnull String slug,
                       @Nonnull String internalTitle,
                       @Nonnull Integer developingDepartmentId,
-                      @Nonnull LocalDateTime created,
-                      @Nonnull LocalDateTime updated,
+                      @Nonnull Instant created,
+                      @Nonnull Instant updated,
                       @Nullable Integer publishedVersion,
                       @Nullable Integer draftedVersion,
                       @Nonnull Integer versionCount) {
@@ -83,13 +83,13 @@ public class FormEntity {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // endregion
@@ -163,21 +163,21 @@ public class FormEntity {
     }
 
     @Nonnull
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public FormEntity setCreated(@Nonnull LocalDateTime created) {
+    public FormEntity setCreated(@Nonnull Instant created) {
         this.created = created;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public FormEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public FormEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }

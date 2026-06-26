@@ -1,6 +1,7 @@
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
 <!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity"*/-->
 <!--/*@thymesVar id="#qrcode" type="de.aivot.GoverBackend.services.pdf.QrCodeDialect"*/-->
+<!--/*@thymesVar id="#markdown" type="de.aivot.GoverBackend.services.pdf.MarkdownDialect"*/-->
 
 <section
         id="general-information"
@@ -11,7 +12,7 @@
     <!--/* Hier wird der Teaser-Text angezeigt, welcher grob das Formular zusammenfasst. */-->
     <div
             th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.teaserText) }"
-            th:utext="${ form.rootElement?.introductionStep?.teaserText }"
+            th:utext="${ #markdown.render(form.rootElement?.introductionStep?.teaserText) }"
             class="content-without-margin-on-childs"
     >
         Allgemeine Informationen für antragstellende Personen
@@ -46,14 +47,14 @@
         <th:block th:replace="~{::list}"></th:block>
     </th:block>
 
-    <!--/* Informationen über die Antragsfristen */-->
+    <!--/* Informationen über die Fristen */-->
     <div
             class="avoid-break-inside"
-            th:if="${ not #strings.isEmpty(form.rootElement.expiring) }"
+            th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.expiring) }"
     >
-        <h4>Antragsfristen</h4>
-        <div th:utext="${ form.rootElement.expiring }">
-            Antragsfristen
+        <h4>Fristen</h4>
+        <div th:utext="${ form.rootElement?.introductionStep?.expiring }">
+            Fristen
         </div>
     </div>
 
@@ -63,9 +64,21 @@
             th:if="${ not #strings.isEmpty(form.rootElement?.introductionStep?.expectedCosts) }"
     >
         <h4>Gebühren dieses Antrages</h4>
-        <div th:utext="${ form.rootElement?.introductionStep?.expectedCosts }" class="content-without-margin-on-childs">
+        <div th:utext="${ #markdown.render(form.rootElement?.introductionStep?.expectedCosts) }" class="content-without-margin-on-childs">
             Gebühren
         </div>
+    </div>
+
+    <!-- /* Alle Kind-Elemente der Allgemeinen Informationen */ -->
+    <div
+            th:if="${ step.children != null && not step.children.isEmpty() }"
+            style="display: flex; flex-wrap: wrap; margin-top: 1rem;"
+    >
+        <th:block
+                th:each="child : ${ step.children }"
+                th:insert="./form-parts/element-dispatcher.html"
+        >
+        </th:block>
     </div>
 
     <!--/* Informationen zum Datenschutz */-->
@@ -74,15 +87,18 @@
             Hinweise zum Datenschutz
         </h3>
 
-        <div th:utext="${ form.rootElement.cleanedPrivacyText }">
+        <div th:utext="${ #markdown.render(form.rootElement.cleanedPrivacyText) }" class="content-without-margin-on-childs">
             Datenschutzhinweise
         </div>
 
-        <div th:if="${ base.isBlankPrint || base.isCitizenPrint || base.isDestinationPrint }">
+        <div
+                th:if="${ base.isBlankPrint || base.isCitizenPrint || base.isDestinationPrint }"
+                th:with="privacyUrl=${ base.createUrlWithQueryParameter(form.slug, 'dialog', 'privacy') }"
+        >
             <a
                     class="do-not-print-link"
-                    th:utext="${ base.createUrl(form.slug) + '&dialog=privacy' }"
-                    th:href="${ base.createUrl(form.slug) + '&dialog=privacy' }"
+                    th:utext="${ privacyUrl }"
+                    th:href="${ privacyUrl }"
                     target="_blank"
             >
                 Link zur Datenschutzerklärung

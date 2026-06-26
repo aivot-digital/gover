@@ -1,0 +1,55 @@
+<mjml>
+    <mj-head>
+        <mj-include path="../partials/head.mjml"/>
+
+        <mj-preview>
+            Mitteilung über eine zugewiesene Prozessaufgabe
+        </mj-preview>
+    </mj-head>
+    <mj-body>
+        <mj-include path="../partials/header.mjml"/>
+
+        <mj-section>
+            <mj-column>
+                <mj-text>
+                    <p>
+                        Hallo,
+                        <br/>
+                        <span th:text="${assignmentIntro}">Ihnen wurde in Gover eine Aufgabe zur Bearbeitung zugewiesen.</span>
+                        <br/>
+                        <br/>
+                        Prozess: <b th:text="${process.internalTitle}">Beispielprozess</b> - Version
+                        <b th:text="${processInstanceTask.processVersion}">1</b>
+                        <br/>
+                        Aufgabe:
+                        <b th:text="${taskName}">Beispielaufgabe</b>
+                        <br/>
+                        Aktenzeichen:
+                        <b th:text="${fileNumbersDisplay}">AZ-123</b>
+                        <br/>
+                        Aufgabe erhalten:
+                        <b th:text="${startedLabel + ' Uhr'}">31.03.2026 10:15 Uhr</b>
+                        <br th:if="${deadlineLabel != null}"/>
+                        <span th:if="${deadlineLabel != null}">
+                            Fälligkeit:
+                            <b th:text="${deadlineLabel + ' Uhr'}">02.04.2026 16:00 Uhr</b>
+                            <br/>
+                        </span>
+                        <br/>
+                        Zugewiesen durch:
+                        <b th:text="${assignmentSource}">System</b>
+                    </p>
+
+                    <p>
+                        Sie können die Aufgabe über den nachfolgenden Link aufrufen:
+                        <a th:href="${base.config.createUrl(taskPath)}"
+                           th:text="${base.config.createUrl(taskPath)}">Beispiel-Link
+                        </a>
+                    </p>
+                </mj-text>
+            </mj-column>
+        </mj-section>
+
+        <mj-include path="../partials/auto-generate-hint.mjml"/>
+    </mj-body>
+</mjml>

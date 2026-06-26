@@ -28,4 +28,5 @@ export const DestinationTypeOptions = [
     DestinationType.Mail,
     DestinationType.HTTP,
     DestinationType.OZGCloud,
+    DestinationType.Script,
 ];

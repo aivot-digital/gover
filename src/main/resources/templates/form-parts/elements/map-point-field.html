@@ -1,0 +1,26 @@
+<!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
+<!--/*@thymesVar id="element" type="de.aivot.GoverBackend.elements.models.elements.form.input.MapPointInputElement"*/-->
+<!--/*@thymesVar id="value" type="java.lang.Object"*/-->
+
+<div class="input-element text-element map-point-element">
+    <div class="input">
+        <div class="label">
+            <strong th:text="${element.label}"></strong>
+            <span th:if="${base.isBlankPrint() && element.required != null && element.required}">(Pflichtangabe)</span>
+        </div>
+
+        <div
+                class="content"
+                th:text="${base.isBlankPrint() ? '' : element.toDisplayValue(value)}"
+                th:style="${(base.isBlankPrint() ? 'min-height: 4.5rem;' : '') + 'display: block; white-space: pre-wrap;'}"
+        ></div>
+    </div>
+
+    <div class="hint-wrapper">
+        <div th:insert="~{./form-parts/elements/_hint.html}"></div>
+        <div
+                class="hint"
+                th:if="${base.isBlankPrint()}"
+        >Bitte Position möglichst genau angeben, z. B. durch Adresse oder Koordinaten.</div>
+    </div>
+</div>

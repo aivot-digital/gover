@@ -1,8 +1,8 @@
 package de.aivot.GoverBackend.submission.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import de.aivot.GoverBackend.core.converters.ElementDataConverter;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.core.converters.AuthoredElementValuesConverter;
+import de.aivot.GoverBackend.elements.models.AuthoredElementValues;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import jakarta.annotation.Nonnull;
@@ -10,9 +10,11 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Objects;
 
+@Deprecated
 @Entity
 @Table(name = "submissions")
 public class Submission {
@@ -27,10 +29,10 @@ public class Submission {
     private Integer formVersion;
 
     @NotNull
-    private LocalDateTime created;
+    private Instant created;
 
     @NotNull
-    private LocalDateTime updated;
+    private Instant updated;
 
     @NotNull
     @Column(columnDefinition = "int4")
@@ -40,12 +42,12 @@ public class Submission {
 
     private String fileNumber;
 
-    private LocalDateTime archived;
+    private Instant archived;
 
     @NotNull
-    @Convert(converter = ElementDataConverter.class)
+    @Convert(converter = AuthoredElementValuesConverter.class)
     @Column(columnDefinition = "jsonb")
-    private ElementData customerInput;
+    private AuthoredElementValues customerInput;
 
     private Integer destinationId;
 
@@ -53,7 +55,7 @@ public class Submission {
 
     private String destinationResult;
 
-    private LocalDateTime destinationTimestamp;
+    private Instant destinationTimestamp;
 
     @NotNull
     private Boolean isTestSubmission;
@@ -73,13 +75,13 @@ public class Submission {
 
     @PrePersist
     public void prePersist() {
-        created = LocalDateTime.now();
-        updated = LocalDateTime.now();
+        created = Instant.now();
+        updated = Instant.now();
     }
 
     @PreUpdate
     public void preUpdate() {
-        updated = LocalDateTime.now();
+        updated = Instant.now();
     }
 
     // Equals & HashCode
@@ -138,20 +140,20 @@ public class Submission {
         return this;
     }
 
-    public LocalDateTime getCreated() {
+    public Instant getCreated() {
         return created;
     }
 
-    public Submission setCreated(LocalDateTime created) {
+    public Submission setCreated(Instant created) {
         this.created = created;
         return this;
     }
 
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public Submission setUpdated(LocalDateTime updated) {
+    public Submission setUpdated(Instant updated) {
         this.updated = updated;
         return this;
     }
@@ -183,20 +185,20 @@ public class Submission {
         return this;
     }
 
-    public LocalDateTime getArchived() {
+    public Instant getArchived() {
         return archived;
     }
 
-    public Submission setArchived(LocalDateTime archived) {
+    public Submission setArchived(Instant archived) {
         this.archived = archived;
         return this;
     }
 
-    public ElementData getCustomerInput() {
+    public AuthoredElementValues getCustomerInput() {
         return customerInput;
     }
 
-    public Submission setCustomerInput(ElementData customerInput) {
+    public Submission setCustomerInput(AuthoredElementValues customerInput) {
         this.customerInput = customerInput;
         return this;
     }
@@ -228,11 +230,11 @@ public class Submission {
         return this;
     }
 
-    public LocalDateTime getDestinationTimestamp() {
+    public Instant getDestinationTimestamp() {
         return destinationTimestamp;
     }
 
-    public Submission setDestinationTimestamp(LocalDateTime destinationTimestamp) {
+    public Submission setDestinationTimestamp(Instant destinationTimestamp) {
         this.destinationTimestamp = destinationTimestamp;
         return this;
     }
@@ -289,8 +291,8 @@ public class Submission {
     public boolean hasExternalAccessExpired(VFormVersionWithDetailsEntity form) {
         int accessHours = form.getCustomerAccessHours() != null ? form.getCustomerAccessHours() : 4;
 
-        LocalDateTime expirationTimestamp = created.plusHours(accessHours);
-        LocalDateTime currentTimestamp = LocalDateTime.now();
+        Instant expirationTimestamp = created.plus(Duration.ofHours(accessHours));
+        Instant currentTimestamp = Instant.now();
 
         return currentTimestamp.isAfter(expirationTimestamp);
     }

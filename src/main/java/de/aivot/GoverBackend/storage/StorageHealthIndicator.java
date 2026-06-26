@@ -1,11 +1,11 @@
 package de.aivot.GoverBackend.storage;
 
-import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.utils.ElementPOJOMapper;
+import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.storage.entities.StorageProviderEntity;
 import de.aivot.GoverBackend.storage.exceptions.StorageException;
 import de.aivot.GoverBackend.storage.models.StorageProviderDefinition;
 import de.aivot.GoverBackend.storage.repositories.StorageProviderRepository;
+import de.aivot.GoverBackend.storage.services.StorageProviderConfigurationService;
 import de.aivot.GoverBackend.storage.services.StorageProviderDefinitionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.actuate.autoconfigure.health.ConditionalOnEnabledHealthIndicator;
@@ -19,12 +19,15 @@ public class StorageHealthIndicator implements HealthIndicator {
 
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
+    private final StorageProviderConfigurationService storageProviderConfigurationService;
 
     @Autowired
     public StorageHealthIndicator(StorageProviderRepository storageProviderRepository,
-                                  StorageProviderDefinitionService storageProviderDefinitionService) {
+                                  StorageProviderDefinitionService storageProviderDefinitionService,
+                                  StorageProviderConfigurationService storageProviderConfigurationService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
+        this.storageProviderConfigurationService = storageProviderConfigurationService;
     }
 
     @Override
@@ -69,15 +72,16 @@ public class StorageHealthIndicator implements HealthIndicator {
                 .build();
     }
 
-    private static <T> void testConnection(StorageProviderEntity provider, StorageProviderDefinition<T> definition) throws StorageException {
+    private <T> void testConnection(StorageProviderEntity provider, StorageProviderDefinition<T> definition) throws StorageException {
         T config;
         try {
-            config = ElementPOJOMapper
-                    .mapToPOJO(provider.getConfiguration(), definition.getConfigClass());
-        } catch (ElementDataConversionException e) {
+            config = storageProviderConfigurationService
+                    .mapToConfig(provider, definition);
+        } catch (ResponseException e) {
             throw new StorageException(e, "Fehler beim Konvertieren der Speicheranbieter-Konfiguration.");
         }
 
-        definition.testConnection(config);
+        // Do not test write, because this may include the writing of test files (S3) and we do not want to write unnecessary files
+        definition.testConnection(config, false);
     }
 }

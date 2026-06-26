@@ -85,12 +85,16 @@ public class JavascriptCode implements Serializable {
         var expliciteReferencePattern = Pattern
                 .compile(">>>([a-zA-Z0-9_-]+)");
 
-        var implicitRegex = String.format(
-                "%s\\.([a-zA-Z0-9_-]+)",
-                JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+        var implicitReferencePatterns = Set.of(
+                Pattern.compile(String.format(
+                        "%s\\.effectiveValues\\.([a-zA-Z0-9_-]+)",
+                        JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+                )),
+                Pattern.compile(String.format(
+                        "%s\\.elementStates\\.([a-zA-Z0-9_-]+)",
+                        JavascriptEngine.JS_CONTEXT_OBJECT_NAME
+                ))
         );
-        var implicitReferencePattern = Pattern
-                .compile(implicitRegex);
 
         var ids = new HashSet<String>();
 
@@ -99,12 +103,39 @@ public class JavascriptCode implements Serializable {
             ids.add(matcher.group(1));
         }
 
-        matcher = implicitReferencePattern.matcher(code);
-        while (matcher.find()) {
-            ids.add(matcher.group(1));
+        for (var implicitReferencePattern : implicitReferencePatterns) {
+            matcher = implicitReferencePattern.matcher(code);
+            while (matcher.find()) {
+                ids.add(matcher.group(1));
+            }
         }
 
         return ids;
+    }
+
+    /**
+     * Get all process data paths that are referenced through the process data root object.
+     *
+     * @return a set of all referenced process data paths
+     */
+    @Nonnull
+    @JsonIgnore
+    public Set<String> getReferencedProcessDataPaths() {
+        if (code == null || StringUtils.isNullOrEmpty(code)) {
+            return new HashSet<>();
+        }
+
+        var processDataReferencePattern = Pattern
+                .compile("(?<![$\\w])\\$((?:\\.[a-zA-Z_$][a-zA-Z0-9_$]*)+)");
+
+        var paths = new HashSet<String>();
+
+        var matcher = processDataReferencePattern.matcher(code);
+        while (matcher.find()) {
+            paths.add(matcher.group(1).substring(1));
+        }
+
+        return paths;
     }
 
     // endregion

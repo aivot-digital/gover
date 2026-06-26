@@ -14,6 +14,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 public class TextInputElement extends BaseInputElement<String> implements PrintableElement<String> {
+    public static final String COPY_VALUE_TEMPLATE_PLACEHOLDER = "{value}";
+
     @Nullable
     private String placeholder;
 
@@ -28,6 +30,15 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
 
     @Nullable
     private Integer minCharacters;
+
+    @Nullable
+    private String prefix;
+
+    @Nullable
+    private Boolean copyable;
+
+    @Nullable
+    private String copyValueTemplate;
 
     @Nullable
     private TextInputElementPattern pattern;
@@ -158,7 +169,16 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         if (!super.equals(object)) return false;
 
         TextInputElement textField = (TextInputElement) object;
-        return Objects.equals(placeholder, textField.placeholder) && Objects.equals(autocomplete, textField.autocomplete) && Objects.equals(isMultiline, textField.isMultiline) && Objects.equals(maxCharacters, textField.maxCharacters) && Objects.equals(minCharacters, textField.minCharacters) && Objects.equals(pattern, textField.pattern) && Objects.equals(suggestions, textField.suggestions);
+        return Objects.equals(placeholder, textField.placeholder)
+                && Objects.equals(autocomplete, textField.autocomplete)
+                && Objects.equals(isMultiline, textField.isMultiline)
+                && Objects.equals(maxCharacters, textField.maxCharacters)
+                && Objects.equals(minCharacters, textField.minCharacters)
+                && Objects.equals(prefix, textField.prefix)
+                && Objects.equals(copyable, textField.copyable)
+                && Objects.equals(copyValueTemplate, textField.copyValueTemplate)
+                && Objects.equals(pattern, textField.pattern)
+                && Objects.equals(suggestions, textField.suggestions);
     }
 
     @Override
@@ -169,6 +189,9 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         result = 31 * result + Objects.hashCode(isMultiline);
         result = 31 * result + Objects.hashCode(maxCharacters);
         result = 31 * result + Objects.hashCode(minCharacters);
+        result = 31 * result + Objects.hashCode(prefix);
+        result = 31 * result + Objects.hashCode(copyable);
+        result = 31 * result + Objects.hashCode(copyValueTemplate);
         result = 31 * result + Objects.hashCode(pattern);
         result = 31 * result + Objects.hashCode(suggestions);
         return result;
@@ -248,5 +271,36 @@ public class TextInputElement extends BaseInputElement<String> implements Printa
         this.suggestions = suggestions;
         return this;
     }
+
+    @Nullable
+    public String getPrefix() {
+        return prefix;
+    }
+
+    public TextInputElement setPrefix(@Nullable String prefix) {
+        this.prefix = prefix;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getCopyable() {
+        return copyable;
+    }
+
+    public TextInputElement setCopyable(@Nullable Boolean copyable) {
+        this.copyable = copyable;
+        return this;
+    }
+
+    @Nullable
+    public String getCopyValueTemplate() {
+        return copyValueTemplate;
+    }
+
+    public TextInputElement setCopyValueTemplate(@Nullable String copyValueTemplate) {
+        this.copyValueTemplate = copyValueTemplate;
+        return this;
+    }
+
     // endregion
 }

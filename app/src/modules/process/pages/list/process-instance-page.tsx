@@ -1,26 +1,49 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
-import {ProcessInstanceStatus, ProcessInstanceStatusLabels} from '../../enums/process-instance-status';
-import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
-import React, {type ReactNode, useEffect, useRef, useState} from 'react';
 import {
+    ProcessInstanceStatus,
+    ProcessInstanceStatusColor,
+    ProcessInstanceStatusLabels,
+} from '../../enums/process-instance-status';
+import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
+import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import {
+    GenericListFilter,
     type GenericListPropsFetchOptions,
     type ListControlRef,
 } from '../../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import ProcessChart from '@aivot/mui-material-symbols-400-outlined/dist/process-chart/ProcessChart';
-import {ProcessInstanceHistoryEventDialog} from '../../dialogs/process-instance-history-event-dialog';
+import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {type Page} from '../../../../models/dtos/page';
 import {useSearchParams} from 'react-router-dom';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import {useConfirm} from '../../../../providers/confirm-provider';
+import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
+import {GridColDef} from '@mui/x-data-grid';
+import {Chip} from '../../../../components/chip/chip';
+import {ProcessInstanceStatusIcon} from '../../components/process-instance-status-icon';
+
+
+const Filters: GenericListFilter[] = [
+    {
+        label: 'Nicht abgeschlossen',
+        value: 'notCompleted',
+    },
+    {
+        label: 'Alle',
+        value: 'all',
+    },
+];
 
 interface ProcessInstanceEntityWithProcessInfo extends ProcessInstanceEntity {
     processName: string;
@@ -28,7 +51,9 @@ interface ProcessInstanceEntityWithProcessInfo extends ProcessInstanceEntity {
 
 export function ProcessInstanceListPage(): ReactNode {
     const dispatch = useAppDispatch();
+    const confirm = useConfirm();
     const [searchParams] = useSearchParams();
+
     const processIdParam = searchParams.get('processId');
     const processVersionParam = searchParams.get('processVersion');
     const processId = processIdParam !== null && processIdParam !== '' ? Number(processIdParam) : undefined;
@@ -63,28 +88,77 @@ export function ProcessInstanceListPage(): ReactNode {
 
     const listRef = useRef<ListControlRef | null>(null);
 
-    const handleListRefresh = (): void => {
+    const handleListRefresh = useCallback((): void => {
         if (listRef.current != null) {
             listRef.current.refresh();
         }
-    };
+    }, []);
 
-    const handleDelete = (item: ProcessInstanceEntity): void => {
-        const apiService = new ProcessInstanceApiService();
-        apiService
-            .destroy(item.id)
-            .then(() => {
-                handleListRefresh();
+    const handleDelete = useCallback((item: ProcessInstanceEntity): void => {
+        confirm({
+            title: 'Vorgang löschen',
+            isDestructive: true,
+            children: (
+                <Typography>
+                    Sind Sie sicher, dass Sie den Vorgang wirklich löschen wollen?
+                    Bitte beachten Sie, dass Sie dies nicht rückgängig machen können.
+                </Typography>
+            ),
+        })
+            .then((conf) => {
+                if (!conf) {
+                    return false;
+                }
+
+                return new ProcessInstanceApiService()
+                    .destroy(item.id)
+                    .then(() => true);
+            })
+            .then((reload) => {
+                if (reload) {
+                    handleListRefresh();
+                }
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Vorgang konnte nicht gelöscht werden'));
             });
-    };
+    }, [confirm, dispatch, handleListRefresh]);
 
     const [showEventsForInstanceId, setShowEventsForInstanceId] = React.useState<number | null>(null);
 
+    const handleRestart = useCallback((item: ProcessInstanceEntity): void => {
+        confirm({
+            title: 'Vorgang neu starten',
+            children: (
+                <Typography>
+                    Wirklich neu starten? Der Neustart ist nur möglich, wenn der Vorgang noch keine Aufgaben hat oder die letzte Aufgabe fehlgeschlagen ist.
+                </Typography>
+            ),
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return false;
+                }
+
+                return new ProcessInstanceApiService()
+                    .restartFailedInstance(item.id)
+                    .then(() => true);
+            })
+            .then((reload) => {
+                if (!reload) {
+                    return;
+                }
+
+                dispatch(showSuccessSnackbar('Der Vorgang wurde neu gestartet.'));
+                handleListRefresh();
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Der Vorgang konnte nicht neu gestartet werden.'));
+            });
+    }, [confirm, dispatch, handleListRefresh]);
+
     // Wrap fetchData to inject processId and processVersion
-    const fetchDataWithParams = async (options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> => {
+    const fetchDataWithParams = useCallback(async (options: GenericListPropsFetchOptions<ProcessInstanceEntityWithProcessInfo>): Promise<Page<ProcessInstanceEntityWithProcessInfo>> => {
         const allProcesses = await new ProcessDefinitionApiService().listAll();
         const filter: any = {
             statusIsNot: options.filter === 'notCompleted' ? ProcessInstanceStatus.Completed : undefined,
@@ -112,7 +186,135 @@ export function ProcessInstanceListPage(): ReactNode {
                 };
             }),
         };
-    };
+    }, [processId, processVersion]);
+
+    const header: GenericPageHeaderProps = useMemo(() => ({
+        icon: ModuleIcons.submissions,
+        title: 'Vorgänge',
+        badge:
+            (processDefinition !== null && processVersion !== undefined) ?
+                {
+                    label: `${String(processDefinition.internalTitle)} (Version ${processVersion})`,
+                    color: 'primary',
+                } :
+                undefined,
+        actions: [
+            {
+                tooltip: 'Liste aktualisieren',
+                icon: <Refresh/>,
+                onClick: handleListRefresh,
+            },
+        ],
+        helpDialog: {
+            title: 'Hilfe zu Vorgängen',
+            tooltip: 'Hilfe anzeigen',
+            content: (
+                <>
+                    <Typography>
+                        Auf dieser Seite erhalten Sie einen Überblick über alle offenen bzw. laufenden
+                        Vorgänge. Klicken Sie auf einen Vorgang, um die zugehörigen Informationen
+                        einzusehen und Aufgaben zu bearbeiten.
+                    </Typography>
+                </>
+            ),
+        },
+    }), [handleListRefresh, processDefinition, processVersion]);
+
+    const columns: GridColDef<ProcessInstanceEntityWithProcessInfo>[] = useMemo(() => [
+        {
+            field: 'status',
+            headerName: 'Status',
+            width: 180,
+            renderCell: (params) => (
+                <Chip
+                    label={params.row.statusOverride != null ? params.row.statusOverride : ProcessInstanceStatusLabels[params.row.status]}
+                    size="small"
+                    mode="soft"
+                    color={ProcessInstanceStatusColor[params.row.status]}
+                />
+            ),
+        },
+        {
+            field: 'processName',
+            headerName: 'Prozess',
+            width: 180,
+            renderCell: (params) => (
+                <CellLink
+                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/?instanceId=${params.row.id}`}
+                    title="Aufrufen"
+                >
+                    {String(params.value)}
+                </CellLink>
+            ),
+        },
+        {
+            field: 'caseNumber',
+            headerName: 'Schlüssel',
+            flex: 1,
+            renderCell: (params) => (
+                <CellLink
+                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/instances/${params.row.id}/tasks`}
+                    title="Aufrufen"
+                >
+                    {String(params.value)}
+                </CellLink>
+            ),
+        },
+        {
+            field: 'started',
+            headerName: 'Gestartet am',
+            width: 200,
+            renderCell: (params) => {
+                if (params.row.started === undefined || params.row.started === null || params.row.started === '') return '—';
+                const date = new Date(params.row.started);
+                return new Intl.DateTimeFormat('de-DE', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false,
+                }).format(date).replace(',', ' –') + ' Uhr';
+            },
+        },
+    ], []);
+
+    const columnIcon = useCallback((row: ProcessInstanceEntityWithProcessInfo) => (
+        <ProcessInstanceStatusIcon
+            status={row.status}
+            statusOverride={row.statusOverride}
+        />
+    ), []);
+
+    const rowActions = useCallback((item: ProcessInstanceEntityWithProcessInfo) => [
+        {
+            icon: <Replay/>,
+            tooltip: 'Fehlgeschlagenen Vorgang neu starten',
+            visible: item.status === ProcessInstanceStatus.Failed,
+            onClick: () => {
+                handleRestart(item);
+            },
+        },
+        {
+            icon: <Delete/>,
+            tooltip: 'Vorgang löschen',
+            onClick: () => {
+                handleDelete(item);
+            },
+        },
+        {
+            icon: <News/>,
+            tooltip: 'Ereignisse einsehen',
+            onClick: () => {
+                setShowEventsForInstanceId(item.id);
+            },
+        },
+        {
+            icon: ModuleIcons.processes,
+            tooltip: 'Prozessverlauf ansehen',
+            to: `/processes/${item.processId}/versions/${item.initialProcessVersion}/?instanceId=${item.id}`,
+        },
+    ], [handleDelete, handleRestart]);
 
     return (
         <>
@@ -124,147 +326,29 @@ export function ProcessInstanceListPage(): ReactNode {
                 <GenericListPage<ProcessInstanceEntityWithProcessInfo>
                     controlRef={listRef}
                     defaultFilter="notCompleted"
-                    filters={[
-                        {
-                            label: 'Nicht abgeschlossen',
-                            value: 'notCompleted',
-                        },
-                        {
-                            label: 'Alle',
-                            value: 'all',
-                        },
-                    ]}
-                    header={{
-                        icon: <ProcessChart/>,
-                        title: 'Vorgänge',
-                        badge:
-                            (processDefinition !== null && processVersion !== undefined) ?
-                                {
-                                    label: `${String(processDefinition.internalTitle)} (Version ${processVersion})`,
-                                    color: 'primary',
-                                } :
-                                undefined,
-                        actions: [
-                            {
-                                tooltip: 'Refresh',
-                                icon: <Refresh/>,
-                                onClick: handleListRefresh,
-                            },
-                        ],
-                        helpDialog: {
-                            title: 'Hilfe zu Teams',
-                            tooltip: 'Hilfe anzeigen',
-                            content: (
-                                <>
-                                    <Typography>
-                                        Ein Fachbereich ist eine zentrale Verwaltungseinheit in Gover und essenziell für
-                                        den
-                                        Betrieb der Anwendung. Er speichert wichtige Stammdaten wie Adress- und
-                                        Kontaktdaten
-                                        sowie rechtliche Informationen (z.
-                                        B. Impressum, Datenschutzerklärung), die in Formularen wiederverwendet werden
-                                        können.
-                                    </Typography>
-                                    <Typography sx={{mt: 2}}>
-                                        Jedem Fachbereich sind Mitarbeiter:innen mit einer spezifischen Rolle
-                                        zugeordnet,
-                                        die deren Berechtigungen innerhalb des Fachbereichs definiert.
-                                    </Typography>
-                                </>
-                            ),
-                        },
-                    }}
+                    filters={Filters}
+                    header={header}
                     searchLabel="Vorgang suchen"
                     searchPlaceholder="Schlüssel des Vorgangs eingeben…"
                     fetch={fetchDataWithParams}
-                    columnIcon={<ProcessChart/>}
-                    columnDefinitions={[
-                        {
-                            field: 'processName',
-                            headerName: 'Prozess',
-                            flex: 1,
-                            renderCell: (params) => (
-                                <CellLink
-                                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/instances/${params.row.id}/tasks`}
-                                    title="Aufrufen"
-                                >
-                                    {String(params.value)}
-                                </CellLink>
-                            ),
-                        },
-                        {
-                            field: 'accessKey',
-                            headerName: 'Schlüssel',
-                            flex: 1,
-                            renderCell: (params) => (
-                                <CellLink
-                                    to={`/processes/${params.row.processId}/versions/${params.row.initialProcessVersion}/instances/${params.row.id}/tasks`}
-                                    title="Aufrufen"
-                                >
-                                    {String(params.value)}
-                                </CellLink>
-                            ),
-                        },
-                        {
-                            field: 'started',
-                            headerName: 'Gestartet am',
-                            flex: 1,
-                            renderCell: (params) => {
-                                if (params.row.started === undefined || params.row.started === null || params.row.started === '') return '—';
-                                const date = new Date(params.row.started);
-                                return new Intl.DateTimeFormat('de-DE', {
-                                    day: '2-digit',
-                                    month: '2-digit',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit',
-                                    hour12: false,
-                                }).format(date).replace(',', ' –') + ' Uhr';
-                            },
-                        },
-                        {
-                            field: 'status',
-                            headerName: 'Status',
-                            flex: 1,
-                            renderCell: (params) => {
-                                if (params.row.statusOverride != null) {
-                                    return params.row.statusOverride;
-                                }
-                                return ProcessInstanceStatusLabels[params.row.status];
-                            },
-                        },
-                    ]}
-                    getRowIdentifier={(row) => row.id.toString()}
-                    noDataPlaceholder="Keine Vorgänge gestartet"
+                    columnIcon={columnIcon}
+                    columnDefinitions={columns}
+                    getRowIdentifier={getRowIdentifier}
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Noch keine Vorgänge gestartet"
+                            description="Vorgänge sind konkrete Ausführungen (Instanzen) eines Prozesses, zum Beispiel eingereichte Anträge oder intern gestartete Abläufe."
+                        />
+                    }
                     noSearchResultsPlaceholder="Keine Vorgänge gefunden"
-                    rowActionsCount={3}
-                    rowActions={(item) => [
-                        {
-                            icon: <Delete/>,
-                            tooltip: 'Vorgang löschen',
-                            onClick: () => {
-                                handleDelete(item);
-                            },
-                        },
-                        {
-                            icon: <News/>,
-                            tooltip: 'Aufgaben Einsehen',
-                            onClick: () => {
-                                setShowEventsForInstanceId(item.id);
-                            },
-                        },
-                        {
-                            icon: ModuleIcons.processes,
-                            tooltip: 'Prozessverlauf Einsehen',
-                            to: `/processes/${item.processId}/versions/${item.initialProcessVersion}/?instanceId=${item.id}`,
-                        },
-                    ]}
+                    rowActionsCount={4}
+                    rowActions={rowActions}
                     defaultSortField="started"
                     disableFullWidthToggle={true}
                 />
             </PageWrapper>
 
-            <ProcessInstanceHistoryEventDialog
+            <ProcessInstanceEventDialog
                 open={showEventsForInstanceId != null}
                 onClose={() => {
                     setShowEventsForInstanceId(null);
@@ -274,4 +358,8 @@ export function ProcessInstanceListPage(): ReactNode {
             />
         </>
     );
+}
+
+function getRowIdentifier(row: ProcessInstanceEntityWithProcessInfo) {
+    return row.id.toString();
 }

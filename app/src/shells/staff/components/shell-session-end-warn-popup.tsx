@@ -2,6 +2,9 @@ import {useEffect, useState} from 'react';
 import Paper from '@mui/material/Paper';
 import Typography from '@mui/material/Typography';
 import IconButton from '@mui/material/IconButton';
+import Box from '@mui/material/Box';
+import CircularProgress from '@mui/material/CircularProgress';
+import Tooltip from '@mui/material/Tooltip';
 import {AuthService} from '../../../services/auth-service';
 import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
 
@@ -15,9 +18,10 @@ function secondsToMinutesAndSeconds(seconds: number): string {
 
 export function ShellSessionEndWarnPopup() {
     const [secondsUntilExpiration, setSecondsUntilExpiration] = useState<number>(0);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     useEffect(() => {
-        const auth = new AuthService();
+        const auth = AuthService;
 
         const interval = setInterval(() => {
             const expirationTimestampMS = auth.getExpirationTimestamp();
@@ -33,8 +37,13 @@ export function ShellSessionEndWarnPopup() {
         return () => clearInterval(interval);
     }, []);
 
-    const handleReloadAuth = () => {
-        new AuthService().refresh();
+    const handleReloadAuth = async () => {
+        setIsRefreshing(true);
+        try {
+            await AuthService.refresh();
+        } finally {
+            setIsRefreshing(false);
+        }
     };
 
     if (secondsUntilExpiration <= 0 || secondsUntilExpiration > expirationThresholdSeconds) {
@@ -43,14 +52,17 @@ export function ShellSessionEndWarnPopup() {
 
     return (
         <Paper
+            elevation={6}
             sx={{
                 position: 'fixed',
                 bottom: '1rem',
                 right: '1rem',
+                zIndex: (theme) => Math.max(theme.zIndex.tooltip + 1, 10000),
                 paddingX: 2,
                 paddingY: 1,
                 display: 'flex',
                 alignItems: 'center',
+                boxShadow: (theme) => theme.shadows[6],
             }}
         >
             <Typography
@@ -63,14 +75,43 @@ export function ShellSessionEndWarnPopup() {
                     display: 'inline-block',
                     textAlign: 'center',
                     width: '3rem',
+                    fontFamily: 'monospace',
+                    fontVariantNumeric: 'tabular-nums',
                 }}
-            >{secondsToMinutesAndSeconds(secondsUntilExpiration)}</span> ab.
+            >{secondsToMinutesAndSeconds(secondsUntilExpiration)}</span>
             </Typography>
-            <IconButton
-                onClick={handleReloadAuth}
-            >
-                <Refresh />
-            </IconButton>
+            <Tooltip title="Sitzung erneuern und angemeldet bleiben" arrow>
+                <span>
+                    <IconButton
+                        onClick={() => {
+                            handleReloadAuth().catch(console.error);
+                        }}
+                        disabled={isRefreshing}
+                        aria-label="Sitzung erneuern"
+                    >
+                        <Box
+                            sx={{
+                                width: 24,
+                                height: 24,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                            }}
+                        >
+                            {
+                                isRefreshing ? (
+                                    <CircularProgress
+                                        size={20}
+                                        thickness={5}
+                                    />
+                                ) : (
+                                    <Refresh />
+                                )
+                            }
+                        </Box>
+                    </IconButton>
+                </span>
+            </Tooltip>
         </Paper>
     );
 }

@@ -28,6 +28,9 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
     @Nullable
     private Integer minFiles;
 
+    @Nullable
+    private String submittedFileName;
+
     public FileUploadInputElement() {
         super(ElementType.FileUpload);
     }
@@ -164,7 +167,11 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
         if (!super.equals(o)) return false;
 
         FileUploadInputElement that = (FileUploadInputElement) o;
-        return Objects.equals(extensions, that.extensions) && Objects.equals(isMultifile, that.isMultifile) && Objects.equals(maxFiles, that.maxFiles) && Objects.equals(minFiles, that.minFiles);
+        return Objects.equals(extensions, that.extensions) &&
+               Objects.equals(isMultifile, that.isMultifile) &&
+               Objects.equals(maxFiles, that.maxFiles) &&
+               Objects.equals(minFiles, that.minFiles) &&
+               Objects.equals(submittedFileName, that.submittedFileName);
     }
 
     @Override
@@ -174,6 +181,7 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
         result = 31 * result + Objects.hashCode(isMultifile);
         result = 31 * result + Objects.hashCode(maxFiles);
         result = 31 * result + Objects.hashCode(minFiles);
+        result = 31 * result + Objects.hashCode(submittedFileName);
         return result;
     }
 
@@ -218,6 +226,16 @@ public class FileUploadInputElement extends BaseInputElement<List<FileUploadInpu
 
     public FileUploadInputElement setMinFiles(@Nullable Integer minFiles) {
         this.minFiles = minFiles;
+        return this;
+    }
+
+    @Nullable
+    public String getSubmittedFileName() {
+        return submittedFileName;
+    }
+
+    public FileUploadInputElement setSubmittedFileName(@Nullable String submittedFileName) {
+        this.submittedFileName = submittedFileName;
         return this;
     }
 

@@ -5,8 +5,7 @@ import {useMemo} from 'react';
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {TextFieldComponentProps} from '../components/text-field/text-field-component-props';
 import Autocomplete from '@mui/material/Autocomplete';
-import {CodeEditor} from "../components/code-editor/code-editor";
-import {RichTextEditorComponentView} from "../components/richt-text-editor/rich-text-editor.component.view";
+import {isStringNullOrEmpty} from '../utils/string-utils';
 
 export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
     const {
@@ -30,6 +29,9 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         maxCharacters,
         minCharacters,
         suggestions,
+        prefix,
+        copyable,
+        copyValueTemplate,
     } = element;
 
     const isDisabled = useMemo(() => {
@@ -40,7 +42,7 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         return isDeriving && hasDerivableAspects(element);
     }, [isDeriving, element]);
 
-    const handleBlur = (val: string | null | undefined) => {
+    const handleBlur = (val: string | null) => {
         if (onBlur != null) {
             onBlur(val, [element.id]);
         }
@@ -58,11 +60,14 @@ export function TextFieldView(props: BaseViewProps<TextFieldElement, string>) {
         busy: isBusy,
         maxCharacters: maxCharacters ?? undefined,
         minCharacters: minCharacters ?? undefined,
-        value: value?.toString() ?? undefined,
+        value: value == null ? value : value.toString(),
         onChange: val => setValue(val),
         onBlur: onBlur != null ? handleBlur : undefined,
         debounce: 1000,
-    }), [label, autocomplete, placeholder, errors, hint, isMultiline, required, isDisabled, isBusy, maxCharacters, minCharacters, value, setValue, onBlur]);
+        startIcon: isStringNullOrEmpty(prefix) ? undefined : prefix,
+        copyable: copyable ?? false,
+        copyValueTemplate: copyValueTemplate ?? undefined,
+    }), [label, autocomplete, placeholder, errors, hint, isMultiline, required, isDisabled, isBusy, maxCharacters, minCharacters, value, setValue, onBlur, element.id, prefix, copyable, copyValueTemplate]);
 
     if (suggestions != null) {
         return (

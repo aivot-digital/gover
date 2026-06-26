@@ -2,13 +2,14 @@ import {createContext, useContext} from 'react';
 
 export interface GenericDetailsPageContextType<ItemType, AdditionalData> {
     item?: ItemType;
-    setItem: (item: ItemType) => void;
+    setItem: (item: ItemType | ((item: ItemType) => ItemType)) => void;
     isNewItem?: boolean;
     isExistingItem?: boolean;
     additionalData?: AdditionalData;
     setAdditionalData: (additionalData: AdditionalData) => void;
     isBusy: boolean;
     setIsBusy: (isBusy: boolean) => void;
+    refresh: () => void;
     isEditable: boolean;
 }
 
@@ -17,6 +18,7 @@ export const GenericDetailsPageContext = createContext<GenericDetailsPageContext
     setAdditionalData: () => {},
     isBusy: false,
     setIsBusy: () => {},
+    refresh: () => {},
     isEditable: false,
 });
 

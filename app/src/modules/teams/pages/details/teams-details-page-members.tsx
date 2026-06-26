@@ -1,11 +1,11 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Box, Button, Typography} from '@mui/material';
-import DeleteOutlineOutlinedIcon from '@mui/icons-material/DeleteOutlineOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -31,6 +31,7 @@ import {Page} from "../../../../models/dtos/page";
 import {
     VTeamUserRoleAssignmentWithDetailsApiService
 } from "../../services/v-team-user-role-assignment-with-details-api-service";
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 export function TeamsDetailsPageMembers() {
     const dispatch = useAppDispatch();
@@ -51,14 +52,12 @@ export function TeamsDetailsPageMembers() {
         if (item == null) {
             const p: Page<VTeamMembershipWithDetailsEntity> = {
                 content: [],
-                empty: false,
-                first: false,
-                last: false,
-                number: 0,
-                numberOfElements: 0,
-                size: 0,
-                totalElements: 0,
-                totalPages: 0
+                page: {
+                    number: 0,
+                    totalPages: 0,
+                    size: 0,
+                    totalElements: 0,
+                },
             };
             return Promise.resolve(p);
         }
@@ -98,15 +97,15 @@ export function TeamsDetailsPageMembers() {
                 disabled: membershipItem.userDeletedInIdp ?? undefined,
             },
             {
-                icon: <DeleteOutlineOutlinedIcon />,
+                icon: <Delete />,
                 onClick: () => {
                     showConfirm({
                         title: 'Mitarbeiter:in entfernen',
                         children: (
                             <>
                                 <Typography>
-                                    Durch das Entfernen der Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem Fachbereich <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen und Berechtigungen in diesem
-                                    Fachbereich.
+                                    Durch das Entfernen der Mitarbeiter:in <strong>{membershipItem.userFullName}</strong> aus dem Team <strong>{item?.name}</strong> verliert diese alle zugewiesenen Rollen und Berechtigungen in diesem
+                                    Team.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Diese Aktion kann nicht rückgängig gemacht werden. Stellen Sie sicher, dass Sie die richtige Mitarbeiter:in entfernen.
@@ -121,7 +120,7 @@ export function TeamsDetailsPageMembers() {
                             }
 
                             dispatch(setLoadingMessage({
-                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus dem Fachbereich`,
+                                message: `Entferne Mitarbeiter:in ${membershipItem.userFullName} aus dem Team`,
                                 blocking: true,
                                 estimatedTime: 5000,
                             }));
@@ -137,7 +136,7 @@ export function TeamsDetailsPageMembers() {
                                         dispatch(showErrorSnackbar(error.message));
                                     } else {
                                         console.error(error);
-                                        dispatch(showErrorSnackbar('Fehler beim Entfernen der Mitarbeiter:in aus dem Fachbereich'));
+                                        dispatch(showErrorSnackbar('Fehler beim Entfernen der Mitarbeiter:in aus dem Team'));
                                     }
                                 })
                                 .finally(() => {
@@ -172,7 +171,7 @@ export function TeamsDetailsPageMembers() {
         }
 
         dispatch(setLoadingMessage({
-            message: `Füge Mitarbeiter:in ${user.fullName} zum Fachbereich hinzu`,
+            message: `Füge Mitarbeiter:in ${user.fullName} zum Team hinzu`,
             blocking: true,
             estimatedTime: 5000,
         }));
@@ -204,7 +203,7 @@ export function TeamsDetailsPageMembers() {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Fachbereich'));
+                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Team'));
                 }
             })
             .finally(() => {
@@ -272,7 +271,7 @@ export function TeamsDetailsPageMembers() {
                     mb: 1,
                 }}
             >
-                Mitarbeiter:innen des Fachbereichs
+                Mitarbeiter:innen des Teams
             </Typography>
 
             <Typography
@@ -281,7 +280,7 @@ export function TeamsDetailsPageMembers() {
                     maxWidth: 900,
                 }}
             >
-                Eine Liste der Mitarbeiter:innen, die diesem Fachbereich zugeordnet sind. Mitarbeiter:innen können unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Fachbereichs definieren.
+                Eine Liste der Mitarbeiter:innen, die diesem Team zugeordnet sind. Mitarbeiter:innen können unterschiedliche Rollen besitzen, die ihre Berechtigungen innerhalb des Teams definieren.
             </Typography>
 
             <GenericList<VTeamMembershipWithDetailsEntity>
@@ -302,7 +301,14 @@ export function TeamsDetailsPageMembers() {
                 rowActions={isEditable ? buildRowActions : undefined}
                 defaultSortField="userId"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Mitarbeiter:innen vorhanden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Mitarbeiter:innen zugeordnet"
+                        description="Mitglieder eines Teams teilen Zuständigkeiten, Berechtigungen oder Aufgaben in Prozessen."
+                        addText={isEditable ? "Mitarbeiter:in hinzufügen" : undefined}
+                        onAdd={isEditable ? () => setShowSelectNewMemberDialog(true) : undefined}
+                    />
+                }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 preSearchElements={preSearchElements}
@@ -366,12 +372,12 @@ const Filters = [
 
 const Columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
-        field: 'fullName',
+        field: 'userFullName',
         headerName: 'Mitarbeiter:in',
         flex: 1,
     },
     {
-        field: 'email',
+        field: 'userEmail',
         headerName: 'E-Mail',
         flex: 1,
     },

@@ -9,32 +9,41 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 public interface SearchEntityRepository extends ReadOnlyRepository<SearchItemEntity, String>, JpaSpecificationExecutor<SearchItemEntity> {
-    /*
-    @Query(
-            value = """
-                        SELECT
-                            *, similarity(label, :search) AS sim
-                        FROM
-                            search_items
-                        WHERE
-                            label IS NOT NULL AND label <> ''
-                        ORDER BY
-                            sim DESC;
-                    """, nativeQuery = true
-    )
-     */
     @Query(
             value = """
                         SELECT
                             word_similarity(search_text, :search) as sim,
                             *
                         FROM
-                            search_items
+                            v_search_items
                         WHERE
-                            word_similarity(search_text, :search) > 0.05
+                            (origin_table <> 'process_nodes' OR origin_table_subset in :process_node_origin_table_subset) AND
+                            word_similarity(search_text, :search) > 0.1
                         ORDER BY
                             sim DESC;
                     """, nativeQuery = true
     )
-    Page<SearchItemEntity> search(@Param("search") String search, Pageable pageable);
+    Page<SearchItemEntity> search(@Param("search") String search,
+                                  @Param("process_node_origin_table_subset") String[] allowedProcessNodeOriginTableSubset,
+                                  Pageable pageable);
+
+    @Query(
+            value = """
+                        SELECT
+                            word_similarity(search_text, :search) as sim,
+                            *
+                        FROM
+                            v_search_items
+                        WHERE
+                            (origin_table <> 'process_nodes' OR origin_table_subset in :process_node_origin_table_subset) AND
+                            word_similarity(search_text, :search) > 0.1 AND
+                            origin_table = :originTable
+                        ORDER BY
+                            sim DESC;
+                    """, nativeQuery = true
+    )
+    Page<SearchItemEntity> search(@Param("search") String search,
+                                  @Param("originTable") String originTable,
+                                  @Param("process_node_origin_table_subset") String[] allowedProcessNodeOriginTableSubset,
+                                  Pageable pageable);
 }

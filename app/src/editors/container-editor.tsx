@@ -7,7 +7,6 @@ import {Button, Grid, Paper} from '@mui/material';
 import {AlertComponent} from '../components/alert/alert-component';
 import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
-import {type ElementTreeEntity} from '../components/element-tree/element-tree-entity';
 import {StoreModuleInfoTable} from '../components/store-module-info-table/store-module-info-table';
 import {useAppSelector} from '../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../slices/system-config-slice';
@@ -16,7 +15,7 @@ import {type AnyInputElement, isAnyInputElement} from '../models/elements/form/i
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 
-export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeEntity>) {
+export function ContainerEditor(props: BaseEditorProps<GroupLayout>) {
     const [storeModule, setStoreModule] = useState<StoreDetailModule>();
     const [confirmRemoveStore, setConfirmRemoveStore] = useState<() => void>();
     const storeKey = useAppSelector(selectSystemConfigValue(SystemConfigKeys.gover.storeKey));
@@ -64,7 +63,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 6
+                            lg: 6,
                         }}>
                         <TextFieldComponent
                             value={onlyInputChild.destinationKey ?? undefined}
@@ -86,7 +85,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                     <Grid
                         size={{
                             xs: 12,
-                            lg: 6
+                            lg: 6,
                         }}>
                         <CheckboxFieldComponent
                             label="Pflichtangabe"
@@ -116,7 +115,7 @@ export function ContainerEditor(props: BaseEditorProps<GroupLayout, ElementTreeE
                 Mehr Informationen hierzu finden Sie in der <a
                 href="https://wiki.teamaivot.de/de/dokumentation/gover/benutzerhandbuch/store"
                 target="_blank"
-                style={{color: "inherit"}}
+                style={{color: 'inherit'}}
                 rel="noreferrer noopener"
             >Dokumentation</a>.
             </AlertComponent>

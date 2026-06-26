@@ -12,7 +12,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
 
@@ -69,7 +69,8 @@ public class ProcessInstanceEventEntity {
 
     @Nonnull
     @NotNull(message = "Der Zeitstempel des Ereignisses muss angegeben werden.")
-    private LocalDateTime timestamp;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant timestamp;
 
     @Nullable
     @Size(min = 36, max = 36, message = "Die ID des auslösenden Benutzers muss genau 36 Zeichen lang sein.")
@@ -93,7 +94,7 @@ public class ProcessInstanceEventEntity {
                                       @Nonnull String title,
                                       @Nonnull String message,
                                       @Nonnull Map<String, Object> details,
-                                      @Nonnull LocalDateTime timestamp,
+                                      @Nonnull Instant timestamp,
                                       @Nullable String triggeringUserId) {
         this.id = id;
         this.processInstanceId = processInstanceId;
@@ -220,11 +221,11 @@ public class ProcessInstanceEventEntity {
     }
 
     @Nonnull
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public ProcessInstanceEventEntity setTimestamp(@Nonnull LocalDateTime timestamp) {
+    public ProcessInstanceEventEntity setTimestamp(@Nonnull Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }

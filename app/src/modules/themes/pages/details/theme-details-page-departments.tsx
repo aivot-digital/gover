@@ -1,4 +1,5 @@
 import React, {useContext} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {GridColDef} from '@mui/x-data-grid';
@@ -12,12 +13,12 @@ import {DepartmentApiService} from '../../../departments/services/department-api
 const columns: GridColDef<DepartmentEntity>[] = [
     {
         field: 'name',
-        headerName: 'Name des Fachbereichs',
+        headerName: 'Name der Organisationseinheit',
         flex: 1,
         renderCell: (params) => (
             <CellLink
                 to={`/departments/${params.id}`}
-                title="Department anzeigen"
+                title="Organisationseinheit anzeigen"
             >
                 {String(params.value)}
             </CellLink>
@@ -40,11 +41,11 @@ export function ThemeDetailsPageDepartments() {
                 variant="h5"
                 sx={{mt: 1.5, mb: 1}}
             >
-                Fachbereiche mit diesem Farbschema
+                Organisationseinheiten mit diesem Erscheinungsbild
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Eine Liste aller Fachbereiche, die dieses Farbschema für ihr optisches Erscheinungsbild verwenden.
+                Eine Liste aller Organisationseinheiten, die dieses Erscheinungsbild verwenden.
             </Typography>
 
             <GenericList<DepartmentEntity>
@@ -68,17 +69,22 @@ export function ThemeDetailsPageDepartments() {
                         );
                 }}
                 getRowIdentifier={(item) => item.id.toString()}
-                searchLabel="Fachbereich suchen"
-                searchPlaceholder="Name des Fachbereichs eingeben…"
+                searchLabel="Organisationseinheit suchen"
+                searchPlaceholder="Name der Organisationseinheit eingeben…"
                 defaultSortField="name"
                 rowMenuItems={[]}
-                noDataPlaceholder="Keine Formulare vorhanden"
-                loadingPlaceholder="Lade Formulare…"
-                noSearchResultsPlaceholder="Keine Formulare gefunden"
+                noDataPlaceholder={
+                    <EmptyDataListPlaceholder
+                        title="Keine Organisationseinheiten zugeordnet"
+                        description="Organisationseinheiten können ein Erscheinungsbild vorgeben, das für ihre Formulare verwendet wird."
+                    />
+                }
+                loadingPlaceholder="Lade Organisationseinheiten…"
+                noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                 rowActions={(item) => [{
                     icon: <EditOutlined />,
                     to: `/departments/${item.id}`,
-                    tooltip: 'Fachbereich anzeigen',
+                    tooltip: 'Organisationseinheiten anzeigen',
                 }]}
                 preSearchElements={[]}
             />

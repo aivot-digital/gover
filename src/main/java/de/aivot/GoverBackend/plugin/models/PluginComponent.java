@@ -1,6 +1,7 @@
 package de.aivot.GoverBackend.plugin.models;
 
 import de.aivot.GoverBackend.plugin.enums.PluginComponentType;
+import de.aivot.GoverBackend.plugin.services.PluginUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -44,7 +45,7 @@ public interface PluginComponent {
      */
     @Nonnull
     default String getKey() {
-        return String.format("%s.%s", getParentPluginKey(), getComponentKey());
+        return PluginUtils.combineComponentKey(getParentPluginKey(), getComponentKey());
     }
 
     /**

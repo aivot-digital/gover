@@ -2,6 +2,8 @@ package de.aivot.GoverBackend.user.models;
 
 import de.aivot.GoverBackend.user.entities.UserEntity;
 
+import java.util.List;
+
 public class KeycloakUser {
     private String id;
     private String firstName;
@@ -9,6 +11,7 @@ public class KeycloakUser {
     private String email;
     private Boolean emailVerified;
     private Boolean enabled;
+    private List<String> requiredActions;
 
     public static KeycloakUser from(UserEntity entity) {
         return new KeycloakUser()
@@ -86,6 +89,15 @@ public class KeycloakUser {
 
     public KeycloakUser setEnabled(Boolean enabled) {
         this.enabled = enabled;
+        return this;
+    }
+
+    public List<String> getRequiredActions() {
+        return requiredActions;
+    }
+
+    public KeycloakUser setRequiredActions(List<String> requiredActions) {
+        this.requiredActions = requiredActions;
         return this;
     }
 }

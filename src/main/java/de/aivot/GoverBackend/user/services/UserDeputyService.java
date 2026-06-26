@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service
@@ -25,6 +26,7 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     @Nonnull
     @Override
     public UserDeputyEntity create(@Nonnull UserDeputyEntity entity) throws ResponseException {
+        validateDateRange(entity);
         entity.setId(null);
         return repository.save(entity);
     }
@@ -72,5 +74,16 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     public void performDelete(@Nonnull UserDeputyEntity entity) throws ResponseException {
         repository.delete(entity);
     }
-}
 
+    private void validateDateRange(@Nonnull UserDeputyEntity entity) throws ResponseException {
+        var untilTimestamp = entity.getUntilTimestamp();
+        if (untilTimestamp == null) {
+            return;
+        }
+
+        LocalDateTime fromTimestamp = entity.getFromTimestamp();
+        if (!fromTimestamp.isBefore(untilTimestamp)) {
+            throw ResponseException.badRequest("Das Ende der Vertretung muss nach dem Start der Vertretung liegen.");
+        }
+    }
+}

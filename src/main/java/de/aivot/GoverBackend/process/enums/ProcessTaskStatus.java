@@ -6,4 +6,5 @@ public enum ProcessTaskStatus {
     Completed,
     Aborted,
     Failed,
+    Restarted,
 }

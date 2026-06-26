@@ -1,13 +1,14 @@
 import {type BaseSummaryProps} from './base-summary';
 import {SummaryDispatcherComponent} from '../components/summary-dispatcher.component';
-import {type RootElement} from '../models/elements/root-element';
+import {type FormLayoutElement} from '../models/elements/form-layout-element';
 
-export function RootSummary(props: BaseSummaryProps<RootElement, void>) {
+export function RootSummary(props: BaseSummaryProps<FormLayoutElement, void>) {
     const {
         model,
         showTechnical,
         allowStepNavigation,
-        elementData,
+        authoredElementValues,
+        derivedData,
     } = props;
 
     const {
@@ -24,7 +25,8 @@ export function RootSummary(props: BaseSummaryProps<RootElement, void>) {
                             element={model}
                             showTechnical={showTechnical}
                             allowStepNavigation={allowStepNavigation}
-                            elementData={elementData}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
                         />
                     ))
             }

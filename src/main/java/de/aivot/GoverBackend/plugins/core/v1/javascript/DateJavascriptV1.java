@@ -1,7 +1,8 @@
 package de.aivot.GoverBackend.plugins.core.v1.javascript;
 
 import de.aivot.GoverBackend.javascript.providers.JavascriptFunctionProvider;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
+import de.aivot.GoverBackend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
@@ -15,7 +16,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -46,6 +47,8 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     public String[] getMethodTypeDefinitions() {
         return new String[]{
                 "createDate(): Date;",
+                "today(): string;",
+                "now(): string;",
                 "createDate(date: Date | string | number): Date | null;",
                 "isSameDay(dateA: Date | string | number, dateB: Date | string | number): boolean;",
                 "isBefore(dateA: Date | string | number, dateB: Date | string | number): boolean;",
@@ -60,16 +63,17 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
                 "subtractWeeks(date: Date | string | number, weeks: number): Date | null;",
                 "subtractMonths(date: Date | string | number, months: number): Date | null;",
                 "subtractYears(date: Date | string | number, years: number): Date | null;",
+                "formatDate(date: Date | string | number, format: string): string | null;",
                 "diff(start: Date | string | number, end: Date | string | number, unit: 'days' | 'weeks' | 'months' | 'years'): number | null;"
         };
     }
 
     private static final DateTimeFormatter isoDateDateFormatter = DateTimeFormatter
             .ofPattern("yyyy-MM-dd")
-            .withZone(ZoneId.systemDefault());
+            .withZone(ApplicationTimeZone.getZoneId());
     private static final DateTimeFormatter germanDateFormatter = DateTimeFormatter
             .ofPattern("dd.MM.yyyy")
-            .withZone(ZoneId.systemDefault());
+            .withZone(ApplicationTimeZone.getZoneId());
     private static final DateTimeFormatter[] availableDateFormatters = new DateTimeFormatter[]{
             DateTimeFormatter.ISO_DATE_TIME,
             isoDateDateFormatter,
@@ -80,7 +84,19 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
     public ZonedDateTime createDate() {
         return LocalDate
                 .now()
-                .atStartOfDay(ZoneId.systemDefault());
+                .atStartOfDay(ApplicationTimeZone.getZoneId());
+    }
+
+    @HostAccess.Export
+    public String today() {
+        var date = createDate();
+        return formatDate(date, "dd.MM.yyyy");
+    }
+
+    @HostAccess.Export
+    public String now() {
+        var date = createDate();
+        return formatDate(date, "dd.MM.yyyy hh:mm") + " Uhr";
     }
 
     @Nullable
@@ -96,7 +112,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
                 long epochMilli = number.longValue();
                 yield ZonedDateTime.ofInstant(
                         Instant.ofEpochSecond(epochMilli),
-                        ZoneId.systemDefault()
+                        ApplicationTimeZone.getZoneId()
                 );
             }
             case String dateString -> {
@@ -104,7 +120,7 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
                     try {
                         yield LocalDate
                                 .parse(dateString, formatter)
-                                .atStartOfDay(ZoneId.systemDefault());
+                                .atStartOfDay(ApplicationTimeZone.getZoneId());
                     } catch (Exception e) {
                         // Try next format
                     }
@@ -313,6 +329,25 @@ public class DateJavascriptV1 implements JavascriptFunctionProvider {
         }
 
         return date.minusYears(years);
+    }
+
+    @Nullable
+    @HostAccess.Export
+    public String formatDate(Object dateRaw, String format) {
+        var date = createDate(dateRaw);
+
+        if (date == null || format == null || format.isBlank()) {
+            return null;
+        }
+
+        try {
+            var formatter = DateTimeFormatter
+                    .ofPattern(format)
+                    .withZone(ApplicationTimeZone.getZoneId());
+            return formatter.format(date);
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     @HostAccess.Export

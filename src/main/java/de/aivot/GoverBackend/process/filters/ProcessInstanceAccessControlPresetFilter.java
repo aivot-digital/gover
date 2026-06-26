@@ -11,6 +11,7 @@ public class ProcessInstanceAccessControlPresetFilter implements Filter<ProcessI
     private Integer sourceTeamId;
     private Integer sourceDepartmentId;
     private Integer targetProcessId;
+    private Integer targetProcessVersion;
 
     public static ProcessInstanceAccessControlPresetFilter create() {
         return new ProcessInstanceAccessControlPresetFilter();
@@ -23,7 +24,8 @@ public class ProcessInstanceAccessControlPresetFilter implements Filter<ProcessI
                 .create(ProcessInstanceAccessControlPresetEntity.class)
                 .withEquals("sourceTeamId", sourceTeamId)
                 .withEquals("sourceDepartmentId", sourceDepartmentId)
-                .withEquals("targetProcessId", targetProcessId);
+                .withEquals("targetProcessId", targetProcessId)
+                .withEquals("targetProcessVersion", targetProcessVersion);
 
         return builder.build();
     }
@@ -52,6 +54,11 @@ public class ProcessInstanceAccessControlPresetFilter implements Filter<ProcessI
 
     public ProcessInstanceAccessControlPresetFilter setTargetProcessId(Integer targetProcessId) {
         this.targetProcessId = targetProcessId;
+        return this;
+    }
+
+    public ProcessInstanceAccessControlPresetFilter setTargetProcessVersion(Integer targetProcessVersion) {
+        this.targetProcessVersion = targetProcessVersion;
         return this;
     }
 }

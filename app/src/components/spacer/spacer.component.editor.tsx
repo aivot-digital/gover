@@ -1,10 +1,9 @@
 import {type SpacerElement} from '../../models/elements/form/content/spacer-element';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
-import {ElementTreeEntity} from '../element-tree/element-tree-entity';
 import {Grid} from '@mui/material';
 
-export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement, ElementTreeEntity>) {
+export function SpacerComponentEditor(props: BaseEditorProps<SpacerElement>) {
     return (
         <Grid
             container

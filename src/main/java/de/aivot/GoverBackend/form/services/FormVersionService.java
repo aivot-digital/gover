@@ -4,7 +4,6 @@ import de.aivot.GoverBackend.asset.repositories.AssetRepository;
 import de.aivot.GoverBackend.department.repositories.DepartmentRepository;
 import de.aivot.GoverBackend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.GoverBackend.destination.repositories.DestinationRepository;
-import de.aivot.GoverBackend.elements.services.ElementApprovalService;
 import de.aivot.GoverBackend.enums.SubmissionStatus;
 import de.aivot.GoverBackend.form.entities.FormVersionEntity;
 import de.aivot.GoverBackend.form.entities.FormVersionEntityId;
@@ -457,13 +456,6 @@ public class FormVersionService implements EntityService<FormVersionEntity, Form
                             .setDone(false)
             );
         }
-
-        checklist.add(
-                FormPublishChecklistItem
-                        .create()
-                        .setLabel("Alle Elemente des Formulars geprüft")
-                        .setDone(ElementApprovalService.isApproved(form.getRootElement()))
-        );
 
         return checklist;
     }

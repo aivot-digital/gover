@@ -5,12 +5,13 @@ import jakarta.annotation.Nonnull;
 import java.lang.reflect.Field;
 import java.lang.reflect.ParameterizedType;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
 public class ReflectionUtils {
     public static List<Field> getAllDeclaredFields(Class<?> type) {
-        var allFields = Arrays.asList(type.getDeclaredFields());
+        var allFields = new LinkedList<>(Arrays.asList(type.getDeclaredFields()));
 
         var superclass = type.getSuperclass();
 

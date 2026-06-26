@@ -5,7 +5,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "search_items")
+@Table(name = "v_search_items")
 public class SearchItemEntity {
     @Id
     private String id;
@@ -13,6 +13,8 @@ public class SearchItemEntity {
     private String label;
 
     private String originTable;
+
+    private String originTableSubset;
 
     public String getId() {
         return id;
@@ -38,6 +40,15 @@ public class SearchItemEntity {
 
     public SearchItemEntity setOriginTable(String originTable) {
         this.originTable = originTable;
+        return this;
+    }
+
+    public String getOriginTableSubset() {
+        return originTableSubset;
+    }
+
+    public SearchItemEntity setOriginTableSubset(String originTableSubset) {
+        this.originTableSubset = originTableSubset;
         return this;
     }
 }

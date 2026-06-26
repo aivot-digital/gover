@@ -6,8 +6,10 @@ import DesktopWindows from '@aivot/mui-material-symbols-400-outlined/dist/deskto
 import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
 import {Paper, useMediaQuery} from '@mui/material';
 
+export const MIN_DISPLAY_WIDTH_PX = 1280;
+
 export function ShellResolutionOverlay() {
-    const widthOK = useMediaQuery('(min-width:1280px)');
+    const widthOK = useMediaQuery(`(min-width:${MIN_DISPLAY_WIDTH_PX}px)`);
     const heightOK = useMediaQuery('(min-height:720px)');
     const tooSmall = !(widthOK && heightOK);
 

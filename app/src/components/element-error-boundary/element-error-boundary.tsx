@@ -1,12 +1,12 @@
 import React, {ErrorInfo} from 'react';
 import {AlertComponent} from '../alert/alert-component';
-import {BaseViewProps} from '../../views/base-view';
 import {Accordion, AccordionDetails, AccordionSummary, Typography} from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import {AnyElement} from '../../models/elements/any-element';
 
 interface ElementErrorBoundaryProps {
     children: React.ReactNode;
-    viewProps: BaseViewProps<any, any>;
+    element: AnyElement;
 }
 
 interface ElementErrorBoundaryState {
@@ -44,7 +44,7 @@ export class ElementErrorBoundary extends React.Component<ElementErrorBoundaryPr
                         }}
                     >
                         <AccordionSummary
-                            expandIcon={<ExpandMoreIcon />}
+                            expandIcon={<ExpandMoreIcon/>}
                         >
                             Mehr Informationen
                         </AccordionSummary>
@@ -88,7 +88,7 @@ export class ElementErrorBoundary extends React.Component<ElementErrorBoundaryPr
                             <Typography
                                 component="pre"
                             >
-                                {JSON.stringify(this.props.viewProps.element, null, 4)}
+                                {JSON.stringify(this.props.element, null, 4)}
                             </Typography>
                         </AccordionDetails>
                     </Accordion>

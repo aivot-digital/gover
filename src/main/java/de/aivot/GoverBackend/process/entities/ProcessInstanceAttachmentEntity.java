@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -45,8 +44,7 @@ public class ProcessInstanceAttachmentEntity {
     private String uploadedByUserId;
 
     /**
-     * Ignore this field in database mapping and JSON serialization.
-     * This is only used when creating the file and saving it to the database.
+     * Ignore this field in database mapping and JSON serialization. This is only used when creating the file and saving it to the database.
      */
     @Transient
     @JsonIgnore
@@ -75,6 +73,24 @@ public class ProcessInstanceAttachmentEntity {
         this.storagePathFromRoot = storagePathFromRoot;
         this.uploadedByUserId = uploadedByUserId;
         this.fileBytes = fileBytes;
+    }
+
+    public static ProcessInstanceAttachmentEntity of(
+            @Nonnull String fileName,
+            @Nonnull Long processInstanceId,
+            @Nullable Long processInstanceTaskId,
+            @Nonnull byte[] fileBytes
+    ) {
+        return new ProcessInstanceAttachmentEntity(
+                null,
+                fileName,
+                processInstanceId,
+                processInstanceTaskId,
+                null,
+                null,
+                null,
+                fileBytes
+        );
     }
 
     // endregion

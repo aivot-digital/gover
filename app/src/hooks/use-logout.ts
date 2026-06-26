@@ -1,11 +1,23 @@
-import {createOidcPath} from '../utils/create-oidc-path';
+import {AuthService} from '../services/auth-service';
 
 export function useLogout() {
-    return () => {
-        const searchParams = new URLSearchParams({
-            post_logout_redirect_uri: window.location.origin + '/staff?logout=true',
-            client_id: AppConfig.oidc.client,
-        });
-        window.location.href = createOidcPath(`/realms/${AppConfig.oidc.realm}/protocol/openid-connect/logout?${searchParams.toString()}`);
+    return async () => {
+        try {
+            if (AuthService.getCsrfToken() == null) {
+                await AuthService.refresh();
+            }
+
+            const csrfToken = AuthService.getCsrfToken();
+            await fetch('/api/auth/logout', {
+                method: 'POST',
+                credentials: 'same-origin',
+                headers: csrfToken != null ? {
+                    'X-CSRF-TOKEN': csrfToken,
+                } : undefined,
+            });
+        } finally {
+            AuthService.logout();
+            window.location.href = `${window.location.origin}/staff?logout=true`;
+        }
     };
 }

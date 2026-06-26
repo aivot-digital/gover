@@ -4,12 +4,12 @@ import de.aivot.GoverBackend.elements.enums.ElementDerivationLogLevel;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
 
 public class ElementDerivationLogItem {
     @Nonnull
-    private LocalDateTime timestamp;
+    private Instant timestamp;
     @Nonnull
     private ElementDerivationLogLevel level;
     @Nonnull
@@ -23,7 +23,7 @@ public class ElementDerivationLogItem {
                                     @Nonnull ElementDerivationLogLevel level,
                                     @Nonnull String message,
                                     @Nullable Map<String, Object> details) {
-        this.timestamp = LocalDateTime.now();
+        this.timestamp = Instant.now();
         this.elementId = elementId;
         this.level = level;
         this.message = message;
@@ -31,11 +31,11 @@ public class ElementDerivationLogItem {
     }
 
     @Nonnull
-    public LocalDateTime getTimestamp() {
+    public Instant getTimestamp() {
         return timestamp;
     }
 
-    public ElementDerivationLogItem setTimestamp(@Nonnull LocalDateTime timestamp) {
+    public ElementDerivationLogItem setTimestamp(@Nonnull Instant timestamp) {
         this.timestamp = timestamp;
         return this;
     }

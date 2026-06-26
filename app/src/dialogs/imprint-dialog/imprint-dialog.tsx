@@ -1,19 +1,18 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Box, Button, Dialog, DialogActions, DialogContent} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
-import {useSelector} from 'react-redux';
-import {selectLoadedForm} from '../../slices/app-slice';
 import {type ImprintDialogProps} from './imprint-dialog-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
 import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const ImprintDialogId = 'imprint';
 
 export function ImprintDialog(props: ImprintDialogProps) {
-    const application = useSelector(selectLoadedForm);
+    const application = props.form;
 
     const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
@@ -21,11 +20,11 @@ export function ImprintDialog(props: ImprintDialogProps) {
     useEffect(() => {
         if (
             !props.isListingPage &&
-            application?.version.imprintDepartmentId != null &&
-            (department == null || department.id !== application.version.imprintDepartmentId)
+            application.imprintDepartmentId != null &&
+            (department == null || department.id !== application.imprintDepartmentId)
         ) {
             new DepartmentApiService()
-                .retrievePublic(application.version.imprintDepartmentId)
+                .retrievePublic(application.imprintDepartmentId)
                 .then(setDepartment);
         } else if (
             props.isListingPage &&
@@ -54,13 +53,14 @@ export function ImprintDialog(props: ImprintDialogProps) {
             </DialogTitleWithClose>
             {
                 department?.imprint ?
-                    <DialogContent
-                        dangerouslySetInnerHTML={{__html: department?.imprint}}
-                    />
+                    <DialogContent>
+                        <MarkdownContent markdown={department.imprint}/>
+                    </DialogContent>
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
-                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ einen Fachbereich als Quelle für den Rechtstext des Impressums aus.
+                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ eine
+                            Organisationseinheit als Quelle für den Rechtstext des Impressums aus.
                         </Alert>
                     </DialogContent>
             }

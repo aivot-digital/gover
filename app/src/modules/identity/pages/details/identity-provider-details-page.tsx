@@ -121,8 +121,8 @@ export function IdentityProviderDetailsPage() {
 
                         return tabs;
                     }}
-                    initializeItem={(api) => new IdentityProvidersApiService(api).initialize()}
-                    fetchData={(api, id: string) => new IdentityProvidersApiService(api).retrieve(id)}
+                    initializeItem={(api) => new IdentityProvidersApiService().initialize()}
+                    fetchData={(api, id: string) => new IdentityProvidersApiService().retrieve(id)}
                     getTabTitle={(item: IdentityProviderDetailsDTO) => {
                         if (item.key === '') {
                             return 'Neuer Nutzerkontenanbieter';

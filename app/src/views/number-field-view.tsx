@@ -29,7 +29,7 @@ export function NumberFieldView(props: BaseViewProps<NumberFieldElement, number>
     return (
         <NumberFieldComponent
             label={element.label ?? ''}
-            value={value ?? undefined}
+            value={value}
             onChange={setValue}
             placeholder={element.placeholder ?? undefined}
             decimalPlaces={element.decimalPlaces ?? undefined}

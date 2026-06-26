@@ -1,5 +1,8 @@
 import {Box, Grid, useTheme} from '@mui/material';
 import React from 'react';
+import {MarkdownContent} from '../markdown-content/markdown-content';
+import {isStringNotNullOrEmpty} from '../../utils/string-utils';
+import {AssetsApiService} from '../../modules/assets/assets-api-service';
 
 interface PreambleProps {
     text: string;
@@ -7,15 +10,29 @@ interface PreambleProps {
     logoAlt?: string;
 }
 
+function resolveLogoLink(logoLink?: string): string | undefined {
+    const trimmedLogoLink = logoLink?.trim();
+
+    if (trimmedLogoLink == null || trimmedLogoLink.length === 0) {
+        return undefined;
+    }
+
+    if (/^(https?:\/\/|data:|blob:|\/)/i.test(trimmedLogoLink)) {
+        return trimmedLogoLink;
+    }
+
+    return AssetsApiService.useAssetLink(trimmedLogoLink);
+}
+
 export function Preamble(props: PreambleProps) {
     const theme = useTheme();
+    const showLogo = isStringNotNullOrEmpty(props.logoLink) && isStringNotNullOrEmpty(props.logoAlt);
+    const logoLink = resolveLogoLink(props.logoLink);
+
     return (
         <>
             {
-                (
-                    props.logoLink != null &&
-                    props.logoAlt != null
-                ) ?
+                showLogo ?
                     <Grid
                         container
                         spacing={10}
@@ -30,8 +47,8 @@ export function Preamble(props: PreambleProps) {
                             <Box
                                 sx={{maxWidth: '660px'}}
                             >
-                                <div
-                                    dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                <MarkdownContent
+                                    markdown={props.text}
                                     className={"content-without-margin-on-childs"}
                                 />
                             </Box>
@@ -53,7 +70,7 @@ export function Preamble(props: PreambleProps) {
                                 lg: 5
                             }}>
                             <img
-                                src={props.logoLink}
+                                src={logoLink}
                                 alt={props.logoAlt}
                                 style={{
                                     maxWidth: '100%',
@@ -73,8 +90,8 @@ export function Preamble(props: PreambleProps) {
                                     maxWidth: '660px',
                                 }}
                             >
-                                <div
-                                    dangerouslySetInnerHTML={{__html: props.text ?? ''}}
+                                <MarkdownContent
+                                    markdown={props.text}
                                     className={"content-without-margin-on-childs"}
                                 />
                             </Box>

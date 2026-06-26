@@ -7,7 +7,8 @@ export function GroupSummary(props: BaseSummaryProps<GroupLayout, void>) {
         model,
         showTechnical,
         allowStepNavigation,
-        elementData,
+        authoredElementValues,
+        derivedData,
     } = props;
 
     const {
@@ -24,7 +25,8 @@ export function GroupSummary(props: BaseSummaryProps<GroupLayout, void>) {
                             element={model}
                             showTechnical={showTechnical}
                             allowStepNavigation={allowStepNavigation}
-                            elementData={elementData}
+                            authoredElementValues={authoredElementValues}
+                            derivedData={derivedData}
                         />
                     ))
             }

@@ -6,8 +6,8 @@ import {ConditionSetOperator} from '../data/condition-set-operator';
 import {ConditionOperator} from '../data/condition-operator';
 import {CodeTabCondition} from './code-tab-condition';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
 import {ElementWithParents} from '../utils/flatten-elements';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 interface CodeTabConditionSetEditorProps {
     element: AnyElement;
@@ -267,7 +267,7 @@ export function CodeTabConditionSetEditor({
                                                 });
                                             }}
                                         >
-                                            <DeleteForeverOutlinedIcon
+                                            <Delete
                                                 fontSize="small"
                                             />
                                         </IconButton>

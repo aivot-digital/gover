@@ -69,6 +69,7 @@ public class StorageProviderDefinitionController {
             @Nonnull Integer version,
             @Nonnull String name,
             @Nonnull String description,
+            @Nonnull Boolean supportsMetadataAttributes,
             @Nullable ConfigLayoutElement providerConfigLayout
     ) {
 
@@ -85,6 +86,7 @@ public class StorageProviderDefinitionController {
                     definition.getMajorVersion(),
                     definition.getName(),
                     definition.getDescription(),
+                    definition.getSupportsMetadataAttributes(),
                     layout
             );
         }

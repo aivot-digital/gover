@@ -2,17 +2,15 @@ import {ElementType} from '../data/element-type/element-type';
 import {type ElementTypesMap} from '../data/element-type/element-types-map';
 import {TextFieldEditor} from './text-field-editor';
 import {type BaseEditor} from './base-editor';
-import {RootComponentEditor} from '../components/root/root.component.editor';
-import {RootComponentEditorTabSchnittstellen} from '../components/root/root.component.editor-tab.schnittstellen';
+import {RootComponentEditor} from '../components/form/root.component.editor';
 import {StepComponentEditor} from '../components/step/step.component.editor';
 import {NumberFieldEditor} from './number-field-editor';
 import {AlertEditor} from './alert-editor';
 import {SelectFieldEditor} from './select-field-editor';
 import {DateFieldEditor} from './date-field-editor';
-import {RootComponentEditorTabLegal} from '../components/root/root.component.editor-tab.legal';
 import {ImageEditor} from '../components/image/image-editor';
 import {
-    MultiCheckboxFieldComponentEditor
+    MultiCheckboxFieldComponentEditor,
 } from '../components/multi-checkbox-field/multi-checkbox-field.component.editor';
 import {HeadlineComponentEditor} from '../components/headline/headline.component.editor';
 import {ReplicatingContainerEditor} from '../components/replicating-container/replicating-container.editor';
@@ -21,40 +19,41 @@ import {RadioFieldComponentEditor} from '../components/radio-field/radio-field.c
 import {SpacerComponentEditor} from '../components/spacer/spacer.component.editor';
 import {TableFieldComponentEditor} from '../components/table-field/table-field.component.editor';
 import {
-    GeneralInformationComponentEditor
+    GeneralInformationComponentEditor,
 } from '../components/general-information/general-information.component.editor';
 import {SubmitComponentEditor} from '../components/submit/submit.component.editor';
 import {FileUploadEditor} from '../components/file-upload-field/file-upload.editor';
 import {ContainerEditor} from './container-editor';
-import {RootComponentEditorTabPayment} from '../components/root/root.component.editor-tab.payment';
+import {ChipInputFieldEditor} from './chip-input-field-editor';
+import {DateTimeFieldEditor} from './date-time-field-editor';
+import {DateRangeFieldEditor} from './date-range-field-editor';
+import {TimeRangeFieldEditor} from './time-range-field-editor';
+import {DateTimeRangeFieldEditor} from './date-time-range-field-editor';
+import {TimeFieldEditor} from './time-field-editor';
+import {MapPointFieldEditor} from './map-point-field-editor';
+import {DomainUserSelectFieldEditor} from './domain-user-select-field-editor';
+import {AssignmentContextFieldEditor} from './assignment-context-field-editor';
+import {DataModelSelectFieldEditor} from './data-model-select-field-editor';
+import {DataObjectSelectFieldEditor} from './data-object-select-field-editor';
+import {RichTextInputFieldEditor} from './rich-text-input-field-editor';
+import {CodeInputFieldEditor} from './code-input-field-editor';
+import {NoCodeInputFieldEditor} from './no-code-input-field-editor';
+import {UiDefinitionInputFieldEditor} from './ui-definition-input-field-editor';
+import {ProcessAttachmentDisplayEditor} from './process-attachment-display-editor';
 
 export interface EditorTab {
     label: string;
-    editor: BaseEditor<any, any>;
+    editor: BaseEditor<any>;
 }
 
 export interface EditorSet {
-    default: BaseEditor<any, any>;
+    default: BaseEditor<any>;
     additionalTabs?: EditorTab[];
 }
 
 export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.FormLayout]: {
         default: RootComponentEditor,
-        additionalTabs: [
-            {
-                label: 'Schnittstellen',
-                editor: RootComponentEditorTabSchnittstellen,
-            },
-            {
-                label: 'Rechtliches',
-                editor: RootComponentEditorTabLegal,
-            },
-            {
-                label: 'E-Payment',
-                editor: RootComponentEditorTabPayment,
-            },
-        ],
     },
     [ElementType.Step]: {
         default: StepComponentEditor,
@@ -102,7 +101,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.Text]: {
         default: TextFieldEditor,
     },
-    [ElementType.Time]: null,
+    [ElementType.Time]: {
+        default: TimeFieldEditor,
+    },
     [ElementType.IntroductionStep]: {
         default: GeneralInformationComponentEditor,
     },
@@ -120,9 +121,60 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     [ElementType.StepperLayout]: null,
     [ElementType.ConfigLayout]: null,
     [ElementType.FunctionInput]: null,
-    [ElementType.CodeInput]: null,
-    [ElementType.RichTextInput]: null,
-    [ElementType.UiDefinitionInput]: null,
-    [ElementType.IdentityInput]: null,
+    [ElementType.CodeInput]: {
+        default: CodeInputFieldEditor,
+    },
+    [ElementType.RichTextInput]: {
+        default: RichTextInputFieldEditor,
+    },
+    [ElementType.UiDefinitionInput]: {
+        default: UiDefinitionInputFieldEditor,
+    },
+    [ElementType.IdentityConfigElement]: null,
     [ElementType.TabLayout]: null,
+    [ElementType.ChipInput]: {
+        default: ChipInputFieldEditor,
+    },
+    [ElementType.DateTime]: {
+        default: DateTimeFieldEditor,
+    },
+    [ElementType.DateRange]: {
+        default: DateRangeFieldEditor,
+    },
+    [ElementType.TimeRange]: {
+        default: TimeRangeFieldEditor,
+    },
+    [ElementType.DateTimeRange]: {
+        default: DateTimeRangeFieldEditor,
+    },
+    [ElementType.MapPoint]: {
+        default: MapPointFieldEditor,
+    },
+    [ElementType.DomainAndUserSelect]: {
+        default: DomainUserSelectFieldEditor,
+    },
+    [ElementType.AssignmentContext]: {
+        default: AssignmentContextFieldEditor,
+    },
+    [ElementType.DataModelSelect]: {
+        default: DataModelSelectFieldEditor,
+    },
+    [ElementType.DataObjectSelect]: {
+        default: DataObjectSelectFieldEditor,
+    },
+    [ElementType.NoCodeInput]: {
+        default: NoCodeInputFieldEditor,
+    },
+    [ElementType.SummaryLayout]: null,
+    [ElementType.ProcessDataKeyInput]: null,
+    [ElementType.ProcessAttachmentNameChipInput]: {
+        default: ChipInputFieldEditor,
+    },
+    [ElementType.ProcessIdentityIdInput]: {
+        default: ChipInputFieldEditor,
+    },
+    [ElementType.HtmlTemplateInput]: null,
+    [ElementType.ProcessAttachmentDisplay]: {
+        default: ProcessAttachmentDisplayEditor,
+    },
 };

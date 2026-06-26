@@ -7,11 +7,11 @@ import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-import org.hibernate.annotations.ColumnDefault;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -46,7 +46,14 @@ public class ProcessInstanceTaskEntity {
     private Integer processNodeId;
 
     @Nullable
+    private Long previousProcessInstanceTaskId;
+
+    @Nullable
     private Integer previousProcessNodeId;
+
+    @Nullable
+    @Size(max = 96, message = "Der Schlüssel des vorherigen Prozessknoten-Ports darf maximal 96 Zeichen lang sein.")
+    private String previousProcessNodePortKey;
 
     @Nonnull
     @NotNull(message = "Der Aufgaben-Status darf nicht null sein.")
@@ -59,14 +66,17 @@ public class ProcessInstanceTaskEntity {
 
     @Nonnull
     @NotNull(message = "Das Startdatum darf nicht null sein.")
-    private LocalDateTime started;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant started;
 
     @Nonnull
     @NotNull(message = "Das Aktualisierungsdatum darf nicht null sein.")
-    private LocalDateTime updated;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant updated;
 
     @Nullable
-    private LocalDateTime finished;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant finished;
 
     @Nullable
     @Column(columnDefinition = "interval", insertable = false, updatable = false)
@@ -79,7 +89,7 @@ public class ProcessInstanceTaskEntity {
     private Map<String, Object> runtimeData;
 
     @Nonnull
-    @NotNull(message = "Die Prozesselementdaten dürfen nicht null sein.")
+    @NotNull(message = "Die Elementdaten dürfen nicht null sein.")
     @Column(columnDefinition = "jsonb")
     @Convert(converter = JsonObjectConverter.class)
     private Map<String, Object> nodeData;
@@ -91,20 +101,28 @@ public class ProcessInstanceTaskEntity {
     private Map<String, Object> processData;
 
     @Nullable
+    @Column(columnDefinition = "jsonb")
+    @Convert(converter = JsonObjectConverter.class)
+    private Map<String, Object> processDataDiff;
+
+    @Nullable
     @Size(max = 36, message = "Die zugewiesene Benutzer-ID darf maximal 36 Zeichen lang sein.")
     private String assignedUserId;
 
     @Nullable
-    private LocalDateTime deadline;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant deadline;
 
     @Nullable
-    private LocalDateTime postponedUntil;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant postponedUntil;
 
     @Nullable
     private Integer retryCount;
 
     @Nullable
-    private LocalDateTime nextRetryAt;
+    @Column(columnDefinition = "timestamp with time zone")
+    private Instant nextRetryAt;
 
     // region Constructors
 
@@ -119,28 +137,33 @@ public class ProcessInstanceTaskEntity {
                                      @Nonnull Integer processId,
                                      @Nonnull Integer processVersion,
                                      @Nonnull Integer processNodeId,
+                                     @Nullable Long previousProcessInstanceTaskId,
                                      @Nullable Integer previousProcessNodeId,
+                                     @Nullable String previousProcessNodePortKey,
                                      @Nonnull ProcessTaskStatus status,
                                      @Nullable String statusOverride,
-                                     @Nonnull LocalDateTime started,
-                                     @Nonnull LocalDateTime updated,
-                                     @Nullable LocalDateTime finished,
+                                     @Nonnull Instant started,
+                                     @Nonnull Instant updated,
+                                     @Nullable Instant finished,
                                      @Nullable Duration runtime,
                                      @Nonnull Map<String, Object> runtimeData,
                                      @Nonnull Map<String, Object> nodeData,
                                      @Nonnull Map<String, Object> processData,
+                                     @Nonnull Map<String, Object> processDataDiff,
                                      @Nullable String assignedUserId,
-                                     @Nullable LocalDateTime deadline,
-                                     @Nullable LocalDateTime postponedUntil,
+                                     @Nullable Instant deadline,
+                                     @Nullable Instant postponedUntil,
                                      @Nullable Integer retryCount,
-                                     @Nullable LocalDateTime nextRetryAt) {
+                                     @Nullable Instant nextRetryAt) {
         this.id = id;
         this.accessKey = accessKey;
         this.processInstanceId = processInstanceId;
         this.processId = processId;
         this.processVersion = processVersion;
         this.processNodeId = processNodeId;
+        this.previousProcessInstanceTaskId = previousProcessInstanceTaskId;
         this.previousProcessNodeId = previousProcessNodeId;
+        this.previousProcessNodePortKey = previousProcessNodePortKey;
         this.status = status;
         this.statusOverride = statusOverride;
         this.started = started;
@@ -150,11 +173,38 @@ public class ProcessInstanceTaskEntity {
         this.runtimeData = runtimeData;
         this.nodeData = nodeData;
         this.processData = processData;
+        this.processDataDiff = processDataDiff;
         this.assignedUserId = assignedUserId;
         this.deadline = deadline;
         this.postponedUntil = postponedUntil;
         this.retryCount = retryCount;
         this.nextRetryAt = nextRetryAt;
+    }
+
+    // endregion
+
+    // region HashCode & Equals
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        ProcessInstanceTaskEntity that = (ProcessInstanceTaskEntity) o;
+        return Objects.equals(id, that.id) && Objects.equals(accessKey, that.accessKey) && Objects.equals(processInstanceId, that.processInstanceId) &&
+                Objects.equals(processId, that.processId) && Objects.equals(processVersion, that.processVersion) &&
+                Objects.equals(processNodeId, that.processNodeId) && Objects.equals(previousProcessInstanceTaskId, that.previousProcessInstanceTaskId) &&
+                Objects.equals(previousProcessNodeId, that.previousProcessNodeId) && Objects.equals(previousProcessNodePortKey, that.previousProcessNodePortKey) &&
+                status == that.status && Objects.equals(statusOverride, that.statusOverride) && Objects.equals(started, that.started) &&
+                Objects.equals(updated, that.updated) && Objects.equals(finished, that.finished) && Objects.equals(runtime, that.runtime) &&
+                Objects.equals(runtimeData, that.runtimeData) && Objects.equals(nodeData, that.nodeData) &&
+                Objects.equals(processData, that.processData) && Objects.equals(processDataDiff, that.processDataDiff) &&
+                Objects.equals(assignedUserId, that.assignedUserId) && Objects.equals(deadline, that.deadline) &&
+                Objects.equals(postponedUntil, that.postponedUntil) && Objects.equals(retryCount, that.retryCount) &&
+                Objects.equals(nextRetryAt, that.nextRetryAt);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, accessKey, processInstanceId, processId, processVersion, processNodeId, previousProcessInstanceTaskId, previousProcessNodeId, previousProcessNodePortKey, status, statusOverride, started, updated, finished, runtime, runtimeData, nodeData, processData, processDataDiff, assignedUserId, deadline, postponedUntil, retryCount, nextRetryAt);
     }
 
     // endregion
@@ -222,12 +272,32 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nullable
+    public Long getPreviousProcessInstanceTaskId() {
+        return previousProcessInstanceTaskId;
+    }
+
+    public ProcessInstanceTaskEntity setPreviousProcessInstanceTaskId(@Nullable Long previousProcessInstanceTaskId) {
+        this.previousProcessInstanceTaskId = previousProcessInstanceTaskId;
+        return this;
+    }
+
+    @Nullable
     public Integer getPreviousProcessNodeId() {
         return previousProcessNodeId;
     }
 
     public ProcessInstanceTaskEntity setPreviousProcessNodeId(@Nullable Integer previousProcessDefinitionNodeId) {
         this.previousProcessNodeId = previousProcessDefinitionNodeId;
+        return this;
+    }
+
+    @Nullable
+    public String getPreviousProcessNodePortKey() {
+        return previousProcessNodePortKey;
+    }
+
+    public ProcessInstanceTaskEntity setPreviousProcessNodePortKey(@Nullable String previousProcessNodePortKey) {
+        this.previousProcessNodePortKey = previousProcessNodePortKey;
         return this;
     }
 
@@ -252,31 +322,31 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nonnull
-    public LocalDateTime getStarted() {
+    public Instant getStarted() {
         return started;
     }
 
-    public ProcessInstanceTaskEntity setStarted(@Nonnull LocalDateTime started) {
+    public ProcessInstanceTaskEntity setStarted(@Nonnull Instant started) {
         this.started = started;
         return this;
     }
 
     @Nonnull
-    public LocalDateTime getUpdated() {
+    public Instant getUpdated() {
         return updated;
     }
 
-    public ProcessInstanceTaskEntity setUpdated(@Nonnull LocalDateTime updated) {
+    public ProcessInstanceTaskEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getFinished() {
+    public Instant getFinished() {
         return finished;
     }
 
-    public ProcessInstanceTaskEntity setFinished(@Nullable LocalDateTime finished) {
+    public ProcessInstanceTaskEntity setFinished(@Nullable Instant finished) {
         this.finished = finished;
         return this;
     }
@@ -322,6 +392,16 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nullable
+    public Map<String, Object> getProcessDataDiff() {
+        return processDataDiff;
+    }
+
+    public ProcessInstanceTaskEntity setProcessDataDiff(@Nullable Map<String, Object> processDataDiff) {
+        this.processDataDiff = processDataDiff;
+        return this;
+    }
+
+    @Nullable
     public String getAssignedUserId() {
         return assignedUserId;
     }
@@ -332,21 +412,21 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nullable
-    public LocalDateTime getDeadline() {
+    public Instant getDeadline() {
         return deadline;
     }
 
-    public ProcessInstanceTaskEntity setDeadline(@Nullable LocalDateTime deadline) {
+    public ProcessInstanceTaskEntity setDeadline(@Nullable Instant deadline) {
         this.deadline = deadline;
         return this;
     }
 
     @Nullable
-    public LocalDateTime getPostponedUntil() {
+    public Instant getPostponedUntil() {
         return postponedUntil;
     }
 
-    public ProcessInstanceTaskEntity setPostponedUntil(@Nullable LocalDateTime postponedUntil) {
+    public ProcessInstanceTaskEntity setPostponedUntil(@Nullable Instant postponedUntil) {
         this.postponedUntil = postponedUntil;
         return this;
     }
@@ -362,11 +442,11 @@ public class ProcessInstanceTaskEntity {
     }
 
     @Nullable
-    public LocalDateTime getNextRetryAt() {
+    public Instant getNextRetryAt() {
         return nextRetryAt;
     }
 
-    public ProcessInstanceTaskEntity setNextRetryAt(@Nullable LocalDateTime nextRetryAt) {
+    public ProcessInstanceTaskEntity setNextRetryAt(@Nullable Instant nextRetryAt) {
         this.nextRetryAt = nextRetryAt;
         return this;
     }

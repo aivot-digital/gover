@@ -21,17 +21,17 @@
                         Formular: <b th:text="${form.internalTitle}">Beispielformular</b>
                         <br/>
                         <span>
-                            Entwickelnder Fachbereich:
+                            Entwickelnde Organisationseinheit:
                             <b th:text="${developingDepartment.name}">—</b>
                         </span>
                         <br th:if="${responsibleDepartment != null}" />
                         <span th:if="${responsibleDepartment != null}">
-                            Zuständiger Fachbereich:
+                            Zuständige Organisationseinheit:
                             <b th:text="${responsibleDepartment.name}">—</b>
                         </span>
                         <br th:if="${managingDepartment != null}" />
                         <span th:if="${managingDepartment != null}">
-                            Bewirtschaftender Fachbereich:
+                            Bewirtschaftende Organisationseinheit:
                             <b th:text="${managingDepartment.name}">—</b>
                         </span>
                         <br/>

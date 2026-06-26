@@ -2,7 +2,7 @@ import React, {useRef} from 'react';
 import {Box, IconButton, Typography} from '@mui/material';
 import {FileUploadProps} from './file-upload-props';
 import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import DeleteForeverOutlinedIcon from '@mui/icons-material/DeleteForeverOutlined';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 
 /**
  * @deprecated Use FieldUploadFieldComponent
@@ -70,7 +70,7 @@ export function FileUpload({
                                     sx={{ml: 1}}
                                     onClick={() => handleRemove(file)}
                                 >
-                                    <DeleteForeverOutlinedIcon/>
+                                    <Delete/>
                                 </IconButton>
                             </Box>
                         ))

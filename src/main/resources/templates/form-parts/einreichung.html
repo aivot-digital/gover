@@ -1,16 +1,17 @@
 <!--/*@thymesVar id="base" type="de.aivot.GoverBackend.pdf.models.FormPdfContext"*/-->
 <!--/*@thymesVar id="form" type="de.aivot.GoverBackend.form.entities.FormVersionWithDetailsEntity"*/-->
+<!--/*@thymesVar id="#markdown" type="de.aivot.GoverBackend.services.pdf.MarkdownDialect"*/-->
 
 <section class="avoid-break-inside">
     <th:block
-            th:if="${ base.isCitizenPrint && !#strings.isEmpty(form.rootElement?.offlineSubmissionText) }"
+            th:if="${ (base.isBlankPrint || base.isCitizenPrint) && !#strings.isEmpty(form.rootElement?.offlineSubmissionText) }"
     >
         <h2>Hinweise zur Einreichung des ausgefüllten Antrages</h2>
         <p>
             Bitte reichen Sie das ausgefüllte Formular auf nachstehendem Weg ein:
         </p>
         <div
-                th:utext="${ form.rootElement.offlineSubmissionText }"
+                th:utext="${ #markdown.render(form.rootElement.offlineSubmissionText) }"
                 class="content-without-margin-on-childs"
         ></div>
     </th:block>

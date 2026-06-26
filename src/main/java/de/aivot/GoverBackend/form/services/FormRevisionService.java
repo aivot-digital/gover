@@ -2,6 +2,7 @@ package de.aivot.GoverBackend.form.services;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.aivot.GoverBackend.core.services.ObjectMapperFactory;
 import de.aivot.GoverBackend.exceptions.BadRequestException;
 import de.aivot.GoverBackend.form.entities.*;
 import de.aivot.GoverBackend.form.repositories.FormRevisionRepository;
@@ -17,9 +18,11 @@ import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.math.BigInteger;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class FormRevisionService {
@@ -27,7 +30,7 @@ public class FormRevisionService {
     private final FormRevisionRepository formRevisionRepository;
     private final FormVersionService formVersionService;
 
-    private static final String[] IGNORED_FIELDS = new String[] {
+    private static final String[] IGNORED_FIELDS = new String[]{
             "created",
             "updated",
             "internalTitle"
@@ -52,15 +55,15 @@ public class FormRevisionService {
 
     public void create(
             @Nonnull UserEntity user,
-            @Nonnull VFormVersionWithDetailsEntity updatedFormVersion
+            @Nonnull Map<String, Object> updatedFormVersion
     ) {
         create(user, updatedFormVersion, null);
     }
 
     public void create(
             @Nonnull UserEntity user,
-            @Nonnull VFormVersionWithDetailsEntity updatedFormVersion,
-            @Nullable VFormVersionWithDetailsEntity existingFormVersion
+            @Nonnull Map<String, Object> updatedFormVersion,
+            @Nullable Map<String, Object> existingFormVersion
     ) {
         if (existingFormVersion == null) {
             createForNewForm(user, updatedFormVersion);
@@ -71,7 +74,7 @@ public class FormRevisionService {
 
     private void createForNewForm(
             @Nonnull UserEntity user,
-            @Nonnull VFormVersionWithDetailsEntity createdForm
+            @Nonnull Map<String, Object> createdForm
     ) {
         var formJson = new JSONObject(createdForm);
         for (String field : IGNORED_FIELDS) {
@@ -81,13 +84,13 @@ public class FormRevisionService {
 
         var formMap = formJson.toMap();
 
-        var diff = new DiffItem("/", null, formMap);
+        var diff = new DiffItem("", null, formMap);
 
         var formRevision = new FormRevisionEntity();
-        formRevision.setFormId(createdForm.getId());
-        formRevision.setFormVersion(createdForm.getVersion());
+        formRevision.setFormId((Integer) createdForm.get("id"));
+        formRevision.setFormVersion((Integer) createdForm.get("version"));
         formRevision.setUserId(user.getId());
-        formRevision.setTimestamp(LocalDateTime.now());
+        formRevision.setTimestamp(Instant.now());
         formRevision.setDiff(List.of(diff));
 
         formRevisionRepository.save(formRevision);
@@ -95,8 +98,8 @@ public class FormRevisionService {
 
     private void createForExistingForm(
             @Nonnull UserEntity user,
-            @Nonnull VFormVersionWithDetailsEntity updatedForm,
-            @Nonnull VFormVersionWithDetailsEntity existingForm
+            @Nonnull Map<String, Object> updatedForm,
+            @Nonnull Map<String, Object> existingForm
     ) {
         var updatedFormJson = new JSONObject(updatedForm);
         var existingFormJson = new JSONObject(existingForm);
@@ -114,10 +117,10 @@ public class FormRevisionService {
         }
 
         var formRevision = new FormRevisionEntity();
-        formRevision.setFormId(existingForm.getId());
-        formRevision.setFormVersion(existingForm.getVersion());
+        formRevision.setFormId((Integer) existingForm.get("id"));
+        formRevision.setFormVersion((Integer) existingForm.get("version"));
         formRevision.setUserId(user.getId());
-        formRevision.setTimestamp(LocalDateTime.now());
+        formRevision.setTimestamp(Instant.now());
         formRevision.setDiff(changes);
 
         formRevisionRepository.save(formRevision);
@@ -148,11 +151,11 @@ public class FormRevisionService {
             }
         }
 
-        // Remove these fields to prevent jackson from crashing because of LocalDateTime
+        // Let JPA regenerate lifecycle timestamps after the rollback instead of reusing stale values.
         formObj.remove("updated");
         formObj.remove("created");
 
-        var objectMapper = new ObjectMapper();
+        var objectMapper = ObjectMapperFactory.getInstance().copy();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         var rolledBackFormVersionWithDetails = objectMapper.convertValue(formObj.toMap(), VFormVersionWithDetailsEntity.class);
 

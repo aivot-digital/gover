@@ -1,7 +1,7 @@
 Hallo,
 
-Ihre Rolle in einem Gover Fachbereich wurde geändert.
-Fachbereich: [(${department.name})]
+Ihre Rolle in einer Organisationseinheit in Gover wurde geändert.
+Organisationseinheit: [(${department.name})]
 Neue Rolle: [(${newRole.getLabel})]
 Bisherige Rolle: [(${oldRole.getLabel})]
 Änderung durch: [(${admin.getFullName()})]

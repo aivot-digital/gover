@@ -36,12 +36,20 @@ public record FormPdfContext(String providerName, String logoAssetKey, String lo
     }
 
     public String createAssetUrl(String assetKey, String assetName) {
-        var urlEncodedAssetName = URLEncoder
-                .encode(assetName, StandardCharsets.UTF_8);
-        return config.createUrl("api/public/assets/" + assetKey + "/" + urlEncodedAssetName);
+        return config.createUrlWithTrailingSlash("/api/public/assets", assetKey);
     }
 
     public String createUrl(String suffix) {
         return config.createUrl(suffix);
+    }
+
+    public String createUrlWithQueryParameter(String suffix, String key, String value) {
+        var url = createUrl(suffix);
+        var separator = url.contains("?") ? "&" : "?";
+        return url + separator + encodeQueryParameter(key) + "=" + encodeQueryParameter(value);
+    }
+
+    private String encodeQueryParameter(String value) {
+        return URLEncoder.encode(value, StandardCharsets.UTF_8);
     }
 }

@@ -1,23 +1,12 @@
 import React from 'react';
 import {type StepElement} from '../../models/elements/steps/step-element';
-import {ViewDispatcherComponent} from '../view-dispatcher.component';
 import {type BaseViewProps} from '../../views/base-view';
 import Grid from '@mui/material/Grid';
+import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 
 export function StepComponentView(props: BaseViewProps<StepElement, void>) {
     const {
-        rootElement,
-        allElements,
         element,
-        isBusy,
-        isDeriving,
-        scrollContainerRef,
-        mode,
-        elementData,
-        onElementDataChange,
-        onElementBlur,
-        disableVisibility,
-        derivationTriggerIdQueue,
     } = props;
 
     const {
@@ -31,23 +20,15 @@ export function StepComponentView(props: BaseViewProps<StepElement, void>) {
             sx={{mt: 0}}
         >
             {
-                (children ?? []).map((child) => (
-                    <ViewDispatcherComponent
-                        rootElement={rootElement}
-                        key={child.id}
-                        allElements={allElements}
-                        element={child}
-                        isBusy={isBusy}
-                        isDeriving={isDeriving}
-                        scrollContainerRef={scrollContainerRef}
-                        mode={mode}
-                        elementData={elementData}
-                        onElementDataChange={onElementDataChange}
-                        onElementBlur={onElementBlur}
-                        derivationTriggerIdQueue={derivationTriggerIdQueue}
-                        disableVisibility={disableVisibility}
-                    />
-                ))
+                children != null &&
+                children
+                    .map((child) => (
+                        <ViewDispatcherComponent
+                            {...props}
+                            key={child.id}
+                            element={child}
+                        />
+                    ))
             }
         </Grid>
 

@@ -3,6 +3,7 @@ package de.aivot.GoverBackend.services;
 
 import de.aivot.GoverBackend.services.pdf.NumberFormatDialect;
 import de.aivot.GoverBackend.services.pdf.QrCodeDialect;
+import de.aivot.GoverBackend.services.pdf.MarkdownDialect;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.extras.java8time.dialect.Java8TimeDialect;
@@ -24,6 +25,7 @@ public class TemplateLoaderService {
         templateEngine.addDialect(new Java8TimeDialect());
         templateEngine.addDialect(new NumberFormatDialect());
         templateEngine.addDialect(new QrCodeDialect());
+        templateEngine.addDialect(new MarkdownDialect());
 
         templateEngine.addTemplateResolver(getAssetTemplateResolver(mode));
         templateEngine.addTemplateResolver(getFileTemplateResolver(mode));

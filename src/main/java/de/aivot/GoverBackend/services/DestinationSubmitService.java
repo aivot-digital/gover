@@ -46,9 +46,13 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.X509Certificate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
+/**
+ * @deprecated
+ */
+@Deprecated
 @Component
 public class DestinationSubmitService {
     private final SubmissionMailService mailService;
@@ -127,13 +131,13 @@ public class DestinationSubmitService {
 
         // Update submission with destination response
 
-        submission.setDestinationTimestamp(LocalDateTime.now());
+        submission.setDestinationTimestamp(Instant.now());
         submission.setDestinationSuccess(response.ok());
 
         if (submission.getDestinationSuccess()) {
             submission.setDestinationResult(response.message());
             submission.setFileNumber(response.fileNumber());
-            submission.setArchived(LocalDateTime.now());
+            submission.setArchived(Instant.now());
             submission.setStatus(SubmissionStatus.Archived);
 
             if (response.attachments() != null) {
@@ -245,9 +249,7 @@ public class DestinationSubmitService {
 
 
 
-        Map<String, Object> destinationData = DestinationDataFormatter
-                .create(formDerivationServiceFactory, form, submission, paymentTransaction, paymentProvider, pdfBytes, attachmentBytes)
-                .format();
+        Map<String, Object> destinationData = Map.of();
 
         ObjectMapper mapper = new ObjectMapper();
         String jsonResult;
@@ -380,9 +382,7 @@ public class DestinationSubmitService {
 
         byte[] destinationDataBytes;
         try {
-            var destinationData = DestinationDataFormatter
-                    .createDataWithoutFiles(formDerivationServiceFactory, form, submission, paymentTransaction, paymentProvider)
-                    .format();
+            var destinationData = Map.of();
             destinationDataBytes = new ObjectMapper().writeValueAsBytes(destinationData);
         } catch (JsonProcessingException e) {
             return new DestinationResponse(

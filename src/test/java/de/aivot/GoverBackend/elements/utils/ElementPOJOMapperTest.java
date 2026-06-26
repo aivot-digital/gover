@@ -5,7 +5,7 @@ import de.aivot.GoverBackend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.GoverBackend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.GoverBackend.elements.exceptions.ElementDataConversionException;
-import de.aivot.GoverBackend.elements.models.ElementData;
+import de.aivot.GoverBackend.elements.models.EffectiveElementValues;
 import de.aivot.GoverBackend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.GoverBackend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.GoverBackend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
@@ -19,39 +19,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class ElementPOJOMapperTest {
-    private ElementData testElementData;
+    private EffectiveElementValues testElementData;
 
     @BeforeEach
     void setUp() {
-        testElementData = new ElementData();
+        testElementData = new EffectiveElementValues();
+        testElementData.put("text_field", "Test Value");
+        testElementData.put("switch_field", true);
 
-        testElementData
-                .putInputValue(
-                        "text_field",
-                        ElementType.Text,
-                        "Test Value"
-                );
-
-        testElementData
-                .putInputValue(
-                        "switch_field",
-                        ElementType.Checkbox,
-                        true
-                );
-
-        var replicatingChildData = new ElementData();
-        replicatingChildData
-                .putInputValue(
-                        "text_field",
-                        ElementType.Text,
-                        "Replicating Value 1"
-                );
-        testElementData
-                .putInputValue(
-                        "replicating_container",
-                        ElementType.ReplicatingContainer,
-                        List.of(replicatingChildData)
-                );
+        var replicatingChildData = new EffectiveElementValues();
+        replicatingChildData.put("text_field", "Replicating Value 1");
+        testElementData.put("replicating_container", List.of(replicatingChildData));
     }
 
     @Test
@@ -74,9 +52,11 @@ class ElementPOJOMapperTest {
     void createFromPOJO() throws ElementDataConversionException {
         var layout = ElementPOJOMapper
                 .createFromPOJO(ExampleBindingClass.class);
+        var textField = layout.findChild("text_field", TextInputElement.class).orElse(null);
 
         assertNotNull(layout);
-        assertNotNull(layout.findChild("text_field", TextInputElement.class).orElse(null));
+        assertNotNull(textField);
+        assertEquals(Boolean.TRUE, textField.getCopyable());
         assertNotNull(layout.findChild("switch_field", CheckboxInputElement.class).orElse(null));
         assertNotNull(layout.findChild("replicating_container", ReplicatingContainerLayoutElement.class).orElse(null));
         assertNotNull(layout.findChild("replicating_container", ReplicatingContainerLayoutElement.class).get().findChild("text_field"));
@@ -88,6 +68,7 @@ class ElementPOJOMapperTest {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Example Text Field"),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "maxCharacters", intValue = 255),
+                @ElementPOJOBindingProperty(key = "copyable", boolValue = true),
         })
         private String exampleField;
 
@@ -126,7 +107,7 @@ class ElementPOJOMapperTest {
         }
     }
 
-    @LayoutElementPOJOBinding(id = "sub_element", type = ElementType.Group)
+    @LayoutElementPOJOBinding(id = "sub_element", type = ElementType.GroupLayout)
     public static class ExampleBindingSubClass {
         @InputElementPOJOBinding(id = "switch_field", type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Example Switch"),

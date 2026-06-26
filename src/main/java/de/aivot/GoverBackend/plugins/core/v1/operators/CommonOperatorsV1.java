@@ -2,7 +2,7 @@ package de.aivot.GoverBackend.plugins.core.v1.operators;
 
 import de.aivot.GoverBackend.nocode.models.NoCodeOperator;
 import de.aivot.GoverBackend.nocode.providers.NoCodeOperatorsProvider;
-import de.aivot.GoverBackend.plugins.core.Core;
+import de.aivot.GoverBackend.plugins.core.CorePlugin;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeAndOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeNotOperator;
 import de.aivot.GoverBackend.plugins.core.v1.operators.bool.NoCodeOrOperator;
@@ -11,10 +11,15 @@ import de.aivot.GoverBackend.plugins.core.v1.operators.date.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.list.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.math.*;
 import de.aivot.GoverBackend.plugins.core.v1.operators.object.NoCodeObjectGetOperator;
-import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexExtractOperator;
-import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeRegexMatchOperator;
-import de.aivot.GoverBackend.plugins.core.v1.operators.text.NoCodeSplitOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.secrets.NoCodeSecretsGetOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.text.*;
+import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserEmailOperator;
+import de.aivot.GoverBackend.plugins.core.v1.operators.user.NoCodeUserFullNameOperator;
+import de.aivot.GoverBackend.secrets.services.SecretService;
+import de.aivot.GoverBackend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -22,6 +27,17 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
+    @Nullable
+    private final UserRepository userRepository;
+    @Nullable
+    private final SecretService secretService;
+
+    @Autowired
+    public CommonOperatorsV1(@Nullable UserRepository userRepository, @Nullable SecretService secretService) {
+        this.userRepository = userRepository;
+        this.secretService = secretService;
+    }
+
     @Override
     public @Nonnull String getComponentKey() {
         return "common";
@@ -36,7 +52,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
     @Nonnull
     @Override
     public String getParentPluginKey() {
-        return Core.PLUGIN_KEY;
+        return CorePlugin.PLUGIN_KEY;
     }
 
     @Nonnull
@@ -78,6 +94,7 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeCreateDateOperator(),
                 new NoCodeCreateTimeOperator(),
                 new NoCodeCreateTodayOperator(),
+                new NoCodeFormatDateOperator(),
                 new NoCodeSubtractFromDateOperator(),
 
                 // List
@@ -85,7 +102,9 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 new NoCodeListConcatOperator(),
                 new NoCodeListContainsOperator(),
                 new NoCodeListGetOperator(),
+                new NoCodeListIntersectionOperator(),
                 new NoCodeListLengthOperator(),
+                new NoCodeListOverlapsOperator(),
                 new NoCodeListSelectOperator(),
                 new NoCodeListSumOperator(),
 
@@ -100,10 +119,19 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
                 // Object
                 new NoCodeObjectGetOperator(),
 
+                // Secrets
+                new NoCodeSecretsGetOperator(secretService),
+
                 // Text
+                new NoCodeBase64Operator(),
+                new NoCodeConcatOperator(),
                 new NoCodeRegexExtractOperator(),
                 new NoCodeRegexMatchOperator(),
                 new NoCodeSplitOperator(),
+
+                // User
+                new NoCodeUserEmailOperator(userRepository),
+                new NoCodeUserFullNameOperator(userRepository),
         };
     }
 }

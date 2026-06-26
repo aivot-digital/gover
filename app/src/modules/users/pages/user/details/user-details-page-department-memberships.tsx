@@ -1,6 +1,9 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@mui/icons-material/EditOutlined';
+import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
+import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';
@@ -36,6 +39,7 @@ import {isApiError} from "../../../../../models/api-error";
 import {
     VDepartmentUserRoleAssignmentWithDetailsService
 } from "../../../../departments/services/v-department-user-role-assignment-with-details-service";
+import {useConfirm} from "../../../../../providers/confirm-provider";
 
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
@@ -68,6 +72,7 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
 
 export function UserDetailsPageDepartmentMemberships() {
     const dispatch = useAppDispatch();
+    const confirm = useConfirm();
 
     const listControlRef = useRef<ListControlRef | null>(null);
 
@@ -103,12 +108,13 @@ export function UserDetailsPageDepartmentMemberships() {
             <Button
                 variant="contained"
                 startIcon={<Add/>}
+                disabled={user?.deletedInIdp === true}
                 onClick={() => setShowSelectNewDepartmentDialog(true)}
             >
                 Mitgliedschaft hinzufügen
             </Button>,
         ];
-    }, [hasAccess]);
+    }, [hasAccess, user?.deletedInIdp]);
 
     if (user == null) {
         return (
@@ -116,7 +122,14 @@ export function UserDetailsPageDepartmentMemberships() {
         );
     }
 
+    const canManageMemberships = !user.deletedInIdp;
+    const disabledMembershipsManagementTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+
     const handleAddMembership = (user: User, department: VDepartmentShadowedEntity, roleIdsToAdd: number[]) => {
+        if (!canManageMemberships) {
+            return;
+        }
+
         dispatch(setLoadingMessage({
             message: `Füge die Mitarbeiter:in zur Organisationseinheit ${department.name} hinzu`,
             blocking: true,
@@ -150,7 +163,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     dispatch(showErrorSnackbar(error.message));
                 } else {
                     console.error(error);
-                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zum Fachbereich'));
+                    dispatch(showErrorSnackbar('Fehler beim Hinzufügen der Mitarbeiter:in zur Organisationseinheit'));
                 }
             })
             .finally(() => {
@@ -159,6 +172,10 @@ export function UserDetailsPageDepartmentMemberships() {
     };
 
     const handleUpdateMembership = (membership: VDepartmentMembershipWithDetailsEntity, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
+        if (!canManageMemberships) {
+            return;
+        }
+
         dispatch(setLoadingMessage({
             message: `Aktualisiere Rollen der Mitarbeiter:in ${membership.userFullName}`,
             blocking: true,
@@ -201,9 +218,60 @@ export function UserDetailsPageDepartmentMemberships() {
             });
     };
 
+    const handleDeleteMembership = (membership: VDepartmentMembershipWithDetailsEntity) => {
+        if (!hasAccess) {
+            return;
+        }
+
+        confirm({
+            title: 'Mitgliedschaft löschen',
+            children: (
+                <>
+                    <Typography>
+                        Durch das Entfernen der Mitarbeiter:in <strong>{membership.userFullName}</strong> aus der
+                        Organisationseinheit <strong>{membership.departmentName}</strong> verliert diese alle
+                        zugewiesenen Rollen und Berechtigungen in dieser Organisationseinheit.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Diese Aktion kann nicht rückgängig gemacht werden.
+                    </Typography>
+                </>
+            ),
+            confirmButtonText: 'Mitgliedschaft löschen',
+        })
+            .then((confirmed) => {
+                if (!confirmed) {
+                    return;
+                }
+
+                dispatch(setLoadingMessage({
+                    message: `Lösche Mitgliedschaft von ${membership.userFullName}`,
+                    blocking: true,
+                    estimatedTime: 5000,
+                }));
+
+                new DepartmentMembershipApiService()
+                    .destroy(membership.membershipId)
+                    .then(() => {
+                        listControlRef.current?.refresh();
+                    })
+                    .catch((error) => {
+                        if (isApiError(error) && error.displayableToUser) {
+                            dispatch(showErrorSnackbar(error.message));
+                        } else {
+                            console.error(error);
+                            dispatch(showErrorSnackbar('Fehler beim Löschen der Mitgliedschaft'));
+                        }
+                    })
+                    .finally(() => {
+                        dispatch(setLoadingMessage(undefined));
+                    });
+            });
+    };
+
     return (
         <>
-            <Box sx={{pt: 2}}>
+            <Box sx={{pt: 1.5}}>
                 <Typography
                     variant="h5"
                     sx={{mb: 1}}
@@ -234,15 +302,24 @@ export function UserDetailsPageDepartmentMemberships() {
                     }}
                     getRowIdentifier={(item) => item.membershipId.toString()}
                     searchLabel="Organisationseinheit suchen"
-                    searchPlaceholder="Titel der Organisationseinheit eingeben…"
+                    searchPlaceholder="Name der Organisationseinheit eingeben…"
                     defaultSortField="departmentName"
                     rowMenuItems={[]}
-                    noDataPlaceholder="Keine Organisationseinheiten vorhanden"
+                    noDataPlaceholder={
+                        <EmptyDataListPlaceholder
+                            title="Keine Organisationseinheiten zugeordnet"
+                            description="Organisationseinheiten beschreiben, in welchen fachlichen Bereichen diese Person mitarbeitet."
+                            addText={hasAccess && canManageMemberships ? "Mitgliedschaft hinzufügen" : undefined}
+                            onAdd={hasAccess && canManageMemberships ? () => setShowSelectNewDepartmentDialog(true) : undefined}
+                        />
+                    }
                     loadingPlaceholder="Lade Organisationseinheiten…"
                     noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                     rowActions={(item) => [
                         {
-                            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
+                            icon: hasAccess ? <ManageAccountsOutlined/> : <Visibility/>,
+                            disabled: !canManageMemberships,
+                            disabledTooltip: disabledMembershipsManagementTooltip,
                             onClick: () => {
                                 setShowSelectRolesDialogForMembership(item);
                             },
@@ -251,6 +328,13 @@ export function UserDetailsPageDepartmentMemberships() {
                             icon: hasAccess ? <EditOutlined/> : <Visibility/>,
                             to: `/departments/${item.departmentId}`,
                             tooltip: hasAccess ? 'Organisationseinheit bearbeiten' : 'Organisationseinheit anzeigen',
+                        }, {
+                            icon: <Delete/>,
+                            visible: hasAccess,
+                            tooltip: 'Mitgliedschaft löschen',
+                            onClick: () => {
+                                handleDeleteMembership(item);
+                            },
                         }
                     ]}
                     preSearchElements={preSearchElements}

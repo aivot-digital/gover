@@ -1,17 +1,6 @@
 package de.aivot.GoverBackend.services;
 
-import de.aivot.GoverBackend.elements.models.BaseElement;
-import de.aivot.GoverBackend.elements.models.RootElement;
-import de.aivot.GoverBackend.elements.models.form.BaseFormElement;
-import de.aivot.GoverBackend.elements.models.form.BaseInputElement;
-import de.aivot.GoverBackend.elements.models.form.input.FileUploadField;
-import de.aivot.GoverBackend.elements.models.form.layout.GroupLayout;
-import de.aivot.GoverBackend.elements.models.form.layout.ReplicatingContainerLayout;
-import de.aivot.GoverBackend.elements.models.steps.StepElement;
-import de.aivot.GoverBackend.form.entities.Form;
-import de.aivot.GoverBackend.form.services.FormDerivationServiceFactory;
-import de.aivot.GoverBackend.identity.constants.IdentityValueKey;
-import de.aivot.GoverBackend.identity.models.IdentityData;
+import de.aivot.GoverBackend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentProviderEntity;
 import de.aivot.GoverBackend.payment.entities.PaymentTransactionEntity;
 import de.aivot.GoverBackend.submission.entities.Submission;
@@ -19,20 +8,13 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.time.format.DateTimeFormatter;
-import java.util.Collection;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.function.Consumer;
 
 
 public class DestinationDataFormatter {
-    private static final Logger logger = LoggerFactory.getLogger(DestinationDataFormatter.class);
-
     private final Map<String, Object> data;
-    private static final String destinationSkipKey = "#";
 
-    private final FormDerivationServiceFactory formDerivationServiceFactory;
 
     private final VFormVersionWithDetailsEntity form;
     private final Submission submission;
@@ -42,8 +24,6 @@ public class DestinationDataFormatter {
     private final Map<String, byte[]> attachmentBytes;
 
     private DestinationDataFormatter(
-            @Nonnull
-            FormDerivationServiceFactory formDerivationServiceFactory,
             @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
@@ -57,7 +37,6 @@ public class DestinationDataFormatter {
             @Nullable
             Map<String, byte[]> attachmentBytes
     ) {
-        this.formDerivationServiceFactory = formDerivationServiceFactory;
         this.form = form;
         this.submission = submission;
         this.paymentTransaction = paymentTransaction;
@@ -69,8 +48,6 @@ public class DestinationDataFormatter {
 
     public static DestinationDataFormatter createDataWithoutFiles(
             @Nonnull
-            FormDerivationServiceFactory formDerivationServiceFactory,
-            @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
             Submission submission,
@@ -80,7 +57,6 @@ public class DestinationDataFormatter {
             PaymentProviderEntity paymentProvider
     ) {
         return new DestinationDataFormatter(
-                formDerivationServiceFactory,
                 form,
                 submission,
                 paymentTransaction,
@@ -90,8 +66,6 @@ public class DestinationDataFormatter {
     }
 
     public static DestinationDataFormatter create(
-            @Nonnull
-            FormDerivationServiceFactory formDerivationServiceFactory,
             @Nonnull
             VFormVersionWithDetailsEntity form,
             @Nonnull
@@ -106,7 +80,6 @@ public class DestinationDataFormatter {
             Map<String, byte[]> attachmentBytes
     ) {
         return new DestinationDataFormatter(
-                formDerivationServiceFactory,
                 form,
                 submission,
                 paymentTransaction,
@@ -125,6 +98,8 @@ public class DestinationDataFormatter {
     }
 
     public Map<String, Object> format() {
+        // TODO: Derive Data
+
         createFormData();
         createMetadata();
         createAuthenticationData();
@@ -152,54 +127,16 @@ public class DestinationDataFormatter {
     private void createMetadata() {
         insertValue("metadata.submission_id", submission.getId());
         insertValue("metadata.is_test_submission", submission.getIsTestSubmission());
-        insertValue("metadata.submitted", submission.getCreated().format(DateTimeFormatter.ISO_DATE_TIME));
+        insertValue("metadata.submitted", submission.getCreated().toString());
         insertValue("metadata.user_rating", submission.getReviewScore());
     }
 
     private void createAuthenticationData() {
-        ElementDataObject rawIdpData = submission
-                .getCustomerInput()
-                .get(IdentityValueKey.IdCustomerInputKey);
-
-        if (rawIdpData == null || rawIdpData.getInputValue() == null) {
-            insertValue("authentication.is_authenticated", false);
-            return;
-        }
-
-        IdentityData identityValue = null;
-        try {
-            identityValue = new ObjectMapper()
-                    .convertValue(rawIdpData.getInputValue(), IdentityData.class);
-        } catch (IllegalArgumentException e) {
-            logger.error("Could not convert IdentityData to IdentityData", e);
-        }
-
-        if (identityValue == null) {
-            insertValue("authentication.is_authenticated", false);
-            return;
-        }
-
-        insertValue("authentication.is_authenticated", true);
-        insertValue("authentication.identity_provider", identityValue.providerKey());
-        insertValue("authentication.data", identityValue.attributes());
+        // Authentication export is currently not part of the formatted destination payload.
     }
 
     private void createCustomerData() {
-        try (var drs = formDerivationServiceFactory.create(
-                form,
-                form.getRoot().getChildren().stream().map(StepElement::getId).toList(),
-                form.getRoot().getChildren().stream().map(StepElement::getId).toList(),
-                form.getRoot().getChildren().stream().map(StepElement::getId).toList(),
-                form.getRoot().getChildren().stream().map(StepElement::getId).toList()
-        ).derive(form.getRoot(), submission.getCustomerInput())) {
-            submission.setCustomerInput(drs.getFormState().values());
-        } catch (Exception e) {
-            // In case of any error during form derivation, we still want to return the unprocessed customer input
-        }
-
-        Map<String, Object> customerData = new HashMap<>();
-        extractDataFromElement(customerData, form.getRootElement(), null);
-        data.put("data", customerData);
+        // Customer field export is currently not part of the formatted destination payload.
     }
 
     private void createPaymentData() {
@@ -225,122 +162,6 @@ public class DestinationDataFormatter {
         }
     }
 
-    private void extractDataFromElement(Map<String, Object> resultContainer, BaseElement element, String idPrefix) {
-        Consumer<BaseElement> extractChildData = (e) -> extractDataFromElement(resultContainer, e, idPrefix);
-
-        switch (element) {
-            case BaseFormElement formElement -> {
-                switch (formElement) {
-                    case GroupLayoutElement groupLayout -> {
-                        groupLayout.getChildren().forEach(extractChildData);
-                    }
-                    case ReplicatingContainerLayoutElement replicatingContainerLayout -> extractReplicatingContainer(resultContainer, replicatingContainerLayout, idPrefix);
-                    case FileUploadInputElement fileUploadField -> extractFileUploadField(resultContainer, fileUploadField, idPrefix);
-                    case BaseInputElement<?> baseInputElement -> {
-                        extractBaseInput(resultContainer, baseInputElement, idPrefix);
-                    }
-                    default -> {
-                        // Do nothing
-                    }
-                }
-            }
-            case FormLayoutElement rootElement -> rootElement.getChildren().forEach(extractChildData);
-            case StepElement stepElement -> stepElement.getChildren().forEach(extractChildData);
-            case null, default -> {
-                // Do nothing
-            }
-        }
-    }
-
-    private void extractReplicatingContainer(Map<String, Object> resultContainer, ReplicatingContainerLayoutElement element, String idPrefix) {
-        var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
-        var rawChildIds = submission.getCustomerInput().get(resolvedElementId);
-
-        // Check if children exist
-        if (!(rawChildIds instanceof Collection<?>)) {
-            return;
-        }
-
-        // Extract destination key and determine if this container should be skipped
-        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : resolvedElementId;
-        if (destinationSkipKey.equals(elementDestinationKey)) {
-            return;
-        }
-
-        // Create extracted child data list to store extracted data into
-        var extractedChildDataList = new LinkedList<>();
-        for (var childId : (Collection<?>) rawChildIds) {
-            var childData = new HashMap<String, Object>();
-            for (var child : element.getChildren()) {
-                extractDataFromElement(childData, child, resolvedElementId + "_" + childId + "_");
-            }
-            extractedChildDataList.add(childData);
-        }
-
-        // Insert extracted data into result container
-        insertValue(resultContainer, elementDestinationKey, extractedChildDataList);
-    }
-
-    private void extractFileUploadField(Map<String, Object> resultContainer, FileUploadInputElement element, String idPrefix) {
-        if (!includeAttachments()) {
-            return;
-        }
-
-        var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
-        var values = submission.getCustomerInput().get(resolvedElementId);
-
-        // Check if values is a collection and not null
-        if (!(values instanceof Collection<?>)) {
-            return;
-        }
-
-        // Extract destination key and determine if this element should be skipped
-        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : resolvedElementId;
-        if (destinationSkipKey.equals(elementDestinationKey)) {
-            return;
-        }
-
-        // Annotate file upload values with base64 encoded file content
-        for (var fileUploadValueItem : (Collection<?>) values) {
-            if (fileUploadValueItem instanceof Map<?, ?> fileUploadValueItemMap) {
-                var fileName = fileUploadValueItemMap.get("name");
-
-                if (fileName != null && attachmentBytes.containsKey(fileName)) {
-                    var bytes = attachmentBytes.get(fileName);
-                    var attachmentBase64 = loadBytesAsBase64(bytes);
-                    ((Map<String, Object>) fileUploadValueItemMap).put("base64", attachmentBase64);
-                }
-            }
-        }
-
-        // Insert annotated values into result container
-        insertValue(resultContainer, elementDestinationKey, values);
-    }
-
-    private void extractBaseInput(Map<String, Object> resultContainer, BaseInputElement<?> element, String idPrefix) {
-        var resolvedElementId = getResolvedElementId(idPrefix, element.getId());
-        var value = submission.getCustomerInput().get(resolvedElementId);
-
-        // Check if value is a collection and not null
-        if (value == null) {
-            return;
-        }
-
-        // Extract destination key and determine if this element should be skipped
-        var elementDestinationKey = element.getDestinationKey() != null ? element.getDestinationKey() : resolvedElementId;
-        if (destinationSkipKey.equals(elementDestinationKey)) {
-            return;
-        }
-
-        // Check if metadata user info is set and fill user data in data
-        if (element.getMetadata() != null && element.getMetadata().getUserInfoIdentifier() != null) {
-            var userInfoIdentifier = element.getMetadata().getUserInfoIdentifier();
-            insertValue("user." + userInfoIdentifier, value);
-        }
-
-        insertValue(resultContainer, elementDestinationKey, value);
-    }
-
     private String loadBytesAsBase64(byte[] bytes) {
         return org.apache.commons.codec.binary.Base64.encodeBase64String(bytes);
     }
@@ -362,7 +183,4 @@ public class DestinationDataFormatter {
         currentMap.put(pathLayers[pathLayers.length - 1], value);
     }
 
-    private static String getResolvedElementId(String idPrefix, String element) {
-        return (idPrefix != null ? idPrefix : "") + element;
-    }
 }

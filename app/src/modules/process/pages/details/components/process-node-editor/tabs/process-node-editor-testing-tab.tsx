@@ -7,6 +7,9 @@ import {ProcessNodeApiService} from '../../../../../services/process-node-api-se
 import {useAppDispatch} from '../../../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../../../slices/snackbar-slice';
 import {ElementDerivationContext} from '../../../../../../elements/components/element-derivation-context';
+import {withDelay} from '../../../../../../../utils/with-delay';
+import {useNavigate} from 'react-router-dom';
+import {getProcessNodeEditURL} from '../../../process-details-page';
 
 export function ProcessNodeEditorTestingTab(): ReactNode {
     const dispatch = useAppDispatch();
@@ -16,48 +19,111 @@ export function ProcessNodeEditorTestingTab(): ReactNode {
         testClaim,
     } = useProcessNodeEditorContext();
 
+    const navigate = useNavigate();
+
     const [layout, setLayout] = useState<GroupLayout | null>(null);
+    const [noTestingLayout, setNoTestingLayout] = useState<boolean>(false);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        if (testClaim == null) {
+            setLayout(null);
+            return () => {
+                cancelled = true;
+            };
+        }
+
+        withDelay(new ProcessNodeApiService()
+                .getTesting(node.id)
+            , 1000)
+            .then((data) => {
+                if (cancelled) {
+                    return;
+                }
+                if (data == null) {
+                    setNoTestingLayout(true);
+                    setLayout(null);
+                } else {
+                    setNoTestingLayout(false);
+                    setLayout(data);
+                }
+            })
+            .catch((err) => {
+                if (cancelled) {
+                    return;
+                }
+                dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden des Test-Layouts.'));
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [dispatch, node.id, testClaim]);
 
     useEffect(() => {
         if (testClaim == null) {
-            setLayout(null);
+            navigate(getProcessNodeEditURL(node.processId, node.processVersion, node.id));
         }
-
-        new ProcessNodeApiService()
-            .getTesting(node.id)
-            .then(setLayout)
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden des Test-Layouts.'));
-            });
     }, [testClaim]);
 
-    if (testClaim == null) {
-        return (
-            <Typography>
-                Der Prozess befindet sich aktuell nicht in der Testphase.
-                Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
-                konfiguriert werden.
-            </Typography>
-        );
-    }
-
-    if (layout == null) {
-        return (
-            <Box>
-                <Skeleton/>
-            </Box>
-        );
-    }
-
     return (
-        <Box>
-            <ElementDerivationContext
-                element={layout}
-                elementData={{}}
-                onElementDataChange={() => {
-                    // Nothing to do here, since the data is not persisted.
-                }}
-            />
+        <Box
+            sx={{
+                pt: 1,
+                pb: 2,
+            }}
+        >
+            <Typography variant="h4">
+                Prozesselement testen
+            </Typography>
+
+            {
+                testClaim == null &&
+                <Typography
+                    variant="body1"
+                    my={2}
+                    maxWidth={400}
+                >
+                    Der Prozess befindet sich aktuell nicht in der Testphase.
+                    Sobald der Prozess in die Testphase wechselt, können hier zusätzliche Eigenschaften des Elemente
+                    konfiguriert werden.
+                </Typography>
+            }
+
+            {
+                testClaim != null &&
+                layout == null &&
+                !noTestingLayout &&
+                <Skeleton
+                    height={100}
+                />
+            }
+
+            {
+                testClaim != null &&
+                noTestingLayout &&
+                <Typography
+                    variant="body1"
+                    my={2}
+                    maxWidth={400}
+                >
+                    Für dieses Prozesselement sind keine weiteren Testinformationen vorhanden.
+                </Typography>
+            }
+
+            {
+                testClaim != null &&
+                !noTestingLayout &&
+                layout != null &&
+                <ElementDerivationContext
+                    element={layout}
+                    authoredElementValues={{}}
+                    onAuthoredElementValuesChange={() => {
+                        // Nothing to do here, since the data is not persisted.
+                    }}
+                />
+            }
         </Box>
     );
 }

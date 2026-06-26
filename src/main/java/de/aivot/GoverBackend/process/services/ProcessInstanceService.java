@@ -4,6 +4,7 @@ import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.lib.models.Filter;
 import de.aivot.GoverBackend.lib.services.EntityService;
 import de.aivot.GoverBackend.process.entities.ProcessInstanceEntity;
+import de.aivot.GoverBackend.process.entities.ProcessVersionEntityId;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceAttachmentRepository;
 import de.aivot.GoverBackend.process.repositories.ProcessInstanceRepository;
 import jakarta.annotation.Nonnull;
@@ -12,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -19,18 +21,25 @@ import java.util.UUID;
 
 @Service
 public class ProcessInstanceService implements EntityService<ProcessInstanceEntity, Long> {
+    private static final int MAX_CASE_NUMBER_GENERATION_ATTEMPTS = 5;
 
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final ProcessVersionService processVersionService;
+    private final CaseNumberGeneratorService caseNumberGeneratorService;
 
     @Autowired
     public ProcessInstanceService(ProcessInstanceRepository processInstanceRepository,
                                   ProcessInstanceAttachmentRepository processInstanceAttachmentRepository,
-                                  ProcessInstanceAttachmentService processInstanceAttachmentService) {
+                                  ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                  ProcessVersionService processVersionService,
+                                  CaseNumberGeneratorService caseNumberGeneratorService) {
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.processVersionService = processVersionService;
+        this.caseNumberGeneratorService = caseNumberGeneratorService;
     }
 
     @Nonnull
@@ -38,7 +47,12 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     public ProcessInstanceEntity create(@Nonnull ProcessInstanceEntity entity) throws ResponseException {
         entity.setId(null);
         entity.setAccessKey(UUID.randomUUID());
-        return processInstanceRepository.save(entity);
+
+        var processVersion = processVersionService
+                .retrieve(ProcessVersionEntityId.of(entity.getProcessId(), entity.getInitialProcessVersion()))
+                .orElseThrow(ResponseException::badRequest);
+
+        return createWithUniqueCaseNumber(entity, processVersion.getCaseNumberTemplate());
     }
 
     @Nullable
@@ -97,5 +111,38 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
 
         processInstanceRepository.delete(entity);
     }
-}
 
+    @Nonnull
+    public ProcessInstanceEntity save(@Nonnull ProcessInstanceEntity entity) {
+        return processInstanceRepository.save(entity);
+    }
+
+    /**
+     * The generator reads the current maximum increment before persisting, but the database unique constraint is still
+     * the last line of defense under concurrent instance creation. Retrying here keeps the sequencing logic simple in
+     * the generator while still handling the race at the boundary where it actually happens.
+     */
+    @Nonnull
+    private ProcessInstanceEntity createWithUniqueCaseNumber(@Nonnull ProcessInstanceEntity entity,
+                                                             @Nullable String caseNumberTemplate) throws ResponseException {
+        for (int attempt = 1; attempt <= MAX_CASE_NUMBER_GENERATION_ATTEMPTS; attempt++) {
+            entity.setId(null);
+            entity.setCaseNumber(caseNumberGeneratorService.generateCaseNumber(caseNumberTemplate));
+
+            try {
+                return processInstanceRepository.saveAndFlush(entity);
+            } catch (DataIntegrityViolationException e) {
+                if (processInstanceRepository.existsByCaseNumber(entity.getCaseNumber())) {
+                    if (attempt == MAX_CASE_NUMBER_GENERATION_ATTEMPTS) {
+                        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
+                    }
+                    continue;
+                }
+
+                throw ResponseException.internalServerError("Die Prozessinstanz konnte nicht gespeichert werden.", e);
+            }
+        }
+
+        throw ResponseException.conflict("Es konnte kein eindeutiger Vorgangsschlüssel erzeugt werden. Bitte versuchen Sie es erneut.");
+    }
+}

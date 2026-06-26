@@ -1,14 +1,12 @@
-import {BaseCrudApiService} from "../../../services/base-crud-api-service";
-import {ProcessVersionEntity} from "../entities/process-version-entity";
-import {ProcessStatus} from "../enums/process-status";
-import {RetentionTimeUnit} from "../enums/retention-time-unit";
+import {BaseCrudApiService} from '../../../services/base-crud-api-service';
+import {ProcessVersionEntity} from '../entities/process-version-entity';
+import {ProcessStatus} from '../enums/process-status';
+import {ProcessNodeProblems} from '../entities/process-node-problems';
 
 interface ProcessDefinitionVersionFilter {
-    processDefinitionId: number;
-    processDefinitionVersion: number;
+    processId: number;
+    processVersion: number;
     status: string;
-    retentionTimeUnit: string;
-    retentionTimeAmount: number;
 }
 
 interface ProcessDefinitionVersionEntityId {
@@ -40,12 +38,25 @@ export class ProcessDefinitionVersionApiService extends BaseCrudApiService<
         return {
             processId: 0,
             processVersion: 0,
-            publicTitle: 'Neues Verfahren',
+            publicTitle: '',
+            caseNumberTemplate: null,
             status: ProcessStatus.Drafted,
             crated: new Date().toISOString(),
             updated: new Date().toISOString(),
             published: null,
             revoked: null,
         };
+    }
+
+    public validate(id: ProcessDefinitionVersionEntityId): Promise<ProcessNodeProblems[]> {
+        return this.get<ProcessNodeProblems[]>(this.buildPath(id) + 'problems/');
+    }
+
+    public publish(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionEntity> {
+        return this.put<any, ProcessVersionEntity>(this.buildPath(id) + 'publish/', {});
+    }
+
+    public revoke(id: ProcessDefinitionVersionEntityId): Promise<ProcessVersionEntity> {
+        return this.put<any, ProcessVersionEntity>(this.buildPath(id) + 'revoke/', {});
     }
 }

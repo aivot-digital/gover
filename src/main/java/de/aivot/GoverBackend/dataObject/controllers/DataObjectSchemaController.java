@@ -3,13 +3,14 @@ package de.aivot.GoverBackend.dataObject.controllers;
 import de.aivot.GoverBackend.audit.enums.AuditAction;
 import de.aivot.GoverBackend.audit.services.AuditService;
 import de.aivot.GoverBackend.audit.services.ScopedAuditService;
-import de.aivot.GoverBackend.dataObject.entities.DataObjectItemEntity;
 import de.aivot.GoverBackend.dataObject.entities.DataObjectSchemaEntity;
 import de.aivot.GoverBackend.dataObject.filters.DataObjectSchemaFilter;
 import de.aivot.GoverBackend.dataObject.services.DataObjectSchemaService;
 import de.aivot.GoverBackend.lib.exceptions.ResponseException;
 import de.aivot.GoverBackend.openApi.OpenApiConfiguration;
+import de.aivot.GoverBackend.openApi.OpenApiConstants;
 import de.aivot.GoverBackend.user.services.UserService;
+import de.aivot.GoverBackend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -25,15 +26,14 @@ import org.springframework.web.bind.annotation.*;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api/data-objects/")
 @Tag(
-        name = "Data Objects",
-        description = "Data Objects are separated into schemas and items. " +
-                      "Schemas define the structure of the data objects, while items are the actual data entries conforming to these schemas. " +
-                      "Data Objects are used to store flexible and dynamic data within the application."
+        name = OpenApiConstants.Tags.DataObjectSchemasName,
+        description = OpenApiConstants.Tags.DataObjectSchemasDescription
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class DataObjectSchemaController {
@@ -44,7 +44,7 @@ public class DataObjectSchemaController {
     @Autowired
     public DataObjectSchemaController(AuditService auditService,
                                       DataObjectSchemaService service, UserService userService) {
-        this.auditService = auditService.createScopedAuditService(DataObjectSchemaController.class);
+        this.auditService = auditService.createScopedAuditService(DataObjectSchemaController.class, "Datenmodelle");
 
         this.service = service;
         this.userService = userService;
@@ -54,7 +54,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "List Data Object Schemas",
             description = "Retrieve a paginated list of data object schemas. " +
-                          "Supports filtering based on various criteria."
+                    "Supports filtering based on various criteria."
     )
     public Page<DataObjectSchemaEntity> list(
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
@@ -68,7 +68,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Create Data Object Schema",
             description = "Create a new data object schema. " +
-                          "Requires system administrator privileges."
+                    "Requires system administrator privileges."
     )
     public DataObjectSchemaEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -82,9 +82,20 @@ public class DataObjectSchemaController {
 
         var created = service.create(newDataObjectEntity);
 
-        auditService.logAction(execUser, AuditAction.Create, DataObjectItemEntity.class, Map.of(
-                "schemaKey", created.getKey()
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Create,
+                        DataObjectSchemaEntity.class,
+                        created.getKey(),
+                        "key"
+                )
+                .withMessage(
+                        "Das Datenmodell mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(created.getKey()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return created;
     }
@@ -106,7 +117,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Update Data Object Schema",
             description = "Update an existing data object schema. " +
-                          "Requires system administrator privileges."
+                    "Requires system administrator privileges."
     )
     public DataObjectSchemaEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -122,9 +133,19 @@ public class DataObjectSchemaController {
         var updated = service
                 .update(key, updatedDataObjectEntity);
 
-        auditService.logAction(execUser, AuditAction.Update, DataObjectItemEntity.class, Map.of(
-                "schemaKey", updated.getKey()
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Update,
+                        DataObjectSchemaEntity.class,
+                        updated.getKey(), "key"
+                )
+                .withMessage(
+                        "Das Datenmodell mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updated.getKey()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log(); // TODO: Add Diff
 
         return updated;
     }
@@ -133,7 +154,7 @@ public class DataObjectSchemaController {
     @Operation(
             summary = "Delete Data Object Schema",
             description = "Delete an existing data object schema. " +
-                          "Requires system administrator privileges."
+                    "Requires system administrator privileges."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -147,8 +168,19 @@ public class DataObjectSchemaController {
 
         var deleted = service.delete(key);
 
-        auditService.logAction(execUser, AuditAction.Delete, DataObjectItemEntity.class, Map.of(
-                "schemaKey", deleted.getKey()
-        ));
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        DataObjectSchemaEntity.class,
+                        deleted.getKey(),
+                        "key"
+                )
+                .withMessage(
+                        "Das Datenmodell mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deleted.getKey()),
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
     }
 }

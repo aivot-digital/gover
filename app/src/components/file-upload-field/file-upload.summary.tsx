@@ -1,6 +1,6 @@
 import {Grid, Typography, useTheme} from '@mui/material';
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
-import {humanizeFileSize} from '../../utils/huminization-utils';
+import {humanizeFileSize} from '../../utils/humanization-utils';
 import {BaseSummaryProps} from '../../summaries/base-summary';
 
 export function FileUploadSummary({
