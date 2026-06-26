@@ -33,7 +33,7 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                 }}
                 variant="body2"
             >
-                Bitte prüfen Sie die von Ihnen eingegebenen Daten sorgfältig, bevor Sie den Antrag einreichen. Durch
+                Bitte prüfen Sie die von Ihnen eingegebenen Daten sorgfältig, bevor Sie das Formular einreichen. Durch
                 einen Klick auf das jeweilige Datenfeld gelangen Sie zurück zu dem dazugehörigen Abschnitt um die
                 Eingabe zu ändern.
             </Typography>
@@ -62,14 +62,14 @@ export function SummaryComponentView(props: BaseViewProps<SummaryStepElement, an
                 }}
                 variant="body2"
             >
-                Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben Ihres Antrages geprüft haben.
-                Fehlerhafte Eingaben können zu einer Verzögerung bei der Bearbeitung Ihres Antrages durch
+                Bitte bestätigen Sie, dass Sie die vorangegangenen Eingaben geprüft haben.
+                Fehlerhafte Eingaben können zu einer Verzögerung bei der Bearbeitung durch
                 die zuständige und/oder bewirtschaftende Stelle führen.
             </Typography>
 
             <Box>
                 <CheckboxFieldComponent
-                    label="Ich habe die Zusammenfassung meines Antrages geprüft."
+                    label="Ich habe die Zusammenfassung meiner Angaben geprüft."
                     required={true}
                     value={value}
                     onChange={(checked) => {
