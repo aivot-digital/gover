@@ -18,17 +18,18 @@ We recommend using the Windows Subsystem for Linux (WSL) for a better developmen
 
 The project contains the following modules and directories:
 
+- `./`: The project root
 - `./app`: The frontend application for both staff and customers
-- `./`: The project root of the Spring Boot backend application, including `pom.xml`
-- `./src`: The source code of the Spring Boot backend application
-- `./mails`: The module that contains the mail templates
-- `./dev`: The module that contains the development setup
-    - `./dev/docker-compose.yml`: The docker compose file for all local development services
+- `./backend/src`: The source code of the Spring Boot backend application
+- `./backend/mails`: The module that contains the mail templates
+- `./devevelopment`: The module that contains the development setup
+    - `./dev/compose.yml`: The docker compose file for all local development services
     - `./dev/gover.env`: An environment file containing the environment variables for the Gover application
     - `./dev/examples`: A directory with example datasets to populate the local database with
 - `./default-assets`: The directory that contains the default assets for the Gover service, such as default templates
   for PDFs
-- `./docker`: The directory contains additional files for the container image
+- `./container`: The directory contains additional files for the container image
+- `./tools`: The directory contains additional tools for installing a gover instance
 
 ### 2.1 Getting started
 
