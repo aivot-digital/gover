@@ -14,6 +14,7 @@ class DefaultPdfTemplateTest {
     private static final String HEADER_HTML_SECTION_SEPARATOR = "<!-- KOPFZEILE -->";
     private static final String FOOTER_HTML_SECTION_SEPARATOR = "<!-- FUSSZEILE -->";
     private static final Path ALBATROS_TEMPLATE = Path.of(
+            "..",
             "default-assets",
             "Vorlagen",
             "Briefe",
