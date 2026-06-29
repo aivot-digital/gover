@@ -314,3 +314,27 @@ Changes to the backend require a restart of the Gover application.
 ## 5 View API Documentation
 
 You can view the API documentation for the backend application at [http://localhost:9595/api/public/docs/swagger.html](http://localhost:9595/api/public/docs/swagger.html) after starting the backend application.
+
+## 6 Testing Workflows Locally
+
+You can use [https://github.com/nektos/act](act) to run GitHub Actions workflows locally.
+Make sure to have Docker installed and running on your machine before using `act`.
+
+You can download the binary for your platform from the releases page: <https://nektosact.com/installation/index.html#manual-download-of-prebuilt-executable>.
+More information about using `act` can be found in the official documentation: <https://nektosact.com/usage/index.html>.
+
+In the folder `./development/workflow-test-payloads` are example payloads for the GitHub Actions workflows.
+
+You can trigger them via:
+
+```bash
+/path/to/the/binary/act pull_request \
+  --rm --quiet \
+  --env TZ=Europe/Berlin \
+  --platform ubuntu-24.04=catthehacker/ubuntu:act-22.04 \
+  --eventpath ./development/workflow-test-payloads/alpha_pull_request.json \
+  --workflows ./.github/workflows/build-alpha.yml
+```
+
+The `--platform` flag overrides the mapping of the missing `ubuntu-24.04` image to a custom image that is compatible with the workflow.
+The `--eventpath` flag specifies the event payload to use for the workflow run.
