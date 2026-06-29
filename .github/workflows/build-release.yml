@@ -1,0 +1,85 @@
+name: Test the pull request, generate SBOMs, and build the library and container image for a full release.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+    branches:
+      - "main"
+
+jobs:
+  prepareBuildVars:
+    name: Prepare build variables
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-24.04
+    outputs:
+      build_date: ${{ steps.build_date.outputs.value }}
+      build_version: ${{ steps.build_version.outputs.value }}
+      build_number: ${{ github.run_number }}
+    steps:
+      - name: Get current date
+        id: build_date
+        run: echo "value=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+      - name: Get the current build version based on the source branch
+        id: build_version
+        run: echoy # "value=$(echo "${GITHUB_REF_NAME#v}") >> "$GITHUB_OUTPUT"
+
+  testBackend:
+    name: Test the backend code
+    if: github.event.pull_request.draft == false
+    needs:
+      - prepareBuildVars
+    uses: ./.github/workflows/subflows/test-backend.yml
+    permissions:
+      contents: read
+    with:
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
+
+  generateSbom:
+    name: Generate SBOMs and verify license compliance
+    if: github.event.pull_request.draft == false
+    needs:
+      - prepareBuildVars
+    uses: ./.github/workflows/subflows/generate-sbom.yml
+    permissions:
+      contents: read
+      issues: write
+    with:
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
+      build_date: ${{ needs.prepareBuildVars.outputs.build_date }}
+    secrets: inherit
+
+  genrateLibrary:
+    name: Generate the java library for the usage in plugins and other java applications
+    if: github.event.pull_request.draft == false
+    needs:
+      - prepareBuildVars
+      - testBackend
+      - generateSbom
+    uses: ./.github/workflows/subflows/generate-library.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
+    secrets: inherit
+
+  generateImage:
+    name: Generate the container image for the deployment of the backend and frontend services
+    if: github.event.pull_request.draft == false
+    needs:
+      - prepareBuildVars
+      - testBackend
+      - generateSbom
+    uses: ./.github/workflows/subflows/generate-image.yml
+    permissions:
+      contents: read
+      packages: write
+    with:
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
+      build_date: ${{ needs.prepareBuildVars.outputs.build_date }}
+      build_number: ${{ needs.prepareBuildVars.outputs.build_number }}
+      package_name: gover
+      image_name: ${{ github.repository }}
+      is_release: true
+    secrets: inherit
