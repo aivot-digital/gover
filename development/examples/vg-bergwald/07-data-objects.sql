@@ -60,7 +60,7 @@ values ('kita_kinder',
         '1',
         '{
           "name": "Leon Lorbeere",
-          "geburtsdatum": "2018-12-11",
+          "geburtsdatum": "2023-12-11",
           "kita_name": "Kita Blaubeeren",
           "name_erziehungsberechtigte": "Lara Lorbeere",
           "adresse_erziehungsberechtigte": "Karottenstraße 4\n54321 Blauheim"
@@ -69,7 +69,7 @@ values ('kita_kinder',
         '2',
         '{
           "name": "Merve Mandel",
-          "geburtsdatum": "2019-01-09",
+          "geburtsdatum": "2023-01-09",
           "kita_name": "Kita Blaubeeren",
           "name_erziehungsberechtigte": "Miraç Mandel",
           "adresse_erziehungsberechtigte": "Bahnhofsstraße 2\n54321 Blauheim"
@@ -78,7 +78,7 @@ values ('kita_kinder',
         '3',
         '{
           "name": "Raphael Rübe",
-          "geburtsdatum": "2019-05-24",
+          "geburtsdatum": "2023-05-24",
           "kita_name": "Kita Grüngras",
           "name_erziehungsberechtigte": "Robert Rübe",
           "adresse_erziehungsberechtigte": "Backweg 19\n54321 Grünberg"
