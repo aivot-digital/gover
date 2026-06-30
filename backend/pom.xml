@@ -251,7 +251,7 @@
         <repository>
             <id>github</id>
             <name>GitHub Packages</name>
-            <url>https://maven.pkg.github.com/aivot-digital/gover-next</url>
+            <url>https://maven.pkg.github.com/aivot-digital/gover</url>
         </repository>
     </distributionManagement>
 </project>
