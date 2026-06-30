@@ -1,6 +1,7 @@
 package de.aivot.gover.backend;
 
 import de.aivot.gover.backend.models.config.GoverConfig;
+import de.aivot.gover.backend.plugin.models.Plugin;
 import de.aivot.gover.backend.system.properties.BuildProperties;
 import io.sentry.Sentry;
 import jakarta.annotation.Nonnull;
@@ -12,26 +13,31 @@ import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.ApplicationListener;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.util.List;
+import java.util.stream.Stream;
+
 
 @Component
 public class ServerReadyEventListener implements ApplicationListener<ApplicationReadyEvent> {
     private static final Logger logger = LoggerFactory.getLogger(ServerReadyEventListener.class);
     private final BuildProperties buildProperties;
     private final GoverConfig goverConfig;
+    private final List<Plugin> plugins;
 
     @Autowired
-    public ServerReadyEventListener(
-            BuildProperties buildProperties,
-            GoverConfig goverConfig
-    ) {
+    public ServerReadyEventListener(BuildProperties buildProperties,
+                                    GoverConfig goverConfig,
+                                    List<Plugin> plugins) {
         this.buildProperties = buildProperties;
         this.goverConfig = goverConfig;
+        this.plugins = plugins;
     }
 
     @Override
     public void onApplicationEvent(@Nonnull @NotNull final ApplicationReadyEvent event) {
         logBuildInfo();
-
+        logPlugins();
         initializeSentry();
     }
 
@@ -74,5 +80,41 @@ public class ServerReadyEventListener implements ApplicationListener<Application
                     .setMessage("Starting server without Sentry.")
                     .log();
         }
+    }
+
+    private void logPlugins() {
+        var message = "Loaded %d plugins: %s";
+        var pluginNames = plugins.stream()
+                .map(Plugin::getName)
+                .toList();
+        var fm = String.format(
+                message,
+                plugins.size(),
+                String.join(", ", pluginNames)
+        );
+
+        List<String> pluginFiles = List.of();
+
+        var pluginsDirPath = System
+                .getenv("GOVER_PLUGINS_DIR");
+        if (pluginsDirPath != null) {
+            var pluginsDir =  new File(pluginsDirPath);
+            var allPluginFiles = pluginsDir.listFiles();
+
+            if  (allPluginFiles != null) {
+                pluginFiles = Stream
+                        .of(allPluginFiles)
+                        .filter(file -> !file.isDirectory())
+                        .map(File::getName)
+                        .toList();
+            }
+        }
+
+        logger
+                .atInfo()
+                .setMessage(fm)
+                .addKeyValue("registeredPlugins", pluginNames)
+                .addKeyValue("pluginFiles", pluginFiles)
+                .log();
     }
 }
