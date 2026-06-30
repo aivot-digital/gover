@@ -317,6 +317,21 @@ You can view the API documentation for the backend application at [http://localh
 
 ## 6 Testing Workflows Locally
 
+### 6.1 Linting GitHub Actions workflows
+
+You can use [https://github.com/rhysd/actionlint](actionlint) to lint GitHub Actions workflows locally.
+Make sure to have download the release and have it available in your PATH before using `actionlint`.
+
+You can download the binary for your platform from the releases page: <https://github.com/rhysd/actionlint/releases>.
+
+You can lint the workflows with the following command:
+
+```bash
+actionlint
+```
+
+### 6.2 Using act to run GitHub Actions workflows locally
+
 You can use [https://github.com/nektos/act](act) to run GitHub Actions workflows locally.
 Make sure to have Docker installed and running on your machine before using `act`.
 
