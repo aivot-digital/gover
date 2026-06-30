@@ -60,68 +60,51 @@ The server must be reachable via a given domain name from the internet.
 
 #### Docker-Compose File
 
-Create a new file named `docker-compose.yml` with the content of the example [docker-compose file](./docker-compose.yml) in the root directory of the Gover repository.
+Create a new file named `compose.yml` with the content of the example [compose file](./compose.yml) in the root directory of the Gover repository.
 
-After you have created the Docker Compose file, you can start the Traefik and Keycloak application by running the following command:
+After you have created the Docker Compose file, you can start the stack by running the following command:
 
 ```bash
-docker compose up -d traefik keycloak
+docker compose up -d
 ```
 
-#### Setup Keycloak
+#### Creating your first User
 
-After Keycloak has started, you can import the required realm templates by importing them into the Keycloak administration console. 
-The administration console can be accessed at `https://<YOUR_DOMAIN>/idp/`.
-You can log in with the credentials you have set in the `docker-compose.yml` file.
+Gover staff users are managed in Keycloak and imported into Gover when they log in for the first time.
+The Keycloak admin account from the Docker Compose configuration is only used to manage Keycloak; it is not automatically a Gover administrator.
 
-The realm templates can be found in the [realm-templates directory](./realm-templates) of the Gover repository.
-To import the realm templates, click on the Realm dropdown in the left drawer and click on the `Create realm` button. 
-Then click on the `Browse...` button and select the realm template file you want to import.
-When the template has loaded click `Create` to import the realm.
+Before the first Gover login, decide which staff user should become the initial Gover super administrator.
+Add that user's e-mail address to the `gover` service environment in your `compose.yml`:
 
-##### Setup Master-Realm
+```yaml
+GOVER_BOOTSTRAP_ADMIN_MAIL: "admin@example.org"
+```
 
-The Master-Realm comes pre-configured with every keycloak installation and cannot be removed. Since we do not rely heavily on anything in the Master-Realm just go to the `Realm settings` section in the drawer on the left and select the `Themes` tab. Set the login, account and admin theme to `gover` and the email theme to `keycloak`.
-
-##### Setup Staff-Realm
-
-After importing the Staff-Realm go to the newly created realm.
-First you need to set the E-Mail-Credentials in for the Staff-Realm to support sending E-Mail-Verifications.
-Navigate to the `Realm Settings` section in the drawer on the left and select the `Email` tab.
-Fill in the SMTP settings for your mail server and save the settings. Hint: Switch the `Authentication` off and back on to reveal the username and password.
-
-After setting up the E-Mail-Credentials for the Staff-Realm, you can add your first user to the realm.
-Navigate to the `Users` section in the drawer on the left and click on the `Add user` button.
-Fill in the user details and click `Save`.
-After saving the user, you can set the user's password by clicking on the `Credentials` tab and setting a new password.
-Make sure to add the role `admin` via the `Role Mappings` tab to the user to be able to access the Gover application as an admin.
-
-Then you need to generate a new secret for the `backend` client.
-Select the `Clients` section in the drawer on the left and navigate to the `backend` client.
-Go to the tab `Credentials` and regenerate the `Client Secret` via the button `Regenerate`.
-Copy the new secret and insert it into the `docker-compose.yml` file for the `KEYCLOAK_BACKEND_CLIENT_SECRET` environment variable.
-
-##### Setup Customer-Realm
-
-After importing the Customer-Realm go to the newly created realm.
-Select the `Identity Providers` section in the drawer on the left and update the `Service provider entity ID` for all identity providers via the settings to match your Gover instance domain.
-
-Then you need to set the correct redirect URIs as well as web origins for the app client.
-To set this up, select the `Clients` section in the drawer on the left. Choose the tab `Clients list`. In the list choose the client id `app`. Update the `Valid redirect URIs` as well as the `Web origins` to reflect the correct URL of your gover instance.
-
-#### Start Gover
-
-You can then start the Gover application by running the following command:
+If the stack is already running, apply the change after editing the compose file:
 
 ```bash
 docker compose up -d gover
 ```
 
-After this process is complete, you can access the Gover application at `https://<YOUR_DOMAIN>/staff`.
-You can log in with the user you have created in the Staff-Realm.
+Then open the Keycloak admin console at `https://{{ HOSTNAME }}/idp/admin/` and sign in with the configured `KEYCLOAK_ADMIN_USERNAME` and `KEYCLOAK_ADMIN_PASSWORD`.
+Switch to the `staff` realm, create a new user, and set the e-mail address to the value of `GOVER_BOOTSTRAP_ADMIN_MAIL`.
+After saving the user, open the "Credentials" tab and set a password.
+Disable "Temporary" if the user should keep this password after the first login.
+
+When this user logs into Gover for the first time, Gover imports the Keycloak user.
+If no Gover super administrator exists yet and the e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, the user receives the `Superadministrator:in` system role.
+
+#### Logging into Gover
+
+Open the staff application at `https://{{ HOSTNAME }}/staff`.
+Gover redirects staff logins to the Keycloak `staff` realm.
+Sign in with the staff user created above and complete any required Keycloak actions, such as changing a temporary password.
+
+After the Keycloak login succeeds, you are redirected back to the Gover staff application.
+If the user can log in but does not have administrator permissions, verify that the user was created in the `staff` realm, that the user's e-mail address matches `GOVER_BOOTSTRAP_ADMIN_MAIL`, and that no other Gover super administrator existed before this user was imported.
 
 ## Development Setup
-Refer to the [development setup instructions](./dev/README.md) for setting up Gover for development.
+Refer to the [development setup instructions](./development/README.md) for setting up Gover for development.
 
 ## Documentation
 If you are looking for code documentation as well as end user documentation visit our [documentation overview](https://aivot.de/docs) and select

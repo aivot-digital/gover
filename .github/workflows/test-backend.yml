@@ -1,0 +1,29 @@
+name: Test backend
+
+on:
+  workflow_call:
+    inputs:
+      build_version:
+        required: true
+        type: string
+
+jobs:
+  testBackend:
+    name: Test backend
+    runs-on: ubuntu-24.04
+    env:
+      BUILD_VERSION: ${{ inputs.build_version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5
+        with:
+          java-version: 21
+          distribution: temurin
+          architecture: x64
+
+      - name: Build with Maven
+        working-directory: backend
+        run: mvn --batch-mode --update-snapshots test

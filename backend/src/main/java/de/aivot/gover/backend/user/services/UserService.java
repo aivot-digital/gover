@@ -1,0 +1,262 @@
+package de.aivot.gover.backend.user.services;
+
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.lib.models.Filter;
+import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.gover.backend.user.entities.UserEntity;
+import de.aivot.gover.backend.user.models.KeycloakUser;
+import de.aivot.gover.backend.user.repositories.UserRepository;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.Optional;
+
+@Service
+public class UserService implements EntityService<UserEntity, String> {
+    private static final List<ProcessTaskStatus> DELETION_BLOCKING_TASK_STATUSES = List.of(
+            ProcessTaskStatus.Running,
+            ProcessTaskStatus.Paused,
+            ProcessTaskStatus.Restarted
+    );
+
+    private final KeyCloakApiService keyCloakApiService;
+    private final ImportedUserSystemRoleService importedUserSystemRoleService;
+    private final ProcessInstanceTaskRepository processInstanceTaskRepository;
+    private final UserRepository userRepository;
+
+    @Autowired
+    public UserService(
+            KeyCloakApiService keyCloakApiService,
+            ImportedUserSystemRoleService importedUserSystemRoleService,
+            ProcessInstanceTaskRepository processInstanceTaskRepository,
+            UserRepository userRepository
+    ) {
+        this.keyCloakApiService = keyCloakApiService;
+        this.importedUserSystemRoleService = importedUserSystemRoleService;
+        this.processInstanceTaskRepository = processInstanceTaskRepository;
+        this.userRepository = userRepository;
+    }
+
+    @Nonnull
+    public Optional<UserEntity> fromJWT(
+            @Nullable Jwt jwt
+    ) throws ResponseException {
+        if (jwt == null) {
+            return Optional.empty();
+        }
+
+        var id = getIdFromJWT(jwt);
+        if (id == null) {
+            return Optional.empty();
+        }
+
+        var stored = retrieve(id);
+        if (stored.isPresent()) {
+            return stored;
+        }
+
+        return importUserFromKeycloak(id);
+    }
+
+    public UserEntity fromJWTOrThrow(
+            @Nullable Jwt jwt
+    ) throws ResponseException {
+        return fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+    }
+
+
+    @Nullable
+    public static String getIdFromJWT(
+            @Nullable Jwt jwt
+    ) {
+        if (jwt == null) {
+            return null;
+        }
+
+        return jwt.getClaimAsString("sub");
+    }
+
+    @Nonnull
+    @Override
+    public UserEntity create(@Nonnull UserEntity entity) throws ResponseException {
+        return create(entity, null, null);
+    }
+
+
+    @Nonnull
+    @Override
+    public Page<UserEntity> performList(@Nonnull Pageable pageable,
+                                        @Nullable Specification<UserEntity> specification,
+                                        @Nullable Filter<UserEntity> filter
+    ) throws ResponseException {
+        return userRepository
+                .findAll(specification, pageable);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<UserEntity> retrieve(@Nonnull String id) throws ResponseException {
+        return userRepository.findById(id);
+    }
+
+    @Nonnull
+    public Optional<UserEntity> importUserFromKeycloak(@Nonnull String id) throws ResponseException {
+        // Try to get user from Keycloak
+        var keycloakUser = keyCloakApiService
+                .retrieveUser(id)
+                .orElse(null);
+
+        // If the user is not in Keycloak, return empty optional
+        if (keycloakUser == null) {
+            return Optional.empty();
+        }
+
+        // Create user entity from Keycloak user and roles
+        var userFromKeycloak = UserEntity
+                .from(keycloakUser)
+                .setSystemRoleId(importedUserSystemRoleService
+                        .resolveSystemRoleId(keycloakUser.getEmail(), null)
+                        .systemRoleId()
+                );
+
+        // Save user to database
+        userRepository.save(userFromKeycloak);
+
+        // Return user
+        return Optional.of(userFromKeycloak);
+    }
+
+    @Nonnull
+    @Override
+    public Optional<UserEntity> retrieve(@Nonnull Specification<UserEntity> specification) {
+        return userRepository.findOne(specification);
+    }
+
+    @Nonnull
+    @Override
+    public UserEntity performUpdate(@Nonnull String id,
+                                    @Nonnull UserEntity entity,
+                                    @Nonnull UserEntity existingEntity) throws ResponseException {
+
+
+        var keycloakUserToUpdate = KeycloakUser
+                .from(existingEntity)
+                .setEmail(entity.getEmail())
+                .setFirstName(entity.getFirstName())
+                .setLastName(entity.getLastName());
+
+        if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
+            var execUser = fromJWT(jwt)
+                    .orElseThrow(ResponseException::unauthorized);
+            if (execUser.getIsSuperAdmin()) {
+                keycloakUserToUpdate.setEnabled(entity.getEnabled());
+            }
+        }
+
+        var updatedKeycloakUser = keyCloakApiService
+                .updateUser(id, keycloakUserToUpdate);
+
+        var userToUpdate = UserEntity
+                .from(updatedKeycloakUser);
+
+        if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
+            var execUser = fromJWT(jwt)
+                    .orElseThrow(ResponseException::unauthorized);
+            if (execUser.getIsSuperAdmin()) {
+                userToUpdate.setSystemRoleId(entity.getSystemRoleId());
+            }
+        }
+
+        return userRepository.save(userToUpdate);
+    }
+
+    @Override
+    public boolean exists(@Nonnull String id) {
+        return userRepository.existsById(id);
+    }
+
+    @Override
+    public boolean exists(@Nonnull Specification<UserEntity> specification) {
+        return userRepository.exists(specification);
+    }
+
+    @Override
+    public void performDelete(@Nonnull UserEntity entity) throws ResponseException {
+        var blockingAssignedTaskCount = processInstanceTaskRepository.countByAssignedUserIdAndStatusIn(
+                entity.getId(),
+                DELETION_BLOCKING_TASK_STATUSES
+        );
+
+        if (blockingAssignedTaskCount > 0) {
+            throw ResponseException.conflict("Die Mitarbeiter:in kann nicht gelöscht werden, da ihr noch nicht abgeschlossene Aufgaben zugewiesen sind.");
+        }
+
+        keyCloakApiService
+                .deleteUser(entity.getId());
+
+        entity.clearPersonalData();
+        entity.setDeletedInIdp(true);
+        entity.setEnabled(false);
+
+        userRepository.save(entity);
+    }
+
+    public UserEntity updatePassword(String id, String password) throws ResponseException {
+        var user = retrieve(id)
+                .orElseThrow(() -> ResponseException.notFound("Mitarbeiter:in nicht gefunden"));
+
+        keyCloakApiService.setUserPassword(id, password, false);
+
+        return user;
+    }
+
+    @Nonnull
+    public UserEntity create(
+            @Nonnull UserEntity entity,
+            @Nullable String temporaryPassword,
+            @Nullable List<String> requiredActions
+    ) throws ResponseException {
+        if (userRepository.existsByEmail(entity.getEmail())) {
+            throw ResponseException
+                    .badRequest("Es existiert bereits eine Mitarbeiter:in mit dieser E-Mail-Adresse.");
+        }
+
+        var keycloakUserToCreate = KeycloakUser
+                .from(entity)
+                .setRequiredActions(requiredActions);
+
+        var createdKeycloakUser = keyCloakApiService
+                .createUser(keycloakUserToCreate);
+
+        try {
+            if (temporaryPassword != null) {
+                keyCloakApiService.setUserPassword(createdKeycloakUser.getId(), temporaryPassword, true);
+            }
+
+            var createdUserEntity = UserEntity
+                    .from(createdKeycloakUser)
+                    .setSystemRoleId(entity.getSystemRoleId());
+
+            return userRepository.save(createdUserEntity);
+        } catch (Exception e) {
+            keyCloakApiService.deleteUser(createdKeycloakUser.getId());
+
+            if (e instanceof ResponseException responseException) {
+                throw responseException;
+            }
+
+            throw ResponseException.internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden.", e);
+        }
+    }
+}

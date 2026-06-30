@@ -3,31 +3,22 @@
 *.iws
 *.iml
 *.ipr
+/.agents/
+/.codex/
 
 ### Backend ###
-/target/
-/data/
-/fakesmtp/
-/test-files/
-/data/assets/
-/data/attachments/
-/data/default/
-/plugins/
+/backend/target/
+/backend/src/main/resources/templates/mail/
+/backend/mails/node_modules/
+/backend/mails/dist/
 
 ### App ###
 /app/node_modules/
 /app/build/
 
-### Mails ###
-/mails/node_modules/
-/mails/dist/
-/src/main/resources/templates/mail
-
 ### macOS ###
 .DS_Store
 
-### Dependencies ###
-/pg_data/
-
 ### Local install ###
-/.env
+.env
+/data/

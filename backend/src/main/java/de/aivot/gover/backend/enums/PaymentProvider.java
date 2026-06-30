@@ -1,0 +1,35 @@
+package de.aivot.gover.backend.enums;
+
+import com.fasterxml.jackson.annotation.JsonValue;
+import de.aivot.gover.backend.lib.models.Identifiable;
+
+// TODO: Remove
+public enum PaymentProvider implements Identifiable<String> {
+    ePayBL("epaybl", "ePayBL"),
+    pmPayment("pmpayment", "pmPayment"),
+    giroPay("giropay", "giropay"),
+    ;
+
+    private final String key;
+    private final String label;
+
+    PaymentProvider(String key, String label) {
+        this.key = key;
+        this.label = label;
+    }
+
+    @Override
+    @JsonValue
+    public String getKey() {
+        return key;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    @Override
+    public boolean matches(Object other) {
+        return key.equals(other);
+    }
+}

@@ -1,0 +1,134 @@
+package de.aivot.gover.backend.permissions.services;
+
+import de.aivot.gover.backend.department.entities.DepartmentEntity;
+import de.aivot.gover.backend.department.repositories.DepartmentRepository;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.permissions.repositories.VUserDepartmentPermissionRepository;
+import de.aivot.gover.backend.permissions.repositories.VUserSystemPermissionRepository;
+import de.aivot.gover.backend.user.entities.UserEntity;
+import de.aivot.gover.backend.user.services.UserService;
+import de.aivot.gover.backend.utils.StringUtils;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+public class PermissionService {
+    private final VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository;
+    private final VUserSystemPermissionRepository vUserSystemPermissionRepository;
+    private final DepartmentRepository departmentRepository;
+
+    public PermissionService(VUserDepartmentPermissionRepository vUserDepartmentPermissionRepository,
+                             VUserSystemPermissionRepository vUserSystemPermissionRepository,
+                             DepartmentRepository departmentRepository) {
+        this.vUserDepartmentPermissionRepository = vUserDepartmentPermissionRepository;
+        this.vUserSystemPermissionRepository = vUserSystemPermissionRepository;
+        this.departmentRepository = departmentRepository;
+    }
+
+    public boolean hasSystemPermission(@Nullable String userId,
+                                       @Nonnull String permission) {
+        if (userId == null) {
+            return false;
+        }
+        return vUserSystemPermissionRepository
+                .hasPermission(userId, permission);
+    }
+
+    public boolean hasSystemPermission(@Nullable Jwt jwt,
+                                       @Nonnull String permission) {
+        return hasSystemPermission(UserService.getIdFromJWT(jwt), permission);
+    }
+
+    public boolean hasSystemPermission(@Nullable UserEntity user,
+                                       @Nonnull String permission) {
+        if (user == null) {
+            return false;
+        }
+        return hasSystemPermission(user.getId(), permission);
+    }
+
+    public void testSystemPermission(@Nullable String userId,
+                                     @Nonnull String permission) throws ResponseException {
+        if (userId == null || !hasSystemPermission(userId, permission)) {
+            throw ResponseException.forbidden(
+                    "Sie benötigen die Berechtigung %s im System.",
+                    StringUtils.quote(permission)
+            );
+        }
+    }
+
+    public void testSystemPermission(@Nullable Jwt jwt,
+                                     @Nonnull String permission) throws ResponseException {
+        testSystemPermission(UserService.getIdFromJWT(jwt), permission);
+    }
+
+    /**
+     * @deprecated use testSystemPermission instead
+     */
+    @Deprecated
+    public void hasSystemPermissionThrows(@Nullable UserEntity user,
+                                          @Nonnull String permission) throws ResponseException {
+        testSystemPermission(user == null ? "" : user.getId(), permission);
+    }
+
+    public boolean hasDepartmentPermission(@Nonnull String userId,
+                                           @Nonnull Integer departmentId,
+                                           @Nonnull String permission) {
+        return vUserDepartmentPermissionRepository.hasPermission(userId, departmentId, permission)
+                || vUserSystemPermissionRepository.hasPermission(userId, permission);
+    }
+
+    public List<Integer> getDepartmentsWithPermission(@Nonnull String userId,
+                                                      @Nonnull String permission) {
+        return vUserDepartmentPermissionRepository
+                .getDepartmentsWithPermission(userId, permission);
+    }
+
+    public void testDepartmentPermission(@Nonnull String userId,
+                                         @Nonnull Integer departmentId,
+                                         @Nonnull String permission) throws ResponseException {
+        if (!hasDepartmentPermission(userId, departmentId, permission)) {
+            var departmentName = departmentRepository
+                    .findById(departmentId)
+                    .map(DepartmentEntity::getName)
+                    .map(StringUtils::quote)
+                    .orElse("mit der ID " + departmentId);
+
+            throw ResponseException.forbidden(
+                    "Sie benötigen die Berechtigung %s für die Organisationseinheit %s.",
+                    StringUtils.quote(permission),
+                    departmentName
+            );
+        }
+    }
+
+    public boolean hasInAnyDepartmentPermission(@Nonnull String userId,
+                                                @Nonnull String permission) {
+        return vUserDepartmentPermissionRepository.hasPermissionInAnyDepartment(userId, permission)
+                || vUserSystemPermissionRepository.hasPermission(userId, permission);
+    }
+
+    public void testInAnyDepartmentPermission(@Nonnull String userId,
+                                              @Nonnull String permission) throws ResponseException {
+        if (!hasInAnyDepartmentPermission(userId, permission)) {
+            throw ResponseException.forbidden(
+                    "Sie benötigen die Berechtigung %s in mindestens einer Organisationseinheit.",
+                    StringUtils.quote(permission)
+            );
+        }
+    }
+
+    /**
+     * @deprecated use testDepartmentPermission instead
+     */
+    @Deprecated
+    public void hasDepartmentPermissionThrows(@Nonnull String userId,
+                                              @Nonnull Integer departmentId,
+                                              @Nonnull String permission) throws ResponseException {
+        testDepartmentPermission(userId, departmentId, permission);
+    }
+}

@@ -1,9 +1,9 @@
 // TODO: Implement this DTO
 export interface FormDerivationResultDTO {
 }
-// package de.aivot.GoverBackend.form.dtos;
+// package de.aivot.gover.backend.form.dtos;
 // 
-// import de.aivot.GoverBackend.elements.models.elements.BaseElement;
+// import de.aivot.gover.backend.elements.models.elements.BaseElement;
 // 
 // import java.util.Map;
 // 

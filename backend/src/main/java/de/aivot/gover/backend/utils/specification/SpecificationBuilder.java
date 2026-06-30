@@ -1,0 +1,159 @@
+package de.aivot.gover.backend.utils.specification;
+
+import de.aivot.gover.backend.utils.StringUtils;
+import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
+
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+
+public class SpecificationBuilder<T> {
+    private final List<SpecificationBuilderItem<T>> items = new LinkedList<>();
+    private final List<Specification<T>> specifications = new LinkedList<>();
+
+    private SpecificationBuilder() {
+    }
+
+    @Nonnull
+    public static <T> SpecificationBuilder<T> create() {
+        return new SpecificationBuilder<>();
+    }
+
+    @Nonnull
+    public static <T> SpecificationBuilder<T> create(@Nonnull Class<T> ignored) {
+        return new SpecificationBuilder<>();
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withEquals(@Nonnull String field, @Nullable Object value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderEquals<>(field, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withGreaterThan(@Nonnull String field, @Nullable Number value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderGreaterThan<>(field, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withJsonEquals(@Nonnull String field, @Nonnull List<String> path, @Nullable String value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderJsonEquals<>(field, path, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withJsonEqualsNull(@Nonnull String field, @Nonnull List<String> path) {
+        return with(new SpecificationBuilderJsonEqualsNull<>(field, path));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withJsonNotEquals(@Nonnull String field, @Nonnull List<String> path, @Nullable String value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderJsonNotEquals<>(field, path, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withNotEquals(@Nonnull String field, @Nullable Object value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderNotEquals<>(field, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withContains(@Nonnull String field, @Nullable String value) {
+        if (StringUtils.isNullOrEmpty(value)) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderContains<>(field, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withInList(@Nonnull String field, @Nullable Collection<?> value) {
+        if (value == null || value.isEmpty()) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderInList<>(field, value));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withNull(@Nonnull String field) {
+        return with(new SpecificationBuilderIsNull<>(field));
+    }
+
+    @Nonnull
+    public SpecificationBuilder<T> withNotNull(@Nonnull String field) {
+        return with(new SpecificationBuilderIsNotNull<>(field));
+    }
+
+    public SpecificationBuilder<T> withJsonArrayElementFieldEquals(@Nonnull String field, @Nonnull String elementField, @Nullable String value) {
+        if (StringUtils.isNullOrEmpty(value)) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderJsonArrayElementFieldEquals<>(field, elementField, value));
+    }
+
+    public SpecificationBuilder<T> withArrayContains(@Nonnull String field, @Nullable String value) {
+        if (value == null) {
+            return this;
+        }
+
+        return with(new SpecificationBuilderArrayContains<>(field, value));
+    }
+
+    public SpecificationBuilder<T> withSpecification(@Nonnull Specification<T> specification) {
+        specifications.add(specification);
+        return this;
+    }
+
+    @Nonnull
+    private SpecificationBuilder<T> with(@Nonnull SpecificationBuilderItem<T> item) {
+        items.add(item);
+        return this;
+    }
+
+    @Nonnull
+    public Specification<T> build() {
+        return (root, query, builder) -> {
+            var predicates = items
+                    .stream()
+                    .map(entry -> entry.toPredicate(root, query, builder))
+                    .toArray(Predicate[]::new);
+
+            var specs = specifications
+                    .stream()
+                    .map(spec -> spec.toPredicate(root, query, builder))
+                    .toArray(Predicate[]::new);
+
+            var allPredicates = new Predicate[predicates.length + specs.length];
+            System.arraycopy(predicates, 0, allPredicates, 0, predicates.length);
+            System.arraycopy(specs, 0, allPredicates, predicates.length, specs.length);
+
+            return builder.and(allPredicates);
+        };
+    }
+
+    public boolean isEmpty() {
+        return items.isEmpty();
+    }
+}
