@@ -59,6 +59,7 @@ jobs:
     permissions:
       contents: read
       issues: write
+      pull-requests: write
     with:
       build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
       build_date: ${{ needs.prepareBuildVars.outputs.build_date }}
