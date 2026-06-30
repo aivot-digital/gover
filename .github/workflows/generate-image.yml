@@ -1,4 +1,4 @@
-name: generateImage
+name: Generate image
 
 on:
   workflow_call:

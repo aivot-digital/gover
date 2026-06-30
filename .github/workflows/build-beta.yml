@@ -43,7 +43,7 @@ jobs:
     if: github.event.pull_request.draft == false
     needs:
       - prepareBuildVars
-    uses: ./.github/workflows/subflows/test-backend.yml
+    uses: ./.github/workflows/test-backend.yml
     permissions:
       contents: read
     with:
@@ -54,7 +54,7 @@ jobs:
     if: github.event.pull_request.draft == false
     needs:
       - prepareBuildVars
-    uses: ./.github/workflows/subflows/generate-sbom.yml
+    uses: ./.github/workflows/generate-sbom.yml
     permissions:
       contents: read
       issues: write
@@ -70,7 +70,7 @@ jobs:
       - prepareBuildVars
       - testBackend
       - generateSbom
-    uses: ./.github/workflows/subflows/generate-library.yml
+    uses: ./.github/workflows/generate-library.yml
     permissions:
       contents: read
       packages: write
@@ -85,7 +85,7 @@ jobs:
       - prepareBuildVars
       - testBackend
       - generateSbom
-    uses: ./.github/workflows/subflows/generate-image.yml
+    uses: ./.github/workflows/generate-image.yml
     permissions:
       contents: read
       packages: write

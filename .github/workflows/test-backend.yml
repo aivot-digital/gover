@@ -1,4 +1,4 @@
-name: genrateLibrary
+name: Test backend
 
 on:
   workflow_call:
@@ -8,11 +8,13 @@ on:
         type: string
 
 jobs:
-  publish:
+  testBackend:
+    name: Test backend
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-      packages: write
+    env:
+      BUILD_VERSION: ${{ inputs.build_version }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
@@ -24,9 +26,6 @@ jobs:
           distribution: temurin
           architecture: x64
 
-      - name: Publish the package to the GitHub package registry
+      - name: Build with Maven
         working-directory: backend
-        run: mvn --batch-mode deploy
-        env:
-          BUILD_VERSION: ${{ inputs.build_version }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn --batch-mode --update-snapshots test
