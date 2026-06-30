@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       build_date: ${{ steps.build_date.outputs.value }}
-      build_version: beta.${{ steps.build_version.outputs.value }}.${{ github.event.pull_request.number }}
+      build_version: ${{ steps.build_version.outputs.value }}
       build_number: ${{ github.event.pull_request.number }}
     steps:
       - name: Get current date
@@ -25,7 +25,18 @@ jobs:
         run: echo "value=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
       - name: Get the current build version based on the source branch
         id: build_version
-        run: echo "value=$(echo "${{ github.event.pull_request.head.ref }}" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/')" >> "$GITHUB_OUTPUT"
+        env:
+          SOURCE_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          build_version="${SOURCE_BRANCH##*/}-beta-${PR_NUMBER}"
+          semver_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if [[ "$build_version" =~ $semver_pattern ]]; then
+            echo "value=$build_version" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Invalid build version::Computed build version '$build_version' is not valid SemVer. Falling back to 0.0.0."
+            echo "value=0.0.0" >> "$GITHUB_OUTPUT"
+          fi
 
   testBackend:
     name: Test the backend code
@@ -69,7 +80,7 @@ jobs:
 
   generateImage:
     name: Generate the container image for the deployment of the backend and frontend services
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && needs.prepareBuildVars.outputs.build_version != '0.0.0'
     needs:
       - prepareBuildVars
       - testBackend
@@ -82,7 +93,6 @@ jobs:
       build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
       build_date: ${{ needs.prepareBuildVars.outputs.build_date }}
       build_number: ${{ needs.prepareBuildVars.outputs.build_number }}
-      package_name: gover-next
       image_name: ${{ github.repository_owner }}/gover-next
       is_release: false
     secrets: inherit

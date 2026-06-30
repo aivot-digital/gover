@@ -21,13 +21,23 @@ jobs:
       build_version: ${{ steps.build_version.outputs.value }}
       build_number: ${{ github.event.pull_request.number }}
     steps:
-      - run: echo "VERSION ${{ github.event.pull_request.base.ref }}"
       - name: Get current date
         id: build_date
         run: echo "value=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
-      - name: Get the current build version based on the source branch
+      - name: Get the current build version based on the target branch
         id: build_version
-        run: echo "value=$(echo "${{ github.event.pull_request.base.ref }}" | sed 's/[^0-9.]*\([0-9.]*\).*/\1/')" >> "$GITHUB_OUTPUT"
+        env:
+          TARGET_BRANCH: ${{ github.event.pull_request.base.ref }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          build_version="${TARGET_BRANCH##*/}-alpha-${PR_NUMBER}"
+          semver_pattern='^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-((0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*)(\.(0|[1-9][0-9]*|[0-9A-Za-z-]*[A-Za-z-][0-9A-Za-z]*))*))?(\+([0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*))?$'
+          if [[ "$build_version" =~ $semver_pattern ]]; then
+            echo "value=$build_version" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice title=Invalid build version::Computed build version '$build_version' is not valid SemVer. Falling back to 0.0.0."
+            echo "value=0.0.0" >> "$GITHUB_OUTPUT"
+          fi
 
   testBackend:
     name: Test the backend code
@@ -66,12 +76,12 @@ jobs:
       contents: read
       packages: write
     with:
-      build_version: alpha.${{ needs.prepareBuildVars.outputs.build_version }}.${{ github.event.pull_request.number }}
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
     secrets: inherit
 
   generateImage:
     name: Generate the container image for the deployment of the backend and frontend services
-    if: github.event.pull_request.draft == false
+    if: github.event.pull_request.draft == false && needs.prepareBuildVars.outputs.build_version != '0.0.0'
     needs:
       - prepareBuildVars
       - testBackend
@@ -81,7 +91,9 @@ jobs:
       contents: read
       packages: write
     with:
-      build_version: alpha.${{ needs.prepareBuildVars.outputs.build_version }}.${{ github.event.pull_request.number }}
+      build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
       build_date: ${{ needs.prepareBuildVars.outputs.build_date }}
       build_number: ${{ needs.prepareBuildVars.outputs.build_number }}
+      image_name: ${{ github.repository_owner }}/gover-next
+      is_release: false
     secrets: inherit

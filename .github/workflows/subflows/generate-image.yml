@@ -12,6 +12,12 @@ on:
       build_number:
         required: true
         type: string
+      image_name:
+        required: true
+        type: string
+      is_release:
+        required: true
+        type: boolean
 
 env:
   REGISTRY: ghcr.io
@@ -19,6 +25,7 @@ env:
 jobs:
   buildArm64Image:
     name: Build ARM64 image and push preview/release when allowed
+    if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04-arm
     permissions:
       contents: read
@@ -27,7 +34,6 @@ jobs:
       BUILD_DATE: ${{ inputs.build_date }}
       BUILD_VERSION: ${{ inputs.build_version }}
       BUILD_NUMBER: ${{ inputs.build_number }}
-      PACKAGE_NAME: ${{ inputs.package_name }}
       IMAGE_NAME: ${{ inputs.image_name }}
       CAN_PUSH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
@@ -84,6 +90,7 @@ jobs:
 
   buildAmd64Image:
     name: Build AMD64 image and push preview/release when allowed
+    if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -92,7 +99,6 @@ jobs:
       BUILD_DATE: ${{ inputs.build_date }}
       BUILD_VERSION: ${{ inputs.build_version }}
       BUILD_NUMBER: ${{ inputs.build_number }}
-      PACKAGE_NAME: ${{ inputs.package_name }}
       IMAGE_NAME: ${{ inputs.image_name }}
       CAN_PUSH_IMAGE: ${{ github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) }}
     steps:
@@ -164,7 +170,6 @@ jobs:
       packages: write
     env:
       BUILD_VERSION: ${{ inputs.build_version }}
-      PACKAGE_NAME: ${{ inputs.package_name }}
       IMAGE_NAME: ${{ inputs.image_name }}
     needs:
       - buildArm64Image
