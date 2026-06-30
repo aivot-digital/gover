@@ -16,9 +16,11 @@ import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
 import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {MapPointValue} from '../../models/elements/form/input/map-point-field-element';
-import {AttributionControl, MapContainer, Marker, TileLayer, useMapEvents} from 'react-leaflet';
-import type {LeafletEventHandlerFnMap} from 'leaflet';
-import L from 'leaflet';
+import {
+    LeafletPointPickerMap,
+    type LeafletPoint,
+    type LeafletPointPickerMapHandle
+} from './leaflet-point-picker-map';
 
 interface MapPointFieldComponentProps {
     label: string;
@@ -150,30 +152,6 @@ function formatNominatimAddress(address?: NominatimAddress, fallback?: string): 
         .join(', ');
 }
 
-const markerIcon = L.divIcon({
-    className: '',
-    html: '<div style="width:18px;height:18px;border-radius:50%;background:#1A73E8;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.25);"></div>',
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
-});
-
-function MapClickHandler(props: {
-    disabled: boolean;
-    onPick: (lat: number, lon: number) => void;
-}) {
-    useMapEvents({
-        click: (event) => {
-            if (props.disabled) {
-                return;
-            }
-
-            props.onPick(event.latlng.lat, event.latlng.lng);
-        },
-    });
-
-    return null;
-}
-
 export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     const zoom = normalizeZoom(props.zoom);
     const [inputMode, setInputMode] = useState<InputMode>('search');
@@ -181,9 +159,8 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     const [isSearching, setIsSearching] = useState(false);
     const [isResolvingAddress, setIsResolvingAddress] = useState(false);
     const [addressResolveError, setAddressResolveError] = useState<string | undefined>(undefined);
-    const mapRef = useRef<L.Map | null>(null);
+    const mapRef = useRef<LeafletPointPickerMapHandle | null>(null);
     const reverseLookupRequestId = useRef(0);
-    const lastAppliedMapCenterRef = useRef<string | null>(null);
     const [latitudeInput, setLatitudeInput] = useState('');
     const [longitudeInput, setLongitudeInput] = useState('');
 
@@ -215,22 +192,16 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
         return configuredCenter;
     }, [configuredCenter, hasCoordinates, markerLat, markerLon]);
 
-    useEffect(() => {
-        const map = mapRef.current;
-        if (map == null) {
-            return;
+    const mapMarker = useMemo<LeafletPoint | null>(() => {
+        if (!hasCoordinates || markerLat == null || markerLon == null) {
+            return null;
         }
 
-        const centerKey = `${mapCenter.lat}:${mapCenter.lon}:${zoom}`;
-        if (lastAppliedMapCenterRef.current === centerKey) {
-            return;
-        }
-
-        lastAppliedMapCenterRef.current = centerKey;
-        map.setView([mapCenter.lat, mapCenter.lon], zoom, {
-            animate: true,
-        });
-    }, [mapCenter.lat, mapCenter.lon, zoom]);
+        return {
+            lat: markerLat,
+            lon: markerLon,
+        };
+    }, [hasCoordinates, markerLat, markerLon]);
 
     useEffect(() => {
         setLatitudeInput(props.value?.latitude != null ? props.value.latitude.toFixed(6) : '');
@@ -250,9 +221,10 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
             address: options?.address ?? props.value?.address,
         }));
 
-        if (mapRef.current != null && options?.panToMap !== false) {
-            mapRef.current.panTo([latitude, longitude], {
-                animate: true,
+        if (options?.panToMap !== false) {
+            mapRef.current?.panTo({
+                lat: latitude,
+                lon: longitude,
             });
         }
     }, [props.onChange, props.value?.address]);
@@ -294,6 +266,11 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
             }
         }
     }, [updatePoint]);
+
+    const handleMapPick = useCallback((point: LeafletPoint) => {
+        updatePoint(point.lat, point.lon);
+        void resolveAddressForPoint(point.lat, point.lon);
+    }, [resolveAddressForPoint, updatePoint]);
 
     const handleSearch = async () => {
         const query = searchQuery.trim();
@@ -412,13 +389,7 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
     }, [addressResolveError, hasCoordinates, isResolvingAddress, props.value?.address]);
 
     const handleResetMapView = () => {
-        if (mapRef.current == null) {
-            return;
-        }
-
-        mapRef.current.setView([configuredCenter.lat, configuredCenter.lon], zoom, {
-            animate: true,
-        });
+        mapRef.current?.setView(configuredCenter, zoom);
     };
 
     const handleClear = useCallback(() => {
@@ -430,21 +401,8 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
         setLongitudeInput('');
         props.onChange(null);
 
-        if (mapRef.current != null) {
-            mapRef.current.setView([configuredCenter.lat, configuredCenter.lon], zoom, {
-                animate: true,
-            });
-        }
+        mapRef.current?.setView(configuredCenter, zoom);
     }, [configuredCenter.lat, configuredCenter.lon, props.onChange, zoom]);
-
-    const markerEvents: LeafletEventHandlerFnMap = useMemo(() => ({
-        dragend: (event) => {
-            const marker = event.target as L.Marker;
-            const latlng = marker.getLatLng();
-            updatePoint(latlng.lat, latlng.lng);
-            void resolveAddressForPoint(latlng.lat, latlng.lng);
-        },
-    }), [resolveAddressForPoint, updatePoint]);
 
     return (
         <Stack spacing={1.5}>
@@ -677,52 +635,18 @@ export function MapPointFieldComponent(props: MapPointFieldComponentProps) {
                         </Tooltip>
                     }
                 </Stack>
-                <MapContainer
-                    center={[mapCenter.lat, mapCenter.lon]}
+                <LeafletPointPickerMap
+                    ref={mapRef}
+                    center={mapCenter}
                     zoom={zoom}
+                    disabled={isMapDisabled}
+                    marker={mapMarker}
+                    onPick={handleMapPick}
                     style={{
                         width: '100%',
                         height: '100%',
                     }}
-                    dragging={!isMapDisabled}
-                    doubleClickZoom={!isMapDisabled}
-                    scrollWheelZoom={!isMapDisabled}
-                    touchZoom={!isMapDisabled}
-                    boxZoom={!isMapDisabled}
-                    keyboard={!isMapDisabled}
-                    zoomControl={!isMapDisabled}
-                    attributionControl={false}
-                    ref={(mapInstance) => {
-                        mapRef.current = mapInstance;
-                    }}
-                >
-                    <TileLayer
-                        attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap-Mitwirkende</a>'
-                        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                    />
-                    <AttributionControl
-                        position="bottomright"
-                        prefix={false}
-                    />
-
-                    <MapClickHandler
-                        disabled={isMapDisabled}
-                        onPick={(lat, lon) => {
-                            updatePoint(lat, lon);
-                            void resolveAddressForPoint(lat, lon);
-                        }}
-                    />
-
-                    {
-                        hasCoordinates && markerLat != null && markerLon != null &&
-                        <Marker
-                            position={[markerLat, markerLon]}
-                            draggable={!isMapDisabled}
-                            icon={markerIcon}
-                            eventHandlers={markerEvents}
-                        />
-                    }
-                </MapContainer>
+                />
             </Paper>
 
             {
