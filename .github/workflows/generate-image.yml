@@ -78,6 +78,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: ./Containerfile
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           tags: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-arm64
           labels: ${{ steps.meta.outputs.labels }}
@@ -143,6 +144,7 @@ jobs:
         uses: docker/build-push-action@v7
         with:
           context: .
+          file: ./Containerfile
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           tags: |
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.BUILD_VERSION }}-amd64
