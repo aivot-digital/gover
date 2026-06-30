@@ -28,5 +28,5 @@ jobs:
         working-directory: backend
         run: mvn --batch-mode deploy
         env:
-          BUILD_VERSION: ${{ inputs.build_version }}
+          BUILD_VERSION: ${{ inputs.build_version }}-SNAPSHOT
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
