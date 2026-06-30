@@ -236,6 +236,7 @@
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <configuration>
+                    <layout>ZIP</layout>
                     <classifier>exec</classifier>
                 </configuration>
             </plugin>
