@@ -126,14 +126,9 @@
         </dependency>
         <dependency>
             <groupId>org.graalvm.polyglot</groupId>
-            <artifactId>js-community</artifactId>
+            <artifactId>js</artifactId>
             <version>${graaljs.version}</version>
             <type>pom</type>
-        </dependency>
-        <dependency>
-            <groupId>org.graalvm.js</groupId>
-            <artifactId>js-scriptengine</artifactId>
-            <version>${graaljs.version}</version>
         </dependency>
         <dependency>
             <groupId>io.sentry</groupId>
