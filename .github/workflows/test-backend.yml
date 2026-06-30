@@ -11,8 +11,6 @@ jobs:
   testBackend:
     name: Test backend
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
     env:
       BUILD_VERSION: ${{ inputs.build_version }}
     steps:

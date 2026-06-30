@@ -27,9 +27,6 @@ jobs:
     name: Build ARM64 image and push preview/release when allowed
     if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04-arm
-    permissions:
-      contents: read
-      packages: write
     env:
       BUILD_DATE: ${{ inputs.build_date }}
       BUILD_VERSION: ${{ inputs.build_version }}
@@ -93,9 +90,6 @@ jobs:
     name: Build AMD64 image and push preview/release when allowed
     if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
     env:
       BUILD_DATE: ${{ inputs.build_date }}
       BUILD_VERSION: ${{ inputs.build_version }}
@@ -167,9 +161,6 @@ jobs:
         github.event.pull_request.head.repo.full_name == github.repository)
       )
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
     env:
       BUILD_VERSION: ${{ inputs.build_version }}
       IMAGE_NAME: ${{ inputs.image_name }}

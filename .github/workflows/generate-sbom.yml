@@ -14,10 +14,6 @@ jobs:
   generateSbom:
     name: Generate SBOMs and verify license compliance
     runs-on: ubuntu-24.04
-    #permissions:
-    #  contents: read
-    #  issues: write
-    #  pull-requests: write
     env:
       BUILD_VERSION: ${{ inputs.build_version }}
       BUILD_DATE: ${{ inputs.build_date }}

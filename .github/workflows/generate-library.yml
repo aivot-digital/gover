@@ -9,10 +9,9 @@ on:
 
 jobs:
   publish:
+    name: Publish the package to the GitHub package registry
+    if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04
-    permissions:
-      contents: read
-      packages: write
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
