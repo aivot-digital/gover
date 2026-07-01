@@ -447,6 +447,10 @@
       "versions": ["*"],
       "_comment": "Gover internal package under Sustainable Use License."
     },
+    "backend": {
+      "versions": ["*"],
+      "_comment": "Gover internal package under Sustainable Use License."
+    },
     "gover-mail-templates": {
       "versions": ["*"],
       "_comment": "Gover internal package under Sustainable Use License."
