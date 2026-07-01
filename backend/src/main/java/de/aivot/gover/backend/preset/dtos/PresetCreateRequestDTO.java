@@ -1,7 +1,7 @@
 package de.aivot.gover.backend.preset.dtos;
 
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.gover.backend.form.enums.FormStatus;
+import de.aivot.gover.backend.preset.enums.PresetStatus;
 import de.aivot.gover.backend.lib.RequestDTO;
 import de.aivot.gover.backend.preset.entities.PresetEntity;
 import de.aivot.gover.backend.preset.entities.PresetVersionEntity;
@@ -42,7 +42,7 @@ public record PresetCreateRequestDTO(
                 parent.getKey(),
                 1,
                 rootElement,
-                FormStatus.Drafted,
+                PresetStatus.Drafted,
                 null,
                 null,
                 null,

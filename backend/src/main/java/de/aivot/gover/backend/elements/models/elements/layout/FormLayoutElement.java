@@ -70,6 +70,19 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
         return getPrivacyText().replaceAll("\\{[^}]+}", "");
     }
 
+    @Nullable
+    public Integer getRelevantDepartmentId() {
+        if (this.getManagingDepartmentId() != null) {
+            return this.getManagingDepartmentId();
+        }
+
+        if (this.getResponsibleDepartmentId() != null) {
+            return this.getResponsibleDepartmentId();
+        }
+
+        return null;
+    }
+
     // region Getters & Setters
 
     public String getTabTitle() {

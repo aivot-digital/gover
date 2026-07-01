@@ -29,4 +29,6 @@ public interface ProcessNodeRepository extends JpaRepository<ProcessNodeEntity, 
     );
 
     boolean existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(String dataKey, Integer nodeId, Integer processId, Integer processVersion);
+
+    long countAllByProcessNodeDefinitionKey(String processNodeDefinitionKey);
 }

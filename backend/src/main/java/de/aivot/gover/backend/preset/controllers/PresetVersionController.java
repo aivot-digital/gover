@@ -3,7 +3,7 @@ package de.aivot.gover.backend.preset.controllers;
 import de.aivot.gover.backend.audit.enums.AuditAction;
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
-import de.aivot.gover.backend.form.enums.FormStatus;
+import de.aivot.gover.backend.preset.enums.PresetStatus;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.preset.entities.PresetEntity;
 import de.aivot.gover.backend.preset.entities.PresetVersionEntity;
@@ -112,7 +112,7 @@ public class PresetVersionController {
 
         newVersion.setPresetKey(presetKey);
         newVersion.setVersion(newVersionNumber);
-        newVersion.setStatus(FormStatus.Drafted);
+        newVersion.setStatus(PresetStatus.Drafted);
         newVersion.setCreated(null);
         newVersion.setUpdated(null);
         newVersion.setPublished(null);
@@ -194,7 +194,7 @@ public class PresetVersionController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (presetVersion.getStatus() != FormStatus.Drafted) {
+        if (presetVersion.getStatus() != PresetStatus.Drafted) {
             throw ResponseException.conflict("Veröffentlichte Versionen können nicht bearbeitet werden.");
         }
 
@@ -246,7 +246,7 @@ public class PresetVersionController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (presetVersion.getStatus() == FormStatus.Published) {
+        if (presetVersion.getStatus() == PresetStatus.Published) {
             throw ResponseException.conflict("Veröffentlichte Versionen können nicht gelöscht werden.");
         }
 
@@ -285,11 +285,11 @@ public class PresetVersionController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (presetVersion.getStatus() == FormStatus.Published) {
+        if (presetVersion.getStatus() == PresetStatus.Published) {
             throw ResponseException.conflict("Die Version ist bereits veröffentlicht.");
         }
 
-        presetVersion.setStatus(FormStatus.Published);
+        presetVersion.setStatus(PresetStatus.Published);
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, PresetVersionEntity.class, presetVersion.getPresetKey(), "key", Map.of(
                         "key", presetVersion.getPresetKey(),
@@ -325,11 +325,11 @@ public class PresetVersionController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (presetVersion.getStatus() == FormStatus.Revoked) {
+        if (presetVersion.getStatus() == PresetStatus.Revoked) {
             throw ResponseException.conflict("Die Version ist bereits widerrufen.");
         }
 
-        presetVersion.setStatus(FormStatus.Revoked);
+        presetVersion.setStatus(PresetStatus.Revoked);
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, PresetVersionEntity.class, presetVersion.getPresetKey(), "key", Map.of(
                         "key", presetVersion.getPresetKey(),

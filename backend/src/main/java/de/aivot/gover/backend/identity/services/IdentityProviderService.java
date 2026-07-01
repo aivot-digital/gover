@@ -6,8 +6,6 @@ import de.aivot.gover.backend.asset.entities.AssetEntity;
 import de.aivot.gover.backend.asset.repositories.AssetRepository;
 import de.aivot.gover.backend.core.exceptions.HttpConnectionException;
 import de.aivot.gover.backend.core.services.HttpService;
-import de.aivot.gover.backend.form.entities.FormVersionEntity;
-import de.aivot.gover.backend.form.repositories.FormVersionRepository;
 import de.aivot.gover.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.gover.backend.identity.enums.IdentityProviderType;
 import de.aivot.gover.backend.identity.models.OpenIdConfiguration;
@@ -60,19 +58,16 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
     private final SecretRepository secretRepository;
     private final AssetRepository assetRepository;
     private final HttpService httpService;
-    private final FormVersionRepository formVersionRepository;
 
     @Autowired
     public IdentityProviderService(IdentityProviderRepository identityProviderRepository,
                                    SecretRepository secretRepository,
                                    AssetRepository assetRepository,
-                                   HttpService httpService,
-                                   FormVersionRepository formVersionRepository) {
+                                   HttpService httpService) {
         this.identityProviderRepository = identityProviderRepository;
         this.secretRepository = secretRepository;
         this.assetRepository = assetRepository;
         this.httpService = httpService;
-        this.formVersionRepository = formVersionRepository;
     }
 
     /**
@@ -333,20 +328,7 @@ public class IdentityProviderService implements EntityService<IdentityProviderEn
             );
         }
 
-
-        var linkedFormExists = formVersionRepository
-                .exists(SpecificationBuilder
-                        .create(FormVersionEntity.class)
-                        .withJsonArrayElementFieldEquals("identityProviders", "identityProviderKey", entity.getKey().toString())
-                        .build());
-
-        if (linkedFormExists) {
-            throw ResponseException.conflict(
-                    "Für den Nutzerkontenanbieter %s (%s) existieren noch Formulare, die diesen Anbieter verwenden. Bitte entfernen Sie diese Verknüpfung, bevor Sie den Anbieter löschen.",
-                    entity.getName(),
-                    entity.getKey()
-            );
-        }
+        // TODO: Check if a process node exists which config references this identity provider.
 
         identityProviderRepository
                 .delete(entity);

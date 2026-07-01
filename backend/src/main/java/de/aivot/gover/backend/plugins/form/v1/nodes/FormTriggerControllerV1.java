@@ -7,7 +7,6 @@ import de.aivot.gover.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
-import de.aivot.gover.backend.destination.services.DestinationService;
 import de.aivot.gover.backend.elements.dtos.ElementDerivationResponse;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
@@ -22,8 +21,6 @@ import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
-import de.aivot.gover.backend.form.dtos.FormCostCalculationResponseDTO;
-import de.aivot.gover.backend.form.services.FormPaymentService;
 import de.aivot.gover.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.gover.backend.identity.controllers.IdentityController;
 import de.aivot.gover.backend.identity.entities.IdentityProviderEntity;
@@ -37,6 +34,7 @@ import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.models.dtos.MaxFileSizeDto;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.services.PaymentProviderService;
+import de.aivot.gover.backend.plugins.form.v1.services.FormPaymentService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.process.entities.*;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
@@ -46,7 +44,6 @@ import de.aivot.gover.backend.process.filters.ProcessVersionFilter;
 import de.aivot.gover.backend.process.services.*;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
-import de.aivot.gover.backend.submission.dtos.SubmissionStatusResponseDTO;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.dtos.ThemeResponseDTO;
@@ -78,10 +75,7 @@ public class FormTriggerControllerV1 {
 
     private final GoverConfig goverConfig;
     private final FormPaymentService paymentService;
-    private final PaymentProviderService paymentProviderService;
-    private final DestinationService destinationService;
     private final IdentityProviderService identityProviderService;
-    private final IdentityCacheRepository identityCacheRepository;
     private final ElementDerivationService elementDerivationService;
     private final AssetService assetService;
     private final ThemeService themeService;
@@ -95,10 +89,8 @@ public class FormTriggerControllerV1 {
     private final ProcessNodeDefinitionService processNodeDefinitionService;
     private final SystemConfigService systemConfigService;
     private final StorageProviderService storageProviderService;
-    private final AVService aVService;
     private final CaptchaReplayGuard captchaReplayGuard;
     private final ProcessInstanceService processInstanceService;
-    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final FileUploadMultipartInputService fileUploadMultipartInputService;
     private final ElementDataTransformService elementDataTransformService;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
@@ -109,7 +101,6 @@ public class FormTriggerControllerV1 {
     public FormTriggerControllerV1(GoverConfig goverConfig,
                                    FormPaymentService paymentService,
                                    PaymentProviderService paymentProviderService,
-                                   DestinationService destinationService,
                                    IdentityProviderService identityProviderService,
                                    IdentityCacheRepository identityCacheRepository,
                                    ElementDerivationService elementDerivationService,
@@ -136,10 +127,7 @@ public class FormTriggerControllerV1 {
                                    IdentityService identityService) {
         this.goverConfig = goverConfig;
         this.paymentService = paymentService;
-        this.paymentProviderService = paymentProviderService;
-        this.destinationService = destinationService;
         this.identityProviderService = identityProviderService;
-        this.identityCacheRepository = identityCacheRepository;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
         this.themeService = themeService;
@@ -153,10 +141,8 @@ public class FormTriggerControllerV1 {
         this.processNodeDefinitionService = processNodeDefinitionService;
         this.systemConfigService = systemConfigService;
         this.storageProviderService = storageProviderService;
-        this.aVService = aVService;
         this.captchaReplayGuard = captchaReplayGuard;
         this.processInstanceService = processInstanceService;
-        this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.fileUploadMultipartInputService = fileUploadMultipartInputService;
         this.elementDataTransformService = elementDataTransformService;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
@@ -372,14 +358,15 @@ public class FormTriggerControllerV1 {
                     "If the form has an associated payment provider, the costs will be calculated accordingly. " +
                     "If no payment provider is linked, the response will indicate that there are no costs."
     )
-    public FormCostCalculationResponseDTO calculateCosts(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                                         @Nonnull @PathVariable String processSlug,
-                                                         @Nonnull @PathVariable String formSlug,
-                                                         @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                                         @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
-                                                         @Nonnull @RequestBody AuthoredElementValues values) throws PaymentException, ResponseException {
-        // TODO: Implement
-        return new FormCostCalculationResponseDTO(BigDecimal.ZERO, List.of(), "");
+    public FormTriggerCostCalculationResponseV1 calculateCosts(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                               @Nonnull @PathVariable String processSlug,
+                                                               @Nonnull @PathVariable String formSlug,
+                                                               @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+                                                               @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) UUID identitySessionId,
+                                                               @Nonnull @RequestBody AuthoredElementValues values) throws PaymentException, ResponseException {
+        // TODO: Implement with the paymentService
+        var exists = paymentService != null;
+        return new FormTriggerCostCalculationResponseV1(BigDecimal.ZERO, List.of(), "");
     }
 
     @PostMapping("derive/")
@@ -430,15 +417,15 @@ public class FormTriggerControllerV1 {
     }
 
     @PostMapping("submit/")
-    public SubmissionStatusResponseDTO submit(@Nullable @AuthenticationPrincipal Jwt jwt,
-                                              @Nonnull @PathVariable String processSlug,
-                                              @Nonnull @PathVariable String formSlug,
-                                              @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
-                                              @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
-                                              @Nonnull @RequestParam(value = "inputs", required = true) String rawInputs,
-                                              @Nullable @RequestParam(value = "files", required = false) MultipartFile[] files,
-                                              @Nullable @RequestParam(value = "fileUris", required = false) List<String> fileUris,
-                                              @Nonnull HttpServletResponse response) throws ResponseException {
+    public FormTriggerSubmissionStatusResponseV1 submit(@Nullable @AuthenticationPrincipal Jwt jwt,
+                                                        @Nonnull @PathVariable String processSlug,
+                                                        @Nonnull @PathVariable String formSlug,
+                                                        @Nullable @RequestParam(value = TEST_CLAIM_QUERY_PARAM, required = false) String testClaimAccessKey,
+                                                        @Nullable @CookieValue(value = IdentityController.IDENTITY_COOKIE_NAME, required = false) String identitySessionId,
+                                                        @Nonnull @RequestParam(value = "inputs", required = true) String rawInputs,
+                                                        @Nullable @RequestParam(value = "files", required = false) MultipartFile[] files,
+                                                        @Nullable @RequestParam(value = "fileUris", required = false) List<String> fileUris,
+                                                        @Nonnull HttpServletResponse response) throws ResponseException {
         var execUser = getExecUser(jwt);
         var process = getProcessEntity(processSlug);
         var processVersion = getProcessVersionEntity(testClaimAccessKey, null, process, execUser);
@@ -498,7 +485,7 @@ public class FormTriggerControllerV1 {
         );
 
         response.addCookie(IdentityCookieUtils.createExpiredIdentityCookie());
-        return new SubmissionStatusResponseDTO(processInstance.getAccessKey());
+        return new FormTriggerSubmissionStatusResponseV1(processInstance.getAccessKey());
     }
 
     void testCaptchaReplayProtection(@Nonnull FormLayoutElement form,

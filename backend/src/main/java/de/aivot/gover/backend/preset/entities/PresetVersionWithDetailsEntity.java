@@ -2,7 +2,7 @@ package de.aivot.gover.backend.preset.entities;
 
 import de.aivot.gover.backend.core.converters.GroupLayoutConverter;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
-import de.aivot.gover.backend.form.enums.FormStatus;
+import de.aivot.gover.backend.preset.enums.PresetStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
@@ -52,7 +52,7 @@ public class PresetVersionWithDetailsEntity {
     private GroupLayoutElement rootElement;
 
     @Nonnull
-    private FormStatus status;
+    private PresetStatus status;
 
     @Nullable
     private Instant created;
@@ -170,11 +170,11 @@ public class PresetVersionWithDetailsEntity {
     }
 
     @Nonnull
-    public FormStatus getStatus() {
+    public PresetStatus getStatus() {
         return status;
     }
 
-    public PresetVersionWithDetailsEntity setStatus(@Nonnull FormStatus status) {
+    public PresetVersionWithDetailsEntity setStatus(@Nonnull PresetStatus status) {
         this.status = status;
         return this;
     }

@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.services;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import de.aivot.gover.backend.asset.entities.AssetEntity;
 import de.aivot.gover.backend.asset.repositories.AssetRepository;
 import de.aivot.gover.backend.config.services.SystemConfigService;
@@ -9,16 +8,14 @@ import de.aivot.gover.backend.core.exceptions.HttpConnectionException;
 import de.aivot.gover.backend.core.services.HttpService;
 import de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.gover.backend.department.repositories.VDepartmentShadowedRepository;
+import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.ElementDerivationOptions;
 import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
+import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.gover.backend.enums.ElementType;
-import de.aivot.gover.backend.form.entities.VFormVersionWithDetailsEntity;
-import de.aivot.gover.backend.form.services.FormVersionService;
-import de.aivot.gover.backend.identity.constants.IdentityValueKey;
-import de.aivot.gover.backend.identity.models.IdentityData;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
@@ -31,8 +28,8 @@ import de.aivot.gover.backend.pdf.enums.FormPdfScope;
 import de.aivot.gover.backend.pdf.models.FormPdfContext;
 import de.aivot.gover.backend.pdf.models.PrintableFormPdfData;
 import de.aivot.gover.backend.services.pdf.PdfElementsGenerator;
-import de.aivot.gover.backend.submission.entities.Submission;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
+import de.aivot.gover.backend.theme.services.ThemeService;
 import de.aivot.gover.backend.utils.MultipartUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -66,10 +63,10 @@ public class PdfService {
     private final IdentityProviderRepository identityProviderRepository;
     private final PaymentProviderRepository paymentProviderRepository;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
-    private final FormVersionService formVersionService;
     private final HttpService httpService;
     private final ElementDerivationService elementDerivationService;
     private final VDepartmentShadowedRepository vDepartmentShadowedRepository;
+    private final ThemeService themeService;
 
     @Autowired
     public PdfService(GotenbergConfig gotenbergConfig,
@@ -81,9 +78,8 @@ public class PdfService {
                       IdentityProviderRepository identityProviderRepository,
                       PaymentProviderRepository paymentProviderRepository,
                       PaymentProviderDefinitionsService paymentProviderDefinitionsService,
-                      FormVersionService formVersionService,
                       HttpService httpService,
-                      ElementDerivationService elementDerivationService) {
+                      ElementDerivationService elementDerivationService, ThemeService themeService) {
         this.gotenbergConfig = gotenbergConfig;
         this.systemConfigService = systemConfigService;
         this.assetRepository = assetRepository;
@@ -92,10 +88,10 @@ public class PdfService {
         this.identityProviderRepository = identityProviderRepository;
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
-        this.formVersionService = formVersionService;
         this.httpService = httpService;
         this.elementDerivationService = elementDerivationService;
         this.vDepartmentShadowedRepository = vDepartmentShadowedRepository;
+        this.themeService = themeService;
     }
 
     public void testGotenbergConnection() throws IOException {
@@ -113,12 +109,12 @@ public class PdfService {
         }
     }
 
-    public byte[] generatePrintableForm(VFormVersionWithDetailsEntity form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        var allElements = ElementFlattenUtils.flattenElements(form.getRootElement());
+    public byte[] generatePrintableForm(FormLayoutElement form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var allElements = ElementFlattenUtils.flattenElements(form);
 
         var dto = new HashMap<String, Object>();
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form.getRootElement(),
+                form,
                 null,
                 true
         ));
@@ -163,13 +159,13 @@ public class PdfService {
         return generateGotenbergPdf(form.getPdfTemplateKey(), dto);
     }
 
-    public byte[] generateCustomerSummary(VFormVersionWithDetailsEntity form, Submission submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
+    public byte[] generateCustomerSummary(FormLayoutElement form, AuthoredElementValues submission, FormPdfScope scope) throws IOException, InterruptedException, URISyntaxException, ResponseException {
         var dto = new HashMap<String, Object>();
         var derivedRuntimeElementData = elementDerivationService
                 .derive(
                         new ElementDerivationRequest(
-                                form.getRootElement(),
-                                submission.getCustomerInput(),
+                                form,
+                                submission,
                                 new ElementDerivationOptions()
                                         .setSkipErrorsForElementIds(java.util.List.of(ElementDerivationOptions.ALL_ELEMENTS))
                         ),
@@ -178,13 +174,14 @@ public class PdfService {
                 );
 
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
-                form.getRootElement(),
+                form,
                 derivedRuntimeElementData,
                 scope != FormPdfScope.Staff
         ));
         dto.put("form", form);
         dto.put("submission", submission);
 
+        /* TODO: Resolve Identity
         var authData = submission
                 .getCustomerInput()
                 .get(IdentityValueKey.IdCustomerInputKey);
@@ -207,7 +204,9 @@ public class PdfService {
                 }
             }
         }
+         */
 
+        /* TODO: Resolve Payment
         if (submission.getPaymentTransactionKey() != null) {
             var paymentTransaction = paymentTransactionRepository
                     .findById(submission.getPaymentTransactionKey())
@@ -230,13 +229,14 @@ public class PdfService {
 
             dto.put("paymentProviderDefinition", paymentProviderDefinition);
         }
+         */
 
         return generatePdf(form, dto, scope);
     }
 
-    private byte[] generatePdf(VFormVersionWithDetailsEntity form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
-        var formTheme = formVersionService
-                .getFormThemesInOrderOfImportance(form.getFormId(), form.getVersion())
+    private byte[] generatePdf(FormLayoutElement form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
+        var formTheme = themeService
+                .getFormThemesInOrderOfImportance(form)
                 .getFirst();
 
         dto.put("base", createBaseContext(formTheme, scope));

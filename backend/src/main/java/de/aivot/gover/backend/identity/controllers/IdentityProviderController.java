@@ -3,12 +3,6 @@ package de.aivot.gover.backend.identity.controllers;
 import de.aivot.gover.backend.audit.enums.AuditAction;
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
-import de.aivot.gover.backend.form.enums.FormStatus;
-import de.aivot.gover.backend.form.filters.VFormVersionWithDetailsFilter;
-import de.aivot.gover.backend.form.repositories.FormVersionRepository;
-import de.aivot.gover.backend.form.repositories.VFormVersionWithDetailsRepository;
-import de.aivot.gover.backend.form.services.FormRevisionService;
 import de.aivot.gover.backend.identity.dtos.IdentityProviderDetailsDTO;
 import de.aivot.gover.backend.identity.dtos.IdentityProviderListDTO;
 import de.aivot.gover.backend.identity.dtos.IdentityProviderPrepareDTO;
@@ -43,33 +37,24 @@ import java.util.UUID;
 @Tag(
         name = "Identity Providers",
         description = "Identity providers are used to authenticate citizens in the application. " +
-                      "They can be configured by systems administrators and linked to forms to enable user authentication. " +
-                      "Identity providers support OAuth2 and OpenID Connect protocols and provide mappings for user attributes."
+                "They can be configured by systems administrators and linked to forms to enable user authentication. " +
+                "Identity providers support OAuth2 and OpenID Connect protocols and provide mappings for user attributes."
 )
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class IdentityProviderController {
     private final ScopedAuditService auditService;
 
     private final IdentityProviderService identityProviderService;
-    private final FormRevisionService formRevisionService;
-    private final VFormVersionWithDetailsRepository formVersionWithDetailsRepository;
-    private final FormVersionRepository formVersionRepository;
     private final UserService userService;
 
     @Autowired
     public IdentityProviderController(AuditService auditService,
                                       IdentityProviderService identityProviderService,
-                                      FormRevisionService formRevisionService,
-                                      VFormVersionWithDetailsRepository formVersionWithDetailsRepository,
-                                      FormVersionRepository formVersionRepository,
                                       UserService userService) {
         this.auditService = auditService
-                .createScopedAuditService(IdentityProviderController.class, "Identitaetsanbieter");
+                .createScopedAuditService(IdentityProviderController.class, "Identitätsanbieter");
 
         this.identityProviderService = identityProviderService;
-        this.formRevisionService = formRevisionService;
-        this.formVersionWithDetailsRepository = formVersionWithDetailsRepository;
-        this.formVersionRepository = formVersionRepository;
         this.userService = userService;
     }
 
@@ -113,7 +98,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Create Identity Provider",
             description = "Creates a new identity provider with the provided configuration. " +
-                          "Only system administrators are allowed to perform this action."
+                    "Only system administrators are allowed to perform this action."
     )
     public IdentityProviderDetailsDTO create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -129,9 +114,9 @@ public class IdentityProviderController {
                 .create(requestDTO.toEntity());
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Create, IdentityProviderEntity.class, created.getKey(), "key", Map.of(
-                                "key", created.getKey(),
-                                "name", created.getName()
-                        )).withMessage(
+                "key", created.getKey(),
+                "name", created.getName()
+        )).withMessage(
                 "Der Identitätsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(created.getName()),
                 StringUtils.quote(String.valueOf(created.getKey())),
@@ -160,8 +145,8 @@ public class IdentityProviderController {
     @Operation(
             summary = "Update Identity Provider",
             description = "Updates the configuration of an existing identity provider. " +
-                          "If the provider is disabled, it will be unlinked from all forms that use it. " +
-                          "Only system administrators are allowed to perform this action."
+                    "If the provider is disabled, it will be unlinked from all forms that use it. " +
+                    "Only system administrators are allowed to perform this action."
     )
     public IdentityProviderDetailsDTO update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -174,45 +159,10 @@ public class IdentityProviderController {
                 .asSystemAdmin()
                 .orElseThrow(ResponseException::noSystemAdminPermission);
 
-        var formFilter = VFormVersionWithDetailsFilter
-                .create()
-                .setIdentityProviderKey(key)
-                .setStatus(FormStatus.Published);
-
-        if (!requestDTO.isEnabled() && formVersionWithDetailsRepository.exists(formFilter.build())) {
-            throw ResponseException.conflict(
-                    "Der Nutzerkontenanbieter %s kann nicht deaktiviert werden, da veröffentlichte Formulare existieren, die diesen Anbieter verwenden.",
-                    key
-            );
-        }
+        // TODO: Check if the identity provide ris used in process node configs and prevent the disabling if so.
 
         var updatedEntity = identityProviderService
                 .update(key, requestDTO.toEntity());
-
-        if (!updatedEntity.getIsEnabled()) {
-            var linkedFormFilter = VFormVersionWithDetailsFilter
-                    .create()
-                    .setIdentityProviderKey(key);
-
-            var linkedForms = formVersionWithDetailsRepository
-                    .findAll(linkedFormFilter.build());
-
-            for (var form : linkedForms) {
-                var formClone = form
-                        .clone();
-
-                var identityProvidersWithoutThisIdentityProvider = form.getIdentityProviders()
-                        .stream()
-                        .filter(link -> link.getIdentityProviderKey() != null && !link.getIdentityProviderKey().equals(key))
-                        .toList();
-
-                form.setIdentityProviders(identityProvidersWithoutThisIdentityProvider);
-                formVersionRepository.save(form.toFormVersionEntity());
-
-                formRevisionService
-                        .create(user, ObjectMapperFactory.Utils.convertToMap(form), ObjectMapperFactory.Utils.convertToMap(formClone));
-            }
-        }
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Update, IdentityProviderEntity.class, updatedEntity.getKey(), "key", Map.of(
                 "key", updatedEntity.getKey(),
@@ -232,7 +182,7 @@ public class IdentityProviderController {
     @Operation(
             summary = "Delete Identity Provider",
             description = "Deletes an identity provider if it is disabled and not linked to any published forms. " +
-                          "Only system administrators are allowed to perform this action."
+                    "Only system administrators are allowed to perform this action."
     )
     public void delete(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -255,39 +205,7 @@ public class IdentityProviderController {
             );
         }
 
-        var formFilter = new VFormVersionWithDetailsFilter()
-                .setIdentityProviderKey(key)
-                .setStatus(FormStatus.Published);
-
-        if (formVersionWithDetailsRepository.exists(formFilter.build())) {
-            throw ResponseException.conflict(
-                    "Der Nutzerkontenanbieter %s kann nicht gelöscht werden, da veröffentlichte Formulare existieren, die diesen Anbieter verwenden.",
-                    key
-            );
-        }
-
-        var linkedFormFilter = new VFormVersionWithDetailsFilter()
-                .setIdentityProviderKey(key);
-
-        var linkedForms = formVersionWithDetailsRepository
-                .findAll(linkedFormFilter.build());
-
-        for (var form : linkedForms) {
-            var formClone = form
-                    .clone();
-
-            var identityProvidersWithoutThisIdentityProvider = form.getIdentityProviders()
-                    .stream()
-                    .filter(link -> link.getIdentityProviderKey() != null && !link.getIdentityProviderKey().equals(key))
-                    .toList();
-
-            form.setIdentityProviders(identityProvidersWithoutThisIdentityProvider);
-            formVersionRepository.save(form.toFormVersionEntity());
-
-            formRevisionService
-                    .create(user, ObjectMapperFactory.Utils.convertToMap(form), ObjectMapperFactory.Utils.convertToMap(formClone));
-        }
-
+        // TODO: Check of this identity provider is still used in a process node config
 
         var deletedEntity = identityProviderService
                 .delete(key);

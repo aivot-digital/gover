@@ -1,35 +1,10 @@
-package de.aivot.gover.backend.form.services;
+package de.aivot.gover.backend.plugins.form.v1.services;
 
-import de.aivot.gover.backend.elements.models.AuthoredElementValues;
-import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
-import de.aivot.gover.backend.elements.models.ElementDerivationOptions;
-import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
-import de.aivot.gover.backend.elements.services.ElementDerivationService;
-import de.aivot.gover.backend.enums.PaymentType;
-import de.aivot.gover.backend.form.entities.VFormVersionWithDetailsEntity;
-import de.aivot.gover.backend.javascript.exceptions.JavascriptException;
-import de.aivot.gover.backend.javascript.models.JavascriptResult;
-import de.aivot.gover.backend.javascript.services.JavascriptEngine;
-import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
-import de.aivot.gover.backend.lib.exceptions.ResponseException;
-import de.aivot.gover.backend.models.payment.PaymentProduct;
-import de.aivot.gover.backend.payment.entities.PaymentTransactionEntity;
-import de.aivot.gover.backend.payment.exceptions.PaymentException;
-import de.aivot.gover.backend.payment.models.PaymentItem;
-import de.aivot.gover.backend.payment.services.PaymentProviderService;
-import de.aivot.gover.backend.payment.services.PaymentTransactionService;
-import de.aivot.gover.backend.utils.StringUtils;
-import jakarta.annotation.Nonnull;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import java.math.BigDecimal;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
 
 @Service
 public class FormPaymentService {
+    /*
     private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderService paymentProviderService;
     private final ElementDerivationService elementDerivationService;
@@ -189,4 +164,5 @@ public class FormPaymentService {
 
         throw new PaymentException("Product %s of form %s has no upfront quantity code", product.getId(), form.getInternalTitle());
     }
+     */
 }
