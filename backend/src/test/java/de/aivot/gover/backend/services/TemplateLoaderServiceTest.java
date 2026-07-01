@@ -20,11 +20,10 @@ import de.aivot.gover.backend.department.entities.DepartmentEntity;
 import de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.gover.backend.enums.DateType;
 import de.aivot.gover.backend.enums.TimeType;
-import de.aivot.gover.backend.form.entities.VFormVersionWithDetailsEntity;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.pdf.enums.FormPdfScope;
 import de.aivot.gover.backend.pdf.models.FormPdfContext;
-import de.aivot.gover.backend.services.TemplateLoaderService;
+import de.aivot.gover.backend.pdf.models.PrintableFormPdfData;
 import de.aivot.gover.backend.services.pdf.MarkdownDialect;
 import de.aivot.gover.backend.services.pdf.PdfElement;
 import de.aivot.gover.backend.services.pdf.PdfElementsGenerator;
@@ -196,7 +195,7 @@ class TemplateLoaderServiceTest {
     void generalInformationTemplate_RendersTeaserMarkdownAsHtml() {
         var introductionStep = new IntroductionStepElement()
                 .setTeaserText("**Wichtig**\n\n- Punkt A");
-        var form = new VFormVersionWithDetailsEntity()
+        var form = new PrintableFormPdfData()
                 .setSlug("test-form")
                 .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep)));
         var html = new TemplateLoaderService().processTemplate(
@@ -340,7 +339,7 @@ class TemplateLoaderServiceTest {
                 ZonedDateTime.of(2025, 1, 5, 17, 0, 0, 0, ApplicationTimeZone.getZoneId())
         );
 
-        var form = new VFormVersionWithDetailsEntity()
+        var form = new PrintableFormPdfData()
                 .setPublicTitle("Testformular")
                 .setRootElement(new FormLayoutElement());
 
@@ -386,7 +385,7 @@ class TemplateLoaderServiceTest {
         var mapPointElement = new MapPointInputElement()
                 .setLabel("Ort");
 
-        var form = new VFormVersionWithDetailsEntity()
+        var form = new PrintableFormPdfData()
                 .setPublicTitle("Testformular")
                 .setRootElement(new FormLayoutElement());
 
@@ -434,7 +433,7 @@ class TemplateLoaderServiceTest {
         var secondStepElement = new GenericStepElement()
                 .setTitle("Zweiter Abschnitt");
 
-        var form = new VFormVersionWithDetailsEntity()
+        var form = new PrintableFormPdfData()
                 .setSlug("testformular-ohne-intro")
                 .setPublicTitle("Testformular")
                 .setRootElement(new FormLayoutElement().setChildren(List.of(firstStepElement, secondStepElement)));
@@ -469,7 +468,7 @@ class TemplateLoaderServiceTest {
         var secondStepElement = new GenericStepElement()
                 .setTitle("Zweiter Abschnitt");
 
-        var form = new VFormVersionWithDetailsEntity()
+        var form = new PrintableFormPdfData()
                 .setSlug("testformular-mit-intro")
                 .setPublicTitle("Testformular")
                 .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep, firstStepElement, secondStepElement)));
@@ -509,7 +508,7 @@ class TemplateLoaderServiceTest {
     }
 
     private String renderBlankForm(FormLayoutElement rootElement) {
-        var form = new VFormVersionWithDetailsEntity()
+        var form = new PrintableFormPdfData()
                 .setSlug("testformular")
                 .setPublicTitle("Testformular")
                 .setRootElement(rootElement);

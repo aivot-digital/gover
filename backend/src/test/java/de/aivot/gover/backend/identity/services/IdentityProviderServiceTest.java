@@ -3,11 +3,9 @@ package de.aivot.gover.backend.identity.services;
 import de.aivot.gover.backend.asset.entities.AssetEntity;
 import de.aivot.gover.backend.asset.repositories.AssetRepository;
 import de.aivot.gover.backend.core.services.HttpService;
-import de.aivot.gover.backend.form.repositories.FormVersionRepository;
 import de.aivot.gover.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.gover.backend.identity.enums.IdentityProviderType;
 import de.aivot.gover.backend.identity.repositories.IdentityProviderRepository;
-import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.secrets.entities.SecretEntity;
 import de.aivot.gover.backend.secrets.repositories.SecretRepository;
@@ -30,7 +28,6 @@ class IdentityProviderServiceTest {
     private SecretRepository secretRepository;
     private AssetRepository assetRepository;
     private HttpService httpService;
-    private FormVersionRepository formVersionRepository;
 
     @BeforeEach
     void setUp() {
@@ -38,14 +35,12 @@ class IdentityProviderServiceTest {
         identityProviderRepository = mock(IdentityProviderRepository.class);
         secretRepository = mock(SecretRepository.class);
         assetRepository = mock(AssetRepository.class);
-        formVersionRepository = mock(FormVersionRepository.class);
 
         identityProviderService = new IdentityProviderService(
                 identityProviderRepository,
                 secretRepository,
                 assetRepository,
-                httpService,
-                formVersionRepository
+                httpService
         );
     }
 

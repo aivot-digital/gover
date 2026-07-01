@@ -1,12 +1,12 @@
 package de.aivot.gover.backend.theme.services;
 
 import de.aivot.gover.backend.department.repositories.DepartmentRepository;
-import de.aivot.gover.backend.form.repositories.FormVersionRepository;
+import de.aivot.gover.backend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.system.services.SystemService;
+import de.aivot.gover.backend.asset.repositories.AssetRepository;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
 import de.aivot.gover.backend.theme.repositories.ThemeRepository;
-import de.aivot.gover.backend.asset.repositories.AssetRepository;
-import de.aivot.gover.backend.theme.services.ThemeService;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
@@ -23,15 +23,15 @@ class ThemeServiceTest {
     @Test
     void performUpdateShouldAllowRemovingLogoAndFavicon() throws ResponseException {
         var themeRepository = mock(ThemeRepository.class);
-        var formVersionRepository = mock(FormVersionRepository.class);
         var departmentRepository = mock(DepartmentRepository.class);
         var assetRepository = mock(AssetRepository.class);
 
         var service = new ThemeService(
                 themeRepository,
-                formVersionRepository,
                 departmentRepository,
-                assetRepository
+                assetRepository,
+                mock(VDepartmentShadowedRepository.class),
+                mock(SystemService.class)
         );
 
         var existingEntity = new ThemeEntity(

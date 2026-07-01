@@ -5,7 +5,6 @@ import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
-import de.aivot.gover.backend.destination.services.DestinationService;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
@@ -234,7 +233,6 @@ class FormTriggerControllerV1SubmitTest {
                 mock(GoverConfig.class),
                 mock(FormPaymentService.class),
                 mock(PaymentProviderService.class),
-                mock(DestinationService.class),
                 mock(IdentityProviderService.class),
                 mock(IdentityCacheRepository.class),
                 elementDerivationService,
