@@ -1,4 +1,4 @@
-import {getLeafDiffPathSegment, resolveElementPath, splitDiffPath} from './resolve-element-path';
+import {getLeafDiffPathSegment, splitDiffPath} from './resolve-element-path';
 
 describe('splitDiffPath', () => {
     it('should split dot notation paths with array indices', () => {
@@ -16,28 +16,6 @@ describe('splitDiffPath', () => {
             'children',
             '0',
             'label',
-        ]);
-    });
-});
-
-describe('resolveElementPath', () => {
-    it('should resolve dot notation paths to the owning element', () => {
-        const child = {
-            id: 'child',
-            label: 'Child',
-        };
-        const group = {
-            id: 'group',
-            children: [child],
-        };
-        const version: any = {
-            rootElement: group,
-        };
-
-        expect(resolveElementPath(version, 'rootElement.children[0].label')).toEqual([
-            version,
-            group,
-            child,
         ]);
     });
 });

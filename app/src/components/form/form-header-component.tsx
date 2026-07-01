@@ -1,5 +1,16 @@
 import React, {useEffect, useState} from 'react';
-import {Box, Container, IconButton, ListItemIcon, ListItemText, Menu, MenuItem, Tooltip, Typography, useTheme} from '@mui/material';
+import {
+    Box,
+    Container,
+    IconButton,
+    ListItemIcon,
+    ListItemText,
+    Menu,
+    MenuItem,
+    Tooltip,
+    Typography,
+    useTheme,
+} from '@mui/material';
 import {showDialog} from '../../slices/app-slice';
 import {Logo} from '../logo/logo';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -10,9 +21,6 @@ import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import Balancer from 'react-wrap-balancer';
 import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
 import {useConfirm} from '../../providers/confirm-provider';
-import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
-import {FormEntity} from '../../modules/forms/entities/form-entity';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {FormLayoutElement, resolveFormNodeName} from '../../models/elements/form-layout-element';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
@@ -197,7 +205,8 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                             title: 'Anlage abbrechen?',
                             children: (
                                 <Typography>
-                                    Möchten Sie die Anlage eines neuen Formulars wirklich abbrechen? Bisher eingegebene Daten werden dabei verworfen.
+                                    Möchten Sie die Anlage eines neuen Formulars wirklich abbrechen? Bisher eingegebene
+                                    Daten werden dabei verworfen.
                                 </Typography>
                             ),
                             confirmButtonText: 'Ja, Eingaben verwerfen',
@@ -212,7 +221,7 @@ export function FormHeaderComponent(props: FormHeaderComponentProps) {
                     }}
                 >
                     <ListItemIcon>
-                        <Delete />
+                        <Delete/>
                     </ListItemIcon>
                     <ListItemText>
                         Alle Formulardaten löschen

@@ -9,7 +9,6 @@ import {assetsRoutes} from '../../modules/assets/assets-routes';
 import {formsRoutes} from '../../modules/forms/forms-routes';
 import {departmentsRoutes} from '../../modules/departments/departments-routes';
 import {dataObjectsRoutes} from '../../modules/data-objects/data-objects-routes';
-import {destinationRoutes} from '../../modules/destination/destination-routes';
 import {identityRoutes} from '../../modules/identity/identity-routes';
 import {paymentRoutes} from '../../modules/payment/payment-routes';
 import {providerLinksRoutes} from '../../modules/provider-links/provider-links-routes';
@@ -50,7 +49,6 @@ const router = sentryCreateBrowserRouter(
                 ...configsRoutes,
                 ...dataObjectsRoutes,
                 ...departmentsRoutes,
-                ...destinationRoutes,
                 ...formsRoutes,
                 ...identityRoutes,
                 ...paymentRoutes,

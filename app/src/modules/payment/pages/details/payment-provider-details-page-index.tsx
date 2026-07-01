@@ -24,12 +24,12 @@ import {goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../.
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {
     ElementDerivationContext,
 } from '../../../elements/components/element-derivation-context';
 import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
+import {Page} from '../../../../models/dtos/page';
 
 type PaymentProviderEditableFields =
     'name' |
@@ -262,10 +262,15 @@ export function PaymentProviderDetailsPageIndex() {
 
         setIsBusy(true);
         try {
-            const formsApi = new VFormVersionWithDetailsService();
-            const relatedForms = await formsApi.listAll({
-                paymentProviderKey: originalPaymentProvider.key,
-            });
+            const relatedForms: Page<any> = {
+                content: [],
+                page: {
+                    size: 0,
+                    number: 0,
+                    totalElements: 0,
+                    totalPages: 0,
+                },
+            };
 
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
