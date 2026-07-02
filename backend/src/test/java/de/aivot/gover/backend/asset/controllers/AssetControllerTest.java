@@ -385,10 +385,10 @@ class AssetControllerTest {
         var expectedItems = java.util.List.<VStorageIndexItemWithAssetEntity>of();
 
         when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
-        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/Userstore/Schroeder%20(Aivot)%2C%20Jan-Philipp/"));
+        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/Userstore/Mustermann%20(Aivot)%2C%20Max/"));
         when(storageIndexItemWithAssetRepository.listAllInFolder(
                 42,
-                "/Userstore/Schroeder (Aivot), Jan-Philipp/",
+                "/Userstore/Mustermann (Aivot), Max/",
                 false,
                 null,
                 null
@@ -399,7 +399,7 @@ class AssetControllerTest {
         assertEquals(expectedItems, result);
         verify(storageIndexItemWithAssetRepository).listAllInFolder(
                 42,
-                "/Userstore/Schroeder (Aivot), Jan-Philipp/",
+                "/Userstore/Mustermann (Aivot), Max/",
                 false,
                 null,
                 null
