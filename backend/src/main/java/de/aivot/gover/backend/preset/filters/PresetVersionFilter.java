@@ -1,6 +1,6 @@
 package de.aivot.gover.backend.preset.filters;
 
-import de.aivot.gover.backend.form.enums.FormStatus;
+import de.aivot.gover.backend.preset.enums.PresetStatus;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.preset.entities.PresetVersionEntity;
 import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
@@ -12,7 +12,7 @@ import java.util.UUID;
 public class PresetVersionFilter implements Filter<PresetVersionEntity> {
     private UUID presetKey;
     private Integer version;
-    private FormStatus status;
+    private PresetStatus status;
 
     public static PresetVersionFilter create() {
         return new PresetVersionFilter();
@@ -47,11 +47,11 @@ public class PresetVersionFilter implements Filter<PresetVersionEntity> {
         return this;
     }
 
-    public FormStatus getStatus() {
+    public PresetStatus getStatus() {
         return status;
     }
 
-    public PresetVersionFilter setStatus(FormStatus status) {
+    public PresetVersionFilter setStatus(PresetStatus status) {
         this.status = status;
         return this;
     }

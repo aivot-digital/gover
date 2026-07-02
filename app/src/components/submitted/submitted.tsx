@@ -19,7 +19,6 @@ import qrcode from 'qrcode';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {SubmissionStatusResponseDTO} from '../../modules/submissions/dtos/submission-status-response-dto';
 import {createApiPath} from '../../utils/url-path-utils';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {ElementType} from '../../data/element-type/element-type';
 import {SubmitStepElement} from '../../models/elements/steps/submit-step-element';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
@@ -125,6 +124,7 @@ export function Submitted(props: SubmittedProps) {
                     setPrivacyError(undefined);
                     setMailError(undefined);
 
+                    /* TODO: Implement Send Mail Copy
                     new FormApiService()
                         .sendApplicationCopy(status.submissionId, email)
                         .then(() => {
@@ -147,6 +147,7 @@ export function Submitted(props: SubmittedProps) {
                                 dispatch(showErrorSnackbar('Es ist ein Fehler aufgetreten. Bitte versuchen Sie es später erneut.'));
                             }
                         });
+                     */
                 } else {
                     setMailErrorWithSnackbar('Bitte geben Sie eine gültige E-Mail-Adresse ein.');
                 }
@@ -496,8 +497,10 @@ export function Submitted(props: SubmittedProps) {
                 <Rating
                     onChange={(newValue) => {
                         if (status != null && newValue != null) {
+                            /* TODO: Implement Rating
                             new FormApiService()
                                 .rateApplication(status.submissionId, newValue);
+                             */
                         }
                     }}
                 />

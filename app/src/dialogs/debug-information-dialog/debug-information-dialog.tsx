@@ -247,7 +247,6 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
                 'mail',
                 'av',
                 'diskSpace',
-                's3',
                 'redis',
                 'gotenberg',
             ];

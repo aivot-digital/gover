@@ -5,7 +5,6 @@ import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
-import de.aivot.gover.backend.destination.services.DestinationService;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
@@ -14,7 +13,6 @@ import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
-import de.aivot.gover.backend.form.services.FormPaymentService;
 import de.aivot.gover.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.gover.backend.identity.controllers.IdentityController;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
@@ -22,9 +20,7 @@ import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.identity.services.IdentityService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
-import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerConfigV1;
-import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerControllerV1;
-import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
+import de.aivot.gover.backend.plugins.form.v1.services.FormPaymentService;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -237,7 +233,6 @@ class FormTriggerControllerV1SubmitTest {
                 mock(GoverConfig.class),
                 mock(FormPaymentService.class),
                 mock(PaymentProviderService.class),
-                mock(DestinationService.class),
                 mock(IdentityProviderService.class),
                 mock(IdentityCacheRepository.class),
                 elementDerivationService,

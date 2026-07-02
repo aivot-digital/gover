@@ -28,8 +28,8 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {ImageSelector} from '../../../assets/components/image-selector';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
-import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {Page} from '../../../../models/dtos/page';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -156,10 +156,15 @@ export function ThemeDetailsPageIndex() {
 
         setIsBusy(true);
         try {
-            const uniqueForms = await new VFormVersionWithDetailsService()
-                .listAll({
-                    themeId: theme.id,
-                });
+            const uniqueForms: Page<any> = {
+                content: [],
+                page: {
+                    size: 0,
+                    number: 0,
+                    totalElements: 0,
+                    totalPages: 0,
+                },
+            };
 
             if (uniqueForms.content.length > 0) {
                 const maxVisibleLinks = 5;

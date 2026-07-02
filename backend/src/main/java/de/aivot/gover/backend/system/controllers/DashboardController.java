@@ -1,11 +1,14 @@
 package de.aivot.gover.backend.system.controllers;
 
-import de.aivot.gover.backend.form.repositories.FormRepository;
+import de.aivot.gover.backend.plugin.services.PluginUtils;
+import de.aivot.gover.backend.plugins.form.FormPlugin;
+import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.enums.ProcessVersionStatus;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceTaskRepository;
+import de.aivot.gover.backend.process.repositories.ProcessNodeRepository;
 import de.aivot.gover.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.gover.backend.system.dtos.DashboardStatsItemDTO;
 import de.aivot.gover.backend.user.repositories.UserRepository;
@@ -20,23 +23,22 @@ import java.util.List;
 @RequestMapping("/api/system/dashboard/")
 public class DashboardController {
 
-    private final FormRepository formRepository;
     private final UserRepository userRepository;
     private final ProcessVersionRepository processVersionRepository;
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
+    private final ProcessNodeRepository processNodeRepository;
 
     @Autowired
-    public DashboardController(FormRepository formRepository,
-                               UserRepository userRepository,
+    public DashboardController(UserRepository userRepository,
                                ProcessVersionRepository processVersionRepository,
                                ProcessInstanceRepository processInstanceRepository,
-                               ProcessInstanceTaskRepository processInstanceTaskRepository) {
-        this.formRepository = formRepository;
+                               ProcessInstanceTaskRepository processInstanceTaskRepository, ProcessNodeRepository processNodeRepository) {
         this.userRepository = userRepository;
         this.processVersionRepository = processVersionRepository;
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
+        this.processNodeRepository = processNodeRepository;
     }
 
     @GetMapping("stats/")
@@ -66,8 +68,11 @@ public class DashboardController {
     }
 
     private DashboardStatsItemDTO getPublishedFormsStat() {
-        var publishedForms = formRepository
-                .countAllByPublishedVersionIsNotNull();
+        var publishedForms = processVersionRepository
+                .countAllByStatusIsAndHasNode(
+                        ProcessVersionStatus.Published,
+                        PluginUtils.combineComponentKey(FormPlugin.PLUGIN_KEY, FormTriggerNodeV1.NODE_KEY)
+                );
 
         return new DashboardStatsItemDTO(
                 "published_forms",

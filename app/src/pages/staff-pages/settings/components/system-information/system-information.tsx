@@ -135,11 +135,6 @@ export function SystemInformation(): React.ReactElement {
             children: getStatusLabel('diskSpace'),
         },
         {
-            label: 'Externer Datenspeicher',
-            icon: getStatusIcon('s3'),
-            children: getStatusLabel('s3'),
-        },
-        {
             label: 'Temporärer Speicher',
             icon: getStatusIcon('redis'),
             children: getStatusLabel('redis'),

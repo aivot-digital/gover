@@ -19,4 +19,11 @@ public interface ProcessVersionRepository extends JpaRepository<ProcessVersionEn
     long countAllByStatusIs(ProcessVersionStatus status);
 
     boolean existsByProcessIdAndStatus(Integer processId, ProcessVersionStatus status);
+
+    @Query(value = """
+            SELECT count(*) from process_versions pv
+                        JOIN process_nodes pn on pv.process_id = pn.process_id and pv.process_version = pn.process_version
+                        WHERE pv.status = :processVersionStatus AND pn.data_key = :s;
+            """, nativeQuery = true)
+    long countAllByStatusIsAndHasNode(ProcessVersionStatus processVersionStatus, String s);
 }

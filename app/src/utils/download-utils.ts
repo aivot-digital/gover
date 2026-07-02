@@ -1,5 +1,3 @@
-import {FormExport} from '../modules/forms/entities/form-export';
-
 export function downloadTextFile(filename: string, content: string, mimetype: string): void {
     const file = new Blob([content], {type: mimetype});
     downloadBlobFile(filename, file);
@@ -17,10 +15,6 @@ export function downloadBlobFile(filename: string, blob: Blob): void {
 
 export function downloadObjectFile(filename: string, obj: any): void {
     downloadTextFile(filename, JSON.stringify(obj), 'application/json');
-}
-
-export function downloadFormExportFile(exp: FormExport): void {
-    downloadObjectFile(`${exp.form.slug} - ${exp.version.version}.json`, exp);
 }
 
 export function uploadTextFile(accepts: string): Promise<string | null> {

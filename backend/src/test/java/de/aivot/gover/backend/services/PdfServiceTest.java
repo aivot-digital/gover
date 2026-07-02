@@ -5,14 +5,13 @@ import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.core.services.HttpService;
 import de.aivot.gover.backend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
-import de.aivot.gover.backend.form.services.FormVersionService;
 import de.aivot.gover.backend.identity.repositories.IdentityProviderRepository;
 import de.aivot.gover.backend.models.config.GotenbergConfig;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.repositories.PaymentTransactionRepository;
 import de.aivot.gover.backend.payment.services.PaymentProviderDefinitionsService;
-import de.aivot.gover.backend.services.PdfService;
+import de.aivot.gover.backend.theme.services.ThemeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -41,9 +40,9 @@ class PdfServiceTest {
                 mock(IdentityProviderRepository.class),
                 mock(PaymentProviderRepository.class),
                 mock(PaymentProviderDefinitionsService.class),
-                mock(FormVersionService.class),
                 mock(HttpService.class),
-                mock(ElementDerivationService.class)
+                mock(ElementDerivationService.class),
+                mock(ThemeService.class)
         );
 
         injectBaseUrlIntoHTMLMethod = PdfService.class

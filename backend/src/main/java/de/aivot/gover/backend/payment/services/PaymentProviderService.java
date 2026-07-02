@@ -1,8 +1,5 @@
 package de.aivot.gover.backend.payment.services;
 
-import de.aivot.gover.backend.form.filters.FormVersionFilter;
-import de.aivot.gover.backend.form.repositories.FormRepository;
-import de.aivot.gover.backend.form.repositories.FormVersionRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
@@ -12,6 +9,7 @@ import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
 import de.aivot.gover.backend.payment.repositories.PaymentTransactionRepository;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -19,31 +17,26 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
-import jakarta.annotation.Nullable;
-import java.util.*;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class PaymentProviderService implements EntityService<PaymentProviderEntity, UUID> {
     private final PaymentProviderRepository paymentProviderRepository;
-    private final FormRepository formRepository;
     private final PaymentTransactionRepository paymentTransactionRepository;
     private final PaymentTransactionService paymentTransactionService;
     private final PaymentProviderDefinitionsService paymentProviderDefinitionsService;
-    private final FormVersionRepository formVersionRepository;
 
     @Autowired
-    public PaymentProviderService(
-            PaymentProviderRepository paymentProviderRepository,
-            FormRepository formRepository,
-            PaymentTransactionRepository paymentTransactionRepository,
-            PaymentTransactionService paymentTransactionService,
-            PaymentProviderDefinitionsService paymentProviderDefinitionsService, FormVersionRepository formVersionRepository) {
-        this.formRepository = formRepository;
+    public PaymentProviderService(PaymentProviderRepository paymentProviderRepository,
+                                  PaymentTransactionRepository paymentTransactionRepository,
+                                  PaymentTransactionService paymentTransactionService,
+                                  PaymentProviderDefinitionsService paymentProviderDefinitionsService) {
         this.paymentProviderRepository = paymentProviderRepository;
         this.paymentTransactionRepository = paymentTransactionRepository;
         this.paymentTransactionService = paymentTransactionService;
         this.paymentProviderDefinitionsService = paymentProviderDefinitionsService;
-        this.formVersionRepository = formVersionRepository;
     }
 
     @Nonnull
@@ -152,17 +145,7 @@ public class PaymentProviderService implements EntityService<PaymentProviderEnti
     public void performDelete(
             @Nonnull PaymentProviderEntity entity
     ) throws ResponseException {
-        var formSpec = new FormVersionFilter()
-                .setPaymentProviderKey(entity.getKey())
-                .build();
-
-        if (formVersionRepository.exists(formSpec)) {
-            throw ResponseException.conflict(
-                    "Der Zahlungsanbieter %s (%s) wird noch in Formularen verwendet",
-                    entity.getName(),
-                    entity.getKey()
-            );
-        }
+        // TODO: Check if this payment provider is still referenced in a process node config and prevent deletion if so.
 
         if (entity.getIsEnabled()) {
             throw ResponseException.conflict(

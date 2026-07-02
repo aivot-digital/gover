@@ -60,11 +60,6 @@ export function PaymentProviderDetailsPage() {
                             isDisabled: (item) => item?.key === '',
                         },
                         {
-                            path: '/payment-providers/:id/forms',
-                            label: 'Formulare',
-                            isDisabled: (item) => item?.key === '',
-                        },
-                        {
                             path: '/payment-providers/:id/tx',
                             label: 'Transaktionen',
                             isDisabled: (item) => item?.key === '',

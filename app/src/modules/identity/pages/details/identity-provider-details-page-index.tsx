@@ -43,8 +43,8 @@ import {
     SnackbarSeverity,
     SnackbarType,
 } from '../../../../slices/shell-slice';
-import {VFormVersionWithDetailsService} from '../../../forms/services/v-form-version-with-details-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {Page} from '../../../../models/dtos/page';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -251,7 +251,7 @@ export function IdentityProviderDetailsPageIndex() {
 
     if (identityProvider == null || secrets == null) {
         return (
-            <GenericDetailsSkeleton />
+            <GenericDetailsSkeleton/>
         );
     }
 
@@ -376,10 +376,15 @@ export function IdentityProviderDetailsPageIndex() {
         setIsBusy(true);
 
         try {
-            const relatedForms = await new VFormVersionWithDetailsService()
-                .listAll({
-                    identityProviderKey: identityProvider.key,
-                });
+            const relatedForms: Page<any> = {
+                content: [],
+                page: {
+                    size: 0,
+                    number: 0,
+                    totalElements: 0,
+                    totalPages: 0,
+                },
+            };
 
             if (relatedForms.content.length > 0) {
                 const maxVisibleLinks = 5;
@@ -441,7 +446,8 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos gelesen und umgesetzt haben.
+                            Bitte bestätigen Sie, dass Sie die Hinweise zur erstmaligen Einrichtung des Nutzerkontos
+                            gelesen und umgesetzt haben.
                         </Typography>
                         <Typography gutterBottom>
                             Diese Hinweise finden Sie im Reiter <strong>Einrichtung</strong>.
@@ -463,10 +469,12 @@ export function IdentityProviderDetailsPageIndex() {
                 children: (
                     <>
                         <Typography gutterBottom>
-                            Wenn Sie den Nutzerkontenanbieter deaktivieren, wird das Nutzerkonto automatisch aus Formularen mit dem Status "In Bearbeitung" entfernt.
+                            Wenn Sie den Nutzerkontenanbieter deaktivieren, wird das Nutzerkonto automatisch aus
+                            Formularen mit dem Status "In Bearbeitung" entfernt.
                         </Typography>
                         <Typography gutterBottom>
-                            Bitte beachten Sie, dass Sie den Nutzerkontenanbieter speichern müssen, um diese Änderung zu übernehmen.
+                            Bitte beachten Sie, dass Sie den Nutzerkontenanbieter speichern müssen, um diese Änderung zu
+                            übernehmen.
                         </Typography>
                     </>
                 ),
@@ -511,7 +519,9 @@ export function IdentityProviderDetailsPageIndex() {
                     </Typography>
 
                     <Typography sx={{mb: 3, maxWidth: 900}}>
-                        Wenn Ihr Nutzerkontenanbieter dies anbietet, können Sie die Konfiguration automatisch laden. Bitte geben Sie hierfür den Link zur OpenID Endpoint Konfiguration ein und klicken Sie auf "Konfiguration laden".
+                        Wenn Ihr Nutzerkontenanbieter dies anbietet, können Sie die Konfiguration automatisch laden.
+                        Bitte geben Sie hierfür den Link zur OpenID Endpoint Konfiguration ein und klicken Sie auf
+                        "Konfiguration laden".
                     </Typography>
                     <Box
                         sx={{
@@ -541,7 +551,7 @@ export function IdentityProviderDetailsPageIndex() {
                         </Button>
                     </Box>
 
-                    <Divider sx={{my: 4}} />
+                    <Divider sx={{my: 4}}/>
                 </>
             }
             <Typography
@@ -551,7 +561,9 @@ export function IdentityProviderDetailsPageIndex() {
                 Nutzerkontenanbieter konfigurieren
             </Typography>
             <Typography sx={{mb: 3, maxWidth: 900}}>
-                Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die Konfiguration bereits für
+                Konfigurieren Sie den Nutzerkontenanbieter, um Nutzerkonten dieses Anbieters zur Authentifizierung in
+                Formularen verwenden zu können. Sie können die Einstellungen jederzeit anpassen, auch wenn die
+                Konfiguration bereits für
                 Formulare verwendet wird.
             </Typography>
             <Grid
@@ -657,8 +669,9 @@ export function IdentityProviderDetailsPageIndex() {
                             color="info"
                             sx={{mt: 2}}
                         >
-                            <strong>Hinweis:</strong>{" "}
-                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover bereitgestellt und sind nicht veränderbar.
+                            <strong>Hinweis:</strong>{' '}
+                            Die Konfigurationen für die offiziellen Nutzerkonten von Bund und Ländern werden von Gover
+                            bereitgestellt und sind nicht veränderbar.
                         </AlertComponent>
                     }
                 </Grid>
@@ -934,7 +947,9 @@ export function IdentityProviderDetailsPageIndex() {
                     content: (
                         <Box>
                             <Typography>
-                                Hier können Sie die Attributszuweisungen (Claim-Zuordnung) für den Nutzerkontenanbieter hinterlegen. Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten Anbieter gelten.
+                                Hier können Sie die Attributszuweisungen (Claim-Zuordnung) für den Nutzerkontenanbieter
+                                hinterlegen. Bitte beachten Sie, dass diese Einstellungen nur für den ausgewählten
+                                Anbieter gelten.
                             </Typography>
                             <ul style={{marginTop: '1rem', paddingLeft: '1.1rem'}}>
                                 <li>
@@ -954,7 +969,8 @@ export function IdentityProviderDetailsPageIndex() {
                                     – Schlüssel in den Daten / Claim-Name
                                     (
                                     <code>email</code>
-                                    , <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token vorkommt.
+                                    , <code>given_name</code>, …), so wie er im <em>userinfo</em>-Response bzw. ID-Token
+                                    vorkommt.
                                 </li>
 
                                 <li>
@@ -981,7 +997,7 @@ export function IdentityProviderDetailsPageIndex() {
                     disabled={isBusy || hasNotChanged}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern
                 </Button>
@@ -1019,7 +1035,7 @@ export function IdentityProviderDetailsPageIndex() {
                                 disabled={isBusy}
                                 color="error"
 
-                                startIcon={<Delete />}
+                                startIcon={<Delete/>}
                             >
                                 Löschen
                             </Button>
@@ -1033,7 +1049,7 @@ export function IdentityProviderDetailsPageIndex() {
                                         variant="outlined"
                                         disabled={true}
                                         color="error"
-                                        startIcon={<Delete />}
+                                        startIcon={<Delete/>}
                                     >
                                         Löschen
                                     </Button>
@@ -1053,7 +1069,8 @@ export function IdentityProviderDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Möchten Sie diesen Nutzerkontenanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diesen Nutzerkontenanbieter wirklich löschen? Diese Aktion kann nicht rückgängig gemacht
+                    werden.
                 </Typography>
             </ConfirmDialog>
             <ConstraintDialog

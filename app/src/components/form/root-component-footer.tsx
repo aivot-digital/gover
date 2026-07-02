@@ -11,9 +11,6 @@ import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import {PrivacyDialogId} from '../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialogId} from '../../dialogs/imprint-dialog/imprint-dialog';
 import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
-import {FormEntity} from '../../modules/forms/entities/form-entity';
-import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {FormLayoutElement} from '../../models/elements/form-layout-element';
 import {ProcessNodeEntity} from '../../modules/process/entities/process-node-entity';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
@@ -109,7 +106,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                         >
                             <Button
                                 startIcon={
-                                    <HelpOutlineOutlinedIcon />
+                                    <HelpOutlineOutlinedIcon/>
                                 }
                                 sx={buttonStyle}
                                 size="medium"
@@ -142,7 +139,7 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                                     href={customListingPageLink && customListingPageLink.length > 0 ? customListingPageLink : '/'}
                                     target="_blank"
                                     endIcon={
-                                        <OpenInNewOutlinedIcon />
+                                        <OpenInNewOutlinedIcon/>
                                     }
                                     title="Link öffnet in einem neuen Tab"
                                 >
@@ -188,7 +185,8 @@ export function RootComponentFooter(props: RootComponentFooterProps) {
                     variant="caption"
                     color="#444444"
                 >
-                    Dieses Formular wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen von Aivot
+                    Dieses Formular wurde umgesetzt mit Gover – dem Fundament für moderne digitale Verwaltungsleistungen
+                    von Aivot
                 </Typography>
             </Box>
         </Box>

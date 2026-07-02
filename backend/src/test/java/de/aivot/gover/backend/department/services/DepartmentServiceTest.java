@@ -2,8 +2,6 @@ package de.aivot.gover.backend.department.services;
 
 import de.aivot.gover.backend.department.entities.DepartmentEntity;
 import de.aivot.gover.backend.department.repositories.DepartmentRepository;
-import de.aivot.gover.backend.department.services.DepartmentService;
-import de.aivot.gover.backend.form.repositories.FormRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.repositories.ThemeRepository;
@@ -28,7 +26,6 @@ class DepartmentServiceTest {
 
         var service = new DepartmentService(
                 departmentRepository,
-                mock(FormRepository.class),
                 mock(ThemeRepository.class),
                 mock(SystemService.class)
         );

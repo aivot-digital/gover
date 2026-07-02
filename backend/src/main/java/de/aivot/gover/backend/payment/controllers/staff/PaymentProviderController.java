@@ -3,13 +3,8 @@ package de.aivot.gover.backend.payment.controllers.staff;
 import de.aivot.gover.backend.audit.enums.AuditAction;
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
-import de.aivot.gover.backend.form.enums.FormStatus;
-import de.aivot.gover.backend.form.filters.VFormVersionWithDetailsFilter;
-import de.aivot.gover.backend.form.repositories.FormVersionRepository;
-import de.aivot.gover.backend.form.repositories.VFormVersionWithDetailsRepository;
-import de.aivot.gover.backend.form.services.FormRevisionService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.payment.dtos.PaymentProviderRequestDTO;
 import de.aivot.gover.backend.payment.dtos.PaymentProviderResponseDTO;
 import de.aivot.gover.backend.payment.dtos.PaymentProviderTestDataRequestDTO;
@@ -18,12 +13,13 @@ import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.gover.backend.payment.filters.PaymentProviderFilter;
 import de.aivot.gover.backend.payment.services.PaymentProviderService;
 import de.aivot.gover.backend.payment.services.PaymentProviderTestService;
-import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -34,8 +30,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.annotation.Nonnull;
-import jakarta.annotation.Nullable;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,25 +45,16 @@ public class PaymentProviderController {
 
     private final PaymentProviderService paymentProviderService;
     private final PaymentProviderTestService paymentProviderTestService;
-    private final FormRevisionService formRevisionService;
-    private final FormVersionRepository formVersionRepository;
-    private final VFormVersionWithDetailsRepository vFormVersionWithDetailsRepository;
     private final UserService userService;
 
     @Autowired
     public PaymentProviderController(AuditService auditService,
                                      PaymentProviderService paymentProviderService,
                                      PaymentProviderTestService paymentProviderTestService,
-                                     FormRevisionService formRevisionService,
-                                     FormVersionRepository formVersionRepository,
-                                     VFormVersionWithDetailsRepository vFormVersionWithDetailsRepository,
                                      UserService userService) {
         this.auditService = auditService.createScopedAuditService(PaymentProviderController.class, "Zahlungen");
         this.paymentProviderService = paymentProviderService;
         this.paymentProviderTestService = paymentProviderTestService;
-        this.formRevisionService = formRevisionService;
-        this.formVersionRepository = formVersionRepository;
-        this.vFormVersionWithDetailsRepository = vFormVersionWithDetailsRepository;
         this.userService = userService;
     }
 
@@ -106,9 +91,9 @@ public class PaymentProviderController {
                 .create(requestDTO.toEntity());
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, PaymentProviderEntity.class, created.getKey(), "key", Map.of(
-                        "key", created.getKey(),
-                        "name", created.getName()
-                )).withMessage(
+                "key", created.getKey(),
+                "name", created.getName()
+        )).withMessage(
                 "Der Zahlungsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(created.getName()),
                 StringUtils.quote(String.valueOf(created.getKey())),
@@ -154,41 +139,16 @@ public class PaymentProviderController {
                 .orElseThrow(ResponseException::notFound);
 
         if (existing.getIsEnabled() && !requestDTO.isEnabled()) {
-            var filterAllPublishedForms = VFormVersionWithDetailsFilter
-                    .create()
-                    .setPaymentProviderKey(key)
-                    .setStatus(FormStatus.Published)
-                    .build();
-
-            if (vFormVersionWithDetailsRepository.exists(filterAllPublishedForms)) {
-                throw ResponseException.conflict(
-                        "Der Zahlungsanbieter kann nicht deaktiviert werden, da er noch in einem oder mehreren Formularen verwendet wird."
-                );
-            } else {
-                var filterAllRelatedForms = VFormVersionWithDetailsFilter
-                        .create()
-                        .setPaymentProviderKey(key)
-                        .build();
-
-                for (var form : vFormVersionWithDetailsRepository.findAll(filterAllRelatedForms)) {
-                    var formClone = form.clone();
-
-                    form.setPaymentProviderKey(null);
-                    formVersionRepository.save(form.toFormVersionEntity());
-
-                    formRevisionService
-                            .create(execUser, ObjectMapperFactory.Utils.convertToMap(form), ObjectMapperFactory.Utils.convertToMap(formClone));
-                }
-            }
+            // TODO: Check if this payment provider is still used in any process node configuration and prevent the disable if so.
         }
 
         var result = paymentProviderService
                 .update(key, requestDTO.toEntity());
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Update, PaymentProviderEntity.class, result.getKey(), "key", Map.of(
-                        "key", result.getKey(),
-                        "name", result.getName()
-                )).withMessage(
+                "key", result.getKey(),
+                "name", result.getName()
+        )).withMessage(
                 "Der Zahlungsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
                 StringUtils.quote(result.getName()),
                 StringUtils.quote(String.valueOf(result.getKey())),
@@ -218,9 +178,9 @@ public class PaymentProviderController {
                 .delete(key);
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Delete, PaymentProviderEntity.class, deleted.getKey(), "key", Map.of(
-                        "key", deleted.getKey(),
-                        "name", deleted.getName()
-                )).withMessage(
+                "key", deleted.getKey(),
+                "name", deleted.getName()
+        )).withMessage(
                 "Der Zahlungsanbieter %s mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
                 StringUtils.quote(deleted.getName()),
                 StringUtils.quote(String.valueOf(deleted.getKey())),

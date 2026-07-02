@@ -1,8 +1,6 @@
 package de.aivot.gover.backend.pdf.models;
 
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
-import de.aivot.gover.backend.form.entities.VFormVersionWithDetailsEntity;
-import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
 import java.util.UUID;
@@ -76,16 +74,5 @@ public class PrintableFormPdfData {
     public PrintableFormPdfData setPdfTemplateKey(@Nullable UUID pdfTemplateKey) {
         this.pdfTemplateKey = pdfTemplateKey;
         return this;
-    }
-
-    @Nonnull
-    public static PrintableFormPdfData fromLegacyForm(@Nonnull VFormVersionWithDetailsEntity form) {
-        return new PrintableFormPdfData()
-                .setSlug(form.getSlug())
-                .setInternalTitle(form.getInternalTitle())
-                .setVersion(form.getVersion())
-                .setPublicTitle(form.getPublicTitle())
-                .setRootElement(form.getRootElement())
-                .setPdfTemplateKey(form.getPdfTemplateKey());
     }
 }

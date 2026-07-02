@@ -9,17 +9,11 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {nextStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
-import {type FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {type BaseViewProps} from '../../views/base-view';
 import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
 import {CustomStep} from '../custom-step/custom-step';
-import {Api} from '../../hooks/use-api';
-import {type AuthoredElementValues, hasAnyErrorRecursivelyInParent} from '../../models/element-data';
+import {hasAnyErrorRecursivelyInParent} from '../../models/element-data';
 import {ErrorAlert} from '../error-alert/error-alert';
-import {walkAuthoredElementValues} from '../../utils/element-data-utils';
-import {FormEntity} from '../../modules/forms/entities/form-entity';
-import {FormVersionEntity} from '../../modules/forms/entities/form-version-entity';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {
     extractVisibleFormSteps,
     resolveVisibleFormStepIndex,
@@ -341,38 +335,4 @@ export function RootComponentView(props: BaseViewProps<FormLayoutElement, void>)
             }
         </main>
     );
-}
-
-/**
- * Returns null if the file sizes are within the limits, returns an error message if the total file size exceeds the maximum allowed size.
- */
-async function determineUploadSizeError(element: FormLayoutElement, elementData: AuthoredElementValues, form: FormEntity, version: FormVersionEntity, api: Api): Promise<string | null> {
-    let totalFileSize = 0;
-
-    walkAuthoredElementValues(
-        element,
-        elementData,
-        (element, value) => {
-            if (element.type === ElementType.FileUpload && value != null) {
-                totalFileSize += (value as FileUploadElementItem[])
-                    .reduce((acc, item) => acc + item.size, 0);
-            }
-        },
-    );
-
-    if (totalFileSize === 0) {
-        // No file uploads, so no size check needed
-        return null;
-    }
-
-    const {maxFileSize} = await new FormApiService()
-        .getMaxFileSize(form.slug, version.version);
-
-    const maxFileSizeBytes = maxFileSize * 1000 * 1000;
-
-    if (totalFileSize > maxFileSizeBytes) {
-        return `Die Gesamtgröße der von Ihnen hinzugefügten Anlagen überschreitet das Maximum von ${maxFileSize.toFixed(0)} Megabyte.`;
-    }
-
-    return null;
 }

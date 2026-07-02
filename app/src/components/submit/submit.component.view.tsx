@@ -11,7 +11,6 @@ import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';
 import {ExpandableList} from '../expandable-list/expandable-list';
 import {AltchaWidget} from '../altcha/altcha-widget';
-import {FormApiService} from '../../modules/forms/services/form-api-service';
 import {ElementType} from '../../data/element-type/element-type';
 import type {IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';

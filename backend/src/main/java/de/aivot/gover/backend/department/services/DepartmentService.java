@@ -2,8 +2,6 @@ package de.aivot.gover.backend.department.services;
 
 import de.aivot.gover.backend.department.entities.DepartmentEntity;
 import de.aivot.gover.backend.department.repositories.DepartmentRepository;
-import de.aivot.gover.backend.form.filters.FormFilter;
-import de.aivot.gover.backend.form.repositories.FormRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
@@ -27,16 +25,13 @@ import java.util.Set;
 @Service
 public class DepartmentService implements EntityService<DepartmentEntity, Integer> {
     private final DepartmentRepository departmentRepository;
-    private final FormRepository formRepository;
     private final ThemeRepository themeRepository;
     private final SystemService systemService;
 
     @Autowired
     public DepartmentService(DepartmentRepository departmentRepository,
-                             FormRepository formRepository,
                              ThemeRepository themeRepository, SystemService systemService) {
         this.departmentRepository = departmentRepository;
-        this.formRepository = formRepository;
         this.themeRepository = themeRepository;
         this.systemService = systemService;
     }
@@ -164,14 +159,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
 
     @Override
     public void performDelete(@Nonnull DepartmentEntity department) throws ResponseException {
-        var specDevDepartment = FormFilter
-                .create()
-                .setDevelopingDepartmentId(department.getId())
-                .build();
-
-        if (formRepository.exists(specDevDepartment)) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Die Organisationseinheit kann nicht gelöscht werden, da noch Formulare zugewiesen sind.");
-        }
+        // TODO: Check if this department still has processes and prevent the deletion if so.
 
         departmentRepository
                 .delete(department);

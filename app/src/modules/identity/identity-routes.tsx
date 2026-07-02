@@ -3,35 +3,32 @@ import {IdentityProvidersListPage} from './pages/list/identity-providers-list-pa
 import {IdentityProviderDetailsPage} from './pages/details/identity-provider-details-page';
 import {IdentityProviderDetailsPageIndex} from './pages/details/identity-provider-details-page-index';
 import {IdentityProviderDetailsPageTest} from './pages/details/identity-provider-details-page-test';
-import {IdentityProviderDetailsPageForms} from './pages/details/identity-provider-details-page-forms';
 import {IdentityProviderDetailsPageSetup} from './pages/details/identity-provider-details-page-setup';
-import {duplicatePageWarningRouteHandle} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
+import {
+    duplicatePageWarningRouteHandle,
+} from '../../components/duplicate-page-warning/duplicate-page-warning-route-handle';
 
 export const identityRoutes: RouteObject[] = [
     {
         path: '/identity-providers',
-        element: <IdentityProvidersListPage />,
+        element: <IdentityProvidersListPage/>,
     },
     {
         path: '/identity-providers/:key',
-        element: <IdentityProviderDetailsPage />,
+        element: <IdentityProviderDetailsPage/>,
         handle: duplicatePageWarningRouteHandle,
         children: [
             {
                 index: true,
-                element: <IdentityProviderDetailsPageIndex />,
+                element: <IdentityProviderDetailsPageIndex/>,
             },
             {
                 path: '/identity-providers/:key/test',
-                element: <IdentityProviderDetailsPageTest />,
-            },
-            {
-                path: '/identity-providers/:key/forms',
-                element: <IdentityProviderDetailsPageForms />,
+                element: <IdentityProviderDetailsPageTest/>,
             },
             {
                 path: '/identity-providers/:key/setup',
-                element: <IdentityProviderDetailsPageSetup />,
+                element: <IdentityProviderDetailsPageSetup/>,
             },
         ],
     },
