@@ -207,13 +207,13 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
     }
 
     @Override
-    public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWritable) throws StorageException {
-        var client = getClient(config);
+public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWritable) throws StorageException {
         if (!folderExists(config, "/")) {
             throw new StorageException("Der WebDAV-Basispfad %s existiert nicht oder ist kein Verzeichnis.", StringUtils.quote(normalizeFolderPath(config.basePath)));
         }
 
         if (mustCheckWritable) {
+            var client = getClient(config);
             var testDocumentPath = createWritableCheckDocumentPath();
             var testDocumentUri = toWebDavUri(config, testDocumentPath);
             var created = false;
