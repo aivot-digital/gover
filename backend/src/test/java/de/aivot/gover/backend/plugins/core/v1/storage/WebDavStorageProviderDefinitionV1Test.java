@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -142,6 +143,43 @@ class WebDavStorageProviderDefinitionV1Test {
     }
 
     @Test
+    void testConnectionUsesUniqueTemporaryDocumentForWritableCheck() throws StorageException {
+        var config = createConfig();
+        var client = new FakeWebDavClient();
+        client.propfindResponses.put(
+                "/dav/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/", true, 0L)))
+        );
+
+        var provider = createProvider(client, mock(KnownExtensionsService.class));
+
+        provider.testConnection(config, true);
+
+        assertTrue(client.putIfAbsentUsed);
+        assertTrue(client.putUri.getPath().startsWith("/dav/permissions-check-temp-"));
+        assertFalse(client.putUri.getPath().equals("/dav/permissions-check-temp"));
+        assertEquals(client.putUri, client.deletedUris.get(0));
+    }
+
+    @Test
+    void testConnectionDoesNotDeleteTemporaryDocumentWhenWritableCheckPutFails() {
+        var config = createConfig();
+        var client = new FakeWebDavClient();
+        client.failPut = true;
+        client.propfindResponses.put(
+                "/dav/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/", true, 0L)))
+        );
+
+        var provider = createProvider(client, mock(KnownExtensionsService.class));
+
+        assertThrows(StorageException.class, () -> provider.testConnection(config, true));
+
+        assertTrue(client.putIfAbsentUsed);
+        assertTrue(client.deletedUris.isEmpty());
+    }
+
+    @Test
     void validateConfigurationRejectsOverlappingRoots() {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
@@ -207,6 +245,8 @@ class WebDavStorageProviderDefinitionV1Test {
         private final List<URI> deletedUris = new LinkedList<>();
         private URI putUri;
         private String putContentType;
+        private boolean putIfAbsentUsed;
+        private boolean failPut;
 
         private FakeWebDavClient() {
             super("user", "password", httpProperties());
@@ -222,9 +262,18 @@ class WebDavStorageProviderDefinitionV1Test {
         }
 
         @Override
-        void put(URI uri, InputStream data, String contentType) {
+        void put(URI uri, InputStream data, String contentType) throws StorageException {
             putUri = uri;
             putContentType = contentType;
+            if (failPut) {
+                throw new StorageException("put failed");
+            }
+        }
+
+        @Override
+        void putIfAbsent(URI uri, InputStream data, String contentType) throws StorageException {
+            putIfAbsentUsed = true;
+            put(uri, data, contentType);
         }
 
         @Override

@@ -54,6 +54,8 @@ import java.util.UUID;
 
 @Component
 public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinition<WebDavStorageProviderDefinitionV1.Config> {
+    private static final String WRITABLE_CHECK_DOCUMENT_PREFIX = "/permissions-check-temp-";
+
     private static final String PROPFIND_BODY = """
             <?xml version="1.0" encoding="UTF-8"?>
             <d:propfind xmlns:d="DAV:">
@@ -212,13 +214,21 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         }
 
         if (mustCheckWritable) {
-            var testDocumentPath = "/permissions-check-temp";
-            client.put(
-                    toWebDavUri(config, testDocumentPath),
-                    new ByteArrayInputStream(new byte[0]),
-                    StorageService.UNKNOWN_MIME_TYPE
-            );
-            client.delete(toWebDavUri(config, testDocumentPath));
+            var testDocumentPath = createWritableCheckDocumentPath();
+            var testDocumentUri = toWebDavUri(config, testDocumentPath);
+            var created = false;
+            try {
+                client.putIfAbsent(
+                        testDocumentUri,
+                        new ByteArrayInputStream(new byte[0]),
+                        StorageService.UNKNOWN_MIME_TYPE
+                );
+                created = true;
+            } finally {
+                if (created) {
+                    client.delete(testDocumentUri);
+                }
+            }
         }
     }
 
@@ -740,6 +750,11 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
     }
 
     @Nonnull
+    private static String createWritableCheckDocumentPath() {
+        return WRITABLE_CHECK_DOCUMENT_PREFIX + UUID.randomUUID();
+    }
+
+    @Nonnull
     private static String hrefToPath(@Nonnull String href) {
         try {
             return URI.create(href).getPath();
@@ -853,14 +868,33 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         void put(@Nonnull URI uri,
                  @Nonnull InputStream data,
                  @Nonnull String contentType) throws StorageException {
-            var request = requestBuilder(uri)
-                    .header("Content-Type", contentType)
-                    .PUT(HttpRequest.BodyPublishers.ofInputStream(() -> data))
-                    .build();
+            put(uri, data, contentType, true);
+        }
 
+        void putIfAbsent(@Nonnull URI uri,
+                         @Nonnull InputStream data,
+                         @Nonnull String contentType) throws StorageException {
+            put(uri, data, contentType, false);
+        }
+
+        private void put(@Nonnull URI uri,
+                         @Nonnull InputStream data,
+                         @Nonnull String contentType,
+                         boolean overwrite) throws StorageException {
+            var requestBuilder = requestBuilder(uri)
+                    .header("Content-Type", contentType)
+                    .PUT(HttpRequest.BodyPublishers.ofInputStream(() -> data));
+            if (!overwrite) {
+                requestBuilder.header("If-None-Match", "*");
+            }
+
+            var request = requestBuilder.build();
             var response = sendBytes(request);
             if (response.statusCode() == 200 || response.statusCode() == 201 || response.statusCode() == 204) {
                 return;
+            }
+            if (!overwrite && response.statusCode() == 412) {
+                throw new StorageException("Das temporäre WebDAV-Prüfdokument existiert bereits.");
             }
             throw unexpectedStatus(response, "Das Dokument konnte nicht im WebDAV-Speicher gespeichert werden.");
         }
