@@ -20,7 +20,11 @@ public interface VStorageIndexItemWithAssetRepository extends ReadOnlyRepository
             value = """
                     SELECT * FROM v_storage_index_items_with_assets
                     WHERE storage_provider_id = :storageProviderId
-                      AND path_from_root ~ :path
+                      AND path_from_root <> CAST(:folderPath AS TEXT)
+                      AND left(path_from_root, char_length(CAST(:folderPath AS TEXT))) = CAST(:folderPath AS TEXT)
+                      AND position(
+                          '/' in trim(trailing '/' from substring(path_from_root from char_length(CAST(:folderPath AS TEXT)) + 1))
+                      ) = 0
                       AND (missing = false OR :includeMissing = true)
                       AND (
                           :isPublic IS NULL
@@ -49,7 +53,7 @@ public interface VStorageIndexItemWithAssetRepository extends ReadOnlyRepository
     )
     @Nonnull
     List<VStorageIndexItemWithAssetEntity> listAllInFolder(@Param("storageProviderId") Integer storageProviderId,
-                                                           @Param("path") String path,
+                                                           @Param("folderPath") String folderPath,
                                                            @Param("includeMissing") boolean includeMissing,
                                                            @Param("contentTypePattern") String contentTypePattern,
                                                            @Param("isPublic") Boolean isPublic);
