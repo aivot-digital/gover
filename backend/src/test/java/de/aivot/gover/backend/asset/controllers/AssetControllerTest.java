@@ -407,6 +407,35 @@ class AssetControllerTest {
     }
 
     @Test
+    void listFolderContent_PreservesPlusInFolderPath() throws Exception {
+        var storageProvider = new StorageProviderEntity()
+                .setId(42)
+                .setType(StorageProviderType.Assets);
+        var expectedItems = java.util.List.<VStorageIndexItemWithAssetEntity>of();
+
+        when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
+        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/images/a+b/"));
+        when(storageIndexItemWithAssetRepository.listAllInFolder(
+                42,
+                "/images/a+b/",
+                false,
+                null,
+                null
+        )).thenReturn(expectedItems);
+
+        var result = assetController.listFolderContent(jwt, 42, request, null, null);
+
+        assertEquals(expectedItems, result);
+        verify(storageIndexItemWithAssetRepository).listAllInFolder(
+                42,
+                "/images/a+b/",
+                false,
+                null,
+                null
+        );
+    }
+
+    @Test
     void listFolderContent_PassesNullPatternWhenContentTypeFilterIsBlank() throws Exception {
         var storageProvider = new StorageProviderEntity()
                 .setId(42)
