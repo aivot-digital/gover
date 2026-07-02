@@ -22,14 +22,18 @@ public interface StorageIndexItemRepository extends JpaRepository<StorageIndexIt
             value = """
                         SELECT * FROM storage_index_items
                         WHERE storage_provider_id = :storageProviderId AND
-                              path_from_root ~ :path AND
+                              path_from_root <> CAST(:folderPath AS TEXT) AND
+                              left(path_from_root, char_length(CAST(:folderPath AS TEXT))) = CAST(:folderPath AS TEXT) AND
+                              position(
+                                  '/' in trim(trailing '/' from substring(path_from_root from char_length(CAST(:folderPath AS TEXT)) + 1))
+                              ) = 0 AND
                               (missing = false OR :includeMissing = true)
                         ORDER BY directory DESC
             """,
             nativeQuery = true
     )
     List<StorageIndexItemEntity> listAllInFolder(@Param("storageProviderId") Integer id,
-                                                 @Param("path") String storagePathFromRoot,
+                                                 @Param("folderPath") String folderPath,
                                                  @Param("includeMissing") boolean includeMissing);
 
     Optional<StorageIndexItemEntity> findByStorageProviderIdAndPathFromRootAndDirectoryIsFalse(

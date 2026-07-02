@@ -265,7 +265,7 @@ public class StorageProviderController {
         var normalizedPath = getNormalizedPath(request, true);
 
         return storageIndexItemRepository
-                .listAllInFolder(id, "^" + normalizedPath + "([^/]+$|[^/]+/$)", false);
+                .listAllInFolder(id, normalizedPath, false);
     }
 
     @GetMapping("{id}/search/")

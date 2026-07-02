@@ -358,7 +358,7 @@ class AssetControllerTest {
         when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/images/"));
         when(storageIndexItemWithAssetRepository.listAllInFolder(
                 42,
-                "^/images/([^/]+$|[^/]+/$)",
+                "/images/",
                 false,
                 "(?:^image/.*$|^application/pdf$)",
                 true
@@ -370,10 +370,39 @@ class AssetControllerTest {
         verify(permissionService).testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
         verify(storageIndexItemWithAssetRepository).listAllInFolder(
                 42,
-                "^/images/([^/]+$|[^/]+/$)",
+                "/images/",
                 false,
                 "(?:^image/.*$|^application/pdf$)",
                 true
+        );
+    }
+
+    @Test
+    void listFolderContent_PassesDecodedFolderPathLiterally() throws Exception {
+        var storageProvider = new StorageProviderEntity()
+                .setId(42)
+                .setType(StorageProviderType.Assets);
+        var expectedItems = java.util.List.<VStorageIndexItemWithAssetEntity>of();
+
+        when(storageProviderService.retrieve(42)).thenReturn(Optional.of(storageProvider));
+        when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/Userstore/Mustermann%20(Aivot)%2C%20Max/"));
+        when(storageIndexItemWithAssetRepository.listAllInFolder(
+                42,
+                "/Userstore/Mustermann (Aivot), Max/",
+                false,
+                null,
+                null
+        )).thenReturn(expectedItems);
+
+        var result = assetController.listFolderContent(jwt, 42, request, null, null);
+
+        assertEquals(expectedItems, result);
+        verify(storageIndexItemWithAssetRepository).listAllInFolder(
+                42,
+                "/Userstore/Mustermann (Aivot), Max/",
+                false,
+                null,
+                null
         );
     }
 
@@ -388,7 +417,7 @@ class AssetControllerTest {
         when(request.getRequestURL()).thenReturn(new StringBuffer("http://localhost/api/assets/42/folders/images/"));
         when(storageIndexItemWithAssetRepository.listAllInFolder(
                 42,
-                "^/images/([^/]+$|[^/]+/$)",
+                "/images/",
                 false,
                 null,
                 null
@@ -399,7 +428,7 @@ class AssetControllerTest {
         assertEquals(expectedItems, result);
         verify(storageIndexItemWithAssetRepository).listAllInFolder(
                 42,
-                "^/images/([^/]+$|[^/]+/$)",
+                "/images/",
                 false,
                 null,
                 null

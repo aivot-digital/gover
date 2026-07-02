@@ -123,7 +123,7 @@ public class AssetController {
         return storageIndexItemWithAssetRepository
                 .listAllInFolder(
                         storageProvider.getId(),
-                        "^" + normalizedPath + "([^/]+$|[^/]+/$)",
+                        normalizedPath,
                         false,
                         createContentTypePattern(contentType),
                         isPublic
