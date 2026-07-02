@@ -29,7 +29,7 @@ jobs:
           fi
 
   prepareBuildVars:
-    name: Prepare build variables
+    name: Prepare
     if: needs.verifyTagOnMain.outputs.is_on_main == 'true'
     needs:
       - verifyTagOnMain
@@ -55,7 +55,7 @@ jobs:
           fi
 
   testBackend:
-    name: Test the backend code
+    name: Test Backend
     needs:
       - prepareBuildVars
     uses: ./.github/workflows/test-backend.yml
@@ -65,7 +65,7 @@ jobs:
       build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
 
   generateSbom:
-    name: Generate SBOMs and verify license compliance
+    name: SBOM
     needs:
       - prepareBuildVars
     uses: ./.github/workflows/generate-sbom.yml
@@ -78,7 +78,7 @@ jobs:
     secrets: inherit
 
   genrateLibrary:
-    name: Generate the java library for the usage in plugins and other java applications
+    name: Java Library
     needs:
       - prepareBuildVars
       - testBackend
@@ -92,7 +92,7 @@ jobs:
     secrets: inherit
 
   generateImage:
-    name: Generate the container image for the deployment of the backend and frontend services
+    name: Container Image
     if: needs.prepareBuildVars.outputs.build_version != '0.0.0'
     needs:
       - prepareBuildVars

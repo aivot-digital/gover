@@ -1,4 +1,4 @@
-name: Test backend
+name: Test
 
 on:
   workflow_call:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   testBackend:
-    name: Test backend
+    name: Run unit tests
     runs-on: ubuntu-24.04
     env:
       BUILD_VERSION: ${{ inputs.build_version }}

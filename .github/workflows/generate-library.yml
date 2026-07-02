@@ -1,4 +1,4 @@
-name: Generate library
+name: Build
 
 on:
   workflow_call:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   publish:
-    name: Publish the package to the GitHub package registry
+    name: Build & Publish
     if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04
     steps:
