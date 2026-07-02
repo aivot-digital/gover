@@ -12,7 +12,7 @@ on:
 
 jobs:
   prepareBuildVars:
-    name: Prepare build variables
+    name: Prepare
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-24.04
     outputs:
@@ -39,7 +39,7 @@ jobs:
           fi
 
   testBackend:
-    name: Test the backend code
+    name: Test Backend
     if: github.event.pull_request.draft == false
     needs:
       - prepareBuildVars
@@ -50,7 +50,7 @@ jobs:
       build_version: ${{ needs.prepareBuildVars.outputs.build_version }}
 
   generateSbom:
-    name: Generate SBOMs and verify license compliance
+    name: SBOM
     if: github.event.pull_request.draft == false
     needs:
       - prepareBuildVars
@@ -64,7 +64,7 @@ jobs:
     secrets: inherit
 
   genrateLibrary:
-    name: Generate the java library for the usage in plugins and other java applications
+    name: Java Library
     if: github.event.pull_request.draft == false
     needs:
       - prepareBuildVars
@@ -79,7 +79,7 @@ jobs:
     secrets: inherit
 
   generateImage:
-    name: Generate the container image for the deployment of the backend and frontend services
+    name: Container Image
     if: github.event.pull_request.draft == false && needs.prepareBuildVars.outputs.build_version != '0.0.0'
     needs:
       - prepareBuildVars

@@ -1,4 +1,4 @@
-name: Generate image
+name: Build
 
 on:
   workflow_call:
@@ -24,7 +24,7 @@ env:
 
 jobs:
   buildArm64Image:
-    name: Build ARM64 image and push preview/release when allowed
+    name: Build & Publish ARM64
     if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04-arm
     env:
@@ -87,7 +87,7 @@ jobs:
             BUILD_DATE=${{ env.BUILD_DATE }}
 
   buildAmd64Image:
-    name: Build AMD64 image and push preview/release when allowed
+    name: Build & Publish AMD64
     if: inputs.build_version != '0.0.0'
     runs-on: ubuntu-24.04
     env:
@@ -152,7 +152,7 @@ jobs:
             BUILD_DATE=${{ env.BUILD_DATE }}
 
   mergeImages:
-    name: Merge ARM64 and AMD64 images and push to registry
+    name: Merge & Publish Images
     if: >
       inputs.build_version != '0.0.0' &&
       (github.event_name == 'push' ||

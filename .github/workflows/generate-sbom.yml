@@ -1,4 +1,4 @@
-name: Generate SBOM
+name: Build
 
 on:
   workflow_call:
@@ -12,7 +12,7 @@ on:
 
 jobs:
   generateSbom:
-    name: Generate SBOMs and verify license compliance
+    name: Generate SBOM
     runs-on: ubuntu-24.04
     env:
       BUILD_VERSION: ${{ inputs.build_version }}
