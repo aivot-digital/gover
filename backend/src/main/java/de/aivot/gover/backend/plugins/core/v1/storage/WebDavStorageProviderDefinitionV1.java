@@ -697,11 +697,18 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     }
 
     @Nonnull
-    private static String normalizePath(@Nullable String path) throws StorageException {
+private static String normalizePath(@Nullable String path) throws StorageException {
         var normalizedPath = StringUtils.isNullOrEmpty(path) ? "/" : path.trim();
         normalizedPath = normalizedPath.replace('\\', '/').replaceAll("/{2,}", "/");
         if (!normalizedPath.startsWith("/")) {
             normalizedPath = "/" + normalizedPath;
+        }
+
+        // Decode percent-escapes so traversal attempts like "%2e%2e" cannot bypass the segment checks below.
+        try {
+            normalizedPath = new URI(null, null, normalizedPath, null, null).getPath();
+        } catch (URISyntaxException e) {
+            throw new StorageException("Der Pfad %s ist ungültig.", StringUtils.quote(path));
         }
 
         var segments = normalizedPath.split("/");
@@ -712,7 +719,7 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
         }
 
         return normalizedPath;
-    }
+}
 
     @Nonnull
     private static String trimTrailingSlash(@Nonnull String path) {
