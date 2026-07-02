@@ -18,7 +18,7 @@ jobs:
     outputs:
       build_date: ${{ steps.build_date.outputs.value }}
       build_version: ${{ steps.build_version.outputs.value }}
-      build_number: ${{ github.event.pull_request.number }}
+      build_number: ${{ github.run_number }}
     steps:
       - name: Get current date
         id: build_date
