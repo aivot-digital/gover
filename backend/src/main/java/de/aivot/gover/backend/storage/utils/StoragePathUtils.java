@@ -50,6 +50,9 @@ public final class StoragePathUtils {
         }
 
         normalizedPath = decodePercentEscapes(normalizedPath, path);
+        if (normalizedPath.matches(".*%[0-9a-fA-F]{2}.*")) {
+            throw invalidPercentEncoding(path);
+        }
         normalizedPath = normalizeSeparators(normalizedPath);
         if (!normalizedPath.startsWith("/")) {
             normalizedPath = "/" + normalizedPath;
