@@ -101,11 +101,6 @@ export function IdentityProviderDetailsPage() {
                                 label: 'Testen',
                                 isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
                             },
-                            {
-                                path: '/identity-providers/:key/forms',
-                                label: 'Formulare',
-                                isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
-                            },
                         ];
 
                         if (!item || item.key === '') {

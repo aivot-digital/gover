@@ -43,11 +43,6 @@ export function ThemeDetailsPage() {
                         label: 'Allgemeine Angaben',
                     },
                     {
-                        path: '/themes/:id/forms',
-                        label: 'Formulare',
-                        isDisabled: (item) => !item?.id,
-                    },
-                    {
                         path: '/themes/:id/departments',
                         label: 'Organisationseinheiten',
                         isDisabled: (item) => !item?.id,
