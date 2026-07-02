@@ -25,6 +25,7 @@ import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
 import de.aivot.gover.backend.storage.services.KnownExtensionsService;
 import de.aivot.gover.backend.storage.services.StorageService;
+import de.aivot.gover.backend.storage.utils.StoragePathUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -598,7 +599,7 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     @Nonnull
     private List<WebDavResource> toProviderResources(@Nonnull Config config,
                                                      @Nonnull List<WebDavRemoteResource> remoteResources) throws StorageException {
-        var rootPath = toWebDavUri(config, "/").getPath();
+        var rootPath = toWebDavUri(config, "/").getRawPath();
         var rootPathWithoutTrailingSlash = trimTrailingSlash(rootPath);
         var result = new LinkedList<WebDavResource>();
         for (var remoteResource : remoteResources) {
@@ -680,53 +681,17 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
 
     @Nonnull
     static String normalizeFolderPath(@Nullable String path) throws StorageException {
-        var normalizedPath = normalizePath(path);
-        if (!normalizedPath.endsWith("/")) {
-            normalizedPath += "/";
-        }
-        return normalizedPath;
+        return StoragePathUtils.normalizeFolderPath(path);
     }
 
     @Nonnull
     static String normalizeDocumentPath(@Nullable String path) throws StorageException {
-        var normalizedPath = normalizePath(path);
-        if ("/".equals(normalizedPath)) {
-            throw new StorageException("Ein Dokumentpfad darf nicht auf das Stammverzeichnis zeigen.");
-        }
-        return trimTrailingSlash(normalizedPath);
+        return StoragePathUtils.normalizeDocumentPath(path);
     }
 
     @Nonnull
-private static String normalizePath(@Nullable String path) throws StorageException {
-        var normalizedPath = StringUtils.isNullOrEmpty(path) ? "/" : path.trim();
-        normalizedPath = normalizedPath.replace('\\', '/').replaceAll("/{2,}", "/");
-        if (!normalizedPath.startsWith("/")) {
-            normalizedPath = "/" + normalizedPath;
-        }
-
-        // Decode percent-escapes so traversal attempts like "%2e%2e" cannot bypass the segment checks below.
-        try {
-            normalizedPath = new URI(null, null, normalizedPath, null, null).getPath();
-        } catch (URISyntaxException e) {
-            throw new StorageException("Der Pfad %s ist ungültig.", StringUtils.quote(path));
-        }
-
-        var segments = normalizedPath.split("/");
-        for (var segment : segments) {
-            if (".".equals(segment) || "..".equals(segment)) {
-                throw new StorageException("Der Pfad %s enthält unzulässige Pfadsegmente.", StringUtils.quote(path));
-            }
-        }
-
-        return normalizedPath;
-}
-
-    @Nonnull
     private static String trimTrailingSlash(@Nonnull String path) {
-        if ("/".equals(path)) {
-            return path;
-        }
-        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+        return StoragePathUtils.trimTrailingSlash(path);
     }
 
     @Nonnull
@@ -764,7 +729,7 @@ private static String normalizePath(@Nullable String path) throws StorageExcepti
     @Nonnull
     private static String hrefToPath(@Nonnull String href) {
         try {
-            return URI.create(href).getPath();
+            return URI.create(href).getRawPath();
         } catch (Exception ignored) {
             return href;
         }

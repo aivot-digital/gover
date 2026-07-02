@@ -58,6 +58,39 @@ class WebDavStorageProviderDefinitionV1Test {
     }
 
     @Test
+    void toWebDavUriRejectsPercentEncodedTraversalInBasePath() {
+        var config = createConfig();
+        config.basePath = "/gover/%2e%2e/documents";
+
+        assertThrows(StorageException.class, () -> WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/file.txt"));
+    }
+
+    @Test
+    void toWebDavUriRejectsPercentEncodedTraversalInProviderPath() {
+        var config = createConfig();
+
+        assertThrows(StorageException.class, () -> WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/%2e%2e/file.txt"));
+        assertThrows(StorageException.class, () -> WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/folder%2f..%2ffile.txt"));
+        assertThrows(StorageException.class, () -> WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/folder%5c..%5cfile.txt"));
+    }
+
+    @Test
+    void toWebDavUriRejectsInvalidPercentEscapes() {
+        var config = createConfig();
+
+        assertThrows(StorageException.class, () -> WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/folder/%zz/file.txt"));
+    }
+
+    @Test
+    void toWebDavUriDoesNotTreatPlusAsSpace() throws StorageException {
+        var config = createConfig();
+
+        var uri = WebDavStorageProviderDefinitionV1.toWebDavUri(config, "/folder/file+name.txt");
+
+        assertEquals("https://example.test/dav/folder/file+name.txt", uri.toString());
+    }
+
+    @Test
     void parseMultiStatusReadsCollectionsAndDocumentSizes() throws StorageException {
         var xml = """
                 <?xml version="1.0" encoding="UTF-8"?>
