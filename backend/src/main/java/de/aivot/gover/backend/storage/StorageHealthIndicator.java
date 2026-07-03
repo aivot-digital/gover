@@ -62,7 +62,7 @@ public class StorageHealthIndicator implements HealthIndicator {
         var providers = storageProviderRepository
                 .findAll();
 
-        boolean hasErrors = defaultAttachmentStorage == null;
+        boolean hasErrors = false;
         boolean hasHints = false;
         boolean defaultAttachmentsProviderIsPresent = false;
 
@@ -137,7 +137,7 @@ public class StorageHealthIndicator implements HealthIndicator {
         // Create the builder for the health check result based on the errors and hints collected during the checks.
         // If errors exist, the component is down. If hints exist the component is afflicted. If no errors and no hints exist, the component is simply up.
         Health.Builder builder;
-        if (hasErrors) {
+        if (hasErrors || defaultAttachmentStorage == null || !defaultAttachmentsProviderIsPresent) {
             builder = Health.down();
         } else if (hasHints) {
             builder = Health.unknown();
