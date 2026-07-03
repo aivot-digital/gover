@@ -136,7 +136,7 @@ management:
   endpoint:
     health:
       access: read_only
-      show-details: when-authorized
+      show-details: when_authorized
 
   health:
     diskspace:
