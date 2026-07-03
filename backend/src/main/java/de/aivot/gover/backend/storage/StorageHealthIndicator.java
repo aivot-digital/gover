@@ -24,6 +24,7 @@ import java.util.Map;
 @Component("storage")
 @ConditionalOnEnabledHealthIndicator("storage")
 public class StorageHealthIndicator implements HealthIndicator {
+    private static final String PROVIDERS_DETAILS_KEY = "providers";
 
     private final StorageProviderRepository storageProviderRepository;
     private final StorageProviderDefinitionService storageProviderDefinitionService;
@@ -65,7 +66,7 @@ public class StorageHealthIndicator implements HealthIndicator {
         if (providers.isEmpty()) {
             return Health
                     .up()
-                    .withDetail("hint", "Es sind keine Speicheranbieter konfiguriert.")
+                    .withDetail(PROVIDERS_DETAILS_KEY, new ArrayList<>())
                     .build();
         }
 
@@ -91,7 +92,7 @@ public class StorageHealthIndicator implements HealthIndicator {
             // If a storage provider definition is missing, the health check should be down, because this is a misconfiguration and the sysadmin needs to add the corresponding plugin again.
             if (def == null) {
                 var msg = String.format(
-                        "Der Der Speicheranbieter %s referenziert eine nicht vorhandene Anbieterdefinition %s Version %d. Bitte stellen Sie sicher, dass das entsprechende Plugin wieder installiert wird.",
+                        "Der Speicheranbieter %s referenziert eine nicht vorhandene Anbieterdefinition %s Version %d. Bitte stellen Sie sicher, dass das entsprechende Plugin wieder installiert wird.",
                         StringUtils.quote(provider.getName()),
                         StringUtils.quote(provider.getStorageProviderDefinitionKey()),
                         provider.getStorageProviderDefinitionVersion()
@@ -101,7 +102,7 @@ public class StorageHealthIndicator implements HealthIndicator {
                 providerDetail.put("error", msg);
                 hasErrors = true;
                 providerDetails.add(providerDetail);
-                break;
+                continue;
             }
 
             providerDetail.put("definitionName", def.getName());
@@ -145,7 +146,7 @@ public class StorageHealthIndicator implements HealthIndicator {
         }
 
         return builder
-                .withDetail("providers", providerDetails)
+                .withDetail(PROVIDERS_DETAILS_KEY, providerDetails)
                 .build();
     }
 
