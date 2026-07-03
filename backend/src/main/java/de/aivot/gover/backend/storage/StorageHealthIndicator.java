@@ -62,26 +62,21 @@ public class StorageHealthIndicator implements HealthIndicator {
         var providers = storageProviderRepository
                 .findAll();
 
-        // If no storage providers are configured they are per definition up.
-        if (providers.isEmpty()) {
-            return Health
-                    .up()
-                    .withDetail(PROVIDERS_DETAILS_KEY, new ArrayList<>())
-                    .build();
-        }
-
         boolean hasErrors = defaultAttachmentStorage == null;
         boolean hasHints = false;
+        boolean defaultAttachmentsProviderIsPresent = false;
 
         List<Map<String, Object>> providerDetails = new ArrayList<>();
 
         // Check for all storage providers if they are reachable.
         for (var provider : providers) {
+            var isDefaultAttachmentStorage = defaultAttachmentStorage != null && defaultAttachmentStorage.equals(provider.getId().toString());
+
             var providerDetail = new HashMap<String, Object>();
             providerDetail.put("name", provider.getName());
             providerDetail.put("definitionKey", provider.getStorageProviderDefinitionKey());
             providerDetail.put("definitionVersion", String.valueOf(provider.getStorageProviderDefinitionVersion()));
-            providerDetail.put("isDefaultAttachmentStorage", defaultAttachmentStorage != null && defaultAttachmentStorage.equals(provider.getId().toString()));
+            providerDetail.put("isDefaultAttachmentStorage", isDefaultAttachmentStorage);
 
             var def = storageProviderDefinitionService
                     .retrieveProviderDefinition(
@@ -133,6 +128,10 @@ public class StorageHealthIndicator implements HealthIndicator {
             }
 
             providerDetails.add(providerDetail);
+
+            if (isDefaultAttachmentStorage) {
+                defaultAttachmentsProviderIsPresent = true;
+            }
         }
 
         // Create the builder for the health check result based on the errors and hints collected during the checks.
@@ -148,6 +147,11 @@ public class StorageHealthIndicator implements HealthIndicator {
 
         if (defaultAttachmentStorage == null) {
             builder.withDetail("error", "Der Standard-Speicheranbieter für Anhänge von Vorgängen ist nicht konfiguriert. Bitte konfigurieren Sie einen Speicheranbieter als Standard-Speicheranbieter für Anhänge von Vorgängen.");
+        } else if (!defaultAttachmentsProviderIsPresent) {
+            builder.withDetail("error", String.format(
+                    "Der Standard-Speicheranbieter für Anhänge von Vorgängen (ID: %s) ist nicht vorhanden. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.",
+                    defaultAttachmentStorage
+            ));
         }
 
         return builder
