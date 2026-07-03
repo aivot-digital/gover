@@ -1,4 +1,4 @@
-name: Test the pull request, generate SBOMs, and build the library and container image for an alpha release candidate.
+name: Build Alpha
 
 on:
   pull_request:
