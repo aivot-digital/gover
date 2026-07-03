@@ -70,17 +70,18 @@ public class StorageHealthIndicator implements HealthIndicator {
                     .build();
         }
 
-        boolean hasErrors = false;
+        boolean hasErrors = defaultAttachmentStorage == null;
         boolean hasHints = false;
 
-        List<Map<String, String>> providerDetails = new ArrayList<>();
+        List<Map<String, Object>> providerDetails = new ArrayList<>();
 
         // Check for all storage providers if they are reachable.
         for (var provider : providers) {
-            var providerDetail = new HashMap<String, String>();
+            var providerDetail = new HashMap<String, Object>();
             providerDetail.put("name", provider.getName());
             providerDetail.put("definitionKey", provider.getStorageProviderDefinitionKey());
             providerDetail.put("definitionVersion", String.valueOf(provider.getStorageProviderDefinitionVersion()));
+            providerDetail.put("isDefaultAttachmentStorage", defaultAttachmentStorage != null && defaultAttachmentStorage.equals(provider.getId().toString()));
 
             var def = storageProviderDefinitionService
                     .retrieveProviderDefinition(
@@ -143,6 +144,10 @@ public class StorageHealthIndicator implements HealthIndicator {
             builder = Health.unknown();
         } else {
             builder = Health.up();
+        }
+
+        if (defaultAttachmentStorage == null) {
+            builder.withDetail("error", "Der Standard-Speicheranbieter für Anhänge von Vorgängen ist nicht konfiguriert. Bitte konfigurieren Sie einen Speicheranbieter als Standard-Speicheranbieter für Anhänge von Vorgängen.");
         }
 
         return builder
