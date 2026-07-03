@@ -17,7 +17,9 @@ import org.springframework.boot.actuate.health.HealthIndicator;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Component("storage")
 @ConditionalOnEnabledHealthIndicator("storage")
@@ -67,11 +69,18 @@ public class StorageHealthIndicator implements HealthIndicator {
                     .build();
         }
 
-        List<String> errors = new ArrayList<>();
-        List<String> hints = new ArrayList<>();
+        boolean hasErrors = false;
+        boolean hasHints = false;
+
+        List<Map<String, String>> providerDetails = new ArrayList<>();
 
         // Check for all storage providers if they are reachable.
         for (var provider : providers) {
+            var providerDetail = new HashMap<String, String>();
+            providerDetail.put("name", provider.getName());
+            providerDetail.put("definitionKey", provider.getStorageProviderDefinitionKey());
+            providerDetail.put("definitionVersion", String.valueOf(provider.getStorageProviderDefinitionVersion()));
+
             var def = storageProviderDefinitionService
                     .retrieveProviderDefinition(
                             provider.getStorageProviderDefinitionKey(),
@@ -88,8 +97,14 @@ public class StorageHealthIndicator implements HealthIndicator {
                         provider.getStorageProviderDefinitionVersion()
                 );
 
-                errors.add(msg);
+
+                providerDetail.put("error", msg);
+                hasErrors = true;
+                providerDetails.add(providerDetail);
+                break;
             }
+
+            providerDetail.put("definitionName", def.getName());
 
             // Check the connection to each storage provider.
             try {
@@ -107,33 +122,31 @@ public class StorageHealthIndicator implements HealthIndicator {
                 if (defaultAttachmentStorage != null && defaultAttachmentStorage.equals(provider.getId().toString())) {
                     msg += " Dieser Speicheranbieter ist als Standard-Speicheranbieter für Anhänge von Vorgängen konfiguriert. Bitte stellen Sie sicher, dass der Speicheranbieter erreichbar ist.";
 
-                    errors.add(msg);
+                    providerDetail.put("error", msg);
+                    hasErrors = true;
                 } else {
-                    hints.add(msg);
+                    providerDetail.put("hint", msg);
+                    hasHints = true;
                 }
             }
+
+            providerDetails.add(providerDetail);
         }
 
         // Create the builder for the health check result based on the errors and hints collected during the checks.
         // If errors exist, the component is down. If hints exist the component is afflicted. If no errors and no hints exist, the component is simply up.
         Health.Builder builder;
-        if (!errors.isEmpty()) {
+        if (hasErrors) {
             builder = Health.down();
-        } else if (!hints.isEmpty()) {
+        } else if (hasHints) {
             builder = Health.unknown();
         } else {
             builder = Health.up();
         }
 
-        if (!errors.isEmpty()) {
-            builder.withDetail("errors", errors);
-        }
-
-        if (!hints.isEmpty()) {
-            builder.withDetail("hints", hints);
-        }
-
-        return builder.build();
+        return builder
+                .withDetail("providers", providerDetails)
+                .build();
     }
 
     private <T> void testConnection(StorageProviderEntity provider, StorageProviderDefinition<T> definition) throws StorageException {
