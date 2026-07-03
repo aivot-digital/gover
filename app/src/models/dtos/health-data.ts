@@ -42,7 +42,15 @@ export interface HealthDataComponents {
         version: string;
     }>;
     storage: BaseComponent<{
-        hint?: string;
         error?: string;
+        providers: Array<{
+            name: string;
+            definitionKey: string;
+            definitionVersion: string;
+            definitionName?: string;
+            isDefaultAttachmentStorage: boolean;
+            error?: string;
+            hint?: string;
+        }>
     }>;
 }
