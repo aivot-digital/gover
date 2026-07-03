@@ -7,6 +7,7 @@ on:
       - synchronize
       - reopened
       - ready_for_review
+      - edited
     branches:
       - "milestone/*"
       - "patch/*"
@@ -14,7 +15,8 @@ on:
 jobs:
   prepareBuildVars:
     name: Prepare
-    if: github.event.pull_request.draft == false
+    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     runs-on: ubuntu-24.04
     outputs:
       build_date: ${{ steps.build_date.outputs.value }}
@@ -41,7 +43,8 @@ jobs:
 
   testBackend:
     name: Test Backend
-    if: github.event.pull_request.draft == false
+    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     needs:
       - prepareBuildVars
     uses: ./.github/workflows/test-backend.yml
@@ -52,7 +55,8 @@ jobs:
 
   generateSbom:
     name: SBOM
-    if: github.event.pull_request.draft == false
+    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     needs:
       - prepareBuildVars
     uses: ./.github/workflows/generate-sbom.yml
@@ -67,7 +71,8 @@ jobs:
 
   genrateLibrary:
     name: Java Library
-    if: github.event.pull_request.draft == false
+    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     needs:
       - prepareBuildVars
       - testBackend
@@ -82,7 +87,8 @@ jobs:
 
   generateImage:
     name: Container Image
-    if: github.event.pull_request.draft == false && needs.prepareBuildVars.outputs.build_version != '0.0.0'
+    # Run if the pr is not a draft and the build version is valid (not 0.0.0) and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    if: github.event.pull_request.draft == false && needs.prepareBuildVars.outputs.build_version != '0.0.0' && (github.event.action != 'edited' || github.event.changes.base)
     needs:
       - prepareBuildVars
       - testBackend
