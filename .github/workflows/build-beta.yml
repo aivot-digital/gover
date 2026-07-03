@@ -14,7 +14,7 @@ on:
 jobs:
   prepareBuildVars:
     name: Prepare
-    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    # Run if the pr is not a draft and the trigger is a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
     if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     runs-on: ubuntu-24.04
     outputs:
@@ -42,7 +42,7 @@ jobs:
 
   testBackend:
     name: Test Backend
-    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    # Run if the pr is not a draft and the trigger is a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
     if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     needs:
       - prepareBuildVars
@@ -54,7 +54,7 @@ jobs:
 
   generateSbom:
     name: SBOM
-    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    # Run if the pr is not a draft and the trigger is a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
     if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     needs:
       - prepareBuildVars
@@ -69,7 +69,7 @@ jobs:
 
   genrateLibrary:
     name: Java Library
-    # Run if the pr is not a draft and the trigger it's a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
+    # Run if the pr is not a draft and the trigger is a normal trigger (open/sync/reopen) OR if it's an 'edited' event where the base branch changed
     if: github.event.pull_request.draft == false && (github.event.action != 'edited' || github.event.changes.base)
     needs:
       - prepareBuildVars
