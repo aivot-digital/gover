@@ -221,7 +221,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                 variant="h5"
             >
                 Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Sie können hier die
-                Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
+                Organisationseinheiten auswählen und formularspezifische Ergänzungen pflegen.
             </ElementEditorSectionHeader>
             <Grid
                 container
@@ -272,7 +272,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     {
                         departments != null &&
                         <DepartmentSelectField
-                            label="Text für die Datenschutzerklärung"
+                            label="Allgemeiner Teil der Datenschutzerklärung"
                             value={privacyDepartment}
                             onChange={(department) => {
                                 onPatch({
@@ -300,7 +300,7 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                     {
                         departments != null &&
                         <DepartmentSelectField
-                            label="Text für die Erklärung der Barrierefreiheit"
+                            label="Allgemeiner Teil der Barrierefreiheitserklärung"
                             value={accessibilityDepartment}
                             onChange={(department) => {
                                 onPatch({
@@ -311,6 +311,41 @@ export function RootComponentEditor(props: BaseEditorProps<FormLayoutElement>) {
                             disabled={!props.editable}
                         />
                     }
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <RichTextInputComponent
+                        label="Formularspezifischer Teil der Datenschutzerklärung"
+                        value={form.formSpecificPrivacyStatement}
+                        hint="Beschreiben Sie hier die formularspezifischen Datenschutzinformationen nach Art. 13 DSGVO, insbesondere konkret verarbeitete Daten, Zwecke, Rechtsgrundlagen, Empfänger, Speicherdauer und zuständige Stellen. Zusammen mit dem allgemeinen Teil der ausgewählten Organisationseinheit ergibt sich die vollständige Datenschutzerklärung für dieses Formular."
+                        onChange={(value) => {
+                            onPatch({
+                                formSpecificPrivacyStatement: value,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
+                </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <RichTextInputComponent
+                        label="Formularspezifischer Teil der Barrierefreiheitserklärung"
+                        value={form.formSpecificAccessibilityStatement}
+                        onChange={(value) => {
+                            onPatch({
+                                formSpecificAccessibilityStatement: value,
+                            });
+                        }}
+                        disabled={!props.editable}
+                    />
                 </Grid>
             </Grid>
             <ElementEditorSectionHeader

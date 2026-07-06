@@ -25,6 +25,8 @@ export interface FormLayoutElement extends BaseElement<ElementType.FormLayout> {
     imprintDepartmentId: number | null | undefined;
     privacyDepartmentId: number | null | undefined;
     accessibilityDepartmentId: number | null | undefined;
+    formSpecificPrivacyStatement: string | null | undefined;
+    formSpecificAccessibilityStatement: string | null | undefined;
 
     themeId: number | null | undefined;
 
