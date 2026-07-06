@@ -142,6 +142,47 @@ class WebDavStorageProviderDefinitionV1Test {
     }
 
     @Test
+    void folderExistsRecognizesEncodedHrefWhenBasePathContainsSpecialCharacters() throws StorageException {
+        var config = createConfig();
+        config.baseUrl = "https://example.test/dav/";
+        config.basePath = "/gover/documents (old), 2026/";
+
+        var client = new FakeWebDavClient();
+        client.propfindResponses.put(
+                "/dav/gover/documents (old), 2026/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026", true, 0L)))
+        );
+
+        var provider = createProvider(client, mock(KnownExtensionsService.class));
+
+        assertTrue(provider.folderExists(config, "/"));
+    }
+
+    @Test
+    void retrieveFolderMapsEncodedChildrenWhenBasePathContainsSpecialCharacters() throws StorageException {
+        var config = createConfig();
+        config.baseUrl = "https://example.test/dav/";
+        config.basePath = "/gover/documents (old), 2026/";
+
+        var client = new FakeWebDavClient();
+        client.propfindResponses.put(
+                "/dav/gover/documents (old), 2026/",
+                Optional.of(List.of(
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026/", true, 0L),
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026/sub%20%28draft%29%2C%20A/", true, 0L),
+                        new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents%20%28old%29%2C%202026/file%20%28final%29%2C%20A.txt", false, 12L)
+                ))
+        );
+
+        var provider = createProvider(client, mock(KnownExtensionsService.class));
+
+        var folder = provider.retrieveFolder(config, "/", false).orElseThrow();
+
+        assertEquals("/sub (draft), A/", folder.getSubfolders().getFirst().getPathFromRoot());
+        assertEquals("/file (final), A.txt", folder.getDocuments().getFirst().getPathFromRoot());
+    }
+
+    @Test
     void storeDocumentRequiresParentAndPutsUnderBasePath() throws StorageException {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";

@@ -599,14 +599,10 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     @Nonnull
     private List<WebDavResource> toProviderResources(@Nonnull Config config,
                                                      @Nonnull List<WebDavRemoteResource> remoteResources) throws StorageException {
-        var rootPath = toWebDavUri(config, "/").getRawPath();
-        var rootPathWithoutTrailingSlash = trimTrailingSlash(rootPath);
+        var rootPath = normalizeFolderPath(toWebDavUri(config, "/").getPath());
         var result = new LinkedList<WebDavResource>();
         for (var remoteResource : remoteResources) {
-            var remotePath = hrefToPath(remoteResource.href());
-            if (remotePath.equals(rootPathWithoutTrailingSlash)) {
-                remotePath = rootPath;
-            }
+            var remotePath = hrefToNormalizedPath(remoteResource);
             if (!remotePath.startsWith(rootPath)) {
                 continue;
             }
@@ -729,10 +725,18 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     @Nonnull
     private static String hrefToPath(@Nonnull String href) {
         try {
-            return URI.create(href).getRawPath();
+            return URI.create(href).getPath();
         } catch (Exception ignored) {
             return href;
         }
+    }
+
+    @Nonnull
+    private static String hrefToNormalizedPath(@Nonnull WebDavRemoteResource remoteResource) throws StorageException {
+        var path = hrefToPath(remoteResource.href());
+        return remoteResource.collection()
+                ? normalizeFolderPath(path)
+                : normalizeDocumentPath(path);
     }
 
     @Nonnull
