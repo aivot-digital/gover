@@ -13,6 +13,7 @@ import io.minio.CopyObjectArgs;
 import io.minio.Directive;
 import io.minio.ListObjectsArgs;
 import io.minio.MinioClient;
+import io.minio.PutObjectArgs;
 import io.minio.Result;
 import io.minio.StatObjectArgs;
 import io.minio.StatObjectResponse;
@@ -35,6 +36,62 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class S3StorageProviderDefinitionV1Test {
+
+    @Test
+    void createFolderUploadsZeroByteMarkerObject() throws Exception {
+        var client = mock(MinioClient.class);
+        var provider = new TestS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        var folder = provider.createFolder(config, "/new-folder");
+
+        var putObjectArgsCaptor = ArgumentCaptor.forClass(PutObjectArgs.class);
+        verify(client).putObject(putObjectArgsCaptor.capture());
+        var putObjectArgs = putObjectArgsCaptor.getValue();
+
+        assertEquals("new-folder/", putObjectArgs.object());
+        assertEquals(0L, putObjectArgs.objectSize());
+        assertEquals("/new-folder/", folder.getPathFromRoot());
+    }
+
+    @Test
+    void retrieveFolderTreatsSlashObjectAsSubfolder() throws Exception {
+        var client = mock(MinioClient.class);
+        var item = mock(Item.class);
+        when(item.objectName()).thenReturn("empty/");
+
+        Iterable<Result<Item>> objects = List.of(new Result<>(item));
+        when(client.listObjects(any(ListObjectsArgs.class))).thenReturn(objects);
+
+        var provider = new ClientOnlyS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        var folder = provider.retrieveFolder(config, "/", false).orElseThrow();
+
+        assertTrue(folder.getDocuments().isEmpty());
+        assertEquals(1, folder.getSubfolders().size());
+        assertEquals("/empty/", folder.getSubfolders().get(0).getPathFromRoot());
+        verify(client).listObjects(any(ListObjectsArgs.class));
+    }
+
+    @Test
+    void retrieveFolderReturnsFolderForItsSlashMarker() throws Exception {
+        var client = mock(MinioClient.class);
+        var item = mock(Item.class);
+        when(item.objectName()).thenReturn("empty/");
+
+        Iterable<Result<Item>> objects = List.of(new Result<>(item));
+        when(client.listObjects(any(ListObjectsArgs.class))).thenReturn(objects);
+
+        var provider = new ClientOnlyS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        var folder = provider.retrieveFolder(config, "/empty/", false).orElseThrow();
+
+        assertEquals("/empty/", folder.getPathFromRoot());
+        assertTrue(folder.getDocuments().isEmpty());
+        assertTrue(folder.getSubfolders().isEmpty());
+    }
 
     @Test
     void copyFolderDoesNotDeleteTargetWhenSourceFolderIsMissing() throws Exception {
@@ -146,6 +203,20 @@ class S3StorageProviderDefinitionV1Test {
                     new LinkedList<>(),
                     recursive
             ));
+        }
+    }
+
+    private static final class ClientOnlyS3StorageProviderDefinitionV1 extends S3StorageProviderDefinitionV1 {
+        private final MinioClient client;
+
+        private ClientOnlyS3StorageProviderDefinitionV1(MinioClient client) {
+            super(mock(SecretRepository.class), mock(SecretService.class), mock(KnownExtensionsService.class), mock(StorageProviderRepository.class));
+            this.client = client;
+        }
+
+        @Override
+        MinioClient getClient(Config config) {
+            return client;
         }
     }
 }
