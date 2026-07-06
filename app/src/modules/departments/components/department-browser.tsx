@@ -485,9 +485,10 @@ function DepartmentSearchResultItem(props: DepartmentSearchResultItemProps): Rea
                         ml: 1,
                         display: {
                             xs: 'none',
-                            md: 'flex',
+                            md: 'block',
                         },
-                        alignItems: 'center',
+                        minWidth: 0,
+                        flexShrink: 1,
                         whiteSpace: 'nowrap',
                         maxWidth: {
                             md: 220,
@@ -810,9 +811,10 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
                         ml: 1,
                         display: {
                             xs: 'none',
-                            md: 'flex',
+                            md: 'block',
                         },
-                        alignItems: 'center',
+                        minWidth: 0,
+                        flexShrink: 1,
                         whiteSpace: 'nowrap',
                         maxWidth: {
                             md: 220,
