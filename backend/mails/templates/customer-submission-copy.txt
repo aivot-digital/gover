@@ -2,8 +2,9 @@ Hallo,
 
 im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "[(${form.publicTitle})]".
 
+[# th:if="${department.defaultMailSignature != null && !#strings.isEmpty(#strings.trim(department.defaultMailSignature))}"]
 Mit freundlichen Grüßen
-[(${base.providerName})]
-[(${department.name})]
+[(${department.defaultMailSignature})]
 
+[/]
 Diese E-Mail ist automatisch generiert. Bitte nicht antworten.

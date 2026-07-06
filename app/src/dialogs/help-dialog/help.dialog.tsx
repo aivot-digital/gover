@@ -1,19 +1,134 @@
-import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography} from '@mui/material';
-import {BoxLink} from '../../components/box-link/box-link';
+import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Link, Stack, Typography} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HelpDialogProps} from './help-dialog-props';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
-import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const HelpDialogId = 'help';
 
+function stripHtmlTags(value: string): string {
+    return value.replace(/<[^>]*>/g, '');
+}
+
+function decodeHtmlEntities(value: string): string {
+    if (typeof document === 'undefined') {
+        return value
+            .replace(/&nbsp;/g, ' ')
+            .replace(/&amp;/g, '&')
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, '\'');
+    }
+
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = value;
+    return textarea.value;
+}
+
+function normalizeRichTextForMarkdown(value: string): string {
+    const trimmedValue = value.trim();
+
+    if (!/<\/?(a|p|div|br)\b/i.test(trimmedValue)) {
+        return trimmedValue;
+    }
+
+    return decodeHtmlEntities(trimmedValue
+        .replace(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_match, href, label) => {
+            return `[${decodeHtmlEntities(stripHtmlTags(label)).trim()}](${href})`;
+        })
+        .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/?(p|div)[^>]*>/gi, '\n')
+        .replace(/<[^>]*>/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim());
+}
+
+function SupportContactBlock(props: {
+    title: string;
+    description: string;
+    email?: string | null;
+    phone?: string | null;
+    info?: string | null;
+    mailSubject: string;
+}) {
+    const {
+        title,
+        description,
+        email,
+        phone,
+        info,
+        mailSubject,
+    } = props;
+
+    return (
+        <Box
+            sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                p: 2,
+                height: '100%',
+            }}
+        >
+            <Typography
+                variant="h6"
+                sx={{mb: 0.5}}
+            >
+                {title}
+            </Typography>
+            <Typography
+                color="text.secondary"
+                sx={{mb: 1.5}}
+            >
+                {description}
+            </Typography>
+            <Stack spacing={1}>
+                {
+                    email != null &&
+                    <Typography>
+                        <b>E-Mail:</b>{' '}
+                        <Link href={`mailto:${email}?subject=${encodeURIComponent(mailSubject)}`}>
+                            {email}
+                        </Link>
+                    </Typography>
+                }
+                {
+                    phone != null &&
+                    <Typography>
+                        <b>Telefon:</b> {phone}
+                    </Typography>
+                }
+                {
+                    info != null &&
+                    info.trim().length > 0 &&
+                    <Box
+                        sx={{
+                            '& > *:first-child': {
+                                mt: 0,
+                            },
+                            '& > *:last-child': {
+                                mb: 0,
+                            },
+                        }}
+                    >
+                        <MarkdownContent markdown={normalizeRichTextForMarkdown(info)}/>
+                    </Box>
+                }
+            </Stack>
+        </Box>
+    );
+}
+
 export function HelpDialog(props: HelpDialogProps) {
     const application = props.form;
-    const [technicalDepartment, setTechnicalDepartment] = useState<VDepartmentShadowedEntity>();
-    const [specialDepartment, setSpecialDepartment] = useState<VDepartmentShadowedEntity>();
+    const [technicalDepartment, setTechnicalDepartment] = useState<PublicDepartmentResponseDTO>();
+    const [specialDepartment, setSpecialDepartment] = useState<PublicDepartmentResponseDTO>();
 
     useEffect(() => {
         const ac = new AbortController();
@@ -38,6 +153,10 @@ export function HelpDialog(props: HelpDialogProps) {
 
         return () => ac.abort();
     }, [application, technicalDepartment, specialDepartment]);
+
+    const mailSubjectTitle = application.publicTitle ?? 'Online-Antrag';
+    const hasSpecialContact = specialDepartment != null;
+    const hasTechnicalContact = technicalDepartment != null;
 
     const FAQs = [
         {
@@ -241,13 +360,12 @@ export function HelpDialog(props: HelpDialogProps) {
             <DialogContent tabIndex={0}>
                 {
                     application != null &&
-                    specialDepartment != null &&
-                    technicalDepartment != null &&
+                    (hasSpecialContact || hasTechnicalContact) &&
                     <Grid
                         container
-                        spacing={4}
+                        spacing={2}
                         sx={{
-                            mb: 4,
+                            mb: 3,
                         }}
                     >
                         <Grid
@@ -256,10 +374,17 @@ export function HelpDialog(props: HelpDialogProps) {
                                 md: 6,
                             }}
                         >
-                            <BoxLink
-                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.publicTitle}`}
-                                text={'Fachlicher Support:\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
-                            />
+                            {
+                                hasSpecialContact &&
+                                <SupportContactBlock
+                                    title="Fachliche Hilfe"
+                                    description="Unterstützung zum Inhalt und Ausfüllen des Antrags."
+                                    email={specialDepartment?.specialSupportEmail}
+                                    phone={specialDepartment?.specialSupportPhone}
+                                    info={specialDepartment?.specialSupportInfo}
+                                    mailSubject={`Fachliche Hilfe: ${mailSubjectTitle}`}
+                                />
+                            }
                         </Grid>
                         <Grid
                             size={{
@@ -267,10 +392,17 @@ export function HelpDialog(props: HelpDialogProps) {
                                 md: 6,
                             }}
                         >
-                            <BoxLink
-                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.publicTitle}`}
-                                text={'Technischer Support:\nUnterstützung bei technischen Problemen und Fehlern'}
-                            />
+                            {
+                                hasTechnicalContact &&
+                                <SupportContactBlock
+                                    title="Technische Hilfe"
+                                    description="Unterstützung bei technischen Problemen und Fehlern."
+                                    email={technicalDepartment?.technicalSupportEmail}
+                                    phone={technicalDepartment?.technicalSupportPhone}
+                                    info={technicalDepartment?.technicalSupportInfo}
+                                    mailSubject={`Technische Hilfe: ${mailSubjectTitle}`}
+                                />
+                            }
                         </Grid>
                     </Grid>
                 }
