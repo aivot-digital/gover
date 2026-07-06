@@ -1,0 +1,83 @@
+.organigram-flow {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.organigram-flow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 15px;
+    pointer-events: none;
+    z-index: 4;
+    background:
+        linear-gradient(
+            180deg,
+            var(--organigram-flow-top-fade-color-solid) 0%,
+            var(--organigram-flow-top-fade-color-mid) 45%,
+            var(--organigram-flow-top-fade-color-transparent) 100%
+        );
+}
+
+.organigram-flow .react-flow__node {
+    cursor: default;
+}
+
+.organigram-flow .react-flow__node a,
+.organigram-flow .react-flow__node button,
+.organigram-flow .react-flow__node [role='button'] {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.organigram-flow-controls.react-flow__controls {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 6px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+
+.organigram-flow-controls.react-flow__panel.bottom.left {
+    top: auto;
+    right: auto;
+}
+
+.organigram-flow-control-tooltip-anchor {
+    display: flex;
+    width: 100%;
+}
+
+.organigram-flow-controls > .organigram-flow-control-tooltip-anchor:not(:last-child) {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.organigram-flow-controls .react-flow__controls-button.organigram-flow-control-button {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #475569;
+    box-shadow: none;
+}
+
+.organigram-flow-controls .react-flow__controls-button.organigram-flow-control-button:hover {
+    background: #f8fafc;
+}
+
+.organigram-flow-controls .react-flow__controls-button.organigram-flow-control-button:disabled {
+    color: #cbd5e1;
+    background: transparent;
+}
+
+.organigram-flow-controls .react-flow__controls-button.organigram-flow-control-button svg,
+.organigram-flow-controls .react-flow__controls-button.organigram-flow-control-button .MuiSvgIcon-root {
+    width: 18px;
+    height: 18px;
+    max-width: none;
+    max-height: none;
+}
