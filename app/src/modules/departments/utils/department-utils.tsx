@@ -52,10 +52,10 @@ export function getDepartmentPath(org: VDepartmentShadowedEntity): string {
     return org.parentNames.join(' › ') + ' › ' + org.name;
 }
 
-export function getDepartmentDisplayAddress(org?: VDepartmentShadowedEntity | null): string | undefined {
-    if (org == null || !isStringNotNullOrEmpty(org.address)) {
+export function getDepartmentDisplayAddress(org?: { postalAddress?: string | null } | null): string | undefined {
+    if (org == null || !isStringNotNullOrEmpty(org.postalAddress)) {
         return undefined;
     }
 
-    return org.address ?? undefined;
+    return org.postalAddress ?? undefined;
 }

@@ -127,7 +127,7 @@ export function DepartmentBrowser(props: DepartmentBrowserProps): React.ReactEle
                 flattened.push({
                     id: department.id,
                     name: department.name,
-                    address: formatAddress(department.address),
+                    address: formatAddress(department.postalAddress),
                     type: getDepartmentTypeLabel(department.depth),
                     path: pathSegments.join(' > '),
                     pathParts: pathSegments,
@@ -741,7 +741,7 @@ function DepartmentTreeItem(props: DepartmentTreeItemProps): React.ReactElement 
 
     const actions = getActions?.(department) ?? [];
     const typeLabel = getDepartmentTypeLabel(department.depth);
-    const formattedAddress = formatAddress(department.address);
+    const formattedAddress = formatAddress(department.postalAddress);
     const addressText = formattedAddress.length > 0 ? formattedAddress : 'Keine Adresse hinterlegt';
     const connectorColor = theme.palette.mode === 'dark' ?
         theme.palette.grey[600] :

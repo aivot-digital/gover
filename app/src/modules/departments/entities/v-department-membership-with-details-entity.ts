@@ -21,19 +21,18 @@ export interface VDepartmentMembershipWithDetailsEntity {
 
     departmentId: number;
     departmentName: string;
-    departmentAddress: string | null;
+    departmentPostalAddress: string | null;
     departmentImprint: string | null;
     departmentCommonPrivacy: string | null;
     departmentCommonAccessibility: string | null;
-    departmentTechnicalSupportAddress: string | null;
+    departmentTechnicalSupportEmail: string | null;
     departmentTechnicalSupportPhone: string | null;
     departmentTechnicalSupportInfo: string | null;
-    departmentSpecialSupportAddress: string | null;
+    departmentSpecialSupportEmail: string | null;
     departmentSpecialSupportPhone: string | null;
     departmentSpecialSupportInfo: string | null;
-    departmentMail: string | null;
     departmentThemeId: number | null;
-    departmentAdditionalInfo: string | null;
+    departmentDefaultMailSignature: string | null;
     departmentDepth: number;
     departmentParentDepartmentId: number | null;
     departmentParentNames: string[] | null;

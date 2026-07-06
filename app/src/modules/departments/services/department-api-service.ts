@@ -1,6 +1,6 @@
 import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {DepartmentEntity} from '../entities/department-entity';
-import {VDepartmentShadowedEntity} from '../entities/v-department-shadowed-entity';
+import {PublicDepartmentResponseDTO} from '../entities/v-department-shadowed-entity';
 
 interface DepartmentFilter {
     id: number;
@@ -20,21 +20,20 @@ export class DepartmentApiService extends BaseCrudApiService<DepartmentEntity, D
 
     public static initialize(): DepartmentEntity {
         return {
-            additionalInfo: undefined,
-            address: undefined,
+            postalAddress: undefined,
             commonAccessibility: undefined,
             commonPrivacy: undefined,
             created: new Date().toISOString(),
-            departmentMail: undefined,
+            defaultMailSignature: undefined,
             depth: 0,
             id: 0,
             imprint: undefined,
             name: '',
             parentDepartmentId: undefined,
-            specialSupportAddress: undefined,
+            specialSupportEmail: undefined,
             specialSupportInfo: undefined,
             specialSupportPhone: undefined,
-            technicalSupportAddress: undefined,
+            technicalSupportEmail: undefined,
             technicalSupportInfo: undefined,
             technicalSupportPhone: undefined,
             themeId: undefined,
@@ -43,6 +42,6 @@ export class DepartmentApiService extends BaseCrudApiService<DepartmentEntity, D
     }
 
     public retrievePublic(id: number) {
-        return this.get<VDepartmentShadowedEntity>(`/api/public/departments/${id}/`);
+        return this.get<PublicDepartmentResponseDTO>(`/api/public/departments/${id}/`);
     }
 }
