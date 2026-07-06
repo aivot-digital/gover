@@ -131,6 +131,7 @@ const MEMBER_PREVIEW_COUNT = 4;
 const FLOW_NODE_BASE_HEIGHT = 100;
 const FLOW_NODE_MEMBER_ROW_HEIGHT = 39;
 const FLOW_NODE_MORE_LINK_HEIGHT = 34;
+const FLOW_NODE_SHADOW = '0px 4px 20px rgba(0, 0, 0, 0.1)';
 const EMPTY_MEMBER_PLACEHOLDER_ROWS = [
     {
         opacity: 0.28,
@@ -639,17 +640,16 @@ function OrganizationChartNodeCard(props: {
 
     return (
         <Paper
-            variant="outlined"
+            elevation={0}
             sx={{
                 width: '100%',
                 height: '100%',
                 boxSizing: 'border-box',
                 px: 2,
                 py: 1.75,
-                borderRadius: 2,
-                borderColor: 'divider',
+                borderRadius: '6px',
                 bgcolor: 'background.paper',
-                boxShadow: 1,
+                boxShadow: FLOW_NODE_SHADOW,
                 overflow: 'hidden',
                 display: 'flex',
                 flexDirection: 'column',
