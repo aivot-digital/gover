@@ -1,9 +1,12 @@
 package de.aivot.gover.backend.storage.services;
 
+import de.aivot.gover.backend.asset.configs.DefaultStorageAssetsSystemConfigDefinition;
+import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.enums.StorageProviderStatus;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
@@ -30,18 +33,20 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
     private final StorageProviderConfigurationService storageProviderConfigurationService;
     private final RabbitTemplate rabbitTemplate;
     private final DataSize maxFileSize;
+    private final SystemConfigService systemConfigService;
 
     @Autowired
     public StorageProviderService(StorageProviderRepository storageProviderRepository,
                                   StorageProviderDefinitionService storageProviderDefinitionService,
                                   StorageProviderConfigurationService storageProviderConfigurationService,
                                   RabbitTemplate rabbitTemplate,
-                                  @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize) {
+                                  @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize, SystemConfigService systemConfigService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageProviderConfigurationService = storageProviderConfigurationService;
         this.rabbitTemplate = rabbitTemplate;
         this.maxFileSize = maxFileSize;
+        this.systemConfigService = systemConfigService;
     }
 
     @Nonnull
@@ -195,10 +200,32 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             @Nonnull StorageProviderEntity entity
     ) throws ResponseException {
         if (entity.getSystemProvider()) {
-            throw ResponseException.badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
+            throw ResponseException
+                    .badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
         }
 
+        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity);
+        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity);
+
+        // TODO: Check if any file of this storage provider is used in a process or process instance.
+
         storageProviderRepository.delete(entity);
+    }
+
+    private void testSystemConfigRelated(@Nonnull String key, @Nonnull StorageProviderEntity entity) throws ResponseException {
+        // Check if the storage provider is the default for process attachments and prevents its deletion
+        var defaultAttachmentStorageIdRaw = systemConfigService
+                .getValue(key);
+
+        if (defaultAttachmentStorageIdRaw instanceof String defaultAttachmentStorageIdStr) {
+            var defaultAttachmentStorageId = Integer
+                    .parseInt(defaultAttachmentStorageIdStr);
+
+            if (defaultAttachmentStorageId == entity.getId()) {
+                throw ResponseException
+                        .badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um den Standardanbieter für Prozessanhänge handelt");
+            }
+        }
     }
 
     private void validateMaxFileSize(@Nonnull StorageProviderEntity entity) throws ResponseException {
