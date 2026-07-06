@@ -1,19 +1,25 @@
 -- Add new columns to support hierarchical organizational units
+DROP VIEW IF EXISTS departments_with_memberships;
+
 ALTER TABLE departments
     -- Make existing columns nullable
-    ALTER COLUMN address DROP NOT NULL,
     ALTER COLUMN imprint DROP NOT NULL,
     ALTER COLUMN privacy DROP NOT NULL,
     ALTER COLUMN accessibility DROP NOT NULL,
-    ALTER COLUMN technical_support_address DROP NOT NULL,
+    ADD COLUMN postal_address          TEXT         NULL,
+    ADD COLUMN technical_support_email VARCHAR(255) NULL,
     ADD COLUMN technical_support_phone VARCHAR(96) NULL,
     ADD COLUMN technical_support_info  TEXT        NULL,
-    ALTER COLUMN special_support_address DROP NOT NULL,
+    ADD COLUMN special_support_email   VARCHAR(255) NULL,
     ADD COLUMN special_support_phone   VARCHAR(96) NULL,
     ADD COLUMN special_support_info    TEXT        NULL,
-    ADD COLUMN additional_info         TEXT        NULL,
+    ADD COLUMN default_mail_signature  TEXT        NULL,
     ADD COLUMN depth                   INTEGER     NOT NULL DEFAULT 0, -- 0: Organization (Organisation), 1: Uni1t (Bereiche), 2: Department (Abteilungen) 3...N: Sub-Department (Unterabteilungen)
-    ADD COLUMN parent_department_id    INTEGER     NULL REFERENCES departments (id) ON DELETE SET NULL;
+    ADD COLUMN parent_department_id    INTEGER     NULL REFERENCES departments (id) ON DELETE SET NULL,
+    DROP COLUMN address,
+    DROP COLUMN technical_support_address,
+    DROP COLUMN special_support_address,
+    DROP COLUMN department_mail;
 
 ALTER TABLE departments
     RENAME COLUMN privacy TO common_privacy;

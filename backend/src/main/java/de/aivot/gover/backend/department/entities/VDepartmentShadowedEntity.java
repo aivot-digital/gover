@@ -13,21 +13,20 @@ public class VDepartmentShadowedEntity {
     @Id
     private Integer id;
     private String name;
-    private String address;
+    private String postalAddress;
     private String imprint;
     private String commonPrivacy;
     private String commonAccessibility;
-    private String technicalSupportAddress;
-    private String specialSupportAddress;
+    private String technicalSupportEmail;
+    private String specialSupportEmail;
     private Instant created;
     private Instant updated;
-    private String departmentMail;
     private Integer themeId;
     private String technicalSupportPhone;
     private String technicalSupportInfo;
     private String specialSupportPhone;
     private String specialSupportInfo;
-    private String additionalInfo;
+    private String defaultMailSignature;
     private Integer depth;
     private Integer parentDepartmentId;
     private List<String> parentNames;
@@ -51,12 +50,12 @@ public class VDepartmentShadowedEntity {
         return this;
     }
 
-    public String getAddress() {
-        return address;
+    public String getPostalAddress() {
+        return postalAddress;
     }
 
-    public VDepartmentShadowedEntity setAddress(String address) {
-        this.address = address;
+    public VDepartmentShadowedEntity setPostalAddress(String postalAddress) {
+        this.postalAddress = postalAddress;
         return this;
     }
 
@@ -87,21 +86,21 @@ public class VDepartmentShadowedEntity {
         return this;
     }
 
-    public String getTechnicalSupportAddress() {
-        return technicalSupportAddress;
+    public String getTechnicalSupportEmail() {
+        return technicalSupportEmail;
     }
 
-    public VDepartmentShadowedEntity setTechnicalSupportAddress(String technicalSupportAddress) {
-        this.technicalSupportAddress = technicalSupportAddress;
+    public VDepartmentShadowedEntity setTechnicalSupportEmail(String technicalSupportEmail) {
+        this.technicalSupportEmail = technicalSupportEmail;
         return this;
     }
 
-    public String getSpecialSupportAddress() {
-        return specialSupportAddress;
+    public String getSpecialSupportEmail() {
+        return specialSupportEmail;
     }
 
-    public VDepartmentShadowedEntity setSpecialSupportAddress(String specialSupportAddress) {
-        this.specialSupportAddress = specialSupportAddress;
+    public VDepartmentShadowedEntity setSpecialSupportEmail(String specialSupportEmail) {
+        this.specialSupportEmail = specialSupportEmail;
         return this;
     }
 
@@ -120,15 +119,6 @@ public class VDepartmentShadowedEntity {
 
     public VDepartmentShadowedEntity setUpdated(Instant updated) {
         this.updated = updated;
-        return this;
-    }
-
-    public String getDepartmentMail() {
-        return departmentMail;
-    }
-
-    public VDepartmentShadowedEntity setDepartmentMail(String departmentMail) {
-        this.departmentMail = departmentMail;
         return this;
     }
 
@@ -177,12 +167,12 @@ public class VDepartmentShadowedEntity {
         return this;
     }
 
-    public String getAdditionalInfo() {
-        return additionalInfo;
+    public String getDefaultMailSignature() {
+        return defaultMailSignature;
     }
 
-    public VDepartmentShadowedEntity setAdditionalInfo(String additionalInfo) {
-        this.additionalInfo = additionalInfo;
+    public VDepartmentShadowedEntity setDefaultMailSignature(String defaultMailSignature) {
+        this.defaultMailSignature = defaultMailSignature;
         return this;
     }
 
