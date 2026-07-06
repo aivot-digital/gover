@@ -20,6 +20,7 @@ import de.aivot.gover.backend.storage.services.StorageProviderDefinitionService;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
 import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.storage.services.StorageSyncWorker;
+import de.aivot.gover.backend.storage.utils.StoragePathUtils;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,8 +40,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 
@@ -292,7 +291,7 @@ public class StorageProviderController {
     }
 
     @Nonnull
-    private static String getNormalizedPath(HttpServletRequest request, boolean isDirectory) {
+    private static String getNormalizedPath(HttpServletRequest request, boolean isDirectory) throws ResponseException {
         var pathParts = request
                 .getRequestURL()
                 .toString()
@@ -311,7 +310,13 @@ public class StorageProviderController {
             }
         }
 
-        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+        try {
+            return isDirectory
+                    ? StoragePathUtils.normalizeFolderPath(normalizedPath)
+                    : StoragePathUtils.normalizeDocumentPath(normalizedPath);
+        } catch (StorageException e) {
+            throw ResponseException.badRequest(e.getMessage());
+        }
     }
 
     @PostMapping("{id}/test/")
