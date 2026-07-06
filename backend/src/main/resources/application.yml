@@ -196,6 +196,7 @@ gover:
   sentryServer: "${GOVER_SENTRY_SERVER:}"
   sentryWebApp: "${GOVER_SENTRY_WEB_APP:}"
   environment: "${GOVER_ENVIRONMENT:}"
+  departmentLevelLabels: "${GOVER_DEPARTMENT_LEVEL_LABELS:}"
   security:
     csrfTtlSeconds: "${GOVER_CSRF_TTL_SECONDS:86400}"
   http:

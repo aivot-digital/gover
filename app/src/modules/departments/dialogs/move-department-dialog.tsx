@@ -15,7 +15,7 @@ import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/
 import {DepartmentEntity} from '../entities/department-entity';
 import {VDepartmentShadowedEntity} from '../entities/v-department-shadowed-entity';
 import {VDepartmentShadowedApiService} from '../services/v-department-shadowed-api-service';
-import {getDepartmentPath, getDepartmentTypeIcons, getDepartmentTypeLabel} from '../utils/department-utils';
+import {getDepartmentPath, getDepartmentTypeIcons, getDepartmentTypeLabel, getMaxDepartmentDepth} from '../utils/department-utils';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {DepartmentApiService} from '../services/department-api-service';
@@ -46,6 +46,7 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
 
     const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntity[]>();
     const [targetParentOption, setTargetParentOption] = useState<MoveDepartmentOption | null>(null);
+    const maxDepartmentDepth = getMaxDepartmentDepth();
 
     useEffect(() => {
         new VDepartmentShadowedApiService()
@@ -58,6 +59,21 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
             });
     }, [dispatch]);
 
+    const departmentSubtreeHeight = useMemo(() => {
+        if (availableDepartments == null) {
+            return 0;
+        }
+
+        return availableDepartments.reduce((maxDepthOffset, candidate) => {
+            const parentIds = candidate.parentIds ?? [];
+            if (!parentIds.includes(department.id)) {
+                return maxDepthOffset;
+            }
+
+            return Math.max(maxDepthOffset, candidate.depth - department.depth);
+        }, 0);
+    }, [availableDepartments, department.depth, department.id]);
+
     const selectableParents = useMemo(() => {
         if (availableDepartments == null) {
             return [];
@@ -69,17 +85,21 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
                     return false;
                 }
 
+                if (candidate.depth + 1 + departmentSubtreeHeight > maxDepartmentDepth) {
+                    return false;
+                }
+
                 const parentIds = candidate.parentIds ?? [];
                 return !parentIds.includes(department.id);
             });
-    }, [availableDepartments, department.id]);
+    }, [availableDepartments, department.id, departmentSubtreeHeight, maxDepartmentDepth]);
 
     const parentOptions = useMemo<MoveDepartmentOption[]>(() => {
         const rootOption: MoveDepartmentOption = {
             value: null,
             label: 'Keine übergeordnete Organisationseinheit (höchste Ebene)',
             subLabel: 'Die Organisationseinheit wird zur Wurzelebene verschoben.',
-            disabled: department.parentDepartmentId == null,
+            disabled: department.parentDepartmentId == null || departmentSubtreeHeight > maxDepartmentDepth,
         };
 
         return [
@@ -92,7 +112,7 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
                 disabled: candidate.id === department.parentDepartmentId,
             })),
         ];
-    }, [department.parentDepartmentId, selectableParents]);
+    }, [department.parentDepartmentId, departmentSubtreeHeight, maxDepartmentDepth, selectableParents]);
 
     const currentParentLabel = useMemo(() => {
         if (department.parentDepartmentId == null) {

@@ -24,7 +24,7 @@ import {TextFieldComponentProps} from '../../../../components/text-field/text-fi
 import {SelectFieldComponentProps} from '../../../../components/select-field/select-field-component-props';
 import {DepartmentEntity} from '../../entities/department-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
-import {getDepartmentTypeLabelGenitiv} from '../../utils/department-utils';
+import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/department-utils';
 import {ProcessDefinitionApiService} from '../../../process/services/process-definition-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
@@ -220,6 +220,9 @@ export function DepartmentsDetailsPageIndex() {
     const apiService = useMemo(() => new DepartmentApiService(), []);
     const department = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
+    const effectiveDepartmentDepth = department?.id === 0 && parentOrgUnitId != null && additionalData?.shadowedDepartment != null
+        ? additionalData.shadowedDepartment.depth + 1
+        : department?.depth ?? 0;
 
     type ShadowedStringField =
         | 'postalAddress'
@@ -313,6 +316,11 @@ export function DepartmentsDetailsPageIndex() {
     const handleSave = () => {
         // Do not save if department is null
         if (department == null) {
+            return;
+        }
+
+        if (department.id === 0 && effectiveDepartmentDepth > getMaxDepartmentDepth()) {
+            dispatch(showErrorSnackbar(`Organisationseinheiten sind auf ${getMaxDepartmentDepth() + 1} Ebenen beschränkt.`));
             return;
         }
 
@@ -470,7 +478,7 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Angaben {getDepartmentTypeLabelGenitiv(department.depth)}
+                Angaben zu {getDepartmentTypeLabel(effectiveDepartmentDepth)}
             </Typography>
             <Typography
                 sx={{

@@ -15,11 +15,10 @@ import {DepartmentBrowser} from '../../components/department-browser';
 import {NewParentIdQueryParam} from '../details/departments-details-page';
 import {type VDepartmentShadowedEntityWithChildren} from '../../entities/v-department-shadowed-entity';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
-import {getDepartmentTypeLabel} from '../../utils/department-utils';
-
-const MAX_DEPARTMENT_DEPTH = 2;
+import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/department-utils';
 
 export function DepartmentsListPage(): React.ReactElement {
+    const rootDepartmentTypeLabel = getDepartmentTypeLabel(0);
     const hasAccess = useAccessGuard({
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
@@ -60,7 +59,7 @@ export function DepartmentsListPage(): React.ReactElement {
                     title="Organisationseinheiten"
                     actions={[
                         {
-                            label: 'Neue Organisation',
+                            label: `Neue ${rootDepartmentTypeLabel}`,
                             icon: <Add />,
                             to: '/departments/new',
                             variant: 'contained',
@@ -101,7 +100,7 @@ export function DepartmentsListPage(): React.ReactElement {
                     <DepartmentBrowser
                         departments={rootDepartments}
                         loadError={loadError}
-                        emptyState={<DepartmentsListEmptyState hasAccess={hasAccess} />}
+                        emptyState={<DepartmentsListEmptyState rootDepartmentTypeLabel={rootDepartmentTypeLabel} hasAccess={hasAccess} />}
                         getActions={(department) => getDepartmentActions(department, hasAccess)}
                         getDepartmentHref={(department) => `/departments/${department.id}`}
                     />
@@ -112,14 +111,15 @@ export function DepartmentsListPage(): React.ReactElement {
 }
 
 function getDepartmentActions(department: VDepartmentShadowedEntityWithChildren, hasAccess: boolean): Action[] {
-    const canAddChildDepartment = department.depth < MAX_DEPARTMENT_DEPTH;
+    const maxDepartmentDepth = getMaxDepartmentDepth();
+    const canAddChildDepartment = department.depth < maxDepartmentDepth;
     const canCreateChildDepartment = hasAccess && canAddChildDepartment;
 
     return [
         {
             tooltip: `${getDepartmentTypeLabel(department.depth + 1)} hinzufügen`,
             disabledTooltip: hasAccess
-                ? `Organisationseinheiten sind auf ${MAX_DEPARTMENT_DEPTH + 1} Ebenen beschränkt.`
+                ? `Organisationseinheiten sind auf ${maxDepartmentDepth + 1} Ebenen beschränkt.`
                 : 'Dieser Bereich kann nur von Administrator:innen bearbeitet werden.',
             icon: <Add />,
             to: `/departments/new?${NewParentIdQueryParam}=${department.id}`,
@@ -146,9 +146,11 @@ function getDepartmentActions(department: VDepartmentShadowedEntityWithChildren,
 }
 
 function DepartmentsListEmptyState(props: {
+    rootDepartmentTypeLabel: string;
     hasAccess: boolean;
 }): React.ReactElement {
     const {
+        rootDepartmentTypeLabel,
         hasAccess,
     } = props;
 
@@ -170,7 +172,7 @@ function DepartmentsListEmptyState(props: {
                         size="small"
                         startIcon={<Add />}
                     >
-                        Erste Organisation anlegen
+                        Erste {rootDepartmentTypeLabel} anlegen
                     </Button>
                 ) : undefined
             }
