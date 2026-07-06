@@ -13,37 +13,37 @@ import {VDepartmentShadowedApiService} from '../../departments/services/v-depart
 import {TeamsApiService} from '../../teams/services/teams-api-service';
 import {TeamMembershipsApiService} from '../../teams/services/team-memberships-api-service';
 import {UsersApiService} from '../../users/users-api-service';
-import {OrganigramFlow, type OrganigramFlowView} from './organigram/organigram-flow';
+import {OrganizationChartFlow, type OrganizationChartFlowView} from './organization-chart/organization-chart-flow';
 import {getDepartmentTypeIcons} from '../../departments/utils/department-utils';
-import {createSimulatedOrganigramData} from './organigram/organigram-simulation';
+import {createSimulatedOrganizationChartData} from './organization-chart/organization-chart-simulation';
 import {
-    type OrganigramDepartmentItem,
-    type OrganigramTeamItem,
-} from './organigram/organigram-types';
+    type OrganizationChartDepartmentItem,
+    type OrganizationChartTeamItem,
+} from './organization-chart/organization-chart-types';
 import {
     compareNamedItems,
-    compareOrganigramUsers,
-    sortOrganigramDepartmentTrees,
-} from './organigram/organigram-utils';
+    compareOrganizationChartUsers,
+    sortOrganizationChartDepartmentTrees,
+} from './organization-chart/organization-chart-utils';
 
 const SIMULATE_QUERY_PARAM = 'simulate';
 
-export function Organigram(): React.ReactElement {
+export function OrganizationChart(): React.ReactElement {
     const dispatch = useAppDispatch();
     const [searchParams] = useSearchParams();
-    const [rootDepartments, setRootDepartments] = useState<OrganigramDepartmentItem[]>();
-    const [teams, setTeams] = useState<OrganigramTeamItem[]>();
-    const [organigramView, setOrganigramView] = useState<OrganigramFlowView>('departments');
+    const [rootDepartments, setRootDepartments] = useState<OrganizationChartDepartmentItem[]>();
+    const [teams, setTeams] = useState<OrganizationChartTeamItem[]>();
+    const [organizationChartView, setOrganizationChartView] = useState<OrganizationChartFlowView>('departments');
     const shouldSimulate = searchParams.get(SIMULATE_QUERY_PARAM) === '1';
 
     useEffect(() => {
         let isActive = true;
 
-        async function loadOrganigram(): Promise<void> {
+        async function loadOrganizationChart(): Promise<void> {
             if (shouldSimulate) {
-                const simulatedOrganigram = createSimulatedOrganigramData();
-                setRootDepartments(simulatedOrganigram.rootDepartments);
-                setTeams(simulatedOrganigram.teams);
+                const simulatedOrganizationChart = createSimulatedOrganizationChartData();
+                setRootDepartments(simulatedOrganizationChart.rootDepartments);
+                setTeams(simulatedOrganizationChart.teams);
                 return;
             }
 
@@ -69,7 +69,7 @@ export function Organigram(): React.ReactElement {
 
                 const usersById = new Map(users.content.map((user) => [user.id, user]));
 
-                const departmentMap: Record<number, OrganigramDepartmentItem> = {};
+                const departmentMap: Record<number, OrganizationChartDepartmentItem> = {};
                 for (const dept of departments.content) {
                     departmentMap[dept.id] = {
                         ...dept,
@@ -79,7 +79,7 @@ export function Organigram(): React.ReactElement {
                     };
                 }
 
-                const nextRootDepartments: OrganigramDepartmentItem[] = [];
+                const nextRootDepartments: OrganizationChartDepartmentItem[] = [];
                 for (const dept of departments.content) {
                     if (dept.parentDepartmentId != null && departmentMap[dept.parentDepartmentId] != null) {
                         departmentMap[dept.parentDepartmentId].children.push(departmentMap[dept.id]);
@@ -96,7 +96,7 @@ export function Organigram(): React.ReactElement {
                     }
                 }
 
-                const nextTeams: OrganigramTeamItem[] = fetchedTeams.content
+                const nextTeams: OrganizationChartTeamItem[] = fetchedTeams.content
                     .map((team) => ({
                         ...team,
                         color: stringToPastelColor(team.name),
@@ -112,10 +112,10 @@ export function Organigram(): React.ReactElement {
                     }
                 }
 
-                sortOrganigramDepartmentTrees(nextRootDepartments);
+                sortOrganizationChartDepartmentTrees(nextRootDepartments);
                 nextTeams.sort(compareNamedItems);
                 nextTeams.forEach((team) => {
-                    team.members.sort(compareOrganigramUsers);
+                    team.members.sort(compareOrganizationChartUsers);
                 });
 
                 if (!isActive) {
@@ -131,7 +131,7 @@ export function Organigram(): React.ReactElement {
             }
         }
 
-        loadOrganigram().catch(console.error);
+        loadOrganizationChart().catch(console.error);
         return () => {
             isActive = false;
         };
@@ -165,14 +165,14 @@ export function Organigram(): React.ReactElement {
                             icon: getDepartmentTypeIcons(0),
                             iconPosition: 'start',
                             variant: 'text',
-                            color: organigramView === 'departments' ? 'primary' : 'inherit',
+                            color: organizationChartView === 'departments' ? 'primary' : 'inherit',
                             activeStyle: {
                                 borderBottom: 2,
-                                borderColor: organigramView === 'departments' ? 'primary.main' : 'transparent',
+                                borderColor: organizationChartView === 'departments' ? 'primary.main' : 'transparent',
                                 borderRadius: 0,
                             },
                             onClick: () => {
-                                setOrganigramView('departments');
+                                setOrganizationChartView('departments');
                             },
                         },
                         {
@@ -180,14 +180,14 @@ export function Organigram(): React.ReactElement {
                             icon: <Groups />,
                             iconPosition: 'start',
                             variant: 'text',
-                            color: organigramView === 'teams' ? 'primary' : 'inherit',
+                            color: organizationChartView === 'teams' ? 'primary' : 'inherit',
                             activeStyle: {
                                 borderBottom: 2,
-                                borderColor: organigramView === 'teams' ? 'primary.main' : 'transparent',
+                                borderColor: organizationChartView === 'teams' ? 'primary.main' : 'transparent',
                                 borderRadius: 0,
                             },
                             onClick: () => {
-                                setOrganigramView('teams');
+                                setOrganizationChartView('teams');
                             },
                         },
                     ]}
@@ -214,10 +214,10 @@ export function Organigram(): React.ReactElement {
                 />
                 {
                     isLoading ? (
-                        <OrganigramLoadingSkeleton />
+                        <OrganizationChartLoadingSkeleton />
                     ) : (
-                        <OrganigramFlow
-                            view={organigramView}
+                        <OrganizationChartFlow
+                            view={organizationChartView}
                             rootDepartments={rootDepartments}
                             teams={teams}
                         />
@@ -228,7 +228,7 @@ export function Organigram(): React.ReactElement {
     );
 }
 
-function OrganigramLoadingSkeleton(): React.ReactElement {
+function OrganizationChartLoadingSkeleton(): React.ReactElement {
     return (
         <Stack
             spacing={2}

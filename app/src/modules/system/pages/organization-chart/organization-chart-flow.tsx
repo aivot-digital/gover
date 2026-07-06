@@ -15,7 +15,7 @@ import {
     useStore,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import './organigram-flow.css';
+import './organization-chart-flow.css';
 import {
     Box,
     Button,
@@ -45,59 +45,59 @@ import {Link as RouterLink} from 'react-router-dom';
 import {StringAvatar} from '../../../../components/avatar/string-avatar';
 import {getDepartmentTypeIcons, getDepartmentTypeLabel} from '../../../departments/utils/department-utils';
 import {
-    type OrganigramDepartmentItem,
-    type OrganigramTeamItem,
-    type OrganigramUserItem,
-} from './organigram-types';
+    type OrganizationChartDepartmentItem,
+    type OrganizationChartTeamItem,
+    type OrganizationChartUserItem,
+} from './organization-chart-types';
 
-interface OrganigramFlowProps {
-    view: OrganigramFlowView;
-    rootDepartments: OrganigramDepartmentItem[];
-    teams: OrganigramTeamItem[];
+interface OrganizationChartFlowProps {
+    view: OrganizationChartFlowView;
+    rootDepartments: OrganizationChartDepartmentItem[];
+    teams: OrganizationChartTeamItem[];
 }
 
-export type OrganigramFlowView = 'departments' | 'teams';
+export type OrganizationChartFlowView = 'departments' | 'teams';
 
-type OrganigramFlowNodeData =
+type OrganizationChartFlowNodeData =
     | {
         itemType: 'department';
-        item: OrganigramDepartmentItem;
+        item: OrganizationChartDepartmentItem;
         height: number;
     }
     | {
         itemType: 'team';
-        item: OrganigramTeamItem;
+        item: OrganizationChartTeamItem;
         height: number;
     };
 
-type OrganigramFlowNode = ReactFlowNode<OrganigramFlowNodeData>;
-type OrganigramFlowEdge = ReactFlowEdge;
+type OrganizationChartFlowNode = ReactFlowNode<OrganizationChartFlowNodeData>;
+type OrganizationChartFlowEdge = ReactFlowEdge;
 
-interface OrganigramLayoutResult {
-    nodes: OrganigramFlowNode[];
-    edges: OrganigramFlowEdge[];
-    groups: OrganigramTreeGroup[];
+interface OrganizationChartLayoutResult {
+    nodes: OrganizationChartFlowNode[];
+    edges: OrganizationChartFlowEdge[];
+    groups: OrganizationChartTreeGroup[];
 }
 
-interface OrganigramDepartmentTreeLayoutInput {
-    rootDepartment: OrganigramDepartmentItem;
-    nodes: OrganigramFlowNode[];
-    edges: OrganigramFlowEdge[];
+interface OrganizationChartDepartmentTreeLayoutInput {
+    rootDepartment: OrganizationChartDepartmentItem;
+    nodes: OrganizationChartFlowNode[];
+    edges: OrganizationChartFlowEdge[];
 }
 
-interface OrganigramDepartmentTreeLayoutResult {
-    nodes: OrganigramFlowNode[];
-    edges: OrganigramFlowEdge[];
-    group: OrganigramTreeGroup | null;
+interface OrganizationChartDepartmentTreeLayoutResult {
+    nodes: OrganizationChartFlowNode[];
+    edges: OrganizationChartFlowEdge[];
+    group: OrganizationChartTreeGroup | null;
 }
 
-interface OrganigramFlowCanvasProps {
-    view: OrganigramFlowView;
-    rootDepartments: OrganigramDepartmentItem[];
-    teams: OrganigramTeamItem[];
+interface OrganizationChartFlowCanvasProps {
+    view: OrganizationChartFlowView;
+    rootDepartments: OrganizationChartDepartmentItem[];
+    teams: OrganizationChartTeamItem[];
 }
 
-interface OrganigramTreeGroup {
+interface OrganizationChartTreeGroup {
     id: string;
     label: string;
     color: string;
@@ -107,7 +107,7 @@ interface OrganigramTreeGroup {
     height: number;
 }
 
-interface OrganigramFlowControlButtonProps {
+interface OrganizationChartFlowControlButtonProps {
     ariaLabel: string;
     children: ReactNode;
     disabled?: boolean;
@@ -115,13 +115,13 @@ interface OrganigramFlowControlButtonProps {
     tooltip: string;
 }
 
-interface OrganigramMemberListProps {
-    members: OrganigramUserItem[];
+interface OrganizationChartMemberListProps {
+    members: OrganizationChartUserItem[];
     compact?: boolean;
 }
 
 const elk = new ELK();
-const FLOW_NODE_TYPE = 'organigram-node';
+const FLOW_NODE_TYPE = 'organization-chart-node';
 const FLOW_NODE_WIDTH = 420;
 const FLOW_NODE_MIN_HEIGHT = 195;
 const FLOW_MIN_ZOOM = 0.25;
@@ -160,7 +160,7 @@ const FLOW_FIT_VIEW_OPTIONS = {
 const TEAM_LAYOUT_COLUMN_COUNT = 3;
 const TEAM_LAYOUT_HORIZONTAL_SPACING = 88;
 const TEAM_LAYOUT_VERTICAL_SPACING = 72;
-const ORGANIGRAM_LAYOUT_OPTIONS = {
+const ORGANIZATION_CHART_LAYOUT_OPTIONS = {
     'elk.algorithm': 'layered',
     'elk.direction': 'DOWN',
     'elk.edgeRouting': 'ORTHOGONAL',
@@ -175,17 +175,17 @@ const ORGANIGRAM_LAYOUT_OPTIONS = {
 } as const;
 
 const NODE_TYPES = {
-    [FLOW_NODE_TYPE]: memo(OrganigramFlowNodeComponent),
+    [FLOW_NODE_TYPE]: memo(OrganizationChartFlowNodeComponent),
 };
 
-export function OrganigramFlow(props: OrganigramFlowProps): ReactNode {
+export function OrganizationChartFlow(props: OrganizationChartFlowProps): ReactNode {
     const {
         view,
         rootDepartments,
         teams,
     } = props;
 
-    const [renderedView, setRenderedView] = useState<OrganigramFlowView>(view);
+    const [renderedView, setRenderedView] = useState<OrganizationChartFlowView>(view);
     const [isSwitchingView, setIsSwitchingView] = useState(false);
 
     useEffect(() => {
@@ -233,12 +233,12 @@ export function OrganigramFlow(props: OrganigramFlowProps): ReactNode {
             >
                 {
                     renderedView === 'departments' && rootDepartments.length === 0 ? (
-                        <OrganigramFlowEmptyState message="Keine Organisationseinheiten vorhanden." />
+                        <OrganizationChartFlowEmptyState message="Keine Organisationseinheiten vorhanden." />
                     ) : renderedView === 'teams' && teams.length === 0 ? (
-                        <OrganigramFlowEmptyState message="Keine Teams vorhanden." />
+                        <OrganizationChartFlowEmptyState message="Keine Teams vorhanden." />
                     ) : (
                         <ReactFlowProvider key={renderedView}>
-                            <OrganigramFlowCanvas
+                            <OrganizationChartFlowCanvas
                                 view={renderedView}
                                 rootDepartments={rootDepartments}
                                 teams={teams}
@@ -246,7 +246,7 @@ export function OrganigramFlow(props: OrganigramFlowProps): ReactNode {
                         </ReactFlowProvider>
                     )
                 }
-                <OrganigramFlowSwitchOverlay
+                <OrganizationChartFlowSwitchOverlay
                     visible={isSwitchingView || renderedView !== view}
                 />
             </Box>
@@ -254,7 +254,7 @@ export function OrganigramFlow(props: OrganigramFlowProps): ReactNode {
     );
 }
 
-function OrganigramFlowSwitchOverlay(props: {
+function OrganizationChartFlowSwitchOverlay(props: {
     visible: boolean;
 }): ReactNode {
     const {
@@ -284,7 +284,7 @@ function OrganigramFlowSwitchOverlay(props: {
     );
 }
 
-function OrganigramFlowCanvas(props: OrganigramFlowCanvasProps): ReactNode {
+function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): ReactNode {
     const {
         view,
         rootDepartments,
@@ -293,9 +293,9 @@ function OrganigramFlowCanvas(props: OrganigramFlowCanvasProps): ReactNode {
     const theme = useTheme();
     const {
         fitView,
-    } = useReactFlow<OrganigramFlowNode, OrganigramFlowEdge>();
+    } = useReactFlow<OrganizationChartFlowNode, OrganizationChartFlowEdge>();
 
-    const [layout, setLayout] = useState<OrganigramLayoutResult>({
+    const [layout, setLayout] = useState<OrganizationChartLayoutResult>({
         nodes: [],
         edges: [],
         groups: [],
@@ -317,7 +317,7 @@ function OrganigramFlowCanvas(props: OrganigramFlowCanvasProps): ReactNode {
                 setIsLayoutReady(true);
             })
             .catch((error) => {
-                console.error('Failed to layout organigram', error);
+                console.error('Failed to layout organization chart', error);
                 if (!isActive) {
                     return;
                 }
@@ -355,12 +355,12 @@ function OrganigramFlowCanvas(props: OrganigramFlowCanvasProps): ReactNode {
 
     return (
         <ReactFlow
-            className="organigram-flow"
+            className="organization-chart-flow"
             style={{
-                '--organigram-flow-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
-                '--organigram-flow-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
-                '--organigram-flow-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
-                '--organigram-flow-edge-color': theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[400],
+                '--organization-chart-flow-top-fade-color-solid': alpha(theme.palette.background.default, 0.96),
+                '--organization-chart-flow-top-fade-color-mid': alpha(theme.palette.background.default, 0.72),
+                '--organization-chart-flow-top-fade-color-transparent': alpha(theme.palette.background.default, 0),
+                '--organization-chart-flow-edge-color': theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[400],
                 opacity: isLayoutReady ? 1 : 0,
                 transition: 'opacity 120ms ease-out',
             } as CSSProperties}
@@ -388,10 +388,10 @@ function OrganigramFlowCanvas(props: OrganigramFlowCanvasProps): ReactNode {
             <Background
                 variant={BackgroundVariant.Dots}
             />
-            <OrganigramTreeGroups
+            <OrganizationChartTreeGroups
                 groups={layout.groups}
             />
-            <OrganigramFlowViewportControls
+            <OrganizationChartFlowViewportControls
                 isViewportLocked={isViewportLocked}
                 onToggleViewportLock={handleToggleViewportLock}
             />
@@ -399,7 +399,7 @@ function OrganigramFlowCanvas(props: OrganigramFlowCanvasProps): ReactNode {
     );
 }
 
-function OrganigramFlowViewportControls(props: {
+function OrganizationChartFlowViewportControls(props: {
     isViewportLocked: boolean;
     onToggleViewportLock: () => void;
 }): ReactNode {
@@ -412,20 +412,20 @@ function OrganigramFlowViewportControls(props: {
         zoomIn,
         zoomOut,
         zoomTo,
-    } = useReactFlow<OrganigramFlowNode, OrganigramFlowEdge>();
+    } = useReactFlow<OrganizationChartFlowNode, OrganizationChartFlowEdge>();
     const zoom = useStore((store) => store.transform[2]);
     const canZoomIn = zoom < FLOW_MAX_ZOOM - ZOOM_EPSILON;
     const canZoomOut = zoom > FLOW_MIN_ZOOM + ZOOM_EPSILON;
 
     return (
         <Controls
-            className="organigram-flow-controls"
+            className="organization-chart-flow-controls"
             position="bottom-left"
             showZoom={false}
             showFitView={false}
             showInteractive={false}
         >
-            <OrganigramFlowControlButton
+            <OrganizationChartFlowControlButton
                 disabled={!canZoomIn}
                 onClick={() => {
                     void zoomIn();
@@ -434,9 +434,9 @@ function OrganigramFlowViewportControls(props: {
                 tooltip="Vergrößern"
             >
                 <Add sx={{fontSize: 20}} />
-            </OrganigramFlowControlButton>
+            </OrganizationChartFlowControlButton>
 
-            <OrganigramFlowControlButton
+            <OrganizationChartFlowControlButton
                 disabled={!canZoomOut}
                 onClick={() => {
                     void zoomOut();
@@ -445,9 +445,9 @@ function OrganigramFlowViewportControls(props: {
                 tooltip="Verkleinern"
             >
                 <Remove sx={{fontSize: 20}} />
-            </OrganigramFlowControlButton>
+            </OrganizationChartFlowControlButton>
 
-            <OrganigramFlowControlButton
+            <OrganizationChartFlowControlButton
                 onClick={() => {
                     void fitView(FLOW_FIT_VIEW_OPTIONS);
                 }}
@@ -455,9 +455,9 @@ function OrganigramFlowViewportControls(props: {
                 tooltip="Ansicht einpassen"
             >
                 <CropFree sx={{fontSize: 18}} />
-            </OrganigramFlowControlButton>
+            </OrganizationChartFlowControlButton>
 
-            <OrganigramFlowControlButton
+            <OrganizationChartFlowControlButton
                 onClick={() => {
                     void zoomTo(1);
                 }}
@@ -465,9 +465,9 @@ function OrganigramFlowViewportControls(props: {
                 tooltip="Zoom auf Originalgröße (100 %)"
             >
                 <ViewRealSize sx={{fontSize: 18}} />
-            </OrganigramFlowControlButton>
+            </OrganizationChartFlowControlButton>
 
-            <OrganigramFlowControlButton
+            <OrganizationChartFlowControlButton
                 onClick={onToggleViewportLock}
                 ariaLabel={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
                 tooltip={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
@@ -477,12 +477,12 @@ function OrganigramFlowViewportControls(props: {
                         <Lock sx={{fontSize: 18}} /> :
                         <LockOpen sx={{fontSize: 18}} />
                 }
-            </OrganigramFlowControlButton>
+            </OrganizationChartFlowControlButton>
         </Controls>
     );
 }
 
-function OrganigramFlowControlButton(props: OrganigramFlowControlButtonProps): ReactNode {
+function OrganizationChartFlowControlButton(props: OrganizationChartFlowControlButtonProps): ReactNode {
     const {
         ariaLabel,
         children,
@@ -497,9 +497,9 @@ function OrganigramFlowControlButton(props: OrganigramFlowControlButtonProps): R
             arrow
             placement="right"
         >
-            <span className="organigram-flow-control-tooltip-anchor">
+            <span className="organization-chart-flow-control-tooltip-anchor">
                 <ControlButton
-                    className="organigram-flow-control-button"
+                    className="organization-chart-flow-control-button"
                     disabled={disabled}
                     onClick={onClick}
                     aria-label={ariaLabel}
@@ -511,8 +511,8 @@ function OrganigramFlowControlButton(props: OrganigramFlowControlButtonProps): R
     );
 }
 
-function OrganigramTreeGroups(props: {
-    groups: OrganigramTreeGroup[];
+function OrganizationChartTreeGroups(props: {
+    groups: OrganizationChartTreeGroup[];
 }): ReactNode {
     const {
         groups,
@@ -581,7 +581,7 @@ function OrganigramTreeGroups(props: {
     );
 }
 
-function OrganigramFlowNodeComponent(props: NodeProps<OrganigramFlowNode>): ReactNode {
+function OrganizationChartFlowNodeComponent(props: NodeProps<OrganizationChartFlowNode>): ReactNode {
     const {
         data,
     } = props;
@@ -605,7 +605,7 @@ function OrganigramFlowNodeComponent(props: NodeProps<OrganigramFlowNode>): Reac
                     pointerEvents: 'none',
                 }}
             />
-            <OrganigramNodeCard
+            <OrganizationChartNodeCard
                 data={data}
             />
             <Handle
@@ -622,8 +622,8 @@ function OrganigramFlowNodeComponent(props: NodeProps<OrganigramFlowNode>): Reac
     );
 }
 
-function OrganigramNodeCard(props: {
-    data: OrganigramFlowNodeData;
+function OrganizationChartNodeCard(props: {
+    data: OrganizationChartFlowNodeData;
 }): ReactNode {
     const {
         data,
@@ -735,12 +735,12 @@ function OrganigramNodeCard(props: {
 
             {
                 members.length > 0 ? (
-                    <OrganigramMemberList
+                    <OrganizationChartMemberList
                         members={members.slice(0, MEMBER_PREVIEW_COUNT)}
                         compact
                     />
                 ) : (
-                    <OrganigramMembersEmptyState />
+                    <OrganizationChartMembersEmptyState />
                 )
             }
 
@@ -771,7 +771,7 @@ function OrganigramNodeCard(props: {
     );
 }
 
-function OrganigramMembersEmptyState(): ReactNode {
+function OrganizationChartMembersEmptyState(): ReactNode {
     return (
         <Stack
             aria-label="Keine Mitglieder"
@@ -860,7 +860,7 @@ function OrganigramMembersEmptyState(): ReactNode {
     );
 }
 
-function OrganigramMemberList(props: OrganigramMemberListProps): ReactNode {
+function OrganizationChartMemberList(props: OrganizationChartMemberListProps): ReactNode {
     const {
         members,
         compact = true,
@@ -870,7 +870,7 @@ function OrganigramMemberList(props: OrganigramMemberListProps): ReactNode {
         <Stack spacing={compact ? 0.5 : 1}>
             {
                 members.map((member) => (
-                    <OrganigramMemberRow
+                    <OrganizationChartMemberRow
                         key={member.id}
                         member={member}
                         compact={compact}
@@ -881,8 +881,8 @@ function OrganigramMemberList(props: OrganigramMemberListProps): ReactNode {
     );
 }
 
-function OrganigramMemberRow(props: {
-    member: OrganigramUserItem;
+function OrganizationChartMemberRow(props: {
+    member: OrganizationChartUserItem;
     compact: boolean;
 }): ReactNode {
     const {
@@ -981,7 +981,7 @@ function OrganigramMemberRow(props: {
     );
 }
 
-function OrganigramFlowEmptyState(props: {
+function OrganizationChartFlowEmptyState(props: {
     message: string;
 }): ReactNode {
     const {
@@ -1009,10 +1009,10 @@ function OrganigramFlowEmptyState(props: {
 }
 
 async function createLayout(
-    view: OrganigramFlowView,
-    rootDepartments: OrganigramDepartmentItem[],
-    teams: OrganigramTeamItem[],
-): Promise<OrganigramLayoutResult> {
+    view: OrganizationChartFlowView,
+    rootDepartments: OrganizationChartDepartmentItem[],
+    teams: OrganizationChartTeamItem[],
+): Promise<OrganizationChartLayoutResult> {
     if (view === 'teams') {
         return createTeamLayout(teams);
     }
@@ -1020,7 +1020,7 @@ async function createLayout(
     return await createDepartmentLayout(rootDepartments);
 }
 
-async function createDepartmentLayout(rootDepartments: OrganigramDepartmentItem[]): Promise<OrganigramLayoutResult> {
+async function createDepartmentLayout(rootDepartments: OrganizationChartDepartmentItem[]): Promise<OrganizationChartLayoutResult> {
     const treeLayoutInputs = rootDepartments.map(createDepartmentTreeLayoutInput);
     const normalizedNodesById = new Map(
         normalizeFlowNodeHeights(treeLayoutInputs.flatMap((tree) => tree.nodes))
@@ -1035,7 +1035,7 @@ async function createDepartmentLayout(rootDepartments: OrganigramDepartmentItem[
         };
     }
 
-    const treeLayouts: OrganigramDepartmentTreeLayoutResult[] = [];
+    const treeLayouts: OrganizationChartDepartmentTreeLayoutResult[] = [];
     let nextTreeGroupX = DEPARTMENT_TREE_GROUP_START_X;
 
     for (const treeLayoutInput of treeLayoutInputs) {
@@ -1044,7 +1044,7 @@ async function createDepartmentLayout(rootDepartments: OrganigramDepartmentItem[
                 ...treeLayoutInput,
                 nodes: treeLayoutInput.nodes
                     .map((node) => normalizedNodesById.get(node.id))
-                    .filter((node): node is OrganigramFlowNode => node != null),
+                    .filter((node): node is OrganizationChartFlowNode => node != null),
             },
             nextTreeGroupX,
         );
@@ -1060,15 +1060,15 @@ async function createDepartmentLayout(rootDepartments: OrganigramDepartmentItem[
         edges: treeLayouts.flatMap((treeLayout) => treeLayout.edges),
         groups: treeLayouts
             .map((treeLayout) => treeLayout.group)
-            .filter((group): group is OrganigramTreeGroup => group != null),
+            .filter((group): group is OrganizationChartTreeGroup => group != null),
     };
 }
 
-function createDepartmentTreeLayoutInput(rootDepartment: OrganigramDepartmentItem): OrganigramDepartmentTreeLayoutInput {
-    const nodes: OrganigramFlowNode[] = [];
-    const edges: OrganigramFlowEdge[] = [];
+function createDepartmentTreeLayoutInput(rootDepartment: OrganizationChartDepartmentItem): OrganizationChartDepartmentTreeLayoutInput {
+    const nodes: OrganizationChartFlowNode[] = [];
+    const edges: OrganizationChartFlowEdge[] = [];
 
-    function appendDepartment(department: OrganigramDepartmentItem): void {
+    function appendDepartment(department: OrganizationChartDepartmentItem): void {
         nodes.push(createFlowNode('department', department));
 
         for (const child of department.children) {
@@ -1091,12 +1091,12 @@ function createDepartmentTreeLayoutInput(rootDepartment: OrganigramDepartmentIte
 }
 
 async function createPositionedDepartmentTreeLayout(
-    treeLayoutInput: OrganigramDepartmentTreeLayoutInput,
+    treeLayoutInput: OrganizationChartDepartmentTreeLayoutInput,
     treeGroupX: number,
-): Promise<OrganigramDepartmentTreeLayoutResult> {
+): Promise<OrganizationChartDepartmentTreeLayoutResult> {
     const elkGraph: ElkNode = {
-        id: `organigram-departments-${treeLayoutInput.rootDepartment.id}`,
-        layoutOptions: ORGANIGRAM_LAYOUT_OPTIONS,
+        id: `organization-chart-departments-${treeLayoutInput.rootDepartment.id}`,
+        layoutOptions: ORGANIZATION_CHART_LAYOUT_OPTIONS,
         children: treeLayoutInput.nodes.map((node) => ({
             id: node.id,
             width: FLOW_NODE_WIDTH,
@@ -1152,7 +1152,7 @@ async function createPositionedDepartmentTreeLayout(
     };
 }
 
-function createTeamLayout(teams: OrganigramTeamItem[]): OrganigramLayoutResult {
+function createTeamLayout(teams: OrganizationChartTeamItem[]): OrganizationChartLayoutResult {
     const nodes = normalizeFlowNodeHeights(teams.map((team) => createFlowNode('team', team)));
     const rowHeights: number[] = [];
 
@@ -1187,16 +1187,16 @@ function createTeamLayout(teams: OrganigramTeamItem[]): OrganigramLayoutResult {
 
 function createFlowNode(
     itemType: 'department',
-    item: OrganigramDepartmentItem,
-): OrganigramFlowNode;
+    item: OrganizationChartDepartmentItem,
+): OrganizationChartFlowNode;
 function createFlowNode(
     itemType: 'team',
-    item: OrganigramTeamItem,
-): OrganigramFlowNode;
+    item: OrganizationChartTeamItem,
+): OrganizationChartFlowNode;
 function createFlowNode(
     itemType: 'department' | 'team',
-    item: OrganigramDepartmentItem | OrganigramTeamItem,
-): OrganigramFlowNode {
+    item: OrganizationChartDepartmentItem | OrganizationChartTeamItem,
+): OrganizationChartFlowNode {
     const id = getNodeId(itemType, item.id);
     const height = getFlowNodeHeight(item);
 
@@ -1215,17 +1215,17 @@ function createFlowNode(
         },
         data: itemType === 'department' ? {
             itemType,
-            item: item as OrganigramDepartmentItem,
+            item: item as OrganizationChartDepartmentItem,
             height,
         } : {
             itemType,
-            item: item as OrganigramTeamItem,
+            item: item as OrganizationChartTeamItem,
             height,
         },
     };
 }
 
-function normalizeFlowNodeHeights(nodes: OrganigramFlowNode[]): OrganigramFlowNode[] {
+function normalizeFlowNodeHeights(nodes: OrganizationChartFlowNode[]): OrganizationChartFlowNode[] {
     const height = Math.max(
         FLOW_NODE_MIN_HEIGHT,
         ...nodes.map((node) => node.data.height),
@@ -1234,7 +1234,7 @@ function normalizeFlowNodeHeights(nodes: OrganigramFlowNode[]): OrganigramFlowNo
     return nodes.map((node) => setFlowNodeHeight(node, height));
 }
 
-function setFlowNodeHeight(node: OrganigramFlowNode, height: number): OrganigramFlowNode {
+function setFlowNodeHeight(node: OrganizationChartFlowNode, height: number): OrganizationChartFlowNode {
     return {
         ...node,
         style: {
@@ -1244,17 +1244,17 @@ function setFlowNodeHeight(node: OrganigramFlowNode, height: number): Organigram
         data: {
             ...node.data,
             height,
-        } as OrganigramFlowNodeData,
+        } as OrganizationChartFlowNodeData,
     };
 }
 
 function createDepartmentTreeGroup(
-    rootDepartment: OrganigramDepartmentItem,
-    nodesById: Map<string, OrganigramFlowNode>,
-): OrganigramTreeGroup | null {
+    rootDepartment: OrganizationChartDepartmentItem,
+    nodesById: Map<string, OrganizationChartFlowNode>,
+): OrganizationChartTreeGroup | null {
     const treeNodes = collectDepartmentNodeIds(rootDepartment)
         .map((nodeId) => nodesById.get(nodeId))
-        .filter((node): node is OrganigramFlowNode => node != null);
+        .filter((node): node is OrganizationChartFlowNode => node != null);
 
     if (treeNodes.length === 0) {
         return null;
@@ -1276,14 +1276,14 @@ function createDepartmentTreeGroup(
     };
 }
 
-function collectDepartmentNodeIds(department: OrganigramDepartmentItem): string[] {
+function collectDepartmentNodeIds(department: OrganizationChartDepartmentItem): string[] {
     return [
         getNodeId('department', department.id),
         ...department.children.flatMap(collectDepartmentNodeIds),
     ];
 }
 
-function getFlowNodeHeight(item: OrganigramDepartmentItem | OrganigramTeamItem): number {
+function getFlowNodeHeight(item: OrganizationChartDepartmentItem | OrganizationChartTeamItem): number {
     const visibleMemberCount = Math.min(item.members.length, MEMBER_PREVIEW_COUNT);
     const hasMoreMembersLink = item.members.length > MEMBER_PREVIEW_COUNT;
 
@@ -1295,7 +1295,7 @@ function getFlowNodeHeight(item: OrganigramDepartmentItem | OrganigramTeamItem):
     );
 }
 
-function createFlowEdge(id: string, source: string, target: string): OrganigramFlowEdge {
+function createFlowEdge(id: string, source: string, target: string): OrganizationChartFlowEdge {
     return {
         id,
         source,
@@ -1305,7 +1305,7 @@ function createFlowEdge(id: string, source: string, target: string): OrganigramF
         type: 'smoothstep',
         interactionWidth: 16,
         style: {
-            stroke: 'var(--organigram-flow-edge-color)',
+            stroke: 'var(--organization-chart-flow-edge-color)',
             strokeWidth: 2,
         },
     };
@@ -1315,11 +1315,11 @@ function getNodeId(itemType: 'department' | 'team', id: number): string {
     return `${itemType}-${id}`;
 }
 
-function getMemberAvatarName(member: OrganigramUserItem): string {
+function getMemberAvatarName(member: OrganizationChartUserItem): string {
     return getMemberDisplayName(member);
 }
 
-function getMemberDisplayName(member: OrganigramUserItem): string {
+function getMemberDisplayName(member: OrganizationChartUserItem): string {
     const fullName = `${member.firstName ?? ''} ${member.lastName ?? ''}`.trim();
     if (fullName.length > 0) {
         return fullName;
