@@ -62,9 +62,7 @@ services:
     restart: always
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
-      WEBHOOK_DENY_PRIVATE_IPS: "true"
-      API_DOWNLOAD_FROM_DENY_PRIVATE_IPS: "true"
-      LIBREOFFICE_DENY_PRIVATE_IPS: "true"
+      CHROMIUM_DENY_PUBLIC_IPS: "true"
       # Die Allow-List für Gotenberg muss angepasst werden, um die Verbindung zu ihrer Gover-Instanz zu ermöglichen.
       # Es handelt sich um einen regulären Ausdruck. Bitte achten Sie darauf, dass Punkte als "\\." geschrieben werden müssen (z.B. gover\\.aivot\\.de) und dass der Ausdruck mit ^ beginnt und mit $ endet.
       CHROMIUM_ALLOW_LIST: "^(https://{{ HOSTNAME_REGEX }}|file:///tmp/)"
