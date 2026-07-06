@@ -254,6 +254,74 @@ class WebDavStorageProviderDefinitionV1Test {
     }
 
     @Test
+    void retrieveDocumentContentErrorIncludesWebDavPathWithoutUrl() {
+        var config = createConfig();
+        config.baseUrl = "https://example.test/dav/";
+        config.basePath = "/gover/documents/";
+
+        var client = new FakeWebDavClient();
+        client.failGet = true;
+
+        var provider = createProvider(client, mock(KnownExtensionsService.class));
+
+        var exception = assertThrows(StorageException.class, () -> provider.retrieveDocumentContent(config, "/folder/file.txt"));
+
+        assertTrue(exception.getMessage().contains("WebDAV-Pfad:"));
+        assertTrue(exception.getMessage().contains("/gover/documents/folder/file.txt"));
+        assertFalse(exception.getMessage().contains("https://example.test"));
+    }
+
+    @Test
+    void createFolderErrorIncludesWebDavPathWithoutUrl() {
+        var config = createConfig();
+        config.baseUrl = "https://example.test/dav/";
+        config.basePath = "/gover/documents/";
+
+        var client = new FakeWebDavClient();
+        client.failMkcol = true;
+        client.propfindResponses.put(
+                "/dav/gover/documents/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/", true, 0L)))
+        );
+
+        var provider = createProvider(client, mock(KnownExtensionsService.class));
+
+        var exception = assertThrows(StorageException.class, () -> provider.createFolder(config, "/folder/"));
+
+        assertTrue(exception.getMessage().contains("WebDAV-Pfad:"));
+        assertTrue(exception.getMessage().contains("/gover/documents/folder/"));
+        assertFalse(exception.getMessage().contains("https://example.test"));
+    }
+
+    @Test
+    void moveDocumentErrorIncludesSourceAndTargetWebDavPathsWithoutUrl() {
+        var config = createConfig();
+        config.baseUrl = "https://example.test/dav/";
+        config.basePath = "/gover/documents/";
+
+        var client = new FakeWebDavClient();
+        client.failMove = true;
+        client.propfindResponses.put(
+                "/dav/gover/documents/source.txt",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/source.txt", false, 12L)))
+        );
+        client.propfindResponses.put(
+                "/dav/gover/documents/folder/",
+                Optional.of(List.of(new WebDavStorageProviderDefinitionV1.WebDavRemoteResource("/dav/gover/documents/folder/", true, 0L)))
+        );
+
+        var provider = createProvider(client, mock(KnownExtensionsService.class));
+
+        var exception = assertThrows(StorageException.class, () -> provider.moveDocument(config, "/source.txt", "/folder/target.txt"));
+
+        assertTrue(exception.getMessage().contains("WebDAV-Quellpfad:"));
+        assertTrue(exception.getMessage().contains("/gover/documents/source.txt"));
+        assertTrue(exception.getMessage().contains("WebDAV-Zielpfad:"));
+        assertTrue(exception.getMessage().contains("/gover/documents/folder/target.txt"));
+        assertFalse(exception.getMessage().contains("https://example.test"));
+    }
+
+    @Test
     void validateConfigurationRejectsOverlappingRoots() {
         var config = createConfig();
         config.baseUrl = "https://example.test/dav/";
@@ -320,7 +388,10 @@ class WebDavStorageProviderDefinitionV1Test {
         private URI putUri;
         private String putContentType;
         private boolean putIfAbsentUsed;
+        private boolean failMkcol;
         private boolean failPut;
+        private boolean failGet;
+        private boolean failMove;
 
         private FakeWebDavClient() {
             super("user", "password", httpProperties());
@@ -332,7 +403,10 @@ class WebDavStorageProviderDefinitionV1Test {
         }
 
         @Override
-        void mkcol(URI uri) {
+        void mkcol(URI uri) throws StorageException {
+            if (failMkcol) {
+                throw new StorageException("mkcol failed");
+            }
         }
 
         @Override
@@ -351,7 +425,10 @@ class WebDavStorageProviderDefinitionV1Test {
         }
 
         @Override
-        InputStream get(URI uri) {
+        InputStream get(URI uri) throws StorageException {
+            if (failGet) {
+                throw new StorageException("get failed");
+            }
             return new ByteArrayInputStream(new byte[0]);
         }
 
@@ -365,7 +442,10 @@ class WebDavStorageProviderDefinitionV1Test {
         }
 
         @Override
-        void move(URI sourceUri, URI targetUri) {
+        void move(URI sourceUri, URI targetUri) throws StorageException {
+            if (failMove) {
+                throw new StorageException("move failed");
+            }
         }
     }
 }
