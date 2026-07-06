@@ -154,17 +154,17 @@ export function HelpDialog(props: HelpDialogProps) {
         return () => ac.abort();
     }, [application, technicalDepartment, specialDepartment]);
 
-    const mailSubjectTitle = application.publicTitle ?? 'Online-Antrag';
+    const mailSubjectTitle = application.publicTitle ?? 'Online-Formular';
     const hasSpecialContact = specialDepartment != null;
     const hasTechnicalContact = technicalDepartment != null;
 
     const FAQs = [
         {
-            question: 'Wie funktioniert die Online-Antragstellung?',
+            question: 'Wie funktioniert das Online-Formular?',
             answer: (
                 <>
                     <Typography>
-                        Um einen Antrag online zu stellen, folgen Sie diesen Schritten:
+                        Um ein Formular online auszufüllen und zu übermitteln, folgen Sie diesen Schritten:
                     </Typography>
                     <ul>
                         <li>Füllen Sie alle mit Stern (*) gekennzeichneten Pflichtfelder aus.</li>
@@ -210,7 +210,7 @@ export function HelpDialog(props: HelpDialogProps) {
                     </ul>
                     <Typography>
                         Andere Sonderzeichen, Steuerzeichen oder nicht-druckbare Zeichen sind nicht erlaubt.
-                        Darüber hinaus besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag weiter
+                        Darüber hinaus besteht die Möglichkeit, dass diese Optionen je nach Feld und Formular weiter
                         eingeschränkt sind. Bitte beachten Sie entsprechende Hinweise im Formular.
                     </Typography>
                 </>
@@ -244,14 +244,14 @@ export function HelpDialog(props: HelpDialogProps) {
                         </li>
                     </ul>
                     <Typography>
-                        Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag variieren. Bitte
+                        Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Formular variieren. Bitte
                         beachten Sie die Hinweise im Formular.
                     </Typography>
                 </>
             ),
         },
         {
-            question: 'Benötige ich zusätzliche Software für meinen Antrag?',
+            question: 'Benötige ich zusätzliche Software für dieses Formular?',
             answer: (
                 <>
                     <Typography>
@@ -282,11 +282,11 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: 'Wer ist für meinen Antrag zuständig?',
+            question: 'Wer ist für dieses Formular zuständig?',
             answer: (
                 <Typography>
                     Die Bearbeitung erfolgt durch die im Formular genannten zuständigen Parteien. Die Online-Plattform
-                    dient nur der digitalen Übermittlung der Antragsdaten.
+                    dient nur der digitalen Übermittlung der Formulardaten.
                 </Typography>
             ),
         },
@@ -300,14 +300,14 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: 'Kann ich meinen Antrag zwischenspeichern und später weiterbearbeiten?',
+            question: 'Kann ich dieses Formular zwischenspeichern und später weiterbearbeiten?',
             answer: (
                 <>
                     <Typography>
                         Ihre Eingaben werden automatisch im <b>lokalen Speicher (Local Storage)</b> Ihres Browsers
                         zwischengespeichert. Wenn Sie das Formular erneut aufrufen, können Sie entscheiden, ob Sie Ihre
                         Eingaben fortsetzen oder
-                        einen neuen Antrag beginnen möchten.
+                        das Formular neu beginnen möchten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         <b>Wichtige Hinweise:</b>
@@ -330,12 +330,12 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: 'Kann ich meinen Antrag nachträglich ändern oder zurückziehen?',
+            question: 'Kann ich meine Angaben nachträglich ändern oder zurückziehen?',
             answer: (
                 <>
                     <Typography>
-                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald Ihr Antrag übermittelt wurde.
-                        Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Antrag genannten
+                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald das Formular übermittelt wurde.
+                        Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Formular genannten
                         Ansprechpartner, welche Ihnen
                         möglicherweise weiterhelfen können.
                     </Typography>
@@ -355,7 +355,7 @@ export function HelpDialog(props: HelpDialogProps) {
             <DialogTitleWithClose
                 onClose={props.onHide}
             >
-                Hilfe für diesen Antrag
+                Hilfe zu diesem Formular
             </DialogTitleWithClose>
             <DialogContent tabIndex={0}>
                 {
@@ -377,8 +377,8 @@ export function HelpDialog(props: HelpDialogProps) {
                             {
                                 hasSpecialContact &&
                                 <SupportContactBlock
-                                    title="Fachliche Hilfe"
-                                    description="Unterstützung zum Inhalt und Ausfüllen des Antrags."
+                                    title="Fachliche Unterstützung"
+                                    description="Unterstützung zum Inhalt und Ausfüllen des Formulars."
                                     email={specialDepartment?.specialSupportEmail}
                                     phone={specialDepartment?.specialSupportPhone}
                                     info={specialDepartment?.specialSupportInfo}
@@ -395,7 +395,7 @@ export function HelpDialog(props: HelpDialogProps) {
                             {
                                 hasTechnicalContact &&
                                 <SupportContactBlock
-                                    title="Technische Hilfe"
+                                    title="Technische Unterstützung"
                                     description="Unterstützung bei technischen Problemen und Fehlern."
                                     email={technicalDepartment?.technicalSupportEmail}
                                     phone={technicalDepartment?.technicalSupportPhone}
