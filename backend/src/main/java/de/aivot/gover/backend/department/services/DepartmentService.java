@@ -8,11 +8,11 @@ import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
 import de.aivot.gover.backend.theme.repositories.ThemeRepository;
+import de.aivot.gover.backend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import jakarta.annotation.Nonnull;
@@ -52,6 +52,8 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
                 entity.setThemeId(null);
             }
         }
+
+        validateRequiredSettings(entity);
 
         return departmentRepository
                 .save(entity);
@@ -119,10 +121,40 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
             }
         }
 
+        validateRequiredSettings(entity);
+
         entity.setParentDepartmentId(entity.getParentDepartmentId());
 
         return departmentRepository
                 .save(entity);
+    }
+
+    private void validateRequiredSettings(@Nonnull DepartmentEntity entity) throws ResponseException {
+        var isRoot = entity.getParentDepartmentId() == null;
+
+        validateRequiredStringSetting(entity.getPostalAddress(), "Anschrift", isRoot);
+        validateRequiredStringSetting(entity.getTechnicalSupportEmail(), "Kontaktdaten Technische Hilfe E-Mail", isRoot);
+        validateRequiredStringSetting(entity.getSpecialSupportEmail(), "Kontaktdaten Fachliche Hilfe E-Mail", isRoot);
+        validateRequiredStringSetting(entity.getImprint(), "Impressum", isRoot);
+        validateRequiredStringSetting(entity.getCommonPrivacy(), "Datenschutzerklärung - allgemeiner Teil", isRoot);
+        validateRequiredStringSetting(entity.getCommonAccessibility(), "Barrierefreiheitserklärung - allgemeiner Teil", isRoot);
+    }
+
+    private void validateRequiredStringSetting(
+            @Nullable String value,
+            @Nonnull String fieldName,
+            boolean isRoot
+    ) throws ResponseException {
+        if (value == null) {
+            if (isRoot) {
+                throw ResponseException.badRequest("Für Organisationseinheiten der obersten Ebene muss „%s“ konfiguriert sein.", fieldName);
+            }
+            return;
+        }
+
+        if (StringUtils.isNullOrEmpty(value)) {
+            throw ResponseException.badRequest("„%s“ darf nicht leer überschrieben werden.", fieldName);
+        }
     }
 
     private void validateParentHierarchy(

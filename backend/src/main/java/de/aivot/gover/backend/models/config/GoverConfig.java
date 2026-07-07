@@ -20,6 +20,7 @@ public class GoverConfig {
     private String sentryServer;
     private String sentryWebApp;
     private String environment;
+    private List<String> departmentLevelLabels;
     @Deprecated
     private List<String> fileExtensions;
     @Deprecated
@@ -108,6 +109,14 @@ public class GoverConfig {
 
     public void setEnvironment(String environment) {
         this.environment = environment;
+    }
+
+    public List<String> getDepartmentLevelLabels() {
+        return departmentLevelLabels;
+    }
+
+    public void setDepartmentLevelLabels(List<String> departmentLevelLabels) {
+        this.departmentLevelLabels = departmentLevelLabels;
     }
 
     public List<String> getFileExtensions() {

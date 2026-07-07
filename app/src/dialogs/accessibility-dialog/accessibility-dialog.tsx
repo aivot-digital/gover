@@ -5,7 +5,7 @@ import {type AccessibilityDialogProps} from './accessibility-dialog-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
@@ -14,7 +14,7 @@ export const AccessibilityDialogId = 'accessibility';
 export function AccessibilityDialog(props: AccessibilityDialogProps) {
     const application = props.form;
 
-    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
+    const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const accessibilityDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId));
 
     useEffect(() => {
@@ -38,6 +38,11 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
         }
     }, [accessibilityDepartmentId, application, department]);
 
+    const commonAccessibility = department?.commonAccessibility;
+    const formSpecificAccessibilityStatement = props.isListingPage ? undefined : application.formSpecificAccessibilityStatement;
+    const hasAccessibilityText = [commonAccessibility, formSpecificAccessibilityStatement]
+        .some((text) => text != null && text.trim().length > 0);
+
     return (
         <Dialog
             open={props.open}
@@ -53,15 +58,27 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
                 Informationen zur Barrierefreiheit
             </DialogTitleWithClose>
             {
-                department?.commonAccessibility ?
+                hasAccessibilityText ?
                     <DialogContent>
-                        <MarkdownContent markdown={department.commonAccessibility}/>
+                        {
+                            commonAccessibility != null &&
+                            commonAccessibility.trim().length > 0 &&
+                            <MarkdownContent markdown={commonAccessibility}/>
+                        }
+                        {
+                            formSpecificAccessibilityStatement != null &&
+                            formSpecificAccessibilityStatement.trim().length > 0 &&
+                            <Box sx={{mt: commonAccessibility != null && commonAccessibility.trim().length > 0 ? 3 : 0}}>
+                                <MarkdownContent markdown={formSpecificAccessibilityStatement}/>
+                            </Box>
+                        }
                     </DialogContent>
                     :
                     <DialogContent tabIndex={0}>
                         <Alert severity="info">
-                            Bitte wählen Sie in den Einstellungen des Formulars im Bereich „Rechtliches“ eine
-                            Organisationseinheit als Quelle für die Informationen zur Barrierefreiheit aus.
+                            Für die Barrierefreiheitserklärung wurden keine Inhalte gefunden. Wählen Sie eine
+                            Organisationseinheit mit allgemeiner Barrierefreiheitserklärung aus und pflegen Sie bei
+                            Bedarf den formularspezifischen Teil in den rechtlichen Angaben des Formulars.
                         </Alert>
                     </DialogContent>
             }

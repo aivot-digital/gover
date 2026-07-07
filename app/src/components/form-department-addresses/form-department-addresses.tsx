@@ -5,7 +5,7 @@ import Typography from '@mui/material/Typography';
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {type FormLayoutElement} from '../../models/elements/form-layout-element';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
-import {type VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {type PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {getDepartmentDisplayAddress} from '../../modules/departments/utils/department-utils';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../slices/snackbar-slice';
@@ -76,9 +76,9 @@ export function useFormDepartmentAddressSections(formElement?: FormLayoutElement
     }, [responsibleDepartment, managingDepartment]);
 }
 
-function usePublicDepartment(departmentId: number | null, errorMessage: string): VDepartmentShadowedEntity | undefined {
+function usePublicDepartment(departmentId: number | null, errorMessage: string): PublicDepartmentResponseDTO | undefined {
     const dispatch = useAppDispatch();
-    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
+    const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
 
     useEffect(() => {
         let active = true;

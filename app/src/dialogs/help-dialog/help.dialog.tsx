@@ -1,19 +1,95 @@
-import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Typography} from '@mui/material';
-import {BoxLink} from '../../components/box-link/box-link';
+import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Link, Stack, Typography} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HelpDialogProps} from './help-dialog-props';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
-import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
+import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
 export const HelpDialogId = 'help';
 
+function SupportContactBlock(props: {
+    title: string;
+    description: string;
+    email?: string | null;
+    phone?: string | null;
+    info?: string | null;
+    mailSubject: string;
+}) {
+    const {
+        title,
+        description,
+        email,
+        phone,
+        info,
+        mailSubject,
+    } = props;
+
+    return (
+        <Box
+            sx={{
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 1,
+                p: 2,
+                height: '100%',
+            }}
+        >
+            <Typography
+                variant="h6"
+                sx={{mb: 0.5}}
+            >
+                {title}
+            </Typography>
+            <Typography
+                color="text.secondary"
+                sx={{mb: 1.5}}
+            >
+                {description}
+            </Typography>
+            <Stack spacing={1}>
+                {
+                    email != null &&
+                    <Typography>
+                        <b>E-Mail:</b>{' '}
+                        <Link href={`mailto:${email}?subject=${encodeURIComponent(mailSubject)}`}>
+                            {email}
+                        </Link>
+                    </Typography>
+                }
+                {
+                    phone != null &&
+                    <Typography>
+                        <b>Telefon:</b> {phone}
+                    </Typography>
+                }
+                {
+                    info != null &&
+                    info.trim().length > 0 &&
+                    <Box
+                        sx={{
+                            '& > *:first-child': {
+                                mt: 0,
+                            },
+                            '& > *:last-child': {
+                                mb: 0,
+                            },
+                        }}
+                    >
+                        <MarkdownContent markdown={info}/>
+                    </Box>
+                }
+            </Stack>
+        </Box>
+    );
+}
+
 export function HelpDialog(props: HelpDialogProps) {
     const application = props.form;
-    const [technicalDepartment, setTechnicalDepartment] = useState<VDepartmentShadowedEntity>();
-    const [specialDepartment, setSpecialDepartment] = useState<VDepartmentShadowedEntity>();
+    const [technicalDepartment, setTechnicalDepartment] = useState<PublicDepartmentResponseDTO>();
+    const [specialDepartment, setSpecialDepartment] = useState<PublicDepartmentResponseDTO>();
 
     useEffect(() => {
         const ac = new AbortController();
@@ -39,13 +115,17 @@ export function HelpDialog(props: HelpDialogProps) {
         return () => ac.abort();
     }, [application, technicalDepartment, specialDepartment]);
 
+    const mailSubjectTitle = application.publicTitle ?? 'Online-Formular';
+    const hasSpecialContact = specialDepartment != null;
+    const hasTechnicalContact = technicalDepartment != null;
+
     const FAQs = [
         {
-            question: 'Wie funktioniert die Online-Antragstellung?',
+            question: 'Wie funktioniert das Online-Formular?',
             answer: (
                 <>
                     <Typography>
-                        Um einen Antrag online zu stellen, folgen Sie diesen Schritten:
+                        Um ein Formular online auszufüllen und zu übermitteln, folgen Sie diesen Schritten:
                     </Typography>
                     <ul>
                         <li>Füllen Sie alle mit Stern (*) gekennzeichneten Pflichtfelder aus.</li>
@@ -91,7 +171,7 @@ export function HelpDialog(props: HelpDialogProps) {
                     </ul>
                     <Typography>
                         Andere Sonderzeichen, Steuerzeichen oder nicht-druckbare Zeichen sind nicht erlaubt.
-                        Darüber hinaus besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag weiter
+                        Darüber hinaus besteht die Möglichkeit, dass diese Optionen je nach Feld und Formular weiter
                         eingeschränkt sind. Bitte beachten Sie entsprechende Hinweise im Formular.
                     </Typography>
                 </>
@@ -125,14 +205,14 @@ export function HelpDialog(props: HelpDialogProps) {
                         </li>
                     </ul>
                     <Typography>
-                        Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Antrag variieren. Bitte
+                        Es besteht die Möglichkeit, dass diese Optionen je nach Feld und Formular variieren. Bitte
                         beachten Sie die Hinweise im Formular.
                     </Typography>
                 </>
             ),
         },
         {
-            question: 'Benötige ich zusätzliche Software für meinen Antrag?',
+            question: 'Benötige ich zusätzliche Software für dieses Formular?',
             answer: (
                 <>
                     <Typography>
@@ -163,11 +243,11 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: 'Wer ist für meinen Antrag zuständig?',
+            question: 'Wer ist für dieses Formular zuständig?',
             answer: (
                 <Typography>
                     Die Bearbeitung erfolgt durch die im Formular genannten zuständigen Parteien. Die Online-Plattform
-                    dient nur der digitalen Übermittlung der Antragsdaten.
+                    dient nur der digitalen Übermittlung der Formulardaten.
                 </Typography>
             ),
         },
@@ -181,14 +261,14 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: 'Kann ich meinen Antrag zwischenspeichern und später weiterbearbeiten?',
+            question: 'Kann ich dieses Formular zwischenspeichern und später weiterbearbeiten?',
             answer: (
                 <>
                     <Typography>
                         Ihre Eingaben werden automatisch im <b>lokalen Speicher (Local Storage)</b> Ihres Browsers
                         zwischengespeichert. Wenn Sie das Formular erneut aufrufen, können Sie entscheiden, ob Sie Ihre
                         Eingaben fortsetzen oder
-                        einen neuen Antrag beginnen möchten.
+                        das Formular neu beginnen möchten.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         <b>Wichtige Hinweise:</b>
@@ -211,12 +291,12 @@ export function HelpDialog(props: HelpDialogProps) {
             ),
         },
         {
-            question: 'Kann ich meinen Antrag nachträglich ändern oder zurückziehen?',
+            question: 'Kann ich meine Angaben nachträglich ändern oder zurückziehen?',
             answer: (
                 <>
                     <Typography>
-                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald Ihr Antrag übermittelt wurde.
-                        Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Antrag genannten
+                        Nachträgliche Änderungen sind online nicht mehr möglich, sobald das Formular übermittelt wurde.
+                        Bitte kontaktieren Sie in solchen Fällen schnellstmöglich die im Formular genannten
                         Ansprechpartner, welche Ihnen
                         möglicherweise weiterhelfen können.
                     </Typography>
@@ -236,18 +316,17 @@ export function HelpDialog(props: HelpDialogProps) {
             <DialogTitleWithClose
                 onClose={props.onHide}
             >
-                Hilfe für diesen Antrag
+                Hilfe zu diesem Formular
             </DialogTitleWithClose>
             <DialogContent tabIndex={0}>
                 {
                     application != null &&
-                    specialDepartment != null &&
-                    technicalDepartment != null &&
+                    (hasSpecialContact || hasTechnicalContact) &&
                     <Grid
                         container
-                        spacing={4}
+                        spacing={2}
                         sx={{
-                            mb: 4,
+                            mb: 3,
                         }}
                     >
                         <Grid
@@ -256,10 +335,17 @@ export function HelpDialog(props: HelpDialogProps) {
                                 md: 6,
                             }}
                         >
-                            <BoxLink
-                                link={`mailto:${specialDepartment.specialSupportAddress}?subject=Fachlicher Support: ${application.publicTitle}`}
-                                text={'Fachlicher Support:\nUnterstützung zum Inhalt\nund Ausfüllen des Antrages'}
-                            />
+                            {
+                                hasSpecialContact &&
+                                <SupportContactBlock
+                                    title="Fachliche Unterstützung"
+                                    description="Unterstützung zum Inhalt und Ausfüllen des Formulars."
+                                    email={specialDepartment?.specialSupportEmail}
+                                    phone={specialDepartment?.specialSupportPhone}
+                                    info={specialDepartment?.specialSupportInfo}
+                                    mailSubject={`Fachliche Hilfe: ${mailSubjectTitle}`}
+                                />
+                            }
                         </Grid>
                         <Grid
                             size={{
@@ -267,10 +353,17 @@ export function HelpDialog(props: HelpDialogProps) {
                                 md: 6,
                             }}
                         >
-                            <BoxLink
-                                link={`mailto:${technicalDepartment.technicalSupportAddress}?subject=Technischer Support: ${application.publicTitle}`}
-                                text={'Technischer Support:\nUnterstützung bei technischen Problemen und Fehlern'}
-                            />
+                            {
+                                hasTechnicalContact &&
+                                <SupportContactBlock
+                                    title="Technische Unterstützung"
+                                    description="Unterstützung bei technischen Problemen und Fehlern."
+                                    email={technicalDepartment?.technicalSupportEmail}
+                                    phone={technicalDepartment?.technicalSupportPhone}
+                                    info={technicalDepartment?.technicalSupportInfo}
+                                    mailSubject={`Technische Hilfe: ${mailSubjectTitle}`}
+                                />
+                            }
                         </Grid>
                     </Grid>
                 }
