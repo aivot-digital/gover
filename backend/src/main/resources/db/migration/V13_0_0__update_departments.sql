@@ -15,7 +15,12 @@ ALTER TABLE departments
     ADD COLUMN special_support_info    TEXT        NULL,
     ADD COLUMN default_mail_signature  TEXT        NULL,
     ADD COLUMN depth                   INTEGER     NOT NULL DEFAULT 0, -- 0: Organization (Organisation), 1: Uni1t (Bereiche), 2: Department (Abteilungen) 3...N: Sub-Department (Unterabteilungen)
-    ADD COLUMN parent_department_id    INTEGER     NULL REFERENCES departments (id) ON DELETE SET NULL,
+    ADD COLUMN parent_department_id    INTEGER     NULL REFERENCES departments (id) ON DELETE SET NULL;
+
+UPDATE departments
+SET postal_address = concat_ws(E'\n', nullif(trim(name), ''), nullif(trim(address), ''));
+
+ALTER TABLE departments
     DROP COLUMN address,
     DROP COLUMN technical_support_address,
     DROP COLUMN special_support_address,
