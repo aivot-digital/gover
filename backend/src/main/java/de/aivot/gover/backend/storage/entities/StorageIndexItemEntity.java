@@ -74,6 +74,9 @@ public class StorageIndexItemEntity {
     @Nonnull
     private Instant updated;
 
+    @Transient
+    private boolean updatedExplicitly;
+
     // region Constructors
 
     public StorageIndexItemEntity() {
@@ -110,13 +113,27 @@ public class StorageIndexItemEntity {
     @PrePersist
     protected void onCreate() {
         var now = Instant.now();
-        created = now;
-        updated = now;
+        if (created == null) {
+            created = now;
+        }
+        if (updated == null) {
+            updated = created;
+        }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        updated = Instant.now();
+        // Provider sync writes remote timestamps intentionally; only synthesize a local one when no caller did.
+        if (!updatedExplicitly) {
+            updated = Instant.now();
+        }
+    }
+
+    @PostLoad
+    @PostPersist
+    @PostUpdate
+    protected void resetExplicitTimestampMarker() {
+        updatedExplicitly = false;
     }
 
     // endregion
@@ -236,6 +253,7 @@ public class StorageIndexItemEntity {
 
     public StorageIndexItemEntity setUpdated(@Nonnull Instant updated) {
         this.updated = updated;
+        this.updatedExplicitly = true;
         return this;
     }
 

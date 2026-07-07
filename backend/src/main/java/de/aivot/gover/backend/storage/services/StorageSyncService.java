@@ -11,6 +11,7 @@ import de.aivot.gover.backend.storage.enums.StorageProviderStatus;
 import de.aivot.gover.backend.storage.exceptions.StorageException;
 import de.aivot.gover.backend.storage.models.StorageDocument;
 import de.aivot.gover.backend.storage.models.StorageFolder;
+import de.aivot.gover.backend.storage.models.StorageItem;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageIndexItemRepository;
@@ -149,6 +150,7 @@ public class StorageSyncService {
                             .orElse(null);
 
                     if (folderItem == null) {
+                        var created = createdForNewIndexItem(folder);
                         folderItem = new StorageIndexItemEntity(
                                 storageProvider.getId(),
                                 storageProvider.getType(),
@@ -159,21 +161,28 @@ public class StorageSyncService {
                                 StorageService.FOLDER_MIME_TYPE,
                                 false,
                                 StorageItemMetadata.empty(), // Only store metadata for documents, not for folders for now
-                                Instant.now(),
-                                Instant.now()
+                                created,
+                                updatedForNewIndexItem(folder, created)
                         );
+                        storageIndexItemRepository.save(folderItem);
+                    } else {
+                        var dataChanged = hasFolderIndexItemChanged(folderItem, storageProvider, folder);
+                        var timestampChanged = hasIndexItemTimestampsChanged(folderItem, folder);
+
+                        if (dataChanged || timestampChanged) {
+                            folderItem
+                                    .setStorageProviderType(storageProvider.getType())
+                                    .setMimeType(StorageService.FOLDER_MIME_TYPE)
+                                    .setDirectory(true)
+                                    .setFilename(folder.getName())
+                                    .setSizeInBytes(0L)
+                                    .setMissing(false)
+                                    .setMetadata(StorageItemMetadata.empty());
+                            applyIndexItemTimestamps(folderItem, folder, dataChanged);
+
+                            storageIndexItemRepository.save(folderItem);
+                        }
                     }
-
-                    folderItem
-                            .setStorageProviderType(storageProvider.getType())
-                            .setMimeType(StorageService.FOLDER_MIME_TYPE)
-                            .setDirectory(true)
-                            .setFilename(folder.getName())
-                            .setSizeInBytes(0L)
-                            .setMissing(false)
-                            .setMetadata(StorageItemMetadata.empty());
-
-                    storageIndexItemRepository.save(folderItem);
 
                     syncedPaths.add(folder.getPathFromRoot());
 
@@ -191,6 +200,7 @@ public class StorageSyncService {
                                 .orElse(MediaType.APPLICATION_OCTET_STREAM_VALUE);
 
                         if (docItem == null) {
+                            var created = createdForNewIndexItem(document);
                             docItem = new StorageIndexItemEntity(
                                     storageProvider.getId(),
                                     storageProvider.getType(),
@@ -201,22 +211,27 @@ public class StorageSyncService {
                                     mimeType,
                                     false,
                                     filteredDocumentMetadata,
-                                    Instant.now(),
-                                    Instant.now()
+                                    created,
+                                    updatedForNewIndexItem(document, created)
                             );
                             storageIndexItemRepository.save(docItem);
-                        } else if (hasDocumentIndexItemChanged(docItem, storageProvider, document, mimeType, filteredDocumentMetadata)) {
-                            docItem
-                                    .setStorageProviderType(storageProvider.getType())
-                                    .setMimeType(mimeType)
-                                    .setDirectory(false)
-                                    .setFilename(document.getName())
-                                    .setSizeInBytes(document.getSizeInBytes())
-                                    .setMissing(false)
-                                    .setMetadata(filteredDocumentMetadata)
-                                    .setUpdated(Instant.now());
+                        } else {
+                            var dataChanged = hasDocumentIndexItemChanged(docItem, storageProvider, document, mimeType, filteredDocumentMetadata);
+                            var timestampChanged = hasIndexItemTimestampsChanged(docItem, document);
 
-                            storageIndexItemRepository.save(docItem);
+                            if (dataChanged || timestampChanged) {
+                                docItem
+                                        .setStorageProviderType(storageProvider.getType())
+                                        .setMimeType(mimeType)
+                                        .setDirectory(false)
+                                        .setFilename(document.getName())
+                                        .setSizeInBytes(document.getSizeInBytes())
+                                        .setMissing(false)
+                                        .setMetadata(filteredDocumentMetadata);
+                                applyIndexItemTimestamps(docItem, document, dataChanged);
+
+                                storageIndexItemRepository.save(docItem);
+                            }
                         }
 
                         syncAssetEntityForDocument(storageProvider, docItem);
@@ -307,6 +322,57 @@ public class StorageSyncService {
                 || !Objects.equals(existingItem.getSizeInBytes(), document.getSizeInBytes())
                 || !Objects.equals(existingItem.getMissing(), false)
                 || !Objects.equals(existingItem.getMetadata(), filteredDocumentMetadata);
+    }
+
+    private static boolean hasFolderIndexItemChanged(@Nonnull StorageIndexItemEntity existingItem,
+                                                     @Nonnull StorageProviderEntity storageProvider,
+                                                     @Nonnull StorageFolder folder) {
+        return !Objects.equals(existingItem.getStorageProviderType(), storageProvider.getType())
+                || !Objects.equals(existingItem.getMimeType(), StorageService.FOLDER_MIME_TYPE)
+                || !Objects.equals(existingItem.getDirectory(), true)
+                || !Objects.equals(existingItem.getFilename(), folder.getName())
+                || !Objects.equals(existingItem.getSizeInBytes(), 0L)
+                || !Objects.equals(existingItem.getMissing(), false)
+                || !Objects.equals(existingItem.getMetadata(), StorageItemMetadata.empty());
+    }
+
+    private static boolean hasIndexItemTimestampsChanged(@Nonnull StorageIndexItemEntity existingItem,
+                                                         @Nonnull StorageItem item) {
+        return item.getCreated() != null && !Objects.equals(existingItem.getCreated(), item.getCreated())
+                || item.getUpdated() != null && !Objects.equals(existingItem.getUpdated(), item.getUpdated());
+    }
+
+    @Nonnull
+    private static Instant createdForNewIndexItem(@Nonnull StorageItem item) {
+        if (item.getCreated() != null) {
+            return item.getCreated();
+        }
+        if (item.getUpdated() != null) {
+            return item.getUpdated();
+        }
+        return Instant.now();
+    }
+
+    @Nonnull
+    private static Instant updatedForNewIndexItem(@Nonnull StorageItem item,
+                                                  @Nonnull Instant created) {
+        return item.getUpdated() != null ? item.getUpdated() : created;
+    }
+
+    private static void applyIndexItemTimestamps(@Nonnull StorageIndexItemEntity indexItem,
+                                                 @Nonnull StorageItem item,
+                                                 boolean dataChanged) {
+        if (item.getCreated() != null) {
+            indexItem.setCreated(item.getCreated());
+        }
+        if (item.getUpdated() != null) {
+            indexItem.setUpdated(item.getUpdated());
+        } else if (dataChanged) {
+            indexItem.setUpdated(Instant.now());
+        } else if (item.getCreated() != null) {
+            // A created-only provider timestamp should not turn into a synthetic updated timestamp.
+            indexItem.setUpdated(indexItem.getUpdated());
+        }
     }
 
     private void syncAssetEntityForDocument(@Nonnull StorageProviderEntity storageProvider,
