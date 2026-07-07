@@ -33,6 +33,9 @@ RUN sed -i 's/@buildVersion/'"$BUILD_VERSION"'/g' /app/src/app-info.ts && \
 # Install frontend dependencies
 RUN npm install
 
+# Copy backend permission providers for generated frontend permissions
+COPY backend/src/main/java /backend/src/main/java
+
 # Build staff app
 RUN npm run build:staff
 
