@@ -49,13 +49,18 @@ export const selectMemberships = (state: RootState): VDepartmentMembershipWithDe
 export const selectPermissions = (state: RootState): PermissionSet | undefined => state.user.permissions;
 export const selectHasMemberships = (departmentId: number, permission: Permission) => {
     return (state: RootState): boolean => {
-        return state
-            .user
-            .memberships
-            ?.some((mem) => {
-                return mem.departmentId === departmentId &&
-                    mem.domainRoles.some((role) => role.permissions.includes(permission));
-            }) ?? false;
+        return (state
+                .user
+                .permissions
+                ?.systemPermissions
+                .some((perm) => perm.permissions.includes(permission)) ?? false)
+            || (state
+                .user
+                .memberships
+                ?.some((mem) => {
+                    return mem.departmentId === departmentId &&
+                        mem.domainRoles.some((role) => role.permissions.includes(permission));
+                }) ?? false);
     };
 };
 
