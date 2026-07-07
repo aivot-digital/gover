@@ -21,6 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.HashSet;
@@ -29,6 +30,7 @@ import java.util.Set;
 import java.util.UUID;
 
 @Service
+@Transactional
 public class StorageSyncService {
     private static final Logger logger = LoggerFactory.getLogger(StorageSyncService.class);
     private static final String SYSTEM_SYNC_UPLOADER_ID = null;
