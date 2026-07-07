@@ -10,45 +10,6 @@ import {MarkdownContent} from '../../components/markdown-content/markdown-conten
 
 export const HelpDialogId = 'help';
 
-function stripHtmlTags(value: string): string {
-    return value.replace(/<[^>]*>/g, '');
-}
-
-function decodeHtmlEntities(value: string): string {
-    if (typeof document === 'undefined') {
-        return value
-            .replace(/&nbsp;/g, ' ')
-            .replace(/&amp;/g, '&')
-            .replace(/&lt;/g, '<')
-            .replace(/&gt;/g, '>')
-            .replace(/&quot;/g, '"')
-            .replace(/&#39;/g, '\'');
-    }
-
-    const textarea = document.createElement('textarea');
-    textarea.innerHTML = value;
-    return textarea.value;
-}
-
-function normalizeRichTextForMarkdown(value: string): string {
-    const trimmedValue = value.trim();
-
-    if (!/<\/?(a|p|div|br)\b/i.test(trimmedValue)) {
-        return trimmedValue;
-    }
-
-    return decodeHtmlEntities(trimmedValue
-        .replace(/<a\s+[^>]*href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi, (_match, href, label) => {
-            return `[${decodeHtmlEntities(stripHtmlTags(label)).trim()}](${href})`;
-        })
-        .replace(/<\/p>\s*<p[^>]*>/gi, '\n\n')
-        .replace(/<br\s*\/?>/gi, '\n')
-        .replace(/<\/?(p|div)[^>]*>/gi, '\n')
-        .replace(/<[^>]*>/g, '')
-        .replace(/\n{3,}/g, '\n\n')
-        .trim());
-}
-
 function SupportContactBlock(props: {
     title: string;
     description: string;
@@ -117,7 +78,7 @@ function SupportContactBlock(props: {
                             },
                         }}
                     >
-                        <MarkdownContent markdown={normalizeRichTextForMarkdown(info)}/>
+                        <MarkdownContent markdown={info}/>
                     </Box>
                 }
             </Stack>
