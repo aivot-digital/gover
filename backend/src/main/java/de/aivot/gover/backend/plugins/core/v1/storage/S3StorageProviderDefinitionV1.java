@@ -257,12 +257,13 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
     @Nonnull
     @Override
     public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) throws StorageException {
+        var normalizedPath = toSuffixWithSlash(toPrefixWithSlash(pathFromRoot));
         var client = getClient(config);
 
         var listObjectsArgs = ListObjectsArgs
                 .builder()
                 .bucket(config.bucket)
-                .prefix(pathFromRoot.substring(1))
+                .prefix(normalizedPath.substring(1))
                 .includeUserMetadata(true)
                 .build();
 
@@ -270,26 +271,37 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 .listObjects(listObjectsArgs);
 
         var folder = new StorageFolder(
-                pathFromRoot,
-                pathFromRoot.substring(1).isEmpty() ? "Root" : StringUtils.getLastPathSegment(pathFromRoot),
+                normalizedPath,
+                normalizedPath.substring(1).isEmpty() ? "Root" : StringUtils.getLastPathSegment(normalizedPath),
                 new LinkedList<>(),
                 new LinkedList<>(),
                 recursive
         );
+        var folderMarkerExists = false;
+        Set<String> subfolderPaths = new HashSet<>();
 
         for (var object : objects) {
-            Item item;
-            try {
-                item = object.get();
-            } catch (ErrorResponseException | InsufficientDataException | XmlParserException | ServerException |
-                     NoSuchAlgorithmException | IOException | InvalidResponseException | InvalidKeyException |
-                     InternalException e) {
-                throw new RuntimeException(e);
-            }
+            var item = getListedObject(object);
+            var objectName = item.objectName();
 
-            if (item.isDir()) {
-                retrieveFolder(config, "/" + item.objectName())
-                        .ifPresent(folder::addSubfolder);
+            if (item.isDir() || objectName.endsWith("/")) {
+                var folderPath = "/" + objectName;
+                if (normalizedPath.equals(folderPath)) {
+                    folderMarkerExists = true;
+                } else if (subfolderPaths.add(folderPath)) {
+                    if (recursive) {
+                        retrieveFolder(config, folderPath, true)
+                                .ifPresent(folder::addSubfolder);
+                    } else {
+                        folder.addSubfolder(new StorageFolder(
+                                folderPath,
+                                StringUtils.getLastPathSegment(folderPath),
+                                new LinkedList<>(),
+                                new LinkedList<>(),
+                                false
+                        ));
+                    }
+                }
             } else {
                 var metadata = new StorageItemMetadata();
 
@@ -308,15 +320,15 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 }
 
                 folder.addDocument(new StorageDocument(
-                        "/" + item.objectName(),
-                        StringUtils.getLastPathSegment(item.objectName()),
+                        "/" + objectName,
+                        StringUtils.getLastPathSegment(objectName),
                         item.size(),
                         metadata
                 ));
             }
         }
 
-        if (folder.getDocuments().isEmpty() && folder.getSubfolders().isEmpty()) {
+        if (!folderMarkerExists && folder.getDocuments().isEmpty() && folder.getSubfolders().isEmpty()) {
             return Optional.empty();
         }
 
@@ -325,10 +337,28 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
     @Nonnull
     @Override
-    public StorageFolder createFolder(@Nonnull Config config, @Nonnull String pathFromRoot) {
+    public StorageFolder createFolder(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
+        var normalizedPath = toSuffixWithSlash(toPrefixWithSlash(pathFromRoot));
+        if (!"/".equals(normalizedPath)) {
+            var putObjectArgs = PutObjectArgs
+                    .builder()
+                    .bucket(config.bucket)
+                    .object(normalizedPath.substring(1))
+                    .stream(new ByteArrayInputStream(new byte[0]), 0, -1)
+                    .build();
+
+            try {
+                getClient(config).putObject(putObjectArgs);
+            } catch (ErrorResponseException | XmlParserException | ServerException | NoSuchAlgorithmException |
+                     IOException | InvalidResponseException | InvalidKeyException | InternalException |
+                     InsufficientDataException e) {
+                throw new StorageException(e, "Der Ordner konnte nicht im S3-kompatiblen Speicher erstellt werden.");
+            }
+        }
+
         return new StorageFolder(
-                toPrefixWithSlash(pathFromRoot),
-                StringUtils.getLastPathSegment(pathFromRoot),
+                normalizedPath,
+                "/".equals(normalizedPath) ? "Root" : StringUtils.getLastPathSegment(normalizedPath),
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false

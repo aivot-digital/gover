@@ -25,6 +25,7 @@ import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
 import de.aivot.gover.backend.storage.services.KnownExtensionsService;
 import de.aivot.gover.backend.storage.services.StorageService;
+import de.aivot.gover.backend.storage.utils.StoragePathUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -207,7 +208,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
     }
 
     @Override
-public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWritable) throws StorageException {
+    public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWritable) throws StorageException {
         if (!folderExists(config, "/")) {
             throw new StorageException("Der WebDAV-Basispfad %s existiert nicht oder ist kein Verzeichnis.", StringUtils.quote(normalizeFolderPath(config.basePath)));
         }
@@ -218,15 +219,19 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
             var testDocumentUri = toWebDavUri(config, testDocumentPath);
             var created = false;
             try {
-                client.putIfAbsent(
-                        testDocumentUri,
-                        new ByteArrayInputStream(new byte[0]),
-                        StorageService.UNKNOWN_MIME_TYPE
+                withWebDavPathContext(
+                        config,
+                        testDocumentPath,
+                        () -> client.putIfAbsent(
+                                testDocumentUri,
+                                new ByteArrayInputStream(new byte[0]),
+                                StorageService.UNKNOWN_MIME_TYPE
+                        )
                 );
                 created = true;
             } finally {
                 if (created) {
-                    client.delete(testDocumentUri);
+                    withWebDavPathContext(config, testDocumentPath, () -> client.delete(testDocumentUri));
                 }
             }
         }
@@ -246,15 +251,15 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
         }
 
         if (documentExists(config, trimTrailingSlash(normalizedPath))) {
-            throw new StorageException("Unter %s existiert bereits ein Dokument.", StringUtils.quote(normalizedPath));
+            throw new StorageException("Unter %s existiert bereits ein Dokument.", StringUtils.quote(debugPath(config, normalizedPath)));
         }
 
         var parentPath = getParentFolderPath(normalizedPath);
         if (!folderExists(config, parentPath)) {
-            throw new StorageException("Das übergeordnete WebDAV-Verzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(normalizedPath));
+            throw new StorageException("Das übergeordnete WebDAV-Verzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedPath)));
         }
 
-        getClient(config).mkcol(toWebDavUri(config, normalizedPath));
+        withWebDavPathContext(config, normalizedPath, () -> getClient(config).mkcol(toWebDavUri(config, normalizedPath)));
 
         return retrieveFolder(config, normalizedPath, false).orElseGet(() -> new StorageFolder(
                 normalizedPath,
@@ -269,12 +274,12 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     @Override
     public Optional<StorageFolder> retrieveFolder(@Nonnull Config config, @Nonnull String pathFromRoot, boolean recursive) throws StorageException {
         var normalizedPath = normalizeFolderPath(pathFromRoot);
-        var resources = getClient(config).propfind(toWebDavUri(config, normalizedPath), 1);
+        var resources = withWebDavPathContext(config, normalizedPath, () -> getClient(config).propfind(toWebDavUri(config, normalizedPath), 1));
         if (resources.isEmpty()) {
             return Optional.empty();
         }
 
-        var providerResources = toProviderResources(config, resources.get());
+        var providerResources = withWebDavPathContext(config, normalizedPath, () -> toProviderResources(config, resources.get()));
         var normalizedDocumentPath = trimTrailingSlash(normalizedPath);
         var current = providerResources
                 .stream()
@@ -344,19 +349,25 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
         var normalizedTargetPath = normalizeFolderPath(targetPathFromRoot);
 
         if (!folderExists(config, normalizedSourcePath)) {
-            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
         }
 
         if (normalizedSourcePath.equals(normalizedTargetPath)) {
+            var debugTargetPath = debugPath(config, normalizedTargetPath);
             return retrieveFolder(config, normalizedTargetPath, true)
-                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(normalizedTargetPath)));
+                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(debugTargetPath)));
         }
 
         validateFolderMoveOrCopyTarget(normalizedSourcePath, normalizedTargetPath, config);
 
-        getClient(config).move(
-                toWebDavUri(config, normalizedSourcePath),
-                toWebDavUri(config, normalizedTargetPath)
+        withWebDavPathContext(
+                config,
+                normalizedSourcePath,
+                normalizedTargetPath,
+                () -> getClient(config).move(
+                        toWebDavUri(config, normalizedSourcePath),
+                        toWebDavUri(config, normalizedTargetPath)
+                )
         );
 
         return retrieveFolder(config, normalizedTargetPath, true).orElseGet(() -> new StorageFolder(
@@ -377,19 +388,25 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
         var normalizedTargetPath = normalizeFolderPath(targetPathFromRoot);
 
         if (!folderExists(config, normalizedSourcePath)) {
-            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
+            throw new StorageException("Der Quellordner %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
         }
 
         if (normalizedSourcePath.equals(normalizedTargetPath)) {
+            var debugTargetPath = debugPath(config, normalizedTargetPath);
             return retrieveFolder(config, normalizedTargetPath, true)
-                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(normalizedTargetPath)));
+                    .orElseThrow(() -> new StorageException("Der Ordner %s konnte nicht abgerufen werden.", StringUtils.quote(debugTargetPath)));
         }
 
         validateFolderMoveOrCopyTarget(normalizedSourcePath, normalizedTargetPath, config);
 
-        getClient(config).copy(
-                toWebDavUri(config, normalizedSourcePath),
-                toWebDavUri(config, normalizedTargetPath)
+        withWebDavPathContext(
+                config,
+                normalizedSourcePath,
+                normalizedTargetPath,
+                () -> getClient(config).copy(
+                        toWebDavUri(config, normalizedSourcePath),
+                        toWebDavUri(config, normalizedTargetPath)
+                )
         );
 
         return retrieveFolder(config, normalizedTargetPath, true).orElseGet(() -> new StorageFolder(
@@ -405,10 +422,10 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     public void deleteFolder(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
         var normalizedPath = normalizeFolderPath(pathFromRoot);
         if ("/".equals(normalizedPath)) {
-            throw new StorageException("Das WebDAV-Stammverzeichnis des Speicheranbieters kann nicht gelöscht werden.");
+            throw new StorageException("Das WebDAV-Stammverzeichnis des Speicheranbieters %s kann nicht gelöscht werden.", StringUtils.quote(debugPath(config, normalizedPath)));
         }
 
-        getClient(config).delete(toWebDavUri(config, normalizedPath));
+        withWebDavPathContext(config, normalizedPath, () -> getClient(config).delete(toWebDavUri(config, normalizedPath)));
     }
 
     @Nonnull
@@ -420,14 +437,14 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
         var normalizedPath = normalizeDocumentPath(pathFromRoot);
         var parentPath = getParentFolderPath(normalizedPath);
         if (!folderExists(config, parentPath)) {
-            throw new StorageException("Das übergeordnete WebDAV-Verzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(normalizedPath));
+            throw new StorageException("Das übergeordnete WebDAV-Verzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedPath)));
         }
 
         var mimeType = knownExtensionsService
                 .determineMimeType(normalizedPath)
                 .orElse(StorageService.UNKNOWN_MIME_TYPE);
 
-        getClient(config).put(toWebDavUri(config, normalizedPath), data, mimeType);
+        withWebDavPathContext(config, normalizedPath, () -> getClient(config).put(toWebDavUri(config, normalizedPath), data, mimeType));
 
         return retrieveDocument(config, normalizedPath).orElseGet(() -> new StorageDocument(
                 normalizedPath,
@@ -457,7 +474,8 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     @Nonnull
     @Override
     public InputStream retrieveDocumentContent(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
-        return getClient(config).get(toWebDavUri(config, normalizeDocumentPath(pathFromRoot)));
+        var normalizedPath = normalizeDocumentPath(pathFromRoot);
+        return withWebDavPathContext(config, normalizedPath, () -> getClient(config).get(toWebDavUri(config, normalizedPath)));
     }
 
     @Override
@@ -477,19 +495,25 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
         var normalizedTargetPath = normalizeDocumentPath(targetPathFromRoot);
 
         if (!documentExists(config, normalizedSourcePath)) {
-            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
+            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
         }
 
         if (normalizedSourcePath.equals(normalizedTargetPath)) {
+            var debugSourcePath = debugPath(config, normalizedSourcePath);
             return retrieveDocument(config, normalizedSourcePath)
-                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath)));
+                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugSourcePath)));
         }
 
         validateDocumentTargetParent(config, normalizedTargetPath);
 
-        getClient(config).move(
-                toWebDavUri(config, normalizedSourcePath),
-                toWebDavUri(config, normalizedTargetPath)
+        withWebDavPathContext(
+                config,
+                normalizedSourcePath,
+                normalizedTargetPath,
+                () -> getClient(config).move(
+                        toWebDavUri(config, normalizedSourcePath),
+                        toWebDavUri(config, normalizedTargetPath)
+                )
         );
 
         return retrieveDocument(config, normalizedTargetPath).orElseGet(() -> new StorageDocument(
@@ -509,19 +533,25 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
         var normalizedTargetPath = normalizeDocumentPath(targetPathFromRoot);
 
         if (!documentExists(config, normalizedSourcePath)) {
-            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath));
+            throw new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugPath(config, normalizedSourcePath)));
         }
 
         if (normalizedSourcePath.equals(normalizedTargetPath)) {
+            var debugSourcePath = debugPath(config, normalizedSourcePath);
             return retrieveDocument(config, normalizedSourcePath)
-                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(normalizedSourcePath)));
+                    .orElseThrow(() -> new StorageException("Das Quelldokument %s konnte nicht gefunden werden.", StringUtils.quote(debugSourcePath)));
         }
 
         validateDocumentTargetParent(config, normalizedTargetPath);
 
-        getClient(config).copy(
-                toWebDavUri(config, normalizedSourcePath),
-                toWebDavUri(config, normalizedTargetPath)
+        withWebDavPathContext(
+                config,
+                normalizedSourcePath,
+                normalizedTargetPath,
+                () -> getClient(config).copy(
+                        toWebDavUri(config, normalizedSourcePath),
+                        toWebDavUri(config, normalizedTargetPath)
+                )
         );
 
         return retrieveDocument(config, normalizedTargetPath).orElseGet(() -> new StorageDocument(
@@ -534,7 +564,98 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
 
     @Override
     public void deleteDocument(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
-        getClient(config).delete(toWebDavUri(config, normalizeDocumentPath(pathFromRoot)));
+        var normalizedPath = normalizeDocumentPath(pathFromRoot);
+        withWebDavPathContext(config, normalizedPath, () -> getClient(config).delete(toWebDavUri(config, normalizedPath)));
+    }
+
+    private static <T> T withWebDavPathContext(@Nonnull Config config,
+                                               @Nonnull String pathFromRoot,
+                                               @Nonnull WebDavStorageOperation<T> operation) throws StorageException {
+        try {
+            return operation.run();
+        } catch (StorageException e) {
+            throw appendWebDavPathContext(e, config, pathFromRoot);
+        }
+    }
+
+    private static void withWebDavPathContext(@Nonnull Config config,
+                                              @Nonnull String pathFromRoot,
+                                              @Nonnull WebDavStorageAction action) throws StorageException {
+        try {
+            action.run();
+        } catch (StorageException e) {
+            throw appendWebDavPathContext(e, config, pathFromRoot);
+        }
+    }
+
+    private static void withWebDavPathContext(@Nonnull Config config,
+                                              @Nonnull String sourcePathFromRoot,
+                                              @Nonnull String targetPathFromRoot,
+                                              @Nonnull WebDavStorageAction action) throws StorageException {
+        try {
+            action.run();
+        } catch (StorageException e) {
+            throw appendWebDavPathContext(e, config, sourcePathFromRoot, targetPathFromRoot);
+        }
+    }
+
+    @Nonnull
+    private static StorageException appendWebDavPathContext(@Nonnull StorageException e,
+                                                            @Nonnull Config config,
+                                                            @Nonnull String pathFromRoot) {
+        if (hasWebDavPathContext(e)) {
+            return e;
+        }
+
+        try {
+            return new StorageException(
+                    e,
+                    "%s WebDAV-Pfad: %s.",
+                    e.getMessage(),
+                    StringUtils.quote(debugPath(config, pathFromRoot))
+            );
+        } catch (StorageException ignored) {
+            return e;
+        }
+    }
+
+    @Nonnull
+    private static StorageException appendWebDavPathContext(@Nonnull StorageException e,
+                                                            @Nonnull Config config,
+                                                            @Nonnull String sourcePathFromRoot,
+                                                            @Nonnull String targetPathFromRoot) {
+        if (hasWebDavPathContext(e)) {
+            return e;
+        }
+
+        try {
+            return new StorageException(
+                    e,
+                    "%s WebDAV-Quellpfad: %s. WebDAV-Zielpfad: %s.",
+                    e.getMessage(),
+                    StringUtils.quote(debugPath(config, sourcePathFromRoot)),
+                    StringUtils.quote(debugPath(config, targetPathFromRoot))
+            );
+        } catch (StorageException ignored) {
+            return e;
+        }
+    }
+
+    private static boolean hasWebDavPathContext(@Nonnull StorageException e) {
+        var message = e.getMessage();
+        return message != null
+                && (message.contains("WebDAV-Pfad:")
+                || message.contains("WebDAV-Quellpfad:")
+                || message.contains("WebDAV-Zielpfad:"));
+    }
+
+    @Nonnull
+    private static String debugPath(@Nonnull Config config, @Nonnull String pathFromRoot) throws StorageException {
+        var basePath = normalizeFolderPath(config.basePath);
+        var providerPath = pathFromRoot.endsWith("/") || "/".equals(pathFromRoot)
+                ? normalizeFolderPath(pathFromRoot)
+                : normalizeDocumentPath(pathFromRoot);
+        return basePath + providerPath.substring(1);
     }
 
     WebDavClient getClient(@Nonnull Config config) throws StorageException {
@@ -563,12 +684,16 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
                                                 @Nonnull String normalizedTargetPath,
                                                 @Nonnull Config config) throws StorageException {
         if (normalizedTargetPath.startsWith(normalizedSourcePath) && !normalizedTargetPath.equals(normalizedSourcePath)) {
-            throw new StorageException("Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.", StringUtils.quote(normalizedTargetPath), StringUtils.quote(normalizedSourcePath));
+            throw new StorageException(
+                    "Der Zielordner %s darf nicht innerhalb des Quellordners %s liegen.",
+                    StringUtils.quote(debugPath(config, normalizedTargetPath)),
+                    StringUtils.quote(debugPath(config, normalizedSourcePath))
+            );
         }
 
         var targetParentPath = getParentFolderPath(normalizedTargetPath);
         if (!folderExists(config, targetParentPath)) {
-            throw new StorageException("Das Zielverzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(normalizedTargetPath));
+            throw new StorageException("Das Zielverzeichnis für den Ordner %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedTargetPath)));
         }
     }
 
@@ -576,20 +701,20 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
                                               @Nonnull String normalizedTargetPath) throws StorageException {
         var targetParentPath = getParentFolderPath(normalizedTargetPath);
         if (!folderExists(config, targetParentPath)) {
-            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(normalizedTargetPath));
+            throw new StorageException("Das Zielverzeichnis für das Dokument %s existiert nicht.", StringUtils.quote(debugPath(config, normalizedTargetPath)));
         }
     }
 
     @Nonnull
     private Optional<WebDavResource> retrieveSingleResource(@Nonnull Config config,
                                                             @Nonnull String pathFromRoot) throws StorageException {
-        var resources = getClient(config).propfind(toWebDavUri(config, pathFromRoot), 0);
+        var resources = withWebDavPathContext(config, pathFromRoot, () -> getClient(config).propfind(toWebDavUri(config, pathFromRoot), 0));
         if (resources.isEmpty()) {
             return Optional.empty();
         }
 
         var normalizedPath = pathFromRoot.endsWith("/") ? normalizeFolderPath(pathFromRoot) : normalizeDocumentPath(pathFromRoot);
-        return toProviderResources(config, resources.get())
+        return withWebDavPathContext(config, normalizedPath, () -> toProviderResources(config, resources.get()))
                 .stream()
                 .filter(resource -> resource.pathFromRoot().equals(normalizedPath))
                 .findFirst();
@@ -598,14 +723,10 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
     @Nonnull
     private List<WebDavResource> toProviderResources(@Nonnull Config config,
                                                      @Nonnull List<WebDavRemoteResource> remoteResources) throws StorageException {
-        var rootPath = toWebDavUri(config, "/").getPath();
-        var rootPathWithoutTrailingSlash = trimTrailingSlash(rootPath);
+        var rootPath = normalizeFolderPath(toWebDavUri(config, "/").getPath());
         var result = new LinkedList<WebDavResource>();
         for (var remoteResource : remoteResources) {
-            var remotePath = hrefToPath(remoteResource.href());
-            if (remotePath.equals(rootPathWithoutTrailingSlash)) {
-                remotePath = rootPath;
-            }
+            var remotePath = hrefToNormalizedPath(remoteResource);
             if (!remotePath.startsWith(rootPath)) {
                 continue;
             }
@@ -680,53 +801,17 @@ public void testConnection(@Nonnull Config config, @Nonnull Boolean mustCheckWri
 
     @Nonnull
     static String normalizeFolderPath(@Nullable String path) throws StorageException {
-        var normalizedPath = normalizePath(path);
-        if (!normalizedPath.endsWith("/")) {
-            normalizedPath += "/";
-        }
-        return normalizedPath;
+        return StoragePathUtils.normalizeFolderPath(path);
     }
 
     @Nonnull
     static String normalizeDocumentPath(@Nullable String path) throws StorageException {
-        var normalizedPath = normalizePath(path);
-        if ("/".equals(normalizedPath)) {
-            throw new StorageException("Ein Dokumentpfad darf nicht auf das Stammverzeichnis zeigen.");
-        }
-        return trimTrailingSlash(normalizedPath);
+        return StoragePathUtils.normalizeDocumentPath(path);
     }
 
     @Nonnull
-private static String normalizePath(@Nullable String path) throws StorageException {
-        var normalizedPath = StringUtils.isNullOrEmpty(path) ? "/" : path.trim();
-        normalizedPath = normalizedPath.replace('\\', '/').replaceAll("/{2,}", "/");
-        if (!normalizedPath.startsWith("/")) {
-            normalizedPath = "/" + normalizedPath;
-        }
-
-        // Decode percent-escapes so traversal attempts like "%2e%2e" cannot bypass the segment checks below.
-        try {
-            normalizedPath = new URI(null, null, normalizedPath, null, null).getPath();
-        } catch (URISyntaxException e) {
-            throw new StorageException("Der Pfad %s ist ungültig.", StringUtils.quote(path));
-        }
-
-        var segments = normalizedPath.split("/");
-        for (var segment : segments) {
-            if (".".equals(segment) || "..".equals(segment)) {
-                throw new StorageException("Der Pfad %s enthält unzulässige Pfadsegmente.", StringUtils.quote(path));
-            }
-        }
-
-        return normalizedPath;
-}
-
-    @Nonnull
     private static String trimTrailingSlash(@Nonnull String path) {
-        if ("/".equals(path)) {
-            return path;
-        }
-        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+        return StoragePathUtils.trimTrailingSlash(path);
     }
 
     @Nonnull
@@ -768,6 +853,14 @@ private static String normalizePath(@Nullable String path) throws StorageExcepti
         } catch (Exception ignored) {
             return href;
         }
+    }
+
+    @Nonnull
+    private static String hrefToNormalizedPath(@Nonnull WebDavRemoteResource remoteResource) throws StorageException {
+        var path = hrefToPath(remoteResource.href());
+        return remoteResource.collection()
+                ? normalizeFolderPath(path)
+                : normalizeDocumentPath(path);
     }
 
     @Nonnull
@@ -813,6 +906,16 @@ private static String normalizePath(@Nullable String path) throws StorageExcepti
             return 443;
         }
         return -1;
+    }
+
+    @FunctionalInterface
+    private interface WebDavStorageOperation<T> {
+        T run() throws StorageException;
+    }
+
+    @FunctionalInterface
+    private interface WebDavStorageAction {
+        void run() throws StorageException;
     }
 
     record WebDavResource(String pathFromRoot, boolean collection, long sizeInBytes) {
