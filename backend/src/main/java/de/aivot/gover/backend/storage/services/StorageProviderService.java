@@ -11,6 +11,7 @@ import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.enums.StorageProviderStatus;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
+import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.jetbrains.annotations.NotNull;
@@ -204,26 +205,40 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                     .badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um einen Systemanbieter handelt");
         }
 
-        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity);
-        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity);
+        testSystemConfigRelated(DefaultStorageProcessAttachmentsSystemConfigDefinition.KEY, entity, "Vorgangsdokumente");
+        testSystemConfigRelated(DefaultStorageAssetsSystemConfigDefinition.DEFAULT_STORAGE_ASSETS_KEY, entity, "Dokument & Medien");
 
         // TODO: Check if any file of this storage provider is used in a process or process instance.
 
         storageProviderRepository.delete(entity);
     }
 
-    private void testSystemConfigRelated(@Nonnull String key, @Nonnull StorageProviderEntity entity) throws ResponseException {
+    private void testSystemConfigRelated(@Nonnull String key, @Nonnull StorageProviderEntity entity, @Nonnull String label) throws ResponseException {
         // Check if the storage provider is the default for process attachments and prevents its deletion
         var defaultAttachmentStorageIdRaw = systemConfigService
                 .getValue(key);
 
         if (defaultAttachmentStorageIdRaw instanceof String defaultAttachmentStorageIdStr) {
-            var defaultAttachmentStorageId = Integer
-                    .parseInt(defaultAttachmentStorageIdStr);
+            Integer defaultAttachmentStorageId;
+            try {
+                defaultAttachmentStorageId = Integer
+                        .parseInt(defaultAttachmentStorageIdStr);
+            } catch (NumberFormatException e) {
+                throw ResponseException.internalServerError(
+                        e,
+                        "Die Systemkonfiguration %s enthält eine ungültige ID für den Standard-Speicheranbieter für %s: %s.",
+                        StringUtils.quote(key),
+                        StringUtils.quote(label),
+                        StringUtils.quote(defaultAttachmentStorageIdStr)
+                );
+            }
 
-            if (defaultAttachmentStorageId == entity.getId()) {
+            if (defaultAttachmentStorageId.equals(entity.getId())) {
                 throw ResponseException
-                        .badRequest("Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um den Standardanbieter für Prozessanhänge handelt");
+                        .badRequest(
+                                "Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um den Standardanbieter für %s handelt.",
+                                StringUtils.quote(label)
+                        );
             }
         }
     }
