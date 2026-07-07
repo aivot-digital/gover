@@ -7,7 +7,7 @@ import {Button, Dialog, DialogActions, DialogContent, Skeleton, Typography} from
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {ProcessDefinitionVersionApiService} from '../services/process-definition-version-api-service';
 import {useAppSelector} from '../../../hooks/use-app-selector';
-import {selectHasMemberships} from '../../../slices/user-slice';
+import {selectHasMembershipPermission} from '../../../slices/user-slice';
 import {Permission} from '../../../data/permissions/permission';
 import {InsufficientPermissionAlert} from '../../../components/insufficient-permission-alert';
 import type {ProcessNodeProvider} from '../services/process-node-provider-api-service';
@@ -38,7 +38,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const canPublish = useAppSelector(selectHasMemberships(process.departmentId, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL));
+    const canPublish = useAppSelector(selectHasMembershipPermission(process.departmentId, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL));
     const replacesPublishedVersion = process.publishedVersion != null && process.publishedVersion !== version.processVersion;
 
     const [publishError, setPublishError] = useState<string>();

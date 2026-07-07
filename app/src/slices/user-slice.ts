@@ -47,7 +47,7 @@ export const {
 export const selectUser = (state: RootState): User | undefined => state.user.user;
 export const selectMemberships = (state: RootState): VDepartmentMembershipWithDetailsEntity[] | undefined => state.user.memberships;
 export const selectPermissions = (state: RootState): PermissionSet | undefined => state.user.permissions;
-export const selectHasMemberships = (departmentId: number, permission: Permission) => {
+export const selectHasMembershipPermission = (departmentId: number, permission: Permission) => {
     return (state: RootState): boolean => {
         return (state
                 .user
