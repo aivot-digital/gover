@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.storage.services;
 
 import de.aivot.gover.backend.TestData;
+import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
@@ -39,6 +40,9 @@ class StorageProviderServiceTest {
     @Mock
     private RabbitTemplate rabbitTemplate;
 
+    @Mock
+    private SystemConfigService systemConfigService;
+
     private StorageProviderService storageProviderService;
 
     @BeforeEach
@@ -50,7 +54,8 @@ class StorageProviderServiceTest {
                 storageProviderDefinitionService,
                 storageProviderConfigurationService,
                 rabbitTemplate,
-                DataSize.ofMegabytes(10)
+                DataSize.ofMegabytes(10),
+                systemConfigService
         );
     }
 
