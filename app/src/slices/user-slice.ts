@@ -56,11 +56,9 @@ export const selectHasMembershipPermission = (departmentId: number, permission: 
                 .some((perm) => perm.permissions.includes(permission)) ?? false)
             || (state
                 .user
-                .memberships
-                ?.some((mem) => {
-                    return mem.departmentId === departmentId &&
-                        mem.domainRoles.some((role) => role.permissions.includes(permission));
-                }) ?? false);
+                .permissions
+                ?.departmentPermissions
+                .some((mem) => mem.departmentId === departmentId && mem.permissions.includes(permission)) ?? false);
     };
 };
 
