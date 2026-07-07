@@ -41,7 +41,8 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
                                   StorageProviderDefinitionService storageProviderDefinitionService,
                                   StorageProviderConfigurationService storageProviderConfigurationService,
                                   RabbitTemplate rabbitTemplate,
-                                  @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize, SystemConfigService systemConfigService) {
+                                  @Value("${spring.servlet.multipart.max-file-size}") DataSize maxFileSize,
+                                  SystemConfigService systemConfigService) {
         this.storageProviderRepository = storageProviderRepository;
         this.storageProviderDefinitionService = storageProviderDefinitionService;
         this.storageProviderConfigurationService = storageProviderConfigurationService;
