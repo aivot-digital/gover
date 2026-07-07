@@ -89,7 +89,7 @@ const requiredShadowedRichText = (
     missingValueMessage: string,
     isCreatedAsChild: boolean,
 ) => requiredShadowedString(emptyOverrideMessage, missingValueMessage, isCreatedAsChild)
-    .min(10, emptyOverrideMessage);
+    .min(10, 'Der Text muss mindestens 10 Zeichen lang sein.');
 
 const optionalShadowedRichText = () => optionalShadowedString();
 
