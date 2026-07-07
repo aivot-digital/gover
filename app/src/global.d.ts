@@ -27,7 +27,7 @@ declare var AppConfig: {
     apiHostname: string;
     registryHostname: string;
     applicationTimeZone: string;
-    departmentLevelLabels?: string[] | null;
+    departmentLevelLabels: string[];
     sentryDsn: string;
     oidc: {
         hostname: string;

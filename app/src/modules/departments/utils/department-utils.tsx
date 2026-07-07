@@ -7,16 +7,8 @@ import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {VDepartmentShadowedEntity} from '../entities/v-department-shadowed-entity';
 import Graph6 from '@aivot/mui-material-symbols-400-outlined/dist/graph-6/Graph6';
 
-const DefaultDepartmentTypeLabels = [
-    'Organisation',
-    'Bereich',
-    'Abteilung',
-    'Sachgebiet',
-    'Arbeitsbereich',
-];
-
-function getDefaultDepartmentTypeLabel(depth: number): string {
-    return DefaultDepartmentTypeLabels[depth] ?? `Unterebene ${decimalNumberToRomanNumeral(depth - DefaultDepartmentTypeLabels.length + 1)}`;
+function getFallbackDepartmentTypeLabel(depth: number, configuredLabelCount: number): string {
+    return `Unterebene ${decimalNumberToRomanNumeral(depth - configuredLabelCount + 1)}`;
 }
 
 export function getDepartmentTypeLabels(): string[] {
@@ -25,17 +17,16 @@ export function getDepartmentTypeLabels(): string[] {
             .map((label) => label.trim())
         : [];
 
-    return configuredLabels.some(isStringNotNullOrEmpty)
-        ? configuredLabels.map((label, index) => isStringNotNullOrEmpty(label) ? label : getDefaultDepartmentTypeLabel(index))
-        : DefaultDepartmentTypeLabels;
+    return configuredLabels.filter(isStringNotNullOrEmpty);
 }
 
 export function getMaxDepartmentDepth(): number {
-    return getDepartmentTypeLabels().length - 1;
+    return Math.max(0, getDepartmentTypeLabels().length - 1);
 }
 
 export function getDepartmentTypeLabel(depth: number): string {
-    return getDepartmentTypeLabels()[depth] ?? getDefaultDepartmentTypeLabel(depth);
+    const labels = getDepartmentTypeLabels();
+    return labels[depth] ?? getFallbackDepartmentTypeLabel(depth, labels.length);
 }
 
 export function getDepartmentTypeIcons(depth: number) {
