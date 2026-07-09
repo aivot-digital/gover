@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.department.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -37,7 +36,7 @@ public class DepartmentPermissionProvider implements PermissionProvider {
     }
 
     @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
+    public boolean supportsDomainRoleAssignment() {
+        return true;
     }
 }

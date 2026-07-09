@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.userRoles.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -25,10 +24,5 @@ public class DomainRolePermissionProvider implements PermissionProvider {
                 PermissionEntry.of(DOMAIN_ROLE_UPDATE, "Domänenrolle bearbeiten", "Erlaubt das Bearbeiten von Domänenrollen."),
                 PermissionEntry.of(DOMAIN_ROLE_DELETE, "Domänenrolle löschen", "Erlaubt das Löschen von Domänenrollen."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

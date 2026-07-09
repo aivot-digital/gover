@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.dataObject.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -34,10 +33,5 @@ public class DataObjectPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(OBJECT_ITEM_UPDATE, "Objekt bearbeiten", "Erlaubt das Bearbeiten von Objekten."),
                 PermissionEntry.of(OBJECT_ITEM_DELETE, "Objekt löschen", "Erlaubt das Löschen von Objekten."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

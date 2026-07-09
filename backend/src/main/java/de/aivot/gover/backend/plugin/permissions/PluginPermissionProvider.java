@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.plugin.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -25,10 +24,5 @@ public class PluginPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PLUGIN_UPDATE, "Plugin bearbeiten", "Erlaubt das Bearbeiten von Plugins."),
                 PermissionEntry.of(PLUGIN_DELETE, "Plugin löschen", "Erlaubt das Löschen von Plugins."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

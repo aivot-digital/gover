@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.theme.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -25,10 +24,5 @@ public class ThemePermissionProvider implements PermissionProvider {
                 PermissionEntry.of(THEME_UPDATE, "Erscheinungsbild bearbeiten", "Erlaubt das Bearbeiten von Erscheinungsbildern."),
                 PermissionEntry.of(THEME_DELETE, "Erscheinungsbild löschen", "Erlaubt das Löschen von Erscheinungsbildern."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

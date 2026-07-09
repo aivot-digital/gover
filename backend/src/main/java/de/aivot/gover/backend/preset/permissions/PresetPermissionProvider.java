@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.preset.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -29,10 +28,5 @@ public class PresetPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PRESET_PUBLISH_LOCAL, "Vorlage lokal veröffentlichen", "Erlaubt das lokale Veröffentlichen von Vorlagen."),
                 PermissionEntry.of(PRESET_PUBLISH_STORE, "Vorlage im Store veröffentlichen", "Erlaubt das Veröffentlichen von Vorlagen im Store."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.userRoles.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -25,10 +24,5 @@ public class SystemRolePermissionProvider implements PermissionProvider {
                 PermissionEntry.of(SYSTEM_ROLE_UPDATE, "Systemrolle bearbeiten", "Erlaubt das Bearbeiten von Systemrollen."),
                 PermissionEntry.of(SYSTEM_ROLE_DELETE, "Systemrolle löschen", "Erlaubt das Löschen von Systemrollen."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

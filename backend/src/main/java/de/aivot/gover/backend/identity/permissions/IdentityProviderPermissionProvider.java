@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.identity.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -25,10 +24,5 @@ public class IdentityProviderPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(IDENTITY_PROVIDER_UPDATE, "Identitätsanbieter bearbeiten", "Erlaubt das Bearbeiten von Identitätsanbietern."),
                 PermissionEntry.of(IDENTITY_PROVIDER_DELETE, "Identitätsanbieter löschen", "Erlaubt das Löschen von Identitätsanbietern."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

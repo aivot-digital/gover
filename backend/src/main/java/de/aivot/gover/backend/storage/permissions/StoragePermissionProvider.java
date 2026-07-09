@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.storage.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -41,10 +40,5 @@ public class StoragePermissionProvider implements PermissionProvider {
                         "Erlaubt das Löschen von Speicheranbietern."
                 )
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

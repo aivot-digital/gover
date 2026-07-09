@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.payment.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -25,10 +24,5 @@ public class PaymentProviderPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PAYMENT_PROVIDER_UPDATE, "Zahlungsanbieter bearbeiten", "Erlaubt das Bearbeiten von Zahlungsanbietern."),
                 PermissionEntry.of(PAYMENT_PROVIDER_DELETE, "Zahlungsanbieter löschen", "Erlaubt das Löschen von Zahlungsanbietern."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

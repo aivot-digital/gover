@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.user.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -34,10 +33,5 @@ public class UserPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(DEPUTY_UPDATE, "Vertretung bearbeiten", "Erlaubt das Bearbeiten von Vertretungen."),
                 PermissionEntry.of(DEPUTY_DELETE, "Vertretung löschen", "Erlaubt das Löschen von Vertretungen."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }

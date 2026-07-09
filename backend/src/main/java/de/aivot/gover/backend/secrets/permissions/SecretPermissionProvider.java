@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.secrets.permissions;
 
-import de.aivot.gover.backend.permissions.enums.PermissionScope;
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
@@ -25,10 +24,5 @@ public class SecretPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(SECRET_UPDATE, "Geheimnis bearbeiten", "Erlaubt das Bearbeiten von Geheimnissen."),
                 PermissionEntry.of(SECRET_DELETE, "Geheimnis löschen", "Erlaubt das Löschen von Geheimnissen."),
         };
-    }
-
-    @Override
-    public PermissionScope getScope() {
-        return PermissionScope.System;
     }
 }
