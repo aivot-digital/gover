@@ -2,13 +2,14 @@ package de.aivot.gover.backend.userRoles.services;
 
 import de.aivot.gover.backend.config.entities.SystemConfigEntity;
 import de.aivot.gover.backend.config.services.SystemConfigService;
+import de.aivot.gover.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.permissions.permissions.PermissionSetPermissionProvider;
 import de.aivot.gover.backend.user.configs.DefaultUserSystemRoleSystemConfigDefinition;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import de.aivot.gover.backend.user.repositories.UserRepository;
 import de.aivot.gover.backend.userRoles.entities.SystemRoleEntity;
 import de.aivot.gover.backend.userRoles.repositories.SystemRoleRepository;
-import de.aivot.gover.backend.userRoles.services.SystemRoleService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 
@@ -26,6 +27,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SystemRoleServiceTest {
+    private static SystemRoleService createService(SystemRoleRepository repository,
+                                                   SystemConfigService systemConfigService,
+                                                   UserRepository userRepository) {
+        return new SystemRoleService(repository, systemConfigService, userRepository, List.of(
+                new DepartmentPermissionProvider(),
+                new PermissionSetPermissionProvider()
+        ));
+    }
+
     @Test
     void performDeleteShouldRejectDeletingRoleWithAssignedUsersWithoutReplacement() throws ResponseException {
         var repository = mock(SystemRoleRepository.class);
@@ -39,7 +49,7 @@ class SystemRoleServiceTest {
                         .setPublicConfig(false));
         when(userRepository.existsBySystemRoleId(4)).thenReturn(true);
 
-        var service = new SystemRoleService(repository, systemConfigService, userRepository);
+        var service = createService(repository, systemConfigService, userRepository);
         var entity = new SystemRoleEntity()
                 .setId(4)
                 .setName("Sachbearbeitung")
@@ -69,7 +79,7 @@ class SystemRoleServiceTest {
         when(userRepository.existsBySystemRoleId(4)).thenReturn(false);
         when(userRepository.findAllBySystemRoleIdOrderByFullNameAsc(4)).thenReturn(List.of());
 
-        var service = new SystemRoleService(repository, systemConfigService, userRepository);
+        var service = createService(repository, systemConfigService, userRepository);
         var entity = new SystemRoleEntity()
                 .setId(4)
                 .setName("Systemadministrator:in")
@@ -119,7 +129,7 @@ class SystemRoleServiceTest {
                 .setPermissions(List.of());
         when(repository.findById(7)).thenReturn(Optional.of(replacementRole));
 
-        var service = new SystemRoleService(repository, systemConfigService, userRepository);
+        var service = createService(repository, systemConfigService, userRepository);
         var entity = new SystemRoleEntity()
                 .setId(3)
                 .setName("Mitarbeiter:in")
@@ -138,5 +148,77 @@ class SystemRoleServiceTest {
         assertEquals("user-1", result.migratedUsers().get(0).id());
         assertEquals("Erika Musterfrau", result.migratedUsers().get(0).fullName());
         assertEquals("erika.musterfrau@example.org", result.migratedUsers().get(0).email());
+    }
+
+    @Test
+    void createShouldRejectPermissionsThatAreUnknown() {
+        var repository = mock(SystemRoleRepository.class);
+        var service = createService(repository, mock(SystemConfigService.class), mock(UserRepository.class));
+        var entity = new SystemRoleEntity()
+                .setPermissions(List.of("removed.permission"));
+
+        var exception = assertThrows(ResponseException.class, () -> service.create(entity));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(repository, never()).save(entity);
+    }
+
+    @Test
+    void updateShouldAllowExistingPermissionsThatAreNoLongerKnown() throws ResponseException {
+        var repository = mock(SystemRoleRepository.class);
+        var service = createService(repository, mock(SystemConfigService.class), mock(UserRepository.class));
+        var existingEntity = new SystemRoleEntity()
+                .setPermissions(List.of(
+                        DepartmentPermissionProvider.DEPARTMENT_READ,
+                        "removed.permission"
+                ));
+        var updatedEntity = new SystemRoleEntity()
+                .setName("Updated")
+                .setDescription("Updated description")
+                .setPermissions(List.of(
+                        DepartmentPermissionProvider.DEPARTMENT_READ,
+                        "removed.permission"
+                ));
+
+        service.performUpdate(1, updatedEntity, existingEntity);
+
+        verify(repository).save(existingEntity);
+    }
+
+    @Test
+    void updateShouldRejectNewPermissionsThatAreUnknown() {
+        var repository = mock(SystemRoleRepository.class);
+        var service = createService(repository, mock(SystemConfigService.class), mock(UserRepository.class));
+        var existingEntity = new SystemRoleEntity()
+                .setPermissions(List.of(DepartmentPermissionProvider.DEPARTMENT_READ));
+        var updatedEntity = new SystemRoleEntity()
+                .setPermissions(List.of(
+                        DepartmentPermissionProvider.DEPARTMENT_READ,
+                        "removed.permission"
+                ));
+
+        var exception = assertThrows(ResponseException.class, () -> service.performUpdate(1, updatedEntity, existingEntity));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verify(repository, never()).save(existingEntity);
+    }
+
+    @Test
+    void updateShouldAllowRemovingPermissionsThatAreNoLongerKnown() throws ResponseException {
+        var repository = mock(SystemRoleRepository.class);
+        var service = createService(repository, mock(SystemConfigService.class), mock(UserRepository.class));
+        var existingEntity = new SystemRoleEntity()
+                .setPermissions(List.of(
+                        DepartmentPermissionProvider.DEPARTMENT_READ,
+                        "removed.permission"
+                ));
+        var updatedEntity = new SystemRoleEntity()
+                .setName("Updated")
+                .setDescription("Updated description")
+                .setPermissions(List.of(DepartmentPermissionProvider.DEPARTMENT_READ));
+
+        service.performUpdate(1, updatedEntity, existingEntity);
+
+        verify(repository).save(existingEntity);
     }
 }
