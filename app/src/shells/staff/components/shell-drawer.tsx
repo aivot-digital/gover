@@ -1,4 +1,4 @@
-import React, {ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
 import {Badge, Box, Button, Chip, createTheme, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
 import {Link, useLocation} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
@@ -33,9 +33,10 @@ import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/
 import {StorageProvidersApiService} from '../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
 import {selectPermissions, selectUser} from '../../../slices/user-slice';
-import {AUDIT_LOG_READ_PERMISSION} from '../../../modules/audit/constants/audit-permissions';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {Permission} from '../../../data/permissions/permission';
+import {checkSystemPermission} from '../../../modules/permissions/utils/permission-utils';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -55,7 +56,7 @@ export interface DrawerItem {
     children?: DrawerItem[];
     chipContent?: ReactNode;
     disabled?: boolean;
-    requiredSystemPermission?: string;
+    requiredSystemPermission?: Permission | string;
 }
 
 const BaseDrawerGroups: DrawerGroup[] = [
@@ -96,6 +97,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.dataObjects,
                 label: 'Datenobjekte',
                 to: '/data-objects',
+                requiredSystemPermission: Permission.OBJECT_ITEM_READ,
             },
         ],
     },
@@ -107,6 +109,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 label: 'Vorlagen',
                 to: '/presets',
                 disabled: true,
+                requiredSystemPermission: Permission.PRESET_READ,
             },
             {
                 icon: ModuleIcons.marketplace,
@@ -127,51 +130,121 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 children: [
                     {icon: ModuleIcons.departments, label: 'Organisationseinheiten', to: '/departments'},
                     {icon: ModuleIcons.teams, label: 'Teams', to: '/teams'},
-                    {icon: ModuleIcons.users, label: 'Mitarbeiter:innen', to: '/users'},
+                    {
+                        icon: ModuleIcons.users,
+                        label: 'Mitarbeiter:innen',
+                        to: '/users',
+                        requiredSystemPermission: Permission.USER_READ,
+                    },
                     {
                         icon: <SupervisedUserCircle />,
                         label: 'Rollenverwaltung',
                         children: [
-                            {icon: ModuleIcons.roles, label: 'Domänenrollen', to: '/user-roles'},
-                            {icon: ModuleIcons.roles, label: 'Systemrollen', to: '/system-roles'},
+                            {
+                                icon: ModuleIcons.roles,
+                                label: 'Systemrollen',
+                                to: '/system-roles',
+                                requiredSystemPermission: Permission.SYSTEM_ROLE_READ,
+                            },
+                            {
+                                icon: ModuleIcons.roles,
+                                label: 'Domänenrollen',
+                                to: '/user-roles',
+                                requiredSystemPermission: Permission.DOMAIN_ROLE_READ,
+                            },
                         ],
                     },
                     {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organigram'},
                 ],
             },
-            {icon: ModuleIcons.assets, label: 'Dateien & Medien', to: '/assets'},
+            {
+                icon: ModuleIcons.assets,
+                label: 'Dateien & Medien',
+                to: '/assets',
+                requiredSystemPermission: Permission.ASSET_READ,
+            },
             {
                 icon: ModuleIcons.dataModels,
                 label: 'Datenmodelle',
                 to: '/data-models',
+                requiredSystemPermission: Permission.OBJECT_SCHEMA_READ,
             },
             {
                 icon: ModuleIcons.settings,
                 label: 'Konfiguration',
                 children: [
-                    {icon: ModuleIcons.settings, label: 'Allgemeine Einstellungen', to: '/settings/app'},
-                    {icon: <ReadinessScore />, label: 'Systeminformationen', to: '/settings/status'},
+                    {
+                        icon: ModuleIcons.settings,
+                        label: 'Allgemeine Einstellungen',
+                        to: '/settings/app',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
+                    {
+                        icon: <ReadinessScore />,
+                        label: 'Systeminformationen',
+                        to: '/settings/status',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
                     {
                         icon: ModuleIcons.audit,
                         label: 'Audit-Log',
                         to: '/audit-log',
-                        requiredSystemPermission: AUDIT_LOG_READ_PERMISSION,
+                        requiredSystemPermission: Permission.AUDIT_LOG_READ,
                     },
-                    {icon: ModuleIcons.themes, label: 'Erscheinungsbild', to: '/themes'},
-                    {icon: ModuleIcons.secrets, label: 'Systemvariablen', to: '/secrets'},
+                    {
+                        icon: ModuleIcons.themes,
+                        label: 'Erscheinungsbild',
+                        to: '/themes',
+                        requiredSystemPermission: Permission.THEME_READ,
+                    },
+                    {
+                        icon: ModuleIcons.secrets,
+                        label: 'Systemvariablen',
+                        to: '/secrets',
+                        requiredSystemPermission: Permission.SECRET_READ,
+                    },
                     {
                         icon: <Api />,
                         label: 'Anbindungen',
                         children: [
-                            {icon: ModuleIcons.identity, label: 'Identitätsanbieter', to: '/identity-providers'},
-                            {icon: ModuleIcons.payment, label: 'Zahlungsanbieter', to: '/payment-providers'},
-                            {icon: ModuleIcons.storage, label: 'Speicheranbieter', to: '/storage-providers'},
-                            // {icon: ModuleIcons.destinations, label: 'Schnittstellen', to: '/destinations'},
+                            {
+                                icon: ModuleIcons.identity,
+                                label: 'Identitätsanbieter',
+                                to: '/identity-providers',
+                                requiredSystemPermission: Permission.IDENTITY_PROVIDER_READ,
+                            },
+                            {
+                                icon: ModuleIcons.payment,
+                                label: 'Zahlungsanbieter',
+                                to: '/payment-providers',
+                                requiredSystemPermission: Permission.PAYMENT_PROVIDER_READ,
+                            },
+                            {
+                                icon: ModuleIcons.storage,
+                                label: 'Speicheranbieter',
+                                to: '/storage-providers',
+                                requiredSystemPermission: Permission.STORAGE_PROVIDER_READ,
+                            },
                         ],
                     },
-                    {icon: ModuleIcons.extensions, label: 'Erweiterungen', to: '/settings/extensions'},
-                    {icon: <ForwardToInbox />, label: 'SMTP-Test (legacy)', to: '/settings/smtp'},
-                    {icon: ModuleIcons.providerLinks, label: 'Links (legacy)', to: '/provider-links'},
+                    {
+                        icon: ModuleIcons.extensions,
+                        label: 'Erweiterungen',
+                        to: '/settings/extensions',
+                        requiredSystemPermission: Permission.PLUGIN_READ,
+                    },
+                    {
+                        icon: <ForwardToInbox />,
+                        label: 'SMTP-Test (legacy)',
+                        to: '/settings/smtp',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
+                    {
+                        icon: ModuleIcons.providerLinks,
+                        label: 'Links (legacy)',
+                        to: '/provider-links',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
                 ],
             },
         ],
@@ -194,8 +267,18 @@ export function ShellDrawer() {
     const [assetStorageProviderItems, setAssetStorageProviderItems] = useState<DrawerItem[]>([]);
     const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
     const [assignedTaskCount, setAssignedTaskCount] = useState<number | null>(null);
+    const hasDrawerSystemPermission = useCallback((permission: Permission | string): boolean => {
+        return checkSystemPermission(permissions, permission);
+    }, [permissions]);
+    const canReadAssets = hasDrawerSystemPermission(Permission.ASSET_READ);
 
     useEffect(() => {
+        if (!canReadAssets) {
+            setAssetStorageProviderItems([]);
+            setIsLoadingAssetStorageProviders(false);
+            return;
+        }
+
         setIsLoadingAssetStorageProviders(true);
 
         new StorageProvidersApiService()
@@ -221,7 +304,7 @@ export function ShellDrawer() {
             .finally(() => {
                 setIsLoadingAssetStorageProviders(false);
             });
-    }, [dispatch]);
+    }, [canReadAssets, dispatch]);
 
     useEffect(() => {
         if (user?.id == null) {
@@ -258,11 +341,6 @@ export function ShellDrawer() {
     }, [user?.id]);
 
     const drawerGroups = useMemo(() => {
-        const hasSystemPermission = (permission: string): boolean => {
-            return permissions?.systemPermissions
-                ?.some((entry) => entry.permissions.includes(permission)) ?? false;
-        };
-
         const filterByPermission = (items: DrawerItem[]): DrawerItem[] => {
             return items
                 .filter((item) => {
@@ -270,7 +348,7 @@ export function ShellDrawer() {
                         return true;
                     }
 
-                    return hasSystemPermission(item.requiredSystemPermission);
+                    return hasDrawerSystemPermission(item.requiredSystemPermission);
                 })
                 .map((item) => {
                     if (item.children == null) {
@@ -325,7 +403,7 @@ export function ShellDrawer() {
                 items: filterByPermission(group.items),
             }))
             .filter((group) => group.items.length > 0);
-    }, [assetStorageProviderItems, assignedTaskCount, isLoadingAssetStorageProviders, permissions]);
+    }, [assetStorageProviderItems, assignedTaskCount, hasDrawerSystemPermission, isLoadingAssetStorageProviders]);
 
     // responsive auto-minimize
     useEffect(() => {
