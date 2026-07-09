@@ -1,15 +1,25 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import React from 'react';
+import React, {useCallback} from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function UserRolesDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
+    useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const canCreateDomainRole = useCheckSystemPermission(Permission.DOMAIN_ROLE_CREATE);
+    const canUpdateDomainRole = useCheckSystemPermission(Permission.DOMAIN_ROLE_UPDATE);
+    const isEditable = useCallback((item: UserRoleResponseDTO | undefined) => {
+        if (item == null) {
+            return false;
+        }
+
+        return item.id === 0 ? canCreateDomainRole : canUpdateDomainRole;
+    }, [canCreateDomainRole, canUpdateDomainRole]);
 
     return (
         <PageWrapper
@@ -18,7 +28,7 @@ export function UserRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<UserRoleResponseDTO, number, undefined>
-                isEditable={() => userIsAdmin}
+                isEditable={isEditable}
                 header={{
                     icon: ModuleIcons.roles,
                     title: 'Domänenrolle bearbeiten',
@@ -40,7 +50,7 @@ export function UserRolesDetailsPage() {
                                 >
                                     Domänenrollen ergänzen Systemrollen um kontextbezogene Rechte. Sie
                                     wirken nur dort, wo Mitarbeiter:innen über eine
-                                    Mitgliedschaft tatsächlich zugewiesen ist.
+                                    Mitgliedschaft tatsächlich zugewiesen sind.
                                 </Typography>
                             </>
                         ),

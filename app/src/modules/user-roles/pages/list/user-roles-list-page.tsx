@@ -6,20 +6,24 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined} from '@mui/icons-material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {Permission} from '../../../../data/permissions/permission';
+import {checkSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 export function UserRolesListPage() {
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_CREATE);
+    const canUpdateDomainRoles = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_UPDATE);
 
     const header = useMemo(() => ({
         icon: ModuleIcons.roles,
@@ -30,7 +34,8 @@ export function UserRolesListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/user-roles/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !canCreateDomainRole,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_CREATE),
             },
         ],
         helpDialog: {
@@ -56,7 +61,7 @@ export function UserRolesListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), [canCreateDomainRole]);
 
     const fetchUserRoles = useCallback((options: GenericListPropsFetchOptions<UserRoleResponseDTO>) => {
         return new UserRolesApiService()
@@ -79,7 +84,7 @@ export function UserRolesListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/user-roles/${params.id}`}
-                    title={hasAccess ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen'}
+                    title={canUpdateDomainRoles ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -90,17 +95,17 @@ export function UserRolesListPage() {
             headerName: 'Beschreibung',
             flex: 2,
         },
-    ], [hasAccess]);
+    ], [canUpdateDomainRoles]);
 
     const getRowIdentifier = useCallback((row: UserRoleResponseDTO) => row.id.toString(), []);
 
     const rowActions = useCallback((item: UserRoleResponseDTO) => [
         {
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+            icon: canUpdateDomainRoles ? <EditOutlined /> : <Visibility />,
             to: `/user-roles/${item.id}`,
-            tooltip: hasAccess ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen',
+            tooltip: canUpdateDomainRoles ? 'Domänenrolle bearbeiten' : 'Domänenrolle anzeigen',
         },
-    ], [hasAccess]);
+    ], [canUpdateDomainRoles]);
 
     return (
         <PageWrapper
@@ -118,13 +123,15 @@ export function UserRolesListPage() {
                 getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Noch keine Domänenrollen angelegt"
-                        description="Domänenrollen bündeln Berechtigungen, die erst im Kontext einer Organisationseinheit oder eines Teams gelten."
-                        addText={hasAccess ? "Neue Domänenrolle anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/user-roles/new') : undefined}
+                        title="Keine Domänenrollen vorhanden"
+                        description="Es wurden noch keine Domänenrollen angelegt."
+                        addText="Neue Domänenrolle anlegen"
+                        onAdd={() => navigate('/user-roles/new')}
+                        addDisabled={!canCreateDomainRole}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_CREATE)}
                     />
                 }
-                noSearchResultsPlaceholder="Keine Domänenrollen gefunden"
+                noSearchResultsPlaceholder="Keine Domänenrollen gefunden, die zu Ihrer Suche passen"
                 rowActionsCount={1}
                 rowActions={rowActions}
                 defaultSortField="name"

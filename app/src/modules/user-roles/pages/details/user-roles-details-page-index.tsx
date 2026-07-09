@@ -1,6 +1,6 @@
 import {Box, Button, Typography} from '@mui/material';
 import Grid from '@mui/material/Grid';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useNavigate} from 'react-router-dom';
@@ -8,17 +8,19 @@ import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {PermissionEditor} from '../../../permissions/components/permission-editor';
-import {PermissionScope} from '../../../permissions/enums/permission-scope';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const UserRoleSchema = yup.object({
     name: yup.string()
@@ -44,23 +46,9 @@ export function UserRolesDetailsPageIndex() {
         setIsBusy,
         isEditable,
     } = useContext(GenericDetailsPageContext);
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-user-roles-details',
-            message: 'Diese Domänenrolle kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-user-roles-details'));
-        };
-    }, [isEditable]);
+    const editPermission = item?.id === 0 ? Permission.DOMAIN_ROLE_CREATE : Permission.DOMAIN_ROLE_UPDATE;
+    const canDeleteDomainRole = useCheckSystemPermission(Permission.DOMAIN_ROLE_DELETE);
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         currentItem,
@@ -80,11 +68,29 @@ export function UserRolesDetailsPageIndex() {
     const changeBlocker = useChangeBlocker(item, currentItem);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
+    const refreshPermissionsAfterRoleChange = () => {
+        // Role edits can affect the current user through existing assignments, so refresh explicitly after successful mutations.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Domänenrolle nicht aktualisiert werden.',
+            )));
+    };
+
     if (entity == null) {
         return (
             <GenericDetailsSkeleton />
         );
     }
+
+    const saveDisabledByPermission = !isEditable;
+    const saveDisabledTooltip = saveDisabledByPermission
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledByPermission = !canDeleteDomainRole;
+    const deleteDisabledTooltip = deleteDisabledByPermission
+        ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_DELETE)
+        : undefined;
 
     const handleSave = () => {
         if (entity != null) {
@@ -104,6 +110,7 @@ export function UserRolesDetailsPageIndex() {
                     .then((newRole) => {
                         setItem(newRole);
                         reset();
+                        refreshPermissionsAfterRoleChange();
 
                         dispatch(showSuccessSnackbar('Neue Domänenrolle erfolgreich angelegt.'));
 
@@ -125,6 +132,7 @@ export function UserRolesDetailsPageIndex() {
                     .then((updatedRole) => {
                         setItem(updatedRole);
                         reset();
+                        refreshPermissionsAfterRoleChange();
 
                         dispatch(showSuccessSnackbar('Änderungen an der Domänenrolle erfolgreich gespeichert.'));
                     })
@@ -147,6 +155,7 @@ export function UserRolesDetailsPageIndex() {
                 .destroy(entity.id)
                 .then(() => {
                     reset(); // prevent change blocker by resetting unsaved changes
+                    refreshPermissionsAfterRoleChange();
                     navigate('/user-roles', {
                         replace: true,
                     });
@@ -221,13 +230,14 @@ export function UserRolesDetailsPageIndex() {
                 </Grid>
             </Grid>
 
+            {/* Domain roles are limited to providers that can be resolved against a domain resource. */}
             <PermissionEditor
                 originalPermissions={item?.permissions ?? []}
                 value={entity.permissions ?? []}
                 onChange={(next: string[]) => handleInputPatch({permissions: next} as Partial<UserRoleResponseDTO>)}
                 isBusy={isBusy}
                 isEditable={isEditable}
-                scope={PermissionScope.Domain}
+                onlyDomainRoleAssignable
             />
 
             <Box
@@ -237,43 +247,56 @@ export function UserRolesDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={saveDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     entity.id !== 0 &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    <DisabledTooltip
+                        title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
                     entity.id !== 0 &&
-                    <Button
-                        variant="outlined"
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete />}
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || deleteDisabledByPermission}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowConfirmDialog(true)}
+                            disabled={isBusy || deleteDisabledByPermission}
+                            color="error"
+                            startIcon={<Delete />}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

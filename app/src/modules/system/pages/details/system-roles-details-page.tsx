@@ -1,9 +1,8 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import React from 'react';
+import React, {useCallback} from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {SystemRolesApiService} from "../../services/system-roles-api-service";
@@ -14,10 +13,21 @@ import {
     DefaultUserSystemRoleBadge,
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function SystemRolesDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
+    useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
+    const canCreateSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_CREATE);
+    const canUpdateSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_UPDATE);
+    const isEditable = useCallback((item: SystemRoleEntity | undefined) => {
+        if (item == null) {
+            return false;
+        }
+
+        return item.id === 0 ? canCreateSystemRole : canUpdateSystemRole;
+    }, [canCreateSystemRole, canUpdateSystemRole]);
 
     return (
         <PageWrapper
@@ -26,7 +36,7 @@ export function SystemRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<SystemRoleEntity, number, void>
-                isEditable={() => userIsAdmin}
+                isEditable={isEditable}
                 header={(item, isNewItem, notFound) => ({
                     icon: ModuleIcons.roles,
                     title: 'Systemrolle bearbeiten',

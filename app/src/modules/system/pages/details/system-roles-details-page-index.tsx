@@ -15,18 +15,11 @@ import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../slices/shell-slice';
 import {type SystemRoleEntity} from '../../entities/system-role-entity';
 import {SystemRolesApiService} from '../../services/system-roles-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import Grid from '@mui/material/Grid';
 import {PermissionEditor} from '../../../permissions/components/permission-editor';
-import {PermissionScope} from '../../../permissions/enums/permission-scope';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue, setSystemConfig} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
@@ -34,6 +27,10 @@ import {UsersApiService} from '../../../users/users-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {type SelectFieldComponentOption} from '../../../../components/select-field/select-field-component-option';
 import {pluralize} from '../../../../utils/humanization-utils';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -68,23 +65,9 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         setIsBusy,
         isEditable,
     } = useContext<GenericDetailsPageContextType<SystemRoleEntity, void>>(GenericDetailsPageContext);
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-system-roles-details',
-            message: 'Diese Systemrolle kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-system-roles-details'));
-        };
-    }, [dispatch, isEditable]);
+    const editPermission = systemRole?.id === 0 ? Permission.SYSTEM_ROLE_CREATE : Permission.SYSTEM_ROLE_UPDATE;
+    const canDeleteSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_DELETE);
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         currentItem: editedSystemRole,
@@ -110,6 +93,15 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(false);
     const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
 
+    const refreshPermissionsAfterRoleChange = (): void => {
+        // System role changes may immediately change the current user's effective permissions.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Systemrolle nicht aktualisiert werden.',
+            )));
+    };
+
     const currentSystemRoleId = editedSystemRole?.id ?? 0;
     const isDefaultSystemRole =
         currentSystemRoleId !== 0 &&
@@ -120,7 +112,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     const requiresReplacementSystemRole = isDefaultSystemRole || hasAssignedUsers;
 
     useEffect(() => {
-        if (currentSystemRoleId === 0) {
+        if (currentSystemRoleId === 0 || !canDeleteSystemRole) {
             setAssignedUsersCount(0);
             setIsDeleteRequirementsLoading(false);
             setHasDeleteRequirementsLoadingError(false);
@@ -164,10 +156,10 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         return () => {
             isCancelled = true;
         };
-    }, [currentSystemRoleId, dispatch, usersApiService]);
+    }, [canDeleteSystemRole, currentSystemRoleId, dispatch, usersApiService]);
 
     useEffect(() => {
-        if (currentSystemRoleId === 0 || !requiresReplacementSystemRole) {
+        if (currentSystemRoleId === 0 || !canDeleteSystemRole || !requiresReplacementSystemRole) {
             setSystemRoleOptions([]);
             setIsSystemRolesLoading(false);
             setHasSystemRolesLoadingError(false);
@@ -212,7 +204,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         return () => {
             isCancelled = true;
         };
-    }, [apiService, currentSystemRoleId, dispatch, requiresReplacementSystemRole]);
+    }, [apiService, canDeleteSystemRole, currentSystemRoleId, dispatch, requiresReplacementSystemRole]);
 
     useEffect(() => {
         if (!showConfirmDialog || !requiresReplacementSystemRole) {
@@ -243,13 +235,15 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     const canOpenDeleteDialog =
         currentSystemRoleId !== 0 &&
         !isBusy &&
-        isEditable &&
+        canDeleteSystemRole &&
         !isDeleteRequirementsLoading &&
         !hasDeleteRequirementsLoadingError &&
         (canDeleteWithoutReplacement || canProvideReplacementRole);
 
     let deleteTooltip = 'Diese Systemrolle löschen';
-    if (isDeleteRequirementsLoading) {
+    if (!canDeleteSystemRole) {
+        deleteTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_DELETE);
+    } else if (isDeleteRequirementsLoading) {
         deleteTooltip = 'Es wird geprüft, ob beim Löschen dieser Rolle eine Migration erforderlich ist.';
     } else if (hasDeleteRequirementsLoadingError) {
         deleteTooltip = 'Die Löschvoraussetzungen konnten nicht geprüft werden.';
@@ -272,6 +266,10 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             'Diese Rolle ist aktuell als Standard-Systemrolle für automatische Benutzerimporte konfiguriert. Beim Löschen wird diese Einstellung ebenfalls auf die ausgewählte Ersatz-Systemrolle geändert.',
         );
     }
+    const saveDisabledByPermission = !isEditable;
+    const saveDisabledTooltip = saveDisabledByPermission
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
 
     const handleCloseConfirmDialog = (): void => {
         setShowConfirmDialog(false);
@@ -294,6 +292,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 .then((newRole) => {
                     setItem(newRole);
                     reset();
+                    refreshPermissionsAfterRoleChange();
 
                     dispatch(showSuccessSnackbar('Neue Systemrolle erfolgreich angelegt.'));
 
@@ -319,6 +318,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             .then((updatedRole) => {
                 setItem(updatedRole);
                 reset();
+                refreshPermissionsAfterRoleChange();
 
                 dispatch(showSuccessSnackbar('Änderungen an der Systemrolle erfolgreich gespeichert.'));
             })
@@ -375,6 +375,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
 
                 handleCloseConfirmDialog();
                 reset();
+                refreshPermissionsAfterRoleChange();
                 dispatch(showSuccessSnackbar(successMessages.join(' ')));
 
                 navigate('/system-roles', {
@@ -454,13 +455,13 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                 </Grid>
             </Grid>
 
+            {/* System roles can receive every permission because system grants are global overrides. */}
             <PermissionEditor
                 originalPermissions={systemRole?.permissions ?? []}
                 value={editedSystemRole.permissions ?? []}
                 onChange={(next) => handleInputPatch({permissions: next})}
                 isBusy={isBusy}
                 isEditable={isEditable}
-                scope={[PermissionScope.System, PermissionScope.Domain]}
             />
 
             <Box
@@ -470,24 +471,34 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={saveDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {editedSystemRole.id !== 0 && (
-                    <Button
-                        onClick={() => reset()}
+                    <DisabledTooltip
+                        title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => reset()}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 )}
 
                 {editedSystemRole.id !== 0 && (
