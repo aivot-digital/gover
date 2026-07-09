@@ -1,6 +1,7 @@
 import React, {type ReactNode} from 'react';
-import {Box, Button, Tooltip, Typography} from '@mui/material';
+import {Box, Button, Typography} from '@mui/material';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
 interface SelectionListRowProps {
     icon: ReactNode;
@@ -120,11 +121,12 @@ export function SelectionListRow(props: SelectionListRowProps): ReactNode {
                     </Button>
                 }
                 {
-                    props.primaryActionDisabledTooltip != null ?
-                        <Tooltip title={props.primaryActionDisabledTooltip}>
-                            <span>{primaryAction}</span>
-                        </Tooltip> :
-                        primaryAction
+                    <DisabledTooltip
+                        disabled={props.primaryActionDisabled}
+                        title={props.primaryActionDisabledTooltip}
+                    >
+                        {primaryAction}
+                    </DisabledTooltip>
                 }
             </Box>
         </Box>

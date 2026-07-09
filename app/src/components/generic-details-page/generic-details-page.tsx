@@ -1,16 +1,17 @@
 import {GenericDetailsPageProps} from './generic-details-page-props';
 import {Box, Button, Container, Paper, Stack, Tab, Tabs, Typography} from '@mui/material';
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Api, useApi} from '../../hooks/use-api';
 import {GenericPageHeader} from '../generic-page-header/generic-page-header';
 import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, useParams} from 'react-router-dom';
 import {GenericDetailsPageContext} from './generic-details-page-context';
-import {ApiError} from '../../models/api-error';
+import {ApiError, isApiError} from '../../models/api-error';
 import NotFoundIllustration from './resource-not-found-illustration.svg?react';
 import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
 import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBulletedOutlined';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {addEntityHistoryItem} from '../../slices/entity-history-slice';
+import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
 export const DEFAULT_ID_PARAM = 'id';
 export const NEW_ID_INDICATOR = 'new';
@@ -52,6 +53,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const navigate = useNavigate();
     const location = useLocation();
     const [notFound, setNotFound] = useState(false);
+    const [loadError, setLoadError] = useState<ApiError>();
     const dispatch = useAppDispatch();
 
     const ID_PARAM = props.idParam ?? DEFAULT_ID_PARAM;
@@ -115,23 +117,26 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         if (id == null) {
             setItem(undefined);
             setAdditionalData(undefined);
+            setNotFound(false);
+            setLoadError(undefined);
             if (currentProps.itemRef != null) {
                 currentProps.itemRef.current = null;
             }
             if (currentProps.onItemChange != null) {
-                currentProps.onItemChange(item ?? null);
+                currentProps.onItemChange(null);
             }
             if (currentProps.additionalDataRef != null) {
                 currentProps.additionalDataRef.current = null;
             }
             if (currentProps.onAdditionalDataChange != null) {
-                currentProps.onAdditionalDataChange(additionalData ?? null);
+                currentProps.onAdditionalDataChange(null);
             }
             return;
         }
 
         let isActive = true;
         setIsBusy(true);
+        setLoadError(undefined);
         fetchData<ItemType, ID, AdditionalData>(api, id, currentProps)
             .then(({item, additionalData}) => {
                 if (!isActive) {
@@ -140,6 +145,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                 setItem(item);
                 setAdditionalData(additionalData);
                 setNotFound(false);
+                setLoadError(undefined);
                 if (currentProps.itemRef != null) {
                     currentProps.itemRef.current = item;
                 }
@@ -153,12 +159,27 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                     currentProps.onAdditionalDataChange(additionalData ?? null);
                 }
             })
-            .catch((error: ApiError) => {
+            .catch((error: unknown) => {
                 if (!isActive) {
                     return;
                 }
                 console.error(error);
-                setNotFound(true);
+
+                if (isApiError(error) && error.status === 404) {
+                    setNotFound(true);
+                    setLoadError(undefined);
+                    return;
+                }
+
+                setNotFound(false);
+                setLoadError(isApiError(error)
+                    ? error
+                    : {
+                        status: 500,
+                        message: 'Unexpected error while loading details.',
+                        details: error,
+                        displayableToUser: false,
+                    });
             })
             .finally(() => {
                 if (!isActive) {
@@ -193,6 +214,14 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
         }));
     }, [id, entityType, item, headerTitle]);
 
+    if (loadError != null) {
+        throw loadError;
+    }
+
+    if (!notFound) {
+        props.hasAccess?.(item);
+    }
+
     return (
         <>
             <Container>
@@ -219,19 +248,44 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                             value={currentTab}
                                             onChange={(_, index: number) => {
                                                 const tab = resolvedTabs[index];
+                                                if (tab.isDisabled?.(item)) {
+                                                    return;
+                                                }
                                                 navigate(generatePath(tab.path, resolvedPathParams));
                                             }}
                                         >
                                             {
                                                 resolvedTabs.length > 1 &&
-                                                resolvedTabs.map(({path, label, isDisabled}, index) => (
-                                                    <Tab
-                                                        key={path}
-                                                        value={index}
-                                                        label={label}
-                                                        disabled={isDisabled?.(item)}
-                                                    />
-                                                ))
+                                                resolvedTabs.map((tab, index) => {
+                                                    const disabled = tab.isDisabled?.(item) ?? false;
+                                                    const disabledTooltip = typeof tab.disabledTooltip === 'function'
+                                                        ? tab.disabledTooltip(item)
+                                                        : tab.disabledTooltip;
+
+                                                    return (
+                                                        <Tab
+                                                            key={tab.path}
+                                                            value={index}
+                                                            label={(
+                                                                <DisabledTabLabel
+                                                                    disabled={disabled}
+                                                                    tooltip={disabledTooltip}
+                                                                >
+                                                                    {tab.label}
+                                                                </DisabledTabLabel>
+                                                            )}
+                                                            aria-disabled={disabled}
+                                                            tabIndex={disabled ? -1 : undefined}
+                                                            sx={disabled ? {
+                                                                color: 'text.disabled',
+                                                                cursor: 'not-allowed',
+                                                                '&:hover': {
+                                                                    color: 'text.disabled',
+                                                                },
+                                                            } : undefined}
+                                                        />
+                                                    );
+                                                })
                                             }
                                         </Tabs>
 
@@ -310,5 +364,20 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                 </Paper>
             </Container>
         </>
+    );
+}
+
+function DisabledTabLabel(props: {
+    disabled: boolean;
+    tooltip: ReactNode;
+    children: ReactNode;
+}): ReactNode {
+    return (
+        <DisabledTooltip
+            disabled={props.disabled}
+            title={props.tooltip}
+        >
+            {props.children}
+        </DisabledTooltip>
     );
 }

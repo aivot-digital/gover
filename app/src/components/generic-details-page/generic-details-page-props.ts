@@ -1,14 +1,15 @@
 import {BadgeProps} from '@mui/material';
 import {Api} from '../../hooks/use-api';
 import {GenericPageHeaderProps} from '../generic-page-header/generic-page-header-props';
-import {RefObject} from 'react';
+import {type ReactNode, type RefObject} from 'react';
 import {ServerEntityType} from '../../shells/staff/data/server-entity-type';
 
 type TabConfig<ItemType> = {
     path: string;
-    label: string;
+    label: ReactNode;
     badge?: BadgeProps;
     isDisabled?: (item: ItemType | undefined) => boolean;
+    disabledTooltip?: ReactNode | ((item: ItemType | undefined) => ReactNode);
 };
 
 export type GenericDetailsPageHeaderConfig<ItemType> =
@@ -40,6 +41,7 @@ export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     controlRef?: RefObject<GenericDetailsPageControlRef | null>;
     entityType?: ServerEntityType;
     isEditable?: (item: ItemType | undefined) => boolean;
+    hasAccess?: (item: ItemType | undefined) => void;
 }
 
 type AdditionalDataFetchObject<AdditionalData, ID> = {
