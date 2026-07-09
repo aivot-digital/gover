@@ -1,5 +1,7 @@
 package de.aivot.gover.backend.department.services;
 
+import com.google.i18n.phonenumbers.NumberParseException;
+import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import de.aivot.gover.backend.department.entities.DepartmentEntity;
 import de.aivot.gover.backend.department.repositories.DepartmentRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
@@ -19,11 +21,14 @@ import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
 @Service
 public class DepartmentService implements EntityService<DepartmentEntity, Integer> {
+    private static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
+
     private final DepartmentRepository departmentRepository;
     private final ThemeRepository themeRepository;
     private final SystemService systemService;
@@ -54,6 +59,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         }
 
         validateRequiredSettings(entity);
+        validateAndNormalizePhoneSettings(entity, null);
 
         return departmentRepository
                 .save(entity);
@@ -122,6 +128,7 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
         }
 
         validateRequiredSettings(entity);
+        validateAndNormalizePhoneSettings(entity, existingDepartment);
 
         entity.setParentDepartmentId(entity.getParentDepartmentId());
 
@@ -154,6 +161,57 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
 
         if (StringUtils.isNullOrEmpty(value)) {
             throw ResponseException.badRequest("„%s“ darf nicht leer überschrieben werden.", fieldName);
+        }
+    }
+
+    private void validateAndNormalizePhoneSettings(
+            @Nonnull DepartmentEntity entity,
+            @Nullable DepartmentEntity existingDepartment
+    ) throws ResponseException {
+        entity.setTechnicalSupportPhone(validateAndNormalizePhoneSetting(
+                entity.getTechnicalSupportPhone(),
+                "Kontakt-Telefonnummer für technische Unterstützung",
+                existingDepartment == null ? null : existingDepartment.getTechnicalSupportPhone()
+        ));
+        entity.setSpecialSupportPhone(validateAndNormalizePhoneSetting(
+                entity.getSpecialSupportPhone(),
+                "Kontakt-Telefonnummer für fachliche Unterstützung",
+                existingDepartment == null ? null : existingDepartment.getSpecialSupportPhone()
+        ));
+    }
+
+    @Nullable
+    private String validateAndNormalizePhoneSetting(
+            @Nullable String value,
+            @Nonnull String fieldName,
+            @Nullable String unchangedLegacyValue
+    ) throws ResponseException {
+        if (value == null) {
+            return null;
+        }
+
+        var trimmedValue = value.trim();
+        if (trimmedValue.isEmpty()) {
+            return "";
+        }
+
+        try {
+            if (!trimmedValue.startsWith("+")) {
+                throw new NumberParseException(NumberParseException.ErrorType.NOT_A_NUMBER, "Missing international prefix");
+            }
+
+            var phoneNumber = PHONE_NUMBER_UTIL.parse(trimmedValue, "ZZ");
+            if (!PHONE_NUMBER_UTIL.isValidNumber(phoneNumber) || phoneNumber.hasExtension()) {
+                throw new NumberParseException(NumberParseException.ErrorType.NOT_A_NUMBER, "Invalid phone number");
+            }
+
+            return PHONE_NUMBER_UTIL.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164);
+        } catch (NumberParseException ignored) {
+            if (unchangedLegacyValue != null && Objects.equals(trimmedValue, unchangedLegacyValue.trim())) {
+                return unchangedLegacyValue;
+            }
+
+            throw ResponseException.badRequest("Bitte geben Sie für „%s“ eine gültige Telefonnummer mit Ländervorwahl ein.", fieldName);
         }
     }
 

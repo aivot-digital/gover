@@ -21,6 +21,8 @@ import {SelectFieldComponent} from '../../../../components/select-field/select-f
 import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
 import {TextFieldComponentProps} from '../../../../components/text-field/text-field-component-props';
 import {SelectFieldComponentProps} from '../../../../components/select-field/select-field-component-props';
+import {PhoneNumberFieldComponent} from '../../../../components/phone-number-field/phone-number-field-component';
+import {PhoneNumberFieldComponentProps} from '../../../../components/phone-number-field/phone-number-field-component-props';
 import {DepartmentEntity} from '../../entities/department-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
 import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/department-utils';
@@ -37,6 +39,7 @@ import {isApiError} from '../../../../models/api-error';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {alpha} from '@mui/material/styles';
+import {isBlankPhoneNumber, isValidPhoneNumber} from '../../../../utils/phone-number-utils';
 
 const canInheritRequiredSetting = (context: yup.TestContext, isCreatedAsChild: boolean) => {
     return isCreatedAsChild || context.parent?.parentDepartmentId != null;
@@ -101,8 +104,23 @@ const optionalShadowedTextAllowEmpty = () => optionalShadowedString();
 
 const optionalShadowedTrimmedTextAllowEmpty = () => optionalShadowedTrimmedString();
 
-const optionalShadowedPhone = () => optionalShadowedTrimmedTextAllowEmpty()
-    .max(96, 'Die Telefonnummer darf maximal 96 Zeichen lang sein.');
+const optionalShadowedPhone = (legacyValue?: string | null) => optionalShadowedTrimmedTextAllowEmpty()
+    .max(96, 'Die Telefonnummer darf maximal 96 Zeichen lang sein.')
+    .test('valid-phone-number', 'Bitte geben Sie eine gültige Telefonnummer mit Ländervorwahl ein.', (value) => {
+        if (isBlankPhoneNumber(value)) {
+            return true;
+        }
+
+        if (
+            legacyValue != null &&
+            value!.trim() === legacyValue.trim() &&
+            !isValidPhoneNumber(legacyValue)
+        ) {
+            return true;
+        }
+
+        return isValidPhoneNumber(value);
+    });
 
 const optionalShadowedInfo = () => optionalShadowedTextAllowEmpty();
 
@@ -129,7 +147,7 @@ const validateOptionalMailSignature = () => optionalShadowedRichText();
 
 const validateOptionalContactInfo = () => optionalShadowedInfo();
 
-const validateOptionalContactPhone = () => optionalShadowedPhone();
+const validateOptionalContactPhone = (legacyValue?: string | null) => optionalShadowedPhone(legacyValue);
 
 const validateThemeId = () => yup.number()
     .optional()
@@ -146,7 +164,10 @@ function getProcessDetailsPath(processId: number, version: number | null): strin
     return `/processes/${processId}/versions/${version}`;
 }
 
-export const createDepartmentSchema = (isCreatedAsChild: boolean) => yup.object({
+export const createDepartmentSchema = (
+    isCreatedAsChild: boolean,
+    legacyDepartment?: Pick<DepartmentEntity, 'specialSupportPhone' | 'technicalSupportPhone'> | null,
+) => yup.object({
     name: yup.string()
         .trim()
         .min(3, 'Der Name der Organisationseinheit muss mindestens 3 Zeichen lang sein.')
@@ -154,10 +175,10 @@ export const createDepartmentSchema = (isCreatedAsChild: boolean) => yup.object(
         .required('Der Name der Organisationseinheit ist ein Pflichtfeld.'),
     postalAddress: validatePostalAddress(isCreatedAsChild),
     specialSupportEmail: validateRequiredEmail('Die E-Mail-Adresse für fachliche Unterstützung', isCreatedAsChild),
-    specialSupportPhone: validateOptionalContactPhone(),
+    specialSupportPhone: validateOptionalContactPhone(legacyDepartment?.specialSupportPhone),
     specialSupportInfo: validateOptionalContactInfo(),
     technicalSupportEmail: validateRequiredEmail('Die E-Mail-Adresse für technische Unterstützung', isCreatedAsChild),
-    technicalSupportPhone: validateOptionalContactPhone(),
+    technicalSupportPhone: validateOptionalContactPhone(legacyDepartment?.technicalSupportPhone),
     technicalSupportInfo: validateOptionalContactInfo(),
     defaultMailSignature: validateOptionalMailSignature(),
     imprint: validateRichTextRequired('Das Impressum', isCreatedAsChild),
@@ -192,7 +213,10 @@ export function DepartmentsDetailsPageIndex() {
         additionalData,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, DepartmentsDetailsPageAdditionalData>;
 
-    const departmentSchema = useMemo(() => createDepartmentSchema(parentOrgUnitId != null), [parentOrgUnitId]);
+    const departmentSchema = useMemo(
+        () => createDepartmentSchema(parentOrgUnitId != null, item),
+        [parentOrgUnitId, item?.specialSupportPhone, item?.technicalSupportPhone],
+    );
 
     const {
         currentItem,
@@ -738,9 +762,9 @@ export function DepartmentsDetailsPageIndex() {
                         disabled={!isEditable}
                     />
 
-                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                    <ShadowedInput<PhoneNumberFieldComponentProps, typeof PhoneNumberFieldComponent>
                         doNotShadow={doNotShadow}
-                        Component={TextFieldComponent}
+                        Component={PhoneNumberFieldComponent}
                         override={department.specialSupportPhone != null}
                         onSetOverride={handleShadowedStringOverride('specialSupportPhone')}
                         shadowedProps={{
@@ -748,11 +772,10 @@ export function DepartmentsDetailsPageIndex() {
                             disabled: true,
                         }}
                         label="Kontakt-Telefonnummer für fachliche Unterstützung"
-                        type="tel"
                         value={department.specialSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('specialSupportPhone')}
                         onBlur={handleShadowedStringBlur('specialSupportPhone')}
-                        maxCharacters={96}
+                        hint="Bitte geben Sie die Telefonnummer mit Ländervorwahl ein, z. B. +4930123456."
                         error={errors.specialSupportPhone}
                         disabled={!isEditable}
                     />
@@ -805,9 +828,9 @@ export function DepartmentsDetailsPageIndex() {
                         disabled={!isEditable}
                     />
 
-                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                    <ShadowedInput<PhoneNumberFieldComponentProps, typeof PhoneNumberFieldComponent>
                         doNotShadow={doNotShadow}
-                        Component={TextFieldComponent}
+                        Component={PhoneNumberFieldComponent}
                         override={department.technicalSupportPhone != null}
                         onSetOverride={handleShadowedStringOverride('technicalSupportPhone')}
                         shadowedProps={{
@@ -815,11 +838,10 @@ export function DepartmentsDetailsPageIndex() {
                             disabled: true,
                         }}
                         label="Kontakt-Telefonnummer für technische Unterstützung"
-                        type="tel"
                         value={department.technicalSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('technicalSupportPhone')}
                         onBlur={handleShadowedStringBlur('technicalSupportPhone')}
-                        maxCharacters={96}
+                        hint="Bitte geben Sie die Telefonnummer mit Ländervorwahl ein, z. B. +4930123456."
                         error={errors.technicalSupportPhone}
                         disabled={!isEditable}
                     />

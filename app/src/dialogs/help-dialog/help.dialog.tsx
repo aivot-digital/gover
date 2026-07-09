@@ -7,6 +7,7 @@ import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../
 import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {MarkdownContent} from '../../components/markdown-content/markdown-content';
+import {formatPhoneNumberForDisplay, normalizePhoneNumberForTelLink} from '../../utils/phone-number-utils';
 
 export const HelpDialogId = 'help';
 
@@ -26,6 +27,8 @@ function SupportContactBlock(props: {
         info,
         mailSubject,
     } = props;
+    const normalizedPhoneNumber = normalizePhoneNumberForTelLink(phone);
+    const phoneNumberLabel = formatPhoneNumberForDisplay(phone);
 
     return (
         <Box
@@ -61,8 +64,16 @@ function SupportContactBlock(props: {
                 }
                 {
                     phone != null &&
+                    phone.trim().length > 0 &&
                     <Typography>
-                        <b>Telefon:</b> {phone}
+                        <b>Telefon:</b>{' '}
+                        {
+                            normalizedPhoneNumber != null ?
+                                <Link href={`tel:${normalizedPhoneNumber}`}>
+                                    {phoneNumberLabel}
+                                </Link> :
+                                phoneNumberLabel
+                        }
                     </Typography>
                 }
                 {
