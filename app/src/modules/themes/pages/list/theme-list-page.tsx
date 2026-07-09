@@ -14,10 +14,13 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {Permission} from '../../../../data/permissions/permission';
+import {checkSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 const activeThemeChip = (
     <Chip
@@ -34,12 +37,11 @@ const activeThemeChip = (
 
 export function ThemeListPage() {
     const navigate = useNavigate();
+    useHasSystemPermission(Permission.THEME_READ);
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
-
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateTheme = checkSystemPermission(permissions, Permission.THEME_CREATE);
+    const canUpdateThemes = checkSystemPermission(permissions, Permission.THEME_UPDATE);
 
     const header = useMemo(() => ({
         icon: <PaletteOutlinedIcon />,
@@ -50,7 +52,8 @@ export function ThemeListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/themes/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !canCreateTheme,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.THEME_CREATE),
             },
         ],
         helpDialog: {
@@ -68,7 +71,7 @@ export function ThemeListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), [canCreateTheme]);
 
     const fetchThemes = useCallback((options: GenericListPropsFetchOptions<Theme>) => {
         return new ThemesApiService(options.api)
@@ -96,15 +99,23 @@ export function ThemeListPage() {
             field: 'name',
             headerName: 'Name',
             flex: 1,
-            renderCell: (params: any) => (
-                <CellLink
-                    to={`/themes/${params.id}`}
-                    title={hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
-                >
-                    {String(params.value)}
-                    {params.row.id === Number(appThemeId) && activeThemeChip}
-                </CellLink>
-            ),
+            renderCell: (params: any) => {
+                const content = (
+                    <>
+                        {String(params.value)}
+                        {params.row.id === Number(appThemeId) && activeThemeChip}
+                    </>
+                );
+
+                return (
+                    <CellLink
+                        to={`/themes/${params.id}`}
+                        title={canUpdateThemes ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
+                    >
+                        {content}
+                    </CellLink>
+                );
+            },
         },
         {
             field: 'colors',
@@ -155,22 +166,22 @@ export function ThemeListPage() {
                 );
             },
         },
-    ], [appThemeId, hasAccess]);
+    ], [appThemeId, canUpdateThemes]);
 
     const getRowIdentifier = useCallback((row: Theme) => row.id.toString(), []);
 
     const rowActions = useCallback((item: Theme) => [
         {
-            icon: hasAccess ? <EditOutlined /> : <Visibility/>,
+            icon: canUpdateThemes ? <EditOutlined /> : <Visibility/>,
             to: `/themes/${item.id}`,
-            tooltip: hasAccess ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
+            tooltip: canUpdateThemes ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
         },
         {
             icon: <DescriptionOutlined />,
             to: `/themes/${item.id}/forms`,
             tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
         },
-    ], [hasAccess]);
+    ], [canUpdateThemes]);
 
     return (
         <PageWrapper
@@ -187,13 +198,15 @@ export function ThemeListPage() {
                 getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Noch keine Erscheinungsbilder angelegt"
-                        description="Erscheinungsbilder steuern Farben, Logos und Layout-Einstellungen für Gover und veröffentlichte Formulare."
-                        addText={hasAccess ? "Neues Erscheinungsbild anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/themes/new') : undefined}
+                        title="Keine Erscheinungsbilder vorhanden"
+                        description="Es wurden noch keine Erscheinungsbilder angelegt."
+                        addText="Neues Erscheinungsbild anlegen"
+                        onAdd={() => navigate('/themes/new')}
+                        addDisabled={!canCreateTheme}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.THEME_CREATE)}
                     />
                 }
-                noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden"
+                noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden, die zu Ihrer Suche passen"
                 rowActionsCount={2}
                 rowActions={rowActions}
                 defaultSortField="name"

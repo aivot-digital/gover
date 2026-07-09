@@ -14,19 +14,22 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {checkSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function SecretsListPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    useHasSystemPermission(Permission.SECRET_READ);
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateSecret = checkSystemPermission(permissions, Permission.SECRET_CREATE);
+    const canUpdateSecrets = checkSystemPermission(permissions, Permission.SECRET_UPDATE);
 
     const header = useMemo(() => ({
         icon: <KeyOutlinedIcon />,
@@ -37,7 +40,8 @@ export function SecretsListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/secrets/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !canCreateSecret,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.SECRET_CREATE),
             },
         ],
         helpDialog: {
@@ -61,7 +65,7 @@ export function SecretsListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), [canCreateSecret]);
 
     const fetchSecrets = useCallback((options: GenericListPropsFetchOptions<SecretEntityResponseDTO>) => {
         return new SecretsApiService(options.api)
@@ -90,7 +94,7 @@ export function SecretsListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/secrets/${params.id}`}
-                    title={hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen'}
+                    title={canUpdateSecrets ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -101,15 +105,15 @@ export function SecretsListPage() {
             headerName: 'Beschreibung',
             flex: 2,
         },
-    ], [hasAccess]);
+    ], [canUpdateSecrets]);
 
     const getRowIdentifier = useCallback((row: SecretEntityResponseDTO) => row.key, []);
 
     const rowActions = useCallback((item: SecretEntityResponseDTO) => [
         {
-            icon: hasAccess ? <EditOutlined /> : <Visibility/>,
+            icon: canUpdateSecrets ? <EditOutlined /> : <Visibility/>,
             to: `/secrets/${item.key}`,
-            tooltip: hasAccess ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen',
+            tooltip: canUpdateSecrets ? 'Geheimnis bearbeiten' : 'Geheimnis anzeigen',
         },
         {
             icon: <ContentPasteOutlinedIcon />,
@@ -123,7 +127,7 @@ export function SecretsListPage() {
             },
             tooltip: `Schlüssel (ID) in Zwischenablage kopieren (${item.key})`,
         },
-    ], [dispatch, hasAccess]);
+    ], [canUpdateSecrets, dispatch]);
 
     return (
         <PageWrapper
@@ -140,10 +144,12 @@ export function SecretsListPage() {
                 getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Noch keine Geheimnisse angelegt"
+                        title="Keine Geheimnisse vorhanden"
                         description="Geheimnisse speichern vertrauliche Konfigurationswerte wie API-Schlüssel, Passwörter oder Tokens verschlüsselt."
-                        addText={hasAccess ? "Neues Geheimnis anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/secrets/new') : undefined}
+                        addText="Neues Geheimnis anlegen"
+                        onAdd={() => navigate('/secrets/new')}
+                        addDisabled={!canCreateSecret}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.SECRET_CREATE)}
                     />
                 }
                 noSearchResultsPlaceholder="Keine Geheimnisse gefunden"

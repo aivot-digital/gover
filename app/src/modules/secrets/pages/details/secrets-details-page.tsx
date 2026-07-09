@@ -4,12 +4,25 @@ import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
-import React from 'react';
+import React, {useCallback} from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function SecretsDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
+    useHasSystemPermission(Permission.SECRET_READ);
+    const canCreateSecret = useCheckSystemPermission(Permission.SECRET_CREATE);
+    const canUpdateSecret = useCheckSystemPermission(Permission.SECRET_UPDATE);
+
+    const isEditable = useCallback((item: Secret | undefined) => {
+        if (item == null) {
+            return false;
+        }
+
+        return item.key === ''
+            ? canCreateSecret
+            : canUpdateSecret;
+    }, [canCreateSecret, canUpdateSecret]);
 
     return (
         <PageWrapper
@@ -18,7 +31,7 @@ export function SecretsDetailsPage() {
             background
         >
             <GenericDetailsPage<Secret, string, undefined>
-                isEditable={() => userIsAdmin}
+                isEditable={isEditable}
                 header={{
                     icon: <KeyOutlinedIcon />,
                     title: 'Geheimnis bearbeiten',

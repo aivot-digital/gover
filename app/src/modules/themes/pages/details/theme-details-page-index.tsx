@@ -1,5 +1,5 @@
 import {Alert, AlertTitle, Box, Button, Divider, Grid, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
@@ -26,10 +26,12 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ImageSelector} from '../../../assets/components/image-selector';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {Page} from '../../../../models/dtos/page';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const ThemeSchema = yup.object({
     name: yup.string()
@@ -42,24 +44,6 @@ export const ThemeSchema = yup.object({
 export function ThemeDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const userIsAdmin = useUserIsAdmin();
-
-    useEffect(() => {
-        if (userIsAdmin) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-theme-details',
-            message: 'Dieses Erscheinungsbild kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            type: SnackbarType.Dismissable,
-            severity: SnackbarSeverity.Warning,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-theme-details'));
-        };
-    }, []);
 
     const api = useApi();
     const {
@@ -69,6 +53,8 @@ export function ThemeDetailsPageIndex() {
         setIsBusy,
         isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Theme, undefined>;
+    const editPermission = item?.id === 0 ? Permission.THEME_CREATE : Permission.THEME_UPDATE;
+    const canDeleteTheme = useCheckSystemPermission(Permission.THEME_DELETE);
 
     const {
         currentItem,
@@ -97,6 +83,15 @@ export function ThemeDetailsPageIndex() {
             <GenericDetailsSkeleton />
         );
     }
+
+    const saveDisabledByPermission = !isEditable;
+    const saveDisabledTooltip = saveDisabledByPermission
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledByPermission = !canDeleteTheme;
+    const deleteDisabledTooltip = deleteDisabledByPermission
+        ? formatMissingPermissionTooltip(Permission.THEME_DELETE)
+        : undefined;
 
     const handleSave = () => {
         if (theme != null) {
@@ -425,43 +420,56 @@ export function ThemeDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={saveDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     theme.id !== 0 &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    <DisabledTooltip
+                        title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
                     theme.id !== 0 &&
-                    <Button
-                        variant={'outlined'}
-                        onClick={checkAndHandleDelete}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete />}
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || deleteDisabledByPermission}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant={'outlined'}
+                            onClick={checkAndHandleDelete}
+                            disabled={isBusy || deleteDisabledByPermission}
+                            color="error"
+                            startIcon={<Delete />}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

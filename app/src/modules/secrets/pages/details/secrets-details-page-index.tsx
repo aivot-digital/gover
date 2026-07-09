@@ -1,5 +1,5 @@
 import {Box, Button, Typography} from '@mui/material';
-import React, {useContext, useEffect, useMemo, useState} from 'react';
+import React, {useContext, useMemo, useState} from 'react';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
@@ -17,9 +17,12 @@ import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import * as yup from 'yup';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const SecretSchema = yup.object({
     name: yup.string()
@@ -50,23 +53,7 @@ export function SecretsDetailsPageIndex() {
         setIsBusy,
         isEditable,
     } = useContext(GenericDetailsPageContext);
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-secrets-details',
-            message: 'Dieses Geheimnis kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff',
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-secrets-details'));
-        };
-    }, [isEditable]);
+    const canDeleteSecret = useCheckSystemPermission(Permission.SECRET_DELETE);
 
     const {
         currentItem,
@@ -83,6 +70,15 @@ export function SecretsDetailsPageIndex() {
     const secret = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+    const editPermission = isStringNullOrEmpty(secret?.key)
+        ? Permission.SECRET_CREATE
+        : Permission.SECRET_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeleteSecret
+        ? formatMissingPermissionTooltip(Permission.SECRET_DELETE)
+        : undefined;
 
     if (secret == null) {
         return (
@@ -238,43 +234,56 @@ export function SecretsDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     isStringNotNullOrEmpty(secret.key) &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    <DisabledTooltip
+                        title={editDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
                     isStringNotNullOrEmpty(secret.key) &&
-                    <Button
-                        variant="outlined"
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete />}
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || !canDeleteSecret}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowConfirmDialog(true)}
+                            disabled={isBusy || !canDeleteSecret}
+                            color="error"
+                            startIcon={<Delete />}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

@@ -5,10 +5,21 @@ import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {useCallback} from 'react';
 
 export function ThemeDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
+    useHasSystemPermission(Permission.THEME_READ);
+    const canCreateTheme = useCheckSystemPermission(Permission.THEME_CREATE);
+    const canUpdateTheme = useCheckSystemPermission(Permission.THEME_UPDATE);
+    const isEditable = useCallback((item: Theme | undefined) => {
+        if (item == null) {
+            return false;
+        }
+
+        return item.id === 0 ? canCreateTheme : canUpdateTheme;
+    }, [canCreateTheme, canUpdateTheme]);
 
     return (
         <PageWrapper
@@ -17,7 +28,7 @@ export function ThemeDetailsPage() {
             background
         >
             <GenericDetailsPage<Theme, number, undefined>
-                isEditable={() => userIsAdmin}
+                isEditable={isEditable}
                 header={{
                     icon: <PaletteOutlinedIcon />,
                     title: 'Erscheinungsbild bearbeiten',
