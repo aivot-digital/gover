@@ -154,13 +154,19 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
     ) throws ResponseException {
         if (value == null) {
             if (isRoot) {
-                throw ResponseException.badRequest("Für Organisationseinheiten der obersten Ebene muss „%s“ konfiguriert sein.", fieldName);
+                throw ResponseException.badRequest(String.format(
+                        "Für Organisationseinheiten der obersten Ebene muss „%s“ konfiguriert sein.",
+                        fieldName
+                ));
             }
             return;
         }
 
         if (StringUtils.isNullOrEmpty(value)) {
-            throw ResponseException.badRequest("„%s“ darf nicht leer überschrieben werden.", fieldName);
+            throw ResponseException.badRequest(String.format(
+                    "„%s“ darf nicht leer überschrieben werden.",
+                    fieldName
+            ));
         }
     }
 
@@ -211,7 +217,10 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
                 return unchangedLegacyValue;
             }
 
-            throw ResponseException.badRequest("Bitte geben Sie für „%s“ eine gültige Telefonnummer mit Ländervorwahl ein.", fieldName);
+            throw ResponseException.badRequest(String.format(
+                    "Bitte geben Sie für „%s“ eine gültige Telefonnummer mit Ländervorwahl ein.",
+                    fieldName
+            ));
         }
     }
 
