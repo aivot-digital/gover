@@ -162,7 +162,7 @@ export function TeamsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Öffentliche Informationen des Teams
+                Angaben zum Team
             </Typography>
             <Typography
                 sx={{
@@ -170,7 +170,7 @@ export function TeamsDetailsPageIndex() {
                     maxWidth: 900,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über dieses Team. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Hinterlegen Sie interne Angaben dieses Teams. Diese Angaben werden in Gover zum Beispiel in Listen, Zuweisungen und Auswahlen verwendet.
             </Typography>
             <Grid
                 container
