@@ -543,6 +543,12 @@ export function DepartmentsDetailsPageIndex() {
                         disabled={!isEditable}
                     />
                 </Grid>
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                />
                 {
                     shouldShowOrgUnitHierarchy &&
                     <Grid
