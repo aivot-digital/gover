@@ -26,19 +26,18 @@ public class VDepartmentMembershipWithDetailsEntity {
     private Integer userSystemRoleId;
     private Integer departmentId;
     private String departmentName;
-    private String departmentAddress;
+    private String departmentPostalAddress;
     private String departmentImprint;
     private String departmentCommonPrivacy;
     private String departmentCommonAccessibility;
-    private String departmentTechnicalSupportAddress;
+    private String departmentTechnicalSupportEmail;
     private String departmentTechnicalSupportPhone;
     private String departmentTechnicalSupportInfo;
-    private String departmentSpecialSupportAddress;
+    private String departmentSpecialSupportEmail;
     private String departmentSpecialSupportPhone;
     private String departmentSpecialSupportInfo;
-    private String departmentMail;
     private Integer departmentThemeId;
-    private String departmentAdditionalInfo;
+    private String departmentDefaultMailSignature;
     private Integer departmentDepth;
     private Integer departmentParentDepartmentId;
     private List<String> departmentParentNames;
@@ -179,12 +178,12 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public String getDepartmentAddress() {
-        return departmentAddress;
+    public String getDepartmentPostalAddress() {
+        return departmentPostalAddress;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setDepartmentAddress(String departmentAddress) {
-        this.departmentAddress = departmentAddress;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentPostalAddress(String departmentPostalAddress) {
+        this.departmentPostalAddress = departmentPostalAddress;
         return this;
     }
 
@@ -215,12 +214,12 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public String getDepartmentTechnicalSupportAddress() {
-        return departmentTechnicalSupportAddress;
+    public String getDepartmentTechnicalSupportEmail() {
+        return departmentTechnicalSupportEmail;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setDepartmentTechnicalSupportAddress(String departmentTechnicalSupportAddress) {
-        this.departmentTechnicalSupportAddress = departmentTechnicalSupportAddress;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentTechnicalSupportEmail(String departmentTechnicalSupportEmail) {
+        this.departmentTechnicalSupportEmail = departmentTechnicalSupportEmail;
         return this;
     }
 
@@ -242,12 +241,12 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public String getDepartmentSpecialSupportAddress() {
-        return departmentSpecialSupportAddress;
+    public String getDepartmentSpecialSupportEmail() {
+        return departmentSpecialSupportEmail;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setDepartmentSpecialSupportAddress(String departmentSpecialSupportAddress) {
-        this.departmentSpecialSupportAddress = departmentSpecialSupportAddress;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentSpecialSupportEmail(String departmentSpecialSupportEmail) {
+        this.departmentSpecialSupportEmail = departmentSpecialSupportEmail;
         return this;
     }
 
@@ -269,15 +268,6 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public String getDepartmentMail() {
-        return departmentMail;
-    }
-
-    public VDepartmentMembershipWithDetailsEntity setDepartmentMail(String departmentMail) {
-        this.departmentMail = departmentMail;
-        return this;
-    }
-
     public Integer getDepartmentThemeId() {
         return departmentThemeId;
     }
@@ -287,12 +277,12 @@ public class VDepartmentMembershipWithDetailsEntity {
         return this;
     }
 
-    public String getDepartmentAdditionalInfo() {
-        return departmentAdditionalInfo;
+    public String getDepartmentDefaultMailSignature() {
+        return departmentDefaultMailSignature;
     }
 
-    public VDepartmentMembershipWithDetailsEntity setDepartmentAdditionalInfo(String departmentAdditionalInfo) {
-        this.departmentAdditionalInfo = departmentAdditionalInfo;
+    public VDepartmentMembershipWithDetailsEntity setDepartmentDefaultMailSignature(String departmentDefaultMailSignature) {
+        this.departmentDefaultMailSignature = departmentDefaultMailSignature;
         return this;
     }
 

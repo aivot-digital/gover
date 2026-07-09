@@ -123,10 +123,10 @@ class TemplateLoaderServiceTest {
     void briefkopfTemplate_RendersResponsibleAndManagingAddressesOnly() {
         var responsibleDepartment = new VDepartmentShadowedEntity()
                 .setName("Responsible Department Name")
-                .setAddress("Responsible Street 1\n12345 Responsible City");
+                .setPostalAddress("Responsible Street 1\n12345 Responsible City");
         var managingDepartment = new VDepartmentShadowedEntity()
                 .setName("Managing Department Name")
-                .setAddress("Managing Street 2\n54321 Managing City");
+                .setPostalAddress("Managing Street 2\n54321 Managing City");
 
         var html = new TemplateLoaderService().processTemplate(
                 "form-parts/briefkopf.html",
@@ -439,7 +439,7 @@ class TemplateLoaderServiceTest {
                 .setRootElement(new FormLayoutElement().setChildren(List.of(firstStepElement, secondStepElement)));
         var department = new DepartmentEntity()
                 .setName("Formularservice")
-                .setAddress("Musterstrasse 1");
+                .setPostalAddress("Musterstrasse 1");
 
         var html = new TemplateLoaderService().processTemplate(
                 "form.html",
@@ -474,7 +474,7 @@ class TemplateLoaderServiceTest {
                 .setRootElement(new FormLayoutElement().setChildren(List.of(introductionStep, firstStepElement, secondStepElement)));
         var department = new DepartmentEntity()
                 .setName("Formularservice")
-                .setAddress("Musterstrasse 1");
+                .setPostalAddress("Musterstrasse 1");
 
         var html = new TemplateLoaderService().processTemplate(
                 "form.html",
@@ -514,7 +514,7 @@ class TemplateLoaderServiceTest {
                 .setRootElement(rootElement);
         var department = new DepartmentEntity()
                 .setName("Formularservice")
-                .setAddress("Musterstrasse 1");
+                .setPostalAddress("Musterstrasse 1");
 
         return new TemplateLoaderService().processTemplate(
                 "form.html",

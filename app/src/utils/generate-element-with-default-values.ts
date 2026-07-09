@@ -161,6 +161,8 @@ const elementConstructors: {
         imprintDepartmentId: undefined,
         privacyDepartmentId: undefined,
         accessibilityDepartmentId: undefined,
+        formSpecificPrivacyStatement: undefined,
+        formSpecificAccessibilityStatement: undefined,
         themeId: undefined,
         pdfTemplateKey: undefined,
     }),

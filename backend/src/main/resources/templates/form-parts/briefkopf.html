@@ -9,8 +9,8 @@
 >
     <th:block
             th:with="
-                hasResponsibleDepartmentAddress=${ responsibleDepartment != null && responsibleDepartment.address != null && !#strings.isEmpty(#strings.trim(responsibleDepartment.address)) },
-                hasManagingDepartmentAddress=${ managingDepartment != null && managingDepartment.address != null && !#strings.isEmpty(#strings.trim(managingDepartment.address)) }
+                hasResponsibleDepartmentAddress=${ responsibleDepartment != null && responsibleDepartment.postalAddress != null && !#strings.isEmpty(#strings.trim(responsibleDepartment.postalAddress)) },
+                hasManagingDepartmentAddress=${ managingDepartment != null && managingDepartment.postalAddress != null && !#strings.isEmpty(#strings.trim(managingDepartment.postalAddress)) }
             "
     >
         <div
@@ -23,7 +23,7 @@
             >
                 <h3>Zuständige Stelle</h3>
                 <p
-                        th:text="${ responsibleDepartment.address }"
+                        th:text="${ responsibleDepartment.postalAddress }"
                         style="white-space: pre-line;"
                 >
                     Adresse der zuständigen Stelle
@@ -36,7 +36,7 @@
             >
                 <h3>Bewirtschaftende Stelle</h3>
                 <p
-                        th:text="${ managingDepartment.address }"
+                        th:text="${ managingDepartment.postalAddress }"
                         style="white-space: pre-line;"
                 >
                     Adresse der bewirtschaftenden Stelle

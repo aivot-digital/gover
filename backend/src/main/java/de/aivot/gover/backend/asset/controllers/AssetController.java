@@ -19,11 +19,13 @@ import de.aivot.gover.backend.openApi.OpenApiConstants;
 import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.enums.StorageProviderType;
+import de.aivot.gover.backend.storage.exceptions.StorageException;
 import de.aivot.gover.backend.storage.models.StorageDocument;
 import de.aivot.gover.backend.storage.models.StorageFolder;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
 import de.aivot.gover.backend.storage.services.StorageProviderService;
 import de.aivot.gover.backend.storage.services.StorageService;
+import de.aivot.gover.backend.storage.utils.StoragePathUtils;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -48,7 +50,6 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -870,7 +871,7 @@ public class AssetController {
             throw ResponseException.notAcceptable("Der Pfad eines Ordners muss mit einem Schrägstrich (/) enden.");
         }
 
-        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+        return normalizeFolderPathInput(normalizedPath);
     }
 
     @Nonnull
@@ -898,7 +899,7 @@ public class AssetController {
             throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
         }
 
-        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+        return normalizeFilePathInput(normalizedPath);
     }
 
     @Nonnull
@@ -926,7 +927,7 @@ public class AssetController {
             throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
         }
 
-        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+        return normalizeFilePathInput(normalizedPath);
     }
 
     @Nonnull
@@ -954,22 +955,31 @@ public class AssetController {
             throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
         }
 
-        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+        return normalizeFilePathInput(normalizedPath);
     }
 
     @Nonnull
     private static String normalizeFilePathInput(@Nonnull String path) throws ResponseException {
-        var normalizedPath = path.trim();
-        if (normalizedPath.isBlank()) {
+        if (path.trim().isBlank()) {
             throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht leer sein.");
         }
-        if (!normalizedPath.startsWith("/")) {
-            normalizedPath = "/" + normalizedPath;
-        }
-        if (normalizedPath.endsWith("/")) {
+        if (path.trim().endsWith("/")) {
             throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
         }
-        return normalizedPath;
+        try {
+            return StoragePathUtils.normalizeDocumentPath(path);
+        } catch (StorageException e) {
+            throw ResponseException.badRequest(e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private static String normalizeFolderPathInput(@Nonnull String path) throws ResponseException {
+        try {
+            return StoragePathUtils.normalizeFolderPath(path);
+        } catch (StorageException e) {
+            throw ResponseException.badRequest(e.getMessage());
+        }
     }
 
     private static void validateReplacementFileExtension(@Nonnull String existingFilePath,

@@ -65,7 +65,7 @@ services:
       CHROMIUM_DENY_PUBLIC_IPS: "true"
       # Die Allow-List für Gotenberg muss angepasst werden, um die Verbindung zu ihrer Gover-Instanz zu ermöglichen.
       # Es handelt sich um einen regulären Ausdruck. Bitte achten Sie darauf, dass Punkte als "\\." geschrieben werden müssen (z.B. gover\\.aivot\\.de) und dass der Ausdruck mit ^ beginnt und mit $ endet.
-      CHROMIUM_ALLOW_LIST: "^(https://{{ HOSTNAME_REGEX }}|file:///tmp/)"
+      CHROMIUM_ALLOW_LIST: "^(https://{{ HOSTNAME_REGEX }}/|file:///tmp/)"
     ports:
       - "9191:3000"
     networks:
@@ -194,6 +194,7 @@ services:
 
       GOVER_HOSTNAME: "https://{{ HOSTNAME }}" # Die Adresse inklusive Protokoll und Hostname unter der die Gover-Anwendung erreichbar ist. Passen Sie diese Adresse unbedingt an.
       GOVER_TIMEZONE: "{{ GOVER_TIMEZONE }}" # Setzen Sie die fachliche Zeitzone der Gover-Anwendung, z. B. Europe/Berlin. Passen Sie diese Zeitzone unbedingt an. Dieser Wert muss mit PGTZ der Gover-Datenbank übereinstimmen.
+      GOVER_DEPARTMENT_LEVEL_LABELS: "Organisation, Bereich, Abteilung, Sachgebiet, Arbeitsbereich" # Setzen Sie die kommagetrennten Bezeichnungen der Hierarchieebenen für Organisationseinheiten. Die Anzahl der Einträge bestimmt die maximal mögliche Anzahl an Ebenen. Entfernen Sie diese Variable oder lassen Sie sie leer, um den Standard zu verwenden.
       GOVER_SECRETS_KEY: "{{ GOVER_SECRETS_KEY }}" # Setzen Sie den geheimen Schlüssel für die Verschlüsselung der Daten. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein.
       GOVER_CAPTCHA_KEY: "{{ GOVER_CAPTCHA_KEY }}" # Setzen Sie den geheimen Schlüssel zur Erzeugung und Verifizierung von Captcha-Challenges. Passen Sie diesen geheimen Schlüssel unbedingt an. Dieser muss mindestens 32 Zeichen lang sein (z. B. 32‑Byte‑Hex).
 

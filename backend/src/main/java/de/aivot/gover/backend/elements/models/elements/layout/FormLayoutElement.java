@@ -33,6 +33,8 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
     private Integer imprintDepartmentId;
     private Integer privacyDepartmentId;
     private Integer accessibilityDepartmentId;
+    private String formSpecificPrivacyStatement;
+    private String formSpecificAccessibilityStatement;
 
     private Integer themeId;
 
@@ -54,12 +56,13 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
                 Objects.equals(responsibleDepartmentId, that.responsibleDepartmentId) && Objects.equals(legalSupportDepartmentId, that.legalSupportDepartmentId) &&
                 Objects.equals(technicalSupportDepartmentId, that.technicalSupportDepartmentId) && Objects.equals(imprintDepartmentId, that.imprintDepartmentId) &&
                 Objects.equals(privacyDepartmentId, that.privacyDepartmentId) && Objects.equals(accessibilityDepartmentId, that.accessibilityDepartmentId) &&
+                Objects.equals(formSpecificPrivacyStatement, that.formSpecificPrivacyStatement) && Objects.equals(formSpecificAccessibilityStatement, that.formSpecificAccessibilityStatement) &&
                 Objects.equals(themeId, that.themeId) && Objects.equals(pdfTemplateKey, that.pdfTemplateKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, themeId, pdfTemplateKey);
+        return Objects.hash(super.hashCode(), tabTitle, children, offlineSubmissionText, offlineSignatureNeeded, publicTitle, showOnFormIndexPage, managingDepartmentId, responsibleDepartmentId, legalSupportDepartmentId, technicalSupportDepartmentId, imprintDepartmentId, privacyDepartmentId, accessibilityDepartmentId, formSpecificPrivacyStatement, formSpecificAccessibilityStatement, themeId, pdfTemplateKey);
     }
 
     @JsonIgnore
@@ -217,6 +220,24 @@ public class FormLayoutElement extends BaseElement implements LayoutElement<Base
 
     public FormLayoutElement setAccessibilityDepartmentId(Integer accessibilityDepartmentId) {
         this.accessibilityDepartmentId = accessibilityDepartmentId;
+        return this;
+    }
+
+    public String getFormSpecificPrivacyStatement() {
+        return formSpecificPrivacyStatement;
+    }
+
+    public FormLayoutElement setFormSpecificPrivacyStatement(String formSpecificPrivacyStatement) {
+        this.formSpecificPrivacyStatement = formSpecificPrivacyStatement;
+        return this;
+    }
+
+    public String getFormSpecificAccessibilityStatement() {
+        return formSpecificAccessibilityStatement;
+    }
+
+    public FormLayoutElement setFormSpecificAccessibilityStatement(String formSpecificAccessibilityStatement) {
+        this.formSpecificAccessibilityStatement = formSpecificAccessibilityStatement;
         return this;
     }
 

@@ -5,7 +5,9 @@ import de.aivot.gover.backend.asset.entities.VStorageIndexItemWithAssetEntityId;
 import de.aivot.gover.backend.asset.repositories.VStorageIndexItemWithAssetRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.storage.exceptions.StorageException;
 import de.aivot.gover.backend.storage.services.StorageService;
+import de.aivot.gover.backend.storage.utils.StoragePathUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
@@ -18,7 +20,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
@@ -161,6 +162,10 @@ public class CitizenAssetController {
             throw ResponseException.notAcceptable("Der Pfad einer Datei darf nicht mit einem Schrägstrich (/) enden.");
         }
 
-        return URLDecoder.decode(normalizedPath, StandardCharsets.UTF_8);
+        try {
+            return StoragePathUtils.normalizeDocumentPath(normalizedPath);
+        } catch (StorageException e) {
+            throw ResponseException.badRequest(e.getMessage());
+        }
     }
 }

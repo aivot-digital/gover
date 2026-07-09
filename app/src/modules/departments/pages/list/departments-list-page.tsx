@@ -14,7 +14,6 @@ import {DepartmentBrowser} from '../../components/department-browser';
 import {NewParentIdQueryParam} from '../details/departments-details-page';
 import {type VDepartmentShadowedEntityWithChildren} from '../../entities/v-department-shadowed-entity';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
-import {getDepartmentTypeLabel} from '../../utils/department-utils';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
@@ -25,10 +24,10 @@ import {
 } from '../../../permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../permissions/models/permission-set';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
-
-const MAX_DEPARTMENT_DEPTH = 2;
+import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/department-utils';
 
 export function DepartmentsListPage(): React.ReactElement {
+    const rootDepartmentTypeLabel = getDepartmentTypeLabel(0);
     const permissions = useAppSelector(selectPermissions);
     const canCreateRootDepartment = checkSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
 
@@ -77,7 +76,7 @@ export function DepartmentsListPage(): React.ReactElement {
                     title="Organisationseinheiten"
                     actions={[
                         {
-                            label: 'Neue Organisation',
+                            label: `Neue ${rootDepartmentTypeLabel}`,
                             icon: <Add />,
                             to: '/departments/new',
                             variant: 'contained',
@@ -119,7 +118,7 @@ export function DepartmentsListPage(): React.ReactElement {
                     <DepartmentBrowser
                         departments={rootDepartments}
                         loadError={loadError}
-                        emptyState={<DepartmentsListEmptyState canCreateRootDepartment={canCreateRootDepartment} />}
+                        emptyState={<DepartmentsListEmptyState canCreateRootDepartment={canCreateRootDepartment} rootDepartmentTypeLabel={rootDepartmentTypeLabel} />}
                         getActions={getActions}
                         getDepartmentHref={getDepartmentHref}
                     />
@@ -133,7 +132,8 @@ function getDepartmentActions(
     department: VDepartmentShadowedEntityWithChildren,
     permissions: PermissionSet | undefined,
 ): Action[] {
-    const canAddChildDepartment = department.depth < MAX_DEPARTMENT_DEPTH;
+    const maxDepartmentDepth = getMaxDepartmentDepth();
+    const canAddChildDepartment = department.depth < maxDepartmentDepth;
     const canCreateChildDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_CREATE) && canAddChildDepartment;
     const canReadDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
     const canUpdateDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_UPDATE);
@@ -144,7 +144,7 @@ function getDepartmentActions(
             tooltip: `${getDepartmentTypeLabel(department.depth + 1)} hinzufügen`,
             disabledTooltip: canAddChildDepartment
                 ? formatMissingPermissionTooltip(Permission.DEPARTMENT_CREATE)
-                : `Organisationseinheiten sind auf ${MAX_DEPARTMENT_DEPTH + 1} Ebenen beschränkt.`,
+                : `Organisationseinheiten sind auf ${maxDepartmentDepth + 1} Ebenen beschränkt.`,
             icon: <Add />,
             to: `/departments/new?${NewParentIdQueryParam}=${department.id}`,
             variant: 'contained',
@@ -175,9 +175,11 @@ function getDepartmentActions(
 
 function DepartmentsListEmptyState(props: {
     canCreateRootDepartment: boolean;
+    rootDepartmentTypeLabel: string;
 }): React.ReactElement {
     const {
         canCreateRootDepartment,
+        rootDepartmentTypeLabel,
     } = props;
 
     return (
@@ -203,7 +205,7 @@ function DepartmentsListEmptyState(props: {
                         startIcon={<Add />}
                         disabled={!canCreateRootDepartment}
                     >
-                        Erste Organisation anlegen
+                        Erste {rootDepartmentTypeLabel} anlegen
                     </Button>
                 </DisabledTooltip>
             )}

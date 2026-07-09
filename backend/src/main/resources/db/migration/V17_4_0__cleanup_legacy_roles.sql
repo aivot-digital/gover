@@ -3,7 +3,6 @@ drop view submissions_with_memberships;
 drop view form_versions_with_memberships;
 drop view form_with_memberships;
 drop view memberships_with_users;
-drop view departments_with_memberships;
 
 -- migrate legacy global admin users to use system role
 update users

@@ -13,6 +13,7 @@ import de.aivot.gover.backend.storage.models.StorageItemMetadata;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageIndexItemRepository;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
+import de.aivot.gover.backend.storage.utils.StoragePathUtils;
 import de.aivot.gover.backend.utils.NumberUtils;
 import de.aivot.gover.backend.utils.PaginationUtils;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -67,6 +68,7 @@ public class StorageService {
 
     @Nonnull
     public StorageFolder createFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
+        var normalizedPath = normalizeInputFolderPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -83,13 +85,14 @@ public class StorageService {
         StorageFolder createdFolder;
         try {
             createdFolder = definition
-                    .createFolder(config, path);
+                    .createFolder(config, normalizedPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
 
+        var createdFolderPathFromRoot = normalizeInputFolderPath(createdFolder.getPathFromRoot());
         var createdFolderPathParts = StringUtils
-                .getPathSegments(createdFolder.getPathFromRoot());
+                .getPathSegments(createdFolderPathFromRoot);
 
         for (int i = 0; i < createdFolderPathParts.size(); i++) {
             var createdFolderPath = Strings
@@ -127,12 +130,13 @@ public class StorageService {
     public Optional<StorageFolder> getFolder(@Nonnull Integer providerId,
                                              @Nonnull String path,
                                              boolean recursive) throws ResponseException {
+        var normalizedPath = normalizeInputFolderPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
         try {
-            return definition.retrieveFolder(config, path, recursive);
+            return definition.retrieveFolder(config, normalizedPath, recursive);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
@@ -152,7 +156,7 @@ public class StorageService {
                 continue;
             }
 
-            var folderPath = normalizeFolderPath(item.getPathFromRoot());
+            var folderPath = normalizeIndexFolderPath(item.getPathFromRoot());
             foldersByPath.computeIfAbsent(folderPath, p -> new StorageFolder(
                     p,
                     "/".equals(p) ? "Root" : StringUtils.getLastPathSegment(p),
@@ -216,6 +220,7 @@ public class StorageService {
     }
 
     public void deleteFolder(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
+        var normalizedPath = normalizeInputFolderPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -230,20 +235,20 @@ public class StorageService {
         }
 
         try {
-            definition.deleteFolder(config, path);
+            definition.deleteFolder(config, normalizedPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
 
-        var normalizedFolderPath = normalizeFolderPath(path);
-
-        storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedFolderPath);
+        storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedPath);
     }
 
     @Nonnull
     public StorageFolder moveFolder(@Nonnull Integer providerId,
                                     @Nonnull String sourcePath,
                                     @Nonnull String targetPath) throws ResponseException {
+        var normalizedSourcePath = normalizeInputFolderPath(sourcePath);
+        var normalizedTargetPath = normalizeInputFolderPath(targetPath);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -259,11 +264,11 @@ public class StorageService {
 
         StorageFolder movedFolder;
         try {
-            movedFolder = definition.moveFolder(config, sourcePath, targetPath);
+            movedFolder = definition.moveFolder(config, normalizedSourcePath, normalizedTargetPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
-        var targetFolderPath = normalizeFolderPath(movedFolder.getPathFromRoot());
+        var targetFolderPath = normalizeInputFolderPath(movedFolder.getPathFromRoot());
         StorageFolder targetFolderTree;
         try {
             targetFolderTree = definition
@@ -275,7 +280,6 @@ public class StorageService {
 
         upsertFolderTreeIndex(provider, targetFolderTree);
 
-        var normalizedSourcePath = normalizeFolderPath(sourcePath);
         if (!normalizedSourcePath.equals(targetFolderPath)) {
             storageIndexItemRepository.deleteFolderTree(provider.getId(), normalizedSourcePath);
         }
@@ -287,6 +291,8 @@ public class StorageService {
     public StorageFolder copyFolder(@Nonnull Integer providerId,
                                     @Nonnull String sourcePath,
                                     @Nonnull String targetPath) throws ResponseException {
+        var normalizedSourcePath = normalizeInputFolderPath(sourcePath);
+        var normalizedTargetPath = normalizeInputFolderPath(targetPath);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -302,11 +308,11 @@ public class StorageService {
 
         StorageFolder copiedFolder;
         try {
-            copiedFolder = definition.copyFolder(config, sourcePath, targetPath);
+            copiedFolder = definition.copyFolder(config, normalizedSourcePath, normalizedTargetPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
-        var targetFolderPath = normalizeFolderPath(copiedFolder.getPathFromRoot());
+        var targetFolderPath = normalizeInputFolderPath(copiedFolder.getPathFromRoot());
         StorageFolder targetFolderTree;
         try {
             targetFolderTree = definition
@@ -322,13 +328,14 @@ public class StorageService {
     }
 
     public Optional<StorageDocument> getDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
+        var normalizedPath = normalizeInputDocumentPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
         Optional<StorageDocument> doc;
         try {
-            doc = definition.retrieveDocument(config, path);
+            doc = definition.retrieveDocument(config, normalizedPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
@@ -341,12 +348,13 @@ public class StorageService {
     }
 
     public InputStream getDocumentContent(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
+        var normalizedPath = normalizeInputDocumentPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
 
         try {
-            return definition.retrieveDocumentContent(config, path);
+            return definition.retrieveDocumentContent(config, normalizedPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
@@ -356,6 +364,7 @@ public class StorageService {
                                          @Nonnull String path,
                                          @Nonnull InputStream content,
                                          @Nonnull StorageItemMetadata metadata) throws ResponseException {
+        var normalizedPath = normalizeInputDocumentPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -386,10 +395,10 @@ public class StorageService {
                                 NumberUtils.formatGermanNumber(provider.getMaxFileSizeInMegabytes(), 2)
                         );
             }
-            throw ResponseException.internalServerError(e, "Der Inhalt des Dokuments %s konnte nicht gelesen werden.", StringUtils.quote(path));
+            throw ResponseException.internalServerError(e, "Der Inhalt des Dokuments %s konnte nicht gelesen werden.", StringUtils.quote(normalizedPath));
         }
 
-        avService.testFile(new ByteArrayInputStream(contentBytes), path);
+        avService.testFile(new ByteArrayInputStream(contentBytes), normalizedPath);
 
         // Only respect metadata attributes if the provider definition supports them.
         // Additionally, filter out any metadata attributes that are not supported by the provider definition.
@@ -402,7 +411,7 @@ public class StorageService {
         StorageDocument createdDocument;
         try {
             createdDocument = definition
-                    .storeDocument(config, path, new ByteArrayInputStream(contentBytes), filteredMetadata);
+                    .storeDocument(config, normalizedPath, new ByteArrayInputStream(contentBytes), filteredMetadata);
         } catch (StorageException e) {
             if (isCausedByMaxFileSizeExceeded(e)) {
                 throw ResponseException
@@ -436,6 +445,7 @@ public class StorageService {
     public StorageDocument updateDocumentMetadata(@Nonnull Integer providerId,
                                                   @Nonnull String path,
                                                   @Nonnull StorageItemMetadata metadata) throws ResponseException {
+        var normalizedPath = normalizeInputDocumentPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -462,7 +472,7 @@ public class StorageService {
 
         StorageDocument updatedDocument;
         try {
-            updatedDocument = definition.updateDocumentMetadata(config, path, filteredMetadata);
+            updatedDocument = definition.updateDocumentMetadata(config, normalizedPath, filteredMetadata);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
@@ -470,8 +480,8 @@ public class StorageService {
         var updatedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, updatedDocument.getMetadata());
         updatedDocument.setMetadata(updatedDocumentFilteredMetadata);
 
-        var normalizedSourcePath = normalizeDocumentPath(path);
-        var normalizedUpdatedPath = normalizeDocumentPath(updatedDocument.getPathFromRoot());
+        var normalizedUpdatedPath = normalizeInputDocumentPath(updatedDocument.getPathFromRoot());
+        var normalizedSourcePath = normalizedPath;
         if (!normalizedSourcePath.equals(normalizedUpdatedPath)) {
             storageIndexItemRepository.moveDocumentPath(provider.getId(), normalizedSourcePath, normalizedUpdatedPath);
         }
@@ -484,6 +494,8 @@ public class StorageService {
     public StorageDocument moveDocument(@Nonnull Integer providerId,
                                         @Nonnull String sourcePath,
                                         @Nonnull String targetPath) throws ResponseException {
+        var normalizedSourcePath = normalizeInputDocumentPath(sourcePath);
+        var normalizedTargetPath = normalizeInputDocumentPath(targetPath);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -499,17 +511,16 @@ public class StorageService {
 
         StorageDocument movedDocument;
         try {
-            movedDocument = definition.moveDocument(config, sourcePath, targetPath);
+            movedDocument = definition.moveDocument(config, normalizedSourcePath, normalizedTargetPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
         var movedDocumentFilteredMetadata = filterMetadataByRegisteredAttributes(provider, movedDocument.getMetadata());
         movedDocument.setMetadata(movedDocumentFilteredMetadata);
 
-        var normalizedSourcePath = normalizeDocumentPath(sourcePath);
-        var normalizedTargetPath = normalizeDocumentPath(movedDocument.getPathFromRoot());
-        if (!normalizedSourcePath.equals(normalizedTargetPath)) {
-            storageIndexItemRepository.moveDocumentPath(provider.getId(), normalizedSourcePath, normalizedTargetPath);
+        var movedDocumentPath = normalizeInputDocumentPath(movedDocument.getPathFromRoot());
+        if (!normalizedSourcePath.equals(movedDocumentPath)) {
+            storageIndexItemRepository.moveDocumentPath(provider.getId(), normalizedSourcePath, movedDocumentPath);
         }
         upsertDocumentIndexItem(provider, movedDocument);
 
@@ -520,6 +531,8 @@ public class StorageService {
     public StorageDocument copyDocument(@Nonnull Integer providerId,
                                         @Nonnull String sourcePath,
                                         @Nonnull String targetPath) throws ResponseException {
+        var normalizedSourcePath = normalizeInputDocumentPath(sourcePath);
+        var normalizedTargetPath = normalizeInputDocumentPath(targetPath);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -535,7 +548,7 @@ public class StorageService {
 
         StorageDocument copiedDocument;
         try {
-            copiedDocument = definition.copyDocument(config, sourcePath, targetPath);
+            copiedDocument = definition.copyDocument(config, normalizedSourcePath, normalizedTargetPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
@@ -548,6 +561,7 @@ public class StorageService {
     }
 
     public void deleteDocument(@Nonnull Integer providerId, @Nonnull String path) throws ResponseException {
+        var normalizedPath = normalizeInputDocumentPath(path);
         var provider = retrieveProvider(providerId);
         var definition = retrieveDefinition(provider);
         var config = createConfig(provider, definition);
@@ -562,7 +576,7 @@ public class StorageService {
         }
 
         try {
-            definition.deleteDocument(config, path);
+            definition.deleteDocument(config, normalizedPath);
         } catch (StorageException e) {
             throw wrapStorageException(e);
         }
@@ -570,13 +584,13 @@ public class StorageService {
         storageIndexItemRepository
                 .deleteById(StorageIndexItemEntityId.of(
                         provider.getId(),
-                        path
+                        normalizedPath
                 ));
     }
 
     private void upsertDocumentIndexItem(@Nonnull StorageProviderEntity provider,
-                                         @Nonnull StorageDocument document) {
-        var normalizedPath = normalizeDocumentPath(document.getPathFromRoot());
+                                         @Nonnull StorageDocument document) throws ResponseException {
+        var normalizedPath = normalizeInputDocumentPath(document.getPathFromRoot());
 
         var indexItem = new StorageIndexItemEntity(
                 provider.getId(),
@@ -597,20 +611,21 @@ public class StorageService {
     }
 
     private void upsertFolderTreeIndex(@Nonnull StorageProviderEntity provider,
-                                       @Nonnull StorageFolder folderTree) {
-        folderTree.apply(folder -> {
-            upsertFolderIndexItem(provider, folder);
-            for (var document : folder.getDocuments()) {
-                var filteredMetadata = filterMetadataByRegisteredAttributes(provider, document.getMetadata());
-                document.setMetadata(filteredMetadata);
-                upsertDocumentIndexItem(provider, document);
-            }
-        });
+                                       @Nonnull StorageFolder folderTree) throws ResponseException {
+        upsertFolderIndexItem(provider, folderTree);
+        for (var document : folderTree.getDocuments()) {
+            var filteredMetadata = filterMetadataByRegisteredAttributes(provider, document.getMetadata());
+            document.setMetadata(filteredMetadata);
+            upsertDocumentIndexItem(provider, document);
+        }
+        for (var subfolder : folderTree.getSubfolders()) {
+            upsertFolderTreeIndex(provider, subfolder);
+        }
     }
 
     private void upsertFolderIndexItem(@Nonnull StorageProviderEntity provider,
-                                       @Nonnull StorageFolder folder) {
-        var normalizedPath = normalizeFolderPath(folder.getPathFromRoot());
+                                       @Nonnull StorageFolder folder) throws ResponseException {
+        var normalizedPath = normalizeInputFolderPath(folder.getPathFromRoot());
         var indexItem = new StorageIndexItemEntity(
                 provider.getId(),
                 provider.getType(),
@@ -628,19 +643,25 @@ public class StorageService {
     }
 
     @Nonnull
-    private static String normalizeDocumentPath(@Nonnull String path) {
-        var normalizedPath = path.trim();
-        if (!normalizedPath.startsWith("/")) {
-            normalizedPath = "/" + normalizedPath;
+    private static String normalizeInputDocumentPath(@Nonnull String path) throws ResponseException {
+        try {
+            return StoragePathUtils.normalizeDocumentPath(path);
+        } catch (StorageException e) {
+            throw ResponseException.badRequest(e.getMessage());
         }
-        if (normalizedPath.endsWith("/")) {
-            normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
-        }
-        return normalizedPath;
     }
 
     @Nonnull
-    private static String normalizeFolderPath(@Nonnull String path) {
+    private static String normalizeInputFolderPath(@Nonnull String path) throws ResponseException {
+        try {
+            return StoragePathUtils.normalizeFolderPath(path);
+        } catch (StorageException e) {
+            throw ResponseException.badRequest(e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private static String normalizeIndexFolderPath(@Nonnull String path) {
         var normalizedPath = path.trim();
         if (!normalizedPath.startsWith("/")) {
             normalizedPath = "/" + normalizedPath;
@@ -653,7 +674,7 @@ public class StorageService {
 
     @Nonnull
     private static String getParentFolderPath(@Nonnull String folderPath) {
-        var normalizedPath = normalizeFolderPath(folderPath);
+        var normalizedPath = normalizeIndexFolderPath(folderPath);
         if ("/".equals(normalizedPath)) {
             return "/";
         }

@@ -3,20 +3,18 @@ export interface DepartmentEntity {
     parentDepartmentId?: number | null;
     depth: number;
     name: string;
-    address?: string | null;
+    postalAddress?: string | null;
     imprint?: string | null;
     commonPrivacy?: string | null;
     commonAccessibility?: string | null;
-    technicalSupportAddress?: string | null;
+    technicalSupportEmail?: string | null;
     technicalSupportPhone?: string | null;
     technicalSupportInfo?: string | null;
-    specialSupportAddress?: string | null;
+    specialSupportEmail?: string | null;
     specialSupportPhone?: string | null;
     specialSupportInfo?: string | null;
-    additionalInfo?: string | null;
-    departmentMail?: string | null;
+    defaultMailSignature?: string | null;
     themeId?: number | null;
     created: string;
     updated: string;
 }
-

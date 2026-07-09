@@ -154,7 +154,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                             },
                         ],
                     },
-                    {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organigram'},
+                    {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organization-chart'},
                 ],
             },
             {

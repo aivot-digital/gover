@@ -67,6 +67,7 @@ public class AppConfigController {
     private static final String REGISTRY_HOSTNAME_CONFIG_KEY = "registryHostname";
     private static final String SENTRY_DSN = "sentryDsn";
     private static final String APPLICATION_TIMEZONE_CONFIG_KEY = "applicationTimeZone";
+    private static final String DEPARTMENT_LEVEL_LABELS_CONFIG_KEY = "departmentLevelLabels";
 
     private static final String OIDC_KEY = "oidc";
     private static final String OIDC_REALM_KEY = "realm";
@@ -112,6 +113,7 @@ public class AppConfigController {
         appConfig.put(REGISTRY_HOSTNAME_CONFIG_KEY, goverConfig.getRegistryHostname());
         appConfig.put(SENTRY_DSN, goverConfig.getSentryWebApp());
         appConfig.put(APPLICATION_TIMEZONE_CONFIG_KEY, ApplicationTimeZone.getZoneIdValue());
+        appConfig.put(DEPARTMENT_LEVEL_LABELS_CONFIG_KEY, goverConfig.getDepartmentLevelLabels());
 
         var oidc = new HashMap<String, String>();
         oidc.put(OIDC_HOSTNAME_KEY, oidcIssuerURI);

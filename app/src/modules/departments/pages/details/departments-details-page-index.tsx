@@ -1,4 +1,4 @@
-import {Box, Breadcrumbs, Button, Grid, Typography} from '@mui/material';
+import {Box, Breadcrumbs, Button, FormControlLabel, Grid, Switch, Tooltip, Typography} from '@mui/material';
 import React, {ComponentType, useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -19,12 +19,11 @@ import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
-import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {TextFieldComponentProps} from '../../../../components/text-field/text-field-component-props';
 import {SelectFieldComponentProps} from '../../../../components/select-field/select-field-component-props';
 import {DepartmentEntity} from '../../entities/department-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
-import {getDepartmentTypeLabelGenitiv} from '../../utils/department-utils';
+import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/department-utils';
 import {ProcessDefinitionApiService} from '../../../process/services/process-definition-api-service';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
@@ -36,14 +35,108 @@ import {formatMissingPermissionTooltip} from '../../../permissions/utils/permiss
 import {useCheckDepartmentPermission} from '../../../permissions/hooks/use-permissions';
 import {isApiError} from '../../../../models/api-error';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {AlertComponent} from '../../../../components/alert/alert-component';
+import {alpha} from '@mui/material/styles';
 
-const emptyStringToNull = (value: unknown, originalValue: unknown) => {
-    if (typeof originalValue === 'string' && originalValue.trim().length === 0) {
-        return null;
-    }
-
-    return value;
+const canInheritRequiredSetting = (context: yup.TestContext, isCreatedAsChild: boolean) => {
+    return isCreatedAsChild || context.parent?.parentDepartmentId != null;
 };
+
+const requiredShadowedString = (
+    emptyOverrideMessage: string,
+    missingValueMessage: string,
+    isCreatedAsChild: boolean,
+) => yup.string()
+    .nullable()
+    .test('required-or-inherited', missingValueMessage, function (value) {
+        return value != null || canInheritRequiredSetting(this, isCreatedAsChild);
+    })
+    .test('not-empty-override', emptyOverrideMessage, (value) => {
+        if (value == null) {
+            return true;
+        }
+
+        return value.trim().length > 0;
+    });
+
+const optionalShadowedString = () => yup.string()
+    .nullable();
+
+const optionalShadowedTrimmedString = () => yup.string()
+    .transform((value, originalValue) => {
+        if (typeof originalValue === 'string' && originalValue.trim().length === 0) {
+            return '';
+        }
+
+        return value;
+    })
+    .trim()
+    .nullable();
+
+const requiredShadowedTrimmedString = (
+    emptyOverrideMessage: string,
+    missingValueMessage: string,
+    isCreatedAsChild: boolean,
+) => requiredShadowedString(emptyOverrideMessage, missingValueMessage, isCreatedAsChild)
+    .trim();
+
+const requiredShadowedEmail = (
+    emptyOverrideMessage: string,
+    missingValueMessage: string,
+    isCreatedAsChild: boolean,
+) => requiredShadowedTrimmedString(emptyOverrideMessage, missingValueMessage, isCreatedAsChild)
+    .email('Bitte eine gültige E-Mail-Adresse eingeben.')
+    .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.');
+
+const requiredShadowedRichText = (
+    emptyOverrideMessage: string,
+    missingValueMessage: string,
+    isCreatedAsChild: boolean,
+) => requiredShadowedString(emptyOverrideMessage, missingValueMessage, isCreatedAsChild)
+    .min(10, 'Der Text muss mindestens 10 Zeichen lang sein.');
+
+const optionalShadowedRichText = () => optionalShadowedString();
+
+const optionalShadowedTextAllowEmpty = () => optionalShadowedString();
+
+const optionalShadowedTrimmedTextAllowEmpty = () => optionalShadowedTrimmedString();
+
+const optionalShadowedPhone = () => optionalShadowedTrimmedTextAllowEmpty()
+    .max(96, 'Die Telefonnummer darf maximal 96 Zeichen lang sein.');
+
+const optionalShadowedInfo = () => optionalShadowedTextAllowEmpty();
+
+const validatePostalAddress = (isCreatedAsChild: boolean) => requiredShadowedTrimmedString(
+    'Die Postadresse darf nicht leer überschrieben werden.',
+    'Die Postadresse ist ein Pflichtfeld.',
+    isCreatedAsChild,
+)
+    .min(3, 'Die Postadresse muss mindestens 3 Zeichen lang sein.');
+
+const validateRichTextRequired = (fieldName: string, isCreatedAsChild: boolean) => requiredShadowedRichText(
+    `${fieldName} darf nicht leer überschrieben werden.`,
+    `${fieldName} ist ein Pflichtfeld.`,
+    isCreatedAsChild,
+);
+
+const validateRequiredEmail = (fieldName: string, isCreatedAsChild: boolean) => requiredShadowedEmail(
+    `${fieldName} darf nicht leer überschrieben werden.`,
+    `${fieldName} ist ein Pflichtfeld.`,
+    isCreatedAsChild,
+);
+
+const validateOptionalMailSignature = () => optionalShadowedRichText();
+
+const validateOptionalContactInfo = () => optionalShadowedInfo();
+
+const validateOptionalContactPhone = () => optionalShadowedPhone();
+
+const validateThemeId = () => yup.number()
+    .optional()
+    .nullable()
+    .test('valid-theme', 'Bitte wählen Sie ein Standard-Theme aus oder übernehmen Sie den geerbten Wert.', (value) => {
+        return value == null || value > 0;
+    });
 
 function getProcessDetailsPath(processId: number, version: number | null): string {
     if (version == null) {
@@ -53,90 +146,27 @@ function getProcessDetailsPath(processId: number, version: number | null): strin
     return `/processes/${processId}/versions/${version}`;
 }
 
-export const DepartmentSchema = yup.object({
+export const createDepartmentSchema = (isCreatedAsChild: boolean) => yup.object({
     name: yup.string()
         .trim()
         .min(3, 'Der Name der Organisationseinheit muss mindestens 3 Zeichen lang sein.')
         .max(96, 'Der Name der Organisationseinheit darf maximal 96 Zeichen lang sein.')
         .required('Der Name der Organisationseinheit ist ein Pflichtfeld.'),
-    address: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .min(3, 'Die Adresse muss mindestens 3 Zeichen lang sein.')
-        .max(255, 'Die Adresse darf maximal 255 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    //.required('Die Adresse ist ein Pflichtfeld.'),
-    specialSupportAddress: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .email('Bitte eine gültige E-Mail-Adresse eingeben.')
-        .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    specialSupportPhone: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .max(255, 'Die Telefonnummer darf maximal 255 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    specialSupportInfo: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .max(1024, 'Die Zusatzinformationen dürfen maximal 1024 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    //.required('Die E-Mail-Adresse für fachliche Unterstützung ist ein Pflichtfeld.'),
-    technicalSupportAddress: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .email('Bitte eine gültige E-Mail-Adresse eingeben.')
-        .max(255, 'Die E-Mail-Adresse darf maximal 255 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    technicalSupportPhone: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .max(255, 'Die Telefonnummer darf maximal 255 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    technicalSupportInfo: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .max(1024, 'Die Zusatzinformationen dürfen maximal 1024 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    //.required('Die E-Mail-Adresse für technische Unterstützung ist ein Pflichtfeld.'),
-    imprint: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .min(10, 'Das Impressum muss mindestens 10 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    //.required('Das Impressum ist ein Pflichtfeld.'),
-    commonPrivacy: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .min(10, 'Die Datenschutzerklärung muss mindestens 10 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    //.required('Die Datenschutzerklärung ist ein Pflichtfeld.'),
-    commonAccessibility: yup.string()
-        .transform(emptyStringToNull)
-        .trim()
-        .min(10, 'Die Barrierefreiheitserklärung muss mindestens 10 Zeichen lang sein.')
-        .optional()
-        .nullable(),
-    //.required('Die Barrierefreiheitserklärung ist ein Pflichtfeld.'),
-    departmentMail: yup.string()
-        .transform(emptyStringToNull)
-        .optional()
-        .nullable()
-        .test('valid-email-list', 'Bitte eine oder mehrere gültige E-Mail-Adressen, durch Komma getrennt, eingeben.', (val) => {
-            if (!val) return true;
-            return val.split(',').every(email => /\S+@\S+\.\S+/.test(email.trim()));
-        }),
+    postalAddress: validatePostalAddress(isCreatedAsChild),
+    specialSupportEmail: validateRequiredEmail('Die E-Mail-Adresse für fachliche Unterstützung', isCreatedAsChild),
+    specialSupportPhone: validateOptionalContactPhone(),
+    specialSupportInfo: validateOptionalContactInfo(),
+    technicalSupportEmail: validateRequiredEmail('Die E-Mail-Adresse für technische Unterstützung', isCreatedAsChild),
+    technicalSupportPhone: validateOptionalContactPhone(),
+    technicalSupportInfo: validateOptionalContactInfo(),
+    defaultMailSignature: validateOptionalMailSignature(),
+    imprint: validateRichTextRequired('Das Impressum', isCreatedAsChild),
+    commonPrivacy: validateRichTextRequired('Die Datenschutzerklärung', isCreatedAsChild),
+    commonAccessibility: validateRichTextRequired('Die Barrierefreiheitserklärung', isCreatedAsChild),
+    themeId: validateThemeId(),
 });
+
+export const DepartmentSchema = createDepartmentSchema(false);
 
 export function DepartmentsDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -162,6 +192,8 @@ export function DepartmentsDetailsPageIndex() {
         additionalData,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, DepartmentsDetailsPageAdditionalData>;
 
+    const departmentSchema = useMemo(() => createDepartmentSchema(parentOrgUnitId != null), [parentOrgUnitId]);
+
     const {
         currentItem,
         errors,
@@ -170,7 +202,7 @@ export function DepartmentsDetailsPageIndex() {
         handleInputChange,
         validate,
         reset,
-    } = useFormManager<DepartmentEntity>(item, DepartmentSchema as any);
+    } = useFormManager<DepartmentEntity>(item, departmentSchema as any);
 
     const apiService = useMemo(() => new DepartmentApiService(), []);
     const department = currentItem;
@@ -180,19 +212,22 @@ export function DepartmentsDetailsPageIndex() {
         department?.id === 0 ? undefined : department?.id,
         Permission.DEPARTMENT_DELETE,
     );
+    const effectiveDepartmentDepth = department?.id === 0 && parentOrgUnitId != null && additionalData?.shadowedDepartment != null
+        ? additionalData.shadowedDepartment.depth + 1
+        : department?.depth ?? 0;
 
     type ShadowedStringField =
-        | 'address'
-        | 'specialSupportAddress'
+        | 'postalAddress'
+        | 'specialSupportEmail'
         | 'specialSupportPhone'
         | 'specialSupportInfo'
-        | 'technicalSupportAddress'
+        | 'technicalSupportEmail'
         | 'technicalSupportPhone'
         | 'technicalSupportInfo'
+        | 'defaultMailSignature'
         | 'imprint'
         | 'commonPrivacy'
-        | 'commonAccessibility'
-        | 'departmentMail';
+        | 'commonAccessibility';
 
     const normalizeShadowedStringValue = (value: string | null | undefined) => value ?? '';
     const handleShadowedStringOverride = (field: ShadowedStringField) => (override: boolean) => {
@@ -287,6 +322,11 @@ export function DepartmentsDetailsPageIndex() {
     const handleSave = () => {
         // Do not save if department is null
         if (department == null) {
+            return;
+        }
+
+        if (department.id === 0 && effectiveDepartmentDepth > getMaxDepartmentDepth()) {
+            dispatch(showErrorSnackbar(`Organisationseinheiten sind auf ${getMaxDepartmentDepth() + 1} Ebenen beschränkt.`));
             return;
         }
 
@@ -444,7 +484,7 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Öffentliche Informationen {getDepartmentTypeLabelGenitiv(department.depth)}
+                Angaben zu {getDepartmentTypeLabel(effectiveDepartmentDepth)}
             </Typography>
             <Typography
                 sx={{
@@ -452,11 +492,13 @@ export function DepartmentsDetailsPageIndex() {
                     maxWidth: 900,
                 }}
             >
-                Hinterlegen Sie grundsätzliche Informationen über diese Organisationseinheit. Diese Informationen werden in der Anwendung angezeigt und sind für die Nutzer:innen sichtbar.
+                Hinterlegen Sie interne Angaben, Postadresse, Kontaktinformationen, rechtliche Texte und Standardwerte dieser Organisationseinheit.
+                Ein Teil dieser Angaben wird in Formularen und Dialogen für Nutzer:innen angezeigt.
             </Typography>
             <Grid
                 container
                 columnSpacing={4}
+                rowSpacing={2}
             >
                 <Grid
                     size={{
@@ -472,6 +514,7 @@ export function DepartmentsDetailsPageIndex() {
                         required
                         maxCharacters={96}
                         minCharacters={3}
+                        hint="Diese Bezeichnung wird nur intern in Gover verwendet, zum Beispiel in Listen, Zuweisungen und Auswahlen."
                         error={errors.name}
                         disabled={!isEditable}
                     />
@@ -531,31 +574,50 @@ export function DepartmentsDetailsPageIndex() {
                         lg: 6,
                     }}
                 />
+                {
+                    !doNotShadow &&
+                    <Grid
+                        size={{
+                            xs: 12,
+                        }}
+                    >
+                        <AlertComponent
+                            color="info"
+                            sx={{
+                                maxWidth: 900,
+                            }}
+                        >
+                            <Typography variant="body2">
+                                Vererbbare Felder ohne eigene Angabe übernehmen die Werte der übergeordneten Organisationseinheit.
+                                Sie können bei jedem Feld steuern, ob diese Organisationseinheit einen eigenen Wert verwenden soll.
+                            </Typography>
+                        </AlertComponent>
+                    </Grid>
+                }
                 <Grid
                     size={{
                         xs: 12,
                         lg: 6,
                     }}
-                    sx={{mt: 2}}
                 >
                     <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
                         doNotShadow={doNotShadow}
                         Component={TextFieldComponent}
-                        override={department.address != null}
-                        onSetOverride={handleShadowedStringOverride('address')}
+                        override={department.postalAddress != null}
+                        onSetOverride={handleShadowedStringOverride('postalAddress')}
                         shadowedProps={{
-                            value: inheritedDepartmentValues?.address ?? '',
+                            value: inheritedDepartmentValues?.postalAddress ?? '',
                             disabled: true,
                         }}
-                        label="Adresse der Organisationseinheit"
-                        value={department.address ?? ''}
-                        onChange={handleShadowedStringChange('address')}
-                        onBlur={handleShadowedStringBlur('address')}
+                        label="Postadresse"
+                        value={department.postalAddress ?? ''}
+                        onChange={handleShadowedStringChange('postalAddress')}
+                        onBlur={handleShadowedStringBlur('postalAddress')}
                         required
-                        maxCharacters={255}
                         multiline
-                        rows={3}
-                        error={errors.address}
+                        rows={5}
+                        hint="Vollständiger Postempfänger inklusive Name der Organisation und ggf. Organisationseinheit, Straße, Hausnummer, Postleitzahl und Ort."
+                        error={errors.postalAddress}
                         disabled={!isEditable}
                     />
                 </Grid>
@@ -578,6 +640,7 @@ export function DepartmentsDetailsPageIndex() {
             <Grid
                 container
                 columnSpacing={4}
+                rowSpacing={2}
             >
                 <Grid
                     size={{
@@ -634,7 +697,7 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Kontakt-E-Mail-Adressen für antragstellende Personen
+                Kontaktinformationen für antragstellende Personen
             </Typography>
             <Typography sx={{mb: 2}}>
                 Die hier hinterlegten Kontaktinformationen werden Nutzer:innen zum Beispiel im Hilfe-Dialog zur Verfügung gestellt.
@@ -642,30 +705,36 @@ export function DepartmentsDetailsPageIndex() {
             <Grid
                 container
                 columnSpacing={4}
+                rowSpacing={2}
             >
                 <Grid
                     size={{
                         xs: 12,
                         lg: 6,
                     }}
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                    }}
                 >
                     <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
                         doNotShadow={doNotShadow}
                         Component={TextFieldComponent}
-                        override={department.specialSupportAddress != null}
-                        onSetOverride={handleShadowedStringOverride('specialSupportAddress')}
+                        override={department.specialSupportEmail != null}
+                        onSetOverride={handleShadowedStringOverride('specialSupportEmail')}
                         shadowedProps={{
-                            value: inheritedDepartmentValues?.specialSupportAddress ?? '',
+                            value: inheritedDepartmentValues?.specialSupportEmail ?? '',
                             disabled: true,
                         }}
                         label="Kontakt-E-Mail-Adresse für fachliche Unterstützung"
                         type="email"
-                        value={department.specialSupportAddress ?? ''}
-                        onChange={handleShadowedStringChange('specialSupportAddress')}
-                        onBlur={handleShadowedStringBlur('specialSupportAddress')}
+                        value={department.specialSupportEmail ?? ''}
+                        onChange={handleShadowedStringChange('specialSupportEmail')}
+                        onBlur={handleShadowedStringBlur('specialSupportEmail')}
                         required
                         maxCharacters={255}
-                        error={errors.specialSupportAddress}
+                        error={errors.specialSupportEmail}
                         disabled={!isEditable}
                     />
 
@@ -683,15 +752,14 @@ export function DepartmentsDetailsPageIndex() {
                         value={department.specialSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('specialSupportPhone')}
                         onBlur={handleShadowedStringBlur('specialSupportPhone')}
-                        required
-                        maxCharacters={255}
+                        maxCharacters={96}
                         error={errors.specialSupportPhone}
                         disabled={!isEditable}
                     />
 
-                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                    <ShadowedInput<RichTextInputComponentProps, typeof RichTextInputComponent>
                         doNotShadow={doNotShadow}
-                        Component={TextFieldComponent}
+                        Component={RichTextInputComponent}
                         override={department.specialSupportInfo != null}
                         onSetOverride={handleShadowedStringOverride('specialSupportInfo')}
                         shadowedProps={{
@@ -701,14 +769,9 @@ export function DepartmentsDetailsPageIndex() {
                         label="Informationen zur fachlichen Unterstützung"
                         value={department.specialSupportInfo ?? ''}
                         onChange={handleShadowedStringChange('specialSupportInfo')}
-                        onBlur={handleShadowedStringBlur('specialSupportInfo')}
-                        required
-                        multiline={true}
-                        rows={5}
-                        maxCharacters={1024}
                         error={errors.specialSupportInfo}
                         disabled={!isEditable}
-                        hint="Zusätzliche Informationen, z.B. zu Erreichbarkeiten oder Supportzeiten."
+                        hint="Zusätzliche Informationen, z. B. zu Kontaktwegen, Supportzeiten oder Links. Diese Angaben werden im Hilfe-Dialog angezeigt."
                     />
                 </Grid>
                 <Grid
@@ -716,24 +779,29 @@ export function DepartmentsDetailsPageIndex() {
                         xs: 12,
                         lg: 6,
                     }}
+                    sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 2,
+                    }}
                 >
                     <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
                         doNotShadow={doNotShadow}
                         Component={TextFieldComponent}
-                        override={department.technicalSupportAddress != null}
-                        onSetOverride={handleShadowedStringOverride('technicalSupportAddress')}
+                        override={department.technicalSupportEmail != null}
+                        onSetOverride={handleShadowedStringOverride('technicalSupportEmail')}
                         shadowedProps={{
-                            value: inheritedDepartmentValues?.technicalSupportAddress ?? '',
+                            value: inheritedDepartmentValues?.technicalSupportEmail ?? '',
                             disabled: true,
                         }}
                         label="Kontakt-E-Mail-Adresse für technische Unterstützung"
                         type="email"
-                        value={department.technicalSupportAddress ?? ''}
-                        onChange={handleShadowedStringChange('technicalSupportAddress')}
-                        onBlur={handleShadowedStringBlur('technicalSupportAddress')}
+                        value={department.technicalSupportEmail ?? ''}
+                        onChange={handleShadowedStringChange('technicalSupportEmail')}
+                        onBlur={handleShadowedStringBlur('technicalSupportEmail')}
                         required
                         maxCharacters={255}
-                        error={errors.technicalSupportAddress}
+                        error={errors.technicalSupportEmail}
                         disabled={!isEditable}
                     />
 
@@ -751,15 +819,14 @@ export function DepartmentsDetailsPageIndex() {
                         value={department.technicalSupportPhone ?? ''}
                         onChange={handleShadowedStringChange('technicalSupportPhone')}
                         onBlur={handleShadowedStringBlur('technicalSupportPhone')}
-                        required
-                        maxCharacters={255}
+                        maxCharacters={96}
                         error={errors.technicalSupportPhone}
                         disabled={!isEditable}
                     />
 
-                    <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
+                    <ShadowedInput<RichTextInputComponentProps, typeof RichTextInputComponent>
                         doNotShadow={doNotShadow}
-                        Component={TextFieldComponent}
+                        Component={RichTextInputComponent}
                         override={department.technicalSupportInfo != null}
                         onSetOverride={handleShadowedStringOverride('technicalSupportInfo')}
                         shadowedProps={{
@@ -769,14 +836,9 @@ export function DepartmentsDetailsPageIndex() {
                         label="Informationen zur technischen Unterstützung"
                         value={department.technicalSupportInfo ?? ''}
                         onChange={handleShadowedStringChange('technicalSupportInfo')}
-                        onBlur={handleShadowedStringBlur('technicalSupportInfo')}
-                        required
-                        multiline={true}
-                        rows={5}
-                        maxCharacters={1024}
                         error={errors.technicalSupportInfo}
                         disabled={!isEditable}
-                        hint="Zusätzliche Informationen, z.B. zu Erreichbarkeiten oder Supportzeiten."
+                        hint="Zusätzliche Informationen, z. B. zu Kontaktwegen, Supportzeiten oder Links. Diese Angaben werden im Hilfe-Dialog angezeigt."
                     />
                 </Grid>
             </Grid>
@@ -817,9 +879,10 @@ export function DepartmentsDetailsPageIndex() {
                         value: inheritedDepartmentValues?.commonPrivacy ?? '',
                         disabled: true,
                     }}
-                    label="Datenschutzerklärung"
+                    label="Datenschutzerklärung - allgemeiner Teil"
                     value={department.commonPrivacy ?? ''}
                     onChange={handleShadowedStringChange('commonPrivacy')}
+                    hint="Allgemeiner Teil der Datenschutzerklärung für diese Organisationseinheit. Formulare können zusätzlich einen spezifischen Teil enthalten, in dem die konkret verarbeiteten Daten, Zwecke und Rechtsgrundlagen beschrieben werden. Zusammen können beide Teile die Informationspflichten nach Art. 13 DSGVO erfüllen."
                     required
                     error={errors.commonPrivacy}
                     disabled={!isEditable}
@@ -835,9 +898,10 @@ export function DepartmentsDetailsPageIndex() {
                         value: inheritedDepartmentValues?.commonAccessibility ?? '',
                         disabled: true,
                     }}
-                    label="Barrierefreiheitserklärung"
+                    label="Barrierefreiheitserklärung - allgemeiner Teil"
                     value={department.commonAccessibility ?? ''}
                     onChange={handleShadowedStringChange('commonAccessibility')}
+                    hint="Allgemeiner Teil der Barrierefreiheitserklärung für diese Organisationseinheit. Formulare können zusätzlich einen spezifischen Teil enthalten, etwa für formularspezifische Gestaltung, eingebundene Dokumente oder besondere Barrieren."
                     required
                     error={errors.commonAccessibility}
                     disabled={!isEditable}
@@ -851,30 +915,29 @@ export function DepartmentsDetailsPageIndex() {
                     mb: 1,
                 }}
             >
-                Zentrale E-Mail-Adressen für Systembenachrichtigungen
+                Standard-E-Mail-Signatur
             </Typography>
 
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Systembenachrichtigungen (wie z.B. Eingang eines neuen Antrags) werden grundsätzlich an jede Mitarbeiter:in in der Organisationseinheit gesendet.
-                Wenn Sie hier eine oder mehrere zentrale E-Mail-Adressen hinterlegen, erhalten nur noch diese die Systembenachrichtigungen.
+                Hinterlegen Sie eine allgemeine E-Mail-Signatur der Organisationseinheit ohne personenbezogene Angaben.
             </Typography>
 
             <ShadowedInput<TextFieldComponentProps, typeof TextFieldComponent>
                 doNotShadow={doNotShadow}
                 Component={TextFieldComponent}
-                override={department.departmentMail != null}
-                onSetOverride={handleShadowedStringOverride('departmentMail')}
+                override={department.defaultMailSignature != null}
+                onSetOverride={handleShadowedStringOverride('defaultMailSignature')}
                 shadowedProps={{
-                    value: inheritedDepartmentValues?.departmentMail ?? '',
+                    value: inheritedDepartmentValues?.defaultMailSignature ?? '',
                     disabled: true,
                 }}
-                label="Zentrale E-Mail-Adressen für Systembenachrichtigungen"
-                value={department.departmentMail ?? ''}
-                onChange={handleShadowedStringChange('departmentMail')}
-                onBlur={handleShadowedStringBlur('departmentMail')}
-                maxCharacters={255}
-                error={errors.departmentMail}
-                hint="Sie können mehrere E-Mail-Adressen durch ein Komma getrennt eingeben."
+                label="Standard-E-Mail-Signatur"
+                value={department.defaultMailSignature ?? ''}
+                onChange={handleShadowedStringChange('defaultMailSignature')}
+                onBlur={handleShadowedStringBlur('defaultMailSignature')}
+                multiline
+                rows={6}
+                error={errors.defaultMailSignature}
                 disabled={!isEditable}
             />
 
@@ -1033,18 +1096,18 @@ function ShadowedInput<P, C extends ComponentType<P>>(props: ShadowedInputProps<
         ...rest
     } = props;
 
-    const propsToPass: any = useMemo(() => {
-        if (override) {
-            return {
-                ...rest as P,
-            };
-        }
+    const restProps = rest as Record<string, unknown>;
+    const isSwitchDisabled = Boolean(restProps.disabled);
+    const inheritanceStatusText = override
+        ? 'Für diese Einheit wird eine eigene Angabe verwendet.'
+        : 'Wert wird von übergeordneter Einheit geerbt.';
 
-        return {
+    const propsToPass: any = override
+        ? {...rest as P}
+        : {
             ...rest as P,
             ...shadowedProps,
         };
-    }, [override, rest, shadowedProps]);
 
     if (doNotShadow) {
         return <Component {...(rest as any)} />;
@@ -1052,26 +1115,72 @@ function ShadowedInput<P, C extends ComponentType<P>>(props: ShadowedInputProps<
 
     return (
         <Box
-            sx={{
-                display: 'flex',
-                gap: 1,
-                flexDirection: 'column',
-            }}
+            sx={(theme) => ({
+                border: '1px solid',
+                borderColor: override ? alpha(theme.palette.primary.main, 0.22) : alpha(theme.palette.text.primary, 0.12),
+                borderRadius: 1,
+                backgroundColor: theme.palette.background.paper,
+                p: 1.5,
+                transition: theme.transitions.create(['background-color', 'border-color'], {
+                    duration: theme.transitions.duration.shorter,
+                }),
+                '&:focus-within': {
+                    borderColor: override ? alpha(theme.palette.primary.main, 0.42) : alpha(theme.palette.text.primary, 0.24),
+                },
+            })}
         >
-            <Box>
-                <CheckboxFieldComponent
-                    label="Überschreiben"
-                    onChange={onSetOverride}
-                    value={override}
-                />
-            </Box>
             <Box
                 sx={{
-                    flex: 1,
+                    display: 'flex',
+                    alignItems: {
+                        xs: 'flex-start',
+                        sm: 'center',
+                    },
+                    justifyContent: 'space-between',
+                    flexWrap: 'wrap',
+                    columnGap: 1.5,
+                    rowGap: 0.25,
+                    mb: 0.75,
                 }}
             >
-                <Component {...propsToPass} />
+                <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{
+                        display: 'block',
+                        fontWeight: 400,
+                        lineHeight: 1.8,
+                        minWidth: 0,
+                        flex: '1 1 260px',
+                    }}
+                >
+                    {inheritanceStatusText}
+                </Typography>
+
+                <FormControlLabel
+                    control={
+                        <Switch
+                            checked={override}
+                            disabled={isSwitchDisabled}
+                            size="small"
+                            onChange={(event) => {
+                                onSetOverride(event.target.checked);
+                            }}
+                        />
+                    }
+                    label="Eigene Angabe verwenden"
+                    sx={{
+                        m: 0,
+                        flexShrink: 0,
+                        '& .MuiFormControlLabel-label': {
+                            color: isSwitchDisabled ? 'text.disabled' : 'text.secondary',
+                            fontSize: '0.8125rem',
+                            lineHeight: 1.4,
+                        },
+                    }}
+                />
             </Box>
+            <Component {...propsToPass} />
         </Box>
     );
 }

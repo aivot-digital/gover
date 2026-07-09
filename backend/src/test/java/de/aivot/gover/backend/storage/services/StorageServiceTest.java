@@ -2,6 +2,7 @@ package de.aivot.gover.backend.storage.services;
 
 import de.aivot.gover.backend.TestData;
 import de.aivot.gover.backend.av.services.AVService;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.storage.entities.StorageIndexItemEntity;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.enums.StorageProviderType;
@@ -21,12 +22,18 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
+import org.springframework.http.HttpStatus;
 
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -62,20 +69,70 @@ class StorageServiceTest {
     }
 
     @Test
+    void storeDocumentRejectsPercentEncodedTraversalBeforeProviderLookup() {
+        var exception = assertThrows(
+                ResponseException.class,
+                () -> storageService.storeDocument(
+                        1,
+                        "/folder/%2e%2e/file.txt",
+                        new ByteArrayInputStream(new byte[0]),
+                        StorageItemMetadata.empty()
+                )
+        );
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        verifyNoInteractions(
+                storageProviderRepository,
+                storageProviderDefinitionService,
+                storageProviderConfigurationService,
+                storageProviderDefinition,
+                storageIndexItemRepository,
+                avService
+        );
+    }
+
+    @Test
+    void storeDocumentNormalizesSafePercentEscapesBeforeProviderCall() throws Exception {
+        var provider = createWritableProvider();
+        var config = new Object();
+        var storedDocument = new StorageDocument(
+                "/folder/file name+.txt",
+                "file name+.txt",
+                4L,
+                StorageItemMetadata.empty()
+        );
+
+        when(storageProviderRepository.findById(1)).thenReturn(Optional.of(provider));
+        when(storageProviderDefinitionService.retrieveProviderDefinition("test", 1)).thenReturn(Optional.of(storageProviderDefinition));
+        when(storageProviderConfigurationService.mapToConfig(provider, storageProviderDefinition)).thenReturn(config);
+        when(storageProviderDefinition.getSupportsMetadataAttributes()).thenReturn(false);
+        when(storageProviderDefinition.storeDocument(
+                eq(config),
+                eq("/folder/file name+.txt"),
+                any(InputStream.class),
+                eq(StorageItemMetadata.empty())
+        )).thenReturn(storedDocument);
+        when(knownExtensionsService.determineMimeType("file name+.txt")).thenReturn(Optional.of("text/plain"));
+
+        storageService.storeDocument(
+                1,
+                "folder/file%20name+.txt",
+                new ByteArrayInputStream("data".getBytes()),
+                StorageItemMetadata.empty()
+        );
+
+        verify(avService).testFile(any(InputStream.class), eq("/folder/file name+.txt"));
+        verify(storageProviderDefinition).storeDocument(
+                eq(config),
+                eq("/folder/file name+.txt"),
+                any(InputStream.class),
+                eq(StorageItemMetadata.empty())
+        );
+    }
+
+    @Test
     void moveDocument_UpdatesMimeTypeBasedOnTargetExtension() throws Exception {
-        var provider = new StorageProviderEntity()
-                .setId(1)
-                .setName("Test Provider")
-                .setDescription("Test Provider")
-                .setStorageProviderDefinitionKey("test")
-                .setStorageProviderDefinitionVersion(1)
-                .setType(StorageProviderType.Assets)
-                .setReadOnlyStorage(false)
-                .setTestProvider(false)
-                .setSystemProvider(false)
-                .setMaxFileSizeInBytes(0L)
-                .setMetadataAttributes(List.of())
-                .setConfiguration(TestData.authored());
+        var provider = createWritableProvider();
 
         var config = new Object();
         var movedDocument = new StorageDocument(
@@ -104,6 +161,22 @@ class StorageServiceTest {
         assertEquals("text/markdown", savedIndexItem.getMimeType());
 
         verify(knownExtensionsService).determineMimeType("test.md");
+    }
+
+    private static StorageProviderEntity createWritableProvider() {
+        return new StorageProviderEntity()
+                .setId(1)
+                .setName("Test Provider")
+                .setDescription("Test Provider")
+                .setStorageProviderDefinitionKey("test")
+                .setStorageProviderDefinitionVersion(1)
+                .setType(StorageProviderType.Assets)
+                .setReadOnlyStorage(false)
+                .setTestProvider(false)
+                .setSystemProvider(false)
+                .setMaxFileSizeInBytes(0L)
+                .setMetadataAttributes(List.of())
+                .setConfiguration(TestData.authored());
     }
 
     @Test
