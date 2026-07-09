@@ -40,6 +40,7 @@ import {
     VDepartmentUserRoleAssignmentWithDetailsService
 } from "../../../../departments/services/v-department-user-role-assignment-with-details-service";
 import {useConfirm} from "../../../../../providers/confirm-provider";
+import {useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
@@ -73,6 +74,7 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
 export function UserDetailsPageDepartmentMemberships() {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const listControlRef = useRef<ListControlRef | null>(null);
 
@@ -89,6 +91,16 @@ export function UserDetailsPageDepartmentMemberships() {
         onlyGlobalAdmin: true,
         messageType: 'snackbar',
     });
+
+    const refreshPermissionsAfterMembershipChange = () => {
+        // Effective permissions may include grants inherited through deputy assignments.
+        // The frontend cannot know whether the edited user is currently represented by the active user.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Organisationseinheitsmitgliedschaft nicht aktualisiert werden.',
+            )));
+    };
 
     useEffect(() => {
         new VDepartmentShadowedApiService()
@@ -157,6 +169,7 @@ export function UserDetailsPageDepartmentMemberships() {
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -204,6 +217,7 @@ export function UserDetailsPageDepartmentMemberships() {
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -254,6 +268,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     .destroy(membership.membershipId)
                     .then(() => {
                         listControlRef.current?.refresh();
+                        refreshPermissionsAfterMembershipChange();
                     })
                     .catch((error) => {
                         if (isApiError(error) && error.displayableToUser) {

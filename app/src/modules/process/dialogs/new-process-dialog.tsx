@@ -52,6 +52,7 @@ import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
 import {DepartmentSelectField} from '../../departments/components/department-select-field';
 import {type VDepartmentShadowedEntityWithChildren} from '../../departments/entities/v-department-shadowed-entity';
 import {normalizeProcessSlugInput, PROCESS_SLUG_MAX_LENGTH, validateProcessSlug} from '../utils/process-slug-utils';
+import {useRefreshPermissionSet} from '../../permissions/hooks/use-permissions';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -69,6 +70,7 @@ interface SelectedStartPoint {
 export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         open,
@@ -452,7 +454,14 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 
         new ProcessDefinitionApiService()
             .import(data)
-            .then((createdProcess) => {
+            .then(async (createdProcess) => {
+                try {
+                    // Newly created processes may receive permissions through database views immediately.
+                    await refreshPermissionSet({broadcast: true});
+                } catch (err) {
+                    dispatch(showApiErrorSnackbar(err, 'Die Berechtigungen konnten nach dem Erstellen des Prozesses nicht aktualisiert werden.'));
+                }
+
                 setIsLoading(false);
                 handleClose();
 

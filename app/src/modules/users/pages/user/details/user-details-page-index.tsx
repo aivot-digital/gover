@@ -27,12 +27,6 @@ import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {SystemRolesApiService} from '../../../../system/services/system-roles-api-service';
 import {useChangeBlocker} from '../../../../../hooks/use-change-blocker';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../../slices/shell-slice';
 import {createOidcPath} from '../../../../../utils/create-oidc-path';
 import {ProcessInstanceTaskApiService} from '../../../../process/services/process-instance-task-api-service';
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../../../process/enums/process-task-status';
@@ -40,6 +34,7 @@ import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
 import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {downloadTextFile} from '../../../../../utils/download-utils';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
+import {useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 
 const KEYCLOAK_PERSON_NAME_MAX_CHARACTERS = 255;
 const KEYCLOAK_EMAIL_MAX_CHARACTERS = 255;
@@ -101,6 +96,7 @@ export function UserDetailsPageIndex() {
     const navigate = useNavigate();
     const location = useLocation();
     const confirm = useConfirm();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         item: user,
@@ -110,23 +106,6 @@ export function UserDetailsPageIndex() {
         setIsBusy,
         isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
-
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-user-details',
-            message: 'Diese Mitarbeiter:in kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            type: SnackbarType.Dismissable,
-            severity: SnackbarSeverity.Warning,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-user-details'));
-        };
-    }, [dispatch, isEditable]);
 
     const {
         currentItem: editedUser,
@@ -161,6 +140,16 @@ export function UserDetailsPageIndex() {
     }, [editedUser?.id]);
 
     const canEditUser = isEditable && !user?.deletedInIdp && !user?.artificialUser;
+
+    const refreshPermissionsAfterUserRoleChange = () => {
+        // Effective permissions may include system grants inherited through deputy assignments.
+        // The frontend cannot know whether the edited user is currently represented by the active user.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Mitarbeiter:in nicht aktualisiert werden.',
+            )));
+    };
 
     useEffect(() => {
         setIsSystemRolesLoading(true);
@@ -289,6 +278,7 @@ export function UserDetailsPageIndex() {
                 .then((result) => {
                     setItem(result.user);
                     reset();
+                    refreshPermissionsAfterUserRoleChange();
                     setSendInitialCredentialsByEmail(false);
 
                     if (result.initialCredentialsSentByEmail) {
@@ -322,6 +312,7 @@ export function UserDetailsPageIndex() {
                 .then((savedUser) => {
                     setItem(savedUser);
                     reset();
+                    refreshPermissionsAfterUserRoleChange();
 
                     dispatch(showSuccessSnackbar('Die Mitarbeiter:in wurde erfolgreich gespeichert.'));
                 })
@@ -391,6 +382,7 @@ export function UserDetailsPageIndex() {
             .destroy(user.id)
             .then(() => {
                 reset();
+                refreshPermissionsAfterUserRoleChange();
                 navigate('/users', {
                     replace: true,
                 });

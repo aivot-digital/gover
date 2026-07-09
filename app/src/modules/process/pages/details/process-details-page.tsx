@@ -85,6 +85,7 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
+import {useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -271,6 +272,7 @@ export function ProcessDetailsPage(): ReactNode {
     const confirm = useConfirm();
     const user = useUser();
     const notImplemented = useNotImplemented();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
@@ -1425,6 +1427,13 @@ export function ProcessDetailsPage(): ReactNode {
                 return;
             }
 
+            try {
+                // Starting a test claim creates runtime instances that can affect process-instance permissions.
+                await refreshPermissionSet({broadcast: true});
+            } catch (refreshError) {
+                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Start des Tests nicht aktualisiert werden.'));
+            }
+
             setCurrentTestClaim({
                 claim: res,
                 user,
@@ -1461,6 +1470,13 @@ export function ProcessDetailsPage(): ReactNode {
                 return new ProcessTestClaimApiService()
                     .destroy(currentTestClaim.claim.id)
                     .then(() => {
+                        // Removing the claim also removes its runtime access, so refresh before updating the local UI state.
+                        return refreshPermissionSet({broadcast: true})
+                            .catch((refreshError) => {
+                                dispatch(showApiErrorSnackbar(refreshError, 'Die Berechtigungen konnten nach dem Löschen des Testanspruchs nicht aktualisiert werden.'));
+                            });
+                    })
+                    .then(() => {
                         setCurrentTestClaim(null);
                         setRuntimeData(null);
                         setShowProcessTestClaimInstancesDialog(false);
@@ -1476,7 +1492,7 @@ export function ProcessDetailsPage(): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Testanspruch konnte nicht gelöscht werden.'));
             });
-    }, [confirm, currentTestClaim, dispatch, instanceId, searchParams, setSearchParams]);
+    }, [confirm, currentTestClaim, dispatch, instanceId, refreshPermissionSet, searchParams, setSearchParams]);
 
     const handleDeleteProcess = useCallback((): void => {
         if (processFlow == null) {

@@ -42,6 +42,7 @@ export enum Permission {
     PAYMENT_PROVIDER_DELETE = "payment_provider.delete",
     PAYMENT_PROVIDER_READ = "payment_provider.read",
     PAYMENT_PROVIDER_UPDATE = "payment_provider.update",
+    PERMISSION_SET_READ = "permission_set.read",
     PLUGIN_CREATE = "plugin.create",
     PLUGIN_DELETE = "plugin.delete",
     PLUGIN_READ = "plugin.read",
