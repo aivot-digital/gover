@@ -18,7 +18,7 @@ import {UserStatusChip} from '../../../users/components/user-status-chip';
 import {UserRolesAssignmentDialog} from '../../../user-roles/components/user-roles-assignment-dialog';
 import {setLoadingMessage} from '../../../../slices/shell-slice';
 import {isApiError} from '../../../../models/api-error';
-import {showErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {DepartmentEntity} from '../../entities/department-entity';
 import {VDepartmentMembershipWithDetailsEntity} from '../../entities/v-department-membership-with-details-entity';
@@ -33,14 +33,22 @@ import {
 import {resolveUserName} from "../../../users/utils/resolve-user-name";
 import {snakeToCamel} from "../../../../utils/camel-to-snake";
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckDepartmentPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function DepartmentsDetailsPageMembers() {
     const dispatch = useAppDispatch();
+    const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
         item,
-        isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, undefined>;
+    const canReadMemberships = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canCreateMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
+    const canUpdateMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
+    const canDeleteMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
 
     const showConfirm = useConfirm();
 
@@ -49,10 +57,20 @@ export function DepartmentsDetailsPageMembers() {
     const [showSelectRolesDialogForUser, setShowSelectRolesDialogForUser] = useState<User | null>(null);
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
 
+    const refreshPermissionsAfterMembershipChange = useCallback(() => {
+        // Effective permissions may include grants inherited through deputy assignments.
+        // The frontend cannot know whether the changed membership belongs to a represented user.
+        refreshPermissionSet({broadcast: true})
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die Berechtigungen konnten nach der Änderung der Organisationseinheitsmitgliedschaft nicht aktualisiert werden.',
+            )));
+    }, [dispatch, refreshPermissionSet]);
+
     const fetchMembers = useCallback((options: GenericListPropsFetchOptions<VDepartmentMembershipWithDetailsEntity>) => {
-        if (item == null) {
+        if (item == null || !canReadMemberships) {
             // GenericList always expects an async page result. While the department details are still loading,
-            // we return an already resolved promise with an empty page instead of hitting the API with no department id.
+            // or the membership list is not readable, we return an empty page instead of hitting the API.
             return Promise.resolve({
                 content: [],
                 page: {
@@ -86,7 +104,7 @@ export function DepartmentsDetailsPageMembers() {
 
         return new VDepartmentMembershipWithDetailsService()
             .listDepartmentMembershipsWithRoles(options.page, options.size, options.sort as any, options.order, filters);
-    }, [item]);
+    }, [canReadMemberships, item]);
 
     const buildRowActions = useCallback((membershipItem: VDepartmentMembershipWithDetailsEntity) => {
         return [
@@ -96,7 +114,10 @@ export function DepartmentsDetailsPageMembers() {
                     setShowSelectRolesDialogForMembership(membershipItem);
                 },
                 tooltip: membershipItem.userDeletedInIdp ? `Kann für gelöschte Mitarbeiter:innen nicht geändert werden` : 'Rolle der Mitarbeiter:in bearbeiten',
-                disabled: membershipItem.userDeletedInIdp ?? undefined,
+                disabled: !canUpdateMembership || (membershipItem.userDeletedInIdp ?? false),
+                disabledTooltip: !canUpdateMembership
+                    ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_UPDATE)
+                    : undefined,
             },
             {
                 icon: <Delete/>,
@@ -135,6 +156,7 @@ export function DepartmentsDetailsPageMembers() {
                                 .then(() => {
                                     // Refresh list
                                     listControlRef.current?.refresh();
+                                    refreshPermissionsAfterMembershipChange();
                                 })
                                 .catch((error) => {
                                     if (isApiError(error) && error.displayableToUser) {
@@ -150,25 +172,30 @@ export function DepartmentsDetailsPageMembers() {
                         });
                 },
                 tooltip: 'Mitarbeiter:in entfernen',
+                disabled: !canDeleteMembership,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_DELETE),
             },
         ];
-    }, [dispatch, item, showConfirm, listControlRef]);
+    }, [canDeleteMembership, canUpdateMembership, dispatch, item, refreshPermissionsAfterMembershipChange, showConfirm, listControlRef]);
 
     const preSearchElements = useMemo(() => {
-        if (!isEditable) {
-            return undefined;
-        }
-
         return [
-            <Button
-                variant="contained"
-                startIcon={<AddOutlinedIcon/>}
-                onClick={() => setShowSelectNewMemberDialog(true)}
+            <DisabledTooltip
+                key="add-department-member"
+                title={!canCreateMembership ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE) : ''}
+                disabled={!canCreateMembership}
             >
-                Mitarbeiter:in hinzufügen
-            </Button>,
+                <Button
+                    variant="contained"
+                    startIcon={<AddOutlinedIcon/>}
+                    onClick={() => setShowSelectNewMemberDialog(true)}
+                    disabled={!canCreateMembership}
+                >
+                    Mitarbeiter:in hinzufügen
+                </Button>
+            </DisabledTooltip>,
         ];
-    }, [isEditable]);
+    }, [canCreateMembership]);
 
     const handleAddMembership = useCallback((user: User | null, roleIdsToAdd: number[]) => {
         if (user == null || item == null) {
@@ -202,6 +229,7 @@ export function DepartmentsDetailsPageMembers() {
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -214,7 +242,7 @@ export function DepartmentsDetailsPageMembers() {
             .finally(() => {
                 dispatch(setLoadingMessage(undefined));
             });
-    }, [dispatch, item, listControlRef]);
+    }, [dispatch, item, listControlRef, refreshPermissionsAfterMembershipChange]);
 
     const handleUpdateMembership = useCallback((membership: VDepartmentMembershipWithDetailsEntity | null, roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => {
         if (membership == null) {
@@ -249,6 +277,7 @@ export function DepartmentsDetailsPageMembers() {
             .then(() => {
                 // Refresh list
                 listControlRef.current?.refresh();
+                refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
                 if (isApiError(error) && error.displayableToUser) {
@@ -261,7 +290,7 @@ export function DepartmentsDetailsPageMembers() {
             .finally(() => {
                 dispatch(setLoadingMessage(undefined));
             });
-    }, [dispatch, listControlRef]);
+    }, [dispatch, listControlRef, refreshPermissionsAfterMembershipChange]);
 
     if (item == null) {
         return null;
@@ -303,16 +332,18 @@ export function DepartmentsDetailsPageMembers() {
                 getRowIdentifier={getRowIdentifier}
                 searchLabel="Mitarbeiter:in suchen"
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
-                rowActionsCount={isEditable ? 2 : 0}
-                rowActions={isEditable ? buildRowActions : undefined}
+                rowActionsCount={2}
+                rowActions={buildRowActions}
                 defaultSortField="userFullName"
                 rowMenuItems={[]}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Keine Mitarbeiter:innen zugeordnet"
-                        description="Mitarbeiter:innen einer Organisationseinheit teilen fachliche Zuständigkeiten und können dafür Rollen oder Aufgaben erhalten."
-                        addText={isEditable ? "Mitarbeiter:in hinzufügen" : undefined}
-                        onAdd={isEditable ? () => setShowSelectNewMemberDialog(true) : undefined}
+                        title="Keine Mitgliedschaften im Zugriff"
+                        description="Es wurden keine Mitgliedschaften gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Mitarbeiter:innen zugeordnet oder Ihnen fehlt die Leseberechtigung für Mitgliedschaften."
+                        addText="Mitarbeiter:in hinzufügen"
+                        onAdd={() => setShowSelectNewMemberDialog(true)}
+                        addDisabled={!canCreateMembership}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)}
                     />
                 }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"

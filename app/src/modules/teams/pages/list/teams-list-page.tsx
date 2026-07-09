@@ -6,20 +6,26 @@ import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import {Typography} from '@mui/material';
 import {EditOutlined, GroupOutlined} from '@mui/icons-material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
 import {TeamsApiService} from '../../services/teams-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {TeamEntity} from "../../entities/team-entity";
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {Permission} from '../../../../data/permissions/permission';
+import {
+    checkSystemPermission,
+    checkTeamPermission,
+    formatMissingPermissionTooltip,
+} from '../../../permissions/utils/permission-utils';
+import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 
 export function TeamsListPage() {
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateTeam = checkSystemPermission(permissions, Permission.TEAM_CREATE);
 
     const header = useMemo(() => ({
         icon: ModuleIcons.teams,
@@ -30,7 +36,8 @@ export function TeamsListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/teams/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !canCreateTeam,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_CREATE),
             },
         ],
         helpDialog: {
@@ -50,7 +57,7 @@ export function TeamsListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), [canCreateTeam]);
 
     const fetchTeams = useCallback((options: GenericListPropsFetchOptions<TeamEntity>) => {
         return new TeamsApiService()
@@ -72,31 +79,54 @@ export function TeamsListPage() {
             field: 'name',
             headerName: 'Name',
             flex: 1,
-            renderCell: (params: any) => (
-                <CellLink
-                    to={`/teams/${params.id}`}
-                    title={hasAccess ? 'Team bearbeiten' : 'Team ansehen'}
-                >
-                    {String(params.value)}
-                </CellLink>
-            ),
+            renderCell: (params: any) => {
+                const canReadTeam = checkTeamPermission(permissions, params.row.id, Permission.TEAM_READ);
+                const canUpdateTeam = checkTeamPermission(permissions, params.row.id, Permission.TEAM_UPDATE);
+
+                if (!canReadTeam) {
+                    return (
+                        <CellContentWrapper title={formatMissingPermissionTooltip(Permission.TEAM_READ)}>
+                            {String(params.value)}
+                        </CellContentWrapper>
+                    );
+                }
+
+                return (
+                    <CellLink
+                        to={`/teams/${params.id}`}
+                        title={canUpdateTeam ? 'Team bearbeiten' : 'Team ansehen'}
+                    >
+                        {String(params.value)}
+                    </CellLink>
+                );
+            },
         },
-    ], [hasAccess]);
+    ], [permissions]);
 
     const getRowIdentifier = useCallback((row: TeamEntity) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: TeamEntity) => [
-        {
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
-            to: `/teams/${item.id}`,
-            tooltip: hasAccess ? 'Team bearbeiten' : 'Team ansehen',
-        },
-        {
-            icon: <GroupOutlined />,
-            to: `/teams/${item.id}/members`,
-            tooltip: hasAccess ? 'Teammitglieder verwalten' : 'Teammitglieder ansehen',
-        },
-    ], [hasAccess]);
+    const rowActions = useCallback((item: TeamEntity) => {
+        const canReadTeam = checkTeamPermission(permissions, item.id, Permission.TEAM_READ);
+        const canUpdateTeam = checkTeamPermission(permissions, item.id, Permission.TEAM_UPDATE);
+        const canReadMemberships = checkTeamPermission(permissions, item.id, Permission.TEAM_MEMBERSHIP_READ);
+
+        return [
+            {
+                icon: canUpdateTeam ? <EditOutlined /> : <Visibility />,
+                to: `/teams/${item.id}`,
+                tooltip: canUpdateTeam ? 'Team bearbeiten' : 'Team ansehen',
+                disabled: !canReadTeam,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_READ),
+            },
+            {
+                icon: <GroupOutlined />,
+                to: `/teams/${item.id}/members`,
+                tooltip: 'Teammitglieder ansehen',
+                disabled: !canReadMemberships,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_READ),
+            },
+        ];
+    }, [permissions]);
 
     return (
         <PageWrapper
@@ -114,14 +144,16 @@ export function TeamsListPage() {
                 getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Noch keine Teams angelegt"
-                        description="Teams bündeln Mitarbeiter:innen für gemeinsame Zuständigkeiten, Berechtigungen oder Aufgaben in Prozessen."
-                        addText={hasAccess ? "Neues Team anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/teams/new') : undefined}
+                        title="Keine Teams im Zugriff"
+                        description="Es wurden keine Teams gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Teams angelegt oder Ihnen fehlen die erforderlichen Leseberechtigungen."
+                        addText="Neues Team anlegen"
+                        onAdd={() => navigate('/teams/new')}
+                        addDisabled={!canCreateTeam}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.TEAM_CREATE)}
                     />
                 }
-                noSearchResultsPlaceholder="Keine Teams gefunden"
-                rowActionsCount={3}
+                noSearchResultsPlaceholder="Keine Teams gefunden, die zu Ihrer Suche oder Ihren Berechtigungen passen"
+                rowActionsCount={2}
                 rowActions={rowActions}
                 defaultSortField="name"
                 disableFullWidthToggle={true}

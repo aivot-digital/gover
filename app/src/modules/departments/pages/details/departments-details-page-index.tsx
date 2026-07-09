@@ -1,4 +1,4 @@
-import {Box, Breadcrumbs, Button, Grid, Tooltip, Typography} from '@mui/material';
+import {Box, Breadcrumbs, Button, Grid, Typography} from '@mui/material';
 import React, {ComponentType, useContext, useEffect, useMemo, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
@@ -18,7 +18,6 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {ThemeResponseDTO} from '../../../themes/models/theme';
 import {ThemesApiService} from '../../../themes/themes-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import {DepartmentsDetailsPageAdditionalData, NewParentIdQueryParam} from './departments-details-page';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {TextFieldComponentProps} from '../../../../components/text-field/text-field-component-props';
@@ -32,6 +31,11 @@ import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/
 import {MoveDepartmentDialog} from '../../dialogs/move-department-dialog';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
 import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckDepartmentPermission} from '../../../permissions/hooks/use-permissions';
+import {isApiError} from '../../../../models/api-error';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 const emptyStringToNull = (value: unknown, originalValue: unknown) => {
     if (typeof originalValue === 'string' && originalValue.trim().length === 0) {
@@ -158,23 +162,6 @@ export function DepartmentsDetailsPageIndex() {
         additionalData,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, DepartmentsDetailsPageAdditionalData>;
 
-    useEffect(() => {
-        if (isEditable) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            severity: SnackbarSeverity.Warning,
-            type: SnackbarType.Dismissable,
-            message: 'Diese Organisationseinheit kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            key: 'no-edit-permission-department',
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('no-edit-permission-department'));
-        };
-    }, [isEditable]);
-
     const {
         currentItem,
         errors,
@@ -188,6 +175,11 @@ export function DepartmentsDetailsPageIndex() {
     const apiService = useMemo(() => new DepartmentApiService(), []);
     const department = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
+    const editPermission = department?.id === 0 ? Permission.DEPARTMENT_CREATE : Permission.DEPARTMENT_UPDATE;
+    const canDeleteDepartment = useCheckDepartmentPermission(
+        department?.id === 0 ? undefined : department?.id,
+        Permission.DEPARTMENT_DELETE,
+    );
 
     type ShadowedStringField =
         | 'address'
@@ -228,7 +220,12 @@ export function DepartmentsDetailsPageIndex() {
             })
             .catch((err) => {
                 console.error(err);
-                dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Fabschemata.'));
+                dispatch(showErrorSnackbar(
+                    isApiError(err) && err.status === 403
+                        ? `Die verfügbaren Farbschemata konnten nicht geladen werden. Für die Auswahl ist die Berechtigung ${Permission.THEME_READ} erforderlich.`
+                        : 'Fehler beim Laden der verfügbaren Farbschemata.',
+                ));
+                setAvailableThemes([]);
             });
     }, []);
 
@@ -277,6 +274,15 @@ export function DepartmentsDetailsPageIndex() {
             <GenericDetailsSkeleton />
         );
     }
+
+    const saveDisabledByPermission = !isEditable;
+    const saveDisabledTooltip = saveDisabledByPermission
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledByPermission = !canDeleteDepartment;
+    const deleteDisabledTooltip = deleteDisabledByPermission
+        ? formatMissingPermissionTooltip(Permission.DEPARTMENT_DELETE)
+        : undefined;
 
     const handleSave = () => {
         // Do not save if department is null
@@ -403,13 +409,13 @@ export function DepartmentsDetailsPageIndex() {
     const canMoveDepartment = department.id !== 0 && isEditable && hasNotChanged;
     const moveDisabledReason = isBusy
         ? 'Bitte warten, bis die aktuelle Aktion abgeschlossen ist.'
-        : department.id === 0
-            ? 'Die Organisationseinheit kann erst nach dem Anlegen verschoben werden.'
-            : !isEditable
-                ? 'Die Organisationseinheit kann nur von Administrator:innen verschoben werden.'
-                : !hasNotChanged
-                    ? 'Bitte speichern oder verwerfen Sie zuerst Ihre Änderungen.'
-                    : null;
+            : department.id === 0
+                ? 'Die Organisationseinheit kann erst nach dem Anlegen verschoben werden.'
+                : !isEditable
+                    ? formatMissingPermissionTooltip(Permission.DEPARTMENT_UPDATE)
+                    : !hasNotChanged
+                        ? 'Bitte speichern oder verwerfen Sie zuerst Ihre Änderungen.'
+                        : null;
 
     const orgUnitPathParts = (() => {
         const safeName = department.name?.trim() || 'Unbenannt';
@@ -879,27 +885,37 @@ export function DepartmentsDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={saveDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon />}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon />}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     department.id !== 0 &&
-                    <Button
-                        onClick={() => {
-                            reset();
-                        }}
+                    <DisabledTooltip
+                        title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
-                        color="error"
                     >
-                        Zurücksetzen
-                    </Button>
+                        <Button
+                            onClick={() => {
+                                reset();
+                            }}
+                            disabled={isBusy || hasNotChanged || !isEditable}
+                            color="error"
+                        >
+                            Zurücksetzen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
@@ -911,32 +927,35 @@ export function DepartmentsDetailsPageIndex() {
                             marginLeft: 'auto',
                         }}
                     >
-                        <Tooltip
-                            title={moveDisabledReason ?? ''}
-                            disableHoverListener={moveDisabledReason == null}
+                        <DisabledTooltip
+                            title={moveDisabledReason}
+                            disabled={isBusy || !canMoveDepartment}
                         >
-                            <span>
-                                <Button
-                                    variant="outlined"
-                                    onClick={() => {
-                                        setShowMoveDialog(true);
-                                    }}
-                                    disabled={isBusy || !canMoveDepartment}
-                                    startIcon={<MoveGroup />}
-                                >
-                                    Verschieben
-                                </Button>
-                            </span>
-                        </Tooltip>
-                        <Button
-                            variant="outlined"
-                            onClick={checkAndHandleDelete}
-                            disabled={isBusy || !isEditable}
-                            color="error"
-                            startIcon={<Delete />}
+                            <Button
+                                variant="outlined"
+                                onClick={() => {
+                                    setShowMoveDialog(true);
+                                }}
+                                disabled={isBusy || !canMoveDepartment}
+                                startIcon={<MoveGroup />}
+                            >
+                                Verschieben
+                            </Button>
+                        </DisabledTooltip>
+                        <DisabledTooltip
+                            title={deleteDisabledTooltip}
+                            disabled={isBusy || deleteDisabledByPermission}
                         >
-                            Löschen
-                        </Button>
+                            <Button
+                                variant="outlined"
+                                onClick={checkAndHandleDelete}
+                                disabled={isBusy || deleteDisabledByPermission}
+                                color="error"
+                                startIcon={<Delete />}
+                            >
+                                Löschen
+                            </Button>
+                        </DisabledTooltip>
                     </Box>
                 }
             </Box>
