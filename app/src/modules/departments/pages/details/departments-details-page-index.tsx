@@ -542,62 +542,62 @@ export function DepartmentsDetailsPageIndex() {
                         error={errors.name}
                         disabled={!isEditable}
                     />
-                    {
-                        shouldShowOrgUnitHierarchy &&
-                        <>
-                            <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{
-                                    mt: 0.25,
-                                    display: 'block',
-                                }}
-                            >
-                                Einordnung in der Organisationsstruktur:
-                            </Typography>
-                            <Breadcrumbs
-                                separator="›"
-                                maxItems={5}
-                                itemsBeforeCollapse={2}
-                                itemsAfterCollapse={2}
-                                sx={{
-                                    mt: 0,
-                                    mb: 2,
-                                    color: 'text.secondary',
-                                    '& .MuiBreadcrumbs-ol': {
-                                        flexWrap: 'nowrap',
-                                        overflow: 'hidden',
-                                    },
-                                }}
-                            >
-                                {
-                                    orgUnitPathParts.map((segment, index) => (
-                                        <Typography
-                                            key={`${department.id}-${index}`}
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{
-                                                maxWidth: 220,
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                            title={segment}
-                                        >
-                                            {segment}
-                                        </Typography>
-                                    ))
-                                }
-                            </Breadcrumbs>
-                        </>
-                    }
                 </Grid>
-                <Grid
-                    size={{
-                        xs: 12,
-                        lg: 6,
-                    }}
-                />
+                {
+                    shouldShowOrgUnitHierarchy &&
+                    <Grid
+                        size={{
+                            xs: 12,
+                        }}
+                        sx={{ mb: 1 }}
+                    >
+                        <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{
+                                display: 'block',
+                            }}
+                        >
+                            Einordnung in der Organisationsstruktur:
+                        </Typography>
+                        <Breadcrumbs
+                            separator="›"
+                            maxItems={5}
+                            itemsBeforeCollapse={2}
+                            itemsAfterCollapse={2}
+                            sx={{
+                                mt: 0,
+                                color: 'text.secondary',
+                                '& .MuiBreadcrumbs-ol': {
+                                    alignItems: 'flex-start',
+                                    flexWrap: 'wrap',
+                                    overflow: 'visible',
+                                    rowGap: 0.25,
+                                },
+                                '& .MuiBreadcrumbs-li': {
+                                    minWidth: 0,
+                                },
+                            }}
+                        >
+                            {
+                                orgUnitPathParts.map((segment, index) => (
+                                    <Typography
+                                        key={`${department.id}-${index}`}
+                                        variant="caption"
+                                        color="text.secondary"
+                                        sx={{
+                                            overflowWrap: 'anywhere',
+                                            whiteSpace: 'normal',
+                                        }}
+                                        title={segment}
+                                    >
+                                        {segment}
+                                    </Typography>
+                                ))
+                            }
+                        </Breadcrumbs>
+                    </Grid>
+                }
                 {
                     !doNotShadow &&
                     <Grid
