@@ -93,7 +93,7 @@ class StorageProviderControllerTest {
         controller.getFolder(jwt, 42, request);
 
         verify(permissionService)
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
         verify(storageIndexItemRepository)
                 .listAllInFolder(42, "/folder+a/", false);
     }
