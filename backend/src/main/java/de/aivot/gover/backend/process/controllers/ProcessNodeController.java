@@ -121,9 +121,40 @@ public class ProcessNodeController {
             description = "List all process definition nodes with optional filtering and pagination."
     )
     public Page<ProcessNodeEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessNodeFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+            if (filter.getProcessId() != null) {
+                permissionService.hasProcessPermission(
+                        user.getId(),
+                        filter.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+            } else {
+                var accessibleProcessIds = permissionService
+                        .getProcessesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+
+                if (filter.getProcessIds() != null) {
+                    accessibleProcessIds = filter.getProcessIds()
+                            .stream()
+                            .filter(accessibleProcessIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessIds(accessibleProcessIds);
+            }
+        }
+
         return processDefinitionNodeService
                 .list(pageable, filter);
     }
@@ -140,6 +171,12 @@ public class ProcessNodeController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessPermission(
+                execUser.getId(),
+                newNode.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var result = processDefinitionNodeService
                 .create(newNode);
@@ -164,11 +201,24 @@ public class ProcessNodeController {
             description = "Retrieve a process definition node by its ID."
     )
     public ProcessNodeEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        return processDefinitionNodeService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var node = processDefinitionNodeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
+        return node;
     }
 
     @PutMapping("{id}/")
@@ -190,6 +240,12 @@ public class ProcessNodeController {
         var existing = processDefinitionNodeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                execUser.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         if (processNodeRepository.existsByDataKeyAndIdIsNotAndProcessIdAndProcessVersion(
                 updateDTO.getDataKey(),
@@ -257,9 +313,17 @@ public class ProcessNodeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existing = processDefinitionNodeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var deleted = processDefinitionNodeService
                 .delete(id);
@@ -294,13 +358,9 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var existingProcess = processDefinitionService
-                .retrieve(existingNode.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService.testDepartmentPermission(
+        permissionService.hasProcessPermission(
                 execUser.getId(),
-                existingProcess.getDepartmentId(),
+                existingNode.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
@@ -341,13 +401,9 @@ public class ProcessNodeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var targetProcess = processDefinitionService
-                .retrieve(processId)
-                .orElseThrow(ResponseException::notFound);
-
-        permissionService.testDepartmentPermission(
+        permissionService.hasProcessPermission(
                 execUser.getId(),
-                targetProcess.getDepartmentId(),
+                processId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
@@ -423,6 +479,12 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
+        permissionService.hasProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
                 .orElseThrow(ResponseException::badRequest);
@@ -463,13 +525,9 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var processDefinition = processDefinitionService
-                .retrieve(node.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService.testDepartmentPermission(
+        permissionService.hasProcessPermission(
                 user.getId(),
-                processDefinition.getDepartmentId(),
+                node.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
         );
 
@@ -493,6 +551,12 @@ public class ProcessNodeController {
         var node = processDefinitionNodeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         ProcessNodeDefinition<NodeConfig> provider = (ProcessNodeDefinition<NodeConfig>) processNodeProviderService
                 .getProcessNodeDefinition(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
@@ -535,9 +599,19 @@ public class ProcessNodeController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
         var node = processNodeRepository
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                node.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
 
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(node)

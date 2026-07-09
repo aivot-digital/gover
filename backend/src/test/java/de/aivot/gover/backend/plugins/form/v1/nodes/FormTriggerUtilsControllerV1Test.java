@@ -72,7 +72,7 @@ class FormTriggerUtilsControllerV1Test {
 
         var response = fixture.controller().printPdf(null, fixture.node().getId());
 
-        verify(fixture.permissionService()).testDepartmentPermission(
+        verify(fixture.permissionService()).hasDepartmentPermission(
                 fixture.user().getId(),
                 fixture.process().getDepartmentId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ

@@ -6,8 +6,10 @@ import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.teams.entities.TeamEntity;
 import de.aivot.gover.backend.teams.filters.TeamFilter;
+import de.aivot.gover.backend.teams.permissions.TeamPermissionProvider;
 import de.aivot.gover.backend.teams.services.TeamService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -40,15 +42,18 @@ public class TeamController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final TeamService teamService;
+    private final PermissionService permissionService;
 
     @Autowired
     public TeamController(AuditService auditService,
                           UserService userService,
-                          TeamService teamService) {
+                          TeamService teamService,
+                          PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(TeamController.class, "Teams");
 
         this.userService = userService;
         this.teamService = teamService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -58,9 +63,41 @@ public class TeamController {
                     "Supports filtering and pagination parameters."
     )
     public Page<TeamEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid TeamFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), TeamPermissionProvider.TEAM_READ)) {
+            if (filter.getId() != null) {
+                permissionService.hasTeamPermission(
+                        user.getId(),
+                        filter.getId(),
+                        TeamPermissionProvider.TEAM_READ
+                );
+            } else {
+                var accessibleTeamIds = permissionService
+                        .getTeamsWithPermission(user.getId(), TeamPermissionProvider.TEAM_READ);
+
+                if (filter.getIds() != null) {
+                    // Preserve explicit client filtering, but intersect it with the teams the user may read.
+                    accessibleTeamIds = filter.getIds()
+                            .stream()
+                            .filter(accessibleTeamIds::contains)
+                            .toList();
+                }
+
+                if (accessibleTeamIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setIds(accessibleTeamIds);
+            }
+        }
+
         return teamService
                 .list(pageable, filter);
     }
@@ -76,9 +113,12 @@ public class TeamController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasSystemPermission(
+                user.getId(),
+                TeamPermissionProvider.TEAM_CREATE
+        );
 
         var result = teamService
                 .create(newTeam);
@@ -102,8 +142,19 @@ public class TeamController {
             description = "Retrieve a team by its ID."
     )
     public TeamEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasTeamPermission(
+                user.getId(),
+                id,
+                TeamPermissionProvider.TEAM_READ
+        );
+
         return teamService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
@@ -121,9 +172,13 @@ public class TeamController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasTeamPermission(
+                user.getId(),
+                id,
+                TeamPermissionProvider.TEAM_UPDATE
+        );
 
         TeamEntity result;
         try {
@@ -157,9 +212,13 @@ public class TeamController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasTeamPermission(
+                user.getId(),
+                id,
+                TeamPermissionProvider.TEAM_DELETE
+        );
 
         var deleted = teamService
                 .delete(id);

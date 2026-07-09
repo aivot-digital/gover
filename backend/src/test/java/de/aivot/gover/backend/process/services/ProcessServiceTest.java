@@ -166,7 +166,7 @@ class ProcessServiceTest {
         Specification<ProcessEntity> specification = (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
         var page = Page.<ProcessEntity>empty(pageable);
 
-        when(permissionService.hasSystemPermission(USER_ID, READ_PERMISSION))
+        when(permissionService.checkSystemPermission(USER_ID, READ_PERMISSION))
                 .thenReturn(true);
         when(repository.findAll(specification, pageable))
                 .thenReturn(page);
@@ -187,7 +187,7 @@ class ProcessServiceTest {
         var service = new ProcessService(repository, processSlugHistoryRepository, permissionService);
         var pageable = PageRequest.of(0, 10);
 
-        when(permissionService.hasSystemPermission(USER_ID, READ_PERMISSION))
+        when(permissionService.checkSystemPermission(USER_ID, READ_PERMISSION))
                 .thenReturn(false);
         when(permissionService.getDepartmentsWithPermission(USER_ID, READ_PERMISSION))
                 .thenReturn(List.of());
@@ -210,7 +210,7 @@ class ProcessServiceTest {
         var pageable = PageRequest.of(0, 10);
         var page = Page.<ProcessEntity>empty(pageable);
 
-        when(permissionService.hasSystemPermission(USER_ID, READ_PERMISSION))
+        when(permissionService.checkSystemPermission(USER_ID, READ_PERMISSION))
                 .thenReturn(false);
         when(permissionService.getDepartmentsWithPermission(USER_ID, READ_PERMISSION))
                 .thenReturn(List.of(10));

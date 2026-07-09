@@ -114,7 +114,7 @@ public class AssetController {
 
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -145,7 +145,7 @@ public class AssetController {
             @Nullable @RequestParam(required = false) Boolean isPublic
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         getStorageProvider(storageProviderId);
 
@@ -173,7 +173,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
+                .hasSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -222,7 +222,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_DELETE);
+                .hasSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_DELETE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -277,7 +277,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
+                .hasSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_CREATE);
 
         var filePath = getNormalizedFilePath(request);
 
@@ -351,7 +351,7 @@ public class AssetController {
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -387,7 +387,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_UPDATE);
+                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_UPDATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -476,7 +476,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_UPDATE);
+                .hasSystemPermission(execUser.getId(), AssetPermissionProvider.ASSET_UPDATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
         var filePath = getNormalizedFileMetadataPath(request);
@@ -546,7 +546,7 @@ public class AssetController {
             @Nonnull HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         var storageProvider = getStorageProvider(storageProviderId);
 
@@ -604,7 +604,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+                .hasSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
         if (storageProvider.getReadOnlyStorage()) {
@@ -684,7 +684,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+                .hasSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
         if (storageProvider.getReadOnlyStorage()) {
@@ -764,7 +764,7 @@ public class AssetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(user.getId(), AssetPermissionProvider.ASSET_DELETE);
+                .hasSystemPermission(user.getId(), AssetPermissionProvider.ASSET_DELETE);
 
         var storageProvider = getStorageProvider(storageProviderId);
 

@@ -6,10 +6,13 @@ import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import jakarta.annotation.Nonnull;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 public class ProcessInstanceAccessControlFilter implements Filter<ProcessInstanceAccessControlEntity> {
     private Integer sourceTeamId;
     private Integer sourceDepartmentId;
     private Integer targetProcessInstanceId;
+    private List<Integer> targetProcessInstanceIds;
     private Integer targetProcessInstanceTaskId;
 
     public static ProcessInstanceAccessControlFilter create() {
@@ -24,6 +27,7 @@ public class ProcessInstanceAccessControlFilter implements Filter<ProcessInstanc
                 .withEquals("sourceTeamId", sourceTeamId)
                 .withEquals("sourceDepartmentId", sourceDepartmentId)
                 .withEquals("targetProcessInstanceId", targetProcessInstanceId)
+                .withInList("targetProcessInstanceId", targetProcessInstanceIds)
                 .withEquals("targetProcessInstanceTaskId", targetProcessInstanceTaskId);
 
         return builder.build();
@@ -56,6 +60,15 @@ public class ProcessInstanceAccessControlFilter implements Filter<ProcessInstanc
         return this;
     }
 
+    public List<Integer> getTargetProcessInstanceIds() {
+        return targetProcessInstanceIds;
+    }
+
+    public ProcessInstanceAccessControlFilter setTargetProcessInstanceIds(List<Integer> targetProcessInstanceIds) {
+        this.targetProcessInstanceIds = targetProcessInstanceIds;
+        return this;
+    }
+
     public Integer getTargetProcessInstanceTaskId() {
         return targetProcessInstanceTaskId;
     }
@@ -65,4 +78,3 @@ public class ProcessInstanceAccessControlFilter implements Filter<ProcessInstanc
         return this;
     }
 }
-

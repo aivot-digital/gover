@@ -5,17 +5,16 @@ import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.department.entities.DepartmentMembershipEntity;
 import de.aivot.gover.backend.department.filters.DepartmentMembershipFilter;
-import de.aivot.gover.backend.department.filters.VDepartmentMembershipWithPermissionsFilter;
+import de.aivot.gover.backend.department.permissions.DepartmentPermissionProvider;
 import de.aivot.gover.backend.department.services.DepartmentMembershipService;
-import de.aivot.gover.backend.department.services.VDepartmentMembershipWithPermissionsService;
 import de.aivot.gover.backend.exceptions.InvalidUserEMailException;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.mail.services.DepartmentMembershipMailService;
 import de.aivot.gover.backend.mail.services.ExceptionMailService;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
-import de.aivot.gover.backend.userRoles.data.PermissionLabels;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -49,7 +48,7 @@ public class DepartmentMembershipController {
     private final DepartmentMembershipService departmentMembershipService;
     private final DepartmentMembershipMailService departmentMembershipMailService;
     private final ExceptionMailService exceptionMailService;
-    private final VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService;
+    private final PermissionService permissionService;
     private final UserService userService;
 
     @Autowired
@@ -57,14 +56,14 @@ public class DepartmentMembershipController {
                                           DepartmentMembershipService departmentMembershipService,
                                           DepartmentMembershipMailService departmentMembershipMailService,
                                           ExceptionMailService exceptionMailService,
-                                          VDepartmentMembershipWithPermissionsService vDepartmentMembershipWithPermissionsService,
+                                          PermissionService permissionService,
                                           UserService userService) {
         this.auditService = auditService.createScopedAuditService(DepartmentMembershipController.class, "Organisationseinheiten");
 
         this.departmentMembershipService = departmentMembershipService;
         this.departmentMembershipMailService = departmentMembershipMailService;
         this.exceptionMailService = exceptionMailService;
-        this.vDepartmentMembershipWithPermissionsService = vDepartmentMembershipWithPermissionsService;
+        this.permissionService = permissionService;
         this.userService = userService;
     }
 
@@ -74,10 +73,41 @@ public class DepartmentMembershipController {
             description = "List department memberships with pagination and filtering."
     )
     public Page<DepartmentMembershipEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid DepartmentMembershipFilter filter
 
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
+            if (filter.getDepartmentId() != null) {
+                permissionService.hasDepartmentPermission(
+                        user.getId(),
+                        filter.getDepartmentId(),
+                        DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
+                );
+            } else {
+                var accessibleDepartmentIds = permissionService
+                        .getDepartmentsWithPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ);
+
+                if (filter.getDepartmentIds() != null) {
+                    accessibleDepartmentIds = filter.getDepartmentIds()
+                            .stream()
+                            .filter(accessibleDepartmentIds::contains)
+                            .toList();
+                }
+
+                if (accessibleDepartmentIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setDepartmentIds(accessibleDepartmentIds);
+            }
+        }
+
         return departmentMembershipService
                 .list(pageable, filter);
     }
@@ -96,21 +126,11 @@ public class DepartmentMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var filter = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(newMembership.getDepartmentId())
-                    .setDepartmentPermissionEdit(true);
-
-            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
-            }
-        }
+        permissionService.hasDepartmentPermission(
+                execUser.getId(),
+                newMembership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_CREATE
+        );
 
         var createdMembership = departmentMembershipService
                 .create(newMembership);
@@ -154,11 +174,24 @@ public class DepartmentMembershipController {
             description = "Retrieve a department membership by its id."
     )
     public DepartmentMembershipEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id
     ) throws ResponseException {
-        return departmentMembershipService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var membership = departmentMembershipService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasDepartmentPermission(
+                user.getId(),
+                membership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
+        );
+
+        return membership;
     }
 
     @PutMapping("{id}/")
@@ -181,21 +214,11 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!execUser.getIsSuperAdmin()) {
-            var filter = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(execUser.getId())
-                    .setDepartmentId(existingMembership.getDepartmentId())
-                    .setDepartmentPermissionEdit(true);
-
-            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
-            }
-        }
+        permissionService.hasDepartmentPermission(
+                execUser.getId(),
+                existingMembership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE
+        );
 
         var savedMembership = departmentMembershipService
                 .update(id, updatedMembership);
@@ -241,21 +264,11 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        if (!user.getIsSuperAdmin()) {
-            var filter = VDepartmentMembershipWithPermissionsFilter
-                    .create()
-                    .setUserId(user.getId())
-                    .setDepartmentId(existingMembership.getDepartmentId())
-                    .setDepartmentPermissionEdit(true);
-
-            var hasPermissionToEdit = vDepartmentMembershipWithPermissionsService
-                    .exists(filter.build());
-
-            if (!hasPermissionToEdit) {
-                throw ResponseException
-                        .noPermission(PermissionLabels.DepartmentPermissionEdit);
-            }
-        }
+        permissionService.hasDepartmentPermission(
+                user.getId(),
+                existingMembership.getDepartmentId(),
+                DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_DELETE
+        );
 
         var deletedMembership = departmentMembershipService
                 .deleteEntity(existingMembership);

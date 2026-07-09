@@ -5,10 +5,12 @@ import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.exceptions.BadRequestException;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.secrets.dtos.SecretEntityRequestDTO;
 import de.aivot.gover.backend.secrets.dtos.SecretEntityResponseDTO;
 import de.aivot.gover.backend.secrets.entities.SecretEntity;
 import de.aivot.gover.backend.secrets.filters.SecretFilter;
+import de.aivot.gover.backend.secrets.permissions.SecretPermissionProvider;
 import de.aivot.gover.backend.secrets.services.SecretService;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.user.services.UserService;
@@ -45,25 +47,38 @@ public class SecretController {
     private final ScopedAuditService auditService;
     private final SecretService secretService;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public SecretController(AuditService auditService,
-                            SecretService secretService, UserService userService) {
+                            SecretService secretService,
+                            UserService userService,
+                            PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(SecretController.class, "Geheimnisse");
         this.secretService = secretService;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List Secrets",
             description = "Retrieve a paginated list of secrets. " +
-                          "Supports filtering by various criteria."
+                          "Supports filtering by various criteria. " +
+                          "This requires the permission „" + SecretPermissionProvider.SECRET_READ + "“."
     )
     public Page<SecretEntityResponseDTO> list(
+            @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid SecretFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_READ);
+
         return secretService
                 .list(pageable, filter)
                 .map(SecretEntityResponseDTO::fromEntity);
@@ -83,7 +98,7 @@ public class SecretController {
             summary = "Create Secret",
             description = "Create a new secret. The secret is encrypted and stored securely. " +
                           "The response contains the key of the created secret. " +
-                          "Requires system administrator privileges."
+                          "This requires the permission „" + SecretPermissionProvider.SECRET_CREATE + "“."
     )
     public SecretEntityResponseDTO create(
             @AuthenticationPrincipal Jwt jwt,
@@ -91,9 +106,10 @@ public class SecretController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_CREATE);
 
         // Save the secret with the authenticated user
         SecretEntity result = null;
@@ -131,11 +147,18 @@ public class SecretController {
             summary = "Retrieve Secret",
             description = "Retrieve a secret by its unique key. " +
                           "The response contains the secret data excluding the encrypted value. " +
-                          "Requires appropriate permissions."
+                          "This requires the permission „" + SecretPermissionProvider.SECRET_READ + "“."
     )
     public SecretEntityResponseDTO retrieve(
+            @AuthenticationPrincipal Jwt jwt,
             @PathVariable UUID key
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_READ);
 
         return secretService
                 .retrieve(key)
@@ -161,7 +184,7 @@ public class SecretController {
             summary = "Update Secret",
             description = "Update an existing secret identified by its unique key. " +
                           "To preserve the old value, set the new value to a string of asterisks. " +
-                          "Requires system administrator privileges."
+                          "This requires the permission „" + SecretPermissionProvider.SECRET_UPDATE + "“."
     )
     public SecretEntityResponseDTO update(
             @AuthenticationPrincipal Jwt jwt,
@@ -170,9 +193,10 @@ public class SecretController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_UPDATE);
 
         // Save the updated secret
         var result = secretService
@@ -194,7 +218,7 @@ public class SecretController {
     @Operation(
             summary = "Delete Secret",
             description = "Delete an existing secret identified by its unique key. " +
-                          "Requires super administrator privileges."
+                          "This requires the permission „" + SecretPermissionProvider.SECRET_DELETE + "“."
     )
     public void delete(
             @AuthenticationPrincipal Jwt jwt,
@@ -202,9 +226,10 @@ public class SecretController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_DELETE);
 
         var entity = secretService
                 .delete(key);

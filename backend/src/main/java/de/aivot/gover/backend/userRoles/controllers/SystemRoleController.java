@@ -74,7 +74,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
+                .hasSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .list(pageable, filter);
@@ -95,7 +95,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_CREATE);
+                .hasSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_CREATE);
 
         var createdEntity = systemRoleService
                 .create(newEntity);
@@ -138,7 +138,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
+                .hasSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_READ);
 
         return systemRoleService
                 .retrieve(id)
@@ -163,7 +163,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::noSuperAdminPermission);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE);
+                .hasSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_UPDATE);
 
         var updatedEntity = systemRoleService
                 .update(id, patchedEntity);
@@ -209,7 +209,7 @@ public class SystemRoleController {
                 .orElseThrow(ResponseException::noSuperAdminPermission);
 
         permissionService
-                .testSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_DELETE);
+                .hasSystemPermission(execUser.getId(), SystemRolePermissionProvider.SYSTEM_ROLE_DELETE);
 
         var entity = systemRoleService
                 .retrieve(id)

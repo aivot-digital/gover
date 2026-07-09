@@ -7,8 +7,10 @@ import de.aivot.gover.backend.department.services.DepartmentService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.gover.backend.process.filters.ProcessInstanceEventFilter;
+import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.gover.backend.process.services.ProcessService;
 import de.aivot.gover.backend.process.services.ProcessInstanceEventService;
 import de.aivot.gover.backend.user.services.UserService;
@@ -41,16 +43,19 @@ public class ProcessInstanceEventController {
     private final ScopedAuditService auditService;
     private final UserService userService;
     private final ProcessInstanceEventService processInstanceHistoryEventService;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessInstanceEventController(AuditService auditService,
                                           UserService userService,
                                           ProcessInstanceEventService processInstanceHistoryEventService,
                                           DepartmentService departmentService,
-                                          ProcessService processDefinitionService) {
+                                          ProcessService processDefinitionService,
+                                          PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceEventController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceHistoryEventService = processInstanceHistoryEventService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -59,9 +64,40 @@ public class ProcessInstanceEventController {
             description = "List all process instance history events with optional filtering and pagination."
     )
     public Page<ProcessInstanceEventEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessInstanceEventFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+            if (filter.getProcessInstanceId() != null) {
+                permissionService.hasProcessInstancePermission(
+                        user.getId(),
+                        filter.getProcessInstanceId(),
+                        ProcessPermissionProvider.PROCESS_INSTANCE_READ
+                );
+            } else {
+                var accessibleProcessInstanceIds = permissionService
+                        .getProcessInstancesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ);
+
+                if (filter.getProcessInstanceIds() != null) {
+                    accessibleProcessInstanceIds = filter.getProcessInstanceIds()
+                            .stream()
+                            .filter(accessibleProcessInstanceIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessInstanceIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessInstanceIds(accessibleProcessInstanceIds);
+            }
+        }
+
         return processInstanceHistoryEventService
                 .list(pageable, filter);
     }
@@ -79,7 +115,11 @@ public class ProcessInstanceEventController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        // Permission check logic can be added here if needed, similar to other controllers
+        permissionService.hasProcessInstancePermission(
+                execUser.getId(),
+                newEvent.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         var result = processInstanceHistoryEventService
                 .create(newEvent);
@@ -104,11 +144,24 @@ public class ProcessInstanceEventController {
             description = "Retrieve a process instance history event by its ID."
     )
     public ProcessInstanceEventEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
-        return processInstanceHistoryEventService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var event = processInstanceHistoryEventService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                event.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_READ
+        );
+
+        return event;
     }
 
     @PutMapping("{id}/")
@@ -129,7 +182,11 @@ public class ProcessInstanceEventController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        // Permission check logic can be added here if needed, similar to other controllers
+        permissionService.hasProcessInstancePermission(
+                execUser.getId(),
+                existing.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         updateDTO.setId(existing.getId());
 
@@ -161,9 +218,17 @@ public class ProcessInstanceEventController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existing = processInstanceHistoryEventService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                existing.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         var deleted = processInstanceHistoryEventService
                 .delete(id);

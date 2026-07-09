@@ -143,5 +143,8 @@ public class ProcessNodeFilter implements Filter<ProcessNodeEntity> {
         this.processIds = processIds;
         return this;
     }
-}
 
+    public List<Integer> getProcessIds() {
+        return processIds;
+    }
+}

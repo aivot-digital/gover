@@ -95,7 +95,7 @@ public class StorageProviderController {
             @Nonnull @ParameterObject @Valid StorageProviderFilter filter
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderService
                 .list(pageable, filter);
@@ -111,7 +111,7 @@ public class StorageProviderController {
             @Nonnull @RequestBody @Valid StorageProviderEntity newStorageProvider
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_CREATE);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_CREATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -141,7 +141,7 @@ public class StorageProviderController {
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderService
                 .retrieve(id)
@@ -159,7 +159,7 @@ public class StorageProviderController {
             @Nonnull @RequestBody @Valid StorageProviderEntity update
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -189,7 +189,7 @@ public class StorageProviderController {
             @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_DELETE);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_DELETE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -217,7 +217,7 @@ public class StorageProviderController {
             @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -260,7 +260,7 @@ public class StorageProviderController {
             HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         var normalizedPath = getNormalizedPath(request, true);
 
@@ -281,7 +281,7 @@ public class StorageProviderController {
             @RequestParam(name = "includeMissing", defaultValue = "false") boolean includeMissing
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         storageProviderService
                 .retrieve(id)
@@ -324,7 +324,7 @@ public class StorageProviderController {
             @PathVariable Integer id,
             @RequestParam(name = "writable", required = false, defaultValue = "false") boolean writable
     ) throws ResponseException {
-        permissionService.testSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+        permissionService.hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         var provider = storageProviderService.retrieve(id).orElseThrow(ResponseException::notFound);
         var def = storageProviderDefinitionService

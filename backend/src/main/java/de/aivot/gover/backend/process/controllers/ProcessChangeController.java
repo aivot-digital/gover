@@ -68,9 +68,40 @@ public class ProcessChangeController {
             description = "List all process definition changes with optional filtering and pagination."
     )
     public Page<ProcessChangeEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessDefinitionChangeFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT)) {
+            if (filter.getProcessDefinitionId() != null) {
+                permissionService.hasProcessPermission(
+                        user.getId(),
+                        filter.getProcessDefinitionId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT
+                );
+            } else {
+                var accessibleProcessIds = permissionService
+                        .getProcessesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT);
+
+                if (filter.getProcessDefinitionIds() != null) {
+                    accessibleProcessIds = filter.getProcessDefinitionIds()
+                            .stream()
+                            .filter(accessibleProcessIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessDefinitionIds(accessibleProcessIds);
+            }
+        }
+
         return processDefinitionChangeService
                 .list(pageable, filter);
     }
@@ -88,19 +119,11 @@ public class ProcessChangeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var processDefinition = processDefinitionService
-                .retrieve(newChange.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        var department = departmentService
-                .retrieve(processDefinition.getDepartmentId())
-                .orElseThrow(ResponseException::badRequest);
-
         permissionService
-                .testDepartmentPermission(
+                .hasProcessPermission(
                         execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
+                        newChange.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
         var result = processDefinitionChangeService
@@ -127,11 +150,24 @@ public class ProcessChangeController {
             description = "Retrieve a process definition change by its ID."
     )
     public ProcessChangeEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
-        return processDefinitionChangeService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var change = processDefinitionChangeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                change.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT
+        );
+
+        return change;
     }
 
     @PutMapping("{id}/")
@@ -152,19 +188,11 @@ public class ProcessChangeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var processDefinition = processDefinitionService
-                .retrieve(existing.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        var department = departmentService
-                .retrieve(processDefinition.getDepartmentId())
-                .orElseThrow(ResponseException::badRequest);
-
         permissionService
-                .testDepartmentPermission(
+                .hasProcessPermission(
                         execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
+                        existing.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
         updateDTO.setId(existing.getId());
@@ -198,9 +226,17 @@ public class ProcessChangeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existing = processDefinitionChangeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var deleted = processDefinitionChangeService
                 .delete(id);

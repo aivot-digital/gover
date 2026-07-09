@@ -161,7 +161,7 @@ public class UserDeputyController extends GenericCrudController<UserDeputyEntity
 
     private boolean hasDeputyPermission(@Nonnull String userId,
                                         @Nonnull String permission) {
-        return permissionService.hasSystemPermission(userId, permission);
+        return permissionService.checkSystemPermission(userId, permission);
     }
 
     private boolean isRelatedToUser(@Nonnull UserDeputyEntity deputyEntity,

@@ -68,10 +68,11 @@ public class ProcessService implements EntityService<ProcessEntity, Integer> {
     public Page<ProcessEntity> listAllByAccessibleForUser(@Nonnull Pageable pageable,
                                                           @Nonnull String userId,
                                                           @Nullable Specification<ProcessEntity> specification) throws ResponseException {
-        if (permissionService.hasSystemPermission(userId, ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+        if (permissionService.checkSystemPermission(userId, ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
             return processDefinitionRepository.findAll(specification, pageable);
         }
 
+        // A process can be visible through its owning department or through an explicit process grant.
         var accessibleDepartmentIds = permissionService
                 .getDepartmentsWithPermission(userId, ProcessPermissionProvider.PROCESS_DEFINITION_READ)
                 .stream()

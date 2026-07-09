@@ -6,10 +6,12 @@ import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
 import jakarta.annotation.Nonnull;
+import java.util.List;
 
 public class ProcessDefinitionEdgeFilter implements Filter<ProcessEdgeEntity> {
     private Integer id;
     private Integer processDefinitionId;
+    private List<Integer> processDefinitionIds;
     private Integer processDefinitionVersion;
     private Integer fromNodeId;
     private Integer toNodeId;
@@ -26,6 +28,7 @@ public class ProcessDefinitionEdgeFilter implements Filter<ProcessEdgeEntity> {
                 .create(ProcessEdgeEntity.class)
                 .withEquals("id", id)
                 .withEquals("processId", processDefinitionId)
+                .withInList("processId", processDefinitionIds)
                 .withEquals("processVersion", processDefinitionVersion)
                 .withEquals("fromNodeId", fromNodeId)
                 .withEquals("toNodeId", toNodeId)
@@ -49,6 +52,15 @@ public class ProcessDefinitionEdgeFilter implements Filter<ProcessEdgeEntity> {
 
     public ProcessDefinitionEdgeFilter setProcessDefinitionId(Integer processDefinitionId) {
         this.processDefinitionId = processDefinitionId;
+        return this;
+    }
+
+    public List<Integer> getProcessDefinitionIds() {
+        return processDefinitionIds;
+    }
+
+    public ProcessDefinitionEdgeFilter setProcessDefinitionIds(List<Integer> processDefinitionIds) {
+        this.processDefinitionIds = processDefinitionIds;
         return this;
     }
 
@@ -88,4 +100,3 @@ public class ProcessDefinitionEdgeFilter implements Filter<ProcessEdgeEntity> {
         return this;
     }
 }
-

@@ -73,9 +73,40 @@ public class ProcessVersionController {
             description = "List all process definition versions with optional filtering and pagination."
     )
     public Page<ProcessVersionEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessVersionFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+            if (filter.getProcessId() != null) {
+                permissionService.hasProcessPermission(
+                        user.getId(),
+                        filter.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+            } else {
+                var accessibleProcessIds = permissionService
+                        .getProcessesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+
+                if (filter.getProcessIds() != null) {
+                    accessibleProcessIds = filter.getProcessIds()
+                            .stream()
+                            .filter(accessibleProcessIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessIds(accessibleProcessIds);
+            }
+        }
+
         return processDefinitionVersionService
                 .list(pageable, filter);
     }
@@ -98,16 +129,11 @@ public class ProcessVersionController {
                 .retrieve(newVersion.getProcessId())
                 .orElseThrow(ResponseException::badRequest);
 
-        // Check department permission for the process definition this version belongs to
-        var department = departmentService
-                .retrieve(processDefinition.getDepartmentId())
-                .orElseThrow(ResponseException::badRequest);
-
         permissionService
-                .testDepartmentPermission(
+                .hasProcessPermission(
                         execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
+                        processDefinition.getId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
         var result = processDefinitionVersionService
@@ -160,6 +186,16 @@ public class ProcessVersionController {
             @Nonnull @PathVariable Integer processDefinitionId,
             @Nonnull @PathVariable Integer processDefinitionVersion
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                processDefinitionId,
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
         var id = new ProcessVersionEntityId(processDefinitionId, processDefinitionVersion);
         return processDefinitionVersionService
                 .retrieve(id)
@@ -189,14 +225,10 @@ public class ProcessVersionController {
                 .orElseThrow(ResponseException::notFound);
         var existingMap = AuditLogPayload.toMap(existing);
 
-        var processDefinition = processDefinitionService
-                .retrieve(existing.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
         permissionService
-                .testDepartmentPermission(
+                .hasProcessPermission(
                         execUser.getId(),
-                        processDefinition.getDepartmentId(),
+                        existing.getProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
@@ -238,9 +270,13 @@ public class ProcessVersionController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                processDefinitionId,
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var id = new ProcessVersionEntityId(processDefinitionId, processDefinitionVersion);
 
@@ -269,9 +305,20 @@ public class ProcessVersionController {
             description = "Validate a process definition version by its composite ID."
     )
     public List<ProcessNodeProblems> validate(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer processDefinitionId,
             @Nonnull @PathVariable Integer processDefinitionVersion
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                processDefinitionId,
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
         var id = ProcessVersionEntityId.of(processDefinitionId, processDefinitionVersion);
         var version = processDefinitionVersionService
                 .retrieve(id)
@@ -299,13 +346,9 @@ public class ProcessVersionController {
                 .retrieve(versionId)
                 .orElseThrow(ResponseException::notFound);
 
-        var processDefinition = processDefinitionService
-                .retrieve(version.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService.testDepartmentPermission(
+        permissionService.hasProcessPermission(
                 user.getId(),
-                processDefinition.getDepartmentId(),
+                version.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
         );
 
@@ -346,13 +389,9 @@ public class ProcessVersionController {
                 .retrieve(versionId)
                 .orElseThrow(ResponseException::notFound);
 
-        var processDefinition = processDefinitionService
-                .retrieve(version.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService.testDepartmentPermission(
+        permissionService.hasProcessPermission(
                 user.getId(),
-                processDefinition.getDepartmentId(),
+                version.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
         );
 

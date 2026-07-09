@@ -6,8 +6,10 @@ import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.filters.ProcessInstanceAttachmentFilter;
+import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -50,16 +52,19 @@ public class ProcessInstanceAttachmentController {
     private final UserService userService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final StorageService storageService;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessInstanceAttachmentController(AuditService auditService,
                                                UserService userService,
                                                ProcessInstanceAttachmentService processInstanceAttachmentService,
-                                               StorageService storageService) {
+                                               StorageService storageService,
+                                               PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceAttachmentController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.storageService = storageService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -68,9 +73,40 @@ public class ProcessInstanceAttachmentController {
             description = "List all process instance attachments with optional filtering and pagination."
     )
     public Page<ProcessInstanceAttachmentEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessInstanceAttachmentFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+            if (filter.getProcessInstanceId() != null) {
+                permissionService.hasProcessInstancePermission(
+                        user.getId(),
+                        filter.getProcessInstanceId(),
+                        ProcessPermissionProvider.PROCESS_INSTANCE_READ
+                );
+            } else {
+                var accessibleProcessInstanceIds = permissionService
+                        .getProcessInstancesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ);
+
+                if (filter.getProcessInstanceIds() != null) {
+                    accessibleProcessInstanceIds = filter.getProcessInstanceIds()
+                            .stream()
+                            .filter(accessibleProcessInstanceIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessInstanceIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessInstanceIds(accessibleProcessInstanceIds);
+            }
+        }
+
         return processInstanceAttachmentService
                 .list(pageable, filter);
     }
@@ -94,13 +130,11 @@ public class ProcessInstanceAttachmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        // Permission check: must be able to edit the process instance's department
-        // You may want to retrieve the process definition via the instance, adjust as needed
-        // For now, assume you can get processDefinitionId from processInstanceId
-        // If you have a ProcessInstanceService, use it here
-        // Otherwise, skip this check or implement as needed
-
-        // ...permission check logic (similar to other controllers)...
+        permissionService.hasProcessInstancePermission(
+                execUser.getId(),
+                processInstanceId,
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         // Save attachment entity (actual file storage logic should be implemented in service)
         var attachment = new ProcessInstanceAttachmentEntity()
@@ -133,11 +167,24 @@ public class ProcessInstanceAttachmentController {
             description = "Retrieve a process instance attachment by its key."
     )
     public ProcessInstanceAttachmentEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID key
     ) throws ResponseException {
-        return processInstanceAttachmentService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var attachment = processInstanceAttachmentService
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                attachment.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_READ
+        );
+
+        return attachment;
     }
 
     @GetMapping("{key}/file/")
@@ -146,12 +193,23 @@ public class ProcessInstanceAttachmentController {
             description = "Streams the file of a process instance attachment by its key."
     )
     public ResponseEntity<InputStreamResource> download(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable UUID key,
             @RequestParam(defaultValue = "true") boolean download
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
         var attachment = processInstanceAttachmentService
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                attachment.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_READ
+        );
 
         var inputStream = storageService
                 .getDocumentContent(attachment.getStorageProviderId(), attachment.getStoragePathFromRoot());
@@ -193,7 +251,11 @@ public class ProcessInstanceAttachmentController {
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
 
-        // ...permission check logic (similar to other controllers)...
+        permissionService.hasProcessInstancePermission(
+                execUser.getId(),
+                existing.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         updateDTO.setKey(existing.getKey());
 
@@ -225,9 +287,17 @@ public class ProcessInstanceAttachmentController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existing = processInstanceAttachmentService
+                .retrieve(key)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                existing.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         var deleted = processInstanceAttachmentService
                 .delete(key);

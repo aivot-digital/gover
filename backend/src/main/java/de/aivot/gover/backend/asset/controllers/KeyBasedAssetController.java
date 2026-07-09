@@ -52,7 +52,7 @@ public class KeyBasedAssetController {
             @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         return storageIndexItemWithAssetRepository
                 .findByAssetKey(key)

@@ -5,6 +5,8 @@ import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.utils.specification.SpecificationBuilder;
 import org.springframework.data.jpa.domain.Specification;
 
+import java.util.List;
+
 /**
  * @deprecated
  */
@@ -12,6 +14,7 @@ import org.springframework.data.jpa.domain.Specification;
 public class VDepartmentUserRoleAssignmentWithDetailsFilter implements Filter<VDepartmentUserRoleAssignmentWithDetailsEntity> {
     private Integer id;
     private Integer departmentId;
+    private List<Integer> departmentIds;
     private String name;
     private String userId;
     private String fullName;
@@ -27,6 +30,7 @@ public class VDepartmentUserRoleAssignmentWithDetailsFilter implements Filter<VD
                 .create(VDepartmentUserRoleAssignmentWithDetailsEntity.class)
                 .withEquals("id", id)
                 .withEquals("departmentId", departmentId)
+                .withInList("departmentId", departmentIds)
                 .withEquals("userId", userId)
                 .withContains("fullName", fullName)
                 .withContains("name", name)
@@ -49,6 +53,15 @@ public class VDepartmentUserRoleAssignmentWithDetailsFilter implements Filter<VD
 
     public VDepartmentUserRoleAssignmentWithDetailsFilter setDepartmentId(Integer departmentId) {
         this.departmentId = departmentId;
+        return this;
+    }
+
+    public List<Integer> getDepartmentIds() {
+        return departmentIds;
+    }
+
+    public VDepartmentUserRoleAssignmentWithDetailsFilter setDepartmentIds(List<Integer> departmentIds) {
+        this.departmentIds = departmentIds;
         return this;
     }
 

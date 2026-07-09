@@ -69,7 +69,7 @@ public class UserController {
             @Nonnull @PageableDefault Pageable pageable,
             @Nonnull @Valid UserFilter filter
     ) throws ResponseException {
-        permissionService.testSystemPermission(jwt, UserPermissionProvider.USER_READ);
+        permissionService.hasSystemPermission(jwt, UserPermissionProvider.USER_READ);
 
         return userService
                 .list(pageable, filter);
@@ -88,7 +88,7 @@ public class UserController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.testSystemPermission(execUser.getId(), UserPermissionProvider.USER_CREATE);
+        permissionService.hasSystemPermission(execUser.getId(), UserPermissionProvider.USER_CREATE);
 
         UserEntity result;
         try {
@@ -137,7 +137,7 @@ public class UserController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.testSystemPermission(execUser.getId(), UserPermissionProvider.USER_CREATE);
+        permissionService.hasSystemPermission(execUser.getId(), UserPermissionProvider.USER_CREATE);
 
         CreateUserResponseDTO result;
         try {
@@ -398,6 +398,6 @@ public class UserController {
             return;
         }
 
-        permissionService.testSystemPermission(execUser.getId(), permission);
+        permissionService.hasSystemPermission(execUser.getId(), permission);
     }
 }

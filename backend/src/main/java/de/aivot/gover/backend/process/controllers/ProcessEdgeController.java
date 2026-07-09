@@ -7,8 +7,10 @@ import de.aivot.gover.backend.audit.services.ScopedAuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.gover.backend.process.filters.ProcessDefinitionEdgeFilter;
+import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.gover.backend.process.services.ProcessEdgeService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -41,16 +43,19 @@ public class ProcessEdgeController {
     private final UserService userService;
     private final ProcessEdgeService processDefinitionEdgeService;
     private final ObjectMapper objectMapper;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessEdgeController(AuditService auditService,
                                  UserService userService,
                                  ProcessEdgeService processDefinitionEdgeService,
-                                 ObjectMapper objectMapper) {
+                                 ObjectMapper objectMapper,
+                                 PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessEdgeController.class, "Prozesse");
         this.userService = userService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;
         this.objectMapper = objectMapper;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -59,9 +64,40 @@ public class ProcessEdgeController {
             description = "List all process definition edges with optional filtering and pagination."
     )
     public Page<ProcessEdgeEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessDefinitionEdgeFilter filter
     ) throws ResponseException {
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+            if (filter.getProcessDefinitionId() != null) {
+                permissionService.hasProcessPermission(
+                        user.getId(),
+                        filter.getProcessDefinitionId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_READ
+                );
+            } else {
+                var accessibleProcessIds = permissionService
+                        .getProcessesWithPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ);
+
+                if (filter.getProcessDefinitionIds() != null) {
+                    accessibleProcessIds = filter.getProcessDefinitionIds()
+                            .stream()
+                            .filter(accessibleProcessIds::contains)
+                            .toList();
+                }
+
+                if (accessibleProcessIds.isEmpty()) {
+                    return Page.empty(pageable);
+                }
+
+                filter.setProcessDefinitionIds(accessibleProcessIds);
+            }
+        }
+
         return processDefinitionEdgeService
                 .list(pageable, filter);
     }
@@ -78,6 +114,12 @@ public class ProcessEdgeController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessPermission(
+                execUser.getId(),
+                newEdge.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var result = processDefinitionEdgeService
                 .create(newEdge);
@@ -102,11 +144,24 @@ public class ProcessEdgeController {
             description = "Retrieve a process definition edge by its ID."
     )
     public ProcessEdgeEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
-        return processDefinitionEdgeService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var edge = processDefinitionEdgeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                edge.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_READ
+        );
+
+        return edge;
     }
 
     @PutMapping("{id}/")
@@ -126,6 +181,12 @@ public class ProcessEdgeController {
         var existing = processDefinitionEdgeService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                execUser.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var existingMap = objectMapper
                 .convertValue(existing, java.util.Map.class);
@@ -164,9 +225,17 @@ public class ProcessEdgeController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        var existing = processDefinitionEdgeService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessPermission(
+                user.getId(),
+                existing.getProcessId(),
+                ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
+        );
 
         var deleted = processDefinitionEdgeService
                 .delete(id);

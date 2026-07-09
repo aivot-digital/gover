@@ -9,6 +9,7 @@ import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
 import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
+import de.aivot.gover.backend.process.entities.VUserProcessInstanceAccessPermissionsEntity;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.filters.ProcessInstanceTaskFilter;
 import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
@@ -17,6 +18,7 @@ import de.aivot.gover.backend.process.services.ProcessService;
 import de.aivot.gover.backend.process.workers.ProcessWorker;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
+import de.aivot.gover.backend.utils.specification.SpecificationBuilderArrayContains;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -76,9 +78,35 @@ public class ProcessInstanceTaskController {
             description = "List all process instance tasks with optional filtering and pagination."
     )
     public Page<ProcessInstanceTaskEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid ProcessInstanceTaskFilter filter
     ) throws ResponseException {
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        if (!permissionService.checkSystemPermission(execUser.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+            // Tasks inherit visibility from their owning process instance.
+            filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
+                var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
+                var processRoot = subquery.from(VUserProcessInstanceAccessPermissionsEntity.class);
+
+                subquery.select(processRoot).where(
+                        criteriaBuilder.equal(processRoot.get("targetProcessInstanceId"), root.get("processInstanceId")),
+                        criteriaBuilder.equal(processRoot.get("userId"), execUser.getId()),
+                        criteriaBuilder.isTrue(SpecificationBuilderArrayContains.getFunc(
+                                criteriaBuilder,
+                                processRoot,
+                                "permissions",
+                                ProcessPermissionProvider.PROCESS_INSTANCE_READ
+                        ))
+                );
+
+                return criteriaBuilder.exists(subquery);
+            });
+        }
+
         return processInstanceTaskService
                 .list(pageable, filter);
     }
@@ -117,20 +145,11 @@ public class ProcessInstanceTaskController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var processDefinition = processDefinitionService
-                .retrieve(newTask.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        var department = departmentService
-                .retrieve(processDefinition.getDepartmentId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService
-                .testDepartmentPermission(
-                        execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
-                );
+        permissionService.hasProcessInstancePermission(
+                execUser.getId(),
+                newTask.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+        );
 
         var result = processInstanceTaskService
                 .create(newTask);
@@ -158,11 +177,24 @@ public class ProcessInstanceTaskController {
             description = "Retrieve a process instance task by its ID."
     )
     public ProcessInstanceTaskEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
-        return processInstanceTaskService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var task = processInstanceTaskService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                task.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_READ
+        );
+
+        return task;
     }
 
     @PutMapping("{id}/")
@@ -183,20 +215,11 @@ public class ProcessInstanceTaskController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        var processDefinition = processDefinitionService
-                .retrieve(existing.getProcessId())
-                .orElseThrow(ResponseException::badRequest);
-
-        var department = departmentService
-                .retrieve(processDefinition.getDepartmentId())
-                .orElseThrow(ResponseException::badRequest);
-
-        permissionService
-                .testDepartmentPermission(
-                        execUser.getId(),
-                        department.getId(),
-                        ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
-                );
+        permissionService.hasProcessInstancePermission(
+                execUser.getId(),
+                existing.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+        );
 
         updateDTO.setId(existing.getId());
 
@@ -231,11 +254,19 @@ public class ProcessInstanceTaskController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
 
         var deleted = processInstanceTaskService
+                .retrieve(id)
+                .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                deleted.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+        );
+
+        deleted = processInstanceTaskService
                 .delete(id);
 
         auditService.create().withUser(user).withAuditAction(AuditAction.Delete, ProcessInstanceTaskEntity.class, deleted.getId(), "id", Map.of(
@@ -270,11 +301,15 @@ public class ProcessInstanceTaskController {
             throw ResponseException.badRequest("Nur Aufgaben im Status 'Fehlgeschlagen' können erneut ausgeführt werden.");
         }
 
-        userService
+        var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                taskEntity.getProcessInstanceId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK
+        );
 
         taskEntity
                 .setStatus(ProcessTaskStatus.Restarted)

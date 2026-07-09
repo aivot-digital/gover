@@ -7,6 +7,7 @@ import de.aivot.gover.backend.department.services.DepartmentService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
@@ -57,6 +58,7 @@ public class ProcessInstanceController {
     private final ProcessService processDefinitionService;
     private final RabbitTemplate rabbitTemplate;
     private final ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory;
+    private final PermissionService permissionService;
 
     @Autowired
     public ProcessInstanceController(AuditService auditService,
@@ -66,7 +68,8 @@ public class ProcessInstanceController {
                                      ProcessService processDefinitionService,
                                      ProcessInstanceTaskService processInstanceTaskService,
                                      RabbitTemplate rabbitTemplate,
-                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory) {
+                                     ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
+                                     PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceController.class, "Prozesse");
         this.userService = userService;
         this.processInstanceService = processInstanceService;
@@ -75,6 +78,7 @@ public class ProcessInstanceController {
         this.processDefinitionService = processDefinitionService;
         this.rabbitTemplate = rabbitTemplate;
         this.processNodeExecutionLoggerFactory = processNodeExecutionLoggerFactory;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -91,23 +95,26 @@ public class ProcessInstanceController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
-            var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
-            var processRoot = subquery.from(VUserProcessInstanceAccessPermissionsEntity.class);
+        if (!permissionService.checkSystemPermission(execUser.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+            // Keep all caller filters and add an EXISTS guard against the resolved process-instance permission view.
+            filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
+                var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
+                var processRoot = subquery.from(VUserProcessInstanceAccessPermissionsEntity.class);
 
-            subquery.select(processRoot).where(
-                    criteriaBuilder.equal(processRoot.get("targetProcessInstanceId"), root.get("id")),
-                    criteriaBuilder.equal(processRoot.get("userId"), execUser.getId()),
-                    criteriaBuilder.isTrue(SpecificationBuilderArrayContains.getFunc(
-                            criteriaBuilder,
-                            processRoot,
-                            "permissions",
-                            ProcessPermissionProvider.PROCESS_INSTANCE_READ
-                    ))
-            );
+                subquery.select(processRoot).where(
+                        criteriaBuilder.equal(processRoot.get("targetProcessInstanceId"), root.get("id")),
+                        criteriaBuilder.equal(processRoot.get("userId"), execUser.getId()),
+                        criteriaBuilder.isTrue(SpecificationBuilderArrayContains.getFunc(
+                                criteriaBuilder,
+                                processRoot,
+                                "permissions",
+                                ProcessPermissionProvider.PROCESS_INSTANCE_READ
+                        ))
+                );
 
-            return criteriaBuilder.exists(subquery);
-        });
+                return criteriaBuilder.exists(subquery);
+            });
+        }
 
         return processInstanceService
                 .list(pageable, filter);
@@ -125,6 +132,12 @@ public class ProcessInstanceController {
         var execUser = userService
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessPermission(
+                execUser.getId(),
+                newInstance.getProcessId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_TRIGGER
+        );
 
         var result = processInstanceService
                 .create(newInstance);
@@ -148,11 +161,24 @@ public class ProcessInstanceController {
             description = "Retrieve a process instance by its ID."
     )
     public ProcessInstanceEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
-        return processInstanceService
+        var user = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
+        var instance = processInstanceService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                instance.getId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_READ
+        );
+
+        return instance;
     }
 
     @PutMapping("{id}/")
@@ -172,6 +198,12 @@ public class ProcessInstanceController {
         var existing = processInstanceService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                execUser.getId(),
+                existing.getId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         updateDTO.setId(existing.getId());
 
@@ -202,13 +234,17 @@ public class ProcessInstanceController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::noSuperAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
 
         var processInstance = processInstanceService
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                processInstance.getId(),
+                ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
+        );
 
         if (processInstance.getStatus() != ProcessInstanceStatus.Failed) {
             throw ResponseException.badRequest("Nur Vorgänge im Status 'Fehlgeschlagen' können neu gestartet werden.");
@@ -301,9 +337,13 @@ public class ProcessInstanceController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService.hasProcessInstancePermission(
+                user.getId(),
+                id,
+                ProcessPermissionProvider.PROCESS_INSTANCE_DELETE
+        );
 
         var deleted = processInstanceService
                 .delete(id);
