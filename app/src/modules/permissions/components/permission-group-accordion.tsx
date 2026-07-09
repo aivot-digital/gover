@@ -94,6 +94,15 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                         {group.contextLabel}
                     </Typography>
 
+                    {group.availabilityWarningLabel != null && (
+                        <Chip
+                            size="small"
+                            color="warning"
+                            variant="outlined"
+                            label={group.availabilityWarningLabel}
+                        />
+                    )}
+
                     <Chip
                         size="small"
                         variant={selectedInGroup > 0 ? 'filled' : 'outlined'}
@@ -152,6 +161,7 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
                                     px: 1.5,
                                     py: 1,
                                     borderRadius: 2,
+                                    borderColor: group.availabilityWarningLabel != null ? 'warning.main' : undefined,
                                     display: 'flex',
                                     alignItems: 'flex-start',
                                     gap: 1,

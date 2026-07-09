@@ -30,7 +30,6 @@ import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/
 import {SearchInput} from '../../../components/search-input/search-input';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
-import {PermissionScope} from '../enums/permission-scope';
 import {type PermissionEntry, type PermissionProvider} from '../models/permission-provider';
 import {PermissionGroupAccordion} from './permission-group-accordion';
 
@@ -47,7 +46,9 @@ function normalizeSearch(value: string): string {
         .replace(/[\u0300-\u036f]/g, '');
 }
 
-export type PermissionGroup = Pick<PermissionProvider, 'contextLabel' | 'permissions'>;
+export type PermissionGroup = Pick<PermissionProvider, 'contextLabel' | 'permissions'> & {
+    availabilityWarningLabel?: string;
+};
 
 interface PermissionEditorProps {
     /** Persisted permissions (used for diff view). */
@@ -62,8 +63,8 @@ interface PermissionEditorProps {
     isBusy?: boolean;
     /** Optional label above editor. */
     title?: string;
-    /** Scope of the permissions. */
-    scope?: PermissionScope | PermissionScope[];
+    /** When true, only shows permissions assignable to domain roles. */
+    onlyDomainRoleAssignable?: boolean;
 }
 
 export function PermissionEditor(props: PermissionEditorProps): React.ReactElement {
@@ -74,7 +75,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
         isEditable = true,
         isBusy = false,
         title = 'Berechtigungen',
-        scope = [PermissionScope.System, PermissionScope.Domain],
+        onlyDomainRoleAssignable = false,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -96,18 +97,103 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             });
     }, [dispatch]);
 
-    const permissions = useMemo(() => {
-        const allowedScopes = scope
-            ? Array.isArray(scope) ? scope : [scope]
-            : null;
-
-        return allowedScopes
-            ? apiPermissions.filter((g) => allowedScopes.includes(g.scope))
+    const assignablePermissions = useMemo(() => {
+        // System roles see every provider; domain roles only see providers that opted into domain-role assignment.
+        return onlyDomainRoleAssignable
+            ? apiPermissions.filter((g) => g.supportsDomainRoleAssignment)
             : apiPermissions;
-    }, [apiPermissions, scope]);
+    }, [apiPermissions, onlyDomainRoleAssignable]);
 
     const selectedPermissions = value ?? [];
     const selectedCount = selectedPermissions.length;
+
+    const allApiPermissionMeta = useMemo(() => {
+        const map = new Map<string, { label?: string; description?: string }>();
+        for (const group of apiPermissions) {
+            for (const permission of group.permissions) {
+                map.set(permission.permission, {
+                    label: permission.label,
+                    description: permission.description,
+                });
+            }
+        }
+        return map;
+    }, [apiPermissions]);
+
+    const assignablePermissionSet = useMemo(() => {
+        const set = new Set<string>();
+        for (const group of assignablePermissions) {
+            for (const permission of group.permissions) {
+                set.add(permission.permission);
+            }
+        }
+        return set;
+    }, [assignablePermissions]);
+
+    const allApiPermissionSet = useMemo(() => new Set(allApiPermissionMeta.keys()), [allApiPermissionMeta]);
+
+    const removedFromSystemPermissions = useMemo(() => {
+        if (apiPermissions.length === 0) {
+            return [];
+        }
+
+        return selectedPermissions
+            .filter((permission) => !allApiPermissionSet.has(permission))
+            .sort()
+            .map((permission) => ({
+                permission,
+                label: permission,
+                description: 'Diese Berechtigung ist im System nicht mehr vorhanden.',
+            }));
+    }, [allApiPermissionSet, apiPermissions.length, selectedPermissions]);
+
+    const unavailableForDomainRolePermissions = useMemo(() => {
+        if (!onlyDomainRoleAssignable || apiPermissions.length === 0) {
+            return [];
+        }
+
+        return selectedPermissions
+            .filter((permission) => allApiPermissionSet.has(permission) && !assignablePermissionSet.has(permission))
+            .sort()
+            .map((permission) => {
+                const meta = allApiPermissionMeta.get(permission);
+
+                return {
+                    permission,
+                    label: meta?.label ?? permission,
+                    description: meta?.description ?? 'Diese Berechtigung ist für Domänenrollen nicht verfügbar.',
+                };
+            });
+    }, [allApiPermissionMeta, allApiPermissionSet, apiPermissions.length, assignablePermissionSet, onlyDomainRoleAssignable, selectedPermissions]);
+
+    const recoveryPermissionCount = removedFromSystemPermissions.length + unavailableForDomainRolePermissions.length;
+
+    const permissions = useMemo<PermissionGroup[]>(() => {
+        const recoveryGroups: PermissionGroup[] = [];
+
+        if (removedFromSystemPermissions.length > 0) {
+            recoveryGroups.push({
+                contextLabel: 'Nicht mehr im System vorhandene Berechtigungen',
+                permissions: removedFromSystemPermissions,
+                availabilityWarningLabel: 'Nicht mehr vorhanden',
+            });
+        }
+
+        if (unavailableForDomainRolePermissions.length > 0) {
+            recoveryGroups.push({
+                contextLabel: 'Für Domänenrollen nicht verfügbare Berechtigungen',
+                permissions: unavailableForDomainRolePermissions,
+                availabilityWarningLabel: 'Nicht verfügbar',
+            });
+        }
+
+        // Recovery permissions are shown only while they are still selected. This keeps them removable
+        // without making them selectable again after the user has cleaned up the role.
+        return [
+            ...recoveryGroups,
+            ...assignablePermissions,
+        ];
+    }, [assignablePermissions, removedFromSystemPermissions, unavailableForDomainRolePermissions]);
 
     useEffect(() => {
         const initialExpanded: Record<string, boolean> = {};
@@ -221,11 +307,11 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
 
     const allKnownPermissions = useMemo(() => {
         const all = new Set<string>();
-        for (const g of permissions) {
+        for (const g of assignablePermissions) {
             for (const p of g.permissions) all.add(p.permission);
         }
         return Array.from(all).sort();
-    }, [permissions]);
+    }, [assignablePermissions]);
 
     const setPermissionsValue = (next: string[]): void => {
         const stable = [...next].filter(Boolean);
@@ -306,7 +392,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
     }, [permissionQuery]);
 
     const permissionMeta = useMemo(() => {
-        const map = new Map<string, { label?: string; description?: string }>();
+        const map = new Map(allApiPermissionMeta);
         for (const g of permissions) {
             for (const p of g.permissions) map.set(p.permission, {
                 label: p.label,
@@ -314,7 +400,7 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             });
         }
         return map;
-    }, [permissions]);
+    }, [allApiPermissionMeta, permissions]);
 
     const inferCrud = (permission: string): 'create' | 'read' | 'update' | 'delete' | null => {
         const p = permission.toLowerCase();
@@ -373,7 +459,8 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                             color="text.secondary"
                             sx={{display: 'inline'}}
                         >
-                            ({selectedCount} von {allKnownPermissions.length} ausgewählt
+                            ({selectedCount} ausgewählt · {allKnownPermissions.length} zuweisbar
+                            {recoveryPermissionCount > 0 ? ` · ${recoveryPermissionCount} zu prüfen` : ''}
                             {permissionQuery.trim() ? ` · ${visiblePermissions.length} sichtbar` : ''})
                         </Typography>
                     </Typography>
@@ -497,6 +584,30 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             {filteredPermissionGroups.length === 0 &&
                 <AlertComponent color="info">Keine Berechtigungen gefunden.</AlertComponent>}
 
+            {removedFromSystemPermissions.length > 0 && (
+                <AlertComponent
+                    color="warning"
+                    sx={{mb: 2}}
+                >
+                    Diese Rolle enthält Berechtigungen, die aktuell nicht mehr vom System bereitgestellt werden.
+                    Das kann zum Beispiel durch entfernte Funktionen oder Erweiterungen (Plugins) entstehen.
+                    Die Berechtigungen werden beim Speichern unverändert übernommen, solange sie ausgewählt bleiben,
+                    sollten aber entfernt werden, um die Rolle zu bereinigen.
+                </AlertComponent>
+            )}
+
+            {unavailableForDomainRolePermissions.length > 0 && (
+                <AlertComponent
+                    color="warning"
+                    sx={{mb: 2}}
+                >
+                    Diese Domänenrolle enthält Berechtigungen, die aktuell nicht für Domänenrollen verfügbar sind.
+                    Das kann zum Beispiel durch geänderte Funktionen oder Erweiterungen (Plugins) entstehen.
+                    Die Berechtigungen werden beim Speichern unverändert übernommen, solange sie ausgewählt bleiben,
+                    sollten aber entfernt werden, um die Rolle zu bereinigen.
+                </AlertComponent>
+            )}
+
             <Stack spacing={2}>
                 {filteredPermissionGroups.map((group) => {
                     const isExpanded = expandedGroups[groupKey(group.contextLabel)] ?? false;
@@ -529,8 +640,9 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
                 fullWidth
                 maxWidth="md"
             >
-                <DialogTitleWithClose onClose={() => setDiffDialogOpen(false)}>Änderungen an
-                                                                               Berechtigungen</DialogTitleWithClose>
+                <DialogTitleWithClose onClose={() => setDiffDialogOpen(false)}>
+                    Änderungen an Berechtigungen
+                </DialogTitleWithClose>
                 <DialogContent>
                     {!diff.hasChanges ? (
                         <Typography
