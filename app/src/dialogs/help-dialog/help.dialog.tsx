@@ -1,5 +1,5 @@
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Grid, Link, Stack, Typography} from '@mui/material';
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HelpDialogProps} from './help-dialog-props';
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
@@ -8,8 +8,88 @@ import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 import {formatPhoneNumberForDisplay, normalizePhoneNumberForTelLink} from '../../utils/phone-number-utils';
+import {alpha} from '@mui/material/styles';
 
 export const HelpDialogId = 'help';
+
+const CollapsedSupportInfoMaxHeight = 144;
+
+function ExpandableSupportInfo(props: {
+    markdown: string;
+}) {
+    const {
+        markdown,
+    } = props;
+    const contentRef = useRef<HTMLDivElement | null>(null);
+    const [expanded, setExpanded] = useState(false);
+    const [canToggle, setCanToggle] = useState(false);
+
+    useEffect(() => {
+        setExpanded(false);
+    }, [markdown]);
+
+    useLayoutEffect(() => {
+        const contentElement = contentRef.current;
+        if (contentElement == null) {
+            return undefined;
+        }
+
+        const updateCanToggle = () => {
+            setCanToggle(contentElement.scrollHeight > CollapsedSupportInfoMaxHeight + 1);
+        };
+
+        updateCanToggle();
+
+        const resizeObserver = new ResizeObserver(updateCanToggle);
+        resizeObserver.observe(contentElement);
+
+        return () => resizeObserver.disconnect();
+    }, [markdown]);
+
+    return (
+        <Box>
+            <Box
+                ref={contentRef}
+                sx={{
+                    position: 'relative',
+                    maxHeight: canToggle && !expanded ? CollapsedSupportInfoMaxHeight : 'none',
+                    overflow: 'hidden',
+                }}
+            >
+                <MarkdownContent markdown={markdown}/>
+                {
+                    canToggle &&
+                    !expanded &&
+                    <Box
+                        aria-hidden="true"
+                        sx={(theme) => ({
+                            position: 'absolute',
+                            right: 0,
+                            bottom: 0,
+                            left: 0,
+                            height: 40,
+                            background: `linear-gradient(to bottom, ${alpha(theme.palette.background.paper, 0)}, ${theme.palette.background.paper})`,
+                        })}
+                    />
+                }
+            </Box>
+            {
+                canToggle &&
+                <Button
+                    size="small"
+                    sx={{
+                        mt: 1,
+                        ml: -1,
+                    }}
+                    aria-expanded={expanded}
+                    onClick={() => setExpanded((prev) => !prev)}
+                >
+                    {expanded ? 'Weniger anzeigen' : 'Mehr anzeigen'}
+                </Button>
+            }
+        </Box>
+    );
+}
 
 function SupportContactBlock(props: {
     title: string;
@@ -89,7 +169,7 @@ function SupportContactBlock(props: {
                             },
                         }}
                     >
-                        <MarkdownContent markdown={info}/>
+                        <ExpandableSupportInfo markdown={info}/>
                     </Box>
                 }
             </Stack>
