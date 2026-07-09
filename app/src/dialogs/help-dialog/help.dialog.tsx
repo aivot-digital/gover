@@ -181,30 +181,62 @@ export function HelpDialog(props: HelpDialogProps) {
     const application = props.form;
     const [technicalDepartment, setTechnicalDepartment] = useState<PublicDepartmentResponseDTO>();
     const [specialDepartment, setSpecialDepartment] = useState<PublicDepartmentResponseDTO>();
+    const technicalSupportDepartmentId = application?.technicalSupportDepartmentId ?? null;
+    const legalSupportDepartmentId = application?.legalSupportDepartmentId ?? null;
 
     useEffect(() => {
-        const ac = new AbortController();
-
-        if (
-            application?.technicalSupportDepartmentId != null &&
-            (technicalDepartment == null || technicalDepartment.id !== application.technicalSupportDepartmentId)
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(application.technicalSupportDepartmentId)
-                .then(setTechnicalDepartment);
+        if (technicalSupportDepartmentId == null) {
+            setTechnicalDepartment(undefined);
+            return;
         }
 
-        if (
-            application.legalSupportDepartmentId != null &&
-            (specialDepartment == null || specialDepartment.id !== application.legalSupportDepartmentId)
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(application.legalSupportDepartmentId)
-                .then(setSpecialDepartment);
+        if (technicalDepartment?.id === technicalSupportDepartmentId) {
+            return;
         }
 
-        return () => ac.abort();
-    }, [application, technicalDepartment, specialDepartment]);
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setTechnicalDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(technicalSupportDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setTechnicalDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [technicalSupportDepartmentId, technicalDepartment?.id]);
+
+    useEffect(() => {
+        if (legalSupportDepartmentId == null) {
+            setSpecialDepartment(undefined);
+            return;
+        }
+
+        if (specialDepartment?.id === legalSupportDepartmentId) {
+            return;
+        }
+
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setSpecialDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(legalSupportDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setSpecialDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [legalSupportDepartmentId, specialDepartment?.id]);
 
     const mailSubjectTitle = application.publicTitle ?? 'Online-Formular';
     const hasSpecialContact = specialDepartment != null;

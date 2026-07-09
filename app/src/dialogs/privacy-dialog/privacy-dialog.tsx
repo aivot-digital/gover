@@ -16,27 +16,39 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
 
     const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const privacyDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.privacyDepartmentId));
+    const parsedPrivacyDepartmentId = privacyDepartmentId != null && privacyDepartmentId !== '' && !Number.isNaN(parseInt(privacyDepartmentId)) ?
+        parseInt(privacyDepartmentId) :
+        null;
+    const selectedPrivacyDepartmentId = props.isListingPage ?
+        parsedPrivacyDepartmentId :
+        application.privacyDepartmentId ?? null;
 
     useEffect(() => {
-        if (
-            !props.isListingPage &&
-            application.privacyDepartmentId != null &&
-            (department == null || department.id !== application.privacyDepartmentId)
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(application.privacyDepartmentId)
-                .then(setDepartment);
-        } else if (
-            props.isListingPage &&
-            privacyDepartmentId != null &&
-            privacyDepartmentId != '' &&
-            (department == null || department.id !== parseInt(privacyDepartmentId))
-        ) {
-            new DepartmentApiService()
-                .retrievePublic(parseInt(privacyDepartmentId))
-                .then(setDepartment);
+        if (selectedPrivacyDepartmentId == null) {
+            setDepartment(undefined);
+            return;
         }
-    }, [privacyDepartmentId, application, department]);
+
+        if (department?.id === selectedPrivacyDepartmentId) {
+            return;
+        }
+
+        let isCancelled = false;
+
+        // Clear stale department data immediately when the configured source is removed or changed.
+        setDepartment(undefined);
+        new DepartmentApiService()
+            .retrievePublic(selectedPrivacyDepartmentId)
+            .then((department) => {
+                if (!isCancelled) {
+                    setDepartment(department);
+                }
+            });
+
+        return () => {
+            isCancelled = true;
+        };
+    }, [selectedPrivacyDepartmentId, department?.id]);
 
     const commonPrivacy = department?.commonPrivacy;
     const formSpecificPrivacyStatement = props.isListingPage ? undefined : application.formSpecificPrivacyStatement;
