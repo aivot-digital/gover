@@ -3,7 +3,6 @@ package de.aivot.gover.backend.process.controllers;
 import de.aivot.gover.backend.audit.enums.AuditAction;
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
-import de.aivot.gover.backend.department.services.DepartmentService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
@@ -11,7 +10,6 @@ import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.gover.backend.process.filters.ProcessInstanceEventFilter;
 import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
-import de.aivot.gover.backend.process.services.ProcessService;
 import de.aivot.gover.backend.process.services.ProcessInstanceEventService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -49,8 +47,6 @@ public class ProcessInstanceEventController {
     public ProcessInstanceEventController(AuditService auditService,
                                           UserService userService,
                                           ProcessInstanceEventService processInstanceHistoryEventService,
-                                          DepartmentService departmentService,
-                                          ProcessService processDefinitionService,
                                           PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(ProcessInstanceEventController.class, "Prozesse");
         this.userService = userService;
