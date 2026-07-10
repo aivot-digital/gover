@@ -364,17 +364,25 @@ public class FileUploadMultipartInputService {
                                                       @Nonnull String configuredSubmittedFileName,
                                                       @Nonnull String originalFileName,
                                                       @Nonnull Set<String> usedFileNames) throws ResponseException {
-        var configuredExtension = StringUtils.extractExtensionFromFileName(configuredSubmittedFileName);
-        var resolvedFileName = configuredExtension.isPresent()
-                ? configuredSubmittedFileName
-                : StringUtils
-                        .extractExtensionFromFileName(originalFileName)
-                        .map(extension -> configuredSubmittedFileName + "." + extension)
-                        .orElse(configuredSubmittedFileName);
+        var configuredBaseFileName = removeExtensionFromConfiguredSubmittedFileName(configuredSubmittedFileName);
+        var resolvedFileName = StringUtils
+                .extractExtensionFromFileName(originalFileName)
+                .map(extension -> configuredBaseFileName + "." + extension)
+                .orElse(configuredBaseFileName);
 
         resolvedFileName = ensureUniqueFileName(resolvedFileName, usedFileNames);
         validateResolvedConfiguredFileName(element, resolvedFileName);
         return resolvedFileName;
+    }
+
+    @Nonnull
+    private String removeExtensionFromConfiguredSubmittedFileName(@Nonnull String configuredSubmittedFileName) {
+        var lastDotIndex = configuredSubmittedFileName.lastIndexOf('.');
+        if (lastDotIndex <= 0) {
+            return configuredSubmittedFileName;
+        }
+
+        return configuredSubmittedFileName.substring(0, lastDotIndex);
     }
 
     private void validateResolvedConfiguredFileName(@Nonnull FileUploadInputElement element,

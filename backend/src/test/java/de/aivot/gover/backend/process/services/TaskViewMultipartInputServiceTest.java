@@ -163,6 +163,42 @@ class FileUploadMultipartInputServiceTest {
     }
 
     @Test
+    void normalizeInputs_UsesOriginalExtensionForConfiguredSubmittedFileName() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(
+                attachmentService,
+                attachmentSetService,
+                new TestAVService()
+        );
+        var layout = createLayout("documents", "evidence.png");
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("documents", List.of(Map.of(
+                "name", "report.pdf",
+                "uri", "blob:report",
+                "size", 3
+        )));
+
+        var normalized = service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "report.pdf", "application/pdf", "pdf".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:report"),
+                42L,
+                9L,
+                "staff-user"
+        ).inputs();
+
+        @SuppressWarnings("unchecked")
+        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        assertEquals("evidence.pdf", documents.getFirst().get("name"));
+        assertEquals("evidence.pdf", attachmentService.createdAttachments().getFirst().getFileName());
+    }
+
+    @Test
     void normalizeInputs_GroupsUploadsByDestinationKeyOrElementId() throws Exception {
         var attachmentService = new TestProcessInstanceAttachmentService();
         var attachmentSetService = new TestProcessInstanceAttachmentSetService();
