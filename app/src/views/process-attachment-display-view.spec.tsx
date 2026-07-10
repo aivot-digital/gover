@@ -187,6 +187,7 @@ function createAttachment(key: string, fileName: string): ProcessInstanceAttachm
     return {
         key,
         fileName,
+        attachmentSetId: 1,
         processInstanceId: 42,
         processInstanceTaskId: null,
         storageProviderId: 7,

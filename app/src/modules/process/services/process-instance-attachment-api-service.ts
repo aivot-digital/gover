@@ -25,6 +25,7 @@ export class ProcessInstanceAttachmentApiService extends BaseCrudApiService<
         return {
             key: '',
             fileName: '',
+            attachmentSetId: 0,
             processInstanceId: 0,
             processInstanceTaskId: null,
             storageProviderId: 0,

@@ -42,6 +42,8 @@ import {alpha} from '@mui/material/styles';
 import {type ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import {type ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
+import {type ProcessInstanceAttachmentEntity} from '../../../../entities/process-instance-attachment-entity';
+import {type ProcessInstanceAttachmentSetEntity} from '../../../../entities/process-instance-attachment-set-entity';
 import Add from '@mui/icons-material/Add';
 import Remove from '@mui/icons-material/Remove';
 import CropFree from '@mui/icons-material/CropFree';
@@ -112,8 +114,11 @@ interface ProcessFlowEditorProps {
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
+        attachments: ProcessInstanceAttachmentEntity[];
+        attachmentSets: ProcessInstanceAttachmentSetEntity[];
     } | null;
     onReloadRuntimeData: () => void;
+    onDownloadAttachment?: (attachment: ProcessInstanceAttachmentEntity) => void | Promise<void>;
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
 
@@ -451,6 +456,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
         runtimeData,
         onReloadRuntimeData,
+        onDownloadAttachment,
         topLeftPanel,
         topRightPanel,
 
@@ -520,6 +526,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartCloneNode: onStartCloneNode ?? NOOP_START_CLONE_NODE,
 
         onReloadRuntimeData: onReloadRuntimeData,
+        onDownloadAttachment,
 
         onAddFollowUpNode: onAddFollowUpNode ?? NOOP_ADD_FOLLOW_UP_NODE,
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
@@ -539,6 +546,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartReplaceNode,
         onStartCloneNode,
         runtimeData,
+        onDownloadAttachment,
         onReloadRuntimeData,
         selectedNode,
         showTargetHandles,

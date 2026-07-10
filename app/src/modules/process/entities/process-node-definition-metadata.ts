@@ -3,7 +3,7 @@ import {type ProcessNodeEntity} from './process-node-entity';
 
 export interface ProcessNodeDefinitionMetadata {
     reusableUiDefinitions: ProcessNodeDefinitionMetadataReusableUiDefinition[];
-    forwardedAttachments: ProcessNodeDefinitionMetadataForwardedAttachment[];
+    forwardedAttachmentSets: ProcessNodeDefinitionMetadataForwardedAttachmentSet[];
     forwardedProcessDataKeys: ProcessNodeDefinitionMetadataForwardedProcessDataKey[];
     forwardedIdentities: ProcessNodeDefinitionMetadataForwardedIdentity[];
 }
@@ -15,8 +15,8 @@ export interface ProcessNodeDefinitionMetadataReusableUiDefinition {
     origin: ProcessNodeEntity;
 }
 
-export interface ProcessNodeDefinitionMetadataForwardedAttachment {
-    fileName: string;
+export interface ProcessNodeDefinitionMetadataForwardedAttachmentSet {
+    dataKey: string;
     label: string;
     subLabel: string | null;
     origin: ProcessNodeEntity;

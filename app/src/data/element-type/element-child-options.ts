@@ -187,7 +187,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.SummaryLayout,
             ElementType.ProcessDataKeyInput,
             ElementType.ProcessAttachmentDisplay,
-            ElementType.ProcessAttachmentNameChipInput,
+            ElementType.ProcessInstanceAttachmentSetSelect,
             ElementType.ProcessIdentityIdInput,
             ElementType.HtmlTemplateInput,
         ],
