@@ -29,10 +29,6 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
             return;
         }
 
-        if (department?.id === selectedAccessibilityDepartmentId) {
-            return;
-        }
-
         let isCancelled = false;
 
         // Clear stale department data immediately when the configured source is removed or changed.
@@ -48,7 +44,7 @@ export function AccessibilityDialog(props: AccessibilityDialogProps) {
         return () => {
             isCancelled = true;
         };
-    }, [selectedAccessibilityDepartmentId, department?.id]);
+    }, [selectedAccessibilityDepartmentId]);
 
     const commonAccessibility = department?.commonAccessibility;
     const formSpecificAccessibilityStatement = props.isListingPage ? undefined : application.formSpecificAccessibilityStatement;

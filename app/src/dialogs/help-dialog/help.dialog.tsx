@@ -190,10 +190,6 @@ export function HelpDialog(props: HelpDialogProps) {
             return;
         }
 
-        if (technicalDepartment?.id === technicalSupportDepartmentId) {
-            return;
-        }
-
         let isCancelled = false;
 
         // Clear stale department data immediately when the configured source is removed or changed.
@@ -209,15 +205,11 @@ export function HelpDialog(props: HelpDialogProps) {
         return () => {
             isCancelled = true;
         };
-    }, [technicalSupportDepartmentId, technicalDepartment?.id]);
+    }, [technicalSupportDepartmentId]);
 
     useEffect(() => {
         if (legalSupportDepartmentId == null) {
             setSpecialDepartment(undefined);
-            return;
-        }
-
-        if (specialDepartment?.id === legalSupportDepartmentId) {
             return;
         }
 
@@ -236,7 +228,7 @@ export function HelpDialog(props: HelpDialogProps) {
         return () => {
             isCancelled = true;
         };
-    }, [legalSupportDepartmentId, specialDepartment?.id]);
+    }, [legalSupportDepartmentId]);
 
     const mailSubjectTitle = application.publicTitle ?? 'Online-Formular';
     const hasSpecialContact = specialDepartment != null;

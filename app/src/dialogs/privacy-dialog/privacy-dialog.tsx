@@ -29,10 +29,6 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
             return;
         }
 
-        if (department?.id === selectedPrivacyDepartmentId) {
-            return;
-        }
-
         let isCancelled = false;
 
         // Clear stale department data immediately when the configured source is removed or changed.
@@ -48,7 +44,7 @@ export function PrivacyDialog(props: PrivacyDialogProps) {
         return () => {
             isCancelled = true;
         };
-    }, [selectedPrivacyDepartmentId, department?.id]);
+    }, [selectedPrivacyDepartmentId]);
 
     const commonPrivacy = department?.commonPrivacy;
     const formSpecificPrivacyStatement = props.isListingPage ? undefined : application.formSpecificPrivacyStatement;

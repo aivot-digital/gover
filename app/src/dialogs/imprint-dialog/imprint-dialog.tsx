@@ -29,10 +29,6 @@ export function ImprintDialog(props: ImprintDialogProps) {
             return;
         }
 
-        if (department?.id === selectedImprintDepartmentId) {
-            return;
-        }
-
         let isCancelled = false;
 
         // Clear stale department data immediately when the configured source is removed or changed.
@@ -48,7 +44,7 @@ export function ImprintDialog(props: ImprintDialogProps) {
         return () => {
             isCancelled = true;
         };
-    }, [selectedImprintDepartmentId, department?.id]);
+    }, [selectedImprintDepartmentId]);
 
     return (
         <Dialog
