@@ -136,6 +136,12 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
                 .findAllByProcessInstanceIdAndFileName(processInstanceId, fileName);
     }
 
+    @Nonnull
+    public List<ProcessInstanceAttachmentEntity> findAllByAttachmentSetId(@Nonnull Integer attachmentSetId) {
+        return processInstanceAttachmentRepository
+                .findAllByAttachmentSetId(attachmentSetId);
+    }
+
     @Override
     public boolean exists(@Nonnull UUID key) {
         return processInstanceAttachmentRepository.existsById(key);
@@ -153,6 +159,7 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
                                                          @Nonnull ProcessInstanceAttachmentEntity existingEntity) throws ResponseException {
         existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
         existingEntity.setProcessInstanceTaskId(entity.getProcessInstanceTaskId());
+        existingEntity.setAttachmentSetId(entity.getAttachmentSetId());
         existingEntity.setUploadedByUserId(entity.getUploadedByUserId());
         return processInstanceAttachmentRepository.save(existingEntity);
     }

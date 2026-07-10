@@ -7,6 +7,7 @@ import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService
 import de.aivot.gover.backend.plugins.core.v1.nodes.actions.HttpActionNodeV1;
 import de.aivot.gover.backend.plugins.core.v1.nodes.actions.HttpActionNodeV1Config;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -19,6 +20,7 @@ import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutio
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.secrets.repositories.SecretRepository;
 import de.aivot.gover.backend.secrets.services.SecretService;
@@ -57,6 +59,7 @@ class HttpActionNodeV1Test {
 
     private HttpService httpService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private StorageService storageService;
     private SecretRepository secretRepository;
     private SecretService secretService;
@@ -66,6 +69,7 @@ class HttpActionNodeV1Test {
     void setUp() {
         httpService = mock(HttpService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         storageService = mock(StorageService.class);
         secretRepository = mock(SecretRepository.class);
         secretService = mock(SecretService.class);
@@ -75,6 +79,7 @@ class HttpActionNodeV1Test {
                 new PassthroughTemplateRenderService(),
                 new JavascriptEngineFactoryService(List.of()),
                 processInstanceAttachmentService,
+                processInstanceAttachmentSetService,
                 storageService,
                 secretRepository,
                 secretService
@@ -171,6 +176,10 @@ class HttpActionNodeV1Test {
                             .setStorageProviderId(7)
                             .setStoragePathFromRoot("attachments/document.pdf");
                 });
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation
+                        .getArgument(0, ProcessInstanceAttachmentSetEntity.class)
+                        .setId(321));
 
         var configuration = baseConfig("GET", "https://gover.test/file", "file", "200");
         configuration.responseConfig.responseFileName = "document.pdf";

@@ -9,6 +9,7 @@ import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.gover.backend.plugins.core.v1.nodes.actions.PdfActionNodeV1;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -21,6 +22,7 @@ import de.aivot.gover.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.services.PdfService;
 import de.aivot.gover.backend.storage.services.StorageService;
@@ -55,6 +57,7 @@ class PdfActionNodeV1Test {
 
     private PdfService pdfService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private AssetService assetService;
     private StorageService storageService;
     private PdfActionNodeV1 node;
@@ -63,6 +66,7 @@ class PdfActionNodeV1Test {
     void setUp() throws Exception {
         pdfService = mock(PdfService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         assetService = mock(AssetService.class);
         storageService = mock(StorageService.class);
 
@@ -76,6 +80,10 @@ class PdfActionNodeV1Test {
                             .setStorageProviderId(7)
                             .setStoragePathFromRoot("attachments/report.pdf");
                 });
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation
+                        .getArgument(0, ProcessInstanceAttachmentSetEntity.class)
+                        .setId(321));
 
         node = createNode(new PassthroughTemplateRenderService());
     }
@@ -194,6 +202,7 @@ class PdfActionNodeV1Test {
                 pdfService,
                 templateRenderService,
                 processInstanceAttachmentService,
+                processInstanceAttachmentSetService,
                 htmlTemplateInputElementResolver
         );
     }

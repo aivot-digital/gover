@@ -63,7 +63,7 @@ public enum ElementType implements Identifiable<Integer> {
     SummaryLayout(43),
     ProcessDataKeyInput(44),
     ProcessAttachmentDisplay(45),
-    ProcessAttachmentNameChipInput(46),
+    ProcessInstanceAttachmentSetSelect(46),
     ProcessIdentityIdInput(47),
     HtmlTemplateInput(48)
     ;
@@ -114,7 +114,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_SummaryLayout = "43";
     public static final String ID_ProcessDataKeyInput = "44";
     public static final String ID_ProcessAttachmentDisplay = "45";
-    public static final String ID_ProcessAttachmentNameChipInput = "46";
+    public static final String ID_ProcessInstanceAttachmentSetSelect = "46";
     public static final String ID_ProcessIdentityIdInput = "47";
     public static final String ID_HtmlTemplateInput = "48";
 
@@ -192,7 +192,7 @@ public enum ElementType implements Identifiable<Integer> {
             case SummaryLayout -> new SummaryLayoutElement();
             case ProcessDataKeyInput -> new ProcessDataKeyInputElement();
             case ProcessAttachmentDisplay -> new ProcessAttachmentDisplayContentElement();
-            case ProcessAttachmentNameChipInput -> new ProcessAttachmentNameChipInputElement();
+            case ProcessInstanceAttachmentSetSelect -> new ProcessInstanceAttachmentSetSelectElement();
             case ProcessIdentityIdInput -> new ProcessIdentityIdInputElement();
             case HtmlTemplateInput -> new HtmlTemplateInputElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());

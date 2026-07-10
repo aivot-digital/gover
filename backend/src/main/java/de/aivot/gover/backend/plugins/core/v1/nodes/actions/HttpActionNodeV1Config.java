@@ -88,9 +88,9 @@ public class HttpActionNodeV1Config {
         @InputElementPOJOBinding(id = REQUEST_FORM_FIELDS_FIELD_ID , type = ElementType.Table, properties = {})
         public List<Map<String, Object>> requestFormFields;
         
-        public static final String REQUEST_FORM_ATTACHMENTS_FIELD_ID = "requestFormAttachments";
-        @InputElementPOJOBinding(id = REQUEST_FORM_ATTACHMENTS_FIELD_ID , type = ElementType.ProcessAttachmentNameChipInput, properties = {})
-        public List<String> requestFormAttachments;
+        public static final String REQUEST_FORM_ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "requestFormAttachments";
+        @InputElementPOJOBinding(id = REQUEST_FORM_ATTACHMENT_SET_DATA_KEYS_FIELD_ID , type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {})
+        public List<String> requestFormAttachmentSetDataKeys;
         
     }
     public RequestData requestData;

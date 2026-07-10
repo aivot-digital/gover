@@ -14,6 +14,7 @@ import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.exceptions.*;
@@ -24,6 +25,7 @@ import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitio
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.services.ProcessDataService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.secrets.repositories.SecretRepository;
 import de.aivot.gover.backend.secrets.services.SecretService;
@@ -102,6 +104,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     private final TemplateRenderService templateRenderService;
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final StorageService storageService;
     private final SecretRepository secretRepository;
     private final SecretService secretService;
@@ -110,6 +113,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                             TemplateRenderService templateRenderService,
                             JavascriptEngineFactoryService javascriptEngineFactoryService,
                             ProcessInstanceAttachmentService processInstanceAttachmentService,
+                            ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                             StorageService storageService,
                             SecretRepository secretRepository,
                             SecretService secretService) {
@@ -117,6 +121,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         this.templateRenderService = templateRenderService;
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
         this.secretRepository = secretRepository;
         this.secretService = secretService;
@@ -217,13 +222,13 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         if (HttpActionNodeV1Config.ResponseConfig.RESPONSE_BODY_TYPE_OPT_DATEI.equals(configuration.responseConfig.responseBodyType)) {
             return ProcessNodeDefinitionMetadata
                     .reuse(previousMetadata)
-                    .addForwardedAttachment(
-                            new ProcessNodeDefinitionMetadata.ForwardedAttachment(
-                                    configuration.responseConfig.responseFileName,
-                                    Objects.requireNonNullElse(processNodeEntity.getName(), "Http-Anfrage"),
-                                    null,
-                                    processNodeEntity
-                            )
+                    .addForwardedAttachmentSet(
+                            processNodeEntity.getDataKey(),
+                            StringUtils.isNotNullOrEmpty(configuration.responseConfig.responseFileName)
+                                    ? configuration.responseConfig.responseFileName
+                                    : Objects.requireNonNullElse(processNodeEntity.getName(), "Http-Anfrage"),
+                            null,
+                            processNodeEntity
                     );
         }
 
@@ -339,13 +344,21 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
 
             ProcessInstanceAttachmentEntity attachment;
             try {
+                var attachmentSet = processInstanceAttachmentSetService.create(
+                        new ProcessInstanceAttachmentSetEntity()
+                                .setName(fileName)
+                                .setDataKey(context.getThisNode().getDataKey())
+                                .setProcessInstanceId(context.getThisProcessInstance().getId())
+                                .setProcessInstanceTaskId(context.getThisTask().getId())
+                );
+
                 attachment = processInstanceAttachmentService.create(
                         ProcessInstanceAttachmentEntity.of(
                                 fileName,
                                 context.getThisProcessInstance().getId(),
                                 context.getThisTask().getId(),
                                 responseBytes
-                        )
+                        ).setAttachmentSetId(attachmentSet.getId())
                 );
             } catch (ResponseException e) {
                 throw new ProcessNodeExecutionExceptionUnknown(
@@ -606,30 +619,26 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             publisher.addPart(entry.getKey(), entry.getValue());
         }
 
-        if (requestData.requestFormAttachments != null) {
-            for (var rawFileName : requestData.requestFormAttachments) {
-                var fileName = StringUtils.toNullableTrimmedString(rawFileName);
-                if (fileName == null) {
-                    continue;
-                }
-
-                var attachment = resolveSingleProcessAttachment(context, fileName);
-                try (var attachmentContent = storageService.getDocumentContent(
-                        attachment.getStorageProviderId(),
-                        attachment.getStoragePathFromRoot()
-                )) {
-                    publisher.addPart(
-                            MULTIPART_ATTACHMENT_FIELD_NAME,
-                            attachment.getFileName(),
-                            attachmentContent.readAllBytes()
-                    );
-                } catch (IOException | ResponseException e) {
-                    throw new ProcessNodeExecutionExceptionUnknown(
-                            e,
-                            "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
-                            StringUtils.quote(fileName),
-                            e.getMessage()
-                    );
+        if (requestData.requestFormAttachmentSetDataKeys != null) {
+            for (var rawAttachmentSetDataKey : requestData.requestFormAttachmentSetDataKeys) {
+                for (var attachment : resolveProcessAttachmentsBySetDataKey(context, rawAttachmentSetDataKey)) {
+                    try (var attachmentContent = storageService.getDocumentContent(
+                            attachment.getStorageProviderId(),
+                            attachment.getStoragePathFromRoot()
+                    )) {
+                        publisher.addPart(
+                                MULTIPART_ATTACHMENT_FIELD_NAME,
+                                attachment.getFileName(),
+                                attachmentContent.readAllBytes()
+                        );
+                    } catch (IOException | ResponseException e) {
+                        throw new ProcessNodeExecutionExceptionUnknown(
+                                e,
+                                "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
+                                StringUtils.quote(attachment.getFileName()),
+                                e.getMessage()
+                        );
+                    }
                 }
             }
         }
@@ -663,29 +672,37 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     }
 
     @Nonnull
-    private ProcessInstanceAttachmentEntity resolveSingleProcessAttachment(@Nonnull ProcessNodeExecutionInitContext<HttpActionNodeV1Config> context,
-                                                                           @Nonnull String fileName) throws ProcessNodeExecutionException {
-        var attachments = processInstanceAttachmentService.findAllByProcessInstanceIdAndFileName(
-                context.getThisProcessInstance().getId(),
-                fileName
-        );
+    private List<ProcessInstanceAttachmentEntity> resolveProcessAttachmentsBySetDataKey(@Nonnull ProcessNodeExecutionInitContext<HttpActionNodeV1Config> context,
+                                                                                        @Nonnull String attachmentSetDataKey) throws ProcessNodeExecutionException {
+        var normalizedDataKey = StringUtils.toNullableTrimmedString(attachmentSetDataKey);
+        if (normalizedDataKey == null) {
+            return List.of();
+        }
+
+        var attachmentSets = processInstanceAttachmentSetService
+                .findAllByProcessInstanceIdAndDataKey(context.getThisProcessInstance().getId(), normalizedDataKey);
+
+        if (attachmentSets.isEmpty()) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der Anlagensatz mit dem Datenschlüssel %s wurde in der Prozess-Instanz %d nicht gefunden.",
+                    StringUtils.quote(normalizedDataKey),
+                    context.getThisProcessInstance().getId()
+            );
+        }
+
+        var attachments = new ArrayList<ProcessInstanceAttachmentEntity>();
+        for (var attachmentSet : attachmentSets) {
+            attachments.addAll(processInstanceAttachmentService.findAllByAttachmentSetId(attachmentSet.getId()));
+        }
 
         if (attachments.isEmpty()) {
             throw new ProcessNodeExecutionExceptionMissingValue(
-                    "Der Prozess-Anhang mit dem Dateinamen %s wurde in der Prozess-Instanz %d nicht gefunden.",
-                    StringUtils.quote(fileName),
-                    context.getThisProcessInstance().getId()
-            );
-        }
-        if (attachments.size() > 1) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    "Der Prozess-Anhang mit dem Dateinamen %s ist in der Prozess-Instanz %d nicht eindeutig vorhanden.",
-                    StringUtils.quote(fileName),
-                    context.getThisProcessInstance().getId()
+                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anhänge.",
+                    StringUtils.quote(normalizedDataKey)
             );
         }
 
-        return attachments.get(0);
+        return attachments;
     }
 
     @Nullable

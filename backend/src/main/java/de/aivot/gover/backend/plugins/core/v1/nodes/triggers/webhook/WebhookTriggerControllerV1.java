@@ -37,6 +37,7 @@ public class WebhookTriggerControllerV1 {
     private final ProcessInstanceService processInstanceService;
     private final ProcessTestClaimRepository processTestClaimRepository;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final ProcessNodeService processNodeService;
     private final ProcessService processService;
     private final ProcessNodeRepository processNodeRepository;
@@ -46,10 +47,12 @@ public class WebhookTriggerControllerV1 {
     public WebhookTriggerControllerV1(ProcessInstanceService processInstanceService,
                                       ProcessTestClaimRepository processTestClaimRepository,
                                       ProcessInstanceAttachmentService processInstanceAttachmentService,
+                                      ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                                       ProcessNodeService processNodeService, ProcessService processService, ProcessNodeRepository processNodeRepository, ProcessNodeDefinitionService processNodeDefinitionService) {
         this.processInstanceService = processInstanceService;
         this.processTestClaimRepository = processTestClaimRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.processNodeService = processNodeService;
         this.processService = processService;
         this.processNodeRepository = processNodeRepository;
@@ -135,7 +138,7 @@ public class WebhookTriggerControllerV1 {
                 payload.put(key, null);
             }
         }
-        return handleRequest(request, processSlug, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM, payload, request.getFileMap(), testClaimAccessKey, authToken, authorizationHeader);
+        return handleRequest(request, processSlug, slug, WebhookTriggerConfigV1.REQUEST_BODY_TYPE_OPTION_FORM, payload, request.getMultiFileMap(), testClaimAccessKey, authToken, authorizationHeader);
     }
 
     @Nonnull
@@ -144,7 +147,7 @@ public class WebhookTriggerControllerV1 {
                                    @Nonnull String slug,
                                    @Nullable String requestBody,
                                    @Nonnull Map<String, Object> payload,
-                                   @Nonnull Map<String, MultipartFile> files,
+                                   @Nonnull Map<String, List<MultipartFile>> files,
                                    @Nullable String testClaimAccessKey,
                                    @Nullable String authToken,
                                    @Nullable String authorizationHeader) throws ResponseException {
@@ -225,7 +228,7 @@ public class WebhookTriggerControllerV1 {
                               @Nonnull WebhookTriggerConfigV1 config,
                               @Nonnull HttpServletRequest request,
                               @Nonnull Map<String, Object> payload,
-                              @Nonnull Map<String, MultipartFile> files,
+                              @Nonnull Map<String, List<MultipartFile>> files,
                               @Nullable String authToken,
                               @Nullable String authorizationHeader) throws ResponseException {
         // Check if the request method is correct
@@ -267,27 +270,38 @@ public class WebhookTriggerControllerV1 {
 
         try {
             var attachments = new LinkedList<ProcessInstanceAttachmentEntity>();
+            var attachmentSets = new LinkedHashMap<String, ProcessInstanceAttachmentSetEntity>();
             for (var fileEntry : files.entrySet()) {
-                var file = fileEntry.getValue();
-
-                byte[] bytes;
-                try {
-                    bytes = file.getBytes();
-                } catch (IOException e) {
-                    throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
+                if (fileEntry.getValue() == null || fileEntry.getValue().isEmpty()) {
+                    continue;
                 }
 
-                var attachment = ProcessInstanceAttachmentEntity.of(
-                        file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
-                        createdInstance.getId(),
-                        null,
-                        bytes
+                var attachmentSet = resolveAttachmentSet(
+                        attachmentSets,
+                        fileEntry.getKey(),
+                        createdInstance.getId()
                 );
 
-                var createdAttachment = processInstanceAttachmentService
-                        .create(attachment);
+                for (var file : fileEntry.getValue()) {
+                    byte[] bytes;
+                    try {
+                        bytes = file.getBytes();
+                    } catch (IOException e) {
+                        throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
+                    }
 
-                attachments.add(createdAttachment);
+                    var attachment = ProcessInstanceAttachmentEntity.of(
+                            file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
+                            createdInstance.getId(),
+                            null,
+                            bytes
+                    ).setAttachmentSetId(attachmentSet.getId());
+
+                    var createdAttachment = processInstanceAttachmentService
+                            .create(attachment);
+
+                    attachments.add(createdAttachment);
+                }
             }
 
             var initialPayload = new HashMap<String, Object>();
@@ -324,6 +338,42 @@ public class WebhookTriggerControllerV1 {
             processInstanceService.update(createdInstance.getId(), createdInstance);
             throw e;
         }
+    }
+
+    @Nonnull
+    private ProcessInstanceAttachmentSetEntity resolveAttachmentSet(@Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSets,
+                                                                    @Nonnull String fieldName,
+                                                                    @Nonnull Long processInstanceId) throws ResponseException {
+        var dataKey = resolveAttachmentSetDataKey(fieldName);
+        var attachmentSet = attachmentSets.get(dataKey);
+        if (attachmentSet != null) {
+            return attachmentSet;
+        }
+
+        attachmentSet = processInstanceAttachmentSetService.create(
+                new ProcessInstanceAttachmentSetEntity()
+                        .setName(dataKey)
+                        .setDataKey(dataKey)
+                        .setProcessInstanceId(processInstanceId)
+                        .setProcessInstanceTaskId(null)
+        );
+        attachmentSets.put(dataKey, attachmentSet);
+        return attachmentSet;
+    }
+
+    @Nonnull
+    private String resolveAttachmentSetDataKey(@Nonnull String fieldName) throws ResponseException {
+        var dataKey = StringUtils.toNullableTrimmedString(fieldName);
+        if (dataKey == null) {
+            throw ResponseException.badRequest("Ein Webhook-Dateiupload benötigt einen Multipart-Feldnamen.");
+        }
+
+        dataKey = dataKey.replace('.', '_');
+        if (dataKey.length() > 255) {
+            throw ResponseException.badRequest("Der Multipart-Feldname %s ist zu lang.", StringUtils.quote(fieldName));
+        }
+
+        return dataKey;
     }
 
     private static void validateRequestContentType(@Nonnull WebhookTriggerConfigV1 config,

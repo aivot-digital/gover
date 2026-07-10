@@ -27,6 +27,7 @@ import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutio
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.gover.backend.process.models.ProcessNodePort;
 import de.aivot.gover.backend.process.models.TaskViewEvent;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.gover.backend.process.services.ProcessInstanceService;
 import de.aivot.gover.backend.process.services.ProcessInstanceTaskService;
 import de.aivot.gover.backend.process.services.CaseNumberGeneratorService;
@@ -250,7 +251,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceEntity instance;
 
         private TestProcessInstanceService(ProcessInstanceEntity instance) {
-            super(null, null, null, null, mock(CaseNumberGeneratorService.class));
+            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class));
             this.instance = instance;
         }
 
@@ -293,7 +294,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         private final AuthoredElementValues normalizedInputs;
 
         private TestTaskViewMultipartInputService(AuthoredElementValues normalizedInputs) {
-            super(null, null);
+            super(null, null, null);
             this.normalizedInputs = normalizedInputs;
         }
 
