@@ -463,7 +463,7 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
                                 borderColor: error != null ? 'error.main' : outlinedBorderColor,
                                 boxShadow: 'none',
                             },
-                            '& .gover-mdx-editor': {
+                            '& .gover-mdx-editor [class*="_toolbarRoot_"], & .gover-mdx-editor .cm-sourceView': {
                                 pointerEvents: 'none',
                             },
                         }
