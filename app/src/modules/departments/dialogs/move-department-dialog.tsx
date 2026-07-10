@@ -29,6 +29,7 @@ interface MoveDepartmentOption {
     subLabel?: string;
     icon?: React.ReactNode;
     disabled?: boolean;
+    disabledReason?: string;
 }
 
 interface MoveDepartmentDialogProps {
@@ -107,56 +108,56 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
         }, 0);
     }, [availableDepartments, department.depth, department.id]);
 
-    const selectableParents = useMemo(() => {
-        if (availableDepartments == null) {
-            return [];
-        }
-
-        return availableDepartments
-            .filter((candidate) => {
-                if (candidate.id === department.id) {
-                    return false;
-                }
-
-                if (candidate.depth + 1 + departmentSubtreeHeight > maxDepartmentDepth) {
-                    return false;
-                }
-
-                const parentIds = candidate.parentIds ?? [];
-                return !parentIds.includes(department.id);
-            });
-    }, [availableDepartments, department.id, departmentSubtreeHeight, maxDepartmentDepth]);
-
     const parentOptions = useMemo<MoveDepartmentOption[]>(() => {
+        const rootDisabledReason = department.parentDepartmentId == null ?
+            'Bereits auf der höchsten Ebene.' :
+            departmentSubtreeHeight > maxDepartmentDepth ?
+                'Die Unterstruktur wäre für die höchste Ebene zu tief.' :
+                undefined;
         const rootOption: MoveDepartmentOption = {
             value: null,
             label: 'Keine übergeordnete Organisationseinheit (höchste Ebene)',
-            subLabel: 'Die Organisationseinheit wird zur Wurzelebene verschoben.',
-            disabled: department.parentDepartmentId == null || departmentSubtreeHeight > maxDepartmentDepth,
+            subLabel: rootDisabledReason ?? 'Die Organisationseinheit wird zur Wurzelebene verschoben.',
+            disabled: rootDisabledReason != null,
+            disabledReason: rootDisabledReason,
         };
 
         return [
             rootOption,
-            ...selectableParents.map((candidate): MoveDepartmentOption => ({
-                value: candidate.id,
-                label: getDepartmentPath(candidate),
-                subLabel: getDepartmentTypeLabel(candidate.depth),
-                icon: getDepartmentTypeIcons(candidate.depth),
-                disabled: candidate.id === department.parentDepartmentId,
-            })),
+            ...(availableDepartments ?? []).map((candidate): MoveDepartmentOption => {
+                const parentIds = candidate.parentIds ?? [];
+                const disabledReason = candidate.id === department.id ?
+                    'Diese Organisationseinheit kann nicht ihr eigenes Ziel sein.' :
+                    parentIds.includes(department.id) ?
+                        'Diese Untereinheit liegt innerhalb der zu verschiebenden Struktur.' :
+                        candidate.depth + 1 + departmentSubtreeHeight > maxDepartmentDepth ?
+                            'Die maximale Hierarchietiefe würde überschritten.' :
+                            candidate.id === department.parentDepartmentId ?
+                                'Bereits die aktuelle übergeordnete Organisationseinheit.' :
+                                undefined;
+
+                return {
+                    value: candidate.id,
+                    label: getDepartmentPath(candidate),
+                    subLabel: disabledReason ?? getDepartmentTypeLabel(candidate.depth),
+                    icon: getDepartmentTypeIcons(candidate.depth),
+                    disabled: disabledReason != null,
+                    disabledReason,
+                };
+            }),
         ];
-    }, [department.parentDepartmentId, departmentSubtreeHeight, maxDepartmentDepth, selectableParents]);
+    }, [availableDepartments, department.id, department.parentDepartmentId, departmentSubtreeHeight, maxDepartmentDepth]);
 
     const currentParentLabel = useMemo(() => {
         if (department.parentDepartmentId == null) {
             return 'Höchste Ebene (keine übergeordnete Organisationseinheit)';
         }
 
-        const currentParent = selectableParents.find((candidate) => candidate.id === department.parentDepartmentId);
+        const currentParent = availableDepartments?.find((candidate) => candidate.id === department.parentDepartmentId);
         return currentParent != null
             ? getDepartmentPath(currentParent)
             : `ID ${department.parentDepartmentId}`;
-    }, [department.parentDepartmentId, selectableParents]);
+    }, [availableDepartments, department.parentDepartmentId]);
 
     const handleMove = async () => {
         if (targetParentOption == null) {
@@ -229,8 +230,10 @@ export function MoveDepartmentDialog(props: MoveDepartmentDialogProps) {
                     </Typography>
 
                     <Typography variant="body2" sx={{mb: 2}}>
-                        Folgen der Verschiebung: Alle untergeordneten Organisationseinheiten werden mit verschoben,
-                        die Ebenentiefe wird neu berechnet und bestehende Zuordnungen bleiben erhalten.
+                        Die Organisationseinheit wird mit allen Untereinheiten verschoben. Als Ziel sind nur Positionen
+                        möglich, bei denen die maximale Hierarchietiefe eingehalten wird. Die Einheit selbst und ihre
+                        Untereinheiten sind ausgeschlossen. Soll eine Untereinheit das neue Ziel werden, verschieben Sie
+                        diese zuerst an eine andere Stelle.
                     </Typography>
 
                     <Typography variant="body2" sx={{mb: 2}}>
