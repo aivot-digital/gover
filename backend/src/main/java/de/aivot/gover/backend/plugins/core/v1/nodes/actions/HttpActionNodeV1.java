@@ -24,6 +24,7 @@ import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutio
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.services.ProcessDataService;
+import de.aivot.gover.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
@@ -67,6 +68,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
     private static final String OUTPUT_NAME_ATTACHMENT_KEY = "attachmentKey";
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
+    private static final String OUTPUT_NAME_FILES = "files";
 
     private static final Set<String> SUPPORTED_METHODS = Set.of(
             HttpActionNodeV1Config.HTTP_METHOD_OPT_GET,
@@ -210,7 +212,8 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 new ProcessNodeOutput(OUTPUT_NAME_SIZE_BYTES, "Dateigröße", "Die Größe der gespeicherten Antwortdatei in Bytes."),
                 new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_KEY, "Anhang-Schlüssel", "Der Schlüssel des gespeicherten Prozess-Anhangs."),
                 new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter", "Die ID des Speicheranbieters des gespeicherten Prozess-Anhangs."),
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs.")
+                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, "Speicherpfad", "Der Speicherpfad des gespeicherten Prozess-Anhangs."),
+                new ProcessNodeOutput(OUTPUT_NAME_FILES, "Dateien", "Die gespeicherten Antwortdateien im Format des Datei-Upload-Feldes.")
         );
     }
 
@@ -375,6 +378,15 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
             metadata.put(OUTPUT_NAME_ATTACHMENT_KEY, attachment.getKey());
             metadata.put(OUTPUT_NAME_STORAGE_PROVIDER_ID, attachment.getStorageProviderId());
             metadata.put(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, attachment.getStoragePathFromRoot());
+            try {
+                metadata.put(OUTPUT_NAME_FILES, List.of(FileUploadMultipartInputService.buildAttachmentItem(attachment, responseBytes.length)));
+            } catch (ResponseException e) {
+                throw new ProcessNodeExecutionExceptionUnknown(
+                        e,
+                        "Die HTTP-Antwortdatei konnte nicht für das Datei-Upload-Feld aufbereitet werden: %s",
+                        e.getMessage()
+                );
+            }
 
             return ProcessNodeExecutionResultTaskCompleted.of(SUCCESS_PORT)
                     .setNodeData(metadata);
@@ -769,6 +781,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
         metadata.put(OUTPUT_NAME_ATTACHMENT_KEY, null);
         metadata.put(OUTPUT_NAME_STORAGE_PROVIDER_ID, null);
         metadata.put(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, null);
+        metadata.put(OUTPUT_NAME_FILES, List.of());
         return metadata;
     }
 

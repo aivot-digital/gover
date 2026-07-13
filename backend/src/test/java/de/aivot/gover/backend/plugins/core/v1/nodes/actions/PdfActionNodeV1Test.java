@@ -3,6 +3,7 @@ package de.aivot.gover.backend.plugins.core.v1.nodes.actions;
 import de.aivot.gover.backend.asset.entities.AssetEntity;
 import de.aivot.gover.backend.asset.services.AssetService;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.gover.backend.elements.models.elements.form.input.HtmlTemplateInputElementResolver;
 import de.aivot.gover.backend.elements.models.elements.form.input.HtmlTemplateInputElementValue;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
@@ -43,6 +44,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -107,6 +109,13 @@ class PdfActionNodeV1Test {
         );
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
         assertEquals("application/pdf", result.getNodeData().get("mimeType"));
+
+        @SuppressWarnings("unchecked")
+        var files = (List<FileUploadInputElementItem>) result.getNodeData().get("files");
+        assertEquals(1, files.size());
+        assertEquals("report.pdf", files.getFirst().getName());
+        assertEquals(9, files.getFirst().getSize());
+        assertTrue(files.getFirst().getUri().startsWith("process-instance-attachment:"));
     }
 
     @Test

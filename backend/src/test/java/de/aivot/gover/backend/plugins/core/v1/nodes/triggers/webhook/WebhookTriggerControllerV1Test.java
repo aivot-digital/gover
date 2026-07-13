@@ -3,6 +3,7 @@ package de.aivot.gover.backend.plugins.core.v1.nodes.triggers.webhook;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.plugins.core.v1.nodes.triggers.webhook.WebhookTriggerConfigV1;
 import de.aivot.gover.backend.plugins.core.v1.nodes.triggers.webhook.WebhookTriggerControllerV1;
@@ -23,6 +24,7 @@ import de.aivot.gover.backend.process.services.ProcessNodeService;
 import de.aivot.gover.backend.process.services.ProcessService;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
@@ -45,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -240,6 +243,18 @@ class WebhookTriggerControllerV1Test {
         assertEquals(fixture.createdAttachmentSets().get(0).getId(), fixture.createdAttachments().get(0).getAttachmentSetId());
         assertEquals(fixture.createdAttachmentSets().get(0).getId(), fixture.createdAttachments().get(1).getAttachmentSetId());
         assertEquals(fixture.createdAttachmentSets().get(1).getId(), fixture.createdAttachments().get(2).getAttachmentSetId());
+
+        var updatedInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        verify(fixture.processInstanceService()).update(eq(1L), updatedInstanceCaptor.capture());
+        @SuppressWarnings("unchecked")
+        var fileItems = (List<FileUploadInputElementItem>) updatedInstanceCaptor
+                .getValue()
+                .getInitialPayload()
+                .get(WebhookTriggerNodeV1.INITIAL_DATA_KEY_FILES);
+        assertEquals(3, fileItems.size());
+        assertEquals("first.pdf", fileItems.getFirst().getName());
+        assertEquals(1, fileItems.getFirst().getSize());
+        assertTrue(fileItems.getFirst().getUri().startsWith("process-instance-attachment:"));
     }
 
     @Test
