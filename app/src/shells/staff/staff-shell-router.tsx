@@ -22,7 +22,7 @@ import {configsRoutes} from '../../modules/configs/configs-routes';
 import {Testinghall} from '../../modules/testinghall/testinghall';
 import {userRolesRoutes} from '../../modules/user-roles/user-roles-routes';
 import {teamsRoutes} from '../../modules/teams/teams-routes';
-import {Organigram} from "../../modules/system/pages/organigram";
+import {OrganizationChart} from "../../modules/system/pages/organization-chart";
 import {processRoutes} from "../../modules/process/process-routes";
 import {systemRolesRoutes} from "../../modules/system/system-roles-routes";
 import {storageRoutes} from '../../modules/storage/storage-routes';
@@ -75,8 +75,8 @@ const router = sentryCreateBrowserRouter(
                     element: <NodeConfigMaker />,
                 },
                 {
-                    path: '/organigram',
-                    element: <Organigram />,
+                    path: '/organization-chart',
+                    element: <OrganizationChart />,
                 },
             ],
         },

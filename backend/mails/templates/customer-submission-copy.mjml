@@ -18,12 +18,15 @@
                         im Anhang dieser E-Mail finden Sie die von Ihnen eingereichten Daten für das Formular "<b th:text="${form.publicTitle}">Beispielformular</b>".
                     </p>
 
-                    <p>
+                    <p th:if="${department.defaultMailSignature != null && !#strings.isEmpty(#strings.trim(department.defaultMailSignature))}">
                         Mit freundlichen Grüßen
                         <br/>
-                        <b th:text="${base.providerName}">Beispielkommune</b>
-                        <br/>
-                        <b th:text="${department.name}">Beispiel-Organisationseinheit</b>
+                        <span
+                                th:text="${department.defaultMailSignature}"
+                                style="white-space: pre-line;"
+                        >Beispielkommune
+Musterstraße 1
+12345 Musterstadt</span>
                     </p>
                 </mj-text>
             </mj-column>

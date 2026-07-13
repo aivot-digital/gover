@@ -195,7 +195,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                     .map((membership) => ({
                         id: membership.departmentId,
                         name: membership.departmentName,
-                        address: membership.departmentAddress,
+                        postalAddress: membership.departmentPostalAddress,
                         depth: membership.departmentDepth,
                         parentNames: membership.departmentParentNames,
                         created: '',

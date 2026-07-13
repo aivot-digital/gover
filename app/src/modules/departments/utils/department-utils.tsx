@@ -1,47 +1,46 @@
-import Domain from '@aivot/mui-material-symbols-400-outlined/dist/domain/Domain';
+import CorporateFare from '@aivot/mui-material-symbols-400-outlined/dist/corporate-fare/CorporateFare';
 import FiberManualRecord from '@aivot/mui-material-symbols-400-outlined/dist/fiber-manual-record/FiberManualRecord';
-import Graph6 from '@aivot/mui-material-symbols-400-outlined/dist/graph-6/Graph6';
+import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
 import Spoke from '@aivot/mui-material-symbols-400-outlined/dist/spoke/Spoke';
 import {decimalNumberToRomanNumeral} from '../../../utils/number-utils';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {VDepartmentShadowedEntity} from '../entities/v-department-shadowed-entity';
+import Graph6 from '@aivot/mui-material-symbols-400-outlined/dist/graph-6/Graph6';
 
-export function getDepartmentTypeLabel(depth: number): string {
-    switch (depth) {
-        case 0:
-            return 'Organisation';
-        case 1:
-            return 'Bereich';
-        case 2:
-            return 'Abteilung';
-        default:
-            return `Unterabteilung ${decimalNumberToRomanNumeral(depth - 2)}`;
-    }
+function getFallbackDepartmentTypeLabel(depth: number, configuredLabelCount: number): string {
+    return `Unterebene ${decimalNumberToRomanNumeral(depth - configuredLabelCount + 1)}`;
 }
 
-export function getDepartmentTypeLabelGenitiv(depth: number): string {
-    switch (depth) {
-        case 0:
-            return 'der Organisation';
-        case 1:
-            return 'des Bereichs';
-        case 2:
-            return 'der Abteilung';
-        default:
-            return `der Unterabteilung ${decimalNumberToRomanNumeral(depth - 2)}`;
-    }
+export function getDepartmentTypeLabels(): string[] {
+    const configuredLabels = typeof AppConfig !== 'undefined' && Array.isArray(AppConfig.departmentLevelLabels)
+        ? AppConfig.departmentLevelLabels
+            .map((label) => label.trim())
+        : [];
+
+    return configuredLabels.filter(isStringNotNullOrEmpty);
+}
+
+export function getMaxDepartmentDepth(): number {
+    return Math.max(0, getDepartmentTypeLabels().length - 1);
+}
+
+export function getDepartmentTypeLabel(depth: number): string {
+    const labels = getDepartmentTypeLabels();
+    return labels[depth] ?? getFallbackDepartmentTypeLabel(depth, labels.length);
 }
 
 export function getDepartmentTypeIcons(depth: number) {
     switch (depth) {
         case 0:
-            return <Domain />;
+            return <CorporateFare />;
         case 1:
             return <Graph6 />;
         case 2:
             return <Spoke />;
-        default:
+        case 3:
             return <FiberManualRecord />;
+        default:
+            return <Label />;
     }
 }
 
@@ -52,10 +51,10 @@ export function getDepartmentPath(org: VDepartmentShadowedEntity): string {
     return org.parentNames.join(' › ') + ' › ' + org.name;
 }
 
-export function getDepartmentDisplayAddress(org?: VDepartmentShadowedEntity | null): string | undefined {
-    if (org == null || !isStringNotNullOrEmpty(org.address)) {
+export function getDepartmentDisplayAddress(org?: { postalAddress?: string | null } | null): string | undefined {
+    if (org == null || !isStringNotNullOrEmpty(org.postalAddress)) {
         return undefined;
     }
 
-    return org.address ?? undefined;
+    return org.postalAddress ?? undefined;
 }

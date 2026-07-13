@@ -31,9 +31,8 @@ public class DepartmentEntity {
     private String name;
 
     @Nullable
-    @Column(length = 255)
-    @Length(max = 255, message = "Die Adresse darf maximal 255 Zeichen lang sein")
-    private String address;
+    @Column(columnDefinition = "TEXT")
+    private String postalAddress;
 
     @Nullable
     @Column(columnDefinition = "TEXT")
@@ -49,8 +48,8 @@ public class DepartmentEntity {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die technische Support Adresse darf maximal 255 Zeichen lang sein")
-    private String technicalSupportAddress;
+    @Length(max = 255, message = "Die technische Support E-Mail-Adresse darf maximal 255 Zeichen lang sein")
+    private String technicalSupportEmail;
 
     @Nullable
     @Column(length = 96)
@@ -63,8 +62,8 @@ public class DepartmentEntity {
 
     @Nullable
     @Column(length = 255)
-    @Length(max = 255, message = "Die fachliche Support Adresse darf maximal 255 Zeichen lang sein")
-    private String specialSupportAddress;
+    @Length(max = 255, message = "Die fachliche Support E-Mail-Adresse darf maximal 255 Zeichen lang sein")
+    private String specialSupportEmail;
 
     @Nullable
     @Column(length = 96)
@@ -77,12 +76,7 @@ public class DepartmentEntity {
 
     @Nullable
     @Column(columnDefinition = "TEXT")
-    private String additionalInfo;
-
-    @Nullable
-    @Column(length = 255)
-    @Length(max = 255, message = "Die Abteilungs-E-Mail darf maximal 255 Zeichen lang sein")
-    private String departmentMail;
+    private String defaultMailSignature;
 
     @Nullable
     private Integer themeId;
@@ -130,12 +124,12 @@ public class DepartmentEntity {
     }
 
     @Nullable
-    public String getAddress() {
-        return address;
+    public String getPostalAddress() {
+        return postalAddress;
     }
 
-    public DepartmentEntity setAddress(@Nullable String address) {
-        this.address = address;
+    public DepartmentEntity setPostalAddress(@Nullable String postalAddress) {
+        this.postalAddress = postalAddress;
         return this;
     }
 
@@ -170,12 +164,12 @@ public class DepartmentEntity {
     }
 
     @Nullable
-    public String getTechnicalSupportAddress() {
-        return technicalSupportAddress;
+    public String getTechnicalSupportEmail() {
+        return technicalSupportEmail;
     }
 
-    public DepartmentEntity setTechnicalSupportAddress(@Nullable String technicalSupportAddress) {
-        this.technicalSupportAddress = technicalSupportAddress;
+    public DepartmentEntity setTechnicalSupportEmail(@Nullable String technicalSupportEmail) {
+        this.technicalSupportEmail = technicalSupportEmail;
         return this;
     }
 
@@ -200,12 +194,12 @@ public class DepartmentEntity {
     }
 
     @Nullable
-    public String getSpecialSupportAddress() {
-        return specialSupportAddress;
+    public String getSpecialSupportEmail() {
+        return specialSupportEmail;
     }
 
-    public DepartmentEntity setSpecialSupportAddress(@Nullable String specialSupportAddress) {
-        this.specialSupportAddress = specialSupportAddress;
+    public DepartmentEntity setSpecialSupportEmail(@Nullable String specialSupportEmail) {
+        this.specialSupportEmail = specialSupportEmail;
         return this;
     }
 
@@ -230,22 +224,12 @@ public class DepartmentEntity {
     }
 
     @Nullable
-    public String getAdditionalInfo() {
-        return additionalInfo;
+    public String getDefaultMailSignature() {
+        return defaultMailSignature;
     }
 
-    public DepartmentEntity setAdditionalInfo(@Nullable String additionalInfo) {
-        this.additionalInfo = additionalInfo;
-        return this;
-    }
-
-    @Nullable
-    public String getDepartmentMail() {
-        return departmentMail;
-    }
-
-    public DepartmentEntity setDepartmentMail(@Nullable String departmentMail) {
-        this.departmentMail = departmentMail;
+    public DepartmentEntity setDefaultMailSignature(@Nullable String defaultMailSignature) {
+        this.defaultMailSignature = defaultMailSignature;
         return this;
     }
 

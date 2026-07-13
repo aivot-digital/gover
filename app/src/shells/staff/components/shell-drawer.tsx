@@ -136,7 +136,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                             {icon: ModuleIcons.roles, label: 'Systemrollen', to: '/system-roles'},
                         ],
                     },
-                    {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organigram'},
+                    {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organization-chart'},
                 ],
             },
             {icon: ModuleIcons.assets, label: 'Dateien & Medien', to: '/assets'},

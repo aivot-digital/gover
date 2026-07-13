@@ -5,19 +5,18 @@ export interface VDepartmentUserRoleAssignmentWithDetailsEntity {
     created: string;
     updated: string;
     name: string;
-    address?: string | null;
+    postalAddress?: string | null;
     imprint?: string | null;
     commonPrivacy?: string | null;
     commonAccessibility?: string | null;
-    technicalSupportAddress?: string | null;
-    specialSupportAddress?: string | null;
-    departmentMail?: string | null;
+    technicalSupportEmail?: string | null;
+    specialSupportEmail?: string | null;
     themeId?: number | null;
     technicalSupportPhone?: string | null;
     technicalSupportInfo?: string | null;
     specialSupportPhone?: string | null;
     specialSupportInfo?: string | null;
-    additionalInfo?: string | null;
+    defaultMailSignature?: string | null;
     depth: number;
     parentDepartmentId?: number | null;
     parentNames?: string[] | null;
@@ -54,4 +53,3 @@ export interface VDepartmentUserRoleAssignmentWithDetailsEntity {
     processInstancePermissionDelete?: boolean | null;
     processInstancePermissionAnnotate?: boolean | null;
 }
-

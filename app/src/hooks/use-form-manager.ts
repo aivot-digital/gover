@@ -95,25 +95,28 @@ export function useFormManager<T extends { [key: string]: any }>(originalItem: T
     };
 
     const validateField = (field: keyof T, value: T[keyof T] | null | undefined, validateUntouchedField: boolean = false) => {
-        if (!validateUntouchedField && !touchedFields[field]) {
+        if (!validateUntouchedField && !touchedFields[field] && errors[field as string] == null) {
             // Do nothing if the field hasn't been touched or is not forced to validate
             return;
         }
 
-        schema
-            .validateAt(field as string, { [field]: value })
-            .then(() => {
-                setErrors(prevErrors => ({
-                    ...prevErrors,
-                    [field]: undefined,
-                }));
-            })
-            .catch(err => {
-                setErrors(prevErrors => ({
-                    ...prevErrors,
-                    [field]: err.message || 'Ungültige Eingabe',
-                }));
-            });
+        const validationItem = {
+            ...currentItem,
+            [field]: value,
+        };
+
+        try {
+            schema.validateSyncAt(field as string, validationItem);
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                [field]: undefined,
+            }));
+        } catch (err: unknown) {
+            setErrors(prevErrors => ({
+                ...prevErrors,
+                [field]: err instanceof Error ? err.message : 'Ungültige Eingabe',
+            }));
+        }
     };
 
     const validate = () => {

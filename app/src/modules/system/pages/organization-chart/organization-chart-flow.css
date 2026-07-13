@@ -1,0 +1,83 @@
+.organization-chart-flow {
+    position: relative;
+    width: 100%;
+    height: 100%;
+}
+
+.organization-chart-flow::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 15px;
+    pointer-events: none;
+    z-index: 4;
+    background:
+        linear-gradient(
+            180deg,
+            var(--organization-chart-flow-top-fade-color-solid) 0%,
+            var(--organization-chart-flow-top-fade-color-mid) 45%,
+            var(--organization-chart-flow-top-fade-color-transparent) 100%
+        );
+}
+
+.organization-chart-flow .react-flow__node {
+    cursor: default;
+}
+
+.organization-chart-flow .react-flow__node a,
+.organization-chart-flow .react-flow__node button,
+.organization-chart-flow .react-flow__node [role='button'] {
+    pointer-events: auto;
+    cursor: pointer;
+}
+
+.organization-chart-flow-controls.react-flow__controls {
+    background: rgba(255, 255, 255, 0.96);
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    border-radius: 6px;
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+    overflow: hidden;
+}
+
+.organization-chart-flow-controls.react-flow__panel.bottom.left {
+    top: auto;
+    right: auto;
+}
+
+.organization-chart-flow-control-tooltip-anchor {
+    display: flex;
+    width: 100%;
+}
+
+.organization-chart-flow-controls > .organization-chart-flow-control-tooltip-anchor:not(:last-child) {
+    border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+}
+
+.organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button {
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: #475569;
+    box-shadow: none;
+}
+
+.organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button:hover {
+    background: #f8fafc;
+}
+
+.organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button:disabled {
+    color: #cbd5e1;
+    background: transparent;
+}
+
+.organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button svg,
+.organization-chart-flow-controls .react-flow__controls-button.organization-chart-flow-control-button .MuiSvgIcon-root {
+    width: 18px;
+    height: 18px;
+    max-width: none;
+    max-height: none;
+}

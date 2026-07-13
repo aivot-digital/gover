@@ -84,6 +84,8 @@ describe('resolveSummaryStepIndex', () => {
             imprintDepartmentId: null,
             privacyDepartmentId: null,
             accessibilityDepartmentId: null,
+            formSpecificPrivacyStatement: null,
+            formSpecificAccessibilityStatement: null,
             themeId: null,
             pdfTemplateKey: null,
         };

@@ -1,5 +1,5 @@
 import Typography from '@mui/material/Typography';
-import {Box, SxProps} from '@mui/material';
+import {Box, FormHelperText, SxProps} from '@mui/material';
 import {alpha, useTheme} from '@mui/material/styles';
 import {useCallback, useEffect, useRef, useState} from 'react';
 import {
@@ -532,15 +532,16 @@ export function RichTextInputComponent(props: RichTextInputComponentProps) {
 
             {
                 (error != null || hint != null) &&
-                <Typography
+                <FormHelperText
+                    component="div"
+                    error={error != null}
                     sx={{
-                        marginTop: 1,
-                        color: error != null ? 'error.main' : 'text.secondary',
+                        mt: 1,
+                        mx: 1,
                     }}
-                    variant="caption"
                 >
                     {error ?? hint}
-                </Typography>
+                </FormHelperText>
             }
         </Box>
     );

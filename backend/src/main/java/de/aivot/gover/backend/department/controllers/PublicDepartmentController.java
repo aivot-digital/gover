@@ -1,6 +1,6 @@
 package de.aivot.gover.backend.department.controllers;
 
-import de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity;
+import de.aivot.gover.backend.department.dtos.PublicDepartmentResponseDTO;
 import de.aivot.gover.backend.department.services.VDepartmentShadowedService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
@@ -34,11 +34,12 @@ public class PublicDepartmentController {
             description = "Retrieves a public view of the department specified by its ID. " +
                           "This endpoint provides limited information suitable for public access."
     )
-    public VDepartmentShadowedEntity retrieve(
+    public PublicDepartmentResponseDTO retrieve(
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         return vDepartmentShadowedService
                 .retrieve(id)
+                .map(PublicDepartmentResponseDTO::fromEntity)
                 .orElseThrow(ResponseException::notFound);
     }
 }

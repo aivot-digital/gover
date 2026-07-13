@@ -5,7 +5,7 @@ import {type ImprintDialogProps} from './imprint-dialog-props';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../data/system-config-keys';
-import {VDepartmentShadowedEntity} from '../../modules/departments/entities/v-department-shadowed-entity';
+import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';
 import {MarkdownContent} from '../../components/markdown-content/markdown-content';
 
@@ -14,7 +14,7 @@ export const ImprintDialogId = 'imprint';
 export function ImprintDialog(props: ImprintDialogProps) {
     const application = props.form;
 
-    const [department, setDepartment] = useState<VDepartmentShadowedEntity>();
+    const [department, setDepartment] = useState<PublicDepartmentResponseDTO>();
     const imprintDepartmentId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.provider.listingPage.imprintDepartmentId));
 
     useEffect(() => {

@@ -61,19 +61,19 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
 
     @Override
     public String[] getMethodTypeDefinitions() {
-        var departmentType = "{id: number; name: string; address: string | null; technicalSupportAddress: string | null; specialSupportAddress: string | null; technicalSupportPhone: string | null; technicalSupportInfo: string | null; specialSupportPhone: string | null; specialSupportInfo: string | null; additionalInfo: string | null; }";
+        var departmentType = "{id: number; name: string; postalAddress: string | null; technicalSupportEmail: string | null; specialSupportEmail: string | null; technicalSupportPhone: string | null; technicalSupportInfo: string | null; specialSupportPhone: string | null; specialSupportInfo: string | null; defaultMailSignature: string | null; }";
 
         return new String[]{
                 "get(id: number | null): " + departmentType + " | null;",
                 "getName(id: number | null): string | null;",
-                "getAddress(id: number | null): string | null;",
-                "getTechnicalSupportAddress(id: number | null): string | null;",
+                "getPostalAddress(id: number | null): string | null;",
+                "getTechnicalSupportEmail(id: number | null): string | null;",
                 "getTechnicalSupportPhone(id: number | null): string | null;",
                 "getTechnicalSupportInfo(id: number | null): string | null;",
-                "getSpecialSupportAddress(id: number | null): string | null;",
+                "getSpecialSupportEmail(id: number | null): string | null;",
                 "getSpecialSupportPhone(id: number | null): string | null;",
                 "getSpecialSupportInfo(id: number | null): string | null;",
-                "getAdditionalInfo(id: number | null): string | null;"
+                "getDefaultMailSignature(id: number | null): string | null;"
         };
     }
 
@@ -104,14 +104,14 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nullable
     @HostAccess.Export
-    public String getAddress(@Nullable Integer id) {
-        return getValue(id, VDepartmentShadowedEntity::getAddress);
+    public String getPostalAddress(@Nullable Integer id) {
+        return getValue(id, VDepartmentShadowedEntity::getPostalAddress);
     }
 
     @Nullable
     @HostAccess.Export
-    public String getTechnicalSupportAddress(@Nullable Integer id) {
-        return getValue(id, VDepartmentShadowedEntity::getTechnicalSupportAddress);
+    public String getTechnicalSupportEmail(@Nullable Integer id) {
+        return getValue(id, VDepartmentShadowedEntity::getTechnicalSupportEmail);
     }
 
     @Nullable
@@ -128,8 +128,8 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nullable
     @HostAccess.Export
-    public String getSpecialSupportAddress(@Nullable Integer id) {
-        return getValue(id, VDepartmentShadowedEntity::getSpecialSupportAddress);
+    public String getSpecialSupportEmail(@Nullable Integer id) {
+        return getValue(id, VDepartmentShadowedEntity::getSpecialSupportEmail);
     }
 
     @Nullable
@@ -146,8 +146,8 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
 
     @Nullable
     @HostAccess.Export
-    public String getAdditionalInfo(@Nullable Integer id) {
-        return getValue(id, VDepartmentShadowedEntity::getAdditionalInfo);
+    public String getDefaultMailSignature(@Nullable Integer id) {
+        return getValue(id, VDepartmentShadowedEntity::getDefaultMailSignature);
     }
 
     private String getValue(@Nullable Integer id, @Nonnull Function<VDepartmentShadowedEntity, String> getter) {
@@ -168,14 +168,14 @@ public class OrgJavascriptV1 implements JavascriptFunctionProvider {
 
         data.put("id", org.getId());
         data.put("name", org.getName());
-        data.put("address", org.getAddress());
-        data.put("technicalSupportAddress", org.getTechnicalSupportAddress());
-        data.put("specialSupportAddress", org.getSpecialSupportAddress());
+        data.put("postalAddress", org.getPostalAddress());
+        data.put("technicalSupportEmail", org.getTechnicalSupportEmail());
+        data.put("specialSupportEmail", org.getSpecialSupportEmail());
         data.put("technicalSupportPhone", org.getTechnicalSupportPhone());
         data.put("technicalSupportInfo", org.getTechnicalSupportInfo());
         data.put("specialSupportPhone", org.getSpecialSupportPhone());
         data.put("specialSupportInfo", org.getSpecialSupportInfo());
-        data.put("additionalInfo", org.getAdditionalInfo());
+        data.put("defaultMailSignature", org.getDefaultMailSignature());
 
         return data;
     }

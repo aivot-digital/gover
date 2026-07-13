@@ -109,55 +109,37 @@ public class MailService {
         var departmentTheme = departmentService
                 .getDepartmentTheme(department);
 
-        if (StringUtils.isNotNullOrEmpty(department.getDepartmentMail())) {
-            String[] mails = department.getDepartmentMail().split(",");
-            for (String mail : mails) {
-                if (StringUtils.isNotNullOrEmpty(mail)) {
-                    sendMail(
-                            departmentTheme,
-                            mail.trim(),
-                            Optional.empty(),
-                            Optional.empty(),
-                            subject,
-                            template,
-                            context,
-                            Optional.empty()
-                    );
-                }
+        var membershipSpec = new DepartmentMembershipFilter()
+                .setDepartmentId(department.getId());
+
+        var memberships = departmetMembershipService
+                .list(Pageable.unpaged(), membershipSpec);
+
+        var hasSentAtLeastOnce = false;
+
+        for (var membership : memberships) {
+            if (userIdsToIgnore != null && userIdsToIgnore.contains(membership.getUserId())) {
+                hasSentAtLeastOnce = true;
+                continue;
             }
-        } else {
-            var membershipSpec = new DepartmentMembershipFilter()
-                    .setDepartmentId(department.getId());
 
-            var memberships = departmetMembershipService
-                    .list(Pageable.unpaged(), membershipSpec);
-
-            var hasSentAtLeastOnce = false;
-
-            for (var membership : memberships) {
-                if (userIdsToIgnore != null && userIdsToIgnore.contains(membership.getUserId())) {
+            context.put("membership", membership);
+            try {
+                var hasSent = sendMailToUser(departmentTheme,
+                        membership.getUserId(),
+                        subject,
+                        template,
+                        context);
+                if (hasSent) {
                     hasSentAtLeastOnce = true;
-                    continue;
                 }
-
-                context.put("membership", membership);
-                try {
-                    var hasSent = sendMailToUser(departmentTheme,
-                            membership.getUserId(),
-                            subject,
-                            template,
-                            context);
-                    if (hasSent) {
-                        hasSentAtLeastOnce = true;
-                    }
-                } catch (ResponseException e) {
-                    logger.error("Failed to send mail to " + membership.getUserId(), e);
-                }
+            } catch (ResponseException e) {
+                logger.error("Failed to send mail to " + membership.getUserId(), e);
             }
+        }
 
-            if (!hasSentAtLeastOnce) {
-                throw new NoValidUserEMailsInDepartmentException("No valid email addresses (user/team) found in department " + department.getId());
-            }
+        if (!hasSentAtLeastOnce) {
+            throw new NoValidUserEMailsInDepartmentException("No valid email addresses (user/team) found in department " + department.getId());
         }
     }
 
@@ -196,48 +178,29 @@ public class MailService {
             var theme = departmentService
                     .getDepartmentTheme(department);
 
-            if (StringUtils.isNotNullOrEmpty(department.getDepartmentMail())) {
-                String[] mails = department.getDepartmentMail().split(",");
-                for (String mail : mails) {
-                    if (StringUtils.isNotNullOrEmpty(mail)) {
-                        sendMail(
-                                theme,
-                                mail.trim(),
-                                Optional.empty(),
-                                Optional.empty(),
-                                subject,
-                                template,
-                                context,
-                                Optional.empty()
-                        );
-                        hasSentAtLeastOnce = true;
-                    }
+            var membershipSpec = new DepartmentMembershipFilter()
+                    .setDepartmentId(department.getId());
+
+            var memberships = departmetMembershipService
+                    .list(Pageable.unpaged(), membershipSpec);
+
+            for (var membership : memberships) {
+                var userId = membership.getUserId();
+
+                if ((userIdsToIgnore != null && userIdsToIgnore.contains(userId)) || alreadyNotifiedUserIds.contains(userId)) {
+                    hasSentAtLeastOnce = true;
+                    continue;
                 }
-            } else {
-                var membershipSpec = new DepartmentMembershipFilter()
-                        .setDepartmentId(department.getId());
 
-                var memberships = departmetMembershipService
-                        .list(Pageable.unpaged(), membershipSpec);
-
-                for (var membership : memberships) {
-                    var userId = membership.getUserId();
-
-                    if ((userIdsToIgnore != null && userIdsToIgnore.contains(userId)) || alreadyNotifiedUserIds.contains(userId)) {
+                context.put("membership", membership);
+                try {
+                    var hasSent = sendMailToUser(theme, userId, subject, template, context);
+                    if (hasSent) {
+                        alreadyNotifiedUserIds.add(userId);
                         hasSentAtLeastOnce = true;
-                        continue;
                     }
-
-                    context.put("membership", membership);
-                    try {
-                        var hasSent = sendMailToUser(theme, userId, subject, template, context);
-                        if (hasSent) {
-                            alreadyNotifiedUserIds.add(userId);
-                            hasSentAtLeastOnce = true;
-                        }
-                    } catch (ResponseException e) {
-                        logger.error("Failed to send mail to " + userId, e);
-                    }
+                } catch (ResponseException e) {
+                    logger.error("Failed to send mail to " + userId, e);
                 }
             }
         }
