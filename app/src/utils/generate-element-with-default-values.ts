@@ -511,7 +511,9 @@ const elementConstructors: {
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),
-        fileName: undefined,
+        attachmentSetKey: undefined,
+        label: undefined,
+        hint: undefined,
     }),
 };
 

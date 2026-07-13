@@ -15,6 +15,7 @@ export interface ProcessAttachmentDisplayItem {
 
 interface ProcessAttachmentDisplayComponentProps {
     items?: ProcessAttachmentDisplayItem[];
+    labelText?: string | null;
     statusText?: string;
     hintText?: string | null;
     previewText?: string;
@@ -27,7 +28,7 @@ export function ProcessAttachmentDisplayComponent(props: ProcessAttachmentDispla
     return (
         <FormControl fullWidth>
             <FormLabel sx={{mb: 1}}>
-                Anhang zum Vorgang
+                {props.labelText == null || props.labelText.trim().length === 0 ? 'Anhang zum Vorgang' : props.labelText}
             </FormLabel>
 
             <Box sx={{containerType: 'inline-size'}}>

@@ -7,6 +7,7 @@ import {ProcessTaskViewAttachmentProvider} from '../modules/process/pages/detail
 import type {BaseViewProps} from './base-view';
 import type {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import type {ProcessInstanceAttachmentEntity} from '../modules/process/entities/process-instance-attachment-entity';
+import type {ProcessInstanceAttachmentSetEntity} from '../modules/process/entities/process-instance-attachment-set-entity';
 
 describe('ProcessAttachmentDisplayView', () => {
     it('should render a configuration prompt in the editor', () => {
@@ -16,70 +17,66 @@ describe('ProcessAttachmentDisplayView', () => {
             />,
         );
 
-        expect(screen.getByText('Konfigurieren Sie einen Dateinamen, um passende Vorgangsanhänge anzuzeigen.')).toBeInTheDocument();
+        expect(screen.getByText('Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanhänge anzuzeigen.')).toBeInTheDocument();
     });
 
     it('should render an editor placeholder without task attachment context', () => {
         render(
             <ProcessAttachmentDisplayView
                 {...createBaseProps({
-                    fileName: 'evidence.pdf',
+                    attachmentSetKey: 'case_documents',
+                    label: 'Fallunterlagen',
                     hint: 'Bitte prüfen Sie den Anhang sorgfältig.',
                 })}
             />,
         );
 
-        expect(screen.getByText('Anhang zum Vorgang')).toBeInTheDocument();
-        expect(screen.getByText('evidence.pdf')).toBeInTheDocument();
+        expect(screen.getByText('Fallunterlagen')).toBeInTheDocument();
         expect(screen.getByText('Bitte prüfen Sie den Anhang sorgfältig.')).toBeInTheDocument();
         expect(screen.getByText('Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden.')).toBeInTheDocument();
         expect(screen.queryByRole('button')).not.toBeInTheDocument();
     });
 
-    it('should render only attachments with an exact matching file name', () => {
-        render(
-            <ProcessTaskViewAttachmentProvider
-                value={{
-                    attachments: [
-                        createAttachment('1', 'evidence.pdf'),
-                        createAttachment('2', 'other.pdf'),
-                        createAttachment('3', 'evidence.pdf'),
-                    ],
-                    isLoadingAttachments: false,
-                    viewAttachment: jest.fn(),
-                    downloadAttachment: jest.fn(),
-                }}
-            >
-                <ProcessAttachmentDisplayView
-                    {...createBaseProps({
-                        fileName: 'evidence.pdf',
-                    })}
-                />
-            </ProcessTaskViewAttachmentProvider>,
+    it('should render attachments from all matching attachment sets', () => {
+        renderWithAttachmentContext(
+            <ProcessAttachmentDisplayView
+                {...createBaseProps({
+                    attachmentSetKey: 'case_documents',
+                })}
+            />,
+            {
+                attachmentSets: [
+                    createAttachmentSet(1, 'case_documents'),
+                    createAttachmentSet(2, 'other_documents'),
+                    createAttachmentSet(3, 'case_documents'),
+                ],
+                attachments: [
+                    createAttachment('1', 'evidence.pdf', 1),
+                    createAttachment('2', 'other.pdf', 2),
+                    createAttachment('3', 'invoice.pdf', 3),
+                ],
+            },
         );
 
-        expect(screen.getAllByText('evidence.pdf')).toHaveLength(2);
+        expect(screen.getByText('evidence.pdf')).toBeInTheDocument();
+        expect(screen.getByText('invoice.pdf')).toBeInTheDocument();
         expect(screen.queryByText('other.pdf')).not.toBeInTheDocument();
     });
 
     it('should trigger the provided download handler for matching attachments', () => {
         const downloadAttachment = jest.fn().mockResolvedValue(undefined);
 
-        render(
-            <ProcessTaskViewAttachmentProvider
-                value={{
-                    attachments: [createAttachment('1', 'evidence.pdf')],
-                    isLoadingAttachments: false,
-                    viewAttachment: jest.fn(),
-                    downloadAttachment,
-                }}
-            >
-                <ProcessAttachmentDisplayView
-                    {...createBaseProps({
-                        fileName: 'evidence.pdf',
-                    })}
-                />
-            </ProcessTaskViewAttachmentProvider>,
+        renderWithAttachmentContext(
+            <ProcessAttachmentDisplayView
+                {...createBaseProps({
+                    attachmentSetKey: 'case_documents',
+                })}
+            />,
+            {
+                downloadAttachment,
+                attachmentSets: [createAttachmentSet(1, 'case_documents')],
+                attachments: [createAttachment('1', 'evidence.pdf', 1)],
+            },
         );
 
         fireEvent.click(screen.getByRole('button', {name: 'evidence.pdf herunterladen'}));
@@ -94,21 +91,18 @@ describe('ProcessAttachmentDisplayView', () => {
         const viewAttachment = jest.fn().mockResolvedValue(undefined);
         const downloadAttachment = jest.fn().mockResolvedValue(undefined);
 
-        render(
-            <ProcessTaskViewAttachmentProvider
-                value={{
-                    attachments: [createAttachment('1', 'evidence.pdf')],
-                    isLoadingAttachments: false,
-                    viewAttachment,
-                    downloadAttachment,
-                }}
-            >
-                <ProcessAttachmentDisplayView
-                    {...createBaseProps({
-                        fileName: 'evidence.pdf',
-                    })}
-                />
-            </ProcessTaskViewAttachmentProvider>,
+        renderWithAttachmentContext(
+            <ProcessAttachmentDisplayView
+                {...createBaseProps({
+                    attachmentSetKey: 'case_documents',
+                })}
+            />,
+            {
+                viewAttachment,
+                downloadAttachment,
+                attachmentSets: [createAttachmentSet(1, 'case_documents')],
+                attachments: [createAttachment('1', 'evidence.pdf', 1)],
+            },
         );
 
         fireEvent.click(screen.getByRole('button', {name: 'evidence.pdf ansehen'}));
@@ -125,27 +119,63 @@ describe('ProcessAttachmentDisplayView', () => {
         expect(downloadAttachment).not.toHaveBeenCalled();
     });
 
-    it('should render an explicit empty state when no attachment matches', () => {
-        render(
-            <ProcessTaskViewAttachmentProvider
-                value={{
-                    attachments: [createAttachment('1', 'other.pdf')],
-                    isLoadingAttachments: false,
-                    viewAttachment: jest.fn(),
-                    downloadAttachment: jest.fn(),
-                }}
-            >
-                <ProcessAttachmentDisplayView
-                    {...createBaseProps({
-                        fileName: 'evidence.pdf',
-                    })}
-                />
-            </ProcessTaskViewAttachmentProvider>,
+    it('should render an explicit empty state when no attachment set matches', () => {
+        renderWithAttachmentContext(
+            <ProcessAttachmentDisplayView
+                {...createBaseProps({
+                    attachmentSetKey: 'case_documents',
+                })}
+            />,
+            {
+                attachmentSets: [createAttachmentSet(2, 'other_documents')],
+                attachments: [createAttachment('1', 'other.pdf', 2)],
+            },
         );
 
-        expect(screen.getByText('Für den konfigurierten Dateinamen wurden keine Anhänge gefunden.')).toBeInTheDocument();
+        expect(screen.getByText('Für den konfigurierten Anlagensatz-Schlüssel wurde kein Anlagensatz gefunden.')).toBeInTheDocument();
+    });
+
+    it('should render an explicit empty state when the attachment set has no attachments', () => {
+        renderWithAttachmentContext(
+            <ProcessAttachmentDisplayView
+                {...createBaseProps({
+                    attachmentSetKey: 'case_documents',
+                })}
+            />,
+            {
+                attachmentSets: [createAttachmentSet(1, 'case_documents')],
+                attachments: [],
+            },
+        );
+
+        expect(screen.getByText('Der konfigurierte Anlagensatz enthält keine Anhänge.')).toBeInTheDocument();
     });
 });
+
+function renderWithAttachmentContext(
+    children: React.ReactElement,
+    overrides?: Partial<{
+        attachments: ProcessInstanceAttachmentEntity[];
+        attachmentSets: ProcessInstanceAttachmentSetEntity[];
+        isLoadingAttachments: boolean;
+        viewAttachment: jest.Mock;
+        downloadAttachment: jest.Mock;
+    }>,
+) {
+    return render(
+        <ProcessTaskViewAttachmentProvider
+            value={{
+                attachments: overrides?.attachments ?? [],
+                attachmentSets: overrides?.attachmentSets ?? [],
+                isLoadingAttachments: overrides?.isLoadingAttachments ?? false,
+                viewAttachment: overrides?.viewAttachment ?? jest.fn(),
+                downloadAttachment: overrides?.downloadAttachment ?? jest.fn(),
+            }}
+        >
+            {children}
+        </ProcessTaskViewAttachmentProvider>,
+    );
+}
 
 function createBaseProps(
     overrides?: Partial<ProcessAttachmentDisplayElement>,
@@ -155,7 +185,8 @@ function createBaseProps(
             id: 'pa_test',
             type: ElementType.ProcessAttachmentDisplay,
             weight: 12,
-            fileName: undefined,
+            attachmentSetKey: undefined,
+            label: undefined,
             hint: undefined,
             metadata: undefined,
             name: undefined,
@@ -183,15 +214,25 @@ function createBaseProps(
     };
 }
 
-function createAttachment(key: string, fileName: string): ProcessInstanceAttachmentEntity {
+function createAttachment(key: string, fileName: string, attachmentSetId: number): ProcessInstanceAttachmentEntity {
     return {
         key,
         fileName,
-        attachmentSetId: 1,
+        attachmentSetId,
         processInstanceId: 42,
         processInstanceTaskId: null,
         storageProviderId: 7,
         storagePathFromRoot: '/proc-1/test/attachments/' + key,
         uploadedByUserId: 'user-1',
+    };
+}
+
+function createAttachmentSet(id: number, dataKey: string): ProcessInstanceAttachmentSetEntity {
+    return {
+        id,
+        dataKey,
+        name: dataKey,
+        processInstanceId: 42,
+        processInstanceTaskId: null,
     };
 }

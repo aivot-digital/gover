@@ -10,38 +10,56 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
     } = props;
 
     const attachmentContext = useOptionalProcessTaskViewAttachmentContext();
-    const configuredFileName = element.fileName ?? '';
-    const hasConfiguredFileName = configuredFileName.trim().length > 0;
+    const configuredAttachmentSetKey = element.attachmentSetKey ?? '';
+    const hasConfiguredAttachmentSetKey = configuredAttachmentSetKey.trim().length > 0;
+
+    const matchingAttachmentSetIds = useMemo(() => {
+        if (attachmentContext == null || !hasConfiguredAttachmentSetKey) {
+            return new Set<number>();
+        }
+
+        // Attachment set keys are the stable process contract; filenames can be configured per upload and may repeat.
+        return new Set(
+            attachmentContext.attachmentSets
+                .filter((attachmentSet) => attachmentSet.dataKey === configuredAttachmentSetKey)
+                .map((attachmentSet) => attachmentSet.id),
+        );
+    }, [
+        attachmentContext,
+        configuredAttachmentSetKey,
+        hasConfiguredAttachmentSetKey,
+    ]);
 
     const matchingAttachments = useMemo(() => {
-        if (attachmentContext == null || !hasConfiguredFileName) {
+        if (attachmentContext == null || matchingAttachmentSetIds.size === 0) {
             return [];
         }
 
-        return attachmentContext.attachments.filter((attachment) => attachment.fileName === configuredFileName);
+        return attachmentContext.attachments.filter((attachment) => matchingAttachmentSetIds.has(attachment.attachmentSetId));
     }, [
         attachmentContext,
-        configuredFileName,
-        hasConfiguredFileName,
+        matchingAttachmentSetIds,
     ]);
 
     if (attachmentContext == null) {
-        if (!hasConfiguredFileName) {
+        if (!hasConfiguredAttachmentSetKey) {
             return (
                 <ProcessAttachmentDisplayComponent
+                    labelText={element.label}
                     hintText={element.hint}
-                    statusText="Konfigurieren Sie einen Dateinamen, um passende Vorgangsanhänge anzuzeigen."
+                    statusText="Konfigurieren Sie einen Anlagensatz-Schlüssel, um Vorgangsanhänge anzuzeigen."
                 />
             );
         }
 
         return (
             <ProcessAttachmentDisplayComponent
+                labelText={element.label}
                 hintText={element.hint}
                 items={[
                     {
                         key: 'preview',
-                        fileName: configuredFileName,
+                        fileName: element.label ?? configuredAttachmentSetKey,
                     },
                 ]}
                 previewText="Dies ist eine Vorschau. Anhänge können im Modellierungsmodus nicht angesehen oder heruntergeladen werden."
@@ -52,6 +70,7 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
     if (attachmentContext.isLoadingAttachments) {
         return (
             <ProcessAttachmentDisplayComponent
+                labelText={element.label}
                 hintText={element.hint}
                 loading
                 statusText="Anhänge werden geladen..."
@@ -59,11 +78,22 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
         );
     }
 
-    if (!hasConfiguredFileName) {
+    if (!hasConfiguredAttachmentSetKey) {
         return (
             <ProcessAttachmentDisplayComponent
+                labelText={element.label}
                 hintText={element.hint}
-                statusText="Es ist kein Dateiname für die anzuzeigenden Anhänge konfiguriert."
+                statusText="Es ist kein Anlagensatz-Schlüssel für die anzuzeigenden Anhänge konfiguriert."
+            />
+        );
+    }
+
+    if (matchingAttachmentSetIds.size === 0) {
+        return (
+            <ProcessAttachmentDisplayComponent
+                labelText={element.label}
+                hintText={element.hint}
+                statusText="Für den konfigurierten Anlagensatz-Schlüssel wurde kein Anlagensatz gefunden."
             />
         );
     }
@@ -71,14 +101,16 @@ export function ProcessAttachmentDisplayView(props: BaseViewProps<ProcessAttachm
     if (matchingAttachments.length === 0) {
         return (
             <ProcessAttachmentDisplayComponent
+                labelText={element.label}
                 hintText={element.hint}
-                statusText="Für den konfigurierten Dateinamen wurden keine Anhänge gefunden."
+                statusText="Der konfigurierte Anlagensatz enthält keine Anhänge."
             />
         );
     }
 
     return (
         <ProcessAttachmentDisplayComponent
+            labelText={element.label}
             hintText={element.hint}
             items={matchingAttachments.map((attachment) => ({
                 key: attachment.key,

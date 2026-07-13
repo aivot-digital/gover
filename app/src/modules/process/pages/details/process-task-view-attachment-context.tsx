@@ -1,8 +1,10 @@
 import {createContext, useContext} from 'react';
 import type {ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
+import type {ProcessInstanceAttachmentSetEntity} from '../../entities/process-instance-attachment-set-entity';
 
 interface ProcessTaskViewAttachmentContextType {
     attachments: ProcessInstanceAttachmentEntity[];
+    attachmentSets: ProcessInstanceAttachmentSetEntity[];
     isLoadingAttachments: boolean;
     viewAttachment: (attachment: ProcessInstanceAttachmentEntity) => Promise<void>;
     downloadAttachment: (attachment: ProcessInstanceAttachmentEntity) => Promise<void>;

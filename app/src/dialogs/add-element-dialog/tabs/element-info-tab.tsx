@@ -1339,9 +1339,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ProcessAttachmentDisplay]: (
         <Box>
             <Typography>
-                Das Element zeigt alle Vorgangsanhänge an, deren Dateiname exakt mit dem festgelegten Dateinamen
-                übereinstimmt. Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen
-                werden. Ein optionaler Hinweis ergänzt die Darstellung um weitere Informationen.
+                Das Element zeigt alle Vorgangsanhänge aus einem Anlagensatz mit dem festgelegten Schlüssel an.
+                Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen werden.
+                Eine optionale Beschriftung und ein Hinweis ergänzen die Darstellung um weitere Informationen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1349,6 +1349,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <ProcessAttachmentDisplayComponent
+                labelText="Bescheide"
                 items={[
                     {
                         key: 'example',
