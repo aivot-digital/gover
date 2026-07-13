@@ -25,6 +25,7 @@ import Rule from '@aivot/mui-material-symbols-400-outlined/dist/rule/Rule';
 import Storage from '@aivot/mui-material-symbols-400-outlined/dist/storage/Storage';
 import Payments from '@aivot/mui-material-symbols-400-outlined/dist/payments/Payments';
 import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
+import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBulletedOutlined';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -53,4 +54,5 @@ export const ModuleIcons = {
     extensions: <Extension />,
     storage: <Storage/>,
     audit: <History/>,
+    codeLists: <FormatListBulletedOutlinedIcon/>,
 };

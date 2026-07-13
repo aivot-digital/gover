@@ -20,4 +20,5 @@ export enum ServerEntityType {
     Processes = 'processes',
     ProcessInstances = 'process_instances',
     ProcessNodes = 'process_nodes',
+    CodeLists = 'code_lists',
 }

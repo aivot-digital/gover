@@ -10,6 +10,7 @@ import org.springframework.data.web.config.EnableSpringDataWebSupport;
 @EnableJpaRepositories(basePackages = {
         "de.aivot.gover.backend.asset.repositories",
         "de.aivot.gover.backend.audit.repositories",
+        "de.aivot.gover.backend.codeLists.repositories",
         "de.aivot.gover.backend.config.repositories",
         "de.aivot.gover.backend.dataObject.repositories",
         "de.aivot.gover.backend.department.repositories",

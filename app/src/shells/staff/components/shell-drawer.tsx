@@ -116,6 +116,11 @@ const BaseDrawerGroups: DrawerGroup[] = [
                     {icon: ModuleIcons.departments, label: 'Durchsuchen'},
                 ],
             },
+            {
+                icon: ModuleIcons.codeLists,
+                label: 'Code-Listen',
+                to: '/code-lists',
+            },
         ],
     },
     {
