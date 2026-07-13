@@ -1,5 +1,6 @@
 package de.aivot.gover.backend.plugins.core.v1.nodes.triggers.webhook;
 
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.process.entities.*;
@@ -270,6 +271,7 @@ public class WebhookTriggerControllerV1 {
 
         try {
             var attachments = new LinkedList<ProcessInstanceAttachmentEntity>();
+            var fileItems = new LinkedList<FileUploadInputElementItem>();
             var attachmentSets = new LinkedHashMap<String, ProcessInstanceAttachmentSetEntity>();
             for (var fileEntry : files.entrySet()) {
                 if (fileEntry.getValue() == null || fileEntry.getValue().isEmpty()) {
@@ -301,6 +303,7 @@ public class WebhookTriggerControllerV1 {
                             .create(attachment);
 
                     attachments.add(createdAttachment);
+                    fileItems.add(FileUploadMultipartInputService.buildAttachmentItem(createdAttachment, file.getSize()));
                 }
             }
 
@@ -312,6 +315,7 @@ public class WebhookTriggerControllerV1 {
                     "storageProviderId", a.getStorageProviderId(),
                     "storagePathFromRoot", a.getStoragePathFromRoot()
             )).toList());
+            initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_FILES, List.copyOf(fileItems));
 
             var requestData = new HashMap<String, Object>();
             requestData.put("method", request.getMethod());

@@ -52,7 +52,7 @@ class FileUploadMultipartInputServiceTest {
                 "pdf".getBytes(StandardCharsets.UTF_8)
         );
 
-        var normalized = service.normalizeInputs(
+        var normalizationResult = service.normalizeInputs(
                 layout,
                 inputs,
                 new MultipartFile[]{file},
@@ -60,7 +60,8 @@ class FileUploadMultipartInputServiceTest {
                 42L,
                 9L,
                 "staff-user"
-        ).inputs();
+        );
+        var normalized = normalizationResult.inputs();
 
         @SuppressWarnings("unchecked")
         var documents = (List<Map<String, Object>>) normalized.get("documents");
@@ -78,6 +79,13 @@ class FileUploadMultipartInputServiceTest {
         assertEquals(42L, createdAttachment.getProcessInstanceId());
         assertEquals(9L, createdAttachment.getProcessInstanceTaskId());
         assertEquals("staff-user", createdAttachment.getUploadedByUserId());
+        assertEquals(1, normalizationResult.createdFileItems().size());
+        assertEquals("report.pdf", normalizationResult.createdFileItems().getFirst().getName());
+        assertEquals(3, normalizationResult.createdFileItems().getFirst().getSize());
+        assertEquals(
+                FileUploadMultipartInputService.buildAttachmentUri(createdAttachment.getKey()),
+                normalizationResult.createdFileItems().getFirst().getUri()
+        );
         assertEquals(1, attachmentSetService.createdSets().size());
         assertEquals(attachmentSetService.createdSets().getFirst().getId(), createdAttachment.getAttachmentSetId());
         assertEquals("documents", attachmentSetService.createdSets().getFirst().getDataKey());

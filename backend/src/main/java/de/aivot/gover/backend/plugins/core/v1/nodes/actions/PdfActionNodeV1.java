@@ -33,6 +33,7 @@ import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutio
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.gover.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
@@ -59,6 +60,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     private static final String OUTPUT_NAME_ATTACHMENT_KEY = "attachmentKey";
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
+    private static final String OUTPUT_NAME_FILES = "files";
     private static final String HEADER_HTML_SECTION_SEPARATOR = "<!-- KOPFZEILE -->";
     private static final String FOOTER_HTML_SECTION_SEPARATOR = "<!-- FUSSZEILE -->";
     private static final Pattern HTML_DOCUMENT_BLOCK_PATTERN = Pattern.compile(
@@ -223,6 +225,11 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                         OUTPUT_NAME_SIZE_BYTES,
                         "Dateigröße in Bytes",
                         "Die Größe des erzeugten PDF-Dokuments in Bytes."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_FILES,
+                        "Dateien",
+                        "Die erzeugten Dateien im Format des Datei-Upload-Feldes."
                 )
         );
     }
@@ -338,6 +345,15 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         metadata.put(OUTPUT_NAME_ATTACHMENT_KEY, attachment.getKey());
         metadata.put(OUTPUT_NAME_STORAGE_PROVIDER_ID, attachment.getStorageProviderId());
         metadata.put(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, attachment.getStoragePathFromRoot());
+        try {
+            metadata.put(OUTPUT_NAME_FILES, List.of(FileUploadMultipartInputService.buildAttachmentItem(attachment, pdfBytes.length)));
+        } catch (ResponseException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Fehler beim Erstellen der Dateiliste für das erzeugte PDF: %s",
+                    e.getMessage()
+            );
+        }
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)

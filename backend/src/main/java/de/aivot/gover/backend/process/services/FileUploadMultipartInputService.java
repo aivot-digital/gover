@@ -67,6 +67,7 @@ public class FileUploadMultipartInputService {
         var filesByUri = buildFilesByUri(files, fileUris);
         var normalizedInputs = inputs.clone();
         var createdAttachments = new LinkedList<ProcessInstanceAttachmentEntity>();
+        var createdFileItems = new LinkedList<FileUploadInputElementItem>();
 
         normalizeElement(
                 layout,
@@ -77,6 +78,7 @@ public class FileUploadMultipartInputService {
                 processInstanceTaskId,
                 uploadedByUserId,
                 createdAttachments,
+                createdFileItems,
                 attachmentSetsByDataKey
         );
 
@@ -86,7 +88,8 @@ public class FileUploadMultipartInputService {
 
         return new NormalizationResult(
                 normalizedInputs,
-                List.copyOf(createdAttachments)
+                List.copyOf(createdAttachments),
+                List.copyOf(createdFileItems)
         );
     }
 
@@ -98,6 +101,7 @@ public class FileUploadMultipartInputService {
                                   @Nullable Long processInstanceTaskId,
                                   @Nullable String uploadedByUserId,
                                   @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
+                                  @Nonnull List<FileUploadInputElementItem> createdFileItems,
                                   @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey) throws ResponseException {
         if (element instanceof FileUploadInputElement fileUploadElement) {
             if (!values.containsKey(fileUploadElement.getId())) {
@@ -115,6 +119,7 @@ public class FileUploadMultipartInputService {
                             processInstanceTaskId,
                             uploadedByUserId,
                             createdAttachments,
+                            createdFileItems,
                             attachmentSetsByDataKey
                     )
             );
@@ -145,6 +150,7 @@ public class FileUploadMultipartInputService {
                             processInstanceTaskId,
                             uploadedByUserId,
                             createdAttachments,
+                            createdFileItems,
                             attachmentSetsByDataKey
                     );
                 }
@@ -166,6 +172,7 @@ public class FileUploadMultipartInputService {
                         processInstanceTaskId,
                         uploadedByUserId,
                         createdAttachments,
+                        createdFileItems,
                         attachmentSetsByDataKey
                 );
             }
@@ -181,6 +188,7 @@ public class FileUploadMultipartInputService {
                                             @Nullable Long processInstanceTaskId,
                                             @Nullable String uploadedByUserId,
                                             @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
+                                            @Nonnull List<FileUploadInputElementItem> createdFileItems,
                                             @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey) throws ResponseException {
         var items = FileUploadInputElement._formatValue(rawValue);
         if (items == null) {
@@ -233,11 +241,9 @@ public class FileUploadMultipartInputService {
             createdAttachments.add(createdAttachment);
             usedFileNames.add(finalFileName);
 
-            normalizedItems.add(createFileUploadItemMap(
-                    finalFileName,
-                    buildAttachmentUri(createdAttachment.getKey()),
-                    safeFileSize(multipartFile, finalFileName)
-            ));
+            var fileItem = buildAttachmentItem(createdAttachment, multipartFile.getSize());
+            createdFileItems.add(fileItem);
+            normalizedItems.add(createFileUploadItemMap(fileItem));
         }
 
         return normalizedItems;
@@ -513,16 +519,25 @@ public class FileUploadMultipartInputService {
         return PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX + attachmentKey;
     }
 
-    private int safeFileSize(@Nonnull MultipartFile multipartFile,
-                             @Nonnull String fileName) throws ResponseException {
-        if (multipartFile.getSize() > Integer.MAX_VALUE) {
+    @Nonnull
+    public static FileUploadInputElementItem buildAttachmentItem(@Nonnull ProcessInstanceAttachmentEntity attachment,
+                                                                long fileSize) throws ResponseException {
+        return new FileUploadInputElementItem()
+                .setName(attachment.getFileName())
+                .setUri(buildAttachmentUri(attachment.getKey()))
+                .setSize(safeFileSize(fileSize, attachment.getFileName()));
+    }
+
+    private static int safeFileSize(long fileSize,
+                                    @Nonnull String fileName) throws ResponseException {
+        if (fileSize > Integer.MAX_VALUE) {
             throw ResponseException.badRequest(
                     "Die Datei „%s“ ist zu groß für die Verarbeitung.",
                     fileName
             );
         }
 
-        return (int) multipartFile.getSize();
+        return (int) fileSize;
     }
 
     @Nonnull
@@ -534,6 +549,15 @@ public class FileUploadMultipartInputService {
         itemMap.put("uri", uri);
         itemMap.put("size", size);
         return itemMap;
+    }
+
+    @Nonnull
+    private static Map<String, Object> createFileUploadItemMap(@Nonnull FileUploadInputElementItem item) {
+        return createFileUploadItemMap(
+                item.getName(),
+                item.getUri(),
+                item.getSize()
+        );
     }
 
     @Nonnull
@@ -549,7 +573,12 @@ public class FileUploadMultipartInputService {
 
     public record NormalizationResult(
             @Nonnull AuthoredElementValues inputs,
-            @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments
+            @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
+            @Nonnull List<FileUploadInputElementItem> createdFileItems
     ) {
+        public NormalizationResult(@Nonnull AuthoredElementValues inputs,
+                                   @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments) {
+            this(inputs, createdAttachments, List.of());
+        }
     }
 }

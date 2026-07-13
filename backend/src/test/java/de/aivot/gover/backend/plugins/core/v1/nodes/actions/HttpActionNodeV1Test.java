@@ -2,6 +2,7 @@ package de.aivot.gover.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.gover.backend.core.services.HttpService;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.gover.backend.plugins.core.v1.nodes.actions.HttpActionNodeV1;
@@ -196,6 +197,13 @@ class HttpActionNodeV1Test {
         assertNull(result.getNodeData().get("rawBody"));
         assertNull(result.getNodeData().get("processedResponse"));
         assertNotNull(result.getNodeData().get("attachmentKey"));
+
+        @SuppressWarnings("unchecked")
+        var files = (List<FileUploadInputElementItem>) result.getNodeData().get("files");
+        assertEquals(1, files.size());
+        assertEquals("document.pdf", files.getFirst().getName());
+        assertEquals(3, files.getFirst().getSize());
+        assertTrue(files.getFirst().getUri().startsWith("process-instance-attachment:"));
     }
 
     private static HttpActionNodeV1Config baseConfig(String method,
