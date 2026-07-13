@@ -19,6 +19,7 @@ export interface ProcessNodeDefinitionMetadataForwardedAttachmentSet {
     dataKey: string;
     label: string;
     subLabel: string | null;
+    isMultifile: boolean;
     origin: ProcessNodeEntity;
 }
 

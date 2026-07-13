@@ -1,10 +1,13 @@
 package de.aivot.gover.backend.process.models;
 
+import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.elements.BaseFormElement;
 import de.aivot.gover.backend.elements.models.elements.form.content.HeadlineContentElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
@@ -15,6 +18,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -83,6 +87,55 @@ class ProcessNodeDefinitionMetadataTest {
         assertInstanceOf(GroupLayoutElement.class, reusableUiDefinition.uiDefinition());
     }
 
+    @Test
+    void withLayout_ShouldExposeFileUploadAttachmentSetMultiplicity() {
+        var groupLayout = new GroupLayoutElement();
+        groupLayout.setId("gp_uploads");
+        groupLayout.setName("Uploaddaten");
+        groupLayout.setChildren(new LinkedList<>(List.of(
+                fileUpload("fu_single", "documents.single", "Einzeldokument", false),
+                fileUpload("fu_multi", "documents.multi", "Mehrere Dokumente", true),
+                replicatingContainer("rc_documents", "documentRows", group(
+                        "gp_nested_uploads",
+                        fileUpload("fu_replicated", "documents.replicated", "Wiederholtes Dokument", false)
+                ))
+        )));
+
+        var metadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(groupLayout, origin());
+
+        assertEquals(3, metadata.forwardedAttachmentSets().size());
+
+        var singleFileAttachmentSet = metadata.forwardedAttachmentSets().get(0);
+        assertEquals("documents_single", singleFileAttachmentSet.dataKey());
+        assertEquals("Einzeldokument", singleFileAttachmentSet.label());
+        assertFalse(singleFileAttachmentSet.isMultifile());
+
+        var multiFileAttachmentSet = metadata.forwardedAttachmentSets().get(1);
+        assertEquals("documents_multi", multiFileAttachmentSet.dataKey());
+        assertEquals("Mehrere Dokumente", multiFileAttachmentSet.label());
+        assertTrue(multiFileAttachmentSet.isMultifile());
+
+        var replicatedAttachmentSet = metadata.forwardedAttachmentSets().get(2);
+        assertEquals("documents_replicated", replicatedAttachmentSet.dataKey());
+        assertEquals("Wiederholtes Dokument", replicatedAttachmentSet.label());
+        assertTrue(replicatedAttachmentSet.isMultifile());
+    }
+
+    @Test
+    void forwardedAttachmentSet_ShouldSerializeMultifileFlagWithFrontendPropertyName() throws Exception {
+        var metadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .addForwardedAttachmentSet("documents", "Dokumente", null, true, origin());
+
+        var json = ObjectMapperFactory
+                .getInstance()
+                .writeValueAsString(metadata);
+
+        assertTrue(json.contains("\"isMultifile\":true"));
+    }
+
     private static void assertSectionHeadline(GroupLayoutElement sectionGroup, String expectedTitle) {
         assertTrue(sectionGroup.getChildren().size() >= 1);
 
@@ -107,6 +160,30 @@ class ProcessNodeDefinitionMetadataTest {
         var textInput = new TextInputElement();
         textInput.setId(id);
         return textInput;
+    }
+
+    private static GroupLayoutElement group(String id, BaseFormElement... children) {
+        var group = new GroupLayoutElement();
+        group.setId(id);
+        group.setChildren(List.of(children));
+        return group;
+    }
+
+    private static ReplicatingContainerLayoutElement replicatingContainer(String id, String destinationKey, BaseFormElement... children) {
+        var replicatingContainer = new ReplicatingContainerLayoutElement();
+        replicatingContainer.setId(id);
+        replicatingContainer.setDestinationKey(destinationKey);
+        replicatingContainer.setChildren(List.of(children));
+        return replicatingContainer;
+    }
+
+    private static FileUploadInputElement fileUpload(String id, String destinationKey, String label, boolean isMultifile) {
+        var fileUpload = new FileUploadInputElement();
+        fileUpload.setId(id);
+        fileUpload.setDestinationKey(destinationKey);
+        fileUpload.setLabel(label);
+        fileUpload.setIsMultifile(isMultifile);
+        return fileUpload;
     }
 
     private static ProcessNodeEntity origin() {

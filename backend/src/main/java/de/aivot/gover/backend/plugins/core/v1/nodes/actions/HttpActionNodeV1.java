@@ -228,6 +228,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                                     ? configuration.responseConfig.responseFileName
                                     : Objects.requireNonNullElse(processNodeEntity.getName(), "Http-Anfrage"),
                             null,
+                            false,
                             processNodeEntity
                     );
         }

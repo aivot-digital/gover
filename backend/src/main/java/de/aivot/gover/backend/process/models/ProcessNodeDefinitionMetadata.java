@@ -77,9 +77,10 @@ public record ProcessNodeDefinitionMetadata(
                                                                    String label,
                                                                    @Nullable
                                                                    String subLabel,
+                                                                   boolean isMultifile,
                                                                    @Nonnull
                                                                    ProcessNodeEntity origin) {
-        return addForwardedAttachmentSet(new ForwardedAttachmentSet(dataKey, label, subLabel, origin));
+        return addForwardedAttachmentSet(new ForwardedAttachmentSet(dataKey, label, subLabel, isMultifile, origin));
     }
 
     public ProcessNodeDefinitionMetadata addForwardedAttachmentSet(ForwardedAttachmentSet forwardedAttachmentSet) {
@@ -155,10 +156,14 @@ public record ProcessNodeDefinitionMetadata(
             if (e instanceof FileUploadInputElement f) {
                 var attachmentSetDataKey = resolveAttachmentSetDataKey(f);
                 if (attachmentSetDataKey != null) {
+                    var isMultifile = Boolean.TRUE.equals(f.getIsMultifile()) ||
+                                      parents.stream().anyMatch(ReplicatingContainerLayoutElement.class::isInstance);
+
                     this.addForwardedAttachmentSet(
                             attachmentSetDataKey,
                             StringUtils.isNotNullOrEmpty(f.getLabel()) ? f.getLabel() : attachmentSetDataKey,
                             f.getHint(),
+                            isMultifile,
                             origin
                     );
                 }
@@ -287,6 +292,7 @@ public record ProcessNodeDefinitionMetadata(
             String label,
             @Nullable
             String subLabel,
+            boolean isMultifile,
             @Nonnull
             ProcessNodeEntity origin
     ) {

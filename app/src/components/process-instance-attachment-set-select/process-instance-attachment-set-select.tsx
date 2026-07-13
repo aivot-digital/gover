@@ -230,6 +230,7 @@ function createAttachmentSetOption(attachmentSet: ProcessNodeDefinitionMetadataF
     const subLabelParts = [
         attachmentSet.dataKey,
         attachmentSet.subLabel,
+        attachmentSet.isMultifile ? 'Mehrere Dateien' : 'Eine Datei',
         attachmentSet.origin.name,
     ].filter((part): part is string => part != null && part.trim().length > 0);
 

@@ -242,6 +242,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                         processNodeEntity.getDataKey(),
                         configuration.fileName,
                         null,
+                        false,
                         processNodeEntity
                 );
     }

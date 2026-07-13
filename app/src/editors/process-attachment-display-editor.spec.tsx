@@ -105,6 +105,7 @@ function createMetadata(): ProcessNodeDefinitionMetadata {
                 dataKey: 'case_documents',
                 label: 'Fallunterlagen',
                 subLabel: 'Upload',
+                isMultifile: true,
                 origin: createNode(1, 'Startformular'),
             },
         ],

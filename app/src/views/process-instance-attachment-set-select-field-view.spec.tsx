@@ -42,6 +42,42 @@ describe('ProcessInstanceAttachmentSetSelectFieldView', () => {
         expect(setValue).toHaveBeenCalledWith(['case_documents']);
     });
 
+    it('should show whether attachment sets contain one or multiple files', async () => {
+        renderWithEditorMetadata(
+            <ProcessInstanceAttachmentSetSelectFieldView
+                {...createBaseProps({
+                    value: null,
+                })}
+            />,
+            {
+                reusableUiDefinitions: [],
+                forwardedAttachmentSets: [
+                    {
+                        dataKey: 'case_documents',
+                        label: 'Fallunterlagen',
+                        subLabel: 'Upload',
+                        isMultifile: true,
+                        origin: createNode(1, 'Startformular'),
+                    },
+                    {
+                        dataKey: 'pdf_report',
+                        label: 'Bescheid',
+                        subLabel: 'PDF',
+                        isMultifile: false,
+                        origin: createNode(2, 'PDF-Erzeugung'),
+                    },
+                ],
+                forwardedProcessDataKeys: [],
+                forwardedIdentities: [],
+            },
+        );
+
+        fireEvent.mouseDown(screen.getByRole('combobox', {name: 'Anlagensaetze'}));
+
+        expect(await screen.findByText(/Mehrere Dateien/)).toBeInTheDocument();
+        expect(await screen.findByText(/Eine Datei/)).toBeInTheDocument();
+    });
+
     it('should render unknown saved data keys as fallback labels', () => {
         renderWithEditorMetadata(
             <ProcessInstanceAttachmentSetSelectFieldView
@@ -137,6 +173,7 @@ function createMetadata(): ProcessNodeDefinitionMetadata {
                 dataKey: 'case_documents',
                 label: 'Fallunterlagen',
                 subLabel: 'Upload',
+                isMultifile: true,
                 origin: createNode(1, 'Startformular'),
             },
         ],

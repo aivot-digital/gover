@@ -17,6 +17,7 @@ import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
+import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
@@ -39,6 +40,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -147,6 +149,18 @@ class PdfActionNodeV1Test {
                 ""
         );
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
+    }
+
+    @Test
+    void getMetadata_ShouldForwardPdfAttachmentSetAsSingleFile() {
+        var metadata = node.getMetadata(processNode(), codeConfiguration("<html></html>"), ProcessNodeDefinitionMetadata.empty());
+
+        assertEquals(1, metadata.forwardedAttachmentSets().size());
+
+        var attachmentSet = metadata.forwardedAttachmentSets().getFirst();
+        assertEquals("pdfNode", attachmentSet.dataKey());
+        assertEquals("report", attachmentSet.label());
+        assertFalse(attachmentSet.isMultifile());
     }
 
     private static ProcessNodeExecutionInitContext context(String html) {
