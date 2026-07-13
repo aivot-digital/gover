@@ -1,11 +1,12 @@
-import React, {useMemo} from 'react';
+import React from 'react';
 import type {BaseEditorProps} from './base-editor';
 import type {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
 import {Grid} from '@mui/material';
-import {AutocompleteTextField, TextFieldComponent} from '../components/text-field/text-field-component';
+import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {
     useOptionalProcessNodeEditorContext,
 } from '../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
+import {ProcessInstanceAttachmentSetSelect} from '../components/process-instance-attachment-set-select/process-instance-attachment-set-select';
 
 export function ProcessAttachmentDisplayEditor(props: BaseEditorProps<ProcessAttachmentDisplayElement>): React.JSX.Element {
     const {
@@ -15,30 +16,6 @@ export function ProcessAttachmentDisplayEditor(props: BaseEditorProps<ProcessAtt
     } = props;
 
     const opec = useOptionalProcessNodeEditorContext();
-
-    const attachmentSetSuggestions = useMemo(() => {
-        const result = new Map<string, { id: string; label: string; subLabel: string }>();
-
-        for (const attachmentSet of opec?.incomingMetadata?.forwardedAttachmentSets ?? []) {
-            if (result.has(attachmentSet.dataKey)) {
-                continue;
-            }
-
-            result.set(attachmentSet.dataKey, {
-                id: attachmentSet.dataKey,
-                label: attachmentSet.label.trim().length > 0 ? attachmentSet.label : attachmentSet.dataKey,
-                subLabel: [
-                    attachmentSet.dataKey,
-                    attachmentSet.subLabel,
-                    attachmentSet.origin.name,
-                ]
-                    .filter((part): part is string => part != null && part.trim().length > 0)
-                    .join(' - '),
-            });
-        }
-
-        return Array.from(result.values());
-    }, [opec?.incomingMetadata?.forwardedAttachmentSets]);
 
     return (
         <React.Fragment>
@@ -52,17 +29,18 @@ export function ProcessAttachmentDisplayEditor(props: BaseEditorProps<ProcessAtt
                         lg: 6,
                     }}
                 >
-                    <AutocompleteTextField
+                    <ProcessInstanceAttachmentSetSelect
+                        attachmentSets={opec?.incomingMetadata?.forwardedAttachmentSets}
                         label="Schlüssel des Anlagensatzes"
-                        value={element.attachmentSetKey}
-                        onChange={(attachmentSetKey) => {
+                        value={element.attachmentSetKey == null ? null : [element.attachmentSetKey]}
+                        onChange={(attachmentSetKeys) => {
                             onPatch({
-                                attachmentSetKey,
+                                attachmentSetKey: attachmentSetKeys?.[0] ?? null,
                             });
                         }}
                         hint="Alle Vorgangsanhänge aus Anlagensätzen mit diesem Schlüssel werden angezeigt."
-                        suggestions={attachmentSetSuggestions}
                         disabled={!editable}
+                        maxItems={1}
                     />
                 </Grid>
                 <Grid
