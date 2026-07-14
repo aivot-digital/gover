@@ -60,6 +60,7 @@ export function TeamsDetailsPageMembers() {
     const [showSelectNewMemberDialog, setShowSelectNewMemberDialog] = useState(false);
     const [showSelectRolesDialogForUser, setShowSelectRolesDialogForUser] = useState<User | null>(null);
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntity | null>(null);
+    const [existingMemberUserIds, setExistingMemberUserIds] = useState<string[]>([]);
 
     const refreshPermissionsAfterMembershipChange = useCallback(() => {
         // Effective permissions may include grants inherited through deputy assignments.
@@ -182,6 +183,25 @@ export function TeamsDetailsPageMembers() {
 
     const columns = useMemo(() => buildColumns(canReadDomainRoles), [canReadDomainRoles]);
 
+    const openSelectNewMemberDialog = useCallback(() => {
+        if (item == null) {
+            return;
+        }
+
+        new TeamMembershipsApiService()
+            .listAll({
+                teamId: item.id,
+            })
+            .then((membershipsPage) => {
+                setExistingMemberUserIds(membershipsPage.content.map((membership) => membership.userId));
+                setShowSelectNewMemberDialog(true);
+            })
+            .catch((err) => dispatch(showApiErrorSnackbar(
+                err,
+                'Die bestehenden Mitgliedschaften konnten nicht geladen werden.',
+            )));
+    }, [dispatch, item]);
+
     const preSearchElements = useMemo(() => {
         const addDisabled = !canCreateMembership || !canReadDomainRoles;
         const addDisabledTooltip = !canCreateMembership
@@ -199,14 +219,14 @@ export function TeamsDetailsPageMembers() {
                 <Button
                     variant="contained"
                     startIcon={<AddOutlinedIcon />}
-                    onClick={() => setShowSelectNewMemberDialog(true)}
+                    onClick={openSelectNewMemberDialog}
                     disabled={addDisabled}
                 >
                     Mitarbeiter:in hinzufügen
                 </Button>
             </DisabledTooltip>,
         ];
-    }, [canCreateMembership, canReadDomainRoles]);
+    }, [canCreateMembership, canReadDomainRoles, openSelectNewMemberDialog]);
 
     const handleAddMembership = useCallback((user: User | null, roleIdsToAdd: number[]) => {
         if (user == null || item == null) {
@@ -351,7 +371,7 @@ export function TeamsDetailsPageMembers() {
                         title="Keine Mitgliedschaften im Zugriff"
                         description="Es wurden keine Mitgliedschaften gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Mitarbeiter:innen zugeordnet oder Ihnen fehlt die Leseberechtigung für Mitgliedschaften."
                         addText="Mitarbeiter:in hinzufügen"
-                        onAdd={() => setShowSelectNewMemberDialog(true)}
+                        onAdd={openSelectNewMemberDialog}
                         addDisabled={!canCreateMembership || !canReadDomainRoles}
                         addDisabledTooltip={!canCreateMembership
                             ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_CREATE)
@@ -365,7 +385,7 @@ export function TeamsDetailsPageMembers() {
 
             <SelectUserDialog
                 open={showSelectNewMemberDialog}
-                idsToExclude={/*memberships.map((membership) => membership.userId)*/ []}
+                idsToExclude={existingMemberUserIds}
                 onClose={() => setShowSelectNewMemberDialog(false)}
                 onSelect={(user) => {
                     setShowSelectRolesDialogForUser(user);

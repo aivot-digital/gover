@@ -4,6 +4,7 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.teams.entities.TeamMembershipEntity;
+import de.aivot.gover.backend.teams.filters.TeamMembershipFilter;
 import de.aivot.gover.backend.teams.repositories.TeamMembershipRepository;
 import de.aivot.gover.backend.teams.repositories.TeamRepository;
 import de.aivot.gover.backend.user.repositories.UserRepository;
@@ -44,6 +45,16 @@ public class TeamMembershipService implements EntityService<TeamMembershipEntity
         // Check if user exists
         if (!userRepository.existsById(entity.getUserId()))  {
             throw ResponseException.badRequest("Der angegebene Benutzer existiert nicht.");
+        }
+
+        var spec = TeamMembershipFilter
+                .create()
+                .setTeamId(entity.getTeamId())
+                .setUserId(entity.getUserId())
+                .build();
+
+        if (exists(spec)) {
+            throw ResponseException.conflict("Diese Mitarbeiter:in ist bereits Teil des Teams.");
         }
 
         return teamMembershipRepository.save(entity);

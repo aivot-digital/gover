@@ -55,7 +55,7 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
                 .build();
 
         if (exists(spec)) {
-            throw new ResponseException(HttpStatus.CONFLICT, "Diese Mitarbeiter:in ist bereits teil der Organisationseinheit.");
+            throw new ResponseException(HttpStatus.CONFLICT, "Diese Mitarbeiter:in ist bereits Teil der Organisationseinheit.");
         }
 
         return repository.save(entity);
