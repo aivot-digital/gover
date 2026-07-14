@@ -272,14 +272,29 @@ export function DepartmentsDetailsPageIndex() {
     const [availableThemes, setAvailableThemes] = useState<ThemeResponseDTO[]>();
     const [showMoveDialog, setShowMoveDialog] = useState(false);
     const [inheritedDepartment, setInheritedDepartment] = useState<VDepartmentShadowedEntity | null>(null);
+    const shouldLoadAvailableThemes = department != null;
 
     useEffect(() => {
+        if (!shouldLoadAvailableThemes) {
+            return;
+        }
+
+        let isActive = true;
+
         new ThemesApiService(api)
             .listAll()
             .then((result) => {
+                if (!isActive) {
+                    return;
+                }
+
                 setAvailableThemes(result.content);
             })
             .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
                 console.error(err);
                 dispatch(showErrorSnackbar(
                     isApiError(err) && err.status === 403
@@ -288,7 +303,11 @@ export function DepartmentsDetailsPageIndex() {
                 ));
                 setAvailableThemes([]);
             });
-    }, []);
+
+        return () => {
+            isActive = false;
+        };
+    }, [api, dispatch, shouldLoadAvailableThemes]);
 
     useEffect(() => {
         if (department == null) {
