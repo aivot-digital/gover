@@ -7,10 +7,12 @@ import de.aivot.gover.backend.codeLists.entities.CodeListEntity;
 import de.aivot.gover.backend.codeLists.entities.CodeListItemEntity;
 import de.aivot.gover.backend.codeLists.entities.VCodeListItemEntity;
 import de.aivot.gover.backend.codeLists.filters.CodeListFilter;
+import de.aivot.gover.backend.codeLists.permissions.CodeListPermissionProvider;
 import de.aivot.gover.backend.codeLists.services.CodeListService;
 import de.aivot.gover.backend.codeLists.services.CodeListWorker;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -49,16 +51,18 @@ public class CodeListController {
     private final CodeListService service;
     private final UserService userService;
     private final CodeListWorker codeListWorker;
+    private final PermissionService permissionService;
 
     @Autowired
     public CodeListController(AuditService auditService,
                               CodeListService service,
                               UserService userService,
-                              CodeListWorker codeListWorker) {
+                              CodeListWorker codeListWorker, PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(CodeListController.class, "Code-Listen");
         this.service = service;
         this.userService = userService;
         this.codeListWorker = codeListWorker;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
@@ -67,10 +71,12 @@ public class CodeListController {
             description = "Retrieve a paginated list of code lists with optional filtering."
     )
     public Page<CodeListEntity> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid CodeListFilter filter
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
         return service
                 .list(pageable, filter);
@@ -85,7 +91,8 @@ public class CodeListController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @Valid @RequestBody CodeListEntity create
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_CREATE);
 
         var execUser = userService
                 .fromJWT(jwt)
@@ -120,9 +127,12 @@ public class CodeListController {
             description = "Retrieve a specific code list by its ID."
     )
     public CodeListEntity retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+
         return service
                 .retrieve(codeListId)
                 .orElseThrow(ResponseException::notFound);
@@ -138,7 +148,8 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId,
             @Nonnull @Valid @RequestBody CodeListEntity update
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         var execUser = userService
                 .fromJWT(jwt)
@@ -177,7 +188,8 @@ public class CodeListController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_DELETE);
 
         var execUser = userService
                 .fromJWT(jwt)
@@ -206,8 +218,29 @@ public class CodeListController {
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+
+        var execUser = userService
+                .fromJWT(jwt)
+                .orElseThrow(ResponseException::unauthorized);
+
         var bytes = service.exportCSV(codeListId);
+
+        auditService.create()
+                .withUser(execUser)
+                .withAuditAction(
+                        AuditAction.Delete,
+                        CodeListEntity.class,
+                        codeListId,
+                        "id"
+                )
+                .withMessage(
+                        "Die Code-Liste mit der ID %d wurde von der Mitarbeiter:in %s exportiert.",
+                        codeListId,
+                        StringUtils.quote(execUser.getFullName())
+                )
+                .log();
 
         return ResponseEntity
                 .ok()
@@ -234,7 +267,8 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId,
             @Nonnull @RequestPart("file") MultipartFile file
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         try {
             return service.importCSV(codeListId, file.getInputStream());
@@ -249,7 +283,8 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId,
             @Nonnull @RequestParam(defaultValue = "true") Boolean keepOutdated
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         var cl = service
                 .retrieve(codeListId)
@@ -269,7 +304,9 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+
         return service.listItems(codeListId, pageable);
     }
 
@@ -279,7 +316,9 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId,
             @Nonnull @Valid @RequestBody CodeListItemEntity item
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+
         return service.createItem(codeListId, item);
     }
 
@@ -289,7 +328,9 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId,
             @Nonnull @PathVariable Long itemId
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+
         return service.getItem(codeListId, itemId);
     }
 
@@ -300,7 +341,9 @@ public class CodeListController {
             @Nonnull @PathVariable Long itemId,
             @Nonnull @Valid @RequestBody CodeListItemEntity item
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+
         return service.updateItem(codeListId, itemId, item);
     }
 
@@ -310,7 +353,9 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId,
             @Nonnull @PathVariable Long itemId
     ) throws ResponseException {
-        // TODO: Permission Check
+        permissionService
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+
         service.deleteItem(codeListId, itemId);
     }
 }
