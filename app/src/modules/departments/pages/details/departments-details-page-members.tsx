@@ -404,6 +404,7 @@ export function DepartmentsDetailsPageMembers() {
                 userId={showSelectRolesDialogForUser?.id ?? undefined}
                 userLabel={showSelectRolesDialogForUser?.fullName}
                 parentId={item.id}
+                parentLabel={item.name}
                 parentType="orgUnit"
             />
 
@@ -419,6 +420,7 @@ export function DepartmentsDetailsPageMembers() {
                 userId={showSelectRolesDialogForMembership?.userId ?? undefined}
                 userLabel={showSelectRolesDialogForMembership?.userFullName ?? undefined}
                 parentId={item.id}
+                parentLabel={item.name}
                 parentType="orgUnit"
             />
         </Box>

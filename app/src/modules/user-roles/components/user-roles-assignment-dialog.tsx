@@ -1,6 +1,5 @@
 import {
     Box,
-    Breadcrumbs,
     Button,
     Checkbox,
     Chip,
@@ -21,15 +20,10 @@ import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Des
 import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {AlertComponent} from '../../../components/alert/alert-component';
-import {TeamsApiService} from '../../teams/services/teams-api-service';
 import {UserRolesApiService} from '../user-roles-api-service';
 import {UserRoleResponseDTO} from '../dtos/user-role-response-dto';
-import {DepartmentEntity} from '../../departments/entities/department-entity';
-import {DepartmentApiService} from '../../departments/services/department-api-service';
-import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
-import {TeamEntity} from '../../teams/entities/team-entity';
 import {
     VDepartmentMembershipWithDetailsService,
 } from '../../departments/services/v-department-membership-with-details-service';
@@ -49,13 +43,9 @@ interface UserRolesAssignmentDialogProps {
     userId?: string;
     userLabel?: string;
     parentId?: number;
+    parentLabel?: string;
     parentType: 'orgUnit' | 'team';
 }
-
-type ParentType<T extends 'orgUnit' | 'team'> =
-    T extends 'orgUnit' ?
-        DepartmentEntity :
-        TeamEntity;
 
 type MembershipType<T extends 'orgUnit' | 'team'> =
     T extends 'orgUnit' ?
@@ -73,13 +63,12 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
         userId,
         userLabel,
         parentId,
+        parentLabel,
         parentType,
     } = props;
 
     const [roles, setRoles] = useState<UserRoleResponseDTO[]>();
-    const [parent, setParent] = useState<ParentType<typeof parentType>>();
     const [memberships, setMemberships] = useState<MembershipType<typeof parentType>[]>();
-    const [orgUnitPathParts, setOrgUnitPathParts] = useState<string[]>();
     const [rolesAccessDenied, setRolesAccessDenied] = useState(false);
 
     const [activeRoleIds, setActiveRoleIds] = useState<Set<number>>();
@@ -112,46 +101,6 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 }
             });
     }, [canReadDomainRoles, dispatch, open]);
-
-    // Load parent details
-    useEffect(() => {
-        if (!open || parentId == null) {
-            setParent(undefined);
-            setOrgUnitPathParts(undefined);
-            return;
-        }
-
-        if (parentType === 'orgUnit') {
-            new DepartmentApiService()
-                .retrieve(parentId)
-                .then(setParent)
-                .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Organisationseinheit konnte nicht geladen werden'));
-                });
-
-            new VDepartmentShadowedApiService()
-                .retrieve(parentId)
-                .then((shadowedDepartment) => {
-                    const path = [
-                        ...(shadowedDepartment.parentNames ?? []),
-                        shadowedDepartment.name,
-                    ].filter(Boolean);
-
-                    setOrgUnitPathParts(path);
-                })
-                .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Pfad der Organisationseinheit konnte nicht geladen werden'));
-                });
-        } else {
-            setOrgUnitPathParts(undefined);
-            new TeamsApiService()
-                .retrieve(parentId)
-                .then(setParent)
-                .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Team konnte nicht geladen werden'));
-                });
-        }
-    }, [dispatch, open, parentId, parentType]);
 
     // Load assignments
     useEffect(() => {
@@ -306,11 +255,9 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
     const handleClose = () => {
         onClose();
         setTimeout(() => {
-            setParent(undefined);
             setMemberships(undefined);
             setActiveRoleIds(undefined);
             setRoles(undefined);
-            setOrgUnitPathParts(undefined);
             setRolesAccessDenied(false);
         }, 300);
     };
@@ -332,93 +279,13 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                         <Typography variant="subtitle1">
                             {userLabel ?? 'Benutzer:in'}
                         </Typography>
-                        {parentType === 'orgUnit' ? (
-                            <Box>
-                                <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{mb: 0.25}}
-                                >
-                                    Organisationseinheit: {parent?.name ?? 'wird geladen...'}
-                                </Typography>
-                                {(orgUnitPathParts?.length ?? 0) > 0 && (
-                                    <Box
-                                        sx={{
-                                            mt: 0.25,
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            maxWidth: '100%',
-                                            color: 'text.secondary',
-                                        }}
-                                    >
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{
-                                                mr: 0.5,
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            ( Pfad:
-                                        </Typography>
-                                        <Breadcrumbs
-                                            separator="›"
-                                            maxItems={5}
-                                            itemsBeforeCollapse={2}
-                                            itemsAfterCollapse={2}
-                                            sx={{
-                                                transform: 'translateY(-2px)',
-                                                color: 'text.secondary',
-                                                '& .MuiBreadcrumbs-separator': {
-                                                    mx: 0.5,
-                                                },
-                                                '& .MuiBreadcrumbs-li': {
-                                                    minWidth: 0,
-                                                },
-                                                '& .MuiBreadcrumbs-ol': {
-                                                    flexWrap: 'nowrap',
-                                                    overflow: 'hidden',
-                                                },
-                                            }}
-                                        >
-                                            {orgUnitPathParts?.map((segment, index) => (
-                                                <Typography
-                                                    key={`${parentId ?? 'org'}-${index}`}
-                                                    variant="caption"
-                                                    color="text.secondary"
-                                                    sx={{
-                                                        maxWidth: 180,
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap',
-                                                    }}
-                                                    title={segment}
-                                                >
-                                                    {segment}
-                                                </Typography>
-                                            ))}
-                                        </Breadcrumbs>
-                                        <Typography
-                                            variant="caption"
-                                            color="text.secondary"
-                                            sx={{
-                                                ml: 0.5,
-                                                whiteSpace: 'nowrap',
-                                            }}
-                                        >
-                                            )
-                                        </Typography>
-                                    </Box>
-                                )}
-                            </Box>
-                        ) : (
-                            <Typography
-                                variant="body2"
-                                color="text.secondary"
-                            >
-                                Team: {parent?.name ?? 'wird geladen...'}
-                            </Typography>
-                        )}
+                        <Typography
+                            variant="body2"
+                            color="text.secondary"
+                        >
+                            {parentType === 'orgUnit' ? 'Organisationseinheit' : 'Team'}:{' '}
+                            {parentLabel ?? 'wird geladen...'}
+                        </Typography>
                     </Box>
 
                     <Stack

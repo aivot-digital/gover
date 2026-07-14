@@ -398,6 +398,7 @@ export function TeamsDetailsPageMembers() {
                 userId={showSelectRolesDialogForUser?.id ?? undefined}
                 userLabel={showSelectRolesDialogForUser?.fullName}
                 parentId={item.id}
+                parentLabel={item.name}
                 parentType="team"
             />
 
@@ -413,6 +414,7 @@ export function TeamsDetailsPageMembers() {
                 userId={showSelectRolesDialogForMembership?.userId ?? undefined}
                 userLabel={showSelectRolesDialogForMembership?.userFullName ?? undefined}
                 parentId={item.id}
+                parentLabel={item.name}
                 parentType="team"
             />
         </Box>

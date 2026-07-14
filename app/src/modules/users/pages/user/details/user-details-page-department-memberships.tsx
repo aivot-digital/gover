@@ -383,6 +383,7 @@ export function UserDetailsPageDepartmentMemberships() {
                 userId={user.id}
                 userLabel={user.fullName}
                 parentId={showSelectRolesDialogForDepartment?.id}
+                parentLabel={showSelectRolesDialogForDepartment?.name}
                 parentType="orgUnit"
             />
 
@@ -402,6 +403,7 @@ export function UserDetailsPageDepartmentMemberships() {
                 userId={user.id}
                 userLabel={user.fullName}
                 parentId={showSelectRolesDialogForMembership?.departmentId}
+                parentLabel={showSelectRolesDialogForMembership?.departmentName ?? undefined}
                 parentType="orgUnit"
             />
         </>
