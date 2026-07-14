@@ -219,6 +219,7 @@ function createSimulatedDepartment(
         parentNames: null,
         color: stringToPastelColor(name),
         children: [],
+        canReadDetails: true,
         canReadMemberships: true,
         members: [],
     };
@@ -231,6 +232,7 @@ function createSimulatedTeam(id: number, name: string): OrganizationChartTeamIte
         created: SIMULATED_CREATED,
         updated: SIMULATED_CREATED,
         color: stringToPastelColor(name),
+        canReadDetails: true,
         canReadMemberships: true,
         members: [],
     };

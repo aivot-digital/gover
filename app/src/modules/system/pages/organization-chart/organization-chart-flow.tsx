@@ -644,6 +644,7 @@ function OrganizationChartNodeCard(props: {
     const item = data.item;
     const department = data.itemType === 'department' ? data.item : null;
     const members = item.members;
+    const canReadDetails = item.canReadDetails;
     const canReadUsers = data.canReadUsers;
     const canReadMemberships = data.canReadMemberships;
     const isDepartment = department != null;
@@ -700,26 +701,44 @@ function OrganizationChartNodeCard(props: {
                 </StringAvatar>
 
                 <Box sx={{display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1}}>
-                    <Typography
-                        component={RouterLink}
-                        to={detailLinkTo}
-                        className="nodrag nopan"
-                        variant="subtitle1"
-                        title={title}
-                        sx={{
-                            color: 'text.primary',
-                            textDecoration: 'none',
-                            fontWeight: 700,
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap',
-                            '&:hover': {
-                                textDecoration: 'underline',
-                            },
-                        }}
-                    >
-                        {title}
-                    </Typography>
+                    {
+                        canReadDetails ? (
+                            <Typography
+                                component={RouterLink}
+                                to={detailLinkTo}
+                                className="nodrag nopan"
+                                variant="subtitle1"
+                                title={title}
+                                sx={{
+                                    color: 'text.primary',
+                                    textDecoration: 'none',
+                                    fontWeight: 700,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                    '&:hover': {
+                                        textDecoration: 'underline',
+                                    },
+                                }}
+                            >
+                                {title}
+                            </Typography>
+                        ) : (
+                            <Typography
+                                variant="subtitle1"
+                                title={title}
+                                sx={{
+                                    color: 'text.primary',
+                                    fontWeight: 700,
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                {title}
+                            </Typography>
+                        )
+                    }
                     <Typography
                         variant="caption"
                         color="text.secondary"

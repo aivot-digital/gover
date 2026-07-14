@@ -87,7 +87,9 @@ export function OrganizationChart(): React.ReactElement {
                     departmentMemberships,
                     teamMemberships,
                 ] = await Promise.all([
-                    new VDepartmentShadowedApiService().listAll(),
+                    new VDepartmentShadowedApiService().listAll({
+                        includeAncestors: true,
+                    }),
                     canReadTeams ? new TeamsApiService().listAll() : Promise.resolve(undefined),
                     canReadUsers ? new UsersApiService().listAll({
                         deletedInIdp: false,
@@ -104,6 +106,7 @@ export function OrganizationChart(): React.ReactElement {
                         ...dept,
                         color: stringToPastelColor(dept.name),
                         children: [],
+                        canReadDetails: checkDepartmentPermission(permissionSet, dept.id, Permission.DEPARTMENT_READ),
                         canReadMemberships: checkDepartmentPermission(permissionSet, dept.id, Permission.DEPARTMENT_MEMBERSHIP_READ),
                         members: [],
                     };
@@ -130,6 +133,7 @@ export function OrganizationChart(): React.ReactElement {
                     .map((team) => ({
                         ...team,
                         color: stringToPastelColor(team.name),
+                        canReadDetails: checkTeamPermission(permissionSet, team.id, Permission.TEAM_READ),
                         canReadMemberships: checkTeamPermission(permissionSet, team.id, Permission.TEAM_MEMBERSHIP_READ),
                         members: [],
                     }));
