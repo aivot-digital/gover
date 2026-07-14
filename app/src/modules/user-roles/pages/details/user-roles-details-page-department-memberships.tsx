@@ -18,8 +18,9 @@ import {
     VDepartmentMembershipWithDetailsService
 } from "../../../departments/services/v-department-membership-with-details-service";
 import {Permission} from '../../../../data/permissions/permission';
-import {useCheckAnyDepartmentPermission} from '../../../permissions/hooks/use-permissions';
-import {type Page} from '../../../../models/dtos/page';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {hasAnyDepartmentPermission} from '../../../permissions/utils/permission-utils';
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     {
@@ -51,16 +52,18 @@ const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
 ];
 
 export function UserRolesDetailsPageDepartmentMemberships() {
+    const permissions = useAppSelector(selectPermissions);
     const {
         item: userRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<UserRoleResponseDTO, undefined>;
-    const canReadDepartmentMemberships = useCheckAnyDepartmentPermission(Permission.DEPARTMENT_MEMBERSHIP_READ);
 
     if (userRole == null) {
         return (
             <GenericDetailsSkeleton />
         );
     }
+
+    hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_READ);
 
     return (
         <>
@@ -88,19 +91,6 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
-                        if (!canReadDepartmentMemberships) {
-                            const page: Page<VDepartmentMembershipWithDetailsEntity> = {
-                                content: [],
-                                page: {
-                                    number: 0,
-                                    size: options.size,
-                                    totalElements: 0,
-                                    totalPages: 0,
-                                },
-                            };
-                            return Promise.resolve(page);
-                        }
-
                         return new VDepartmentMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
                                 domainRoleId: userRole.id,
@@ -113,10 +103,8 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     defaultSortField="userFullName"
                     noDataPlaceholder={
                         <EmptyDataListPlaceholder
-                            title={canReadDepartmentMemberships ? 'Keine Mitarbeiter:innen zugeordnet' : 'Keine Zuordnungen sichtbar'}
-                            description={canReadDepartmentMemberships
-                                ? 'Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb einer Organisationseinheit.'
-                                : `Für die Anzeige von Zuordnungen in Organisationseinheiten ist die Berechtigung ${Permission.DEPARTMENT_MEMBERSHIP_READ} erforderlich.`}
+                            title="Keine Mitarbeiter:innen zugeordnet"
+                            description="Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb einer Organisationseinheit."
                         />
                     }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"
