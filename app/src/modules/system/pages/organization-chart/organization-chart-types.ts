@@ -5,11 +5,13 @@ import {type User} from '../../../users/models/user';
 export interface OrganizationChartDepartmentItem extends VDepartmentShadowedEntity {
     color: string;
     children: OrganizationChartDepartmentItem[];
+    canReadMemberships: boolean;
     members: OrganizationChartUserItem[];
 }
 
 export interface OrganizationChartTeamItem extends TeamEntity {
     color: string;
+    canReadMemberships: boolean;
     members: OrganizationChartUserItem[];
 }
 

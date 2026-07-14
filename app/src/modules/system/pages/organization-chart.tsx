@@ -7,7 +7,9 @@ import {GenericPageHeader} from '../../../components/generic-page-header/generic
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {stringToPastelColor} from '../../../components/avatar/string-avatar';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
+import {useAppSelector} from '../../../hooks/use-app-selector';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
+import {selectPermissions} from '../../../slices/user-slice';
 import {DepartmentMembershipApiService} from '../../departments/services/department-membership-api-service';
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
 import {TeamsApiService} from '../../teams/services/teams-api-service';
@@ -25,25 +27,52 @@ import {
     compareOrganizationChartUsers,
     sortOrganizationChartDepartmentTrees,
 } from './organization-chart/organization-chart-utils';
+import {Permission} from '../../../data/permissions/permission';
+import {
+    checkDepartmentPermission,
+    checkTeamPermission,
+    formatMissingPermissionTooltip,
+} from '../../permissions/utils/permission-utils';
+import {
+    useCheckAnyDepartmentPermission,
+    useCheckAnyTeamPermission,
+    useCheckSystemPermission,
+    useHasAnyDepartmentPermission,
+} from '../../permissions/hooks/use-permissions';
 
 const SIMULATE_QUERY_PARAM = 'simulate';
 
 export function OrganizationChart(): React.ReactElement {
     const dispatch = useAppDispatch();
+    const permissionSet = useAppSelector(selectPermissions);
     const [searchParams] = useSearchParams();
+    useHasAnyDepartmentPermission(Permission.DEPARTMENT_READ);
+    const canReadTeams = useCheckAnyTeamPermission(Permission.TEAM_READ);
+    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
+    const canReadAnyDepartmentMemberships = useCheckAnyDepartmentPermission(Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canReadAnyTeamMemberships = useCheckAnyTeamPermission(Permission.TEAM_MEMBERSHIP_READ);
     const [rootDepartments, setRootDepartments] = useState<OrganizationChartDepartmentItem[]>();
     const [teams, setTeams] = useState<OrganizationChartTeamItem[]>();
     const [organizationChartView, setOrganizationChartView] = useState<OrganizationChartFlowView>('departments');
     const shouldSimulate = searchParams.get(SIMULATE_QUERY_PARAM) === '1';
 
     useEffect(() => {
+        if (!canReadTeams && organizationChartView === 'teams') {
+            setOrganizationChartView('departments');
+        }
+    }, [canReadTeams, organizationChartView]);
+
+    useEffect(() => {
         let isActive = true;
 
         async function loadOrganizationChart(): Promise<void> {
             if (shouldSimulate) {
-                const simulatedOrganizationChart = createSimulatedOrganizationChartData();
+                const simulatedOrganizationChart = createSimulatedOrganizationChartData({
+                    canReadDepartmentMemberships: canReadAnyDepartmentMemberships,
+                    canReadTeamMemberships: canReadAnyTeamMemberships,
+                });
                 setRootDepartments(simulatedOrganizationChart.rootDepartments);
-                setTeams(simulatedOrganizationChart.teams);
+                setTeams(canReadTeams ? simulatedOrganizationChart.teams : []);
                 return;
             }
 
@@ -53,21 +82,21 @@ export function OrganizationChart(): React.ReactElement {
             try {
                 const [
                     departments,
-                    departmentMemberships,
                     fetchedTeams,
-                    teamMemberships,
                     users,
+                    departmentMemberships,
+                    teamMemberships,
                 ] = await Promise.all([
                     new VDepartmentShadowedApiService().listAll(),
-                    new DepartmentMembershipApiService().listAll(),
-                    new TeamsApiService().listAll(),
-                    new TeamMembershipsApiService().listAll(),
-                    new UsersApiService().listAll({
+                    canReadTeams ? new TeamsApiService().listAll() : Promise.resolve(undefined),
+                    canReadUsers ? new UsersApiService().listAll({
                         deletedInIdp: false,
-                    }),
+                    }) : Promise.resolve(undefined),
+                    canReadUsers && canReadAnyDepartmentMemberships ? new DepartmentMembershipApiService().listAll() : Promise.resolve(undefined),
+                    canReadUsers && canReadTeams && canReadAnyTeamMemberships ? new TeamMembershipsApiService().listAll() : Promise.resolve(undefined),
                 ]);
 
-                const usersById = new Map(users.content.map((user) => [user.id, user]));
+                const usersById = new Map((users?.content ?? []).map((user) => [user.id, user]));
 
                 const departmentMap: Record<number, OrganizationChartDepartmentItem> = {};
                 for (const dept of departments.content) {
@@ -75,6 +104,7 @@ export function OrganizationChart(): React.ReactElement {
                         ...dept,
                         color: stringToPastelColor(dept.name),
                         children: [],
+                        canReadMemberships: checkDepartmentPermission(permissionSet, dept.id, Permission.DEPARTMENT_MEMBERSHIP_READ),
                         members: [],
                     };
                 }
@@ -88,7 +118,7 @@ export function OrganizationChart(): React.ReactElement {
                     }
                 }
 
-                for (const membership of departmentMemberships.content) {
+                for (const membership of departmentMemberships?.content ?? []) {
                     const dept = departmentMap[membership.departmentId];
                     const user = usersById.get(membership.userId);
                     if (dept != null && user != null) {
@@ -96,15 +126,16 @@ export function OrganizationChart(): React.ReactElement {
                     }
                 }
 
-                const nextTeams: OrganizationChartTeamItem[] = fetchedTeams.content
+                const nextTeams: OrganizationChartTeamItem[] = (fetchedTeams?.content ?? [])
                     .map((team) => ({
                         ...team,
                         color: stringToPastelColor(team.name),
+                        canReadMemberships: checkTeamPermission(permissionSet, team.id, Permission.TEAM_MEMBERSHIP_READ),
                         members: [],
                     }));
 
                 const teamsById = new Map(nextTeams.map((team) => [team.id, team]));
-                for (const membership of teamMemberships.content) {
+                for (const membership of teamMemberships?.content ?? []) {
                     const team = teamsById.get(membership.teamId);
                     const user = usersById.get(membership.userId);
                     if (team != null && user != null) {
@@ -135,7 +166,15 @@ export function OrganizationChart(): React.ReactElement {
         return () => {
             isActive = false;
         };
-    }, [dispatch, shouldSimulate]);
+    }, [
+        canReadAnyDepartmentMemberships,
+        canReadAnyTeamMemberships,
+        canReadTeams,
+        canReadUsers,
+        dispatch,
+        permissionSet,
+        shouldSimulate,
+    ]);
 
     const isLoading = rootDepartments == null || teams == null;
 
@@ -181,6 +220,8 @@ export function OrganizationChart(): React.ReactElement {
                             iconPosition: 'start',
                             variant: 'text',
                             color: organizationChartView === 'teams' ? 'primary' : 'inherit',
+                            disabled: !canReadTeams,
+                            disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_READ),
                             activeStyle: {
                                 borderBottom: 2,
                                 borderColor: organizationChartView === 'teams' ? 'primary.main' : 'transparent',
@@ -220,6 +261,7 @@ export function OrganizationChart(): React.ReactElement {
                             view={organizationChartView}
                             rootDepartments={rootDepartments}
                             teams={teams}
+                            canReadUsers={canReadUsers}
                         />
                     )
                 }

@@ -36,7 +36,8 @@ import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
 import {Permission} from '../../../data/permissions/permission';
-import {checkSystemPermission} from '../../../modules/permissions/utils/permission-utils';
+import {checkAnyDepartmentPermission, checkSystemPermission} from '../../../modules/permissions/utils/permission-utils';
+import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -57,6 +58,7 @@ export interface DrawerItem {
     chipContent?: ReactNode;
     disabled?: boolean;
     requiredSystemPermission?: Permission | string;
+    isVisible?: (permissions: PermissionSet | undefined) => boolean;
 }
 
 const BaseDrawerGroups: DrawerGroup[] = [
@@ -154,7 +156,12 @@ const BaseDrawerGroups: DrawerGroup[] = [
                             },
                         ],
                     },
-                    {icon: <FamilyHistory/>, label: 'Organigramm', to: '/organization-chart'},
+                    {
+                        icon: <FamilyHistory/>,
+                        label: 'Organigramm',
+                        to: '/organization-chart',
+                        isVisible: (permissions) => checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),
+                    },
                 ],
             },
             {
@@ -344,6 +351,10 @@ export function ShellDrawer() {
         const filterByPermission = (items: DrawerItem[]): DrawerItem[] => {
             return items
                 .filter((item) => {
+                    if (item.isVisible != null && !item.isVisible(permissions)) {
+                        return false;
+                    }
+
                     if (item.requiredSystemPermission == null) {
                         return true;
                     }
@@ -403,7 +414,7 @@ export function ShellDrawer() {
                 items: filterByPermission(group.items),
             }))
             .filter((group) => group.items.length > 0);
-    }, [assetStorageProviderItems, assignedTaskCount, hasDrawerSystemPermission, isLoadingAssetStorageProviders]);
+    }, [assetStorageProviderItems, assignedTaskCount, hasDrawerSystemPermission, isLoadingAssetStorageProviders, permissions]);
 
     // responsive auto-minimize
     useEffect(() => {

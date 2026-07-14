@@ -16,6 +16,11 @@ interface SimulatedOrganizationChartData {
     teams: OrganizationChartTeamItem[];
 }
 
+interface SimulatedOrganizationChartOptions {
+    canReadDepartmentMemberships?: boolean;
+    canReadTeamMemberships?: boolean;
+}
+
 const SIMULATED_CREATED = '2026-01-01T00:00:00.000Z';
 const SIMULATED_DEPARTMENT_MEMBER_COUNTS = [
     0,
@@ -98,7 +103,7 @@ const SIMULATED_LAST_NAMES = [
     'Zeder',
 ];
 
-export function createSimulatedOrganizationChartData(): SimulatedOrganizationChartData {
+export function createSimulatedOrganizationChartData(options: SimulatedOrganizationChartOptions = {}): SimulatedOrganizationChartData {
     const rootDepartments = [
         createSimulatedCityAdministrationOrganisation(),
         createSimulatedMunicipalServicesOrganisation(),
@@ -107,6 +112,7 @@ export function createSimulatedOrganizationChartData(): SimulatedOrganizationCha
     const departments = flattenDepartments(rootDepartments);
 
     departments.forEach((department, index) => {
+        department.canReadMemberships = options.canReadDepartmentMemberships ?? true;
         department.members = createSimulatedMembers(
             SIMULATED_DEPARTMENT_MEMBER_COUNTS[index % SIMULATED_DEPARTMENT_MEMBER_COUNTS.length],
             `department-${department.id}`,
@@ -116,6 +122,7 @@ export function createSimulatedOrganizationChartData(): SimulatedOrganizationCha
 
     const teams = createSimulatedTeams();
     teams.forEach((team, index) => {
+        team.canReadMemberships = options.canReadTeamMemberships ?? true;
         team.members = createSimulatedMembers(
             SIMULATED_TEAM_MEMBER_COUNTS[index % SIMULATED_TEAM_MEMBER_COUNTS.length],
             `team-${team.id}`,
@@ -212,6 +219,7 @@ function createSimulatedDepartment(
         parentNames: null,
         color: stringToPastelColor(name),
         children: [],
+        canReadMemberships: true,
         members: [],
     };
 }
@@ -223,6 +231,7 @@ function createSimulatedTeam(id: number, name: string): OrganizationChartTeamIte
         created: SIMULATED_CREATED,
         updated: SIMULATED_CREATED,
         color: stringToPastelColor(name),
+        canReadMemberships: true,
         members: [],
     };
 }

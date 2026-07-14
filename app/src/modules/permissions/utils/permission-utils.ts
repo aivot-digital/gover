@@ -55,6 +55,20 @@ export function hasDepartmentPermission(
     }
 }
 
+export function checkAnyDepartmentPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
+    return checkSystemPermission(permissionSet, permission) ||
+        (
+            permissionSet?.departmentPermissions
+                ?.some((entry) => entry != null && entry.permissions?.includes(permission)) ?? false
+        );
+}
+
+export function hasAnyDepartmentPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
+    if (!checkAnyDepartmentPermission(permissionSet, permission)) {
+        throw createPermissionDeniedError(permission);
+    }
+}
+
 export function checkTeamPermission(
     permissionSet: PermissionSet | undefined,
     teamId: number | undefined,
@@ -74,6 +88,20 @@ export function hasTeamPermission(
     permission: PermissionLike,
 ): void {
     if (!checkTeamPermission(permissionSet, teamId, permission)) {
+        throw createPermissionDeniedError(permission);
+    }
+}
+
+export function checkAnyTeamPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
+    return checkSystemPermission(permissionSet, permission) ||
+        (
+            permissionSet?.teamPermissions
+                ?.some((entry) => entry != null && entry.permissions?.includes(permission)) ?? false
+        );
+}
+
+export function hasAnyTeamPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
+    if (!checkAnyTeamPermission(permissionSet, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }

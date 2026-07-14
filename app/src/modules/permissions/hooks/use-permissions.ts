@@ -5,11 +5,15 @@ import {selectPermissions, selectUser, setPermissions} from '../../../slices/use
 import {PermissionApiService} from '../permission-api-service';
 import {broadcastCrossTabInvalidation} from '../../../hooks/use-cross-tab-invalidation';
 import {
+    checkAnyDepartmentPermission,
+    checkAnyTeamPermission,
     checkDepartmentPermission,
     checkProcessInstancePermission,
     checkProcessPermission,
     checkSystemPermission,
     checkTeamPermission,
+    hasAnyDepartmentPermission,
+    hasAnyTeamPermission,
     hasDepartmentPermission,
     hasProcessInstancePermission,
     hasProcessPermission,
@@ -78,6 +82,16 @@ export function useHasDepartmentPermission(
     hasDepartmentPermission(permissionSet, departmentId, permission);
 }
 
+export function useCheckAnyDepartmentPermission(permission: PermissionLike): boolean {
+    const permissionSet = useAppSelector(selectPermissions);
+    return checkAnyDepartmentPermission(permissionSet, permission);
+}
+
+export function useHasAnyDepartmentPermission(permission: PermissionLike): void {
+    const permissionSet = useAppSelector(selectPermissions);
+    hasAnyDepartmentPermission(permissionSet, permission);
+}
+
 export function useCheckTeamPermission(
     teamId: number | undefined,
     permission: PermissionLike,
@@ -92,6 +106,16 @@ export function useHasTeamPermission(
 ): void {
     const permissionSet = useAppSelector(selectPermissions);
     hasTeamPermission(permissionSet, teamId, permission);
+}
+
+export function useCheckAnyTeamPermission(permission: PermissionLike): boolean {
+    const permissionSet = useAppSelector(selectPermissions);
+    return checkAnyTeamPermission(permissionSet, permission);
+}
+
+export function useHasAnyTeamPermission(permission: PermissionLike): void {
+    const permissionSet = useAppSelector(selectPermissions);
+    hasAnyTeamPermission(permissionSet, permission);
 }
 
 export function useCheckProcessPermission(
