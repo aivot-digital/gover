@@ -5,14 +5,16 @@ import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {useCallback} from 'react';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function ThemeDetailsPage() {
-    useHasSystemPermission(Permission.THEME_READ);
-    const canCreateTheme = useCheckSystemPermission(Permission.THEME_CREATE);
-    const canUpdateTheme = useCheckSystemPermission(Permission.THEME_UPDATE);
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateTheme = checkSystemPermission(permissions, Permission.THEME_CREATE);
+    const canUpdateTheme = checkSystemPermission(permissions, Permission.THEME_UPDATE);
     const isEditable = useCallback((item: Theme | undefined) => {
         if (item == null) {
             return false;
@@ -20,6 +22,15 @@ export function ThemeDetailsPage() {
 
         return item.id === 0 ? canCreateTheme : canUpdateTheme;
     }, [canCreateTheme, canUpdateTheme]);
+    const hasAccess = useCallback((item: Theme | undefined) => {
+        if (item == null) {
+            return;
+        }
+
+        hasSystemPermission(permissions, item.id === 0
+            ? Permission.THEME_CREATE
+            : Permission.THEME_READ);
+    }, [permissions]);
 
     return (
         <PageWrapper
@@ -28,6 +39,7 @@ export function ThemeDetailsPage() {
             background
         >
             <GenericDetailsPage<Theme, number, undefined>
+                hasAccess={hasAccess}
                 isEditable={isEditable}
                 header={{
                     icon: <PaletteOutlinedIcon />,

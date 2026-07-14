@@ -6,13 +6,15 @@ import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function UserRolesDetailsPage() {
-    useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
-    const canCreateDomainRole = useCheckSystemPermission(Permission.DOMAIN_ROLE_CREATE);
-    const canUpdateDomainRole = useCheckSystemPermission(Permission.DOMAIN_ROLE_UPDATE);
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_CREATE);
+    const canUpdateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_UPDATE);
     const isEditable = useCallback((item: UserRoleResponseDTO | undefined) => {
         if (item == null) {
             return false;
@@ -20,6 +22,15 @@ export function UserRolesDetailsPage() {
 
         return item.id === 0 ? canCreateDomainRole : canUpdateDomainRole;
     }, [canCreateDomainRole, canUpdateDomainRole]);
+    const hasAccess = useCallback((item: UserRoleResponseDTO | undefined) => {
+        if (item == null) {
+            return;
+        }
+
+        hasSystemPermission(permissions, item.id === 0
+            ? Permission.DOMAIN_ROLE_CREATE
+            : Permission.DOMAIN_ROLE_READ);
+    }, [permissions]);
 
     return (
         <PageWrapper
@@ -28,6 +39,7 @@ export function UserRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<UserRoleResponseDTO, number, undefined>
+                hasAccess={hasAccess}
                 isEditable={isEditable}
                 header={{
                     icon: ModuleIcons.roles,

@@ -13,14 +13,15 @@ import {
     DefaultUserSystemRoleBadge,
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function SystemRolesDetailsPage() {
-    useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
+    const permissions = useAppSelector(selectPermissions);
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
-    const canCreateSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_CREATE);
-    const canUpdateSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_UPDATE);
+    const canCreateSystemRole = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_CREATE);
+    const canUpdateSystemRole = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_UPDATE);
     const isEditable = useCallback((item: SystemRoleEntity | undefined) => {
         if (item == null) {
             return false;
@@ -28,6 +29,15 @@ export function SystemRolesDetailsPage() {
 
         return item.id === 0 ? canCreateSystemRole : canUpdateSystemRole;
     }, [canCreateSystemRole, canUpdateSystemRole]);
+    const hasAccess = useCallback((item: SystemRoleEntity | undefined) => {
+        if (item == null) {
+            return;
+        }
+
+        hasSystemPermission(permissions, item.id === 0
+            ? Permission.SYSTEM_ROLE_CREATE
+            : Permission.SYSTEM_ROLE_READ);
+    }, [permissions]);
 
     return (
         <PageWrapper
@@ -36,6 +46,7 @@ export function SystemRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<SystemRoleEntity, number, void>
+                hasAccess={hasAccess}
                 isEditable={isEditable}
                 header={(item, isNewItem, notFound) => ({
                     icon: ModuleIcons.roles,

@@ -6,13 +6,15 @@ import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
 import React, {useCallback} from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../../slices/user-slice';
+import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function SecretsDetailsPage() {
-    useHasSystemPermission(Permission.SECRET_READ);
-    const canCreateSecret = useCheckSystemPermission(Permission.SECRET_CREATE);
-    const canUpdateSecret = useCheckSystemPermission(Permission.SECRET_UPDATE);
+    const permissions = useAppSelector(selectPermissions);
+    const canCreateSecret = checkSystemPermission(permissions, Permission.SECRET_CREATE);
+    const canUpdateSecret = checkSystemPermission(permissions, Permission.SECRET_UPDATE);
 
     const isEditable = useCallback((item: Secret | undefined) => {
         if (item == null) {
@@ -23,6 +25,15 @@ export function SecretsDetailsPage() {
             ? canCreateSecret
             : canUpdateSecret;
     }, [canCreateSecret, canUpdateSecret]);
+    const hasAccess = useCallback((item: Secret | undefined) => {
+        if (item == null) {
+            return;
+        }
+
+        hasSystemPermission(permissions, item.key === ''
+            ? Permission.SECRET_CREATE
+            : Permission.SECRET_READ);
+    }, [permissions]);
 
     return (
         <PageWrapper
@@ -31,6 +42,7 @@ export function SecretsDetailsPage() {
             background
         >
             <GenericDetailsPage<Secret, string, undefined>
+                hasAccess={hasAccess}
                 isEditable={isEditable}
                 header={{
                     icon: <KeyOutlinedIcon />,
