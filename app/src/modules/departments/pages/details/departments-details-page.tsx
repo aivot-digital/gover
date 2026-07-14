@@ -94,8 +94,11 @@ export function DepartmentsDetailsPage() {
                     },
                     {
                         path: '/departments/:id/processes',
-                        label: 'Prozesse',
-                        isDisabled: (item) => !item?.id,
+                        label: 'Verwaltete Prozesse',
+                        isDisabled: (item) => !item?.id || !checkDepartmentPermission(permissions, item.id, Permission.PROCESS_DEFINITION_READ),
+                        disabledTooltip: (item) => item?.id && !checkDepartmentPermission(permissions, item.id, Permission.PROCESS_DEFINITION_READ)
+                            ? formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_READ)
+                            : undefined,
                     },
                 ]}
                 initializeItem={(api) => DepartmentApiService.initialize()}
