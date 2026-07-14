@@ -4,11 +4,13 @@ import de.aivot.gover.backend.asset.entities.AssetEntity;
 import de.aivot.gover.backend.asset.services.AssetService;
 import de.aivot.gover.backend.codeLists.entities.CodeListEntity;
 import de.aivot.gover.backend.codeLists.entities.CodeListItemEntity;
+import de.aivot.gover.backend.codeLists.entities.VCodeListItemEntity;
 import de.aivot.gover.backend.codeLists.enums.CodeListSourceType;
 import de.aivot.gover.backend.codeLists.enums.CodeListStatus;
 import de.aivot.gover.backend.codeLists.repositories.CodeListItemRepository;
 import de.aivot.gover.backend.codeLists.repositories.CodeListRepository;
 import de.aivot.gover.backend.codeLists.repositories.VCodeListItemRepository;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.xrepository.models.*;
 import de.aivot.gover.backend.xrepository.services.XRepositoryCodeListService;
@@ -24,6 +26,7 @@ import java.util.stream.StreamSupport;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -253,6 +256,144 @@ class CodeListServiceTest {
 
         assertEquals(CodeListStatus.Synced, codeList.getStatus());
         assertEquals(List.of("code", "COL1", "name"), codeList.getColumns());
+    }
+
+    @Test
+    void exportCsvWritesColumnsAndItems() throws Exception {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var assetService = mock(AssetService.class);
+        var storageService = mock(StorageService.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
+        var codeList = createManualCodeList();
+
+        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
+                new VCodeListItemEntity()
+                        .setId(1L)
+                        .setCodeListId(7)
+                        .setColumns(List.of("001", "Berlin"))
+                        .setValue("001")
+                        .setLabel("Berlin"),
+                new VCodeListItemEntity()
+                        .setId(2L)
+                        .setCodeListId(7)
+                        .setColumns(List.of("00,2", "Ham\"burg"))
+                        .setValue("00,2")
+                        .setLabel("Ham\"burg")
+        ));
+
+        var csv = new String(service.exportCSV(7), StandardCharsets.UTF_8);
+
+        assertEquals("code,name\r\n001,Berlin\r\n\"00,2\",\"Ham\"\"burg\"\r\n", csv);
+    }
+
+    @Test
+    void importManualCsvReplacesItemsAndUpdatesColumns() throws Exception {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var assetService = mock(AssetService.class);
+        var storageService = mock(StorageService.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
+        var codeList = createManualCodeList()
+                .setColumns(List.of("old"))
+                .setValueColumnIndex(0)
+                .setLabelColumnIndex(0);
+
+        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var imported = service.importCSV(
+                7,
+                new ByteArrayInputStream("""
+                        code,name
+                        001,Berlin
+                        002,Hamburg
+                        """.getBytes(StandardCharsets.UTF_8))
+        );
+
+        verify(codeListItemRepository).deleteAllByCodeListId(7);
+
+        @SuppressWarnings({"rawtypes", "unchecked"})
+        var itemsCaptor = (ArgumentCaptor<Iterable<CodeListItemEntity>>) (ArgumentCaptor) ArgumentCaptor.forClass(Iterable.class);
+        verify(codeListItemRepository).saveAll(itemsCaptor.capture());
+        var savedItems = StreamSupport
+                .stream(itemsCaptor.getValue().spliterator(), false)
+                .toList();
+
+        assertEquals(List.of("code", "name"), imported.getColumns());
+        assertEquals(0, imported.getValueColumnIndex());
+        assertEquals(0, imported.getLabelColumnIndex());
+        assertEquals(List.of("001", "Berlin"), savedItems.getFirst().getColumns());
+        assertEquals(List.of("002", "Hamburg"), savedItems.get(1).getColumns());
+    }
+
+    @Test
+    void importManualCsvRejectsDuplicateValuesBeforeDeletingItems() {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var assetService = mock(AssetService.class);
+        var storageService = mock(StorageService.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
+        var codeList = createManualCodeList();
+
+        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+
+        assertThrows(ResponseException.class, () -> service.importCSV(
+                7,
+                new ByteArrayInputStream("""
+                        code,name
+                        001,Berlin
+                        001,Hamburg
+                        """.getBytes(StandardCharsets.UTF_8))
+        ));
+
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        verify(codeListItemRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void importCsvRejectsNonManualCodeLists() {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var assetService = mock(AssetService.class);
+        var storageService = mock(StorageService.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
+        var codeList = createCodeList();
+
+        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+
+        assertThrows(ResponseException.class, () -> service.importCSV(
+                7,
+                new ByteArrayInputStream("""
+                        code,name
+                        001,Berlin
+                        """.getBytes(StandardCharsets.UTF_8))
+        ));
+
+        verify(codeListItemRepository, never()).deleteAllByCodeListId(any());
+        verify(codeListItemRepository, never()).saveAll(any());
+    }
+
+    private static CodeListEntity createManualCodeList() {
+        return new CodeListEntity()
+                .setId(7)
+                .setSourceType(CodeListSourceType.Manual)
+                .setSourceRef("")
+                .setName("Test")
+                .setDescription("")
+                .setColumns(List.of("code", "name"))
+                .setValueColumnIndex(0)
+                .setLabelColumnIndex(1)
+                .setStatus(CodeListStatus.Synced);
     }
 
     private static CodeListEntity createCodeList() {

@@ -21,6 +21,7 @@ import de.aivot.gover.backend.xrepository.services.XRepositoryCodeListService;
 import de.siegmar.fastcsv.reader.CsvParseException;
 import de.siegmar.fastcsv.reader.CsvReader;
 import de.siegmar.fastcsv.reader.CsvRecord;
+import de.siegmar.fastcsv.writer.CsvWriter;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,9 +29,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
@@ -148,6 +153,47 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         } catch (Exception e) {
             markSyncFailed(codeList, e.getMessage());
         }
+    }
+
+    @Nonnull
+    public byte[] exportCSV(@Nonnull Integer codeListId) throws ResponseException {
+        var codeList = requireCodeList(codeListId);
+        var items = vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+        var outputStream = new ByteArrayOutputStream();
+
+        try (var csv = CsvWriter.builder().build(outputStream, StandardCharsets.UTF_8)) {
+            csv.writeRecord(codeList.getColumns());
+            for (var item : items) {
+                csv.writeRecord(item.getColumns());
+            }
+        } catch (IOException | UncheckedIOException e) {
+            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht erzeugt werden: %s", e.getMessage());
+        }
+
+        return outputStream.toByteArray();
+    }
+
+    @Nonnull
+    @Transactional
+    public CodeListEntity importCSV(@Nonnull Integer codeListId,
+                                    @Nonnull InputStream inputStream) throws ResponseException {
+        var codeList = requireManualCodeList(codeListId);
+
+        List<CodeListItemEntity> importedItems;
+        try (var csv = CsvReader.builder()
+                .detectBomHeader(true)
+                .ofCsvRecord(inputStream)
+        ) {
+            importedItems = extractCsvItems(codeList, csv);
+        } catch (CsvParseException | UncheckedIOException e) {
+            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
+        } catch (IOException e) {
+            throw ResponseException.internalServerError(e, "Die CSV-Datei konnte nicht geschlossen werden: %s", e.getMessage());
+        }
+
+        validateUniqueItemValues(codeList, importedItems);
+        replaceItems(codeList, importedItems);
+        return codeListRepository.save(codeList);
     }
 
     @Nonnull
@@ -304,6 +350,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         }
 
         validateUniqueItemValues(codeListEntity, importedItems);
+        codeListRepository.save(codeListEntity);
 
         if (keepOutdated) {
             upsertItems(codeListEntity, importedItems);
@@ -418,8 +465,8 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
                                                      @Nonnull CsvReader<CsvRecord> csv) throws ResponseException {
         var iterator = csv.iterator();
         codeListEntity.setColumns(extractCsvHeader(iterator));
+        normalizeColumnIndexes(codeListEntity);
         validateCodeListColumns(codeListEntity);
-        codeListRepository.save(codeListEntity);
 
         var items = new ArrayList<CodeListItemEntity>();
         while (iterator.hasNext()) {
@@ -472,6 +519,28 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         }
 
         return normalizedHeader;
+    }
+
+    private void normalizeColumnIndexes(@Nonnull CodeListEntity codeListEntity) {
+        var columns = codeListEntity.getColumns();
+        if (columns == null || columns.isEmpty()) {
+            codeListEntity
+                    .setValueColumnIndex(0)
+                    .setLabelColumnIndex(0);
+            return;
+        }
+
+        var lastIndex = columns.size() - 1;
+        if (codeListEntity.getValueColumnIndex() == null ||
+                codeListEntity.getValueColumnIndex() < 0 ||
+                codeListEntity.getValueColumnIndex() > lastIndex) {
+            codeListEntity.setValueColumnIndex(0);
+        }
+        if (codeListEntity.getLabelColumnIndex() == null ||
+                codeListEntity.getLabelColumnIndex() < 0 ||
+                codeListEntity.getLabelColumnIndex() > lastIndex) {
+            codeListEntity.setLabelColumnIndex(Math.min(1, lastIndex));
+        }
     }
 
     @Nonnull

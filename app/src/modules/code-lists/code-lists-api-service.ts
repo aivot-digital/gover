@@ -43,6 +43,16 @@ export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, 
         });
     }
 
+    public async exportCsv(codeListId: number): Promise<Blob> {
+        return await this.getBlob(`${this.buildPath(codeListId)}export.csv`);
+    }
+
+    public async importCsv(codeListId: number, file: File): Promise<CodeList> {
+        const formData = new FormData();
+        formData.append('file', file);
+        return await this.postFormData<CodeList>(`${this.buildPath(codeListId)}import.csv`, formData);
+    }
+
     public async listItems(
         codeListId: number,
         page: number,

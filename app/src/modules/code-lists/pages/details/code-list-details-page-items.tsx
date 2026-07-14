@@ -1,7 +1,9 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {Alert, Box, Button, Typography} from '@mui/material';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
 import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {GridColDef} from '@mui/x-data-grid';
 import {
@@ -19,6 +21,24 @@ import {CodeList} from '../../models/code-list';
 import {CodeListItem} from '../../models/code-list-item';
 import {CodeListSourceType} from '../../enums/code-list-source-type';
 import {CodeListItemDialog} from '../../dialogs/code-list-item-dialog';
+import {downloadBlobFile} from '../../../../utils/download-utils';
+
+function selectCsvFile(): Promise<File | null> {
+    return new Promise((resolve) => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv,text/csv';
+        input.addEventListener('change', () => {
+            resolve(input.files?.[0] ?? null);
+            input.remove();
+        });
+        input.addEventListener('cancel', () => {
+            resolve(null);
+            input.remove();
+        });
+        input.click();
+    });
+}
 
 export function CodeListDetailsPageItems() {
     const dispatch = useAppDispatch();
@@ -27,15 +47,18 @@ export function CodeListDetailsPageItems() {
 
     const {
         item: codeList,
+        setItem,
         isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<CodeList, void>;
 
     const [dialogItem, setDialogItem] = useState<CodeListItem | null>(null);
     const [showDialog, setShowDialog] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [isCsvBusy, setIsCsvBusy] = useState(false);
 
     const isManual = codeList?.sourceType === CodeListSourceType.Manual;
     const canManageItems = isEditable && isManual;
+    const isSavedCodeList = codeList != null && codeList.id !== 0;
 
     const fetchItems = useCallback((options: GenericListPropsFetchOptions<CodeListItem>) => {
         if (codeList == null) {
@@ -151,6 +174,67 @@ export function CodeListDetailsPageItems() {
             });
     };
 
+    const handleExportCsv = useCallback(() => {
+        if (codeList == null || codeList.id === 0) {
+            return;
+        }
+
+        setIsCsvBusy(true);
+
+        new CodeListsApiService()
+            .exportCsv(codeList.id)
+            .then((blob) => {
+                downloadBlobFile(`code-list-${codeList.id}.csv`, blob);
+                dispatch(showSuccessSnackbar('CSV-Export wurde gestartet.'));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die CSV-Datei konnte nicht exportiert werden.'));
+            })
+            .finally(() => {
+                setIsCsvBusy(false);
+            });
+    }, [codeList, dispatch]);
+
+    const handleImportCsv = useCallback(async () => {
+        if (codeList == null || codeList.id === 0 || !canManageItems) {
+            return;
+        }
+
+        const file = await selectCsvFile();
+        if (file == null) {
+            return;
+        }
+
+        const confirmed = await showConfirm({
+            title: 'CSV importieren',
+            children: (
+                <Typography>
+                    Der Import ersetzt alle bestehenden Einträge dieser Code-Liste.
+                </Typography>
+            ),
+            confirmButtonText: 'CSV importieren',
+        });
+        if (!confirmed) {
+            return;
+        }
+
+        setIsCsvBusy(true);
+
+        new CodeListsApiService()
+            .importCsv(codeList.id, file)
+            .then((updatedCodeList) => {
+                setItem(updatedCodeList);
+                listControlRef.current?.refresh();
+                dispatch(showSuccessSnackbar('CSV-Datei wurde importiert.'));
+            })
+            .catch((err) => {
+                dispatch(showApiErrorSnackbar(err, 'Die CSV-Datei konnte nicht importiert werden.'));
+            })
+            .finally(() => {
+                setIsCsvBusy(false);
+            });
+    }, [canManageItems, codeList, dispatch, setItem, showConfirm]);
+
     const rowActions = useCallback((item: CodeListItem) => {
         if (!canManageItems) {
             return [];
@@ -174,22 +258,52 @@ export function CodeListDetailsPageItems() {
     }, [canManageItems]);
 
     const preSearchElements = useMemo(() => {
-        if (!canManageItems) {
+        if (!isSavedCodeList) {
             return undefined;
         }
 
         return [
-            <Button
-                key="add"
-                variant="contained"
-                startIcon={<AddOutlinedIcon/>}
-                onClick={handleOpenCreateDialog}
-                disabled={(codeList?.columns.length ?? 0) === 0}
+            <Box
+                key="actions"
+                sx={{
+                    display: 'flex',
+                    gap: 1,
+                    flexWrap: 'wrap',
+                }}
             >
-                Eintrag hinzufügen
-            </Button>,
+                <Button
+                    variant="outlined"
+                    startIcon={<FileDownloadOutlinedIcon/>}
+                    onClick={handleExportCsv}
+                    disabled={isCsvBusy}
+                >
+                    CSV exportieren
+                </Button>
+                {
+                    canManageItems &&
+                    <Button
+                        variant="outlined"
+                        startIcon={<CloudUploadOutlinedIcon/>}
+                        onClick={handleImportCsv}
+                        disabled={isCsvBusy}
+                    >
+                        CSV importieren
+                    </Button>
+                }
+                {
+                    canManageItems &&
+                    <Button
+                        variant="contained"
+                        startIcon={<AddOutlinedIcon/>}
+                        onClick={handleOpenCreateDialog}
+                        disabled={(codeList?.columns.length ?? 0) === 0}
+                    >
+                        Eintrag hinzufügen
+                    </Button>
+                }
+            </Box>,
         ];
-    }, [canManageItems, codeList?.columns.length]);
+    }, [canManageItems, codeList?.columns.length, handleExportCsv, handleImportCsv, isCsvBusy, isSavedCodeList]);
 
     if (codeList == null) {
         return null;

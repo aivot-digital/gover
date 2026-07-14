@@ -20,14 +20,22 @@ import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 @RestController
@@ -194,12 +202,45 @@ public class CodeListController {
     }
 
     @GetMapping("{codeListId}/export.csv")
-    public Resource exportCSV(
+    public ResponseEntity<Resource> exportCSV(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
         // TODO: Permission Check
-        throw ResponseException.methodNotAllowed("CSV-Export ist noch nicht implementiert.");
+        var bytes = service.exportCSV(codeListId);
+
+        return ResponseEntity
+                .ok()
+                .contentType(MediaType.valueOf("text/csv"))
+                .contentLength(bytes.length)
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition
+                                .attachment()
+                                .filename("code-list-%d.csv".formatted(codeListId), StandardCharsets.UTF_8)
+                                .build()
+                                .toString()
+                )
+                .body(new ByteArrayResource(bytes));
+    }
+
+    @PostMapping(
+            value = "{codeListId}/import.csv",
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public CodeListEntity importCSV(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @RequestPart("file") MultipartFile file
+    ) throws ResponseException {
+        // TODO: Permission Check
+
+        try {
+            return service.importCSV(codeListId, file.getInputStream());
+        } catch (IOException e) {
+            throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
+        }
     }
 
     @GetMapping("{codeListId}/update/")
