@@ -9,15 +9,20 @@ import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import de.aivot.gover.backend.user.services.UserService;
+import de.aivot.gover.backend.userRoles.entities.UserRoleAssignmentEntity;
+import de.aivot.gover.backend.userRoles.services.UserRoleAssignmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -25,14 +30,17 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
     private final DepartmentMembershipRepository repository;
     private final DepartmentRepository departmentRepository;
     private final UserService userService;
+    private final UserRoleAssignmentService userRoleAssignmentService;
 
     @Autowired
     public DepartmentMembershipService(DepartmentMembershipRepository repository,
                                        DepartmentRepository departmentRepository,
-                                       UserService userService) {
+                                       UserService userService,
+                                       UserRoleAssignmentService userRoleAssignmentService) {
         this.repository = repository;
         this.departmentRepository = departmentRepository;
         this.userService = userService;
+        this.userRoleAssignmentService = userRoleAssignmentService;
     }
 
     @Nonnull
@@ -59,6 +67,29 @@ public class DepartmentMembershipService implements EntityService<DepartmentMemb
         }
 
         return repository.save(entity);
+    }
+
+    @Nonnull
+    @Transactional(rollbackFor = ResponseException.class)
+    public DepartmentMembershipEntity createWithRoles(@Nonnull DepartmentMembershipEntity entity,
+                                                      @Nonnull List<Integer> roleIds) throws ResponseException {
+        var membership = create(entity);
+
+        // Initial role assignment belongs to membership creation. Later role changes still go through the
+        // assignment endpoints and require the department membership update permission.
+        createInitialRoleAssignments(membership.getId(), roleIds);
+
+        return membership;
+    }
+
+    private void createInitialRoleAssignments(@Nonnull Integer membershipId,
+                                              @Nonnull List<Integer> roleIds) throws ResponseException {
+        for (var roleId : roleIds.stream().filter(Objects::nonNull).distinct().toList()) {
+            userRoleAssignmentService.create(new UserRoleAssignmentEntity()
+                    .setDepartmentMembershipId(membershipId)
+                    .setTeamMembershipId(null)
+                    .setUserRoleId(roleId));
+        }
     }
 
     @Nonnull

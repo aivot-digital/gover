@@ -246,21 +246,9 @@ export function DepartmentsDetailsPageMembers() {
 
         new DepartmentMembershipApiService()
             .create({
-                id: 0,
                 userId: user.id,
                 departmentId: item.id,
-                created: new Date().toISOString(),
-                updated: new Date().toISOString(),
-            })
-            .then((membership) => {
-                const apiService = new VDepartmentUserRoleAssignmentWithDetailsService();
-                return Promise.all(roleIdsToAdd.map((roleId) => apiService.create({
-                    id: 0,
-                    departmentMembershipId: membership.id,
-                    teamMembershipId: null,
-                    userRoleId: roleId,
-                    created: new Date().toISOString(),
-                })));
+                roleIds: roleIdsToAdd,
             })
             .then(() => {
                 // Refresh list

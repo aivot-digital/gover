@@ -3,6 +3,7 @@ package de.aivot.gover.backend.department.controllers;
 import de.aivot.gover.backend.audit.enums.AuditAction;
 import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.audit.services.ScopedAuditService;
+import de.aivot.gover.backend.department.dtos.DepartmentMembershipCreateRequestDTO;
 import de.aivot.gover.backend.department.entities.DepartmentMembershipEntity;
 import de.aivot.gover.backend.department.filters.DepartmentMembershipFilter;
 import de.aivot.gover.backend.department.permissions.DepartmentPermissionProvider;
@@ -116,11 +117,11 @@ public class DepartmentMembershipController {
     @Operation(
             summary = "Create department membership",
             description = "Create a new department membership linking a user to a department. " +
-                    "Requires super admin permissions or department edit permissions for the membership's target department."
+                    "Requires the department membership create permission for the target department."
     )
     public DepartmentMembershipEntity create(
             @AuthenticationPrincipal Jwt jwt,
-            @Valid @RequestBody DepartmentMembershipEntity newMembership
+            @Valid @RequestBody DepartmentMembershipCreateRequestDTO newMembership
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -128,12 +129,14 @@ public class DepartmentMembershipController {
 
         permissionService.hasDepartmentPermission(
                 execUser.getId(),
-                newMembership.getDepartmentId(),
+                newMembership.departmentId(),
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_CREATE
         );
 
+        var roleIds = newMembership.roleIdsOrEmpty();
+
         var createdMembership = departmentMembershipService
-                .create(newMembership);
+                .createWithRoles(newMembership.toEntity(), roleIds);
 
         auditService.create()
                 .withUser(execUser)
@@ -144,7 +147,8 @@ public class DepartmentMembershipController {
                         "id",
                         Map.of(
                                 "departmentId", createdMembership.getDepartmentId(),
-                                "userId", createdMembership.getUserId()
+                                "userId", createdMembership.getUserId(),
+                                "roleIds", roleIds
                         ))
                 .withMessage(
                         "Die Zugehörigkeit mit der ID %s für die Organisationseinheit %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",

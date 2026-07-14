@@ -7,6 +7,7 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
 import de.aivot.gover.backend.permissions.services.PermissionService;
+import de.aivot.gover.backend.teams.dtos.TeamMembershipCreateRequestDTO;
 import de.aivot.gover.backend.teams.entities.TeamMembershipEntity;
 import de.aivot.gover.backend.teams.filters.TeamMembershipFilter;
 import de.aivot.gover.backend.teams.permissions.TeamPermissionProvider;
@@ -104,11 +105,11 @@ public class TeamMembershipController {
     @Operation(
             summary = "Create Team Membership",
             description = "Create a new team membership to assign a user to a team. " +
-                    "You need the team membership create permission for the team to create a membership."
+                    "You need the team membership create permission for the team to create a membership with initial roles."
     )
     public TeamMembershipEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @RequestBody @Valid TeamMembershipEntity createDTO
+            @Nonnull @RequestBody @Valid TeamMembershipCreateRequestDTO createDTO
     ) throws ResponseException {
         var execUser = userService
                 .fromJWT(jwt)
@@ -116,17 +117,20 @@ public class TeamMembershipController {
 
         permissionService.hasTeamPermission(
                 execUser.getId(),
-                createDTO.getTeamId(),
+                createDTO.teamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_CREATE
         );
 
+        var roleIds = createDTO.roleIdsOrEmpty();
+
         var result = teamMembershipService
-                .create(createDTO);
+                .createWithRoles(createDTO.toEntity(), roleIds);
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, TeamMembershipEntity.class, result.getId(), "id", Map.of(
                 "id", result.getId(),
                 "teamId", result.getTeamId(),
-                "userId", result.getUserId()
+                "userId", result.getUserId(),
+                "roleIds", roleIds
         )).withMessage(
                 "Die Teamzugehörigkeit mit der ID %s für das Team %s und die Mitarbeiter:in %s wurde von der Mitarbeiter:in %s erstellt.",
                 StringUtils.quote(String.valueOf(result.getId())),

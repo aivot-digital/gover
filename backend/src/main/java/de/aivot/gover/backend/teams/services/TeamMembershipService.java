@@ -8,6 +8,8 @@ import de.aivot.gover.backend.teams.filters.TeamMembershipFilter;
 import de.aivot.gover.backend.teams.repositories.TeamMembershipRepository;
 import de.aivot.gover.backend.teams.repositories.TeamRepository;
 import de.aivot.gover.backend.user.repositories.UserRepository;
+import de.aivot.gover.backend.userRoles.entities.UserRoleAssignmentEntity;
+import de.aivot.gover.backend.userRoles.services.UserRoleAssignmentService;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +17,10 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -24,12 +29,17 @@ public class TeamMembershipService implements EntityService<TeamMembershipEntity
     private final TeamMembershipRepository teamMembershipRepository;
     private final TeamRepository teamRepository;
     private final UserRepository userRepository;
+    private final UserRoleAssignmentService userRoleAssignmentService;
 
     @Autowired
-    public TeamMembershipService(TeamMembershipRepository teamMembershipRepository, TeamRepository teamRepository, UserRepository userRepository) {
+    public TeamMembershipService(TeamMembershipRepository teamMembershipRepository,
+                                 TeamRepository teamRepository,
+                                 UserRepository userRepository,
+                                 UserRoleAssignmentService userRoleAssignmentService) {
         this.teamMembershipRepository = teamMembershipRepository;
         this.teamRepository = teamRepository;
         this.userRepository = userRepository;
+        this.userRoleAssignmentService = userRoleAssignmentService;
     }
 
     @Nonnull
@@ -58,6 +68,29 @@ public class TeamMembershipService implements EntityService<TeamMembershipEntity
         }
 
         return teamMembershipRepository.save(entity);
+    }
+
+    @Nonnull
+    @Transactional(rollbackFor = ResponseException.class)
+    public TeamMembershipEntity createWithRoles(@Nonnull TeamMembershipEntity entity,
+                                                @Nonnull List<Integer> roleIds) throws ResponseException {
+        var membership = create(entity);
+
+        // Initial role assignment belongs to membership creation. Later role changes still go through the
+        // assignment endpoints and require the team membership update permission.
+        createInitialRoleAssignments(membership.getId(), roleIds);
+
+        return membership;
+    }
+
+    private void createInitialRoleAssignments(@Nonnull Integer membershipId,
+                                              @Nonnull List<Integer> roleIds) throws ResponseException {
+        for (var roleId : roleIds.stream().filter(Objects::nonNull).distinct().toList()) {
+            userRoleAssignmentService.create(new UserRoleAssignmentEntity()
+                    .setDepartmentMembershipId(null)
+                    .setTeamMembershipId(membershipId)
+                    .setUserRoleId(roleId));
+        }
     }
 
     @Nullable
