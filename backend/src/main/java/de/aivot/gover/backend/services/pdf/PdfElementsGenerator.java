@@ -27,10 +27,20 @@ public class PdfElementsGenerator {
             @Nullable DerivedRuntimeElementData elementData,
             @Nonnull Boolean skipTechnical
     ) {
+        return generatePdfElements(rootElement, elementData, skipTechnical, elementData == null);
+    }
+
+    public static List<PdfElement> generatePdfElements(
+            @Nonnull FormLayoutElement rootElement,
+            @Nullable DerivedRuntimeElementData elementData,
+            @Nonnull Boolean skipTechnical,
+            boolean blankPrint
+    ) {
         var rootPdfElement = generatePdfElement(
                 rootElement,
                 elementData,
-                skipTechnical
+                skipTechnical,
+                blankPrint
         );
 
         if (rootPdfElement == null) {
@@ -40,6 +50,16 @@ public class PdfElementsGenerator {
         return rootPdfElement.children();
     }
 
+    public static int getBlankPrintPlaceholderCount(@Nonnull ReplicatingContainerLayoutElement replicatingContainerLayout) {
+        var amountOfPlaceholderDatasets = replicatingContainerLayout.getMaximumSets() != null && replicatingContainerLayout.getMaximumSets() > 0
+                ? replicatingContainerLayout.getMaximumSets()
+                : BLANK_PRINT_PLACEHOLDER_COUNT;
+        if (replicatingContainerLayout.getMinimumRequiredSets() != null && replicatingContainerLayout.getMinimumRequiredSets() > amountOfPlaceholderDatasets) {
+            amountOfPlaceholderDatasets = replicatingContainerLayout.getMinimumRequiredSets();
+        }
+        return amountOfPlaceholderDatasets;
+    }
+
     @Nullable
     private static PdfElement generatePdfElement(
             @Nullable
@@ -47,7 +67,8 @@ public class PdfElementsGenerator {
             @Nullable
             DerivedRuntimeElementData customerInput,
             @Nonnull
-            Boolean skipTechnical
+            Boolean skipTechnical,
+            boolean blankPrint
     ) {
         // Check if the current element is null
         if (currentElement == null) {
@@ -74,7 +95,7 @@ public class PdfElementsGenerator {
         }
 
         // Check if the element is visible
-        if (elementState != null) {
+        if (elementState != null && !blankPrint) {
             var isVisible = elementState.getVisible();
             if (!isVisible) {
                 return null;
@@ -91,7 +112,7 @@ public class PdfElementsGenerator {
             var children = rootElement
                     .getChildren()
                     .stream()
-                    .map(child -> generatePdfElement(child, customerInput, skipTechnical))
+                    .map(child -> generatePdfElement(child, customerInput, skipTechnical, blankPrint))
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
@@ -99,7 +120,7 @@ public class PdfElementsGenerator {
             var children = stepElement
                     .getChildren()
                     .stream()
-                    .map(child -> generatePdfElement(child, customerInput, skipTechnical))
+                    .map(child -> generatePdfElement(child, customerInput, skipTechnical, blankPrint))
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
@@ -107,7 +128,7 @@ public class PdfElementsGenerator {
             var children = stepElement
                     .getChildren()
                     .stream()
-                    .map(child -> generatePdfElement(child, customerInput, skipTechnical))
+                    .map(child -> generatePdfElement(child, customerInput, skipTechnical, blankPrint))
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
@@ -115,22 +136,23 @@ public class PdfElementsGenerator {
             var children = groupLayout
                     .getChildren()
                     .stream()
-                    .map(child -> generatePdfElement(child, customerInput, skipTechnical))
+                    .map(child -> generatePdfElement(child, customerInput, skipTechnical, blankPrint))
                     .filter(Objects::nonNull)
                     .toList();
             return new PdfElement(currentElement, null, children);
         } else if (currentElement instanceof ReplicatingContainerLayoutElement replicatingContainerLayout) {
-            if (customerInput == null) {
-                value = new LinkedList<DerivedRuntimeElementData>();
-                var amountOfPlaceholderDatasets = replicatingContainerLayout.getMaximumSets() != null && replicatingContainerLayout.getMaximumSets() > 0
-                        ? replicatingContainerLayout.getMaximumSets()
-                        : BLANK_PRINT_PLACEHOLDER_COUNT;
-                if (replicatingContainerLayout.getMinimumRequiredSets() != null && replicatingContainerLayout.getMinimumRequiredSets() > amountOfPlaceholderDatasets) {
-                    amountOfPlaceholderDatasets = replicatingContainerLayout.getMinimumRequiredSets();
-                }
+            if (blankPrint) {
+                var placeholderValues = new LinkedList<DerivedRuntimeElementData>();
+                var amountOfPlaceholderDatasets = getBlankPrintPlaceholderCount(replicatingContainerLayout);
                 for (int i = 0; i < amountOfPlaceholderDatasets; i++) {
-                    ((LinkedList<DerivedRuntimeElementData>) value).add(new DerivedRuntimeElementData());
+                    var childStates = elementState != null &&
+                            elementState.getSubStates() != null &&
+                            i < elementState.getSubStates().size()
+                            ? elementState.getSubStates().get(i)
+                            : new ComputedElementStates();
+                    placeholderValues.add(new DerivedRuntimeElementData(new EffectiveElementValues(), childStates));
                 }
+                value = placeholderValues;
             }
 
             if (value instanceof Collection<?> cValue) {
@@ -158,7 +180,7 @@ public class PdfElementsGenerator {
                     var children = replicatingContainerLayout
                             .getChildren()
                             .stream()
-                            .map(child -> generatePdfElement(child, childElementData, skipTechnical))
+                            .map(child -> generatePdfElement(child, childElementData, skipTechnical, blankPrint))
                             .filter(Objects::nonNull)
                             .toList();
 
@@ -172,7 +194,7 @@ public class PdfElementsGenerator {
                 return new PdfElement(currentElement, null, List.of());
             }
         } else {
-            if (currentElement instanceof TableInputElement tableElement && customerInput == null) {
+            if (currentElement instanceof TableInputElement tableElement && blankPrint) {
                 var placeholderRows = tableElement.getMaximumRows() != null && tableElement.getMaximumRows() > 0
                         ? tableElement.getMaximumRows()
                         : BLANK_PRINT_PLACEHOLDER_COUNT;

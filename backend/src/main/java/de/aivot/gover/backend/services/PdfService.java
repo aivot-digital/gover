@@ -9,9 +9,13 @@ import de.aivot.gover.backend.core.services.HttpService;
 import de.aivot.gover.backend.department.entities.VDepartmentShadowedEntity;
 import de.aivot.gover.backend.department.repositories.VDepartmentShadowedRepository;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.ElementDerivationOptions;
 import de.aivot.gover.backend.elements.models.ElementDerivationRequest;
+import de.aivot.gover.backend.elements.models.elements.BaseElement;
+import de.aivot.gover.backend.elements.models.elements.LayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
@@ -45,6 +49,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -111,11 +117,13 @@ public class PdfService {
 
     public byte[] generatePrintableForm(FormLayoutElement form) throws IOException, URISyntaxException, InterruptedException, ResponseException {
         var allElements = ElementFlattenUtils.flattenElements(form);
+        var derivedRuntimeElementData = deriveBlankPrintableElementData(form);
 
         var dto = new HashMap<String, Object>();
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 form,
-                null,
+                derivedRuntimeElementData,
+                true,
                 true
         ));
         dto.put("form", form);
@@ -141,11 +149,13 @@ public class PdfService {
         }
 
         var allElements = ElementFlattenUtils.flattenElements(rootElement);
+        var derivedRuntimeElementData = deriveBlankPrintableElementData(rootElement);
 
         var dto = new HashMap<String, Object>();
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 rootElement,
-                null,
+                derivedRuntimeElementData,
+                true,
                 true
         ));
         dto.put("form", form);
@@ -176,7 +186,8 @@ public class PdfService {
         dto.put("elements", PdfElementsGenerator.generatePdfElements(
                 form,
                 derivedRuntimeElementData,
-                scope != FormPdfScope.Staff
+                scope != FormPdfScope.Staff,
+                false
         ));
         dto.put("form", form);
         dto.put("submission", submission);
@@ -232,6 +243,54 @@ public class PdfService {
          */
 
         return generatePdf(form, dto, scope);
+    }
+
+    private DerivedRuntimeElementData deriveBlankPrintableElementData(FormLayoutElement form) {
+        return elementDerivationService
+                .derive(
+                        new ElementDerivationRequest(
+                                form,
+                                createBlankPrintableElementValues(form),
+                                new ElementDerivationOptions()
+                                        .setSkipErrorsForElementIds(java.util.List.of(ElementDerivationOptions.ALL_ELEMENTS))
+                        ),
+                        new IdentityDataMap(),
+                        new ElementDerivationLogger()
+                );
+    }
+
+    private AuthoredElementValues createBlankPrintableElementValues(BaseElement element) {
+        var values = new AuthoredElementValues();
+        collectBlankPrintableElementValues(element, values);
+        return values;
+    }
+
+    private AuthoredElementValues createBlankPrintableElementValues(Collection<? extends BaseElement> elements) {
+        var values = new AuthoredElementValues();
+        for (var element : elements) {
+            collectBlankPrintableElementValues(element, values);
+        }
+        return values;
+    }
+
+    private void collectBlankPrintableElementValues(BaseElement element, AuthoredElementValues values) {
+        if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
+            if (replicatingContainer.getId() != null) {
+                var rows = new ArrayList<AuthoredElementValues>();
+                var rowCount = PdfElementsGenerator.getBlankPrintPlaceholderCount(replicatingContainer);
+                for (var i = 0; i < rowCount; i++) {
+                    rows.add(createBlankPrintableElementValues(replicatingContainer.getChildren()));
+                }
+                values.put(replicatingContainer.getId(), rows);
+            }
+            return;
+        }
+
+        if (element instanceof LayoutElement<?> layoutElement) {
+            for (var child : layoutElement.getChildren()) {
+                collectBlankPrintableElementValues(child, values);
+            }
+        }
     }
 
     private byte[] generatePdf(FormLayoutElement form, Map<String, Object> dto, FormPdfScope scope) throws IOException, URISyntaxException, InterruptedException, ResponseException {
