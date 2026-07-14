@@ -11,6 +11,7 @@ public class CodeListPermissionProvider implements PermissionProvider {
     public static final String CODE_LIST_READ = "code_list.read";
     public static final String CODE_LIST_UPDATE = "code_list.update";
     public static final String CODE_LIST_DELETE = "code_list.delete";
+    public static final String CODE_LIST_EXPORT = "code_list.export";
 
     @Override
     public String getContextLabel() {
@@ -24,6 +25,7 @@ public class CodeListPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(CODE_LIST_READ, "Code-Liste anzeigen", "Erlaubt das Anzeigen und Auflisten von Code-Listen."),
                 PermissionEntry.of(CODE_LIST_UPDATE, "Code-Liste bearbeiten", "Erlaubt das Bearbeiten von Code-Listen."),
                 PermissionEntry.of(CODE_LIST_DELETE, "Code-Liste löschen", "Erlaubt das Löschen von Code-Listen."),
+                PermissionEntry.of(CODE_LIST_EXPORT, "Code-Liste exportieren", "Erlaubt das Exportieren von Code-Listen.")
         };
     }
 

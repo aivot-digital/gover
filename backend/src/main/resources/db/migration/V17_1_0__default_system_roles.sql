@@ -12,6 +12,7 @@ values (1,
             'code_list.read',
             'code_list.update',
             'code_list.delete',
+            'code_list.export',
 
             'object_schema.create',
             'object_schema.read',
