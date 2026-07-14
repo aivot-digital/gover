@@ -17,6 +17,9 @@ import {GenericList} from "../../../../components/generic-list/generic-list";
 import {
     VDepartmentMembershipWithDetailsService
 } from "../../../departments/services/v-department-membership-with-details-service";
+import {Permission} from '../../../../data/permissions/permission';
+import {useCheckAnyDepartmentPermission} from '../../../permissions/hooks/use-permissions';
+import {type Page} from '../../../../models/dtos/page';
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     {
@@ -51,6 +54,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
     const {
         item: userRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<UserRoleResponseDTO, undefined>;
+    const canReadDepartmentMemberships = useCheckAnyDepartmentPermission(Permission.DEPARTMENT_MEMBERSHIP_READ);
 
     if (userRole == null) {
         return (
@@ -84,6 +88,19 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
+                        if (!canReadDepartmentMemberships) {
+                            const page: Page<VDepartmentMembershipWithDetailsEntity> = {
+                                content: [],
+                                page: {
+                                    number: 0,
+                                    size: options.size,
+                                    totalElements: 0,
+                                    totalPages: 0,
+                                },
+                            };
+                            return Promise.resolve(page);
+                        }
+
                         return new VDepartmentMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
                                 domainRoleId: userRole.id,
@@ -96,8 +113,10 @@ export function UserRolesDetailsPageDepartmentMemberships() {
                     defaultSortField="userFullName"
                     noDataPlaceholder={
                         <EmptyDataListPlaceholder
-                            title="Keine Mitarbeiter:innen zugeordnet"
-                            description="Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb einer Organisationseinheit."
+                            title={canReadDepartmentMemberships ? 'Keine Mitarbeiter:innen zugeordnet' : 'Keine Zuordnungen sichtbar'}
+                            description={canReadDepartmentMemberships
+                                ? 'Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb einer Organisationseinheit.'
+                                : `Für die Anzeige von Zuordnungen in Organisationseinheiten ist die Berechtigung ${Permission.DEPARTMENT_MEMBERSHIP_READ} erforderlich.`}
                         />
                     }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"

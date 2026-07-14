@@ -13,6 +13,9 @@ import {GenericDetailsSkeleton} from "../../../../components/generic-details-pag
 import {GenericList} from "../../../../components/generic-list/generic-list";
 import {VTeamMembershipWithDetailsService} from '../../../teams/services/v-team-membership-with-details-service';
 import {VTeamMembershipWithDetailsEntity} from '../../../teams/entities/v-team-membership-with-details-entity';
+import {Permission} from '../../../../data/permissions/permission';
+import {useCheckAnyTeamPermission} from '../../../permissions/hooks/use-permissions';
+import {type Page} from '../../../../models/dtos/page';
 
 const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
@@ -47,6 +50,7 @@ export function UserRolesDetailsPageTeamMemberships() {
     const {
         item: userRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<UserRoleResponseDTO, undefined>;
+    const canReadTeamMemberships = useCheckAnyTeamPermission(Permission.TEAM_MEMBERSHIP_READ);
 
     if (userRole == null) {
         return (
@@ -80,6 +84,19 @@ export function UserRolesDetailsPageTeamMemberships() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
+                        if (!canReadTeamMemberships) {
+                            const page: Page<VTeamMembershipWithDetailsEntity> = {
+                                content: [],
+                                page: {
+                                    number: 0,
+                                    size: options.size,
+                                    totalElements: 0,
+                                    totalPages: 0,
+                                },
+                            };
+                            return Promise.resolve(page);
+                        }
+
                         return new VTeamMembershipWithDetailsService()
                             .list(options.page, options.size, options.sort, options.order, {
                                 domainRoleId: userRole.id,
@@ -92,8 +109,10 @@ export function UserRolesDetailsPageTeamMemberships() {
                     defaultSortField="userFullName"
                     noDataPlaceholder={
                         <EmptyDataListPlaceholder
-                            title="Keine Mitarbeiter:innen zugeordnet"
-                            description="Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb eines Teams."
+                            title={canReadTeamMemberships ? 'Keine Mitarbeiter:innen zugeordnet' : 'Keine Zuordnungen sichtbar'}
+                            description={canReadTeamMemberships
+                                ? 'Diese Zuordnungen vergeben kontextbezogene Rechte an Mitarbeiter:innen innerhalb eines Teams.'
+                                : `Für die Anzeige von Zuordnungen in Teams ist die Berechtigung ${Permission.TEAM_MEMBERSHIP_READ} erforderlich.`}
                         />
                     }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"

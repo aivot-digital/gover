@@ -13,6 +13,9 @@ import {GenericList} from "../../../../components/generic-list/generic-list";
 import {User} from "../../../users/models/user";
 import {UsersApiService} from "../../../users/users-api-service";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
+import {Permission} from '../../../../data/permissions/permission';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {type Page} from '../../../../models/dtos/page';
 
 const columns: Array<GridColDef<User>> = [
     {
@@ -34,6 +37,7 @@ export function SystemRolesDetailsPageMembers() {
     const {
         item: systemRole,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<SystemRoleEntity, undefined>;
+    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
 
     if (systemRole == null) {
         return (
@@ -66,6 +70,19 @@ export function SystemRolesDetailsPageMembers() {
                     }}
                     columnDefinitions={columns}
                     fetch={(options) => {
+                        if (!canReadUsers) {
+                            const page: Page<User> = {
+                                content: [],
+                                page: {
+                                    number: 0,
+                                    size: options.size,
+                                    totalElements: 0,
+                                    totalPages: 0,
+                                },
+                            };
+                            return Promise.resolve(page);
+                        }
+
                         return new UsersApiService()
                             .list(options.page, options.size, options.sort, options.order, {
                                 name: options.search,
@@ -78,8 +95,10 @@ export function SystemRolesDetailsPageMembers() {
                     defaultSortField="fullName"
                     noDataPlaceholder={
                         <EmptyDataListPlaceholder
-                            title="Keine Mitarbeiter:innen zugeordnet"
-                            description="Diese Zuordnung vergibt globale Berechtigungen an Mitarbeiter:innen, unabhängig von Team oder Organisationseinheit."
+                            title={canReadUsers ? 'Keine Mitarbeiter:innen zugeordnet' : 'Keine Mitarbeiter:innen sichtbar'}
+                            description={canReadUsers
+                                ? 'Diese Zuordnung vergibt globale Berechtigungen an Mitarbeiter:innen, unabhängig von Team oder Organisationseinheit.'
+                                : `Für die Anzeige zugeordneter Mitarbeiter:innen ist die Berechtigung ${Permission.USER_READ} erforderlich.`}
                         />
                     }
                     loadingPlaceholder="Lade Mitarbeiter:innen…"

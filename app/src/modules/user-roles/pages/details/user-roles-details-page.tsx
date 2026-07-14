@@ -9,12 +9,20 @@ import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
+import {
+    checkAnyDepartmentPermission,
+    checkAnyTeamPermission,
+    checkSystemPermission,
+    formatMissingPermissionTooltip,
+    hasSystemPermission,
+} from '../../../permissions/utils/permission-utils';
 
 export function UserRolesDetailsPage() {
     const permissions = useAppSelector(selectPermissions);
     const canCreateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_CREATE);
     const canUpdateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_UPDATE);
+    const canReadAnyDepartmentMemberships = checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canReadAnyTeamMemberships = checkAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_READ);
     const isEditable = useCallback((item: UserRoleResponseDTO | undefined) => {
         if (item == null) {
             return false;
@@ -76,12 +84,18 @@ export function UserRolesDetailsPage() {
                     {
                         path: '/user-roles/:id/department-memberships',
                         label: 'Zuordnungen in Organisationseinheiten',
-                        isDisabled: (item) => !item?.id,
+                        isDisabled: (item) => !item?.id || !canReadAnyDepartmentMemberships,
+                        disabledTooltip: (item) => item?.id && !canReadAnyDepartmentMemberships
+                            ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_READ)
+                            : undefined,
                     },
                     {
                         path: '/user-roles/:id/team-memberships',
                         label: 'Zuordnungen in Teams',
-                        isDisabled: (item) => !item?.id,
+                        isDisabled: (item) => !item?.id || !canReadAnyTeamMemberships,
+                        disabledTooltip: (item) => item?.id && !canReadAnyTeamMemberships
+                            ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_READ)
+                            : undefined,
                     },
                 ]}
                 initializeItem={(api) => new UserRolesApiService().initialize()}

@@ -15,13 +15,14 @@ import {
 } from '../../components/default-user-system-role-badge';
 import {Permission} from '../../../../data/permissions/permission';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
+import {checkSystemPermission, formatMissingPermissionTooltip, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function SystemRolesDetailsPage() {
     const permissions = useAppSelector(selectPermissions);
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
     const canCreateSystemRole = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_CREATE);
     const canUpdateSystemRole = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_UPDATE);
+    const canReadUsers = checkSystemPermission(permissions, Permission.USER_READ);
     const isEditable = useCallback((item: SystemRoleEntity | undefined) => {
         if (item == null) {
             return false;
@@ -86,7 +87,10 @@ export function SystemRolesDetailsPage() {
                     {
                         path: '/system-roles/:id/members',
                         label: 'Zugeordnete Mitarbeiter:innen',
-                        isDisabled: (item) => !item?.id,
+                        isDisabled: (item) => !item?.id || !canReadUsers,
+                        disabledTooltip: (item) => item?.id && !canReadUsers
+                            ? formatMissingPermissionTooltip(Permission.USER_READ)
+                            : undefined,
                     },
                 ]}
                 initializeItem={(api) => SystemRolesApiService.initialize()}
