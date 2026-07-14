@@ -269,13 +269,10 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
     const filteredPermissionGroups = useMemo(() => {
         const q = normalizeSearch(permissionQuery);
         if (!q) {
-            return permissions.map((g) => ({
-                ...g,
-                permissions: [...g.permissions].sort((a, b) => a.label.localeCompare(b.label)),
-            }));
+            return permissions;
         }
 
-        const matchesByGroup = new Map<string, PermissionEntry[]>();
+        const matchesByGroup = new Map<string, Set<string>>();
         const seen = new Set<string>();
 
         permissionSearchIndex.search(q).forEach(({item}) => {
@@ -283,17 +280,24 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
             if (seen.has(key)) return;
             seen.add(key);
 
-            const existing = matchesByGroup.get(item.groupLabel) ?? [];
-            existing.push(item.permission);
+            const existing = matchesByGroup.get(item.groupLabel) ?? new Set<string>();
+            existing.add(item.permission.permission);
             matchesByGroup.set(item.groupLabel, existing);
         });
 
         return permissions
-            .map((group) => ({
-                ...group,
-                permissions: [...(matchesByGroup.get(group.contextLabel) ?? [])]
-                    .sort((a, b) => a.label.localeCompare(b.label)),
-            }))
+            .map((group) => {
+                const matches = matchesByGroup.get(group.contextLabel);
+
+                return {
+                    ...group,
+                    // Permission providers define the intentional display order within a group.
+                    // Preserve it so related resource permissions stay before their secondary permissions.
+                    permissions: matches == null
+                        ? []
+                        : group.permissions.filter((permission) => matches.has(permission.permission)),
+                };
+            })
             .filter((group) => group.permissions.length > 0);
     }, [permissions, permissionQuery, permissionSearchIndex]);
 
