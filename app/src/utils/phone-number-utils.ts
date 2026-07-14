@@ -1,10 +1,19 @@
-import {parsePhoneNumberFromString} from 'libphonenumber-js';
+import {parsePhoneNumberFromString} from 'libphonenumber-js/max';
 
 const E164PhoneNumberRegex = /^\+[1-9]\d{1,14}$/;
 
-function parseValidPhoneNumber(value: string): ReturnType<typeof parsePhoneNumberFromString> {
+export type PhoneNumberValidationMode = 'strict' | 'possible';
+
+function parseValidPhoneNumber(value: string, validationMode: PhoneNumberValidationMode = 'strict'): ReturnType<typeof parsePhoneNumberFromString> {
     const phoneNumber = parsePhoneNumberFromString(value);
-    if (phoneNumber == null || !phoneNumber.isValid() || phoneNumber.ext != null) {
+    if (phoneNumber == null || phoneNumber.ext != null) {
+        return undefined;
+    }
+
+    const isAccepted = validationMode === 'strict'
+        ? phoneNumber.isValid()
+        : phoneNumber.isPossible();
+    if (!isAccepted) {
         return undefined;
     }
 
@@ -15,21 +24,21 @@ export function isBlankPhoneNumber(value: string | null | undefined): boolean {
     return value == null || value.trim().length === 0;
 }
 
-export function isValidPhoneNumber(value: string | null | undefined): boolean {
+export function isValidPhoneNumber(value: string | null | undefined, validationMode: PhoneNumberValidationMode = 'strict'): boolean {
     if (isBlankPhoneNumber(value)) {
         return true;
     }
 
-    return parseValidPhoneNumber(value!.trim()) != null;
+    return parseValidPhoneNumber(value!.trim(), validationMode) != null;
 }
 
-export function normalizePhoneNumberForTelLink(value: string | null | undefined): string | undefined {
+export function normalizePhoneNumber(value: string | null | undefined, validationMode: PhoneNumberValidationMode = 'possible'): string | undefined {
     if (isBlankPhoneNumber(value)) {
         return undefined;
     }
 
     const trimmedValue = value!.trim();
-    const phoneNumber = parseValidPhoneNumber(trimmedValue);
+    const phoneNumber = parseValidPhoneNumber(trimmedValue, validationMode);
     if (phoneNumber == null) {
         return undefined;
     }
@@ -40,13 +49,17 @@ export function normalizePhoneNumberForTelLink(value: string | null | undefined)
         : undefined;
 }
 
-export function formatPhoneNumberForDisplay(value: string | null | undefined): string {
+export function normalizePhoneNumberForTelLink(value: string | null | undefined): string | undefined {
+    return normalizePhoneNumber(value, 'strict');
+}
+
+export function formatPhoneNumberForDisplay(value: string | null | undefined, validationMode: PhoneNumberValidationMode = 'strict'): string {
     if (isBlankPhoneNumber(value)) {
         return '';
     }
 
     const trimmedValue = value!.trim();
-    const phoneNumber = parseValidPhoneNumber(trimmedValue);
+    const phoneNumber = parseValidPhoneNumber(trimmedValue, validationMode);
     if (phoneNumber == null) {
         return trimmedValue;
     }

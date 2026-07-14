@@ -2,7 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {Box} from '@mui/material';
 import {MuiTelInput, type MuiTelInputCountry, type MuiTelInputInfo} from 'mui-tel-input';
 import {PhoneNumberFieldComponentProps} from './phone-number-field-component-props';
-import {isBlankPhoneNumber, normalizePhoneNumberForTelLink} from '../../utils/phone-number-utils';
+import {isBlankPhoneNumber, normalizePhoneNumber} from '../../utils/phone-number-utils';
 
 const preferredCountries: MuiTelInputCountry[] = ['DE', 'AT', 'CH'];
 
@@ -20,9 +20,10 @@ function getCanonicalPhoneNumber(value: string, info?: MuiTelInputInfo): string 
     }
 
     const normalizedInfoValue = cleanPhoneNumberValue(info?.numberValue);
-    const normalizedHrefValue = normalizePhoneNumberForTelLink(normalizedInfoValue ?? value);
+    // Canonicalize plausible input; form-level validation decides whether the value is accepted.
+    const normalizedValue = normalizePhoneNumber(normalizedInfoValue ?? value);
 
-    return normalizedHrefValue ?? cleanPhoneNumberValue(value);
+    return normalizedValue ?? cleanPhoneNumberValue(value);
 }
 
 function CountryCodeFlagElement(isoCode: MuiTelInputCountry, countryName: string | undefined) {

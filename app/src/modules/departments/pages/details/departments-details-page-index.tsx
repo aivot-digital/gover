@@ -6,7 +6,7 @@ import {useApi} from '../../../../hooks/use-api';
 import {useNavigate, useSearchParams} from 'react-router-dom';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {RichTextInputComponent, RichTextInputComponentProps} from '../../../../components/rich-text-input-component/rich-text-input-component';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
 import {useFormManager} from '../../../../hooks/use-form-manager';
@@ -39,7 +39,9 @@ import {isApiError} from '../../../../models/api-error';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {alpha} from '@mui/material/styles';
-import {isBlankPhoneNumber, isValidPhoneNumber} from '../../../../utils/phone-number-utils';
+import {isBlankPhoneNumber, isValidPhoneNumber, type PhoneNumberValidationMode} from '../../../../utils/phone-number-utils';
+
+const DepartmentPhoneNumberValidationMode: PhoneNumberValidationMode = 'strict';
 
 const canInheritRequiredSetting = (context: yup.TestContext, isCreatedAsChild: boolean) => {
     return isCreatedAsChild || context.parent?.parentDepartmentId != null;
@@ -114,12 +116,12 @@ const optionalShadowedPhone = (legacyValue?: string | null) => optionalShadowedT
         if (
             legacyValue != null &&
             value!.trim() === legacyValue.trim() &&
-            !isValidPhoneNumber(legacyValue)
+            !isValidPhoneNumber(legacyValue, DepartmentPhoneNumberValidationMode)
         ) {
             return true;
         }
 
-        return isValidPhoneNumber(value);
+        return isValidPhoneNumber(value, DepartmentPhoneNumberValidationMode);
     });
 
 const optionalShadowedInfo = () => optionalShadowedTextAllowEmpty();
@@ -386,10 +388,10 @@ export function DepartmentsDetailsPageIndex() {
                         });
                     }, 0);
                 })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                })
+                .catch(err => dispatch(showApiErrorSnackbar(
+                    err,
+                    'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+                )))
                 .finally(() => {
                     setIsBusy(false);
                 });
@@ -402,10 +404,10 @@ export function DepartmentsDetailsPageIndex() {
 
                     dispatch(showSuccessSnackbar('Änderungen an der Organisationseinheit erfolgreich gespeichert.'));
                 })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
-                })
+                .catch(err => dispatch(showApiErrorSnackbar(
+                    err,
+                    'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.',
+                )))
                 .finally(() => {
                     setIsBusy(false);
                 });
