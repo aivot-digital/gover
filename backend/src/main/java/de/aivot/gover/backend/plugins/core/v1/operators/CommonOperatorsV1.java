@@ -11,6 +11,7 @@ import de.aivot.gover.backend.plugins.core.v1.operators.date.*;
 import de.aivot.gover.backend.plugins.core.v1.operators.list.*;
 import de.aivot.gover.backend.plugins.core.v1.operators.math.*;
 import de.aivot.gover.backend.plugins.core.v1.operators.object.NoCodeObjectGetOperator;
+import de.aivot.gover.backend.plugins.core.v1.operators.phone.*;
 import de.aivot.gover.backend.plugins.core.v1.operators.secrets.NoCodeSecretsGetOperator;
 import de.aivot.gover.backend.plugins.core.v1.operators.text.*;
 import de.aivot.gover.backend.plugins.core.v1.operators.user.NoCodeUserEmailOperator;
@@ -118,6 +119,11 @@ public class CommonOperatorsV1 implements NoCodeOperatorsProvider {
 
                 // Object
                 new NoCodeObjectGetOperator(),
+
+                // Phone
+                new NoCodePhoneNumberIsValidOperator(),
+                new NoCodePhoneNumberIsPossibleOperator(),
+                new NoCodePhoneNumberNormalizeOperator(),
 
                 // Secrets
                 new NoCodeSecretsGetOperator(secretService),

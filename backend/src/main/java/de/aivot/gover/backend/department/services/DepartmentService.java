@@ -1,7 +1,5 @@
 package de.aivot.gover.backend.department.services;
 
-import com.google.i18n.phonenumbers.NumberParseException;
-import com.google.i18n.phonenumbers.PhoneNumberUtil;
 import de.aivot.gover.backend.department.entities.DepartmentEntity;
 import de.aivot.gover.backend.department.repositories.DepartmentRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
@@ -10,6 +8,7 @@ import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.system.services.SystemService;
 import de.aivot.gover.backend.theme.entities.ThemeEntity;
 import de.aivot.gover.backend.theme.repositories.ThemeRepository;
+import de.aivot.gover.backend.utils.PhoneNumberUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -27,8 +26,6 @@ import java.util.Set;
 
 @Service
 public class DepartmentService implements EntityService<DepartmentEntity, Integer> {
-    private static final PhoneNumberUtil PHONE_NUMBER_UTIL = PhoneNumberUtil.getInstance();
-
     private final DepartmentRepository departmentRepository;
     private final ThemeRepository themeRepository;
     private final SystemService systemService;
@@ -201,27 +198,19 @@ public class DepartmentService implements EntityService<DepartmentEntity, Intege
             return "";
         }
 
-        try {
-            if (!trimmedValue.startsWith("+")) {
-                throw new NumberParseException(NumberParseException.ErrorType.NOT_A_NUMBER, "Missing international prefix");
-            }
-
-            var phoneNumber = PHONE_NUMBER_UTIL.parse(trimmedValue, "ZZ");
-            if (!PHONE_NUMBER_UTIL.isValidNumber(phoneNumber) || phoneNumber.hasExtension()) {
-                throw new NumberParseException(NumberParseException.ErrorType.NOT_A_NUMBER, "Invalid phone number");
-            }
-
-            return PHONE_NUMBER_UTIL.format(phoneNumber, PhoneNumberUtil.PhoneNumberFormat.E164);
-        } catch (NumberParseException ignored) {
-            if (unchangedLegacyValue != null && Objects.equals(trimmedValue, unchangedLegacyValue.trim())) {
-                return unchangedLegacyValue;
-            }
-
-            throw ResponseException.badRequest(String.format(
-                    "Bitte geben Sie für „%s“ eine gültige Telefonnummer mit Ländervorwahl ein.",
-                    fieldName
-            ));
+        var normalizedPhoneNumber = PhoneNumberUtils.normalizeValidPhoneNumberToE164(trimmedValue);
+        if (normalizedPhoneNumber != null) {
+            return normalizedPhoneNumber;
         }
+
+        if (unchangedLegacyValue != null && Objects.equals(trimmedValue, unchangedLegacyValue.trim())) {
+            return unchangedLegacyValue;
+        }
+
+        throw ResponseException.badRequest(String.format(
+                "Bitte geben Sie für „%s“ eine gültige Telefonnummer mit Ländervorwahl ein.",
+                fieldName
+        ));
     }
 
     private void validateParentHierarchy(

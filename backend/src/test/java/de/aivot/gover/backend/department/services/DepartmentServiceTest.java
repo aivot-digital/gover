@@ -76,6 +76,26 @@ class DepartmentServiceTest {
     }
 
     @Test
+    void createShouldRejectPossibleButInvalidSupportPhoneNumbers() {
+        var departmentRepository = mock(DepartmentRepository.class);
+        when(departmentRepository.findById(42)).thenReturn(Optional.of(parentDepartment()));
+
+        var service = createService(departmentRepository);
+
+        var entity = childDepartment()
+                .setSpecialSupportPhone("+49 1234");
+
+        var exception = assertThrows(ResponseException.class, () -> service.create(entity));
+
+        assertEquals(HttpStatus.BAD_REQUEST, exception.getStatus());
+        assertEquals(
+                "Bitte geben Sie für „Kontakt-Telefonnummer für fachliche Unterstützung“ eine gültige Telefonnummer mit Ländervorwahl ein.",
+                exception.getTitle()
+        );
+        verify(departmentRepository, never()).save(any(DepartmentEntity.class));
+    }
+
+    @Test
     void createShouldRejectSupportPhoneNumbersWithExtensions() {
         var departmentRepository = mock(DepartmentRepository.class);
         when(departmentRepository.findById(42)).thenReturn(Optional.of(parentDepartment()));
