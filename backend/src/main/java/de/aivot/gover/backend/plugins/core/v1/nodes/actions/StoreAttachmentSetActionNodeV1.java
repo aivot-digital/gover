@@ -31,6 +31,7 @@ import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
+import de.aivot.gover.backend.storage.enums.StorageProviderType;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
 import de.aivot.gover.backend.storage.services.StorageService;
@@ -133,7 +134,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 .ifPresent(field -> field.setOptions(storageProviderRepository
                         .findAll()
                         .stream()
-                        .filter(provider -> !Boolean.TRUE.equals(provider.getReadOnlyStorage()))
+                        .filter(provider -> !Boolean.TRUE.equals(provider.getReadOnlyStorage()) && !StorageProviderType.Attachments.equals(provider.getType()))
                         .sorted(Comparator.comparing(StorageProviderEntity::getName, String.CASE_INSENSITIVE_ORDER))
                         .map(provider -> SelectInputElementOption.of(
                                 provider.getId().toString(),
