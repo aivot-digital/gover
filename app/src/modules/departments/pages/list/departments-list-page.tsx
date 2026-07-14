@@ -167,8 +167,10 @@ function getDepartmentActions(
         },
         {
             tooltip: 'Prozesse der Organisationseinheit ansehen',
+            disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
             icon: ModuleIcons.processes,
             to: `/departments/${department.id}/processes`,
+            disabled: !canReadDepartment,
         },
     ];
 }
