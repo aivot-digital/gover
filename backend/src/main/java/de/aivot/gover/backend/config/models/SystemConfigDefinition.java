@@ -47,4 +47,10 @@ public interface SystemConfigDefinition<T> {
     default void validate(@Nullable T value) throws ResponseException {
         // Raise an exception here if the value is broken
     }
+
+    default void validateChange(@Nullable T oldValue,
+                                @Nullable T newValue,
+                                boolean changeConfirmed) throws ResponseException {
+        // Raise an exception here if changing from oldValue to newValue needs extra validation
+    }
 }

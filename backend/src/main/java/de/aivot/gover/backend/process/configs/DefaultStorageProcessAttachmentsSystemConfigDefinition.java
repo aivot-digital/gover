@@ -5,11 +5,15 @@ import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.gover.backend.storage.enums.StorageProviderType;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
+
+import java.util.Objects;
 
 @Component
 public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements SystemConfigDefinition<String> {
@@ -17,9 +21,12 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
     public static final String KEY = "storage.attachments.default_storage_provider";
 
     private final StorageProviderRepository storageProviderRepository;
+    private final ProcessInstanceRepository processInstanceRepository;
 
-    public DefaultStorageProcessAttachmentsSystemConfigDefinition(StorageProviderRepository storageProviderRepository) {
+    public DefaultStorageProcessAttachmentsSystemConfigDefinition(StorageProviderRepository storageProviderRepository,
+                                                                  ProcessInstanceRepository processInstanceRepository) {
         this.storageProviderRepository = storageProviderRepository;
+        this.processInstanceRepository = processInstanceRepository;
     }
 
     @Nonnull
@@ -77,5 +84,24 @@ public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements S
             throw ResponseException.internalServerError("Ungültiger Wert für " + getKey() + ": " + value);
         }
         return value;
+    }
+
+    @Override
+    public void validateChange(@Nullable String oldValue,
+                               @Nullable String newValue,
+                               boolean changeConfirmed) throws ResponseException {
+        if (Objects.equals(oldValue, newValue) || changeConfirmed) {
+            return;
+        }
+
+        var runningProcesses = processInstanceRepository
+                .countAllByStatusIs(ProcessInstanceStatus.Running);
+
+        if (runningProcesses > 0) {
+            throw ResponseException.conflict(
+                    "Der zentrale Speicheranbieter für Vorgangsanlagen kann nicht ohne ausdrückliche Bestätigung geändert werden, weil aktuell %d Vorgänge laufen.",
+                    runningProcesses
+            );
+        }
     }
 }

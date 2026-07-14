@@ -114,7 +114,7 @@ public class SystemConfigController {
                 .toEntity(def);
 
         var config = systemConfigService
-                .save(key, entity);
+                .save(key, entity, Boolean.TRUE.equals(updateRequest.changeConfirmed()));
 
         // Log the action of updating the system configuration
         auditService
