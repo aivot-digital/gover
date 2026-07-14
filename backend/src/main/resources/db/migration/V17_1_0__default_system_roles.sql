@@ -259,6 +259,8 @@ values (1,
             'asset.read',
             'asset.update',
 
+            'code_list.read',
+
             'object_schema.read',
 
             'object_item.create',
