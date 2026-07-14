@@ -35,6 +35,7 @@ import {VTeamMembershipWithDetailsEntity} from '../../teams/entities/v-team-memb
 import {useCheckSystemPermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {isApiError} from '../../../models/api-error';
+import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
 
 interface UserRolesAssignmentDialogProps {
     open: boolean;
@@ -72,27 +73,42 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
     const [rolesAccessDenied, setRolesAccessDenied] = useState(false);
 
     const [activeRoleIds, setActiveRoleIds] = useState<Set<number>>();
+    // Callers clear their selected row as soon as the dialog closes; keep the last context visible during the close transition.
+    const renderUserId = useRetainedDialogValue(open, userId);
+    const renderUserLabel = useRetainedDialogValue(open, userLabel);
+    const renderParentId = useRetainedDialogValue(open, parentId);
+    const renderParentLabel = useRetainedDialogValue(open, parentLabel);
+    const renderParentType = useRetainedDialogValue(open, parentType);
 
     useEffect(() => {
         if (!open) {
-            setRoles(undefined);
-            setRolesAccessDenied(false);
             return;
         }
 
+        let isActive = true;
+
+        setRoles(undefined);
         setRolesAccessDenied(false);
 
         if (!canReadDomainRoles) {
             setRoles([]);
             setRolesAccessDenied(true);
-            return;
+            return undefined;
         }
 
         // The dialog is mounted while closed on membership pages; scope permission-protected loads to the open state.
         new UserRolesApiService()
             .listAll()
-            .then((rolesPage) => setRoles(rolesPage.content))
+            .then((rolesPage) => {
+                if (isActive) {
+                    setRoles(rolesPage.content);
+                }
+            })
             .catch((err) => {
+                if (!isActive) {
+                    return;
+                }
+
                 setRoles([]);
                 if (isApiError(err) && err.status === 403) {
                     setRolesAccessDenied(true);
@@ -100,41 +116,65 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     dispatch(showApiErrorSnackbar(err, 'Rollen konnten nicht geladen werden'));
                 }
             });
+
+        return () => {
+            isActive = false;
+        };
     }, [canReadDomainRoles, dispatch, open]);
 
     // Load assignments
     useEffect(() => {
-        if (!open || userId == null) {
-            setMemberships(undefined);
+        if (!open) {
             return;
         }
 
-        if (parentType === 'orgUnit') {
+        if (renderUserId == null || renderParentId == null) {
+            setMemberships(undefined);
+            return undefined;
+        }
+
+        let isActive = true;
+
+        setMemberships(undefined);
+
+        if (renderParentType === 'orgUnit') {
             new VDepartmentMembershipWithDetailsService()
                 .listAll({
-                    departmentId: parentId,
-                    userId: userId,
+                    departmentId: renderParentId,
+                    userId: renderUserId,
                 })
                 .then((membershipsPage) => {
-                    setMemberships(membershipsPage.content);
+                    if (isActive) {
+                        setMemberships(membershipsPage.content);
+                    }
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'));
+                    if (isActive) {
+                        dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'));
+                    }
                 });
         } else {
             new VTeamMembershipWithDetailsApiService()
                 .listAll({
-                    teamId: parentId,
-                    userId: userId,
+                    teamId: renderParentId,
+                    userId: renderUserId,
                 })
                 .then((membershipsPage) => {
-                    setMemberships(membershipsPage.content);
+                    if (isActive) {
+                        setMemberships(membershipsPage.content);
+                    }
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'));
+                    if (isActive) {
+                        dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'));
+                    }
                 });
         }
-    }, [dispatch, open, userId, parentId, parentType]);
+
+        return () => {
+            isActive = false;
+        };
+    }, [dispatch, open, renderParentId, renderParentType, renderUserId]);
 
     // Determine active role IDs
     useEffect(() => {
@@ -254,12 +294,13 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
 
     const handleClose = () => {
         onClose();
-        setTimeout(() => {
-            setMemberships(undefined);
-            setActiveRoleIds(undefined);
-            setRoles(undefined);
-            setRolesAccessDenied(false);
-        }, 300);
+    };
+
+    const resetDialogState = () => {
+        setMemberships(undefined);
+        setActiveRoleIds(undefined);
+        setRoles(undefined);
+        setRolesAccessDenied(false);
     };
 
     return (
@@ -268,6 +309,9 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             onClose={handleClose}
             fullWidth
             maxWidth="md"
+            TransitionProps={{
+                onExited: resetDialogState,
+            }}
         >
             <DialogTitleWithClose onClose={handleClose}>
                 Rollen zuweisen
@@ -277,14 +321,14 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 <Stack spacing={2}>
                     <Box>
                         <Typography variant="subtitle1">
-                            {userLabel ?? 'Benutzer:in'}
+                            {renderUserLabel ?? 'Benutzer:in'}
                         </Typography>
                         <Typography
                             variant="body2"
                             color="text.secondary"
                         >
-                            {parentType === 'orgUnit' ? 'Organisationseinheit' : 'Team'}:{' '}
-                            {parentLabel ?? 'wird geladen...'}
+                            {renderParentType === 'orgUnit' ? 'Organisationseinheit' : 'Team'}:{' '}
+                            {renderParentLabel ?? 'wird geladen...'}
                         </Typography>
                     </Box>
 
