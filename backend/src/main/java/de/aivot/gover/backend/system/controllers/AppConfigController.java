@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.gover.backend.asset.services.AssetService;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.core.configs.ProviderNameSystemConfigDefinition;
+import de.aivot.gover.backend.core.enums.ModuleFlags;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.models.config.GoverConfig;
@@ -68,6 +69,8 @@ public class AppConfigController {
     private static final String SENTRY_DSN = "sentryDsn";
     private static final String APPLICATION_TIMEZONE_CONFIG_KEY = "applicationTimeZone";
     private static final String DEPARTMENT_LEVEL_LABELS_CONFIG_KEY = "departmentLevelLabels";
+    private static final String MODULE_FLAGS_KEY = "moduleFlags";
+    private static final String PROCESS_NODE_LIMITS_KEY = "processNodeLimits";
 
     private static final String OIDC_KEY = "oidc";
     private static final String OIDC_REALM_KEY = "realm";
@@ -114,6 +117,8 @@ public class AppConfigController {
         appConfig.put(SENTRY_DSN, goverConfig.getSentryWebApp());
         appConfig.put(APPLICATION_TIMEZONE_CONFIG_KEY, ApplicationTimeZone.getZoneIdValue());
         appConfig.put(DEPARTMENT_LEVEL_LABELS_CONFIG_KEY, goverConfig.getDepartmentLevelLabels());
+        appConfig.put(MODULE_FLAGS_KEY, goverConfig.getModuleFlags());
+        appConfig.put(PROCESS_NODE_LIMITS_KEY, goverConfig.getProcessNodeLimits());
 
         var oidc = new HashMap<String, String>();
         oidc.put(OIDC_HOSTNAME_KEY, oidcIssuerURI);

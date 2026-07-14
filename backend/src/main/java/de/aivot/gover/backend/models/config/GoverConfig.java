@@ -1,5 +1,7 @@
 package de.aivot.gover.backend.models.config;
 
+import de.aivot.gover.backend.core.enums.ModuleFlags;
+import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -9,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -30,6 +33,10 @@ public class GoverConfig {
     private List<String> bootstrapAdminMail;
     private String registryHostname;
     private String timezone;
+
+    private Map<ProcessNodeType, Integer> processNodeLimits;
+    private List<ModuleFlags> moduleFlags;
+
 
     public String getDefaultLogoUrl() {
         return createUrl("/assets/default-logo.png");
@@ -178,6 +185,24 @@ public class GoverConfig {
 
     public ZoneId getZoneId() {
         return ZoneId.of(timezone);
+    }
+
+    public List<ModuleFlags> getModuleFlags() {
+        return moduleFlags;
+    }
+
+    public GoverConfig setModuleFlags(List<ModuleFlags> moduleFlags) {
+        this.moduleFlags = moduleFlags;
+        return this;
+    }
+
+    public Map<ProcessNodeType, Integer> getProcessNodeLimits() {
+        return processNodeLimits;
+    }
+
+    public GoverConfig setProcessNodeLimits(Map<ProcessNodeType, Integer> processNodeLimits) {
+        this.processNodeLimits = processNodeLimits;
+        return this;
     }
 
     // endregion

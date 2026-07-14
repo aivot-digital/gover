@@ -213,6 +213,12 @@ gover:
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
   registryHostname: "${GOVER_TEMPLATE_REGISTRY_URL:}"
+  moduleFlags: "${GOVER_MODULE_FLAGS:form,process_unlimited}"
+  processNodeLimits:
+    trigger: "${GOVER_PROCESS_NODE_LIMITS_TRIGGERS:-1}"
+    action: "${GOVER_PROCESS_NODE_LIMITS_ACTIONS:-1}"
+    flowControl: "${GOVER_PROCESS_NODE_LIMITS_FLOWS:-1}"
+    termination: "${GOVER_PROCESS_NODE_LIMITS_TERMINATIONS:-1}"
 
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:
