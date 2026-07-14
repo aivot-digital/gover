@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 
 @Component
 public class DefaultStorageProcessAttachmentsSystemConfigDefinition implements SystemConfigDefinition<String> {
+    // Needs to be changed also in the frontend, see storage-provider-details-page-index.tsx
     public static final String KEY = "storage.attachments.default_storage_provider";
 
     private final StorageProviderRepository storageProviderRepository;
