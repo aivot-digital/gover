@@ -31,6 +31,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useCheckSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {isApiError} from '../../../../models/api-error';
 
 export const SystemRoleSchema = yup.object({
     name: yup.string()
@@ -67,6 +68,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     } = useContext<GenericDetailsPageContextType<SystemRoleEntity, void>>(GenericDetailsPageContext);
     const editPermission = systemRole?.id === 0 ? Permission.SYSTEM_ROLE_CREATE : Permission.SYSTEM_ROLE_UPDATE;
     const canDeleteSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_DELETE);
+    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
     const refreshPermissionSet = useRefreshPermissionSet();
 
     const {
@@ -89,6 +91,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     const [assignedUsersCount, setAssignedUsersCount] = useState<number | null>(null);
     const [isDeleteRequirementsLoading, setIsDeleteRequirementsLoading] = useState(false);
     const [hasDeleteRequirementsLoadingError, setHasDeleteRequirementsLoadingError] = useState(false);
+    const [deleteRequirementsMissingPermission, setDeleteRequirementsMissingPermission] = useState<Permission | undefined>();
     const [systemRoleOptions, setSystemRoleOptions] = useState<SelectFieldComponentOption[]>([]);
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(false);
     const [hasSystemRolesLoadingError, setHasSystemRolesLoadingError] = useState(false);
@@ -116,6 +119,17 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             setAssignedUsersCount(0);
             setIsDeleteRequirementsLoading(false);
             setHasDeleteRequirementsLoadingError(false);
+            setDeleteRequirementsMissingPermission(undefined);
+            return;
+        }
+
+        if (!canReadUsers) {
+            // The delete endpoint validates assignments itself, but the UI needs user.read
+            // to preflight whether a replacement role must be selected.
+            setAssignedUsersCount(null);
+            setIsDeleteRequirementsLoading(false);
+            setHasDeleteRequirementsLoadingError(true);
+            setDeleteRequirementsMissingPermission(Permission.USER_READ);
             return;
         }
 
@@ -123,6 +137,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
 
         setIsDeleteRequirementsLoading(true);
         setHasDeleteRequirementsLoadingError(false);
+        setDeleteRequirementsMissingPermission(undefined);
 
         usersApiService
             .list(0, 1, undefined, undefined, {
@@ -142,10 +157,11 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
 
                 setAssignedUsersCount(null);
                 setHasDeleteRequirementsLoadingError(true);
-                dispatch(showApiErrorSnackbar(
-                    err,
-                    'Es konnte nicht geprüft werden, ob dieser Systemrolle Mitarbeiter:innen zugeordnet sind.',
-                ));
+                setDeleteRequirementsMissingPermission(
+                    isApiError(err) && err.status === 403
+                        ? Permission.USER_READ
+                        : undefined,
+                );
             })
             .finally(() => {
                 if (!isCancelled) {
@@ -156,7 +172,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         return () => {
             isCancelled = true;
         };
-    }, [canDeleteSystemRole, currentSystemRoleId, dispatch, usersApiService]);
+    }, [canDeleteSystemRole, canReadUsers, currentSystemRoleId, usersApiService]);
 
     useEffect(() => {
         if (currentSystemRoleId === 0 || !canDeleteSystemRole || !requiresReplacementSystemRole) {
@@ -245,6 +261,8 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         deleteTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_DELETE);
     } else if (isDeleteRequirementsLoading) {
         deleteTooltip = 'Es wird geprüft, ob beim Löschen dieser Rolle eine Migration erforderlich ist.';
+    } else if (hasDeleteRequirementsLoadingError && deleteRequirementsMissingPermission != null) {
+        deleteTooltip = `Die Löschvoraussetzungen konnten nicht geprüft werden, da Ihnen das Recht „${deleteRequirementsMissingPermission}“ fehlt.`;
     } else if (hasDeleteRequirementsLoadingError) {
         deleteTooltip = 'Die Löschvoraussetzungen konnten nicht geprüft werden.';
     } else if (requiresReplacementSystemRole && isSystemRolesLoading) {
