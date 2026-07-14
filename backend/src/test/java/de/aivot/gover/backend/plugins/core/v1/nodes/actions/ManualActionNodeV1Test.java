@@ -6,6 +6,7 @@ import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.form.content.RichTextContentElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.*;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.gover.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
@@ -503,7 +504,8 @@ class ManualActionNodeV1Test {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
-                new ElementDataTransformService()
+                new ElementDataTransformService(),
+                new CodeListElementOptionsService(null)
         );
     }
 

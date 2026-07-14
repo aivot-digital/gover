@@ -477,7 +477,8 @@ class ElementDerivationServiceTest {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
-                new ElementDataTransformService()
+                new ElementDataTransformService(),
+                new CodeListElementOptionsService(null)
         );
     }
 

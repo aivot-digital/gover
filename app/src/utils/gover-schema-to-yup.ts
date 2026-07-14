@@ -39,6 +39,7 @@ import {
     createDomainAndUserSelectValueKey,
     normalizeDomainAndUserSelectItem,
 } from '../components/domain-user-select-field/domain-user-select-options';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 
 
 export function goverSchemaToYup(elem: AnyElement, states: ComputedElementStates): Record<string, Schema> {
@@ -195,7 +196,7 @@ function selectFieldToYup(elem: SelectFieldElement | RadioFieldElement): Schema 
             .nullable();
     }
 
-    if (elem.options) {
+    if ((elem.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && elem.options) {
         const validValues = (elem.options ?? [])
             .map(opt => typeof opt === 'string' ? opt : opt.value);
 

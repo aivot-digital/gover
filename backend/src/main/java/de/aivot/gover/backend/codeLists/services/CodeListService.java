@@ -269,38 +269,6 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         codeListItemRepository.delete(existingItem);
     }
 
-    @Nonnull
-    public List<SelectInputElementOption> listAsSelect(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
-                .stream()
-                .map(item -> SelectInputElementOption.of(item.getValue(), item.getLabel()))
-                .toList();
-    }
-
-    @Nonnull
-    public List<RadioInputElementOption> listAsRadio(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
-                .stream()
-                .map(item -> RadioInputElementOption.of(item.getValue(), item.getLabel()))
-                .toList();
-    }
-
-    @Nonnull
-    public List<MultiCheckboxInputElementOption> listAsMultiCheckbox(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
-        return vCodeListItemRepository
-                .findAllByCodeListIdOrderByIdAsc(codeListId)
-                .stream()
-                .map(item -> new MultiCheckboxInputElementOption()
-                        .setValue(item.getValue())
-                        .setLabel(item.getLabel()))
-                .toList();
-    }
-
     private void syncXRepository(CodeListEntity codeListEntity, boolean keepOutdated) throws ResponseException {
         var xRepositoryCodeList = xRepositoryCodeListService.getCodeList(codeListEntity.getSourceRef());
         var columnRefs = extractColumnRefs(xRepositoryCodeList);

@@ -4,9 +4,27 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
 import {OptionListInput} from '../option-list-input/option-list-input';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
+import {OptionsSourceType} from '../../models/elements/form/input/options-source-type';
+import {SelectFieldComponent} from '../select-field/select-field-component';
+import {CodeListSelectField} from '../../modules/code-lists/components/code-list-select-field';
+
+const optionsSourceOptions = [
+    {
+        label: 'Manuell konfigurieren',
+        value: OptionsSourceType.Manual,
+    },
+    {
+        label: 'Code-Liste verwenden',
+        value: OptionsSourceType.CodeList,
+    },
+];
 
 export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCheckboxFieldElement>) {
+    const optionsSource = props.element.optionsSource ?? OptionsSourceType.Manual;
+    const usesManualOptions = optionsSource === OptionsSourceType.Manual;
+
     const minRequiredError = (
+        usesManualOptions &&
         props.element.minimumRequiredOptions != null &&
         props.element.options != null &&
         props.element.minimumRequiredOptions > props.element.options.length
@@ -16,21 +34,54 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
 
     return (
         <>
-            <OptionListInput
-                label="Optionen"
-                addLabel="Option hinzufügen"
-                hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
-                noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
-                value={options as any}
-                onChange={(options) => {
+            <SelectFieldComponent
+                label="Optionsquelle"
+                value={optionsSource}
+                onChange={(value) => {
+                    const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
+
                     props.onPatch({
-                        options,
+                        optionsSource: nextSource,
+                        codeListId: nextSource === OptionsSourceType.CodeList ? props.element.codeListId : undefined,
                     });
                 }}
-                allowEmpty={false}
+                options={optionsSourceOptions}
                 disabled={!props.editable}
-                variant="outlined"
+                required
             />
+
+            {
+                usesManualOptions &&
+                <OptionListInput
+                    label="Optionen"
+                    addLabel="Option hinzufügen"
+                    hint="Die antragstellende Person kann eine oder mehrere dieser Optionen auswählen."
+                    noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
+                    value={options as any}
+                    onChange={(options) => {
+                        props.onPatch({
+                            options,
+                        });
+                    }}
+                    allowEmpty={false}
+                    disabled={!props.editable}
+                    variant="outlined"
+                />
+            }
+
+            {
+                !usesManualOptions &&
+                <CodeListSelectField
+                    value={props.element.codeListId}
+                    onChange={(codeListId) => {
+                        props.onPatch({
+                            codeListId,
+                        });
+                    }}
+                    disabled={!props.editable}
+                    required
+                />
+            }
 
             {
                 props.element.required === true &&

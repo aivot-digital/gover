@@ -3,7 +3,7 @@ package de.aivot.gover.backend.codeLists.controllers;
 import de.aivot.gover.backend.elements.models.elements.form.input.MultiCheckboxInputElementOption;
 import de.aivot.gover.backend.elements.models.elements.form.input.RadioInputElementOption;
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElementOption;
-import de.aivot.gover.backend.codeLists.services.CodeListService;
+import de.aivot.gover.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,31 +23,31 @@ import java.util.List;
         description = OpenApiConstants.Tags.CodeListDescription
 )
 public class PublicCodeListController {
-    private final CodeListService codeListService;
+    private final CodeListElementOptionsService codeListElementOptionsService;
 
     @Autowired
-    public PublicCodeListController(CodeListService codeListService) {
-        this.codeListService = codeListService;
+    public PublicCodeListController(CodeListElementOptionsService codeListElementOptionsService) {
+        this.codeListElementOptionsService = codeListElementOptionsService;
     }
 
     @GetMapping("select/")
     public List<SelectInputElementOption> listAsSelect(
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
-        return codeListService.listAsSelect(codeListId);
+        return codeListElementOptionsService.listAsSelect(codeListId);
     }
 
     @GetMapping("radio/")
     public List<RadioInputElementOption> listAsRadio(
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
-        return codeListService.listAsRadio(codeListId);
+        return codeListElementOptionsService.listAsRadio(codeListId);
     }
 
     @GetMapping("multi-checkbox/")
     public List<MultiCheckboxInputElementOption> listAsMultiCheckbox(
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
-        return codeListService.listAsMultiCheckbox(codeListId);
+        return codeListElementOptionsService.listAsMultiCheckbox(codeListId);
     }
 }

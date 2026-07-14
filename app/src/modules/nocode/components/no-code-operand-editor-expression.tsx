@@ -38,6 +38,7 @@ import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {ElementType} from '../../../data/element-type/element-type';
 import {BOOL_DEFAULT_OPTIONS} from './no-code-operand-editor-static-value';
 import {NoCodeOperandEditorContextType} from './no-code-operand-editor';
+import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 import {Stack} from '@mui/material';
 
 interface NoCodeOperandEditorExpressionProps {
@@ -184,7 +185,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                     break;
                 case ElementType.Radio:
                 case ElementType.Select:
-                    if (element.options != null) {
+                    if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
                         options.push(...element.options.map((option) => (
                             typeof option === 'string' ?
                                 {
@@ -196,7 +197,7 @@ export function NoCodeOperandEditorExpression(props: NoCodeOperandEditorExpressi
                     }
                     break;
                 case ElementType.MultiCheckbox:
-                    if (element.options != null) {
+                    if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual && element.options != null) {
                         options.push(...element.options);
                     }
                     break;
