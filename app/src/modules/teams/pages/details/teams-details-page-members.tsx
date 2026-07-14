@@ -53,6 +53,7 @@ export function TeamsDetailsPageMembers() {
     const canUpdateMembership = useCheckTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_UPDATE);
     const canDeleteMembership = useCheckTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_DELETE);
     const canReadDomainRoles = useCheckSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
 
     const showConfirm = useConfirm();
 
@@ -123,7 +124,7 @@ export function TeamsDetailsPageMembers() {
                     ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_UPDATE)
                     : !canReadDomainRoles
                         ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
-                    : undefined,
+                        : undefined,
             },
             {
                 icon: <Delete />,
@@ -203,12 +204,14 @@ export function TeamsDetailsPageMembers() {
     }, [dispatch, item]);
 
     const preSearchElements = useMemo(() => {
-        const addDisabled = !canCreateMembership || !canReadDomainRoles;
+        const addDisabled = !canCreateMembership || !canReadUsers || !canReadDomainRoles;
         const addDisabledTooltip = !canCreateMembership
             ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_CREATE)
-            : !canReadDomainRoles
-                ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
-                : '';
+            : !canReadUsers
+                ? formatMissingPermissionTooltip(Permission.USER_READ)
+                : !canReadDomainRoles
+                    ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
+                    : '';
 
         return [
             <DisabledTooltip
@@ -226,7 +229,7 @@ export function TeamsDetailsPageMembers() {
                 </Button>
             </DisabledTooltip>,
         ];
-    }, [canCreateMembership, canReadDomainRoles, openSelectNewMemberDialog]);
+    }, [canCreateMembership, canReadDomainRoles, canReadUsers, openSelectNewMemberDialog]);
 
     const handleAddMembership = useCallback((user: User | null, roleIdsToAdd: number[]) => {
         if (user == null || item == null) {
@@ -360,10 +363,12 @@ export function TeamsDetailsPageMembers() {
                         description="Es wurden keine Mitgliedschaften gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Mitarbeiter:innen zugeordnet oder Ihnen fehlt die Leseberechtigung für Mitgliedschaften."
                         addText="Mitarbeiter:in hinzufügen"
                         onAdd={openSelectNewMemberDialog}
-                        addDisabled={!canCreateMembership || !canReadDomainRoles}
+                        addDisabled={!canCreateMembership || !canReadUsers || !canReadDomainRoles}
                         addDisabledTooltip={!canCreateMembership
                             ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_CREATE)
-                            : formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)}
+                            : !canReadUsers
+                                ? formatMissingPermissionTooltip(Permission.USER_READ)
+                                : formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)}
                     />
                 }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
@@ -391,6 +396,7 @@ export function TeamsDetailsPageMembers() {
                     setShowSelectRolesDialogForUser(null);
                 }}
                 userId={showSelectRolesDialogForUser?.id ?? undefined}
+                userLabel={showSelectRolesDialogForUser?.fullName}
                 parentId={item.id}
                 parentType="team"
             />
@@ -405,6 +411,7 @@ export function TeamsDetailsPageMembers() {
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={showSelectRolesDialogForMembership?.userId ?? undefined}
+                userLabel={showSelectRolesDialogForMembership?.userFullName ?? undefined}
                 parentId={item.id}
                 parentType="team"
             />

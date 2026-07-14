@@ -381,6 +381,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     setShowSelectRolesDialogForDepartment(null);
                 }}
                 userId={user.id}
+                userLabel={user.fullName}
                 parentId={showSelectRolesDialogForDepartment?.id}
                 parentType="orgUnit"
             />
@@ -399,6 +400,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={user.id}
+                userLabel={user.fullName}
                 parentId={showSelectRolesDialogForMembership?.departmentId}
                 parentType="orgUnit"
             />

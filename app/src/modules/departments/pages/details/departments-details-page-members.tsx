@@ -54,6 +54,7 @@ export function DepartmentsDetailsPageMembers() {
     const canUpdateMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
     const canDeleteMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
     const canReadDomainRoles = useCheckSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
 
     const showConfirm = useConfirm();
 
@@ -125,7 +126,7 @@ export function DepartmentsDetailsPageMembers() {
                     ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_UPDATE)
                     : !canReadDomainRoles
                         ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
-                    : undefined,
+                        : undefined,
             },
             {
                 icon: <Delete/>,
@@ -208,12 +209,14 @@ export function DepartmentsDetailsPageMembers() {
     }, [dispatch, item]);
 
     const preSearchElements = useMemo(() => {
-        const addDisabled = !canCreateMembership || !canReadDomainRoles;
+        const addDisabled = !canCreateMembership || !canReadUsers || !canReadDomainRoles;
         const addDisabledTooltip = !canCreateMembership
             ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)
-            : !canReadDomainRoles
-                ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
-                : '';
+            : !canReadUsers
+                ? formatMissingPermissionTooltip(Permission.USER_READ)
+                : !canReadDomainRoles
+                    ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
+                    : '';
 
         return [
             <DisabledTooltip
@@ -231,7 +234,7 @@ export function DepartmentsDetailsPageMembers() {
                 </Button>
             </DisabledTooltip>,
         ];
-    }, [canCreateMembership, canReadDomainRoles, openSelectNewMemberDialog]);
+    }, [canCreateMembership, canReadDomainRoles, canReadUsers, openSelectNewMemberDialog]);
 
     const handleAddMembership = useCallback((user: User | null, roleIdsToAdd: number[]) => {
         if (user == null || item == null) {
@@ -366,10 +369,12 @@ export function DepartmentsDetailsPageMembers() {
                         description="Es wurden keine Mitgliedschaften gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Mitarbeiter:innen zugeordnet oder Ihnen fehlt die Leseberechtigung für Mitgliedschaften."
                         addText="Mitarbeiter:in hinzufügen"
                         onAdd={openSelectNewMemberDialog}
-                        addDisabled={!canCreateMembership || !canReadDomainRoles}
+                        addDisabled={!canCreateMembership || !canReadUsers || !canReadDomainRoles}
                         addDisabledTooltip={!canCreateMembership
                             ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)
-                            : formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)}
+                            : !canReadUsers
+                                ? formatMissingPermissionTooltip(Permission.USER_READ)
+                                : formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)}
                     />
                 }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
@@ -397,6 +402,7 @@ export function DepartmentsDetailsPageMembers() {
                     setShowSelectRolesDialogForUser(null);
                 }}
                 userId={showSelectRolesDialogForUser?.id ?? undefined}
+                userLabel={showSelectRolesDialogForUser?.fullName}
                 parentId={item.id}
                 parentType="orgUnit"
             />
@@ -411,6 +417,7 @@ export function DepartmentsDetailsPageMembers() {
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={showSelectRolesDialogForMembership?.userId ?? undefined}
+                userLabel={showSelectRolesDialogForMembership?.userFullName ?? undefined}
                 parentId={item.id}
                 parentType="orgUnit"
             />

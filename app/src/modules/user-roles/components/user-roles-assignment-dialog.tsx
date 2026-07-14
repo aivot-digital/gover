@@ -21,8 +21,6 @@ import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Des
 import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {AlertComponent} from '../../../components/alert/alert-component';
-import {UsersApiService} from '../../users/users-api-service';
-import {User} from '../../users/models/user';
 import {TeamsApiService} from '../../teams/services/teams-api-service';
 import {UserRolesApiService} from '../user-roles-api-service';
 import {UserRoleResponseDTO} from '../dtos/user-role-response-dto';
@@ -40,12 +38,16 @@ import {
     VDepartmentMembershipWithDetailsEntity,
 } from '../../departments/entities/v-department-membership-with-details-entity';
 import {VTeamMembershipWithDetailsEntity} from '../../teams/entities/v-team-membership-with-details-entity';
+import {useCheckSystemPermission} from '../../permissions/hooks/use-permissions';
+import {Permission} from '../../../data/permissions/permission';
+import {isApiError} from '../../../models/api-error';
 
 interface UserRolesAssignmentDialogProps {
     open: boolean;
     onClose: () => void;
     onSave: (roleIdsToAdd: number[], userRoleAssignmentIdsToRemove: number[]) => void;
     userId?: string;
+    userLabel?: string;
     parentId?: number;
     parentType: 'orgUnit' | 'team';
 }
@@ -62,27 +64,38 @@ type MembershipType<T extends 'orgUnit' | 'team'> =
 
 export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps) {
     const dispatch = useAppDispatch();
+    const canReadDomainRoles = useCheckSystemPermission(Permission.DOMAIN_ROLE_READ);
 
     const {
         open,
         onClose,
         onSave,
         userId,
+        userLabel,
         parentId,
         parentType,
     } = props;
 
     const [roles, setRoles] = useState<UserRoleResponseDTO[]>();
-    const [user, setUser] = useState<User>();
     const [parent, setParent] = useState<ParentType<typeof parentType>>();
     const [memberships, setMemberships] = useState<MembershipType<typeof parentType>[]>();
     const [orgUnitPathParts, setOrgUnitPathParts] = useState<string[]>();
+    const [rolesAccessDenied, setRolesAccessDenied] = useState(false);
 
     const [activeRoleIds, setActiveRoleIds] = useState<Set<number>>();
 
     useEffect(() => {
         if (!open) {
             setRoles(undefined);
+            setRolesAccessDenied(false);
+            return;
+        }
+
+        setRolesAccessDenied(false);
+
+        if (!canReadDomainRoles) {
+            setRoles([]);
+            setRolesAccessDenied(true);
             return;
         }
 
@@ -91,24 +104,14 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             .listAll()
             .then((rolesPage) => setRoles(rolesPage.content))
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Rollen konnten nicht geladen werden'));
+                setRoles([]);
+                if (isApiError(err) && err.status === 403) {
+                    setRolesAccessDenied(true);
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Rollen konnten nicht geladen werden'));
+                }
             });
-    }, [dispatch, open]);
-
-    // Load user details
-    useEffect(() => {
-        if (!open || userId == null) {
-            setUser(undefined);
-            return;
-        }
-
-        new UsersApiService()
-            .retrieve(userId)
-            .then(setUser)
-            .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Benutzer konnte nicht geladen werden'));
-            });
-    }, [dispatch, open, userId]);
+    }, [canReadDomainRoles, dispatch, open]);
 
     // Load parent details
     useEffect(() => {
@@ -303,12 +306,12 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
     const handleClose = () => {
         onClose();
         setTimeout(() => {
-            setUser(undefined);
             setParent(undefined);
             setMemberships(undefined);
             setActiveRoleIds(undefined);
             setRoles(undefined);
             setOrgUnitPathParts(undefined);
+            setRolesAccessDenied(false);
         }, 300);
     };
 
@@ -327,7 +330,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 <Stack spacing={2}>
                     <Box>
                         <Typography variant="subtitle1">
-                            {user?.fullName ?? 'Benutzer:in'}
+                            {userLabel ?? 'Benutzer:in'}
                         </Typography>
                         {parentType === 'orgUnit' ? (
                             <Box>
@@ -481,7 +484,14 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                         </Stack>
                     </Stack>
 
-                    {!isLoading && selectedCount === 0 && (
+                    {rolesAccessDenied && (
+                        <AlertComponent color="info">
+                            Keine Berechtigung zur Einsicht von Rollen.
+                            Für die Rollenauswahl ist die Berechtigung domain_role.read erforderlich.
+                        </AlertComponent>
+                    )}
+
+                    {!rolesAccessDenied && !isLoading && selectedCount === 0 && (
                         <AlertComponent color="warning">
                             Es wurde keine Domänenrolle ausgewählt.
                             Die Mitarbeiter:in wird ohne Domänenrolle gespeichert und hat dadurch in dieser Domäne
@@ -489,7 +499,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                         </AlertComponent>
                     )}
 
-                    {!isLoading && sortedRoles.length === 0 && (
+                    {!rolesAccessDenied && !isLoading && sortedRoles.length === 0 && (
                         <Typography
                             variant="body2"
                             color="text.secondary"
@@ -545,7 +555,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                 <Button
                     variant="contained"
                     onClick={handleSave}
-                    disabled={isLoading || (!isNewMembership && !changes.hasChanges)}
+                    disabled={isLoading || rolesAccessDenied || (!isNewMembership && !changes.hasChanges)}
                     startIcon={<SaveOutlinedIcon/>}
                 >
                     Speichern

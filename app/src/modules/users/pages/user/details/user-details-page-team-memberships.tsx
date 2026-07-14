@@ -374,6 +374,7 @@ export function UserDetailsPageTeamMemberships() {
                     setShowSelectRolesDialogForTeam(null);
                 }}
                 userId={user.id}
+                userLabel={user.fullName}
                 parentId={showSelectRolesDialogForTeam?.id}
                 parentType="team"
             />
@@ -392,6 +393,7 @@ export function UserDetailsPageTeamMemberships() {
                     setShowSelectRolesDialogForMembership(null);
                 }}
                 userId={user.id}
+                userLabel={user.fullName}
                 parentId={showSelectRolesDialogForMembership?.teamId}
                 parentType="team"
             />
