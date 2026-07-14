@@ -13,6 +13,7 @@ import {CodeListsApiService} from '../../code-lists-api-service';
 import {CodeList} from '../../models/code-list';
 import {CodeListStatusChip} from '../../components/code-list-status-chip';
 import {isCodeListSyncable} from '../../enums/code-list-source-type';
+import SyncProblem from '@aivot/mui-material-symbols-400-outlined/dist/sync-problem/SyncProblem';
 
 export function CodeListDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();
@@ -23,14 +24,14 @@ export function CodeListDetailsPage(): ReactNode {
     const detailsPageControlRef = useRef<GenericDetailsPageControlRef | null>(null);
     const [isSyncing, setIsSyncing] = useState(false);
 
-    const handleSync = async (codeList: CodeList | undefined): Promise<void> => {
+    const handleSync = async (codeList: CodeList | undefined, keepOutdated: boolean): Promise<void> => {
         if (codeList == null || codeList.id === 0 || !isCodeListSyncable(codeList.sourceType) || isSyncing) {
             return;
         }
 
         setIsSyncing(true);
         try {
-            await new CodeListsApiService().triggerUpdate(codeList.id, true);
+            await new CodeListsApiService().triggerUpdate(codeList.id, keepOutdated);
             dispatch(showSuccessSnackbar('Die Synchronisierung wurde gestartet.'));
             detailsPageControlRef.current?.refresh();
         } catch (err) {
@@ -61,10 +62,18 @@ export function CodeListDetailsPage(): ReactNode {
                         : undefined,
                     actions: [
                         {
-                            tooltip: 'Code-Liste synchronisieren',
+                            tooltip: 'Code-Liste synchronisieren (veraltete Einträge behalten)',
                             icon: <Sync />,
                             onClick: () => {
-                                void handleSync(item);
+                                void handleSync(item, true);
+                            },
+                            disabled: item == null || item.id === 0 || !isCodeListSyncable(item.sourceType) || isSyncing || !hasAccess,
+                        },
+                        {
+                            tooltip: 'Code-Liste synchronisieren (veraltete Einträge entfernen)',
+                            icon: <SyncProblem />,
+                            onClick: () => {
+                                void handleSync(item, false);
                             },
                             disabled: item == null || item.id === 0 || !isCodeListSyncable(item.sourceType) || isSyncing || !hasAccess,
                         },
