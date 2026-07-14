@@ -19,6 +19,9 @@ import {SystemRolesApiService} from '../../../../system/services/system-roles-ap
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../slices/snackbar-slice';
 import {GenericListPropsFetchOptions} from '../../../../../components/generic-list/generic-list-props';
+import {useCheckSystemPermission} from '../../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../../data/permissions/permission';
+import {isApiError} from '../../../../../models/api-error';
 
 const Filters = [
     {
@@ -43,11 +46,23 @@ export function UserListPage() {
         messageType: 'snackbar',
     });
     const systemRolesApiService = useMemo(() => new SystemRolesApiService(), []);
+    const canReadSystemRoles = useCheckSystemPermission(Permission.SYSTEM_ROLE_READ);
     const [systemRoleNamesById, setSystemRoleNamesById] = useState<Record<number, string>>({});
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
+    const [systemRolesAccessDenied, setSystemRolesAccessDenied] = useState(false);
 
     useEffect(() => {
         let isCancelled = false;
+
+        setSystemRolesAccessDenied(false);
+
+        if (!canReadSystemRoles) {
+            setSystemRoleNamesById({});
+            setIsSystemRolesLoading(false);
+            return () => {
+                isCancelled = true;
+            };
+        }
 
         setIsSystemRolesLoading(true);
 
@@ -66,7 +81,11 @@ export function UserListPage() {
                 }
 
                 setSystemRoleNamesById({});
-                dispatch(showApiErrorSnackbar(err, 'Die Systemrollen konnten nicht geladen werden.'));
+                if (isApiError(err) && err.status === 403) {
+                    setSystemRolesAccessDenied(true);
+                } else {
+                    dispatch(showApiErrorSnackbar(err, 'Die Systemrollen konnten nicht geladen werden.'));
+                }
             })
             .finally(() => {
                 if (!isCancelled) {
@@ -77,7 +96,7 @@ export function UserListPage() {
         return () => {
             isCancelled = true;
         };
-    }, [dispatch, systemRolesApiService]);
+    }, [canReadSystemRoles, dispatch, systemRolesApiService]);
 
     const columns = useMemo<GenericListColDef<User>[]>(() => [
         {
@@ -136,6 +155,8 @@ export function UserListPage() {
                 let roleLabel: string;
                 if (systemRoleId == null) {
                     roleLabel = 'Keine Systemrolle';
+                } else if (!canReadSystemRoles || systemRolesAccessDenied) {
+                    roleLabel = 'Keine Berechtigung';
                 } else if (systemRoleNamesById[systemRoleId] != null) {
                     roleLabel = systemRoleNamesById[systemRoleId];
                 } else if (isSystemRolesLoading) {
@@ -149,6 +170,11 @@ export function UserListPage() {
                         label={roleLabel}
                         size="small"
                         variant="outlined"
+                        title={
+                            systemRoleId != null && (!canReadSystemRoles || systemRolesAccessDenied)
+                                ? 'Für die Anzeige der Systemrolle ist die Berechtigung system_role.read erforderlich.'
+                                : undefined
+                        }
                     />
                 );
             },
@@ -164,7 +190,7 @@ export function UserListPage() {
                 />
             ),
         },
-    ], [isSystemRolesLoading, systemRoleNamesById]);
+    ], [canReadSystemRoles, isSystemRolesLoading, systemRoleNamesById, systemRolesAccessDenied]);
 
     const header = useMemo(() => ({
         icon: <PeopleOutlined/>,
