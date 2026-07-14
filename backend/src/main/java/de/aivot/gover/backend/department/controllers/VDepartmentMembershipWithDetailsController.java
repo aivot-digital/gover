@@ -9,6 +9,7 @@ import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
 import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
+import de.aivot.gover.backend.userRoles.permissions.DomainRolePermissionProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,6 +27,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/department-memberships-with-details/")
@@ -89,7 +92,13 @@ public class VDepartmentMembershipWithDetailsController {
             }
         }
 
-        return service.list(pageable, filter);
+        var page = service.list(pageable, filter);
+
+        if (!permissionService.checkSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
+            return page.map(VDepartmentMembershipWithDetailsController::redactDomainRoleDetails);
+        }
+
+        return page;
     }
 
     @GetMapping("{id}/")
@@ -115,6 +124,18 @@ public class VDepartmentMembershipWithDetailsController {
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
         );
 
+        if (!permissionService.checkSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
+            return redactDomainRoleDetails(membership);
+        }
+
         return membership;
+    }
+
+    private static VDepartmentMembershipWithDetailsEntity redactDomainRoleDetails(VDepartmentMembershipWithDetailsEntity membership) {
+        // Membership read permission grants access to the membership itself, but not to domain role metadata.
+        return membership
+                .setDomainRoles(List.of())
+                .setDomainRoleAssignments(List.of())
+                .setDomainRolePermissions(List.of());
     }
 }
