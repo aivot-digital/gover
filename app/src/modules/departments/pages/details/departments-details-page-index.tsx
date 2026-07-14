@@ -296,11 +296,15 @@ export function DepartmentsDetailsPageIndex() {
                 }
 
                 console.error(err);
-                dispatch(showErrorSnackbar(
-                    isApiError(err) && err.status === 403
-                        ? `Die verfügbaren Farbschemata konnten nicht geladen werden. Für die Auswahl ist die Berechtigung ${Permission.THEME_READ} erforderlich.`
-                        : 'Fehler beim Laden der verfügbaren Farbschemata.',
-                ));
+                if (isApiError(err) && err.status === 403) {
+                    if (isEditable) {
+                        dispatch(showErrorSnackbar(
+                            `Die verfügbaren Farbschemata konnten nicht geladen werden. Für die Auswahl ist die Berechtigung ${Permission.THEME_READ} erforderlich.`,
+                        ));
+                    }
+                } else {
+                    dispatch(showErrorSnackbar('Fehler beim Laden der verfügbaren Farbschemata.'));
+                }
                 setAvailableThemes([]);
             });
 
