@@ -35,7 +35,11 @@ import {snakeToCamel} from "../../../../utils/camel-to-snake";
 import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckDepartmentPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {
+    useCheckDepartmentPermission,
+    useCheckSystemPermission,
+    useRefreshPermissionSet,
+} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function DepartmentsDetailsPageMembers() {
@@ -49,6 +53,7 @@ export function DepartmentsDetailsPageMembers() {
     const canCreateMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
     const canUpdateMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
     const canDeleteMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
+    const canReadDomainRoles = useCheckSystemPermission(Permission.DOMAIN_ROLE_READ);
 
     const showConfirm = useConfirm();
 
@@ -114,9 +119,11 @@ export function DepartmentsDetailsPageMembers() {
                     setShowSelectRolesDialogForMembership(membershipItem);
                 },
                 tooltip: membershipItem.userDeletedInIdp ? `Kann für gelöschte Mitarbeiter:innen nicht geändert werden` : 'Rolle der Mitarbeiter:in bearbeiten',
-                disabled: !canUpdateMembership || (membershipItem.userDeletedInIdp ?? false),
+                disabled: !canUpdateMembership || !canReadDomainRoles || (membershipItem.userDeletedInIdp ?? false),
                 disabledTooltip: !canUpdateMembership
                     ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_UPDATE)
+                    : !canReadDomainRoles
+                        ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
                     : undefined,
             },
             {
@@ -176,26 +183,35 @@ export function DepartmentsDetailsPageMembers() {
                 disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_DELETE),
             },
         ];
-    }, [canDeleteMembership, canUpdateMembership, dispatch, item, refreshPermissionsAfterMembershipChange, showConfirm, listControlRef]);
+    }, [canDeleteMembership, canReadDomainRoles, canUpdateMembership, dispatch, item, refreshPermissionsAfterMembershipChange, showConfirm, listControlRef]);
+
+    const columns = useMemo(() => buildColumns(canReadDomainRoles), [canReadDomainRoles]);
 
     const preSearchElements = useMemo(() => {
+        const addDisabled = !canCreateMembership || !canReadDomainRoles;
+        const addDisabledTooltip = !canCreateMembership
+            ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)
+            : !canReadDomainRoles
+                ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
+                : '';
+
         return [
             <DisabledTooltip
                 key="add-department-member"
-                title={!canCreateMembership ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE) : ''}
-                disabled={!canCreateMembership}
+                title={addDisabledTooltip}
+                disabled={addDisabled}
             >
                 <Button
                     variant="contained"
                     startIcon={<AddOutlinedIcon/>}
                     onClick={() => setShowSelectNewMemberDialog(true)}
-                    disabled={!canCreateMembership}
+                    disabled={addDisabled}
                 >
                     Mitarbeiter:in hinzufügen
                 </Button>
             </DisabledTooltip>,
         ];
-    }, [canCreateMembership]);
+    }, [canCreateMembership, canReadDomainRoles]);
 
     const handleAddMembership = useCallback((user: User | null, roleIdsToAdd: number[]) => {
         if (user == null || item == null) {
@@ -327,7 +343,7 @@ export function DepartmentsDetailsPageMembers() {
                     mx: '-16px',
                     mb: '-16px',
                 }}
-                columnDefinitions={Columns}
+                columnDefinitions={columns}
                 fetch={fetchMembers}
                 getRowIdentifier={getRowIdentifier}
                 searchLabel="Mitarbeiter:in suchen"
@@ -342,8 +358,10 @@ export function DepartmentsDetailsPageMembers() {
                         description="Es wurden keine Mitgliedschaften gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Mitarbeiter:innen zugeordnet oder Ihnen fehlt die Leseberechtigung für Mitgliedschaften."
                         addText="Mitarbeiter:in hinzufügen"
                         onAdd={() => setShowSelectNewMemberDialog(true)}
-                        addDisabled={!canCreateMembership}
-                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)}
+                        addDisabled={!canCreateMembership || !canReadDomainRoles}
+                        addDisabledTooltip={!canCreateMembership
+                            ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)
+                            : formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)}
                     />
                 }
                 loadingPlaceholder="Lade Mitarbeiter:innen…"
@@ -407,75 +425,85 @@ const Filters = [
     },
 ];
 
-const Columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
-    {
-        field: 'userFullName',
-        headerName: 'Mitarbeiter:in',
-        flex: 1,
-        renderCell: (params) => (
-            <Box
-                display="flex"
-                flexDirection="column"
-                justifyContent="center"
-                height="100%"
-            >
-                <Typography>
-                    {params.row.userFullName}
-                </Typography>
-                {
-                    params.row.membershipHasDeputies && (
-                        <Typography
-                            variant="caption"
+function buildColumns(canReadDomainRoles: boolean): Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> {
+    return [
+        {
+            field: 'userFullName',
+            headerName: 'Mitarbeiter:in',
+            flex: 1,
+            renderCell: (params) => (
+                <Box
+                    display="flex"
+                    flexDirection="column"
+                    justifyContent="center"
+                    height="100%"
+                >
+                    <Typography>
+                        {params.row.userFullName}
+                    </Typography>
+                    {
+                        params.row.membershipHasDeputies && (
+                            <Typography
+                                variant="caption"
 
-                            color="text.secondary"
-                        >
-                            (Stellvertretung durch {
-                                params
-                                    .row
-                                    .membershipDeputies
-                                    .map(snakeToCamel)
-                                    .map(resolveUserName)
-                                    .join(', ')
-                            })
-                        </Typography>
-                    )
-                }
-            </Box>
-        )
-    },
-    {
-        field: 'userEmail',
-        headerName: 'E-Mail',
-        flex: 1,
-    },
-    {
-        field: 'role',
-        headerName: 'Rollen',
-        flex: 1,
-        sortable: false,
-        renderCell: (params) => (
-            <UserRoleChips
-                roles={params.row.domainRoles.map(item => ({
-                    name: item.name ?? '',
-                    id: item.id,
-                }))}
-                maxVisibleChips={1}
-            />
-        ),
-    },
-    {
-        field: 'enabled',
-        headerName: 'Status',
-        type: 'boolean',
-        sortable: false,
-        renderCell: (params) => (
-            <UserStatusChip
-                userDeletedInIdp={params.row.userDeletedInIdp}
-                userEnabled={params.row.userEnabled}
-            />
-        ),
-    },
-];
+                                color="text.secondary"
+                            >
+                                (Stellvertretung durch {
+                                    params
+                                        .row
+                                        .membershipDeputies
+                                        .map(snakeToCamel)
+                                        .map(resolveUserName)
+                                        .join(', ')
+                                })
+                            </Typography>
+                        )
+                    }
+                </Box>
+            )
+        },
+        {
+            field: 'userEmail',
+            headerName: 'E-Mail',
+            flex: 1,
+        },
+        {
+            field: 'role',
+            headerName: 'Rollen',
+            flex: 1,
+            sortable: false,
+            renderCell: (params) => canReadDomainRoles ? (
+                <UserRoleChips
+                    roles={params.row.domainRoles.map(item => ({
+                        name: item.name ?? '',
+                        id: item.id,
+                    }))}
+                    maxVisibleChips={1}
+                />
+            ) : (
+                <UserRoleChips
+                    roles={[{
+                        id: 'domain-role-read-missing',
+                        name: 'Keine Berechtigung zur Einsicht',
+                    }]}
+                    maxVisibleChips={1}
+                />
+            ),
+        },
+        {
+            field: 'enabled',
+            headerName: 'Status',
+            type: 'boolean',
+            sortable: false,
+            renderCell: (params) => (
+                <UserStatusChip
+                    userDeletedInIdp={params.row.userDeletedInIdp}
+                    userEnabled={params.row.userEnabled}
+                />
+            ),
+        },
+    ];
+}
 
 function getRowIdentifier(item: VDepartmentMembershipWithDetailsEntity): string {
     return item.userId;

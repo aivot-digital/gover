@@ -80,19 +80,24 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
 
     const [activeRoleIds, setActiveRoleIds] = useState<Set<number>>();
 
-    // Load all available roles
     useEffect(() => {
+        if (!open) {
+            setRoles(undefined);
+            return;
+        }
+
+        // The dialog is mounted while closed on membership pages; scope permission-protected loads to the open state.
         new UserRolesApiService()
             .listAll()
             .then((rolesPage) => setRoles(rolesPage.content))
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Rollen konnten nicht geladen werden'));
             });
-    }, [dispatch]);
+    }, [dispatch, open]);
 
     // Load user details
     useEffect(() => {
-        if (userId == null) {
+        if (!open || userId == null) {
             setUser(undefined);
             return;
         }
@@ -103,11 +108,11 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Benutzer konnte nicht geladen werden'));
             });
-    }, [dispatch, userId]);
+    }, [dispatch, open, userId]);
 
     // Load parent details
     useEffect(() => {
-        if (parentId == null) {
+        if (!open || parentId == null) {
             setParent(undefined);
             setOrgUnitPathParts(undefined);
             return;
@@ -143,11 +148,11 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     dispatch(showApiErrorSnackbar(err, 'Team konnte nicht geladen werden'));
                 });
         }
-    }, [dispatch, parentId, parentType]);
+    }, [dispatch, open, parentId, parentType]);
 
     // Load assignments
     useEffect(() => {
-        if (userId == null) {
+        if (!open || userId == null) {
             setMemberships(undefined);
             return;
         }
@@ -177,7 +182,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
                     dispatch(showApiErrorSnackbar(err, 'Rollen-Zuweisungen konnten nicht geladen werden'));
                 });
         }
-    }, [dispatch, userId, parentId, parentType]);
+    }, [dispatch, open, userId, parentId, parentType]);
 
     // Determine active role IDs
     useEffect(() => {
@@ -302,6 +307,7 @@ export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps)
             setParent(undefined);
             setMemberships(undefined);
             setActiveRoleIds(undefined);
+            setRoles(undefined);
             setOrgUnitPathParts(undefined);
         }, 300);
     };

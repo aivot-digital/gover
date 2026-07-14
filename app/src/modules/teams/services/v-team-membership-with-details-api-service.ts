@@ -2,11 +2,8 @@ import {BaseCrudApiService} from '../../../services/base-crud-api-service';
 import {
     VTeamMembershipWithDetailsEntity,
 } from "../entities/v-team-membership-with-details-entity";
-import {SystemUserRole} from "../../users/models/user";
-import {TeamMembershipsApiService} from "./team-memberships-api-service";
 import {SortOrder} from "../../../components/generic-list/generic-list-props";
 import {Page} from "../../../models/dtos/page";
-import {VTeamUserRoleAssignmentWithDetailsApiService} from "./v-team-user-role-assignment-with-details-api-service";
 
 interface VTeamMembershipWithDetailsFilter {
     teamIds: number[];
@@ -22,7 +19,7 @@ interface VTeamMembershipWithDetailsFilter {
     deletedInIdp: boolean;
 }
 
-export type ListTeamMembershipsWithRolesFilter = Partial<{
+export type ListTeamMembershipsWithDetailsFilter = Partial<{
     teamId: number;
     teamSearch: string;
     userId: string;
@@ -70,54 +67,21 @@ export class VTeamMembershipWithDetailsApiService extends BaseCrudApiService<
         };
     }
 
-    public async listTeamMembershipsWithRoles(
+    public async listTeamMembershipsWithDetails(
         page: number,
         limit: number,
         sort?: 'name' | 'fullName',
         order?: SortOrder,
-        filters?: Partial<ListTeamMembershipsWithRolesFilter>,
+        filters?: Partial<ListTeamMembershipsWithDetailsFilter>,
     ): Promise<Page<VTeamMembershipWithDetailsEntity>> {
-        const userRoleAssignmentService = new VTeamUserRoleAssignmentWithDetailsApiService();
-
-        const [assignmentsPage, membershipsPage] = await Promise.all([
-            userRoleAssignmentService.listAll({
-                teamId: filters?.teamId,
-                fullName: filters?.userSearch,
-                name: filters?.teamSearch,
-                userId: filters?.userId,
-            }),
-            this.list(page, limit, sort as any, order, {
-                userId: filters?.userId,
-                name: filters?.teamSearch,
-                teamId: filters?.teamId,
-                fullName: filters?.userSearch,
-                deletedInIdp: filters?.deletedUser,
-                enabled: filters?.enabledUser,
-            }),
-        ]);
-
-        const {
-            content: assignments,
-        } = assignmentsPage;
-
-        const {
-            content: memberships,
-        } = membershipsPage;
-
-        const membershipsWithRoles: VTeamMembershipWithDetailsEntity[] = memberships
-            .map((membership) => {
-                const membershipRoles = assignments
-                    .filter((assignment) => assignment.membershipId === membership.membershipId);
-
-                return {
-                    ...membership,
-                    roles: membershipRoles,
-                };
-            });
-
-        return {
-            ...membershipsPage,
-            content: membershipsWithRoles,
-        };
+        // Domain roles are embedded in the membership details response and redacted server-side when domain_role.read is missing.
+        return this.list(page, limit, sort as any, order, {
+            userId: filters?.userId,
+            name: filters?.teamSearch,
+            teamId: filters?.teamId,
+            fullName: filters?.userSearch,
+            deletedInIdp: filters?.deletedUser,
+            enabled: filters?.enabledUser,
+        });
     }
 }
