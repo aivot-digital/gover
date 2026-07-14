@@ -6,6 +6,10 @@ import {AlertComponent} from '../../../components/alert/alert-component';
 import {DepartmentBrowser} from '../components/department-browser';
 import {type VDepartmentShadowedEntityWithChildren} from '../entities/v-department-shadowed-entity';
 import {VDepartmentShadowedApiService} from '../services/v-department-shadowed-api-service';
+import {useAppSelector} from '../../../hooks/use-app-selector';
+import {selectPermissions} from '../../../slices/user-slice';
+import {Permission} from '../../../data/permissions/permission';
+import {checkDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 interface SelectDepartmentDialogProps {
     open: boolean;
@@ -17,6 +21,7 @@ interface SelectDepartmentDialogProps {
 }
 
 export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): React.ReactElement {
+    const permissions = useAppSelector(selectPermissions);
     const {
         open,
         onClose,
@@ -111,6 +116,8 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
                             label: 'Auswählen',
                             icon: <CheckOutlined />,
                             variant: 'contained',
+                            disabled: !checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ),
+                            disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
                             onClick: () => {
                                 onSelect(department);
                                 onClose();
