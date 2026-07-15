@@ -15,6 +15,8 @@ interface SelectDepartmentDialogProps {
     open: boolean;
     onClose: () => void;
     onSelect: (department: VDepartmentShadowedEntityWithChildren) => void;
+    isDepartmentSelectable?: (department: VDepartmentShadowedEntityWithChildren) => boolean;
+    getDepartmentDisabledTooltip?: (department: VDepartmentShadowedEntityWithChildren) => string | undefined;
     selectedDepartmentId?: number | null;
     title?: string;
     departments?: VDepartmentShadowedEntityWithChildren[];
@@ -26,6 +28,8 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
         open,
         onClose,
         onSelect,
+        isDepartmentSelectable,
+        getDepartmentDisabledTooltip,
         selectedDepartmentId,
         title = 'Organisationseinheit auswählen',
         departments: providedDepartments,
@@ -111,19 +115,27 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
                             Es sind keine Organisationseinheiten vorhanden.
                         </AlertComponent>
                     )}
-                    getActions={(department) => [
-                        {
-                            label: 'Auswählen',
-                            icon: <CheckOutlined />,
-                            variant: 'contained',
-                            disabled: !checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ),
-                            disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
-                            onClick: () => {
-                                onSelect(department);
-                                onClose();
+                    getActions={(department) => {
+                        const canSelectDepartment = isDepartmentSelectable?.(department) ??
+                            checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
+                        const disabledTooltip = canSelectDepartment ?
+                            undefined :
+                            getDepartmentDisabledTooltip?.(department) ?? formatMissingPermissionTooltip(Permission.DEPARTMENT_READ);
+
+                        return [
+                            {
+                                label: 'Auswählen',
+                                icon: <CheckOutlined />,
+                                variant: 'contained',
+                                disabled: !canSelectDepartment,
+                                disabledTooltip,
+                                onClick: () => {
+                                    onSelect(department);
+                                    onClose();
+                                },
                             },
-                        },
-                    ]}
+                        ];
+                    }}
                 />
             </DialogContent>
         </Dialog>
