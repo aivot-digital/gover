@@ -160,12 +160,13 @@ public class ProcessDataService {
                                                 @Nonnull List<ProcessNodeEntity> nodes) {
         Map<String, Object> taskMetadata = new HashMap<>();
 
+        Map<Integer, ProcessNodeEntity> nodesById = new HashMap<>();
+        for (ProcessNodeEntity node : nodes) {
+            nodesById.put(node.getId(), node);
+        }
+
         for (ProcessInstanceTaskEntity task : tasks) {
-            var node = nodes
-                    .stream()
-                    .filter(n -> n.getId().equals(task.getProcessNodeId()))
-                    .findFirst()
-                    .orElse(null);
+            var node = nodesById.get(task.getProcessNodeId());
 
             if (node == null) {
                 continue;
