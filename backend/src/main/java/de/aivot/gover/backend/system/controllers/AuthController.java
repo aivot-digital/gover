@@ -59,13 +59,19 @@ public class AuthController {
     @Value("${gover.goverHostname}")
     private String hostname;
 
-    @Value("${spring.security.oauth2.client.provider.keycloak.issuer-uri}")
-    private String oidcIssuerURI;
+    @Value("${keycloak.hostname}")
+    private String oidcHostname;
 
-    @Value("${spring.security.oauth2.client.registration.keycloak.client-id}")
+    @Value("${keycloak.internalHostname}")
+    private String oidcInternalHostname;
+
+    @Value("${keycloak.realm}")
+    private String oidcRealm;
+
+    @Value("${keycloak.frontendClientId}")
     private String oidcClientId;
 
-    @Value("${spring.security.oauth2.client.registration.keycloak.client-secret}")
+    @Value("${keycloak.backendClientSecret}")
     private String oidcClientSecret;
 
     private final HttpService httpService;
@@ -74,6 +80,19 @@ public class AuthController {
     public AuthController(HttpService httpService, CsrfTokenRepository csrfTokenRepository) {
         this.httpService = httpService;
         this.csrfTokenRepository = csrfTokenRepository;
+    }
+
+    private String getIssuerURI() {
+        return getIssuerURI(false);
+    }
+
+    private String getIssuerURI(boolean internal) {
+        return UriComponentsBuilder
+                .fromUriString(internal ? oidcInternalHostname : oidcHostname)
+                .path("/realms/")
+                .path(oidcRealm)
+                .build()
+                .toUriString();
     }
 
     @GetMapping("login")
@@ -93,7 +112,7 @@ public class AuthController {
                 .toUriString();
 
         var uriBuilder = UriComponentsBuilder
-                .fromUriString(oidcIssuerURI)
+                .fromUriString(getIssuerURI())
                 .path(AUTH_PATH)
                 .queryParam(OIDC_CLIENT_ID_PARAM_KEY, oidcClientId)
                 .queryParam(OIDC_REDIRECT_URI_PARAM_KEY, callbackRedirectUri)
@@ -201,7 +220,7 @@ public class AuthController {
     @Nonnull
     private TokenResponse getTokenResponse(@Nonnull Map<String, String> payload) throws ResponseException {
         var tokenUri = UriComponentsBuilder
-                .fromUriString(oidcIssuerURI)
+                .fromUriString(getIssuerURI())
                 .path(TOKEN_PATH)
                 .build()
                 .toUri();
@@ -231,7 +250,7 @@ public class AuthController {
 
     private void performOidcLogout(@Nonnull String refreshToken) throws ResponseException {
         var logoutUri = UriComponentsBuilder
-                .fromUriString(oidcIssuerURI)
+                .fromUriString(getIssuerURI(true))
                 .path(LOGOUT_PATH)
                 .build()
                 .toUri();

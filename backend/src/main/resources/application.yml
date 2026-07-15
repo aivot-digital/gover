@@ -103,20 +103,10 @@ spring:
   security:
     # Configure oidc authentication details
     oauth2:
-      client:
-        registration:
-          keycloak:
-            client-id: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
-            client-secret: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_SECRET:}"
-            authorization-grant-type: authorization_code
-            scope: profile,email
-        provider:
-          keycloak:
-            issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
-            user-name-attribute: preferred_username
       resourceserver:
         jwt:
           issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
+          jwk-set-uri: "${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${GOVER_KEYCLOAK_OIDC_HOSTNAME}}/realms/${GOVER_KEYCLOAK_OIDC_REALM}/protocol/openid-connect/certs"
 
   rabbitmq:
     host: "${GOVER_RABBITMQ_HOST}"
@@ -216,27 +206,20 @@ gover:
 
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:
-  oidc:
-    hostname: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}"
-    realm: "${GOVER_KEYCLOAK_OIDC_REALM}"
-    frontendClientId: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
-    backendClientId: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID}"
-    backendClientSecret: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}"
+  hostname: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}"
+  internalHostname: "${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${GOVER_KEYCLOAK_OIDC_HOSTNAME}}"
+  realm: "${GOVER_KEYCLOAK_OIDC_REALM}"
+  frontendClientId: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
+  backendClientId: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID}"
+  backendClientSecret: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}"
 
+# Configure the storage provider plugins
 storage:
-  # Set the path for locally stored files
-  localStoragePath: "${GOVER_STORAGE_LOCAL_PATH:./data}"
-
-  # Set the properties for the remote s3 storage
-  remoteEndpoint: "${GOVER_STORAGE_REMOTE_ENDPOINT:}"
-  remoteBucket: "${GOVER_STORAGE_REMOTE_BUCKET:}"
-  remoteAccessKey: "${GOVER_STORAGE_REMOTE_ACCESS_KEY:}"
-  remoteSecretKey: "${GOVER_STORAGE_REMOTE_SECRET_KEY:}"
-
   local:
     v1:
       allowed-local-roots: "${GOVER_STORAGE_LOCAL_ALLOWED_ROOTS:./data}"
 
+# Configure the openapi documentation for the backend application
 springdoc:
   apiDocs:
     path: "/api/public/docs/openapi.json"

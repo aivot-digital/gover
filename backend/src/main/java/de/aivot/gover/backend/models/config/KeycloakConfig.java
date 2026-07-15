@@ -4,9 +4,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConfigurationProperties(prefix = "keycloak.oidc")
-public class KeyCloakOIDCConfig {
+@ConfigurationProperties(prefix = "keycloak")
+public class KeycloakConfig {
     private String hostname;
+    private String internalHostname;
     private String realm;
     private String frontendClientId;
     private String backendClientId;
@@ -18,6 +19,15 @@ public class KeyCloakOIDCConfig {
 
     public void setHostname(String hostname) {
         this.hostname = hostname;
+    }
+
+    public String getInternalHostname() {
+        return internalHostname;
+    }
+
+    public KeycloakConfig setInternalHostname(String internalHostname) {
+        this.internalHostname = internalHostname;
+        return this;
     }
 
     public String getRealm() {
