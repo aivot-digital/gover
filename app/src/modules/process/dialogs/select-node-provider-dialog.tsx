@@ -55,6 +55,7 @@ interface SelectNodeProviderDialogProps {
     primaryActionLabel?: string;
     primaryActionIcon?: ReactNode;
     titleActions?: Action[];
+    emptyFilteredMessage?: ReactNode;
 }
 
 function getProviderId(provider: ProcessNodeProvider): string {
@@ -103,6 +104,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         primaryActionLabel = 'Hinzufügen',
         primaryActionIcon = <Add sx={{fontSize: 18}}/>,
         titleActions,
+        emptyFilteredMessage = 'Für diese Aktion stehen aktuell keine kompatiblen Prozesselemente zur Verfügung.',
     } = props;
 
     const [currentTab, setCurrentTab] = useState(0);
@@ -115,6 +117,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
     const renderPrimaryActionLabel = useRetainedDialogValue(open, primaryActionLabel);
     const renderPrimaryActionIcon = useRetainedDialogValue(open, primaryActionIcon);
     const renderTitleActions = useRetainedDialogValue(open, titleActions);
+    const renderEmptyFilteredMessage = useRetainedDialogValue(open, emptyFilteredMessage);
 
     const filteredNodeProviders = useMemo(() => (
         getFilteredNodeProviders(renderNodeProviders, renderFilter)
@@ -219,7 +222,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                     filteredNodeProviders.length === 0 &&
                     <Box sx={{mt: 2, px: 2}}>
                         <Alert severity="info">
-                            Für diese Aktion stehen aktuell keine kompatiblen Prozesselemente zur Verfügung.
+                            {renderEmptyFilteredMessage}
                         </Alert>
                     </Box>
                 }

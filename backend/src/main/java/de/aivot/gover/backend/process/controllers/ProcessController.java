@@ -206,6 +206,8 @@ public class ProcessController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
         );
 
+        processDefinitionNodeService.validateNewProcessNodeBatch(exportData.nodes());
+
         var newProcess = processDefinitionService
                 .create(
                         exportData
@@ -608,6 +610,10 @@ public class ProcessController {
                 .maxVersionForProcessDefinition(id)
                 .orElse(0) + 1;
 
+        var originalNodes = processDefinitionNodeService
+                .findAllByProcessIdAndProcessVersion(process.getId(), originalProcessVersion.getProcessVersion());
+        processDefinitionNodeService.validateNewProcessNodeBatch(originalNodes);
+
         var createdProcessVersion = processDefinitionVersionService
                 .create(new ProcessVersionEntity(
                         process.getId(),
@@ -621,8 +627,6 @@ public class ProcessController {
                         null
                 ));
 
-        var originalNodes = processDefinitionNodeService
-                .findAllByProcessIdAndProcessVersion(process.getId(), originalProcessVersion.getProcessVersion());
         var nodesIdMap = new HashMap<Integer, Integer>();
         for (var originalNode : originalNodes) {
             var createdNode = processDefinitionNodeService

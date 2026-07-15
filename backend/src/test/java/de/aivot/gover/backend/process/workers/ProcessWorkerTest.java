@@ -3,6 +3,7 @@ package de.aivot.gover.backend.process.workers;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
+import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -225,7 +226,7 @@ class ProcessWorkerTest {
 
     private static final class TestProcessNodeService extends ProcessNodeService {
         private TestProcessNodeService() {
-            super(null, null, null, null, null, null, null);
+            super(null, null, null, null, null, null, null, new GoverConfig());
         }
 
         @Nonnull

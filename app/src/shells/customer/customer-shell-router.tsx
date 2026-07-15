@@ -7,6 +7,8 @@ import {store} from '../../store.customer';
 import {Provider as StoreProvide} from 'react-redux';
 import {CustomerFormPage} from '../../pages/customer-pages/customer-form-page';
 import {CustomerListPage} from '../../pages/customer-pages/customer-list-page';
+import {isFormModuleEnabled} from '../../utils/module-flags';
+import {NotFoundPage} from '../../components/not-found-page/not-found-page';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -17,7 +19,7 @@ const router = sentryCreateBrowserRouter(
         {
             element: <CustomerShell/>,
             errorElement: <CustomerShell/>,
-            children: [
+            children: isFormModuleEnabled() ? [
                 {
                     index: true,
                     element: <CustomerListPage/>,
@@ -25,6 +27,11 @@ const router = sentryCreateBrowserRouter(
                 {
                     path: '/form/:processSlug/:formSlug',
                     element: <CustomerFormPage/>,
+                },
+            ] : [
+                {
+                    path: '*',
+                    element: <NotFoundPage/>,
                 },
             ],
         },

@@ -29,6 +29,7 @@ import {storageRoutes} from '../../modules/storage/storage-routes';
 import {auditRoutes} from '../../modules/audit/audit-routes';
 import {elementsRoutes} from '../../modules/elements/elements-routes';
 import {NodeConfigMaker} from '../../pages/staff-pages/node-config-maker/node-config-maker';
+import {isFormModuleEnabled} from '../../utils/module-flags';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
@@ -49,7 +50,7 @@ const router = sentryCreateBrowserRouter(
                 ...configsRoutes,
                 ...dataObjectsRoutes,
                 ...departmentsRoutes,
-                ...formsRoutes,
+                ...(isFormModuleEnabled() ? formsRoutes : []),
                 ...identityRoutes,
                 ...paymentRoutes,
                 ...presetsRoutes,
@@ -64,7 +65,7 @@ const router = sentryCreateBrowserRouter(
                 ...usersRoutes,
                 ...accountRoutes,
                 ...systemRolesRoutes,
-                ...elementsRoutes,
+                ...(isFormModuleEnabled() ? elementsRoutes : []),
 
                 {
                     path: '/testinghall',

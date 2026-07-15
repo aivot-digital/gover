@@ -36,6 +36,7 @@ import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {AUDIT_LOG_READ_PERMISSION} from '../../../modules/audit/constants/audit-permissions';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -56,6 +57,7 @@ export interface DrawerItem {
     chipContent?: ReactNode;
     disabled?: boolean;
     requiredSystemPermission?: string;
+    requiredModuleFlag?: ModuleFlag;
 }
 
 const BaseDrawerGroups: DrawerGroup[] = [
@@ -91,6 +93,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.forms,
                 label: 'Formulare',
                 to: '/forms',
+                requiredModuleFlag: ModuleFlag.Form,
             },
             {
                 icon: ModuleIcons.dataObjects,
@@ -266,6 +269,10 @@ export function ShellDrawer() {
         const filterByPermission = (items: DrawerItem[]): DrawerItem[] => {
             return items
                 .filter((item) => {
+                    if (item.requiredModuleFlag != null && !hasModuleFlag(item.requiredModuleFlag)) {
+                        return false;
+                    }
+
                     if (item.requiredSystemPermission == null) {
                         return true;
                     }

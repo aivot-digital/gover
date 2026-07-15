@@ -187,6 +187,35 @@ public class GoverConfig {
         return ZoneId.of(timezone);
     }
 
+    public boolean hasModuleFlag(ModuleFlags flag) {
+        return moduleFlags != null && moduleFlags.contains(flag);
+    }
+
+    public boolean isFormModuleEnabled() {
+        return hasModuleFlag(ModuleFlags.FORM);
+    }
+
+    public boolean isProcessUnlimitedModuleEnabled() {
+        return hasModuleFlag(ModuleFlags.PROCESS_UNLIMITED);
+    }
+
+    /**
+     * Missing limits are treated as unlimited so adding a new process node type or running with older
+     * configuration does not silently turn into a zero-capacity system.
+     */
+    public int getProcessNodeLimit(ProcessNodeType type) {
+        if (processNodeLimits == null) {
+            return -1;
+        }
+
+        var limit = processNodeLimits.get(type);
+        return limit != null ? limit : -1;
+    }
+
+    public boolean isProcessNodeTypeUnlimited(ProcessNodeType type) {
+        return isProcessUnlimitedModuleEnabled() || getProcessNodeLimit(type) < 0;
+    }
+
     public List<ModuleFlags> getModuleFlags() {
         return moduleFlags;
     }

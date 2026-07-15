@@ -85,10 +85,18 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
+import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
+const FORM_PLUGIN_KEY = 'de.aivot.form';
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
+export const PROCESS_NODE_TYPE_LABELS: Record<ProcessNodeType, string> = {
+    [ProcessNodeType.Trigger]: 'Auslöser',
+    [ProcessNodeType.Action]: 'Aktionen',
+    [ProcessNodeType.FlowControl]: 'Flusselemente',
+    [ProcessNodeType.Termination]: 'Abschlüsse',
+};
 
 const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
 export const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
@@ -108,6 +116,11 @@ export interface ProcessFlow {
 
 interface ReplaceNodeRequest {
     nodeId: number;
+}
+
+interface NewNodeRequest {
+    fromNodeId: number;
+    viaPort: string;
 }
 
 interface NodeRefreshSignal {
@@ -139,6 +152,153 @@ function canReplaceNodeType(currentType: ProcessNodeType, replacementType: Proce
     }
 
     return true;
+}
+
+function isProcessNodeProviderEnabled(provider: ProcessNodeProvider): boolean {
+    return provider.parentPluginKey !== FORM_PLUGIN_KEY || isFormModuleEnabled();
+}
+
+function countProcessNodesOfType(
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    type: ProcessNodeType,
+    excludedNodeId?: number,
+): number {
+    if (processFlow == null) {
+        return 0;
+    }
+
+    return processFlow.nodes.filter((node) => {
+        if (node.id === excludedNodeId) {
+            return false;
+        }
+
+        const currentProvider = providerCache[getProcessNodeProviderKey(
+            node.processNodeDefinitionKey,
+            node.processNodeDefinitionVersion,
+        )];
+
+        return currentProvider?.type === type;
+    }).length;
+}
+
+function isProcessNodeTypeLimitReached(
+    type: ProcessNodeType,
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): boolean {
+    return processFlow != null &&
+        !isProcessNodeTypeUnlimited(type) &&
+        countProcessNodesOfType(processFlow, providerCache, type, excludedNodeId) >= getProcessNodeLimit(type);
+}
+
+function canPlaceProcessNodeProvider(
+    provider: ProcessNodeProvider,
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): boolean {
+    if (!isProcessNodeProviderEnabled(provider)) {
+        return false;
+    }
+
+    if (processFlow == null || isProcessNodeTypeUnlimited(provider.type)) {
+        return true;
+    }
+
+    return countProcessNodesOfType(processFlow, providerCache, provider.type, excludedNodeId) < getProcessNodeLimit(provider.type);
+}
+
+function getProcessNodeLimitReachedEmptyMessage(
+    nodeProviders: ProcessNodeProvider[],
+    isCandidateProvider: (provider: ProcessNodeProvider) => boolean,
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): string | undefined {
+    const limitedTypes = new Set<ProcessNodeType>();
+
+    for (const provider of nodeProviders) {
+        if (
+            isCandidateProvider(provider) &&
+            isProcessNodeProviderEnabled(provider) &&
+            isProcessNodeTypeLimitReached(provider.type, processFlow, providerCache, excludedNodeId)
+        ) {
+            limitedTypes.add(provider.type);
+        }
+    }
+
+    if (limitedTypes.size === 0) {
+        return undefined;
+    }
+
+    if (limitedTypes.size === 1) {
+        const type = Array.from(limitedTypes)[0]!;
+        return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[type]} in dieser Prozessversion ist erreicht.`;
+    }
+
+    return 'Die Limits für kompatible Prozesselemente in dieser Prozessversion sind erreicht.';
+}
+
+function isReplacementCandidateProvider(
+    provider: ProcessNodeProvider,
+    replaceNodeSource: ProcessNodeEntity | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+): boolean {
+    if (replaceNodeSource == null) {
+        return false;
+    }
+
+    const currentProvider = providerCache[getProcessNodeProviderKey(
+        replaceNodeSource.processNodeDefinitionKey,
+        replaceNodeSource.processNodeDefinitionVersion,
+    )];
+    if (currentProvider == null) {
+        return false;
+    }
+
+    if (
+        provider.key === replaceNodeSource.processNodeDefinitionKey &&
+        provider.majorVersion === replaceNodeSource.processNodeDefinitionVersion
+    ) {
+        return false;
+    }
+
+    return canReplaceNodeType(currentProvider.type, provider.type);
+}
+
+function isFollowUpCandidateProvider(
+    provider: ProcessNodeProvider,
+    processFlow: ProcessFlow | null,
+    newNodeFor: NewNodeRequest | null,
+): boolean {
+    if (provider.type === ProcessNodeType.Trigger) {
+        return false;
+    }
+
+    if (processFlow == null || newNodeFor == null) {
+        return true;
+    }
+
+    const requiresOutgoingPort = processFlow.edges.some((edge) => (
+        edge.fromNodeId === newNodeFor.fromNodeId &&
+        edge.viaPort === newNodeFor.viaPort
+    ));
+
+    return !requiresOutgoingPort || provider.ports.length > 0;
+}
+
+function isInbetweenCandidateProvider(provider: ProcessNodeProvider): boolean {
+    return provider.type !== ProcessNodeType.Trigger && provider.ports.length > 0;
+}
+
+function getUnavailableProcessNodeProviderMessage(provider: ProcessNodeProvider): string {
+    if (!isProcessNodeProviderEnabled(provider)) {
+        return 'Die Formularerweiterung ist auf dieser Instanz nicht aktiviert.';
+    }
+
+    return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[provider.type]} in dieser Prozessversion ist erreicht.`;
 }
 
 function formatOutgoingConnectionSummary(preservedOutgoingEdgeCount: number, removedOutgoingEdgeCount: number): string {
@@ -296,10 +456,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
-    const [newNodeFor, setNewNodeFor] = useState<{
-        fromNodeId: number;
-        viaPort: string;
-    } | null>(null);
+    const [newNodeFor, setNewNodeFor] = useState<NewNodeRequest | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
     const [replaceNodeRequest, setReplaceNodeRequest] = useState<ReplaceNodeRequest | null>(null);
     const [connectExistingNodeRequest, setConnectExistingNodeRequest] = useState<{
@@ -1633,6 +1790,11 @@ export function ProcessDetailsPage(): ReactNode {
                 return;
             }
 
+            if (!canPlaceProcessNodeProvider(importedProvider, processFlow, flowNodeProviderCache)) {
+                dispatch(showErrorSnackbar(getUnavailableProcessNodeProviderMessage(importedProvider)));
+                return;
+            }
+
             dispatch(setLoadingMessage({
                 message: 'Importiere Prozesselement',
                 blocking: false,
@@ -1664,6 +1826,7 @@ export function ProcessDetailsPage(): ReactNode {
     }, [
         availableNodeProviders,
         dispatch,
+        flowNodeProviderCache,
         handleAddImportedFollowUpNode,
         handleAddImportedInbetweenNode,
         handleAddImportedTriggerNode,
@@ -2406,7 +2569,16 @@ export function ProcessDetailsPage(): ReactNode {
                         void handleImportNode('trigger');
                     },
                 }]}
-                filter={(provider) => provider.type === ProcessNodeType.Trigger}
+                filter={(provider) => (
+                    provider.type === ProcessNodeType.Trigger &&
+                    canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache)
+                )}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    (provider) => provider.type === ProcessNodeType.Trigger,
+                    processFlow,
+                    flowNodeProviderCache,
+                )}
                 onClose={() => {
                     setShowAddTriggerDialog(false);
                 }}
@@ -2434,31 +2606,19 @@ export function ProcessDetailsPage(): ReactNode {
                 primaryActionLabel="Ersetzen"
                 primaryActionIcon={<SwapHoriz sx={{fontSize: 18}}/>}
                 filter={(provider) => {
-                    if (replaceNodeSource == null) {
+                    if (!isReplacementCandidateProvider(provider, replaceNodeSource, flowNodeProviderCache)) {
                         return false;
                     }
 
-                    const currentProvider = flowNodeProviderCache[getProcessNodeProviderKey(
-                        replaceNodeSource.processNodeDefinitionKey,
-                        replaceNodeSource.processNodeDefinitionVersion,
-                    )];
-                    if (currentProvider == null) {
-                        return false;
-                    }
-
-                    if (
-                        provider.key === replaceNodeSource.processNodeDefinitionKey &&
-                        provider.majorVersion === replaceNodeSource.processNodeDefinitionVersion
-                    ) {
-                        return false;
-                    }
-
-                    if (!canReplaceNodeType(currentProvider.type, provider.type)) {
-                        return false;
-                    }
-
-                    return true;
+                    return canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache, replaceNodeSource?.id);
                 }}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    (provider) => isReplacementCandidateProvider(provider, replaceNodeSource, flowNodeProviderCache),
+                    processFlow,
+                    flowNodeProviderCache,
+                    replaceNodeSource?.id,
+                )}
                 onClose={() => {
                     setReplaceNodeRequest(null);
                 }}
@@ -2482,21 +2642,18 @@ export function ProcessDetailsPage(): ReactNode {
                     },
                 }]}
                 filter={(provider) => {
-                    if (provider.type === ProcessNodeType.Trigger) {
+                    if (!isFollowUpCandidateProvider(provider, processFlow, newNodeFor)) {
                         return false;
                     }
 
-                    if (newNodeFor == null) {
-                        return true;
-                    }
-
-                    const requiresOutgoingPort = processFlow.edges.some((edge) => (
-                        edge.fromNodeId === newNodeFor.fromNodeId &&
-                        edge.viaPort === newNodeFor.viaPort
-                    ));
-
-                    return !requiresOutgoingPort || provider.ports.length > 0;
+                    return canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache);
                 }}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    (provider) => isFollowUpCandidateProvider(provider, processFlow, newNodeFor),
+                    processFlow,
+                    flowNodeProviderCache,
+                )}
                 onClose={() => {
                     setNewNodeFor(null);
                 }}
@@ -2514,8 +2671,14 @@ export function ProcessDetailsPage(): ReactNode {
                     },
                 }]}
                 filter={(provider) => (
-                    provider.type !== ProcessNodeType.Trigger &&
-                    provider.ports.length > 0
+                    isInbetweenCandidateProvider(provider) &&
+                    canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache)
+                )}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    isInbetweenCandidateProvider,
+                    processFlow,
+                    flowNodeProviderCache,
                 )}
                 onClose={() => {
                     setNewNodeOnEdgeId(null);
