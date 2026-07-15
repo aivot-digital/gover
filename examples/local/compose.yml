@@ -104,7 +104,7 @@ services:
 
   keycloak_setup:
     image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.19
-    restart: unless-stopped
+    restart: on-failure
     depends_on:
       - keycloak
     environment:
