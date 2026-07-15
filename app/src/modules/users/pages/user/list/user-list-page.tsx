@@ -156,7 +156,7 @@ export function UserListPage() {
                 if (systemRoleId == null) {
                     roleLabel = 'Keine Systemrolle';
                 } else if (!canReadSystemRoles || systemRolesAccessDenied) {
-                    roleLabel = 'Keine Berechtigung';
+                    roleLabel = 'Keine Berechtigung zur Einsicht';
                 } else if (systemRoleNamesById[systemRoleId] != null) {
                     roleLabel = systemRoleNamesById[systemRoleId];
                 } else if (isSystemRolesLoading) {
