@@ -115,7 +115,7 @@ function humanizeDuration(
         sb.push(
             humanizeNumberCapitalized(minutes, {1: 'Eine'}) +
             ' ' +
-            pluralize(minutes, 'Minute', 'Minute'),
+            pluralize(minutes, 'Minute', 'Minuten'),
         );
     }
 
