@@ -262,7 +262,7 @@ public class AuthController {
     @Nonnull
     private TokenResponse getTokenResponse(@Nonnull Map<String, String> payload) throws ResponseException {
         var tokenUri = UriComponentsBuilder
-                .fromUriString(getIssuerURI())
+                .fromUriString(getIssuerURI(true))
                 .path(TOKEN_PATH)
                 .build()
                 .toUri();
