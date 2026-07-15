@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Size;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -374,16 +373,6 @@ public class ProcessInstanceTaskEntity {
 
     @Nonnull
     public Map<String, Object> getNodeData() {
-        if (nodeData == null) {
-            nodeData = new HashMap<>();
-        }
-
-        nodeData.put("_started", started);
-        if (finished != null) {
-            nodeData.put("_finished", finished);
-            nodeData.put("_runtime", runtime);
-        }
-
         return nodeData;
     }
 
