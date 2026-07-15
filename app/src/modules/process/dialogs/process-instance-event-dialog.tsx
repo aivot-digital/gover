@@ -40,7 +40,7 @@ import ChevronLeft from '@aivot/mui-material-symbols-400-outlined/dist/chevron-l
 import {ProcessInstanceEntity} from '../entities/process-instance-entity';
 import {StatusTable} from '../../../components/status-table/status-table';
 import {StatusTablePropsItem} from '../../../components/status-table/status-table-props';
-import {humanizeISO8601Duration} from '../../../utils/duration-utils';
+import {humanizeMillisecondsDuration} from '../../../utils/duration-utils';
 
 interface ProcessInstanceEventDialogProps {
     open: boolean;
@@ -102,7 +102,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
         if (eventsData.instance.runtime != null) {
             info.push({
                 label: 'Laufzeit',
-                children: humanizeISO8601Duration(eventsData.instance.runtime),
+                children: humanizeMillisecondsDuration(eventsData.instance.runtime),
             });
         } else {
             info.push({
@@ -141,7 +141,7 @@ export function ProcessInstanceEventDialog(props: ProcessInstanceEventDialogProp
         if (eventsData.task.runtime != null) {
             info.push({
                 label: 'Laufzeit',
-                children: humanizeISO8601Duration(eventsData.task.runtime),
+                children: humanizeMillisecondsDuration(eventsData.task.runtime),
             });
         } else {
             info.push({
