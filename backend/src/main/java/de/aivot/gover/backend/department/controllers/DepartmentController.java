@@ -112,7 +112,7 @@ public class DepartmentController {
     @PostMapping("")
     @Operation(
             summary = "Create department",
-            description = "Create a new department. This requires system admin permissions."
+            description = "Create a new department. This requires the system-level department create permission."
     )
     public DepartmentEntity create(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -122,20 +122,11 @@ public class DepartmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var parentDepartmentId = newDepartment.getParentDepartmentId();
-        // Root departments are system-scoped. Child departments are controlled by the parent's create permission.
-        if (parentDepartmentId == null) {
-            permissionService.hasSystemPermission(
-                    execUser.getId(),
-                    DepartmentPermissionProvider.DEPARTMENT_CREATE
-            );
-        } else {
-            permissionService.hasDepartmentPermission(
-                    execUser.getId(),
-                    parentDepartmentId,
-                    DepartmentPermissionProvider.DEPARTMENT_CREATE
-            );
-        }
+        // Creating departments changes the organization structure and is always controlled system-wide.
+        permissionService.hasSystemPermission(
+                execUser.getId(),
+                DepartmentPermissionProvider.DEPARTMENT_CREATE
+        );
 
         var createdDepartment = departmentService
                 .create(newDepartment);

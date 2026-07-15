@@ -134,7 +134,7 @@ function getDepartmentActions(
 ): Action[] {
     const maxDepartmentDepth = getMaxDepartmentDepth();
     const canAddChildDepartment = department.depth < maxDepartmentDepth;
-    const canCreateChildDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_CREATE) && canAddChildDepartment;
+    const canCreateChildDepartment = checkSystemPermission(permissions, Permission.DEPARTMENT_CREATE) && canAddChildDepartment;
     const canReadDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
     const canUpdateDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_UPDATE);
     const canReadMemberships = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_READ);

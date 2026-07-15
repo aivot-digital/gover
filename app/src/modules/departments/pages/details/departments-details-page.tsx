@@ -9,7 +9,7 @@ import {DepartmentEntity} from '../../entities/department-entity';
 import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
-import {useCallback, useMemo} from 'react';
+import {useCallback} from 'react';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
@@ -30,10 +30,6 @@ export interface DepartmentsDetailsPageAdditionalData {
 export function DepartmentsDetailsPage() {
     const [searchParams, _] = useSearchParams();
     const permissions = useAppSelector(selectPermissions);
-    const parentOrgUnitId = useMemo(() => {
-        const parentId = searchParams.get(NewParentIdQueryParam);
-        return parentId != null && !isNaN(Number(parentId)) ? Number(parentId) : undefined;
-    }, [searchParams]);
 
     const isEditable = useCallback((item: DepartmentEntity | undefined) => {
         if (item == null) {
@@ -41,29 +37,23 @@ export function DepartmentsDetailsPage() {
         }
 
         if (item.id === 0) {
-            return parentOrgUnitId != null
-                ? checkDepartmentPermission(permissions, parentOrgUnitId, Permission.DEPARTMENT_CREATE)
-                : checkSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
+            return checkSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
         }
 
         return checkDepartmentPermission(permissions, item.id, Permission.DEPARTMENT_UPDATE);
-    }, [parentOrgUnitId, permissions]);
+    }, [permissions]);
     const hasAccess = useCallback((item: DepartmentEntity | undefined) => {
         if (item == null) {
             return;
         }
 
         if (item.id === 0) {
-            if (parentOrgUnitId != null) {
-                hasDepartmentPermission(permissions, parentOrgUnitId, Permission.DEPARTMENT_CREATE);
-            } else {
-                hasSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
-            }
+            hasSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
             return;
         }
 
         hasDepartmentPermission(permissions, item.id, Permission.DEPARTMENT_READ);
-    }, [parentOrgUnitId, permissions]);
+    }, [permissions]);
 
     return (
         <PageWrapper
