@@ -162,7 +162,7 @@ services:
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
-      CHROMIUM_ALLOW_LIST: "^(https://localhost:9595/|file:///tmp/)"
+      CHROMIUM_ALLOW_LIST: "^(http://localhost:9595/|file:///tmp/)"
 
   mailpit:
     image: docker.io/axllent/mailpit:v1.30
