@@ -41,7 +41,7 @@ Once the services are up and running, you can access them using the following UR
 ## 4. Next Steps
 
 After all services are running, you need to create a new staff user in the staff realm.
-Log into the Keycloak Admin Console and open the "Staff" realm.
+Log into the Keycloak Admin Console with the credentials from the `.env`-File and open the "Staff" realm.
 Then, create a new user in the "Users" section and assign them a password.
 You can then log into the Gover Staff App using the newly created staff user credentials.
 
