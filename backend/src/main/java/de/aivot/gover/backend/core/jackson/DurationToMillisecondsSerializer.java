@@ -7,7 +7,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import java.time.Duration;
 
-public class DurationToMillisecondsDeserializer extends JsonSerializer<Duration> {
+public class DurationToMillisecondsSerializer extends JsonSerializer<Duration> {
     @Override
     public void serialize(Duration value, JsonGenerator gen, SerializerProvider serializers) throws IOException {
         long milliseconds = value.toMillis();

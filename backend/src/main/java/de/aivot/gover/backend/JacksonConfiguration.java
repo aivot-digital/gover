@@ -1,6 +1,6 @@
 package de.aivot.gover.backend;
 
-import de.aivot.gover.backend.core.jackson.DurationToMillisecondsDeserializer;
+import de.aivot.gover.backend.core.jackson.DurationToMillisecondsSerializer;
 import de.aivot.gover.backend.core.jackson.FallbackZoneInstantDeserializer;
 import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
@@ -15,6 +15,6 @@ public class JacksonConfiguration {
     public Jackson2ObjectMapperBuilderCustomizer fallbackZoneInstantDeserializerCustomizer() {
         return builder -> builder
                 .deserializerByType(Instant.class, new FallbackZoneInstantDeserializer())
-                .serializerByType(Duration.class, new DurationToMillisecondsDeserializer());
+                .serializerByType(Duration.class, new DurationToMillisecondsSerializer());
     }
 }
