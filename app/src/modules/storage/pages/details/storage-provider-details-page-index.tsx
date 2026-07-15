@@ -829,7 +829,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     originalStorageProvider != null &&
                     <Tooltip
                         title={
-                            (isDefaultAttachmentStorage || isDefaultAttachmentStorage) ?
+                            (isDefaultAttachmentStorage || isDefaultAssetStorage) ?
                                 'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dokumente und Medien konfiguriert und kann nicht gelöscht werden.' :
                                 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.'
                         }
@@ -843,7 +843,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                             <Button
                                 variant={'outlined'}
                                 onClick={() => setShowConfirmDialog(true)}
-                                disabled={inputsDisabled || isDefaultAttachmentStorage || isDefaultAttachmentStorage}
+                                disabled={inputsDisabled || isDefaultAttachmentStorage || isDefaultAssetStorage}
                                 color="error"
                                 startIcon={<Delete/>}
                             >
