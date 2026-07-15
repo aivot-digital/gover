@@ -370,6 +370,7 @@ export function CodeListDetailsPageIndex() {
                                 required={true}
                                 error={errors.sourceRef}
                                 disabled={isBusy || !isEditable}
+                                hint="Verwenden Sie die spezifische Versionskennung der XRepository-Code-Liste."
                             />
 
                             <Actions
