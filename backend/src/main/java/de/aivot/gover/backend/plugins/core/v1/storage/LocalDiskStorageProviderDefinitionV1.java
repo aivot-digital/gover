@@ -15,6 +15,7 @@ import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.exceptions.StorageException;
 import de.aivot.gover.backend.storage.models.StorageDocument;
 import de.aivot.gover.backend.storage.models.StorageFolder;
+import de.aivot.gover.backend.storage.models.StorageItem;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
@@ -26,6 +27,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.Objects;
 import java.util.Optional;
@@ -255,13 +257,13 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         try {
             Files.createDirectories(folderToCreatePathReal);
-            return new StorageFolder(
+            return withFileAttributes(new StorageFolder(
                     toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                     folderToCreatePathReal.getFileName().toString(),
                     new LinkedList<>(),
                     new LinkedList<>(),
                     false
-            );
+            ), folderToCreatePathReal);
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Erstellen des Verzeichnisses %s: %s",
@@ -303,13 +305,13 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 .toString();
 
         // Create the folder object, which will be returned
-        var folderObject = new StorageFolder(
+        var folderObject = withFileAttributes(new StorageFolder(
                 toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false
-        );
+        ), folderToRetrievePathReal);
 
         try (var files = Files.list(folderToRetrievePathReal)) {
             var children = files.toList();
@@ -322,18 +324,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                     var subfolder = retrieveFolderRecursive(rootPathReal, childPathReal, pathFromRootToChild);
                     folderObject.addSubfolder(subfolder);
                 } else if (Files.isRegularFile(childPathReal)) {
-                    long size;
-                    try {
-                        size = Files.size(childPathReal);
-                    } catch (IOException e) {
-                        throw new StorageException(
-                                e,
-                                "Fehler beim Lesen der Dateigröße für %s: %s.",
-                                StringUtils.quote(childPathReal.toString()),
-                                e.getMessage()
-                        );
-                    }
-                    var document = new StorageDocument(pathFromRootToChild, filename, size, StorageItemMetadata.empty());
+                    var attributes = readFileAttributes(childPathReal);
+                    var document = withFileAttributes(new StorageDocument(pathFromRootToChild, filename, attributes.size(), StorageItemMetadata.empty()), attributes);
                     folderObject.addDocument(document);
                 }
             }
@@ -364,13 +356,13 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 .toString();
 
         // Create the folder object, which will be returned
-        var folderObject = new StorageFolder(
+        var folderObject = withFileAttributes(new StorageFolder(
                 toSuffixWithSlash(toPrefixWithSlash(pathFromRoot)),
                 folderToRetrieveName,
                 new LinkedList<>(),
                 new LinkedList<>(),
                 false
-        );
+        ), folderToRetrievePathReal);
 
         // Extract the name from the folderToRetrievePath
         var folderName = folderToRetrievePathReal.getFileName().toString();
@@ -386,33 +378,23 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
                 var filename = childPathReal.getFileName().toString();
 
                 if (Files.isDirectory(childPathReal)) {
-                    var subfolder = new StorageFolder(
+                    var subfolder = withFileAttributes(new StorageFolder(
                             toSuffixWithSlash(pathFromTheRootToThisFile),
                             filename,
                             new LinkedList<>(),
                             new LinkedList<>(),
                             false
-                    );
+                    ), childPathReal);
                     folderObject.addSubfolder(subfolder);
                 } else if (Files.isRegularFile(childPathReal)) {
-                    long size;
-                    try {
-                        size = Files.size(childPathReal);
-                    } catch (IOException e) {
-                        throw new StorageException(
-                                e,
-                                "Fehler beim Lesen der Dateigröße für %s: %s.",
-                                StringUtils.quote(childPathReal.toString()),
-                                e.getMessage()
-                        );
-                    }
+                    var attributes = readFileAttributes(childPathReal);
 
-                    var document = new StorageDocument(
+                    var document = withFileAttributes(new StorageDocument(
                             pathFromTheRootToThisFile,
                             filename,
-                            size,
+                            attributes.size(),
                             StorageItemMetadata.empty()
-                    );
+                    ), attributes);
                     folderObject.addDocument(document);
                 }
             }
@@ -597,8 +579,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             Files.copy(data, sanitizedDocumentPathReal, StandardCopyOption.REPLACE_EXISTING);
             var relativePathFromRoot = config.getRealRootPath().relativize(sanitizedDocumentPathReal).toString();
             relativePathFromRoot = toPrefixWithSlash(relativePathFromRoot);
-            var fileSize = Files.size(sanitizedDocumentPathReal);
-            return new StorageDocument(relativePathFromRoot, sanitizedFilename, fileSize, StorageItemMetadata.empty());
+            var attributes = readFileAttributes(sanitizedDocumentPathReal);
+            return withFileAttributes(new StorageDocument(relativePathFromRoot, sanitizedFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Speichern des Dokuments %s: %s.",
@@ -617,17 +599,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         var relativePathFromRoot = config.getRealRootPath().relativize(documentPathReal).toString();
         relativePathFromRoot = toPrefixWithSlash(relativePathFromRoot);
 
-        long size;
-        try {
-            size = Files.size(documentPathReal);
-        } catch (IOException e) {
-            throw new StorageException(e,
-                    "Fehler beim Lesen des Dokuments %s: %s.",
-                    StringUtils.quote(pathFromRoot),
-                    e.getMessage());
-        }
+        var attributes = readFileAttributes(documentPathReal);
 
-        var document = new StorageDocument(relativePathFromRoot, documentPathReal.getFileName().toString(), size, StorageItemMetadata.empty());
+        var document = withFileAttributes(new StorageDocument(relativePathFromRoot, documentPathReal.getFileName().toString(), attributes.size(), StorageItemMetadata.empty()), attributes);
         return Optional.of(document);
     }
 
@@ -675,8 +649,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             Files.move(sourcePathReal, sanitizedTargetPathReal, StandardCopyOption.REPLACE_EXISTING);
             var relativeTargetPathFromRoot = config.getRealRootPath().relativize(sanitizedTargetPathReal).toString();
             relativeTargetPathFromRoot = toPrefixWithSlash(relativeTargetPathFromRoot);
-            var sizeInBytes = Files.size(sanitizedTargetPathReal);
-            return new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, sizeInBytes, StorageItemMetadata.empty());
+            var attributes = readFileAttributes(sanitizedTargetPathReal);
+            return withFileAttributes(new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Verschieben des Dokuments von %s nach %s: %s.",
@@ -710,8 +684,8 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
             Files.copy(sourcePathReal, sanitizedTargetPathReal, StandardCopyOption.REPLACE_EXISTING);
             var relativeTargetPathFromRoot = config.getRealRootPath().relativize(sanitizedTargetPathReal).toString();
             relativeTargetPathFromRoot = toPrefixWithSlash(relativeTargetPathFromRoot);
-            var sizeInBytes = Files.size(sanitizedTargetPathReal);
-            return new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, sizeInBytes, StorageItemMetadata.empty());
+            var attributes = readFileAttributes(sanitizedTargetPathReal);
+            return withFileAttributes(new StorageDocument(relativeTargetPathFromRoot, sanitizedTargetFilename, attributes.size(), StorageItemMetadata.empty()), attributes);
         } catch (IOException e) {
             throw new StorageException(e,
                     "Fehler beim Kopieren des Dokuments von %s nach %s: %s.",
@@ -794,6 +768,33 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
         }
 
         return sanitized;
+    }
+
+    @Nonnull
+    private static BasicFileAttributes readFileAttributes(@Nonnull Path path) throws StorageException {
+        try {
+            return Files.readAttributes(path, BasicFileAttributes.class);
+        } catch (IOException e) {
+            throw new StorageException(e,
+                    "Fehler beim Lesen der Dateiattribute für %s: %s.",
+                    StringUtils.quote(path.toString()),
+                    e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private static <T extends StorageItem> T withFileAttributes(@Nonnull T item,
+                                                               @Nonnull Path path) throws StorageException {
+        return withFileAttributes(item, readFileAttributes(path));
+    }
+
+    @Nonnull
+    private static <T extends StorageItem> T withFileAttributes(@Nonnull T item,
+                                                               @Nonnull BasicFileAttributes attributes) {
+        item
+                .setCreated(attributes.creationTime().toInstant())
+                .setUpdated(attributes.lastModifiedTime().toInstant());
+        return item;
     }
 
     @LayoutElementPOJOBinding(id = "config", type = ElementType.ConfigLayout)
