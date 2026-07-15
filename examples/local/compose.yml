@@ -33,7 +33,7 @@ services:
       GOVER_CLAM_PORT: 3310
       GOVER_GOTENBERG_HOST: localhost
       GOVER_GOTENBERG_PORT: 3000
-      GOVER_KEYCLOAK_OIDC_HOSTNAME: http://localhost:9595
+      GOVER_KEYCLOAK_OIDC_HOSTNAME: http://localhost:9595/idp
       GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME: http://keycloak:8080
       GOVER_KEYCLOAK_OIDC_REALM: staff
       GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
@@ -45,23 +45,24 @@ services:
       GOVER_TIMEZONE: Europe/Berlin
       GOVER_FROM_MAIL: mail@example.com
       GOVER_REPORT_MAIL: mail@example.com
+      GOVER_BOOTSTRAP_ADMIN_MAIL: admin@example.com
     volumes:
       - gover_data:/app/data
     networks:
       - gover
       - gover_keycloak
+      - mail
       - proxy
 
   gover_app:
     image: ghcr.io/aivot-digital/gover-next:5.0.0-alpha-117
     restart: unless-stopped
     command: web
+    network_mode: "service:gover_api"
     depends_on:
       - gover_api
     environment:
-      GOVER_HOSTNAME: http://gover_api:9595
-    networks:
-      - proxy
+      GOVER_HOSTNAME: http://localhost:9595
 
   gover_database:
     image: docker.io/postgres:18-alpine
@@ -98,6 +99,7 @@ services:
     networks:
       - keycloak
       - gover_keycloak
+      - mail
       - proxy
 
   keycloak_setup:
@@ -123,7 +125,7 @@ services:
       SMTP_USERNAME: ""
       SMTP_PASSWORD: ""
       SMTP_FROM: mail@example.com
-      SMTP_FROM_DISPLAY: Gover IDP
+      SMTP_FROM_DISPLAY: GoverIDP
       BACKEND_CLIENT_SECRET: ${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
     networks:
       - keycloak
@@ -175,7 +177,7 @@ services:
     ports:
       - "9025:8025"
     networks:
-      - gover
+      - mail
 
   rabbitmq:
     image: docker.io/rabbitmq:4-alpine
@@ -211,4 +213,5 @@ networks:
   gover:
   keycloak:
   gover_keycloak:
+  mail:
   proxy:

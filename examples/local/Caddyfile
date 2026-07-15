@@ -29,11 +29,11 @@ http://localhost:80 {
     }
 
     handle @staff {
-        reverse_proxy gover_app:8080
+        reverse_proxy gover_api:8080
     }
 
     handle @customer {
-        reverse_proxy gover_app:8080
+        reverse_proxy gover_api:8080
     }
 
     header /assets/fonts/* {
