@@ -55,7 +55,9 @@ class AuthControllerTest {
         when(redis.opsForValue()).thenReturn(valueOperations);
         controller = new AuthController(httpService, csrfTokenRepository, redis);
         ReflectionTestUtils.setField(controller, "hostname", "https://gover.example.com");
-        ReflectionTestUtils.setField(controller, "oidcIssuerURI", "https://auth.example.com/realms/gover");
+        ReflectionTestUtils.setField(controller, "oidcHostname", "https://auth.example.com");
+        ReflectionTestUtils.setField(controller, "oidcInternalHostname", "https://auth.example.com");
+        ReflectionTestUtils.setField(controller, "oidcRealm", "gover");
         ReflectionTestUtils.setField(controller, "oidcClientId", "gover-client");
         ReflectionTestUtils.setField(controller, "oidcClientSecret", "gover-secret");
     }
