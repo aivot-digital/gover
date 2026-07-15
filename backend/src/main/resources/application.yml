@@ -213,7 +213,7 @@ gover:
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
   registryHostname: "${GOVER_TEMPLATE_REGISTRY_URL:}"
-  moduleFlags: "${GOVER_MODULE_FLAGS:form,process_unlimited}"
+  moduleFlags: "${GOVER_MODULE_FLAGS:form,process_unlimited,portal}"
   processNodeLimits:
     trigger: "${GOVER_PROCESS_NODE_LIMITS_TRIGGERS:1}"
     action: "${GOVER_PROCESS_NODE_LIMITS_ACTIONS:4}"
