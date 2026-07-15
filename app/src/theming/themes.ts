@@ -48,8 +48,6 @@ export function createDefaultAppTheme(baseTheme: MuiTheme): MuiTheme {
     return createAppTheme(undefined, baseTheme);
 }
 
-const darkMode = localStorage.getItem('dark') != null;
-
 export function createAppTheme(appTheme: Theme | undefined, baseTheme: MuiTheme): MuiTheme {
     const palette: PaletteOptions = {
         primary: {
@@ -93,13 +91,6 @@ export function createAppTheme(appTheme: Theme | undefined, baseTheme: MuiTheme)
                             color: palette.primary?.main ?? '#253e63',
                         },
                     },
-                },
-            },
-            MuiDataGrid: {
-                styleOverrides: {
-                    root: {
-                        background: darkMode ? '#0a0a0a' : undefined,
-                    }
                 },
             },
         },
