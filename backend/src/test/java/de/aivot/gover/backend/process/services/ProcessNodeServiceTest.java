@@ -259,8 +259,8 @@ class ProcessNodeServiceTest {
     }
 
     @Test
-    void create_ShouldAllowLimitedNodeTypeWhenProcessUnlimitedFlagIsSet() throws Exception {
-        goverConfig.setModuleFlags(List.of(ModuleFlags.PROCESS_UNLIMITED));
+    void create_ShouldAllowLimitedNodeTypeWhenProcessFlagIsSet() throws Exception {
+        goverConfig.setModuleFlags(List.of(ModuleFlags.PROCESS));
         goverConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 0));
         when(processNodeRepository.save(any(ProcessNodeEntity.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));

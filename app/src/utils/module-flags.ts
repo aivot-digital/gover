@@ -1,6 +1,6 @@
 export const ModuleFlag = {
     Form: 'FORM',
-    ProcessUnlimited: 'PROCESS_UNLIMITED',
+    Process: 'PROCESS',
     Portal: 'PORTAL',
 } as const;
 
@@ -14,8 +14,8 @@ export function isFormModuleEnabled(): boolean {
     return hasModuleFlag(ModuleFlag.Form);
 }
 
-export function isProcessUnlimitedModuleEnabled(): boolean {
-    return hasModuleFlag(ModuleFlag.ProcessUnlimited);
+export function isProcessModuleEnabled(): boolean {
+    return hasModuleFlag(ModuleFlag.Process);
 }
 
 export function getProcessNodeLimit(type: string): number {
@@ -24,11 +24,11 @@ export function getProcessNodeLimit(type: string): number {
 }
 
 export function isProcessNodeTypeUnlimited(type: string): boolean {
-    return isProcessUnlimitedModuleEnabled() || getProcessNodeLimit(type) < 0;
+    return isProcessModuleEnabled() || getProcessNodeLimit(type) < 0;
 }
 
 export const ModuleFlagLabels: Record<ModuleFlag, string> = {
     [ModuleFlag.Form]: "Formulare",
-    [ModuleFlag.ProcessUnlimited]: "Prozesse",
+    [ModuleFlag.Process]: "Prozesse",
     [ModuleFlag.Portal]: "Portale",
 }

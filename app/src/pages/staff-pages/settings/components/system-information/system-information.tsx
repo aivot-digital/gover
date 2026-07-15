@@ -31,7 +31,7 @@ import Extension from '@aivot/mui-material-symbols-400-outlined/dist/extension/E
 import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
 import Graph1 from '@aivot/mui-material-symbols-400-outlined/dist/graph-1/Graph1';
 import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
-import {humanizeNumberCapitalized} from '../../../../../utils/humanization-utils';
+import {humanizeNumber, humanizeNumberCapitalized} from '../../../../../utils/humanization-utils';
 import {ProviderTypeStyles} from '../../../../../modules/process/data/provider-type-styles';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
@@ -196,10 +196,10 @@ export function SystemInformation(): React.ReactElement {
             },
         ];
 
-        if (!AppConfig.moduleFlags.includes(ModuleFlag.ProcessUnlimited)) {
+        if (!AppConfig.moduleFlags.includes(ModuleFlag.Process)) {
             res.push({
                 alignTop: true,
-                label: 'Knotenlimitierungen',
+                label: 'Limitierung der Prozesselemente',
                 children: (
                     <TableContainer>
                         <Table size="small">
@@ -233,7 +233,13 @@ export function SystemInformation(): React.ReactElement {
                                                                 pl: 2,
                                                             }}
                                                         >
-                                                            {limit < 0 ? 'beliebig viele' : limit}
+                                                            {
+                                                                limit == 0 ?
+                                                                    'nicht zur Prozessmodellierung freigegeben'
+                                                                    : limit < 0
+                                                                        ? 'beliebig viele pro Prozessversion erlaubt'
+                                                                        : `max. ${humanizeNumber(limit, {1: 'eins'})} pro Prozessversion`
+                                                            }
                                                         </TableCell>
                                                     </TableRow>
                                                 );

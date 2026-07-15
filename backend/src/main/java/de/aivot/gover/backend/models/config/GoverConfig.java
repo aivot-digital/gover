@@ -195,8 +195,8 @@ public class GoverConfig {
         return hasModuleFlag(ModuleFlags.FORM);
     }
 
-    public boolean isProcessUnlimitedModuleEnabled() {
-        return hasModuleFlag(ModuleFlags.PROCESS_UNLIMITED);
+    public boolean isProcessModuleEnabled() {
+        return hasModuleFlag(ModuleFlags.PROCESS);
     }
 
     /**
@@ -213,7 +213,7 @@ public class GoverConfig {
     }
 
     public boolean isProcessNodeTypeUnlimited(ProcessNodeType type) {
-        return isProcessUnlimitedModuleEnabled() || getProcessNodeLimit(type) < 0;
+        return isProcessModuleEnabled() || getProcessNodeLimit(type) < 0;
     }
 
     public List<ModuleFlags> getModuleFlags() {
