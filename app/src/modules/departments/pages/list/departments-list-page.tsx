@@ -138,6 +138,7 @@ function getDepartmentActions(
     const canReadDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
     const canUpdateDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_UPDATE);
     const canReadMemberships = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canReadProcesses = checkDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_READ);
 
     return [
         {
@@ -167,10 +168,12 @@ function getDepartmentActions(
         },
         {
             tooltip: 'Prozesse der Organisationseinheit ansehen',
-            disabledTooltip: formatMissingPermissionTooltip(Permission.DEPARTMENT_READ),
+            disabledTooltip: !canReadDepartment
+                ? formatMissingPermissionTooltip(Permission.DEPARTMENT_READ)
+                : formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_READ),
             icon: ModuleIcons.processes,
             to: `/departments/${department.id}/processes`,
-            disabled: !canReadDepartment,
+            disabled: !canReadDepartment || !canReadProcesses,
         },
     ];
 }
