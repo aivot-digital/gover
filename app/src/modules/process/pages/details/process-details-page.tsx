@@ -17,7 +17,7 @@ import {
     ProcessNodeProviderApiService,
     ProcessNodeType,
 } from '../../services/process-node-provider-api-service';
-import {SelectNodeProviderDialog} from '../../dialogs/select-node-provider-dialog';
+import {type ProcessNodeTypeLimit, SelectNodeProviderDialog} from '../../dialogs/select-node-provider-dialog';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {
     addSnackbarMessage,
@@ -183,6 +183,40 @@ function countProcessNodesOfType(
     }).length;
 }
 
+function getProcessNodeTypeLimit(
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    type: ProcessNodeType,
+    excludedNodeId?: number,
+): ProcessNodeTypeLimit | undefined {
+    if (processFlow == null || isProcessNodeTypeUnlimited(type)) {
+        return undefined;
+    }
+
+    return {
+        current: countProcessNodesOfType(processFlow, providerCache, type, excludedNodeId),
+        limit: getProcessNodeLimit(type),
+    };
+}
+
+function getProcessNodeTypeLimits(
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): Partial<Record<ProcessNodeType, ProcessNodeTypeLimit>> {
+    const limits: Partial<Record<ProcessNodeType, ProcessNodeTypeLimit>> = {};
+
+    for (const type of Object.values(ProcessNodeType) as ProcessNodeType[]) {
+        const limit = getProcessNodeTypeLimit(processFlow, providerCache, type, excludedNodeId);
+
+        if (limit != null) {
+            limits[type] = limit;
+        }
+    }
+
+    return limits;
+}
+
 function isProcessNodeTypeLimitReached(
     type: ProcessNodeType,
     processFlow: ProcessFlow | null,
@@ -217,7 +251,7 @@ function getProcessNodeLimitReachedEmptyMessage(
     processFlow: ProcessFlow | null,
     providerCache: Record<string, ProcessNodeProvider>,
     excludedNodeId?: number,
-): string | undefined {
+): ReactNode | undefined {
     const limitedTypes = new Set<ProcessNodeType>();
 
     for (const provider of nodeProviders) {
@@ -236,10 +270,36 @@ function getProcessNodeLimitReachedEmptyMessage(
 
     if (limitedTypes.size === 1) {
         const type = Array.from(limitedTypes)[0]!;
-        return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[type]} in dieser Prozessversion ist erreicht.`;
+        const limit = getProcessNodeTypeLimit(processFlow, providerCache, type, excludedNodeId);
+
+        if (limit == null) {
+            return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[type]} in dieser Prozessversion ist erreicht.`;
+        }
+
+        return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[type]} in dieser Prozessversion ist erreicht: ${limit.current}/${limit.limit}.`;
     }
 
-    return 'Die Limits für kompatible Prozesselemente in dieser Prozessversion sind erreicht.';
+    const limitLabels = Array
+        .from(limitedTypes)
+        .map((type) => {
+            const limit = getProcessNodeTypeLimit(processFlow, providerCache, type, excludedNodeId);
+            return limit == null
+                ? PROCESS_NODE_TYPE_LABELS[type]
+                : `${PROCESS_NODE_TYPE_LABELS[type]} ${limit.current}/${limit.limit}`;
+        });
+
+    return (
+        <Typography>
+            Die Limits für kompatible Prozesselemente in dieser Prozessversion sind erreicht: <br/>
+            {
+                limitLabels.map((l) => (
+                    <React.Fragment key={l}>
+                        {l} <br/>
+                    </React.Fragment>
+                ))
+            }
+        </Typography>
+    );
 }
 
 function isReplacementCandidateProvider(
@@ -2580,6 +2640,7 @@ export function ProcessDetailsPage(): ReactNode {
                     processFlow,
                     flowNodeProviderCache,
                 )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache)}
                 onClose={() => {
                     setShowAddTriggerDialog(false);
                 }}
@@ -2620,6 +2681,7 @@ export function ProcessDetailsPage(): ReactNode {
                     flowNodeProviderCache,
                     replaceNodeSource?.id,
                 )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache, replaceNodeSource?.id)}
                 onClose={() => {
                     setReplaceNodeRequest(null);
                 }}
@@ -2655,6 +2717,7 @@ export function ProcessDetailsPage(): ReactNode {
                     processFlow,
                     flowNodeProviderCache,
                 )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache)}
                 onClose={() => {
                     setNewNodeFor(null);
                 }}
@@ -2681,6 +2744,7 @@ export function ProcessDetailsPage(): ReactNode {
                     processFlow,
                     flowNodeProviderCache,
                 )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache)}
                 onClose={() => {
                     setNewNodeOnEdgeId(null);
                 }}

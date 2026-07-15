@@ -45,6 +45,11 @@ const DEFAULT_EXPANDED_GROUPS: Record<ProcessNodeType, boolean> = {
     [ProcessNodeType.Termination]: true,
 };
 
+export interface ProcessNodeTypeLimit {
+    current: number;
+    limit: number;
+}
+
 interface SelectNodeProviderDialogProps {
     open: boolean;
     nodeProviders: ProcessNodeProvider[];
@@ -56,6 +61,7 @@ interface SelectNodeProviderDialogProps {
     primaryActionIcon?: ReactNode;
     titleActions?: Action[];
     emptyFilteredMessage?: ReactNode;
+    nodeTypeLimits?: Partial<Record<ProcessNodeType, ProcessNodeTypeLimit>>;
 }
 
 function getProviderId(provider: ProcessNodeProvider): string {
@@ -105,6 +111,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         primaryActionIcon = <Add sx={{fontSize: 18}}/>,
         titleActions,
         emptyFilteredMessage = 'Für diese Aktion stehen aktuell keine kompatiblen Prozesselemente zur Verfügung.',
+        nodeTypeLimits,
     } = props;
 
     const [currentTab, setCurrentTab] = useState(0);
@@ -118,6 +125,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
     const renderPrimaryActionIcon = useRetainedDialogValue(open, primaryActionIcon);
     const renderTitleActions = useRetainedDialogValue(open, titleActions);
     const renderEmptyFilteredMessage = useRetainedDialogValue(open, emptyFilteredMessage);
+    const renderNodeTypeLimits = useRetainedDialogValue(open, nodeTypeLimits);
 
     const filteredNodeProviders = useMemo(() => (
         getFilteredNodeProviders(renderNodeProviders, renderFilter)
@@ -242,6 +250,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                         const typeStyle = ProviderTypeStyles[type];
                         const isExpanded = search.trim().length > 0 ? true : expandedGroups[type];
                         const shouldShowExpandIcon = search.trim().length === 0;
+                        const nodeTypeLimit = renderNodeTypeLimits?.[type];
 
                         return (
                             <Accordion
@@ -315,6 +324,18 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                                                 color: typeStyle.textColor,
                                             }}
                                         />
+                                        {
+                                            nodeTypeLimit != null &&
+                                            <Chip
+                                                size="small"
+                                                variant="outlined"
+                                                label={`${nodeTypeLimit.current}/${nodeTypeLimit.limit}`}
+                                                sx={{
+                                                    borderColor: typeStyle.bgColor,
+                                                    color: typeStyle.textColor,
+                                                }}
+                                            />
+                                        }
                                     </Box>
                                 </AccordionSummary>
                                 <AccordionDetails sx={{p: 0}}>
