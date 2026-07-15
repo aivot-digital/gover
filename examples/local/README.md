@@ -44,3 +44,5 @@ After all services are running, you need to create a new staff user in the staff
 Log into the Keycloak Admin Console and open the "Staff" realm.
 Then, create a new user in the "Users" section and assign them a password.
 You can then log into the Gover Staff App using the newly created staff user credentials.
+
+You can use the email address `admin@example.com` for the staff user to automatically register this user as an admin.
