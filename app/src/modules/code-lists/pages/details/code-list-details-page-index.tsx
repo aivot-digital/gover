@@ -256,6 +256,13 @@ export function CodeListDetailsPageIndex() {
                 Legen Sie Quelle, Spalten und die Zuordnung von Wert und Beschriftung fest.
             </Typography>
 
+            <Alert
+                severity="info"
+                sx={{mb: 2}}
+            >
+                Alle Code-Listen sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+            </Alert>
+
             <Grid
                 container
                 columnSpacing={4}

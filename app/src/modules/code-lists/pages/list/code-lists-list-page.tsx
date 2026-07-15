@@ -48,6 +48,9 @@ export function CodeListsListPage() {
                     <Typography sx={{mt: 2}}>
                         Manuelle Listen werden direkt gepflegt. Listen aus XRepository oder CSV-Dateien werden aus ihrer Quelle synchronisiert.
                     </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Alle Code-Listen sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                    </Typography>
                 </>
             ),
         },

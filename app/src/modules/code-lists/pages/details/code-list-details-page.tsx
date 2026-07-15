@@ -90,6 +90,9 @@ export function CodeListDetailsPage(): ReactNode {
                                     Einträge manueller Listen können im Tab Einträge gepflegt werden.
                                     Synchronisierte Listen beziehen ihre Einträge aus XRepository oder einer CSV-Datei.
                                 </Typography>
+                                <Typography sx={{mt: 2}}>
+                                    Alle Code-Listen sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                                </Typography>
                             </>
                         ),
                     },
