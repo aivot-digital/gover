@@ -15,12 +15,19 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.web.csrf.CsrfTokenRepository;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,20 +48,28 @@ public class AuthController {
     private static final String OIDC_RESPONSE_SCOPE_PARAM_KEY = "scope";
     private static final String OIDC_RESPONSE_SCOPE_PARAM_VALUE = "openid profile email";
     private static final String OIDC_REDIRECT_URI_PARAM_KEY = "redirect_uri";
+    private static final String OIDC_STATE_PARAM_KEY = "state";
+    private static final String OIDC_CODE_CHALLENGE_PARAM_KEY = "code_challenge";
+    private static final String OIDC_CODE_CHALLENGE_METHOD_PARAM_KEY = "code_challenge_method";
+    private static final String OIDC_CODE_CHALLENGE_METHOD_VALUE = "S256";
+    private static final String OIDC_CODE_VERIFIER_PARAM_KEY = "code_verifier";
 
     private static final String OIDC_GRANT_TYPE_PARAM_KEY = "grant_type";
     private static final String OIDC_GRANT_TYPE_VALUE = "authorization_code";
     private static final String OIDC_GRANT_TYPE_REFRESH_TOKEN = "refresh_token";
     private static final String OIDC_REFRESH_TOKEN_PARAM_KEY = "refresh_token";
 
-    private static final String OIDC_CALLBACK_SESSION_STATE_PARAM_KEY = "session_state";
-    private static final String OIDC_CALLBACK_ISS_PARAM_KEY = "iss";
     private static final String OIDC_CALLBACK_CODE_PARAM_KEY = "code";
 
     public static final String ACCESS_COOKIE_NAME = "access";
     public static final String REFRESH_COOKIE_NAME = "refresh";
+    public static final String AUTH_FLOW_COOKIE_NAME = "auth_flow";
     private static final String ACCESS_COOKIE_PATH = "/api/";
     private static final String REFRESH_COOKIE_PATH = "/api/auth/";
+    private static final String AUTH_FLOW_COOKIE_PATH = "/api/auth/";
+    private static final String AUTH_FLOW_REDIS_PREFIX = "auth:pkce:";
+    private static final Duration AUTH_FLOW_TTL = Duration.ofMinutes(10);
+    private static final SecureRandom SECURE_RANDOM = new SecureRandom();
 
     @Value("${gover.goverHostname}")
     private String hostname;
@@ -76,10 +91,16 @@ public class AuthController {
 
     private final HttpService httpService;
     private final CsrfTokenRepository csrfTokenRepository;
+    private final StringRedisTemplate redis;
 
-    public AuthController(HttpService httpService, CsrfTokenRepository csrfTokenRepository) {
+    public AuthController(
+            HttpService httpService,
+            CsrfTokenRepository csrfTokenRepository,
+            StringRedisTemplate redis
+    ) {
         this.httpService = httpService;
         this.csrfTokenRepository = csrfTokenRepository;
+        this.redis = redis;
     }
 
     private String getIssuerURI() {
@@ -108,8 +129,21 @@ public class AuthController {
         var callbackRedirectUri = UriComponentsBuilder
                 .fromUriString(hostname)
                 .path(request.getServletPath().replace("/login", "/oidc-callback"))
-                .queryParam(APP_URI_QUERY_PARAM, appUri)
                 .toUriString();
+
+        var state = generateOpaqueValue();
+        var codeVerifier = generateOpaqueValue();
+        var codeChallenge = createCodeChallenge(codeVerifier);
+
+        saveAuthFlowState(
+                state,
+                new AuthFlowState(
+                        codeVerifier,
+                        callbackRedirectUri,
+                        appUri
+                )
+        );
+        response.addCookie(getAuthFlowCookie(state));
 
         var uriBuilder = UriComponentsBuilder
                 .fromUriString(getIssuerURI())
@@ -117,11 +151,10 @@ public class AuthController {
                 .queryParam(OIDC_CLIENT_ID_PARAM_KEY, oidcClientId)
                 .queryParam(OIDC_REDIRECT_URI_PARAM_KEY, callbackRedirectUri)
                 .queryParam(OIDC_RESPONSE_TYPE_PARAM_KEY, OIDC_RESPONSE_TYPE_VALUE)
-                .queryParam(OIDC_RESPONSE_SCOPE_PARAM_KEY, OIDC_RESPONSE_SCOPE_PARAM_VALUE);
-
-        if (StringUtils.isNotNullOrEmpty(oidcClientSecret)) {
-            uriBuilder = uriBuilder.queryParam(OIDC_CLIENT_SECRET_PARAM_KEY, oidcClientSecret);
-        }
+                .queryParam(OIDC_RESPONSE_SCOPE_PARAM_KEY, OIDC_RESPONSE_SCOPE_PARAM_VALUE)
+                .queryParam(OIDC_STATE_PARAM_KEY, state)
+                .queryParam(OIDC_CODE_CHALLENGE_PARAM_KEY, codeChallenge)
+                .queryParam(OIDC_CODE_CHALLENGE_METHOD_PARAM_KEY, OIDC_CODE_CHALLENGE_METHOD_VALUE);
 
         response.sendRedirect(uriBuilder.toUriString());
     }
@@ -135,11 +168,14 @@ public class AuthController {
             @Nonnull HttpServletResponse response,
             @Nonnull @CookieValue(value = REFRESH_COOKIE_NAME) String refreshToken
     ) throws ResponseException {
-        var payload = Map.of(
-                OIDC_GRANT_TYPE_PARAM_KEY, OIDC_GRANT_TYPE_REFRESH_TOKEN,
-                OIDC_CLIENT_ID_PARAM_KEY, oidcClientId,
-                OIDC_REFRESH_TOKEN_PARAM_KEY, refreshToken
-        );
+        var payload = new HashMap<String, String>();
+        payload.put(OIDC_GRANT_TYPE_PARAM_KEY, OIDC_GRANT_TYPE_REFRESH_TOKEN);
+        payload.put(OIDC_CLIENT_ID_PARAM_KEY, oidcClientId);
+        payload.put(OIDC_REFRESH_TOKEN_PARAM_KEY, refreshToken);
+
+        if (StringUtils.isNotNullOrEmpty(oidcClientSecret)) {
+            payload.put(OIDC_CLIENT_SECRET_PARAM_KEY, oidcClientSecret);
+        }
 
         var tokenResponse = getTokenResponse(payload);
 
@@ -158,40 +194,46 @@ public class AuthController {
             description = "Redirects the user to the authentication provider login page or directly to the specified redirect URL if already authenticated."
     )
     public void idpCallback(
-            @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response,
-            @Nonnull @RequestParam(value = APP_URI_QUERY_PARAM) String appUri,
-            @Nonnull @RequestParam(value = OIDC_CALLBACK_SESSION_STATE_PARAM_KEY) String sessionState,
-            @Nonnull @RequestParam(value = OIDC_CALLBACK_ISS_PARAM_KEY) String iss,
-            @Nonnull @RequestParam(value = OIDC_CALLBACK_CODE_PARAM_KEY) String code
+            @Nullable @RequestParam(value = OIDC_STATE_PARAM_KEY, required = false) String state,
+            @Nullable @RequestParam(value = OIDC_CALLBACK_CODE_PARAM_KEY, required = false) String code,
+            @Nullable @CookieValue(value = AUTH_FLOW_COOKIE_NAME, required = false) String authFlowState
     ) throws ResponseException, IOException {
-        var redirectTo = UriComponentsBuilder
-                .fromUriString(hostname)
-                .path(request.getServletPath())
-                .queryParam(APP_URI_QUERY_PARAM, appUri)
-                .toUriString();
+        try {
+            if (StringUtils.isNullOrEmpty(code)) {
+                throw ResponseException.badRequest("Es wurde kein Autorisierungscode übergeben.");
+            }
 
-        var payload = Map.of(
-                OIDC_GRANT_TYPE_PARAM_KEY, OIDC_GRANT_TYPE_VALUE,
-                OIDC_CLIENT_ID_PARAM_KEY, oidcClientId,
-                OIDC_CALLBACK_CODE_PARAM_KEY, code,
-                OIDC_REDIRECT_URI_PARAM_KEY, redirectTo,
-                OIDC_RESPONSE_SCOPE_PARAM_KEY, OIDC_RESPONSE_SCOPE_PARAM_VALUE
-        );
+            var flowState = consumeAuthFlowState(state, authFlowState);
 
-        TokenResponse tokenResponse = getTokenResponse(payload);
+            var payload = new HashMap<String, String>();
+            payload.put(OIDC_GRANT_TYPE_PARAM_KEY, OIDC_GRANT_TYPE_VALUE);
+            payload.put(OIDC_CLIENT_ID_PARAM_KEY, oidcClientId);
+            payload.put(OIDC_CALLBACK_CODE_PARAM_KEY, code);
+            payload.put(OIDC_REDIRECT_URI_PARAM_KEY, flowState.redirectUri);
+            payload.put(OIDC_RESPONSE_SCOPE_PARAM_KEY, OIDC_RESPONSE_SCOPE_PARAM_VALUE);
+            payload.put(OIDC_CODE_VERIFIER_PARAM_KEY, flowState.codeVerifier);
 
-        var refreshCookie = getRefreshCookie(tokenResponse);
-        response.addCookie(refreshCookie);
+            if (StringUtils.isNotNullOrEmpty(oidcClientSecret)) {
+                payload.put(OIDC_CLIENT_SECRET_PARAM_KEY, oidcClientSecret);
+            }
 
-        var accessCookie = getAccessCookie(tokenResponse);
-        response.addCookie(accessCookie);
+            TokenResponse tokenResponse = getTokenResponse(payload);
 
-        var appRedirectLocation = UriComponentsBuilder
-                .fromUriString(appUri)
-                .toUriString();
+            var refreshCookie = getRefreshCookie(tokenResponse);
+            response.addCookie(refreshCookie);
 
-        response.sendRedirect(appRedirectLocation);
+            var accessCookie = getAccessCookie(tokenResponse);
+            response.addCookie(accessCookie);
+
+            var appRedirectLocation = UriComponentsBuilder
+                    .fromUriString(flowState.appUri)
+                    .toUriString();
+
+            response.sendRedirect(appRedirectLocation);
+        } finally {
+            response.addCookie(getExpiredAuthFlowCookie());
+        }
     }
 
     @PostMapping("logout")
@@ -248,6 +290,57 @@ public class AuthController {
         return tokenResponse;
     }
 
+    private void saveAuthFlowState(
+            @Nonnull String state,
+            @Nonnull AuthFlowState authFlowState
+    ) throws ResponseException {
+        try {
+            var value = ObjectMapperFactory
+                    .getInstance()
+                    .writeValueAsString(authFlowState);
+            redis
+                    .opsForValue()
+                    .set(getAuthFlowRedisKey(state), value, AUTH_FLOW_TTL);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.internalServerError(e, "Failed to create auth flow state: " + e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private AuthFlowState consumeAuthFlowState(
+            @Nullable String state,
+            @Nullable String authFlowStateCookie
+    ) throws ResponseException {
+        if (StringUtils.isNullOrEmpty(state) || StringUtils.isNullOrEmpty(authFlowStateCookie)) {
+            throw ResponseException.badRequest("Der state-Parameter ist ungültig.");
+        }
+
+        if (!state.equals(authFlowStateCookie)) {
+            throw ResponseException.badRequest("Der state-Parameter ist ungültig.");
+        }
+
+        var value = redis
+                .opsForValue()
+                .getAndDelete(getAuthFlowRedisKey(state));
+
+        if (value == null) {
+            throw ResponseException.badRequest("Die Authentifizierungssitzung ist abgelaufen.");
+        }
+
+        try {
+            return ObjectMapperFactory
+                    .getInstance()
+                    .readValue(value, AuthFlowState.class);
+        } catch (JsonProcessingException e) {
+            throw ResponseException.internalServerError(e, "Failed to parse auth flow state: " + e.getMessage());
+        }
+    }
+
+    @Nonnull
+    private static String getAuthFlowRedisKey(@Nonnull String state) {
+        return AUTH_FLOW_REDIS_PREFIX + state;
+    }
+
     private void performOidcLogout(@Nonnull String refreshToken) throws ResponseException {
         var logoutUri = UriComponentsBuilder
                 .fromUriString(getIssuerURI(true))
@@ -299,6 +392,17 @@ public class AuthController {
     }
 
     @Nonnull
+    private static Cookie getAuthFlowCookie(@Nonnull String state) {
+        var cookie = new Cookie(AUTH_FLOW_COOKIE_NAME, state);
+        cookie.setSecure(true);
+        cookie.setHttpOnly(true);
+        cookie.setPath(AUTH_FLOW_COOKIE_PATH);
+        cookie.setMaxAge((int) AUTH_FLOW_TTL.toSeconds());
+        cookie.setAttribute("SameSite", "Lax");
+        return cookie;
+    }
+
+    @Nonnull
     private static Cookie getExpiredAccessCookie() {
         return getExpiredCookie(ACCESS_COOKIE_NAME, ACCESS_COOKIE_PATH);
     }
@@ -309,6 +413,13 @@ public class AuthController {
     }
 
     @Nonnull
+    private static Cookie getExpiredAuthFlowCookie() {
+        var cookie = getExpiredCookie(AUTH_FLOW_COOKIE_NAME, AUTH_FLOW_COOKIE_PATH);
+        cookie.setAttribute("SameSite", "Lax");
+        return cookie;
+    }
+
+    @Nonnull
     private static Cookie getExpiredCookie(@Nonnull String name, @Nonnull String path) {
         var cookie = new Cookie(name, "");
         cookie.setSecure(true);
@@ -316,6 +427,35 @@ public class AuthController {
         cookie.setPath(path);
         cookie.setMaxAge(0);
         return cookie;
+    }
+
+    @Nonnull
+    private static String generateOpaqueValue() {
+        var bytes = new byte[32];
+        SECURE_RANDOM.nextBytes(bytes);
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+    }
+
+    @Nonnull
+    static String createCodeChallenge(@Nonnull String codeVerifier) throws ResponseException {
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw ResponseException.internalServerError(e, "Der SHA-256 Algorithmus wird nicht unterstützt.");
+        }
+        var hash = digest.digest(codeVerifier.getBytes(StandardCharsets.UTF_8));
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(hash);
+    }
+
+    private record AuthFlowState(
+            @Nonnull
+            String codeVerifier,
+            @Nonnull
+            String redirectUri,
+            @Nonnull
+            String appUri
+    ) {
     }
 
     public record TokenResponse(
