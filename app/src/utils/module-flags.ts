@@ -1,6 +1,7 @@
 export const ModuleFlag = {
     Form: 'FORM',
     ProcessUnlimited: 'PROCESS_UNLIMITED',
+    Portal: 'PORTAL',
 } as const;
 
 export type ModuleFlag = typeof ModuleFlag[keyof typeof ModuleFlag];
@@ -29,4 +30,5 @@ export function isProcessNodeTypeUnlimited(type: string): boolean {
 export const ModuleFlagLabels: Record<ModuleFlag, string> = {
     [ModuleFlag.Form]: "Formulare",
     [ModuleFlag.ProcessUnlimited]: "Prozesse",
+    [ModuleFlag.Portal]: "Portale",
 }
