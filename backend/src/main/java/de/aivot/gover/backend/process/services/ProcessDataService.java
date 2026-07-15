@@ -31,7 +31,8 @@ public class ProcessDataService {
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
 
     public ProcessDataService(ProcessInstanceTaskRepository processInstanceTaskRepository,
-                              ProcessNodeRepository processDefinitionNodeRepository, ProcessInstanceAttachmentRepository processInstanceAttachmentRepository) {
+                              ProcessNodeRepository processDefinitionNodeRepository,
+                              ProcessInstanceAttachmentRepository processInstanceAttachmentRepository) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
@@ -85,7 +86,7 @@ public class ProcessDataService {
         var allData = new ProcessExecutionData();
 
         allData.put("$", getProcessData(instance, previousTask));
-        allData.put("$$", getInstanceData(instance, previousNode));
+        allData.put("$$", getInstanceData(instance, previousNode, tasks, nodes));
         allData.put("_", getNodeData(tasks, nodes));
 
         return allData;
@@ -99,7 +100,9 @@ public class ProcessDataService {
 
     @Nonnull
     private Map<String, Object> getInstanceData(@Nonnull ProcessInstanceEntity instance,
-                                                @Nullable ProcessNodeEntity previousNode) {
+                                                @Nullable ProcessNodeEntity previousNode,
+                                                @Nonnull List<ProcessInstanceTaskEntity> tasks,
+                                                @Nonnull List<ProcessNodeEntity> nodes) {
         var initialNode = processDefinitionNodeRepository
                 .findById(instance.getInitialNodeId())
                 .orElseThrow(() -> new RuntimeException("Initial node not found for process instance " + instance.getId()));
@@ -126,6 +129,7 @@ public class ProcessDataService {
                         "storagePathFromRoot", att.getStoragePathFromRoot()
                 ))
                 .toList());
+        instanceData.put("taskMetadata", getTaskMetaData(tasks, nodes));
 
         return instanceData;
     }
@@ -150,5 +154,38 @@ public class ProcessDataService {
         }
 
         return nodeData;
+    }
+
+    private Map<String, Object> getTaskMetaData(@Nonnull List<ProcessInstanceTaskEntity> tasks,
+                                                @Nonnull List<ProcessNodeEntity> nodes) {
+        Map<String, Object> taskMetadata = new HashMap<>();
+
+        for (ProcessInstanceTaskEntity task : tasks) {
+            var node = nodes
+                    .stream()
+                    .filter(n -> n.getId().equals(task.getProcessNodeId()))
+                    .findFirst()
+                    .orElse(null);
+
+            if (node == null) {
+                continue;
+            }
+
+            var metadata = new HashMap<String, Object>();
+            metadata.put("nodeId", node.getId());
+            metadata.put("taskId", task.getId());
+            metadata.put("assignedUserId", task.getAssignedUserId());
+            metadata.put("started", task.getStarted());
+            metadata.put("updated", task.getUpdated());
+            metadata.put("finished", task.getFinished());
+            metadata.put("runtime", task.getRuntime());
+            metadata.put("previousProcessNodeId", task.getPreviousProcessNodeId());
+            metadata.put("previousProcessNodePortKey", task.getPreviousProcessNodePortKey());
+            metadata.put("previousProcessInstanceTaskId", task.getPreviousProcessInstanceTaskId());
+
+            taskMetadata.put(node.getDataKey(), metadata);
+        }
+
+        return taskMetadata;
     }
 }
