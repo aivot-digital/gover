@@ -20,6 +20,7 @@ import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.exceptions.StorageException;
 import de.aivot.gover.backend.storage.models.StorageDocument;
 import de.aivot.gover.backend.storage.models.StorageFolder;
+import de.aivot.gover.backend.storage.models.StorageItem;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
@@ -46,6 +47,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Base64;
 import java.util.LinkedList;
 import java.util.List;
@@ -63,6 +68,8 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
               <d:prop>
                 <d:resourcetype/>
                 <d:getcontentlength/>
+                <d:creationdate/>
+                <d:getlastmodified/>
               </d:prop>
             </d:propfind>
             """;
@@ -289,13 +296,13 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
             return Optional.empty();
         }
 
-        var folder = new StorageFolder(
+        var folder = withTimestamps(new StorageFolder(
                 normalizedPath,
                 "/".equals(normalizedPath) ? "Root" : StringUtils.getLastPathSegment(normalizedPath),
                 new LinkedList<>(),
                 new LinkedList<>(),
                 recursive
-        );
+        ), current.map(WebDavResource::created).orElse(null), current.map(WebDavResource::updated).orElse(null));
 
         for (var resource : providerResources) {
             if (normalizedPath.equals(normalizeFolderPath(resource.pathFromRoot()))) {
@@ -311,21 +318,21 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
                     retrieveFolder(config, resourceFolderPath, true)
                             .ifPresent(folder::addSubfolder);
                 } else {
-                    folder.addSubfolder(new StorageFolder(
+                    folder.addSubfolder(withTimestamps(new StorageFolder(
                             resourceFolderPath,
                             StringUtils.getLastPathSegment(resourceFolderPath),
                             new LinkedList<>(),
                             new LinkedList<>(),
                             false
-                    ));
+                    ), resource.created(), resource.updated()));
                 }
             } else {
-                folder.addDocument(new StorageDocument(
+                folder.addDocument(withTimestamps(new StorageDocument(
                         normalizeDocumentPath(resource.pathFromRoot()),
                         StringUtils.getLastPathSegment(resource.pathFromRoot()),
                         resource.sizeInBytes(),
                         StorageItemMetadata.empty()
-                ));
+                ), resource.created(), resource.updated()));
             }
         }
 
@@ -463,12 +470,12 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
             return Optional.empty();
         }
 
-        return Optional.of(new StorageDocument(
+        return Optional.of(withTimestamps(new StorageDocument(
                 normalizedPath,
                 StringUtils.getLastPathSegment(normalizedPath),
                 resource.get().sizeInBytes(),
                 StorageItemMetadata.empty()
-        ));
+        ), resource.get().created(), resource.get().updated()));
     }
 
     @Nonnull
@@ -739,7 +746,7 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
                 providerPath = normalizeDocumentPath(providerPath);
             }
 
-            result.add(new WebDavResource(providerPath, remoteResource.collection(), remoteResource.sizeInBytes()));
+            result.add(new WebDavResource(providerPath, remoteResource.collection(), remoteResource.sizeInBytes(), remoteResource.created(), remoteResource.updated()));
         }
         return result;
     }
@@ -918,10 +925,13 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         void run() throws StorageException;
     }
 
-    record WebDavResource(String pathFromRoot, boolean collection, long sizeInBytes) {
+    record WebDavResource(String pathFromRoot, boolean collection, long sizeInBytes, @Nullable Instant created, @Nullable Instant updated) {
     }
 
-    record WebDavRemoteResource(String href, boolean collection, long sizeInBytes) {
+    record WebDavRemoteResource(String href, boolean collection, long sizeInBytes, @Nullable Instant created, @Nullable Instant updated) {
+        WebDavRemoteResource(String href, boolean collection, long sizeInBytes) {
+            this(href, collection, sizeInBytes, null, null);
+        }
     }
 
     static class WebDavClient {
@@ -1146,8 +1156,14 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
                 var sizeInBytes = textContent(responseElement, "getcontentlength")
                         .map(WebDavStorageProviderDefinitionV1::parseLongOrZero)
                         .orElse(0L);
+                var created = textContent(responseElement, "creationdate")
+                        .flatMap(WebDavStorageProviderDefinitionV1::parseIsoInstant)
+                        .orElse(null);
+                var updated = textContent(responseElement, "getlastmodified")
+                        .flatMap(WebDavStorageProviderDefinitionV1::parseRfc1123Instant)
+                        .orElse(null);
 
-                result.add(new WebDavRemoteResource(href, collection, sizeInBytes));
+                result.add(new WebDavRemoteResource(href, collection, sizeInBytes, created, updated));
             }
             return result;
         } catch (Exception e) {
@@ -1183,6 +1199,37 @@ public class WebDavStorageProviderDefinitionV1 implements StorageProviderDefinit
         } catch (NumberFormatException ignored) {
             return 0L;
         }
+    }
+
+    @Nonnull
+    private static Optional<Instant> parseIsoInstant(@Nonnull String value) {
+        try {
+            return Optional.of(Instant.parse(value));
+        } catch (DateTimeParseException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    @Nonnull
+    private static Optional<Instant> parseRfc1123Instant(@Nonnull String value) {
+        try {
+            return Optional.of(ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant());
+        } catch (DateTimeParseException ignored) {
+            return Optional.empty();
+        }
+    }
+
+    @Nonnull
+    private static <T extends StorageItem> T withTimestamps(@Nonnull T item,
+                                                           @Nullable Instant created,
+                                                           @Nullable Instant updated) {
+        if (created != null) {
+            item.setCreated(created);
+        }
+        if (updated != null) {
+            item.setUpdated(updated);
+        }
+        return item;
     }
 
     @LayoutElementPOJOBinding(id = "config", type = ElementType.ConfigLayout)

@@ -21,6 +21,7 @@ import io.minio.messages.Item;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.time.ZonedDateTime;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -167,6 +168,25 @@ class S3StorageProviderDefinitionV1Test {
         assertTrue(copyObjectArgs.headers().get("Content-Type").contains("application/pdf"));
         assertEquals("/document.pdf", updatedDocument.getPathFromRoot());
         assertEquals("blue", updatedDocument.getMetadata().get("x-amz-meta-color"));
+    }
+
+    @Test
+    void retrieveDocumentUsesLastModifiedAsTimestamps() throws Exception {
+        var client = mock(MinioClient.class);
+        var statObjectResponse = mock(StatObjectResponse.class);
+        var lastModified = ZonedDateTime.parse("2026-01-02T03:04:05Z");
+        when(statObjectResponse.size()).thenReturn(123L);
+        when(statObjectResponse.userMetadata()).thenReturn(Map.of());
+        when(statObjectResponse.lastModified()).thenReturn(lastModified);
+        when(client.statObject(any(StatObjectArgs.class))).thenReturn(statObjectResponse);
+
+        var provider = new TestS3StorageProviderDefinitionV1(client);
+        var config = createConfig();
+
+        var document = provider.retrieveDocument(config, "/document.pdf").orElseThrow();
+
+        assertEquals(lastModified.toInstant(), document.getCreated());
+        assertEquals(lastModified.toInstant(), document.getUpdated());
     }
 
     private static S3StorageProviderDefinitionV1.Config createConfig() {
