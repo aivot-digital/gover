@@ -311,6 +311,12 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                     StringUtils.quote(storageProvider.getName()),
                     storageProviderId
             );
+        } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Der Speicheranbieter %s (ID %d) ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.",
+                    StringUtils.quote(storageProvider.getName()),
+                    storageProviderId
+            );
         }
     }
 
