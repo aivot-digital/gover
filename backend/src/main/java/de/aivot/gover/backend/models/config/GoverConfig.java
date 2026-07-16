@@ -9,10 +9,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -217,6 +214,9 @@ public class GoverConfig {
     }
 
     public List<ModuleFlags> getModuleFlags() {
+        if (moduleFlags == null) {
+            return new LinkedList<>();
+        }
         return moduleFlags;
     }
 
