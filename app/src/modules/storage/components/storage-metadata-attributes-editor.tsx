@@ -1,4 +1,4 @@
-import {Box, Stack, Typography} from '@mui/material';
+import {Box, Stack, Typography, Grid} from '@mui/material';
 import React from 'react';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {StorageProviderEntity} from '../entities/storage-provider-entity';
@@ -20,7 +20,12 @@ function normalizeMetadataValue(value: unknown): string {
     return String(value);
 }
 
-export function StorageMetadataAttributesEditor({storageProvider, metadata, onChange, disabled}: StorageMetadataAttributesEditorProps) {
+export function StorageMetadataAttributesEditor({
+                                                    storageProvider,
+                                                    metadata,
+                                                    onChange,
+                                                    disabled,
+                                                }: StorageMetadataAttributesEditorProps) {
     if (storageProvider.metadataAttributes.length === 0) {
         return (
             <Typography color="text.secondary">
@@ -30,30 +35,40 @@ export function StorageMetadataAttributesEditor({storageProvider, metadata, onCh
     }
 
     return (
-        <Stack spacing={2}>
-            {storageProvider.metadataAttributes.map((attribute) => (
-                <Box key={attribute.key}>
-                    <TextFieldComponent
-                        label={attribute.label}
-                        value={normalizeMetadataValue(metadata[attribute.key])}
-                        hint={attribute.description}
-                        disabled={disabled}
-                        onChange={(value) => {
-                            const nextMetadata = {
-                                ...metadata,
-                            };
+        <Grid
+            container
+            spacing={2}
+        >
+            {
+                storageProvider
+                    .metadataAttributes
+                    .map((attribute) => (
+                        <Grid
+                            size={6}
+                            key={attribute.key}
+                        >
+                            <TextFieldComponent
+                                label={attribute.label}
+                                value={normalizeMetadataValue(metadata[attribute.key])}
+                                hint={attribute.description}
+                                disabled={disabled}
+                                onChange={(value) => {
+                                    const nextMetadata = {
+                                        ...metadata,
+                                    };
 
-                            if (value == null || value.trim().length === 0) {
-                                delete nextMetadata[attribute.key];
-                            } else {
-                                nextMetadata[attribute.key] = value;
-                            }
+                                    if (value == null || value.trim().length === 0) {
+                                        delete nextMetadata[attribute.key];
+                                    } else {
+                                        nextMetadata[attribute.key] = value;
+                                    }
 
-                            onChange(nextMetadata);
-                        }}
-                    />
-                </Box>
-            ))}
-        </Stack>
+                                    onChange(nextMetadata);
+                                }}
+                            />
+                        </Grid>
+                    ))
+            }
+        </Grid>
     );
 }

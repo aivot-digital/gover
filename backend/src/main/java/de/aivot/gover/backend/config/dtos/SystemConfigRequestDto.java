@@ -9,7 +9,9 @@ import jakarta.annotation.Nullable;
 
 public record SystemConfigRequestDto(
         @Nullable
-        Object value
+        Object value,
+        @Nullable
+        Boolean changeConfirmed
 ) {
     @Nonnull
     public SystemConfigEntity toEntity(@Nonnull SystemConfigDefinition definition) throws ResponseException {

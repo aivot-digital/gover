@@ -347,7 +347,7 @@ export function AssetDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Dokumente und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                                    Dateien und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
                                     verwaltet werden können.
                                     In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
                                     bearbeiten.

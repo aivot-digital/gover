@@ -170,6 +170,15 @@ public class SystemConfigService {
             @Nonnull String key,
             @Nonnull SystemConfigEntity entity
     ) throws ResponseException {
+        return save(key, entity, false);
+    }
+
+    @Nonnull
+    public SystemConfigEntity save(
+            @Nonnull String key,
+            @Nonnull SystemConfigEntity entity,
+            boolean changeConfirmed
+    ) throws ResponseException {
         SystemConfigDefinition<?> def = getDefinition(key)
                 .orElseThrow(() -> ResponseException
                         .notFound(
@@ -177,7 +186,17 @@ public class SystemConfigService {
                                 StringUtils.quote(key)
                         ));
 
-        validateValue(def, entity.getValue());
+        var oldEntity = configRepository
+                .findById(key)
+                .orElseGet(() -> {
+                    try {
+                        return getDefault(def);
+                    } catch (ResponseException e) {
+                        throw new RuntimeException(e);
+                    }
+                });
+
+        validateChange(def, oldEntity.getValue(), entity.getValue(), changeConfirmed);
 
         entity.setKey(key);
         entity.setPublicConfig(def.isPublicConfig());
@@ -187,9 +206,14 @@ public class SystemConfigService {
         return entity;
     }
 
-    private <T> void validateValue(@Nonnull SystemConfigDefinition<T> def, @Nullable String val) throws ResponseException {
-        T value = def.parseValueFromDB(val);
-        def.validate(value);
+    private <T> void validateChange(@Nonnull SystemConfigDefinition<T> def,
+                                    @Nonnull String oldVal,
+                                    @Nonnull String newVal,
+                                    boolean changeConfirmed) throws ResponseException {
+        T oldValue = def.parseValueFromDB(oldVal);
+        T newValue = def.parseValueFromDB(newVal);
+        def.validate(newValue);
+        def.validateChange(oldValue, newValue, changeConfirmed);
     }
 
     @Nonnull
