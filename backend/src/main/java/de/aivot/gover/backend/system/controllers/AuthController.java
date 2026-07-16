@@ -86,7 +86,7 @@ public class AuthController {
     @Value("${keycloak.frontendClientId}")
     private String oidcClientId;
 
-    @Value("${keycloak.backendClientSecret}")
+    @Value("${keycloak.frontendClientSecret}")
     private String oidcClientSecret;
 
     private final HttpService httpService;

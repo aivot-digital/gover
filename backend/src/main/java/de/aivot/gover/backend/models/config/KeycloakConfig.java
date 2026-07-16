@@ -10,6 +10,7 @@ public class KeycloakConfig {
     private String internalHostname;
     private String realm;
     private String frontendClientId;
+    private String frontendClientSecret;
     private String backendClientId;
     private String backendClientSecret;
 
@@ -60,5 +61,14 @@ public class KeycloakConfig {
 
     public void setBackendClientSecret(String backendClientSecret) {
         this.backendClientSecret = backendClientSecret;
+    }
+
+    public String getFrontendClientSecret() {
+        return frontendClientSecret;
+    }
+
+    public KeycloakConfig setFrontendClientSecret(String frontendClientSecret) {
+        this.frontendClientSecret = frontendClientSecret;
+        return this;
     }
 }
