@@ -26,8 +26,10 @@ import java.util.Arrays;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -68,7 +70,7 @@ class AuthControllerTest {
         request.setServletPath("/api/auth/login");
         var response = new MockHttpServletResponse();
 
-        controller.login(request, response, "https://app.example.com/dashboard");
+        controller.login(request, response, "/staff/dashboard");
 
         var location = response.getRedirectedUrl();
         assertNotNull(location);
@@ -100,7 +102,7 @@ class AuthControllerTest {
                 eq("auth:pkce:" + state),
                 argThat(value ->
                         value.contains("\"redirectUri\":\"https://gover.example.com/api/auth/oidc-callback\"") &&
-                                value.contains("\"appUri\":\"https://app.example.com/dashboard\"") &&
+                                value.contains("\"appUri\":\"/staff/dashboard\"") &&
                                 value.contains("\"codeVerifier\":")
                 ),
                 eq(Duration.ofMinutes(10))
@@ -108,9 +110,38 @@ class AuthControllerTest {
     }
 
     @Test
+    void loginShouldAllowGoverHostnameAppRedirectOrigin() throws Exception {
+        var request = new MockHttpServletRequest();
+        request.setServletPath("/api/auth/login");
+        var response = new MockHttpServletResponse();
+
+        controller.login(request, response, "https://gover.example.com/staff/dashboard");
+
+        assertNotNull(response.getRedirectedUrl());
+        verify(valueOperations).set(
+                anyString(),
+                argThat(value -> value.contains("\"appUri\":\"https://gover.example.com/staff/dashboard\"")),
+                eq(Duration.ofMinutes(10))
+        );
+    }
+
+    @Test
+    void loginShouldRejectDisallowedAppRedirectBeforeStoringState() {
+        var request = new MockHttpServletRequest();
+        request.setServletPath("/api/auth/login");
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> controller.login(request, response, "https://evil.example/dashboard"));
+
+        assertNull(response.getRedirectedUrl());
+        verify(valueOperations, never()).set(anyString(), anyString(), any(Duration.class));
+        verifyNoInteractions(httpService);
+    }
+
+    @Test
     void callbackShouldValidateStateAndUseCodeVerifierWithClientSecret() throws Exception {
         when(valueOperations.getAndDelete("auth:pkce:state")).thenReturn("""
-                {"codeVerifier":"verifier","redirectUri":"https://gover.example.com/api/auth/oidc-callback","appUri":"https://app.example.com/dashboard"}
+                {"codeVerifier":"verifier","redirectUri":"https://gover.example.com/api/auth/oidc-callback","appUri":"/staff/dashboard"}
                 """);
 
         var tokenResponse = mock(HttpResponse.class);
@@ -134,9 +165,23 @@ class AuthControllerTest {
 
         controller.idpCallback(response, "state", "authorization-code", "state");
 
-        assertEquals("https://app.example.com/dashboard", response.getRedirectedUrl());
+        assertEquals("/staff/dashboard", response.getRedirectedUrl());
         assertNotNull(findCookie(response, AuthController.ACCESS_COOKIE_NAME, "/api/"));
         assertNotNull(findCookie(response, AuthController.REFRESH_COOKIE_NAME, "/api/auth/"));
+        assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
+    }
+
+    @Test
+    void callbackShouldRejectDisallowedStoredAppRedirectWithoutTokenRequest() {
+        when(valueOperations.getAndDelete("auth:pkce:state")).thenReturn("""
+                {"codeVerifier":"verifier","redirectUri":"https://gover.example.com/api/auth/oidc-callback","appUri":"https://evil.example/dashboard"}
+                """);
+
+        var response = new MockHttpServletResponse();
+
+        assertThrows(ResponseException.class, () -> controller.idpCallback(response, "state", "authorization-code", "state"));
+
+        verifyNoInteractions(httpService);
         assertClearsCookie(response, AuthController.AUTH_FLOW_COOKIE_NAME, "/api/auth/");
     }
 

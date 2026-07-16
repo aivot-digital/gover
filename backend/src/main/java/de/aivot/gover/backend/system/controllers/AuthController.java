@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -126,6 +128,8 @@ public class AuthController {
             @Nonnull HttpServletResponse response,
             @Nonnull @RequestParam(value = APP_URI_QUERY_PARAM) String appUri
     ) throws IOException, ResponseException {
+        var appRedirectLocation = resolveAppRedirectLocation(appUri);
+
         var callbackRedirectUri = UriComponentsBuilder
                 .fromUriString(hostname)
                 .path(request.getServletPath().replace("/login", "/oidc-callback"))
@@ -140,7 +144,7 @@ public class AuthController {
                 new AuthFlowState(
                         codeVerifier,
                         callbackRedirectUri,
-                        appUri
+                        appRedirectLocation
                 )
         );
         response.addCookie(getAuthFlowCookie(state));
@@ -205,6 +209,7 @@ public class AuthController {
             }
 
             var flowState = consumeAuthFlowState(state, authFlowState);
+            var appRedirectLocation = resolveAppRedirectLocation(flowState.appUri);
 
             var payload = new HashMap<String, String>();
             payload.put(OIDC_GRANT_TYPE_PARAM_KEY, OIDC_GRANT_TYPE_VALUE);
@@ -225,10 +230,6 @@ public class AuthController {
 
             var accessCookie = getAccessCookie(tokenResponse);
             response.addCookie(accessCookie);
-
-            var appRedirectLocation = UriComponentsBuilder
-                    .fromUriString(flowState.appUri)
-                    .toUriString();
 
             response.sendRedirect(appRedirectLocation);
         } finally {
@@ -339,6 +340,70 @@ public class AuthController {
     @Nonnull
     private static String getAuthFlowRedisKey(@Nonnull String state) {
         return AUTH_FLOW_REDIS_PREFIX + state;
+    }
+
+    @Nonnull
+    private String resolveAppRedirectLocation(@Nonnull String appUri) throws ResponseException {
+        URI appRedirectUri;
+        try {
+            appRedirectUri = new URI(appUri);
+        } catch (URISyntaxException | IllegalArgumentException e) {
+            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist ungültig.");
+        }
+
+        if (!appRedirectUri.isAbsolute()) {
+            if (appUri.startsWith("/") && !appUri.startsWith("//") && appRedirectUri.getRawAuthority() == null) {
+                return appRedirectUri.toString();
+            }
+            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist ungültig.");
+        }
+
+        if (!hasAllowedSchemeAndHost(appRedirectUri)) {
+            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist ungültig.");
+        }
+
+        if (!hasSameOrigin(appRedirectUri, parseConfiguredAppRedirectOrigin(hostname))) {
+            throw ResponseException.badRequest("Die App-Weiterleitungsadresse ist nicht erlaubt.");
+        }
+
+        return appRedirectUri.toString();
+    }
+
+    @Nonnull
+    private URI parseConfiguredAppRedirectOrigin(@Nonnull String configuredOrigin) throws ResponseException {
+        try {
+            var uri = new URI(configuredOrigin.trim());
+            if (hasAllowedSchemeAndHost(uri)) {
+                return uri;
+            }
+        } catch (URISyntaxException | IllegalArgumentException ignored) {
+        }
+
+        throw ResponseException.internalServerError("Eine konfigurierte App-Weiterleitungsadresse ist ungültig.");
+    }
+
+    private static boolean hasAllowedSchemeAndHost(@Nonnull URI uri) {
+        return ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme()))
+                && uri.getHost() != null;
+    }
+
+    private static boolean hasSameOrigin(@Nonnull URI uri, @Nonnull URI allowedOrigin) {
+        return uri.getScheme().equalsIgnoreCase(allowedOrigin.getScheme())
+                && uri.getHost().equalsIgnoreCase(allowedOrigin.getHost())
+                && getOriginPort(uri) == getOriginPort(allowedOrigin);
+    }
+
+    private static int getOriginPort(@Nonnull URI uri) {
+        if (uri.getPort() != -1) {
+            return uri.getPort();
+        }
+        if ("https".equalsIgnoreCase(uri.getScheme())) {
+            return 443;
+        }
+        if ("http".equalsIgnoreCase(uri.getScheme())) {
+            return 80;
+        }
+        return -1;
     }
 
     private void performOidcLogout(@Nonnull String refreshToken) throws ResponseException {
