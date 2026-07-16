@@ -46,6 +46,11 @@ import {useStorageProviderDetailsPageSyncContext} from './storage-provider-detai
 import {Hint} from '../../../../components/hint/hint';
 import {StorageProviderStatus} from '../../enums/storage-provider-status';
 import {isApiError} from '../../../../models/api-error';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+
+const DefaultStorageProcessAttachmentsSystemConfigDefinitionKey = 'storage.attachments.default_storage_provider';
+const DefaultStorageAssetsSystemConfigDefinitionKey = 'storage.assets.default_storage_provider';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -140,6 +145,15 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     } = originalStorageProvider ?? {
         id: null,
     };
+
+    // Check if this provider is the default attachment storage
+    const defaultAttachmentStorage = useAppSelector(selectSystemConfigValue(DefaultStorageProcessAttachmentsSystemConfigDefinitionKey));
+    const isDefaultAttachmentStorage = useMemo(() => defaultAttachmentStorage === storageProviderId?.toString(), [defaultAttachmentStorage, storageProviderId]);
+
+    // Check if this is the default asset storage
+    const defaultAssetStorage = useAppSelector(selectSystemConfigValue(DefaultStorageAssetsSystemConfigDefinitionKey));
+    const isDefaultAssetStorage = useMemo(() => defaultAssetStorage === storageProviderId?.toString(), [defaultAssetStorage, storageProviderId]);
+
 
     // Store the state of the initial derivation to prevent the change blocker from firing after the first derivation.
     const [initialDerivationDone, setInitialDerivationDone] = useState(false);
@@ -380,6 +394,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             setIsBusy(false);
         }
     };
+
     const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
     const attributesError = getIndexedFieldError(
         errors,
@@ -396,6 +411,23 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             children: 'Dieser Speicheranbieter ist ein Systemanbieter und kann nicht verändert werden.',
         });
     }
+
+    if (isDefaultAttachmentStorage) {
+        statusTableItems.push({
+            label: 'Standardanbieter für Anhänge von Vorgängen',
+            icon: <HelpIconOutlined color="primary"/>,
+            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Anhänge von Vorgängen konfiguriert und kann nicht gelöscht werden.',
+        });
+    }
+
+    if (isDefaultAssetStorage) {
+        statusTableItems.push({
+            label: 'Standardanbieter für Dateien und Medien',
+            icon: <HelpIconOutlined color="primary"/>,
+            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Dateien und Medien konfiguriert und kann nicht gelöscht werden.',
+        });
+    }
+
     statusTableItems.push({
         label: 'Zuletzt synchronisiert',
         icon: <Sync/>,
@@ -780,7 +812,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     Speichern
                 </Button>
 
-                <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
+                <Tooltip title="Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.">
                     <Button
                         onClick={handleRefreshDefinitions}
                         disabled={inputsDisabled}
@@ -795,18 +827,30 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 {
                     editedStorageProvider.id !== 0 &&
                     originalStorageProvider != null &&
-                    <Button
-                        variant={'outlined'}
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={inputsDisabled}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete/>}
+                    <Tooltip
+                        title={
+                            (isDefaultAttachmentStorage || isDefaultAssetStorage) ?
+                                'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.' :
+                                'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.'
+                        }
                     >
-                        Löschen
-                    </Button>
+                        <Box
+                            component="span"
+                            sx={{
+                                marginLeft: 'auto',
+                            }}
+                        >
+                            <Button
+                                variant={'outlined'}
+                                onClick={() => setShowConfirmDialog(true)}
+                                disabled={inputsDisabled || isDefaultAttachmentStorage || isDefaultAssetStorage}
+                                color="error"
+                                startIcon={<Delete/>}
+                            >
+                                Löschen
+                            </Button>
+                        </Box>
+                    </Tooltip>
                 }
             </Box>
 
