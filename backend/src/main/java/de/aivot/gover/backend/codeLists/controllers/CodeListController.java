@@ -219,7 +219,7 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_EXPORT);
 
         var execUser = userService
                 .fromJWT(jwt)
