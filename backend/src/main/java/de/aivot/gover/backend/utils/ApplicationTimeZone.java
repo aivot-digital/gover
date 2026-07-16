@@ -28,7 +28,7 @@ public final class ApplicationTimeZone {
 
     @Nonnull
     private static ZoneId resolveInitialZoneId() {
-        var configuredZoneId = System.getProperty("user.timezone");
+        var configuredZoneId = System.getProperty("gover.timezone");
         if (configuredZoneId != null && !configuredZoneId.isBlank()) {
             return ZoneId.of(configuredZoneId);
         }
@@ -38,11 +38,9 @@ public final class ApplicationTimeZone {
             return ZoneId.of(configuredZoneId);
         }
 
-        configuredZoneId = System.getenv("TZ");
-        if (configuredZoneId != null && !configuredZoneId.isBlank()) {
-            return ZoneId.of(configuredZoneId);
-        }
-
+        // Keep the non-Spring fallback aligned with application.yml. The host/JVM
+        // timezone is intentionally ignored because Gover's business timezone is
+        // configured explicitly and must not depend on the runtime environment.
         return ZoneId.of(DEFAULT_TIMEZONE);
     }
 }
