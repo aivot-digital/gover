@@ -3,9 +3,9 @@ import {
     Box,
     Button,
     CircularProgress,
-    Stack,
     Table,
-    TableBody, TableCell,
+    TableBody,
+    TableCell,
     TableContainer,
     TableRow,
     Typography,
@@ -19,7 +19,6 @@ import {AppInfo} from '../../../../../app-info';
 import {StatusTable} from '../../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
 import {DebugInformationDialog} from '../../../../../dialogs/debug-information-dialog/debug-information-dialog';
-
 import TagIcon from '@mui/icons-material/Tag';
 import EventIcon from '@mui/icons-material/Event';
 import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
@@ -29,9 +28,8 @@ import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
 import Extension from '@aivot/mui-material-symbols-400-outlined/dist/extension/Extension';
 import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
-import Graph1 from '@aivot/mui-material-symbols-400-outlined/dist/graph-1/Graph1';
 import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
-import {humanizeNumber, humanizeNumberCapitalized} from '../../../../../utils/humanization-utils';
+import {humanizeNumber} from '../../../../../utils/humanization-utils';
 import {ProviderTypeStyles} from '../../../../../modules/process/data/provider-type-styles';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
