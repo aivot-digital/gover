@@ -405,14 +405,17 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     private static String resolveTargetPath(@Nonnull String renderedPath,
                                             @Nonnull String originalFileName,
                                             int attachmentIndex) {
+        var originalExtension = extractOriginalExtension(originalFileName);
         var basePath = removeConfiguredExtension(renderedPath);
+        var configuredExtension = renderedPath.substring(basePath.length());
+
         if (basePath.contains("#")) {
             basePath = basePath.replace("#", Integer.toString(attachmentIndex));
         } else if (attachmentIndex > 1) {
             basePath = appendNumericSuffix(basePath, attachmentIndex);
         }
 
-        return basePath + extractOriginalExtension(originalFileName);
+        return basePath + (originalExtension.isEmpty() ? configuredExtension : originalExtension);
     }
 
     @Nonnull

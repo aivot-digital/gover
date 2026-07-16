@@ -168,6 +168,18 @@ class StoreAttachmentSetActionNodeV1Test {
     }
 
     @Test
+    void init_PreservesConfiguredExtensionWhenOriginalFileNameHasNone() throws Exception {
+        arrangeAttachmentSet(attachment("README", 11, "/source/README"));
+
+        var configuration = configuration("/case/{{caseId}}/attachment.pdf");
+        node.init(context(configuration));
+
+        assertEquals(List.of(
+                new StoredDocument("/case/123/attachment.pdf", "docx")
+        ), storedDocuments);
+    }
+
+    @Test
     void init_FailsWhenSelectedAttachmentSetIsEmpty() {
         when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, "documents"))
                 .thenReturn(List.of(new ProcessInstanceAttachmentSetEntity().setId(321)));
