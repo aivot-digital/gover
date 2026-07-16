@@ -188,6 +188,8 @@ export function CodeListDetailsPageIndex() {
     };
 
     const handleDelete = () => {
+        setShowConfirmDelete(false);
+
         if (codeList.id === 0) {
             return;
         }
@@ -485,7 +487,7 @@ export function CodeListDetailsPageIndex() {
             <ConfirmDialog
                 title="Code-Liste löschen"
                 onCancel={() => setShowConfirmDelete(false)}
-                onConfirm={undefined}
+                onConfirm={showConfirmDelete ? handleDelete : undefined}
                 confirmationText={codeList.name}
                 isDestructive
                 confirmButtonText="Ja, endgültig löschen"
