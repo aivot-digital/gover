@@ -139,7 +139,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                         .map(provider -> SelectInputElementOption.of(
                                 provider.getId().toString(),
                                 provider.getName(),
-                                provider.getType().name()
+                                provider.getType().getLabel()
                         ))
                         .toList()));
 
