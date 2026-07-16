@@ -10,9 +10,9 @@ echo "Using runtime timezone ${TZ}"
 
 if [ "$1" = "serve" ]; then
   echo "serve" > /app/runtime-mode
-  echo "Waiting for IDP to be available at ${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff…"
+  echo "Waiting for IDP to be available at ${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME}/realms/staff…"
 
-  until curl --output /dev/null --silent --head --fail "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/staff/"; do
+  until curl --output /dev/null --silent --head --fail "${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME}/realms/staff/"; do
       sleep 5
   done
 
