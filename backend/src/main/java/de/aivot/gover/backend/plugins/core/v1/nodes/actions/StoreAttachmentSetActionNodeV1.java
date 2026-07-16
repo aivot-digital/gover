@@ -195,6 +195,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of("Der ausgewählte Speicheranbieter wurde nicht gefunden."));
             } else if (Boolean.TRUE.equals(storageProvider.getReadOnlyStorage())) {
                 errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of("Der ausgewählte Speicheranbieter ist schreibgeschützt."));
+            } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
+                errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of("Der ausgewählte Speicheranbieter ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden."));
             }
         } catch (ProcessNodeExecutionException e) {
             errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of(e.getMessage()));
