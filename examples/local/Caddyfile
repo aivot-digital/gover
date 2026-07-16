@@ -1,4 +1,6 @@
 http://localhost:80 {
+    tls internal
+
     @customer {
         path /
         path /*
