@@ -115,7 +115,7 @@ public class AppConfigController {
         appConfig.put(APPLICATION_TIMEZONE_CONFIG_KEY, ApplicationTimeZone.getZoneIdValue());
         appConfig.put(DEPARTMENT_LEVEL_LABELS_CONFIG_KEY, goverConfig.getDepartmentLevelLabels());
 
-        // TODO: This data should no be required in the fronted because the backend handles the authentication flow
+        // TODO: This data should not be required in the fronted because the backend handles the authentication flow
         var oidc = new HashMap<String, String>();
         oidc.put(OIDC_HOSTNAME_KEY, oidcIssuerURI);
         oidc.put(OIDC_REALM_KEY, oidcRealm);
