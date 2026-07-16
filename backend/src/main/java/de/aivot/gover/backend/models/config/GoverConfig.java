@@ -226,6 +226,9 @@ public class GoverConfig {
     }
 
     public Map<ProcessNodeType, Integer> getProcessNodeLimits() {
+        if (processNodeLimits == null) {
+            return new HashMap<>();
+        }
         return processNodeLimits;
     }
 
