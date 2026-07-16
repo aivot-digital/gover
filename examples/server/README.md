@@ -126,6 +126,12 @@ Back up these Docker volumes regularly:
 The database volumes and `gover_data` are the critical application data.
 `caddy_data` contains the TLS certificates and ACME account data.
 
+**Attention:** Make sure to stop the stack before backing up the volumes to avoid data corruption:
+
+```bash
+docker compose down
+```
+
 ## 7. Updates
 
 Back up the volumes first, then update the stack with:
