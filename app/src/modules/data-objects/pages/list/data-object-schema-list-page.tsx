@@ -1,9 +1,9 @@
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
-import {EditOutlined} from '@mui/icons-material';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
@@ -11,11 +11,11 @@ import {DataObjectSchema} from '../../models/data-object-schema';
 import {uploadObjectFile} from '../../../../utils/download-utils';
 import {useNavigate} from 'react-router-dom';
 import {v4 as uuid4} from 'uuid';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
-import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import CloudUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
+import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 

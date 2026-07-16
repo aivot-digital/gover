@@ -1,15 +1,15 @@
 import React, {type ReactNode, useMemo} from 'react';
 import {Box, Button, Link, Skeleton, Tooltip, Typography} from '@mui/material';
 import {Link as RouterLink} from 'react-router-dom';
-import FingerprintOutlinedIcon from '@mui/icons-material/FingerprintOutlined';
-import SellOutlinedIcon from '@mui/icons-material/SellOutlined';
-import RouteOutlinedIcon from '@mui/icons-material/RouteOutlined';
-import EventAvailableOutlinedIcon from '@mui/icons-material/EventAvailableOutlined';
-import ScheduleOutlinedIcon from '@mui/icons-material/ScheduleOutlined';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import AssignmentIndOutlinedIcon from '@mui/icons-material/AssignmentIndOutlined';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import FingerprintOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Fingerprint';
+import SellOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Sell';
+import RouteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Route';
+import EventAvailableOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EventAvailable';
+import ScheduleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Schedule';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
+import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import AssignmentIndOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AssignmentInd';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {format, formatDistanceToNowStrict, parseISO} from 'date-fns';
 import {de} from 'date-fns/locale';
 import {StatusTable} from '../../../../components/status-table/status-table';
@@ -23,10 +23,10 @@ import {
     getProcessTaskProcessPath,
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
-import Inbox from '@aivot/mui-material-symbols-400-outlined/dist/inbox/Inbox';
-import MoveToInbox from '@aivot/mui-material-symbols-400-outlined/dist/move-to-inbox/MoveToInbox';
-import Acute from '@aivot/mui-material-symbols-400-outlined/dist/acute/Acute';
-import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
+import Inbox from '@aivot/mui-material-symbols-400-n25-outlined/Inbox';
+import MoveToInbox from '@aivot/mui-material-symbols-400-n25-outlined/MoveToInbox';
+import Acute from '@aivot/mui-material-symbols-400-n25-outlined/Acute';
+import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 
 function formatDateTimeWithRelative(value?: string | null, fallback = 'Nicht hinterlegt'): ReactNode {
     if (value == null || value.trim().length === 0) {

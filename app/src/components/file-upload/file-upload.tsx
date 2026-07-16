@@ -1,8 +1,8 @@
 import React, {useRef} from 'react';
 import {Box, IconButton, Typography} from '@mui/material';
 import {FileUploadProps} from './file-upload-props';
-import FileUploadOutlinedIcon from '@mui/icons-material/FileUploadOutlined';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import FileUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileUpload';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 /**
  * @deprecated Use FieldUploadFieldComponent

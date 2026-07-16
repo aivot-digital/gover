@@ -11,8 +11,8 @@ import {PresetVersionApiService} from '../../../modules/presets/preset-version-a
 import {FormStatus, FormVersionStatusIcons} from '../../../modules/forms/enums/form-status';
 import Divider from '@mui/material/Divider';
 import {FormStatusChip} from '../../../modules/forms/components/form-status-chip';
-import {Edit} from '@mui/icons-material';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {Actions} from '../../../components/actions/actions';
 import {withDelay} from '../../../utils/with-delay';
 import {isApiError} from '../../../models/api-error';

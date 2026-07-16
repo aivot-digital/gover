@@ -1,11 +1,11 @@
-import CorporateFare from '@aivot/mui-material-symbols-400-outlined/dist/corporate-fare/CorporateFare';
-import FiberManualRecord from '@aivot/mui-material-symbols-400-outlined/dist/fiber-manual-record/FiberManualRecord';
-import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
-import Spoke from '@aivot/mui-material-symbols-400-outlined/dist/spoke/Spoke';
+import CorporateFare from '@aivot/mui-material-symbols-400-n25-outlined/CorporateFare';
+import FiberManualRecord from '@aivot/mui-material-symbols-400-n25-outlined/FiberManualRecord';
+import Label from '@aivot/mui-material-symbols-400-n25-outlined/Label';
+import Spoke from '@aivot/mui-material-symbols-400-n25-outlined/Spoke';
 import {decimalNumberToRomanNumeral} from '../../../utils/number-utils';
 import {isStringNotNullOrEmpty} from '../../../utils/string-utils';
 import {VDepartmentShadowedEntity} from '../entities/v-department-shadowed-entity';
-import Graph6 from '@aivot/mui-material-symbols-400-outlined/dist/graph-6/Graph6';
+import Graph6 from '@aivot/mui-material-symbols-400-n25-outlined/Graph6';
 
 function getFallbackDepartmentTypeLabel(depth: number, configuredLabelCount: number): string {
     return `Unterebene ${decimalNumberToRomanNumeral(depth - configuredLabelCount + 1)}`;

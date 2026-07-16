@@ -18,11 +18,11 @@ import {
 } from '@mui/material';
 import React, {useCallback, useMemo, useReducer, useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import SwapHorizOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {type OptionListInputProps} from './option-list-input-props';
 import {TableVirtuoso} from 'react-virtuoso';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 export function OptionListInput(props: OptionListInputProps) {
     const [textInputMode, toggleTextInputMode] = useReducer((state: boolean) => !state, false);

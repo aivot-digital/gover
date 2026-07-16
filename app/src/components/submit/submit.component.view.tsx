@@ -5,7 +5,7 @@ import {Box, FormHelperText, ListItem, ListItemIcon, ListItemText, Typography, u
 import {FadingPaper} from '../fading-paper/fading-paper';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import UploadFileOutlinedIcon from '@mui/icons-material/UploadFileOutlined';
+import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import {AlertComponent} from '../alert/alert-component';
 import {formatNumToGermanNum} from '../../utils/format-german-numbers';
 import {FormCostCalculationResponseDTO} from '../../modules/forms/dtos/form-cost-calculation-response-dto';

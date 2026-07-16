@@ -11,7 +11,7 @@ import {
     Skeleton,
     Typography,
 } from '@mui/material';
-import ChevronRight from '@aivot/mui-material-symbols-400-outlined/dist/chevron-right/ChevronRight';
+import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 import {Page} from '../../../models/dtos/page';
 import {Link} from 'react-router-dom';

@@ -15,7 +15,7 @@ import {SelectFieldComponent} from '../../../../../components/select-field/selec
 import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
 import {useApi} from '../../../../../hooks/use-api';
 import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
@@ -36,9 +36,8 @@ import {SystemRolesApiService} from '../../../../../modules/system/services/syst
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {DepartmentSelectField} from '../../../../../modules/departments/components/department-select-field';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
-import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
-import SupervisedUserCircle
-    from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import Label from '@aivot/mui-material-symbols-400-n25-outlined/Label';
+import SupervisedUserCircle from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircle';
 import {
     SystemConfigDefinitionResponseDTO,
 } from '../../../../../modules/configs/dtos/system-config-definition-response-dto';

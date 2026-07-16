@@ -2,8 +2,8 @@ import {useEffect, useState} from 'react';
 import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
-import DesktopWindows from '@aivot/mui-material-symbols-400-outlined/dist/desktop-windows/DesktopWindows';
-import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
+import DesktopWindows from '@aivot/mui-material-symbols-400-n25-outlined/DesktopWindows';
+import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {Paper, useMediaQuery} from '@mui/material';
 
 export const MIN_DISPLAY_WIDTH_PX = 1280;

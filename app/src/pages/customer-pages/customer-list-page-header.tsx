@@ -2,7 +2,7 @@ import React from 'react';
 import {Box, Container, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import {Logo} from '../../components/logo/logo';
 import {useAppSelector} from '../../hooks/use-app-selector';
-import Accessibility from '@aivot/mui-material-symbols-400-outlined/dist/accessibility/Accessibility';
+import Accessibility from '@aivot/mui-material-symbols-400-n25-outlined/Accessibility';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showDialog} from '../../slices/app-slice';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';

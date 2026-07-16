@@ -7,8 +7,8 @@ import {IdentityProvidersApiService} from '../modules/identity/identity-provider
 import {hasDerivableAspects} from '../utils/has-derivable-aspects';
 import {IdentityProviderListDTO} from '../modules/identity/models/identity-provider-list-dto';
 import {isApiError} from '../models/api-error';
-import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
-import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import {generateId} from '../utils/id-utils';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';

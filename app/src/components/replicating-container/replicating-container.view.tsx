@@ -10,12 +10,12 @@ import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
 import {stringOrDefault} from '../../utils/string-utils';
 import {type BaseViewProps} from '../../views/base-view';
-import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import AddCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AddCircle';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import {flattenElements} from '../../utils/flatten-elements';
 import {type AuthoredElementValues} from '../../models/element-data';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
 

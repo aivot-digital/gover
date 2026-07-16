@@ -6,7 +6,7 @@ import {type User} from '../../../../../models/entities/user';
 import {UsersApiService} from '../../../users-api-service';
 import {stringOrDefault} from '../../../../../utils/string-utils';
 import React from 'react';
-import {PersonOutlined} from '@mui/icons-material';
+import PersonOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import {resolveUserName} from '../../../utils/resolve-user-name';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {useParams} from 'react-router-dom';

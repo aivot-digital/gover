@@ -1,6 +1,6 @@
 import {Autocomplete, Box, Chip, CircularProgress, TextField, Typography} from '@mui/material';
 import {SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
-import CheckIcon from '@mui/icons-material/Check';
+import CheckIcon from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import {
     createDomainAndUserSelectValueKey,
     DomainAndUserSelectOption,

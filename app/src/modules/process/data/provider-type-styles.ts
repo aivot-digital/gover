@@ -1,13 +1,12 @@
-import {FC} from "react";
-import {SvgIconProps} from "@mui/material";
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
 import {ProcessNodeType} from "../services/process-node-provider-api-service";
-import Bolt from "@aivot/mui-material-symbols-400-outlined/dist/bolt/Bolt";
-import Token from "@aivot/mui-material-symbols-400-outlined/dist/token/Token";
-import ForkLeft from "@aivot/mui-material-symbols-400-outlined/dist/fork-left/ForkLeft";
-import Flag from "@aivot/mui-material-symbols-400-outlined/dist/flag/Flag";
+import Bolt from '@aivot/mui-material-symbols-400-n25-outlined/Bolt';
+import Token from '@aivot/mui-material-symbols-400-n25-outlined/Token';
+import ForkLeft from '@aivot/mui-material-symbols-400-n25-outlined/ForkLeft';
+import Flag from '@aivot/mui-material-symbols-400-n25-outlined/Flag';
 
 export const ProviderTypeStyles: Record<string, {
-    Icon: FC<SvgIconProps>;
+    Icon: SvgIconComponent;
     label: string;
     bgColor: string;
     textColor: string;

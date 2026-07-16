@@ -60,14 +60,14 @@ import {IdentityProvidersApiService} from '../../modules/identity/identity-provi
 import {IdentityProviderType} from '../../modules/identity/enums/identity-provider-type';
 import {RichtextComponent} from '../../components/richtext/richtext.component';
 import {IdentityButton} from '../../modules/identity/components/identity-button/identity-button';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {CustomerInputLoader} from '../../dialogs/customer-input-loader/customer-input-loader';
 import {isStringNotNullOrEmpty} from '../../utils/string-utils';
 import {Chip} from '../../components/chip/chip';
-import RestorePageIcon from '@mui/icons-material/RestorePage';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
+import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/RestorePage';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;

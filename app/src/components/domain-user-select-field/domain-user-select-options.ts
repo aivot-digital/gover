@@ -5,7 +5,7 @@ import {UsersApiService} from '../../modules/users/users-api-service';
 import {User} from '../../modules/users/models/user';
 import {createElement, ReactElement} from 'react';
 import {ModuleIcons} from '../../shells/staff/data/module-icons';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
+import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import {
     DomainAndUserSelectItem,
     DomainAndUserSelectItemType,

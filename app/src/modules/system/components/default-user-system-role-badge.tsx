@@ -1,4 +1,4 @@
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import HelpOutlineIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {Box, type SxProps, type Theme} from '@mui/material';
 import React from 'react';
 import {Chip} from '../../../components/chip/chip';

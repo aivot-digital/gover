@@ -1,7 +1,7 @@
 import {useCallback, useEffect, useState} from 'react';
 import {Alert, Button, Dialog, DialogActions, DialogContent, List, ListItem, ListItemIcon, ListItemText, Skeleton, Typography} from '@mui/material';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import LinkIcon from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import LinkIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessSlugHistoryEntity} from '../../entities/process-slug-history-entity';

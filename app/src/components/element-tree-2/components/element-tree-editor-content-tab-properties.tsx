@@ -5,7 +5,7 @@ import React, {ReactNode, useEffect, useMemo} from 'react';
 import {ElementEditorSectionHeader} from '../../element-editor-section-header/element-editor-section-header';
 import {Grid, Typography} from '@mui/material';
 import {TextFieldComponent} from '../../text-field/text-field-component';
-import ContentPasteIcon from '@mui/icons-material/ContentPaste';
+import ContentPasteIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentPaste';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useElementTreeContext} from '../element-tree-context';

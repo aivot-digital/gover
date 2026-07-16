@@ -3,7 +3,7 @@ import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-p
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {GridColDef} from '@mui/x-data-grid';
-import {EditOutlined} from '@mui/icons-material';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {Box, Typography} from '@mui/material';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import type {Theme} from '../../models/theme';

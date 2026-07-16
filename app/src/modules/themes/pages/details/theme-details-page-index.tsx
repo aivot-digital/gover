@@ -4,7 +4,7 @@ import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../..
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {Link, useNavigate, useParams} from 'react-router-dom';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
@@ -14,10 +14,10 @@ import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
 import * as yup from 'yup';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
+import AccessibilityNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccessibilityNew';
 import {PresetColor} from 'react-color/lib/components/sketch/Sketch';
 import {SketchPicker} from 'react-color';
-import ContrastOutlinedIcon from '@mui/icons-material/ContrastOutlined';
+import ContrastOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Contrast';
 import {calculateContrastRatio} from '../../../../utils/calculate-contrast-ratio';
 import type {Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
@@ -28,7 +28,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {ImageSelector} from '../../../assets/components/image-selector';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Page} from '../../../../models/dtos/page';
 
 export const ThemeSchema = yup.object({

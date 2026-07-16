@@ -12,7 +12,7 @@ import {
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {Button, Dialog, DialogActions, DialogContent} from "@mui/material";
-import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
 import {showErrorSnackbar} from "../../../../../slices/snackbar-slice";
 import {GenericListPropsFetchOptions, ListControlRef} from "../../../../../components/generic-list/generic-list-props";
@@ -21,7 +21,7 @@ import {isApiError} from "../../../../../models/api-error";
 import {VUserDeputyWithDetailsEntity} from "../../../entities/v-user-deputy-with-details-entity";
 import {VUserDeputyWithDetailsApiService} from "../../../services/v-user-deputy-with-details-api-service";
 import {parseISO} from "date-fns/parseISO";
-import Delete from "@aivot/mui-material-symbols-400-outlined/dist/delete/Delete";
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {useConfirm} from "../../../../../providers/confirm-provider";
 import {UserDeputyApiService} from "../../../services/user-deputy-api-service";
 import {SelectUserDialog} from "../../../dialogs/select-user-dialog";

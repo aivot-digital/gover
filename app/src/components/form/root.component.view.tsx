@@ -10,7 +10,7 @@ import {useAppSelector} from '../../hooks/use-app-selector';
 import {nextStep, selectCurrentStep, selectUpcomingStepDirection, setCurrentStep} from '../../slices/stepper-slice';
 import {ElementType} from '../../data/element-type/element-type';
 import {type BaseViewProps} from '../../views/base-view';
-import GppGoodOutlinedIcon from '@mui/icons-material/GppGoodOutlined';
+import GppGoodOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/VerifiedUser';
 import {CustomStep} from '../custom-step/custom-step';
 import {hasAnyErrorRecursivelyInParent} from '../../models/element-data';
 import {ErrorAlert} from '../error-alert/error-alert';

@@ -1,7 +1,7 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
+import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 
 export function AccountDetailsPage() {
     return (

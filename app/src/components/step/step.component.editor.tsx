@@ -5,8 +5,8 @@ import {StepIconsMap} from '../../data/step-icons';
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {IconPickerDialog} from '../../dialogs/icon-picker-dialog/icon-picker-dialog';
-import {SvgIconComponent} from '@mui/icons-material';
-import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
+import {type SvgIconComponent} from '../../types/svg-icon-component';
+import ArrowCircleRightOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowCircleRight';
 
 export function StepComponentEditor(props: BaseEditorProps<StepElement>) {
     const [pickerOpen, setPickerOpen] = useState(false);

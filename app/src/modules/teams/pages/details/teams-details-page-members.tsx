@@ -6,8 +6,8 @@ import {
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {Box, Button, Typography} from '@mui/material';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {SelectUserDialog} from '../../../users/dialogs/select-user-dialog';
 import {User} from '../../../users/models/user';
@@ -31,7 +31,7 @@ import {Page} from "../../../../models/dtos/page";
 import {
     VTeamUserRoleAssignmentWithDetailsApiService
 } from "../../services/v-team-user-role-assignment-with-details-api-service";
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 export function TeamsDetailsPageMembers() {
     const dispatch = useAppDispatch();

@@ -14,9 +14,9 @@ import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with
 import {useConfirm} from '../../providers/confirm-provider';
 import {deepEquals} from '../../utils/equality-utils';
 import {Actions} from '../actions/actions';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 
 export type DialogListPropsDialogContentComponent<T> = FunctionComponent<{
     item: T;

@@ -6,7 +6,7 @@ import {CodeEditor} from '../../code-editor/code-editor';
 import {CodeTabNoCodeEditor} from '../../code-tab-no-code-editor';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import LocationSearchingIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocationSearching';
 import {SelectElementDialog} from '../../../dialogs/select-element-dialog/select-element-dialog';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {createLowCodeContextType} from '../../../utils/create-low-code-context-type';

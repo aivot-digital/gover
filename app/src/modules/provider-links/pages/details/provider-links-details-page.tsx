@@ -2,7 +2,7 @@ import React from 'react';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {Typography} from '@mui/material';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
+import InsertLinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import {ProviderLinksApiService} from '../../provider-links-api-service';
 import {ProviderLink} from '../../models/provider-link';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
