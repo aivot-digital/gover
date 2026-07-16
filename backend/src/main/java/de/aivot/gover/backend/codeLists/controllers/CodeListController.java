@@ -230,7 +230,7 @@ public class CodeListController {
         auditService.create()
                 .withUser(execUser)
                 .withAuditAction(
-                        AuditAction.Delete,
+                        AuditAction.Export,
                         CodeListEntity.class,
                         codeListId,
                         "id"
