@@ -307,7 +307,7 @@ class StoreAttachmentSetActionNodeV1Test {
                 .setId(id)
                 .setName(name)
                 .setDescription("")
-                .setType(StorageProviderType.Attachments)
+                .setType(StorageProviderType.Assets)
                 .setStatus(StorageProviderStatus.Synced)
                 .setReadOnlyStorage(readOnly);
     }
