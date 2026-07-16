@@ -261,6 +261,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.Table,
             ElementType.Text,
             ElementType.Time,
+            ElementType.FileUpload,
             ElementType.RichTextInput,
             ElementType.ChipInput,
             ElementType.DateTime,
