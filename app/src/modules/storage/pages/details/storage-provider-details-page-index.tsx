@@ -422,9 +422,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
 
     if (isDefaultAssetStorage) {
         statusTableItems.push({
-            label: 'Standardanbieter für Dokumente und Medien',
+            label: 'Standardanbieter für Dateien und Medien',
             icon: <HelpIconOutlined color="primary"/>,
-            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Dokumente und Medien konfiguriert und kann nicht gelöscht werden.',
+            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Dateien und Medien konfiguriert und kann nicht gelöscht werden.',
         });
     }
 
@@ -830,7 +830,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     <Tooltip
                         title={
                             (isDefaultAttachmentStorage || isDefaultAssetStorage) ?
-                                'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dokumente und Medien konfiguriert und kann nicht gelöscht werden.' :
+                                'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.' :
                                 'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.'
                         }
                     >
