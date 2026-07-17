@@ -61,7 +61,7 @@ const CodeListSchema = yup.object({
         .of(yup.string().trim().required())
         .when('sourceType', {
             is: CodeListSourceType.Manual,
-            then: (schema) => schema.min(1, 'Manuelle Codelisten benoetigen mindestens eine Spalte.'),
+            then: (schema) => schema.min(1, 'Manuelle Codelisten benötigen mindestens eine Spalte.'),
             otherwise: (schema) => schema,
         }),
     valueColumnIndex: yup.number()
@@ -159,7 +159,7 @@ export function CodeListDetailsPageIndex() {
 
     const handleSave = () => {
         if (!validate()) {
-            dispatch(showErrorSnackbar('Bitte ueberpruefen Sie Ihre Eingaben.'));
+            dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
             return;
         }
 
@@ -178,7 +178,7 @@ export function CodeListDetailsPageIndex() {
                     }, 0);
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte ueberpruefen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -189,10 +189,10 @@ export function CodeListDetailsPageIndex() {
                 .then((updated) => {
                     setItem(updated);
                     reset();
-                    dispatch(showSuccessSnackbar('Aenderungen an der Codeliste erfolgreich gespeichert.'));
+                    dispatch(showSuccessSnackbar('Änderungen an der Codeliste erfolgreich gespeichert.'));
                 })
                 .catch((err) => {
-                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte ueberpruefen Sie Ihre Eingaben.'));
+                    dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte überprüfen Sie Ihre Eingaben.'));
                 })
                 .finally(() => {
                     setIsBusy(false);
@@ -213,10 +213,10 @@ export function CodeListDetailsPageIndex() {
             .then(() => {
                 reset();
                 navigate('/code-lists', {replace: true});
-                dispatch(showSuccessSnackbar('Die Codeliste wurde erfolgreich geloescht.'));
+                dispatch(showSuccessSnackbar('Die Codeliste wurde erfolgreich gelöscht.'));
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Loeschen der Codeliste ist ein Fehler aufgetreten.'));
+                dispatch(showApiErrorSnackbar(err, 'Beim Löschen der Codeliste ist ein Fehler aufgetreten.'));
             })
             .finally(() => {
                 setIsBusy(false);
@@ -508,7 +508,7 @@ export function CodeListDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Moechten Sie diese Codeliste wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Möchten Sie diese Codeliste wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
         </Box>

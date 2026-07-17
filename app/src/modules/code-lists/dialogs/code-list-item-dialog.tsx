@@ -71,13 +71,13 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
             maxWidth="md"
         >
             <DialogTitle>
-                {item == null ? 'Eintrag hinzufuegen' : 'Eintrag bearbeiten'}
+                {item == null ? 'Eintrag hinzufügen' : 'Eintrag bearbeiten'}
             </DialogTitle>
             <DialogContent>
                 {
                     !hasColumns &&
                     <Alert severity="warning">
-                        Fuer diese Codeliste sind noch keine Spalten definiert.
+                        Für diese Codeliste sind noch keine Spalten definiert.
                     </Alert>
                 }
                 {
@@ -111,20 +111,21 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
                     </Grid>
                 }
             </DialogContent>
-            <DialogActions>
-                <Button
-                    onClick={onClose}
-                    disabled={isBusy}
-                >
-                    Abbrechen
-                </Button>
+            <DialogActions sx={{justifyContent: 'flex-start'}}>
                 <Button
                     onClick={() => onSave(columns)}
                     disabled={isBusy || !hasColumns || columns.length !== codeList.columns.length}
                     variant="contained"
-                    startIcon={<Save />}
+                    startIcon={<Save/>}
                 >
                     Speichern
+                </Button>
+                <Button
+                    onClick={onClose}
+                    disabled={isBusy}
+                    variant="outlined"
+                >
+                    Abbrechen
                 </Button>
             </DialogActions>
         </Dialog>
