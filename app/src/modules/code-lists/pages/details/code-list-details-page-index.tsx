@@ -510,6 +510,10 @@ export function CodeListDetailsPageIndex() {
                 <Typography>
                     Möchten Sie diese Codeliste wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
+                <AlertComponent color="warning" sx={{mt: 2}}>
+                    Das System kann nicht prüfen, ob diese Codeliste noch in Low-Code-Skripten verwendet wird.
+                    Stellen Sie vor dem Löschen sicher, dass keine entsprechenden Verwendungen mehr bestehen.
+                </AlertComponent>
             </ConfirmDialog>
         </Box>
     );
