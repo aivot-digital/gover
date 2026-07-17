@@ -52,13 +52,13 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     @Nonnull
     @Override
     public String getName() {
-        return "Code-Listen";
+        return "Codelisten";
     }
 
     @Nonnull
     @Override
     public String getDescription() {
-        return "Dieses Paket enthält Funktionen für Code-Listen.";
+        return "Dieses Paket enthält Funktionen für Codelisten.";
     }
 
     @Override

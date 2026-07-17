@@ -24,7 +24,7 @@ export const OriginTableLabels: Record<ServerEntityType, string> = {
     [ServerEntityType.Processes]: 'Prozess',
     [ServerEntityType.ProcessInstances]: 'Vorgang',
     [ServerEntityType.ProcessNodes]: 'Formular',
-    [ServerEntityType.CodeLists]: 'Code-Liste',
+    [ServerEntityType.CodeLists]: 'Codeliste',
 };
 
 export const OriginTableIcons: Record<ServerEntityType, ReactNode> = {

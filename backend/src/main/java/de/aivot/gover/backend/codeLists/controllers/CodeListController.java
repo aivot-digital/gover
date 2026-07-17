@@ -58,7 +58,7 @@ public class CodeListController {
                               CodeListService service,
                               UserService userService,
                               CodeListWorker codeListWorker, PermissionService permissionService) {
-        this.auditService = auditService.createScopedAuditService(CodeListController.class, "Code-Listen");
+        this.auditService = auditService.createScopedAuditService(CodeListController.class, "Codelisten");
         this.service = service;
         this.userService = userService;
         this.codeListWorker = codeListWorker;
@@ -110,7 +110,7 @@ public class CodeListController {
                         "id"
                 )
                 .withMessage(
-                        "Eine neue Code-Liste wurde von der Mitarbeiter:in %s erstellt.",
+                        "Eine neue Codeliste wurde von der Mitarbeiter:in %s erstellt.",
                         StringUtils.quote(execUser.getFullName())
                 )
                 .log();
@@ -167,7 +167,7 @@ public class CodeListController {
                         "id"
                 )
                 .withMessage(
-                        "Die Code-Liste mit der ID %d wurde von der Mitarbeiter:in %s aktualisiert.",
+                        "Die Codeliste mit der ID %d wurde von der Mitarbeiter:in %s aktualisiert.",
                         updated.getId(),
                         StringUtils.quote(execUser.getFullName())
                 )
@@ -206,7 +206,7 @@ public class CodeListController {
                         "id"
                 )
                 .withMessage(
-                        "Die Code-Liste mit der ID %d wurde von der Mitarbeiter:in %s gelöscht.",
+                        "Die Codeliste mit der ID %d wurde von der Mitarbeiter:in %s gelöscht.",
                         deleted.getId(),
                         StringUtils.quote(execUser.getFullName())
                 )
@@ -236,7 +236,7 @@ public class CodeListController {
                         "id"
                 )
                 .withMessage(
-                        "Die Code-Liste mit der ID %d wurde von der Mitarbeiter:in %s exportiert.",
+                        "Die Codeliste mit der ID %d wurde von der Mitarbeiter:in %s exportiert.",
                         codeListId,
                         StringUtils.quote(execUser.getFullName())
                 )

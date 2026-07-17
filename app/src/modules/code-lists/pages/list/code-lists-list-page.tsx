@@ -27,10 +27,10 @@ export function CodeListsListPage() {
 
     const header = useMemo(() => ({
         icon: ModuleIcons.codeLists,
-        title: 'Code-Listen',
+        title: 'Codelisten',
         actions: [
             {
-                label: 'Neue Code-Liste',
+                label: 'Neue Codeliste',
                 icon: <AddOutlinedIcon />,
                 to: '/code-lists/new',
                 variant: 'contained' as const,
@@ -38,18 +38,18 @@ export function CodeListsListPage() {
             },
         ],
         helpDialog: {
-            title: 'Hilfe zu Code-Listen',
+            title: 'Hilfe zu Codelisten',
             tooltip: 'Hilfe anzeigen',
             content: (
                 <>
                     <Typography>
-                        Code-Listen verwalten wiederverwendbare Werte und Beschriftungen für Formulare und Prozesse.
+                        Codelisten verwalten wiederverwendbare Werte und Beschriftungen für Formulare und Prozesse.
                     </Typography>
                     <Typography sx={{mt: 2}}>
                         Manuelle Listen werden direkt gepflegt. Listen aus XRepository oder CSV-Dateien werden aus ihrer Quelle synchronisiert.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Alle Code-Listen sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                        Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
                     </Typography>
                 </>
             ),
@@ -79,7 +79,7 @@ export function CodeListsListPage() {
             renderCell: (params) => (
                 <CellLink
                     to={`/code-lists/${params.row.id}`}
-                    title={hasAccess ? 'Code-Liste bearbeiten' : 'Code-Liste ansehen'}
+                    title={hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -118,33 +118,33 @@ export function CodeListsListPage() {
         {
             icon: hasAccess ? <EditOutlinedIcon /> : <Visibility />,
             to: `/code-lists/${item.id}`,
-            tooltip: hasAccess ? 'Code-Liste bearbeiten' : 'Code-Liste ansehen',
+            tooltip: hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen',
         },
     ], [hasAccess]);
 
     return (
         <PageWrapper
-            title="Code-Listen"
+            title="Codelisten"
             fullWidth
             background
         >
             <GenericListPage<CodeList>
                 header={header}
-                searchLabel="Code-Liste suchen"
-                searchPlaceholder="Name der Code-Liste eingeben..."
+                searchLabel="Codeliste suchen"
+                searchPlaceholder="Name der Codeliste eingeben..."
                 fetch={fetchCodeLists}
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Noch keine Code-Listen angelegt"
-                        description="Code-Listen stellen wiederverwendbare Werte für Auswahlfelder und Prozesse bereit."
-                        addText={hasAccess ? 'Neue Code-Liste anlegen' : undefined}
+                        title="Noch keine Codelisten angelegt"
+                        description="Codelisten stellen wiederverwendbare Werte für Auswahlfelder und Prozesse bereit."
+                        addText={hasAccess ? 'Neue Codeliste anlegen' : undefined}
                         onAdd={hasAccess ? () => navigate('/code-lists/new') : undefined}
                     />
                 }
-                noSearchResultsPlaceholder="Keine Code-Listen gefunden"
+                noSearchResultsPlaceholder="Keine Codelisten gefunden"
                 rowActionsCount={1}
                 rowActions={rowActions}
                 defaultSortField="name"

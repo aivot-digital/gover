@@ -363,7 +363,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     @Nonnull
     private List<String> extractColumnRefs(@Nonnull XRepositoryCodeList xRepositoryCodeList) throws ResponseException {
         if (xRepositoryCodeList.getColumnSet() == null || xRepositoryCodeList.getColumnSet().getColumn() == null) {
-            throw ResponseException.internalServerError("Die XRepository-Code-Liste enthält keine Spalten.");
+            throw ResponseException.internalServerError("Die XRepository-Codeliste enthält keine Spalten.");
         }
 
         var columnRefs = xRepositoryCodeList
@@ -374,7 +374,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
                 .toList();
 
         if (columnRefs.isEmpty() || columnRefs.stream().anyMatch(String::isBlank)) {
-            throw ResponseException.internalServerError("Die XRepository-Code-Liste enthält ungültige Spalten.");
+            throw ResponseException.internalServerError("Die XRepository-Codeliste enthält ungültige Spalten.");
         }
 
         return columnRefs;
@@ -426,7 +426,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         for (var item : items) {
             var value = getColumnValue(item, codeListEntity.getValueColumnIndex());
             if (!values.add(value)) {
-                throw ResponseException.conflict("Die Code-Liste enthält den Wert %s mehrfach.", value);
+                throw ResponseException.conflict("Die Codeliste enthält den Wert %s mehrfach.", value);
             }
         }
     }
@@ -519,7 +519,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         try {
             return UUID.fromString(sourceRef);
         } catch (IllegalArgumentException e) {
-            throw ResponseException.badRequest("Die Asset-Referenz der Code-Liste ist keine gültige UUID.", e);
+            throw ResponseException.badRequest("Die Asset-Referenz der Codeliste ist keine gültige UUID.", e);
         }
     }
 
@@ -547,15 +547,15 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         }
 
         if (codeListEntity.getName() == null || codeListEntity.getName().isBlank()) {
-            throw ResponseException.badRequest("Der Name der Code-Liste darf nicht leer sein.");
+            throw ResponseException.badRequest("Der Name der Codeliste darf nicht leer sein.");
         }
 
         if (isSyncable(codeListEntity) && codeListEntity.getSourceRef().isBlank()) {
-            throw ResponseException.badRequest("Die Quelle der Code-Liste darf nicht leer sein.");
+            throw ResponseException.badRequest("Die Quelle der Codeliste darf nicht leer sein.");
         }
 
         if (codeListEntity.getSourceType() == CodeListSourceType.Manual && codeListEntity.getColumns().isEmpty()) {
-            throw ResponseException.badRequest("Manuelle Code-Listen benötigen mindestens eine Spalte.");
+            throw ResponseException.badRequest("Manuelle Codelisten benötigen mindestens eine Spalte.");
         }
 
         validateCodeListColumns(codeListEntity);
@@ -580,7 +580,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     private List<String> normalizeItemColumns(@Nonnull CodeListEntity codeListEntity,
                                               @Nullable List<String> columns) throws ResponseException {
         if (columns == null || columns.size() != codeListEntity.getColumns().size()) {
-            throw ResponseException.badRequest("Die Anzahl der Werte passt nicht zur Spaltenanzahl der Code-Liste.");
+            throw ResponseException.badRequest("Die Anzahl der Werte passt nicht zur Spaltenanzahl der Codeliste.");
         }
 
         return columns
@@ -600,7 +600,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     private CodeListEntity requireManualCodeList(@Nonnull Integer codeListId) throws ResponseException {
         var codeList = requireCodeList(codeListId);
         if (codeList.getSourceType() != CodeListSourceType.Manual) {
-            throw ResponseException.methodNotAllowed("Nur manuelle Code-Listen können direkt bearbeitet werden.");
+            throw ResponseException.methodNotAllowed("Nur manuelle Codelisten können direkt bearbeitet werden.");
         }
         return codeList;
     }

@@ -118,7 +118,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
             },
             {
                 icon: ModuleIcons.codeLists,
-                label: 'Code-Listen',
+                label: 'Codelisten',
                 to: '/code-lists',
             },
         ],

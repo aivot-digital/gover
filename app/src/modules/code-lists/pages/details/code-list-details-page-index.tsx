@@ -55,7 +55,7 @@ const CodeListSchema = yup.object({
         .of(yup.string().trim().required())
         .when('sourceType', {
             is: CodeListSourceType.Manual,
-            then: (schema) => schema.min(1, 'Manuelle Code-Listen benoetigen mindestens eine Spalte.'),
+            then: (schema) => schema.min(1, 'Manuelle Codelisten benoetigen mindestens eine Spalte.'),
             otherwise: (schema) => schema,
         }),
     valueColumnIndex: yup.number()
@@ -159,7 +159,7 @@ export function CodeListDetailsPageIndex() {
                 .then((created) => {
                     setItem(created);
                     reset();
-                    dispatch(showSuccessSnackbar('Neue Code-Liste erfolgreich angelegt.'));
+                    dispatch(showSuccessSnackbar('Neue Codeliste erfolgreich angelegt.'));
                     setTimeout(() => {
                         navigate(`/code-lists/${created.id}`, {replace: true});
                     }, 0);
@@ -176,7 +176,7 @@ export function CodeListDetailsPageIndex() {
                 .then((updated) => {
                     setItem(updated);
                     reset();
-                    dispatch(showSuccessSnackbar('Aenderungen an der Code-Liste erfolgreich gespeichert.'));
+                    dispatch(showSuccessSnackbar('Aenderungen an der Codeliste erfolgreich gespeichert.'));
                 })
                 .catch((err) => {
                     dispatch(showApiErrorSnackbar(err, 'Speichern fehlgeschlagen. Bitte ueberpruefen Sie Ihre Eingaben.'));
@@ -200,10 +200,10 @@ export function CodeListDetailsPageIndex() {
             .then(() => {
                 reset();
                 navigate('/code-lists', {replace: true});
-                dispatch(showSuccessSnackbar('Die Code-Liste wurde erfolgreich geloescht.'));
+                dispatch(showSuccessSnackbar('Die Codeliste wurde erfolgreich geloescht.'));
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Beim Loeschen der Code-Liste ist ein Fehler aufgetreten.'));
+                dispatch(showApiErrorSnackbar(err, 'Beim Loeschen der Codeliste ist ein Fehler aufgetreten.'));
             })
             .finally(() => {
                 setIsBusy(false);
@@ -217,7 +217,7 @@ export function CodeListDetailsPageIndex() {
                     severity="warning"
                     sx={{mb: 3}}
                 >
-                    Diese Code-Liste kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.
+                    Diese Codeliste kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.
                 </Alert>
             )}
 
@@ -262,7 +262,7 @@ export function CodeListDetailsPageIndex() {
                 severity="info"
                 sx={{mb: 2}}
             >
-                Alle Code-Listen sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
             </Alert>
 
             <Grid
@@ -379,7 +379,7 @@ export function CodeListDetailsPageIndex() {
                                 required={true}
                                 error={errors.sourceRef}
                                 disabled={isBusy || !isEditable}
-                                hint="Verwenden Sie die spezifische Versionskennung der XRepository-Code-Liste."
+                                hint="Verwenden Sie die spezifische Versionskennung der XRepository-Codeliste."
                             />
 
                             <Actions
@@ -407,7 +407,7 @@ export function CodeListDetailsPageIndex() {
                 <Grid size={{xs: 12}}>
                     <StringListInput2
                         label="Spalten"
-                        hint="Die Spalten dieser Code-Liste"
+                        hint="Die Spalten dieser Codeliste"
                         addLabel="Spalte hinzufügen"
                         disabled={isBusy || !isEditable || codeList.sourceType !== CodeListSourceType.Manual}
                         noItemsHint="Noch keine Spalten definiert."
@@ -485,7 +485,7 @@ export function CodeListDetailsPageIndex() {
             {changeBlocker.dialog}
 
             <ConfirmDialog
-                title="Code-Liste löschen"
+                title="Codeliste löschen"
                 onCancel={() => setShowConfirmDelete(false)}
                 onConfirm={showConfirmDelete ? handleDelete : undefined}
                 confirmationText={codeList.name}
@@ -493,7 +493,7 @@ export function CodeListDetailsPageIndex() {
                 confirmButtonText="Ja, endgültig löschen"
             >
                 <Typography>
-                    Moechten Sie diese Code-Liste wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
+                    Moechten Sie diese Codeliste wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden.
                 </Typography>
             </ConfirmDialog>
         </Box>

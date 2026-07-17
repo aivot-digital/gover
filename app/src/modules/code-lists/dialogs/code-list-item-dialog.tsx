@@ -58,7 +58,7 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
                 {
                     !hasColumns &&
                     <Alert severity="warning">
-                        Fuer diese Code-Liste sind noch keine Spalten definiert.
+                        Fuer diese Codeliste sind noch keine Spalten definiert.
                     </Alert>
                 }
                 {

@@ -432,8 +432,8 @@ public class XdfTransformService {
                         selectField.setOptions(options);
                     } catch (ResponseException e) {
                         fields.add(createErrorAlert(
-                                "CodeListe konnte nicht geladen werden",
-                                "Die Code-Liste mit der URN %s für das Feld %s (%s) konnte nicht geladen werden. Die Fehlermeldung war: %s",
+                                "Codeliste konnte nicht geladen werden",
+                                "Die Codeliste mit der URN %s für das Feld %s (%s) konnte nicht geladen werden. Die Fehlermeldung war: %s",
                                 codeListUrn,
                                 name,
                                 id,

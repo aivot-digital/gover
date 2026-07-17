@@ -101,7 +101,7 @@ public class CodeListElementOptionsService {
     @Nonnull
     private Integer requireCodeListId(Integer codeListId) throws ResponseException {
         if (codeListId == null || codeListId <= 0) {
-            throw ResponseException.badRequest("Für die Code-Listen-Optionen muss eine Code-Liste ausgewählt sein.");
+            throw ResponseException.badRequest("Für die Codelisten-Optionen muss eine Codeliste ausgewählt sein.");
         }
         return codeListId;
     }

@@ -15,17 +15,17 @@ public class CodeListPermissionProvider implements PermissionProvider {
 
     @Override
     public String getContextLabel() {
-        return "Code-Listen";
+        return "Codelisten";
     }
 
     @Override
     public PermissionEntry[] getPermissions() {
         return new PermissionEntry[]{
-                PermissionEntry.of(CODE_LIST_CREATE, "Code-Liste erstellen", "Erlaubt das Erstellen von Code-Listen."),
-                PermissionEntry.of(CODE_LIST_READ, "Code-Liste anzeigen", "Erlaubt das Anzeigen und Auflisten von Code-Listen."),
-                PermissionEntry.of(CODE_LIST_UPDATE, "Code-Liste bearbeiten", "Erlaubt das Bearbeiten von Code-Listen."),
-                PermissionEntry.of(CODE_LIST_DELETE, "Code-Liste löschen", "Erlaubt das Löschen von Code-Listen."),
-                PermissionEntry.of(CODE_LIST_EXPORT, "Code-Liste exportieren", "Erlaubt das Exportieren von Code-Listen.")
+                PermissionEntry.of(CODE_LIST_CREATE, "Codeliste erstellen", "Erlaubt das Erstellen von Codelisten."),
+                PermissionEntry.of(CODE_LIST_READ, "Codeliste anzeigen", "Erlaubt das Anzeigen und Auflisten von Codelisten."),
+                PermissionEntry.of(CODE_LIST_UPDATE, "Codeliste bearbeiten", "Erlaubt das Bearbeiten von Codelisten."),
+                PermissionEntry.of(CODE_LIST_DELETE, "Codeliste löschen", "Erlaubt das Löschen von Codelisten."),
+                PermissionEntry.of(CODE_LIST_EXPORT, "Codeliste exportieren", "Erlaubt das Exportieren von Codelisten.")
         };
     }
 

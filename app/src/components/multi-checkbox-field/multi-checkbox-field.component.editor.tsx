@@ -14,7 +14,7 @@ const optionsSourceOptions = [
         value: OptionsSourceType.Manual,
     },
     {
-        label: 'Code-Liste verwenden',
+        label: 'Codeliste verwenden',
         value: OptionsSourceType.CodeList,
     },
 ];

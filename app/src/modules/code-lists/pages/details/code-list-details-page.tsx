@@ -43,14 +43,14 @@ export function CodeListDetailsPage(): ReactNode {
 
     return (
         <PageWrapper
-            title="Code-Liste bearbeiten"
+            title="Codeliste bearbeiten"
             fullWidth
             background
         >
             <GenericDetailsPage<CodeList, number, void>
                 header={(item) => ({
                     icon: ModuleIcons.codeLists,
-                    title: 'Code-Liste bearbeiten',
+                    title: 'Codeliste bearbeiten',
                     badge: item != null && item.id !== 0
                         ? (
                             <CodeListStatusChip
@@ -62,7 +62,7 @@ export function CodeListDetailsPage(): ReactNode {
                         : undefined,
                     actions: [
                         {
-                            tooltip: 'Code-Liste synchronisieren (veraltete Einträge behalten)',
+                            tooltip: 'Codeliste synchronisieren (veraltete Einträge behalten)',
                             icon: <Sync />,
                             onClick: () => {
                                 void handleSync(item, true);
@@ -70,7 +70,7 @@ export function CodeListDetailsPage(): ReactNode {
                             disabled: item == null || item.id === 0 || !isCodeListSyncable(item.sourceType) || isSyncing || !hasAccess,
                         },
                         {
-                            tooltip: 'Code-Liste synchronisieren (veraltete Einträge entfernen)',
+                            tooltip: 'Codeliste synchronisieren (veraltete Einträge entfernen)',
                             icon: <SyncProblem />,
                             onClick: () => {
                                 void handleSync(item, false);
@@ -79,19 +79,19 @@ export function CodeListDetailsPage(): ReactNode {
                         },
                     ],
                     helpDialog: {
-                        title: 'Hilfe zu Code-Listen',
+                        title: 'Hilfe zu Codelisten',
                         tooltip: 'Hilfe anzeigen',
                         content: (
                             <>
                                 <Typography>
-                                    Code-Listen stellen zentrale Werte für Auswahlfelder bereit.
+                                    Codelisten stellen zentrale Werte für Auswahlfelder bereit.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
                                     Einträge manueller Listen können im Tab Einträge gepflegt werden.
                                     Synchronisierte Listen beziehen ihre Einträge aus XRepository oder einer CSV-Datei.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Alle Code-Listen sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                                    Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
                                 </Typography>
                             </>
                         ),
@@ -110,14 +110,14 @@ export function CodeListDetailsPage(): ReactNode {
                 ]}
                 initializeItem={() => new CodeListsApiService().initialize()}
                 fetchData={(_, id: number) => new CodeListsApiService().retrieve(id)}
-                getTabTitle={(item) => item.id === 0 ? 'Neue Code-Liste' : item.name}
+                getTabTitle={(item) => item.id === 0 ? 'Neue Codeliste' : item.name}
                 getHeaderTitle={(item, isNewItem, notFound) => {
-                    if (notFound ?? false) return 'Code-Liste nicht gefunden';
-                    if (isNewItem ?? false) return 'Neue Code-Liste anlegen';
-                    return `Code-Liste: ${item?.name ?? 'Unbenannt'}`;
+                    if (notFound ?? false) return 'Codeliste nicht gefunden';
+                    if (isNewItem ?? false) return 'Neue Codeliste anlegen';
+                    return `Codeliste: ${item?.name ?? 'Unbenannt'}`;
                 }}
                 parentLink={{
-                    label: 'Liste der Code-Listen',
+                    label: 'Liste der Codelisten',
                     to: '/code-lists',
                 }}
                 entityType={ServerEntityType.CodeLists}

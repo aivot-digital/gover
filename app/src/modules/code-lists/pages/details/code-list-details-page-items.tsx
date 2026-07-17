@@ -209,7 +209,7 @@ export function CodeListDetailsPageItems() {
             title: 'CSV importieren',
             children: (
                 <Typography>
-                    Der Import ersetzt alle bestehenden Einträge dieser Code-Liste.
+                    Der Import ersetzt alle bestehenden Einträge dieser Codeliste.
                 </Typography>
             ),
             confirmButtonText: 'CSV importieren',
@@ -318,14 +318,14 @@ export function CodeListDetailsPageItems() {
                 Einträge
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Verwalten Sie die Werte dieser Code-Liste.
+                Verwalten Sie die Werte dieser Codeliste.
             </Typography>
 
             <Alert
                 severity="info"
                 sx={{mb: 2}}
             >
-                Alle Code-Listen sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
             </Alert>
 
             {
@@ -334,7 +334,7 @@ export function CodeListDetailsPageItems() {
                     severity="info"
                     sx={{mb: 2}}
                 >
-                    Einträge synchronisierter Code-Listen werden aus der Quelle gelesen und können hier nicht direkt
+                    Einträge synchronisierter Codelisten werden aus der Quelle gelesen und können hier nicht direkt
                     bearbeitet werden.
                 </Alert>
             }
@@ -356,7 +356,7 @@ export function CodeListDetailsPageItems() {
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
                         title="Keine Einträge vorhanden"
-                        description={isManual ? 'Fügen Sie die ersten Werte für diese Code-Liste hinzu.' : 'Bei der nächsten Synchronisierung werden Einträge aus der Quelle geladen.'}
+                        description={isManual ? 'Fügen Sie die ersten Werte für diese Codeliste hinzu.' : 'Bei der nächsten Synchronisierung werden Einträge aus der Quelle geladen.'}
                         addText={canManageItems ? 'Eintrag hinzufügen' : undefined}
                         onAdd={canManageItems ? handleOpenCreateDialog : undefined}
                     />

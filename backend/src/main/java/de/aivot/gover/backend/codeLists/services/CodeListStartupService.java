@@ -67,8 +67,8 @@ public class CodeListStartupService implements ApplicationListener<ApplicationRe
             }
 
             logger.warn(
-                    "Das verwaltende Plugin für die Code-Liste {} ist nicht mehr verfügbar. " +
-                            "Die Code-Liste wird nun als manuell verwaltet markiert.",
+                    "Das verwaltende Plugin für die Codeliste {} ist nicht mehr verfügbar. " +
+                            "Die Codeliste wird nun als manuell verwaltet markiert.",
                     StringUtils.quote(codeList.getName())
             );
         }

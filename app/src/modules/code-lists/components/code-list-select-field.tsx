@@ -53,14 +53,14 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
 
     return (
         <SelectFieldComponent
-            label={props.label ?? 'Code-Liste'}
+            label={props.label ?? 'Codeliste'}
             hint={props.hint}
             value={props.value}
             onChange={(value) => props.onChange(value)}
             options={options}
             disabled={props.disabled}
             required={props.required}
-            emptyStatePlaceholder={loading ? 'Code-Listen werden geladen...' : 'Keine Code-Listen verfügbar'}
+            emptyStatePlaceholder={loading ? 'Codelisten werden geladen...' : 'Keine Codelisten verfügbar'}
         />
     );
 }
