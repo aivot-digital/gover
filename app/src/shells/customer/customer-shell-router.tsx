@@ -9,26 +9,45 @@ import {CustomerFormPage} from '../../pages/customer-pages/customer-form-page';
 import {CustomerListPage} from '../../pages/customer-pages/customer-list-page';
 import {isFormModuleEnabled} from '../../utils/module-flags';
 import {NotFoundPage} from '../../components/not-found-page/not-found-page';
+import {MetaElement} from '../../components/meta-element/meta-element';
 
 const sentryCreateBrowserRouter = Sentry.wrapCreateBrowserRouterV7(
     createBrowserRouter,
 );
+
+const formModuleEnabled = isFormModuleEnabled();
 
 const router = sentryCreateBrowserRouter(
     [
         {
             element: <CustomerShell/>,
             errorElement: <CustomerShell/>,
-            children: isFormModuleEnabled() ? [
+            children: [
                 {
                     index: true,
-                    element: <CustomerListPage/>,
+                    element: formModuleEnabled ? (
+                        <CustomerListPage/>
+                    ) : (
+                        <>
+                            <MetaElement
+                                title="Gover-Instanz"
+                                titlePrefix={AppConfig.providerName}
+                            />
+                            <NotFoundPage
+                                title={'Gover-Instanz von ' + AppConfig.providerName}
+                                msg="Unter dieser Domain wird eine Gover-Instanz betrieben. Aktuell sind keine öffentlichen Angebote freigeschaltet."
+                            />
+                        </>
+                    ),
                 },
-                {
-                    path: '/form/:processSlug/:formSlug',
-                    element: <CustomerFormPage/>,
-                },
-            ] : [
+                ...(
+                    formModuleEnabled ? [
+                        {
+                            path: '/form/:processSlug/:formSlug',
+                            element: <CustomerFormPage/>,
+                        },
+                    ] : []
+                ),
                 {
                     path: '*',
                     element: <NotFoundPage/>,
