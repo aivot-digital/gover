@@ -1,9 +1,9 @@
 import React, {useContext, useMemo, useState} from 'react';
 import {Alert, Box, Button, Grid, Stack, Typography} from '@mui/material';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useNavigate} from 'react-router-dom';
 import * as yup from 'yup';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
@@ -23,7 +23,7 @@ import {CodeListStatus} from '../../enums/code-list-status';
 import {AssetSelector} from '../../../assets/components/asset-selector';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {Actions} from '../../../../components/actions/actions';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
 import {StorageProviderStatus} from '../../../storage/enums/storage-provider-status';
 import {AlertComponent} from '../../../../components/alert/alert-component';
@@ -456,7 +456,7 @@ export function CodeListDetailsPageIndex() {
                     disabled={isBusy || hasNotChanged || !isEditable}
                     variant="contained"
                     color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
+                    startIcon={<Save/>}
                 >
                     Speichern
                 </Button>

@@ -1,10 +1,10 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
 import {Alert, Box, Button, Typography} from '@mui/material';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import CloudUpload from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import FileDownload from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {GridColDef} from '@mui/x-data-grid';
 import {
     GenericDetailsPageContext,
@@ -242,7 +242,7 @@ export function CodeListDetailsPageItems() {
 
         return [
             {
-                icon: <EditOutlinedIcon/>,
+                icon: <Edit/>,
                 onClick: () => {
                     setDialogItem(item);
                     setShowDialog(true);
@@ -273,7 +273,7 @@ export function CodeListDetailsPageItems() {
             >
                 <Button
                     variant="outlined"
-                    startIcon={<FileDownloadOutlinedIcon/>}
+                    startIcon={<FileDownload/>}
                     onClick={handleExportCsv}
                     disabled={isCsvBusy}
                 >
@@ -283,7 +283,7 @@ export function CodeListDetailsPageItems() {
                     canManageItems &&
                     <Button
                         variant="outlined"
-                        startIcon={<CloudUploadOutlinedIcon/>}
+                        startIcon={<CloudUpload/>}
                         onClick={handleImportCsv}
                         disabled={isCsvBusy}
                     >
@@ -294,7 +294,7 @@ export function CodeListDetailsPageItems() {
                     canManageItems &&
                     <Button
                         variant="contained"
-                        startIcon={<AddOutlinedIcon/>}
+                        startIcon={<Add/>}
                         onClick={handleOpenCreateDialog}
                         disabled={(codeList?.columns.length ?? 0) === 0}
                     >

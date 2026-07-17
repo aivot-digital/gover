@@ -1,8 +1,8 @@
 import React, {useCallback, useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {Typography} from '@mui/material';
 import {GridColDef} from '@mui/x-data-grid';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
@@ -31,7 +31,7 @@ export function CodeListsListPage() {
         actions: [
             {
                 label: 'Neue Codeliste',
-                icon: <AddOutlinedIcon />,
+                icon: <Add />,
                 to: '/code-lists/new',
                 variant: 'contained' as const,
                 disabled: !hasAccess,
@@ -116,7 +116,7 @@ export function CodeListsListPage() {
 
     const rowActions = useCallback((item: CodeList) => [
         {
-            icon: hasAccess ? <EditOutlinedIcon /> : <Visibility />,
+            icon: hasAccess ? <Edit /> : <Visibility />,
             to: `/code-lists/${item.id}`,
             tooltip: hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen',
         },

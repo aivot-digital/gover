@@ -132,11 +132,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
                     {...drawerModuleIcon('departments'), label: 'Durchsuchen'},
                 ],
             },
-            {
-                icon: ModuleIcons.codeLists,
-                label: 'Codelisten',
-                to: '/code-lists',
-            },
         ],
     },
     {
@@ -165,6 +160,11 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 ...drawerModuleIcon('dataModels'),
                 label: 'Datenmodelle',
                 to: '/data-models',
+            },
+            {
+                icon: ModuleIcons.codeLists,
+                label: 'Codelisten',
+                to: '/code-lists',
             },
             {
                 ...drawerModuleIcon('settings'),

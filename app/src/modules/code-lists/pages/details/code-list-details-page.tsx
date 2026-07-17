@@ -1,6 +1,6 @@
 import React, {ReactNode, useRef, useState} from 'react';
 import {Typography} from '@mui/material';
-import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
+import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {GenericDetailsPageControlRef} from '../../../../components/generic-details-page/generic-details-page-props';
@@ -13,7 +13,7 @@ import {CodeListsApiService} from '../../code-lists-api-service';
 import {CodeList} from '../../models/code-list';
 import {CodeListStatusChip} from '../../components/code-list-status-chip';
 import {isCodeListSyncable} from '../../enums/code-list-source-type';
-import SyncProblem from '@aivot/mui-material-symbols-400-outlined/dist/sync-problem/SyncProblem';
+import SyncProblem from '@aivot/mui-material-symbols-400-n25-outlined/SyncProblem';
 
 export function CodeListDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();

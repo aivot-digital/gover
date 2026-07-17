@@ -1,13 +1,13 @@
 import React, {ReactNode, useMemo} from 'react';
 import {Chip} from '../../../components/chip/chip';
 import {CodeListStatus, CodeListStatusColors, CodeListStatusLabels} from '../enums/code-list-status';
-import SyncProblem from '@aivot/mui-material-symbols-400-outlined/dist/sync-problem/SyncProblem';
-import SyncArrowDown from '@aivot/mui-material-symbols-400-outlined/dist/sync-arrow-down/SyncArrowDown';
-import Autoplay from '@aivot/mui-material-symbols-400-outlined/dist/autoplay/Autoplay';
-import CheckCircle from '@aivot/mui-material-symbols-400-outlined/dist/check-circle/CheckCircle';
-import {SvgIconComponent} from '@mui/icons-material';
+import SyncProblem from '@aivot/mui-material-symbols-400-n25-outlined/SyncProblem';
+import SyncArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/SyncArrowDown';
+import Autoplay from '@aivot/mui-material-symbols-400-n25-outlined/Autoplay';
+import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import {format} from 'date-fns';
 import {de} from 'date-fns/locale';
+import {SvgIconComponent} from '../../../types/svg-icon-component';
 
 interface CodeListStatusChipProps {
     status: CodeListStatus;

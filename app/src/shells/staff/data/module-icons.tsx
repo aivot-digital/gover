@@ -51,8 +51,8 @@ import Payments from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 import PaymentsFilled from '@aivot/mui-material-symbols-400-n25-outlined/PaymentsFilled';
 import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import HistoryFilled from '@aivot/mui-material-symbols-400-n25-outlined/HistoryFilled';
-import ViewList from '@aivot/mui-material-symbols-400-n25-outlined/ViewList';
-import ViewListFilled from '@aivot/mui-material-symbols-400-n25-outlined/ViewListFilled';
+import ListAlt from '@aivot/mui-material-symbols-400-n25-outlined/ListAlt';
+import ListAltFilled from '@aivot/mui-material-symbols-400-n25-outlined/ListAltFilled';
 
 export const ModuleIcons = {
     dashboard: <Dashboard />,
@@ -81,7 +81,7 @@ export const ModuleIcons = {
     extensions: <Extension />,
     storage: <Storage/>,
     audit: <History/>,
-    codeLists: <ViewList/>,
+    codeLists: <ListAlt/>,
 };
 
 export const ModuleIconsFilled = {
@@ -111,5 +111,5 @@ export const ModuleIconsFilled = {
     extensions: <ExtensionFilled />,
     storage: <StorageFilled/>,
     audit: <HistoryFilled/>,
-    codeLists: <ViewListFilled/>,
+    codeLists: <ListAltFilled/>,
 } satisfies Record<keyof typeof ModuleIcons, React.ReactNode>;

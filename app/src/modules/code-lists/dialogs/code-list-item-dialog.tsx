@@ -1,6 +1,6 @@
 import React, {useEffect, useState} from 'react';
 import {Alert, Dialog, DialogActions, DialogContent, DialogTitle, Button, Grid} from '@mui/material';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {CodeList} from '../models/code-list';
 import {CodeListItem} from '../models/code-list-item';
@@ -98,7 +98,7 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
                     onClick={() => onSave(columns)}
                     disabled={isBusy || !hasColumns || columns.length !== codeList.columns.length}
                     variant="contained"
-                    startIcon={<SaveOutlinedIcon />}
+                    startIcon={<Save />}
                 >
                     Speichern
                 </Button>
