@@ -1,12 +1,12 @@
 import {ProcessTaskStatus} from '../enums/process-task-status';
 import React, {type ReactNode} from 'react';
 import {Tooltip} from '@mui/material';
-import AppBadging from '@aivot/mui-material-symbols-400-outlined/dist/app-badging/AppBadging';
-import PlayCircle from '@aivot/mui-material-symbols-400-outlined/dist/play-circle/PlayCircle';
-import PauseCircle from '@aivot/mui-material-symbols-400-outlined/dist/pause-circle/PauseCircle';
-import CheckCircle from '@aivot/mui-material-symbols-400-outlined/dist/check-circle/CheckCircle';
-import Cancel from '@aivot/mui-material-symbols-400-outlined/dist/cancel/Cancel';
-import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import AppBadging from '@aivot/mui-material-symbols-400-n25-outlined/AppBadging';
+import PlayCircle from '@aivot/mui-material-symbols-400-n25-outlined/PlayCircle';
+import PauseCircle from '@aivot/mui-material-symbols-400-n25-outlined/PauseCircle';
+import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import Cancel from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
+import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 
 interface ProcessInstanceTaskStatusIconProps {
     status: ProcessTaskStatus;

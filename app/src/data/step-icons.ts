@@ -5,59 +5,59 @@ import {type IntroductionStepElement} from '../models/elements/steps/introductio
 import {type SummaryStepElement} from '../models/elements/steps/summary-step-element';
 import {type SubmitStepElement} from '../models/elements/steps/submit-step-element';
 import {type SubmittedStepElement} from '../models/elements/steps/submitted-step-element';
-import {type SvgIcon} from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import LightbulbCircleOutlinedIcon from '@mui/icons-material/LightbulbCircleOutlined';
-import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
-import FlagCircleOutlinedIcon from '@mui/icons-material/FlagCircleOutlined';
-import BuildCircleOutlinedIcon from '@mui/icons-material/BuildCircleOutlined';
-import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
-import CircleNotificationsOutlinedIcon from '@mui/icons-material/CircleNotificationsOutlined';
-import CloudCircleOutlinedIcon from '@mui/icons-material/CloudCircleOutlined';
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
-import StarsOutlinedIcon from '@mui/icons-material/StarsOutlined';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
-import BookmarkBorderOutlinedIcon from '@mui/icons-material/BookmarkBorderOutlined';
-import AutoStoriesOutlinedIcon from '@mui/icons-material/AutoStoriesOutlined';
-import FavoriteBorderOutlinedIcon from '@mui/icons-material/FavoriteBorderOutlined';
-import ArrowCircleRightOutlinedIcon from '@mui/icons-material/ArrowCircleRightOutlined';
-import AccountBalanceOutlinedIcon from '@mui/icons-material/AccountBalanceOutlined';
-import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
-import DirectionsCarFilledOutlinedIcon from '@mui/icons-material/DirectionsCarFilledOutlined';
-import LocalShippingOutlinedIcon from '@mui/icons-material/LocalShippingOutlined';
-import FamilyRestroomOutlinedIcon from '@mui/icons-material/FamilyRestroomOutlined';
-import ChecklistOutlinedIcon from '@mui/icons-material/ChecklistOutlined';
-import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBulletedOutlined';
-import LocationOnOutlinedIcon from '@mui/icons-material/LocationOnOutlined';
-import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import FactoryOutlinedIcon from '@mui/icons-material/FactoryOutlined';
-import EscalatorWarningOutlinedIcon from '@mui/icons-material/EscalatorWarningOutlined';
-import EuroOutlinedIcon from '@mui/icons-material/EuroOutlined';
-import ReceiptLongOutlinedIcon from '@mui/icons-material/ReceiptLongOutlined';
-import AccessTimeOutlinedIcon from '@mui/icons-material/AccessTimeOutlined';
-import CalendarMonthOutlinedIcon from '@mui/icons-material/CalendarMonthOutlined';
-import AttachFileOutlinedIcon from '@mui/icons-material/AttachFileOutlined';
-import ChangeCircleOutlinedIcon from '@mui/icons-material/ChangeCircleOutlined';
-import SwapHorizontalCircleOutlinedIcon from '@mui/icons-material/SwapHorizontalCircleOutlined';
-import OfflineBoltOutlinedIcon from '@mui/icons-material/OfflineBoltOutlined';
-import GavelOutlinedIcon from '@mui/icons-material/GavelOutlined';
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
-import PaymentOutlinedIcon from '@mui/icons-material/PaymentOutlined';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import WorkOutlineOutlinedIcon from '@mui/icons-material/WorkOutlineOutlined';
-import SchoolOutlinedIcon from '@mui/icons-material/SchoolOutlined';
-import PetsOutlinedIcon from '@mui/icons-material/PetsOutlined';
-import PeopleAltOutlinedIcon from '@mui/icons-material/PeopleAltOutlined';
-import StorefrontOutlinedIcon from '@mui/icons-material/StorefrontOutlined';
-import PublicOutlinedIcon from '@mui/icons-material/PublicOutlined';
-import PhoneAndroidOutlinedIcon from '@mui/icons-material/PhoneAndroidOutlined';
-import ConstructionOutlinedIcon from '@mui/icons-material/ConstructionOutlined';
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import QuestionAnswerOutlinedIcon from '@mui/icons-material/QuestionAnswerOutlined';
-import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import HowToRegOutlinedIcon from '@mui/icons-material/HowToRegOutlined';
+import {type SvgIconComponent} from '../types/svg-icon-component';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import LightbulbCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LightbulbCircle';
+import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import FlagCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FlagCircle';
+import BuildCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/BuildCircle';
+import AddCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AddCircle';
+import CircleNotificationsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CircleNotifications';
+import CloudCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CloudCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import HelpOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
+import StarsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Stars';
+import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import BookmarkBorderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Bookmark';
+import AutoStoriesOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AutoStories';
+import FavoriteBorderOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Favorite';
+import ArrowCircleRightOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowCircleRight';
+import AccountBalanceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountBalance';
+import CheckCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import EmailOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
+import DirectionsCarFilledOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/DirectionsCar';
+import LocalShippingOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocalShipping';
+import FamilyRestroomOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FamilyRestroom';
+import ChecklistOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Checklist';
+import FormatListBulletedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FormatListBulleted';
+import LocationOnOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocationOn';
+import HomeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Home';
+import FactoryOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Factory';
+import EscalatorWarningOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EscalatorWarning';
+import EuroOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Euro';
+import ReceiptLongOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ReceiptLong';
+import AccessTimeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Schedule';
+import CalendarMonthOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CalendarMonth';
+import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
+import ChangeCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ChangeCircle';
+import SwapHorizontalCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHorizontalCircle';
+import OfflineBoltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OfflineBolt';
+import GavelOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Gavel';
+import BadgeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Badge';
+import PaymentOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CreditCard';
+import LockOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import WorkOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Work';
+import SchoolOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/School';
+import PetsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Pets';
+import PeopleAltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Groups';
+import StorefrontOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Storefront';
+import PublicOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Public';
+import PhoneAndroidOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/PhoneAndroid';
+import ConstructionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Construction';
+import InsertDriveFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
+import QuestionAnswerOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Forum';
+import VerifiedUserOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/VerifiedUser';
+import HowToRegOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/HowToReg';
 
 export const StepIcons: StepIcon[] = [
     // Allgemein / Navigation
@@ -136,7 +136,7 @@ export const StepIconsMap = StepIcons.reduce<any>((acc, val) => ({
     [val.id]: val,
 }), {});
 
-export function getStepIcon(step: StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement): typeof SvgIcon {
+export function getStepIcon(step: StepElement | IntroductionStepElement | SummaryStepElement | SubmitStepElement | SubmittedStepElement): SvgIconComponent {
     switch (step.type) {
         case ElementType.Step:
             if (step.icon != null && step.icon in StepIconsMap) {

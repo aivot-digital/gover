@@ -2,8 +2,8 @@ import React, {useState} from 'react';
 import {Box, Checkbox, FormControlLabel, IconButton} from '@mui/material';
 import {CheckboxTree} from './checkbox-tree';
 import {type CheckboxTreeOption} from './checkbox-tree-option';
-import ExpandLessOutlinedIcon from '@mui/icons-material/ExpandLessOutlined';
-import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
+import ExpandLessOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ExpandLess';
+import ExpandMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
 import {type CheckboxTreeItemProps} from './checkbox-tree-item-props';
 
 function getChildValues(treeOption: CheckboxTreeOption): string[] {

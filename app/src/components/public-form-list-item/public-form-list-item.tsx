@@ -3,8 +3,8 @@ import {Box, Button, Typography} from '@mui/material';
 import styles from './public-form-list-item.module.scss';
 import {Link} from 'react-router-dom';
 import {format, parseISO} from 'date-fns';
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import {FormCitizenListResponseDTO} from '../../modules/forms/dtos/form-citizen-list-response-dto';
 
 interface PublicFormListItemProps {

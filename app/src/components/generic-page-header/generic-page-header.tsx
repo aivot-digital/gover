@@ -6,7 +6,7 @@ import {Badge} from '../badge/badge';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
 import {Action} from '../actions/actions-props';
 import {isBadgeProps} from '../badge/badge-props';
-import Help from '@aivot/mui-material-symbols-400-outlined/dist/help/Help';
+import Help from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 
 export function GenericPageHeader(props: GenericPageHeaderProps) {
     const [isHelpDialogOpen, toggleIsHelpDialogOpen] = useReducer((isHelpDialogOpen) => !isHelpDialogOpen, false);

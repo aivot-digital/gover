@@ -8,11 +8,11 @@ import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {Box, Button, Typography} from '@mui/material';
 import {TextFieldComponent} from '../../text-field/text-field-component';
 import {Actions} from '../../actions/actions';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../../dialogs/select-element-dialog/select-element-dialog';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
-import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import LocationSearchingIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocationSearching';
 import {createLowCodeContextType} from '../../../utils/create-low-code-context-type';
 import {ReferenceCheck} from '../../element-editor-code-tab/components/reference-check/reference-check';
 import {editor} from 'monaco-editor';
@@ -20,7 +20,7 @@ import {ElementValidationFunction} from '../../../models/elements/element-valida
 import {
     NoCodeEditorWrapper,
 } from '../../element-editor-code-tab/components/no-code-editor-wrapper/no-code-editor-wrapper';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
 import {BaseInputElement} from '../../../models/elements/form/base-input-element';
 import {useElementTreeContext} from '../element-tree-context';

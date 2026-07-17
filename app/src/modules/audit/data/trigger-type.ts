@@ -1,10 +1,12 @@
-import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
-import {DoNotDisturb, Message, SvgIconComponent} from '@mui/icons-material';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Error from '@aivot/mui-material-symbols-400-outlined/dist/error/Error';
-import ArrowDownward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-downward/ArrowDownward';
-import ArrowUpward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-upward/ArrowUpward';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import DoNotDisturb from '@aivot/mui-material-symbols-400-n25-outlined/DoNotDisturbOn';
+import Message from '@aivot/mui-material-symbols-400-n25-outlined/Chat';
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Error from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import ArrowDownward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowDownward';
+import ArrowUpward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowUpward';
 
 type TriggerDefault = 'Create' |
     'Update' |

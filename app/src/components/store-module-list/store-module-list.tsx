@@ -8,9 +8,9 @@ import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {LoadingPlaceholder} from '../loading-placeholder/loading-placeholder';
 import {Link} from 'react-router-dom';
 import {SearchInput} from '../search-input/search-input';
-import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ExtensionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
+import LockOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import {type StoreModuleListProps} from './store-module-list-props';
 import {SelectionListRow} from '../selection-dialog/selection-list-row';
 

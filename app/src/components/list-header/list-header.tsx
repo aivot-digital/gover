@@ -3,7 +3,7 @@ import {Badge, Box, Button, IconButton, Tooltip, Typography} from '@mui/material
 import {SearchInput} from '../search-input/search-input';
 import {type ListHeaderProps} from './list-header-props';
 import {Link} from 'react-router-dom';
-import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {HintTooltip} from '../hint-tooltip/hint-tooltip';
 
 export function ListHeader(props: ListHeaderProps) {

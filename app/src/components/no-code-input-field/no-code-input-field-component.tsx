@@ -6,7 +6,7 @@ import {NoCodeDataType} from '../../data/no-code-data-type';
 import {AnyElement} from '../../models/elements/any-element';
 import {ElementType} from '../../data/element-type/element-type';
 import {NoCodeOperandEditorContextType} from '../../modules/nocode/components/no-code-operand-editor';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {NoCodeOperand, NoCodeOperandError} from '../../models/functions/no-code-expression';
 import {useApi} from '../../hooks/use-api';
 import {NoCodeApiService} from '../../services/no-code-api-service';

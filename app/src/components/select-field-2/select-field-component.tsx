@@ -70,6 +70,10 @@ export function SelectFieldComponent<T extends SelectFieldValueType>(props: Sele
                 <MenuItem
                     key={option.value}
                     value={normalizeValue(option.value)}
+                    sx={{
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                    }}
                 >
                     {
                         option.icon != null &&
@@ -81,6 +85,17 @@ export function SelectFieldComponent<T extends SelectFieldValueType>(props: Sele
                     <ListItemText
                         primary={option.label}
                         secondary={option.subLabel}
+                        sx={{
+                            minWidth: 0,
+                        }}
+                        slotProps={{
+                            primary: {
+                                noWrap: true,
+                            },
+                            secondary: {
+                                noWrap: true,
+                            },
+                        }}
                     />
                 </MenuItem>
             ));
@@ -139,6 +154,13 @@ export function SelectFieldComponent<T extends SelectFieldValueType>(props: Sele
                 renderValue: (value) => {
                     const option = options.find((option) => normalizeValue(option.value) === value);
                     return option?.label ?? '';
+                },
+                MenuProps: {
+                    PaperProps: {
+                        sx: {
+                            width: 0,
+                        },
+                    },
                 },
             }}
         >

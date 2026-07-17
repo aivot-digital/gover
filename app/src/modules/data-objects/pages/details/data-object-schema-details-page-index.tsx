@@ -7,7 +7,7 @@ import {
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useLocation, useNavigate} from 'react-router-dom';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
@@ -32,7 +32,7 @@ import {generateElementWithDefaultValues} from '../../../../utils/generate-eleme
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {ElementDisplayContext} from '../../../../data/element-type/element-child-options';
 import {
     UiDefinitionInputFieldComponent,

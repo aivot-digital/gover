@@ -1,6 +1,6 @@
-import Article from '@aivot/mui-material-symbols-400-outlined/dist/article/Article';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
+import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {Autocomplete, Box, InputAdornment, TextField, createFilterOptions} from '@mui/material';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {renderIconButton} from '../../../components/text-field/text-field-component';

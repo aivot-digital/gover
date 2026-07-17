@@ -4,7 +4,7 @@ import {type BaseTabProps} from './base-tab-props';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import {StoreModuleList} from '../../../components/store-module-list/store-module-list';
 
 export function StoreTab(props: BaseTabProps & {

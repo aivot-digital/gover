@@ -31,7 +31,7 @@ import {ProcessFlowEditor} from './components/process-flow-editor/process-flow-e
 import {ReactFlowProvider} from '@xyflow/react';
 import {ProcessDetailsPageProvider} from './process-details-page-context';
 import {Allotment} from 'allotment';
-import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {
     ProcessDetailsPageMoreMenu,
     type ProcessDetailsPageMoreMenuEvent,
@@ -51,22 +51,22 @@ import {ProcessInstanceApiService} from '../../services/process-instance-api-ser
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {BaseApiService, RequestOptions} from '../../../../services/base-api-service';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
 import {ProcessDetailsPageSkeleton} from './components/process-details-page-skeleton';
 import {useDelayedVisibility} from '../../../../hooks/use-delayed-visibility';
-import Undo from '@mui/icons-material/Undo';
-import Redo from '@mui/icons-material/Redo';
-import Refresh from '@mui/icons-material/Refresh';
-import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
+import Undo from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
+import Redo from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
+import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
-import HomeStorage from '@aivot/mui-material-symbols-400-outlined/dist/home-storage/HomeStorage';
-import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
+import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 import {getNodeName} from './components/process-flow-editor/utils/node-utils';
-import SwapHoriz from '@mui/icons-material/SwapHoriz';
-import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
+import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
+import UploadFile from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import {type ProcessNodeExport} from '../../entities/process-node-export';
 import {ProcessSettingsDialog} from '../../dialogs/process-settings-dialog/process-settings-dialog';
 import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test-claim-process-instances-dialog';

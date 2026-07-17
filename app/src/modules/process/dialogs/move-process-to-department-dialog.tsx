@@ -3,7 +3,7 @@ import React, {useEffect, useState} from 'react';
 import {Button, Dialog, DialogActions, DialogContent, Skeleton, Typography} from '@mui/material';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {isApiError} from '../../../models/api-error';
-import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
+import MoveGroup from '@aivot/mui-material-symbols-400-n25-outlined/MoveGroup';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {setLoadingMessage} from '../../../slices/shell-slice';
 import {VDepartmentShadowedEntity} from '../../departments/entities/v-department-shadowed-entity';

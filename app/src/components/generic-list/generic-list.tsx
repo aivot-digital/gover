@@ -11,9 +11,9 @@ import {Box, CircularProgress, Menu, MenuItem, styled, SxProps, Tab, Tabs} from 
 import React, {useCallback, useEffect, useMemo, useReducer, useRef, useState} from 'react';
 import {SearchInput} from '../search-input/search-input';
 import {IconButton} from '../icon-button/icon-button';
-import ZoomOutMapOutlinedIcon from '@mui/icons-material/ZoomOutMapOutlined';
-import ZoomInMapOutlinedIcon from '@mui/icons-material/ZoomInMapOutlined';
-import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
+import ZoomOutMapOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ZoomOutMap';
+import ZoomInMapOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ZoomInMap';
+import MoreVertOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {useApi} from '../../hooks/use-api';
 import {Page} from '../../models/dtos/page';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
@@ -24,8 +24,8 @@ import {GenericListProps} from './generic-list-props';
 import {useSearchParams} from 'react-router-dom';
 import {GridSortItem} from '@mui/x-data-grid/models/gridSortModel';
 import {CellContentWrapper} from "../cell-content-wrapper/cell-content-wrapper";
-import WidthWide from '@aivot/mui-material-symbols-400-outlined/dist/width-wide/WidthWide';
-import FitPageWidth from '@aivot/mui-material-symbols-400-outlined/dist/fit-page-width/FitPageWidth';
+import WidthWide from '@aivot/mui-material-symbols-400-n25-outlined/WidthWide';
+import FitPageWidth from '@aivot/mui-material-symbols-400-n25-outlined/FitPageWidth';
 
 const UrlParamKeys = {
     search: 'search',

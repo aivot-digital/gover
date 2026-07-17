@@ -8,12 +8,12 @@ import {getFullName} from '../../../models/entities/user';
 import {Link} from 'react-router-dom';
 import {useLogout} from '../../../hooks/use-logout';
 
-import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
-import DescriptionOutlined from '@mui/icons-material/DescriptionOutlined';
-import HeadsetMicOutlined from '@mui/icons-material/HeadsetMicOutlined';
-import InfoOutlined from '@mui/icons-material/InfoOutlined';
-import Logout from '@mui/icons-material/Logout';
-import OpenInNew from '@mui/icons-material/OpenInNew';
+import ManageAccountsOutlined from '@aivot/mui-material-symbols-400-n25-outlined/ManageAccounts';
+import DescriptionOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Description';
+import HeadsetMicOutlined from '@aivot/mui-material-symbols-400-n25-outlined/HeadsetMic';
+import InfoOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import Logout from '@aivot/mui-material-symbols-400-n25-outlined/Logout';
+import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {AppInfo} from '../../../app-info';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {setShowAboutGoverDialog} from '../../../slices/shell-slice';

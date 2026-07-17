@@ -1,7 +1,7 @@
 import Box from '@mui/material/Box';
 import {Button, Divider, Paper, Typography} from '@mui/material';
-import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
-import CloudOff from '@aivot/mui-material-symbols-400-outlined/dist/cloud-off/CloudOff';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
+import CloudOff from '@aivot/mui-material-symbols-400-n25-outlined/CloudOff';
 
 export function ShellOffline() {
     const handleReload = () => {

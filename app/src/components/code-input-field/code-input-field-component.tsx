@@ -1,6 +1,6 @@
 import {Box, Dialog, DialogContent, SxProps, Typography} from '@mui/material';
 import {useState} from 'react';
-import OpenInFull from '@aivot/mui-material-symbols-400-outlined/dist/open-in-full/OpenInFull';
+import OpenInFull from '@aivot/mui-material-symbols-400-n25-outlined/OpenInFull';
 import {CodeEditor} from '../code-editor/code-editor';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {Actions} from '../actions/actions';

@@ -5,7 +5,7 @@ import {type StoreDetailModule} from '../models/entities/store-detail-module';
 import {GoverStoreService} from '../services/gover-store.service';
 import {Button, Grid, Paper} from '@mui/material';
 import {AlertComponent} from '../components/alert/alert-component';
-import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
+import LinkOffOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LinkOff';
 import {ConfirmDialog} from '../dialogs/confirm-dialog/confirm-dialog';
 import {StoreModuleInfoTable} from '../components/store-module-info-table/store-module-info-table';
 import {useAppSelector} from '../hooks/use-app-selector';

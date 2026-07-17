@@ -1,6 +1,6 @@
 import React from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Skeleton} from '@mui/material';
-import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
+import ContentPasteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentPaste';
 import {useDispatch} from 'react-redux';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';

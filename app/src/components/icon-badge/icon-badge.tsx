@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {type SvgIconComponent} from '@mui/icons-material';
+import {type SvgIconComponent} from '../../types/svg-icon-component';
 import {Box, type SvgIconProps, type SxProps, type Theme} from '@mui/material';
 
 export type IconBadgeCorner = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';

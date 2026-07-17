@@ -1,10 +1,10 @@
 import React, {type ReactNode} from 'react';
 import {Box, Button, Card, CardContent, Divider, Grid, Link, Skeleton, Stack, Typography} from '@mui/material';
 import {alpha, type Theme} from '@mui/material/styles';
-import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
-import HistoryOutlinedIcon from '@mui/icons-material/HistoryOutlined';
-import WarningAmberOutlinedIcon from '@mui/icons-material/WarningAmberOutlined';
-import WidgetsOutlinedIcon from '@mui/icons-material/WidgetsOutlined';
+import ExtensionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
+import HistoryOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/History';
+import WarningAmberOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
+import WidgetsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Widgets';
 import {format} from 'date-fns';
 import {
     type PluginComponentType,
@@ -15,7 +15,7 @@ import {
 } from '../../../../../services/plugins-api-service';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
 import {Badge} from '../../../../../components/badge/badge';
-import Article from '@aivot/mui-material-symbols-400-outlined/dist/article/Article';
+import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {MarkdownContent} from '../../../../../components/markdown-content/markdown-content';
 import {StatusTable} from '../../../../../components/status-table/status-table';

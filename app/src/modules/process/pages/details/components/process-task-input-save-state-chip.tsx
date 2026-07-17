@@ -1,7 +1,7 @@
 import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
 import {Box, Chip as MuiChip, CircularProgress, Tooltip} from '@mui/material';
-import CloudAlert from '@aivot/mui-material-symbols-400-outlined/dist/cloud-alert/CloudAlert';
-import CloudDone from '@aivot/mui-material-symbols-400-outlined/dist/cloud-done/CloudDone';
+import CloudAlert from '@aivot/mui-material-symbols-400-n25-outlined/CloudAlert';
+import CloudDone from '@aivot/mui-material-symbols-400-n25-outlined/CloudDone';
 import {formatDistanceToNowStrict} from 'date-fns';
 import {de} from 'date-fns/locale';
 

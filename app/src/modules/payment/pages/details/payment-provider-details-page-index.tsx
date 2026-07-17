@@ -6,7 +6,7 @@ import {useNavigate} from 'react-router-dom';
 import {isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
@@ -17,14 +17,14 @@ import {useChangeBlocker} from '../../../../hooks/use-change-blocker-2';
 import {ConstraintDialog} from '../../../../dialogs/constraint-dialog/constraint-dialog';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {ConstraintLinkProps} from '../../../../dialogs/constraint-dialog/constraint-link-props';
-import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import Tooltip from '@mui/material/Tooltip';
 import * as yup from 'yup';
 import {goverSchemaToYup, mapFormManagerErrorsToComputedErrors} from '../../../../utils/gover-schema-to-yup';
 import {PaymentProviderDefinitionResponseDTO} from '../../dtos/payment-provider-definition-response-dto';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {
     ElementDerivationContext,
 } from '../../../elements/components/element-derivation-context';

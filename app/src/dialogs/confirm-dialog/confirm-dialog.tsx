@@ -2,7 +2,7 @@ import React, {type PropsWithChildren, type ReactNode, useMemo, useState} from '
 import {Box, Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {TextFieldComponent} from '../../components/text-field/text-field-component';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {CopyToClipboardButton} from '../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 
 interface ConfirmDialogProps {

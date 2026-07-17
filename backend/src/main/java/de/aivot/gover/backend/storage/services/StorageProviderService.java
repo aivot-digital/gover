@@ -237,8 +237,10 @@ public class StorageProviderService implements EntityService<StorageProviderEnti
             if (defaultAttachmentStorageId.equals(entity.getId())) {
                 throw ResponseException
                         .badRequest(
-                                "Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um den Standardanbieter für %s handelt.",
-                                StringUtils.quote(label)
+                                String.format(
+                                        "Dieser Speicheranbieter kann nicht gelöscht werden, da es sich um den Standardanbieter für %s handelt.",
+                                        StringUtils.quote(label)
+                                )
                         );
             }
         }

@@ -1,5 +1,5 @@
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {
     isNoCodeExpression,
     isNoCodeInstanceDataReference,
@@ -27,9 +27,9 @@ import Box from '@mui/material/Box';
 import Typography from '@mui/material/Typography';
 import {NoCodeOperandEditor} from './no-code-operand-editor';
 import {Actions} from '../../../components/actions/actions';
-import Help from '@aivot/mui-material-symbols-400-outlined/dist/help/Help';
-import SwapHoriz from '@aivot/mui-material-symbols-400-outlined/dist/swap-horiz/SwapHoriz';
-import SwapVert from '@aivot/mui-material-symbols-400-outlined/dist/swap-vert/SwapVert';
+import Help from '@aivot/mui-material-symbols-400-n25-outlined/Help';
+import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
+import SwapVert from '@aivot/mui-material-symbols-400-n25-outlined/SwapVert';
 import {SelectOperatorDialog} from '../../../dialogs/select-operator-dialog/select-operator-dialog';
 import {OperatorInfoDialog} from '../../../dialogs/operator-info-dialog/operator-info-dialog';
 import {ReorderDialog} from '../../../dialogs/reorder-dialog/reorder-dialog';

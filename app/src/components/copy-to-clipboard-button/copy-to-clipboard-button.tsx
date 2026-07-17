@@ -3,8 +3,8 @@ import {Box, IconButton, SxProps, Theme, Tooltip, Zoom} from '@mui/material';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {copyToClipboardText} from '../../utils/copy-to-clipboard';
-import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
-import Check from '@aivot/mui-material-symbols-400-outlined/dist/check/Check';
+import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
+import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 
 interface CopyToClipboardButtonProps {
     text: string;

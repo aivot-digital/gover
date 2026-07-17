@@ -13,12 +13,12 @@ import {AnyElementWithChildren, isAnyElementWithChildren} from '../../../models/
 import {isReplicatingContainerLayout} from '../../../models/elements/form/layout/replicating-container-layout';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {MIN_EDITOR_DRAWER_WIDTH_PX} from '../../../modules/process/pages/details/process-details-page';
-import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {IconBadge} from '../../../components/icon-badge/icon-badge';
-import FileJson from '@aivot/mui-material-symbols-400-outlined/dist/file-json/FileJson';
-import ArrowDownward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-downward/ArrowDownward';
-import ArrowUpward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-upward/ArrowUpward';
-import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
+import FileJson from '@aivot/mui-material-symbols-400-n25-outlined/FileJson';
+import ArrowDownward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowDownward';
+import ArrowUpward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowUpward';
+import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
 import {ConfigLayoutElement} from '../../../models/elements/form/layout/config-layout-element';
 import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
