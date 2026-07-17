@@ -123,7 +123,11 @@ export function ElementTreeEditor<T extends AnyElement>(props: ElementTreeEditor
 
     const handleClone = () => {
         setIsBusy(true);
-        onClone();
+        try {
+            onClone();
+        } finally {
+            setIsBusy(false);
+        }
     };
 
     const isRoot = root === value;
