@@ -24,7 +24,6 @@ import {CodeListStatus} from '../../enums/code-list-status';
 import {AssetSelector} from '../../../assets/components/asset-selector';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
-import {StorageProviderStatus} from '../../../storage/enums/storage-provider-status';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
@@ -436,13 +435,13 @@ export function CodeListDetailsPageIndex() {
                 codeList.statusMessage != null &&
                 <AlertComponent
                     color="error"
-                    title="Fehler bei der Synchronisation des Speicheranbieters"
+                    title="Fehler bei der Synchronisierung der Codeliste"
                     sx={{
                         mt: 0,
                         mb: 2,
                     }}
                 >
-                    Während der Synchronisation mit dem Speicheranbieter ist ein Fehler aufgetreten.
+                    Beim Synchronisieren der Codeliste ist ein Fehler aufgetreten.
                     Die folgende Fehlermeldung wurde protokolliert:
 
                     <ExpandableCodeBlock
@@ -452,9 +451,9 @@ export function CodeListDetailsPageIndex() {
                         }}
                     />
 
-                    Bitte beheben Sie das Problem mit dem Speicheranbieter, damit eine ordnungsgemäße Funktion
-                    gewährleistet ist. Bitte starten Sie nach der Behebung des Problems manuell die Synchronisation,
-                    damit die Verbindung geprüft und der Fehlerstatus entfernt wird.
+                    Bitte prüfen Sie die konfigurierte Quelle der Codeliste und beheben Sie das Problem.
+                    Starten Sie anschließend die Synchronisierung erneut, damit die Einträge aktualisiert und
+                    der Fehlerstatus entfernt wird.
                 </AlertComponent>
             }
 
