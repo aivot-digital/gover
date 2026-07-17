@@ -26,7 +26,7 @@ import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlin
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
-import Extension from '@aivot/mui-material-symbols-400-outlined/dist/extension/Extension';
+import Extension from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
 import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
 import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
 import {humanizeNumber} from '../../../../../utils/humanization-utils';
