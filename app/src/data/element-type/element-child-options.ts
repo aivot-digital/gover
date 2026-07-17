@@ -247,7 +247,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.MapPoint,
             ElementType.DataObjectSelect,
             ElementType.SummaryLayout,
-            ElementType.ProcessAttachmentDisplay,
         ],
         [ElementType.SummaryLayout]: [
             ElementType.GroupLayout,
