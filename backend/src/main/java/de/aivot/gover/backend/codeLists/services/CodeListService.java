@@ -225,6 +225,12 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     }
 
     @Nonnull
+    public List<VCodeListItemEntity> listAllItems(@Nonnull Integer codeListId) throws ResponseException {
+        requireCodeList(codeListId);
+        return vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
+    }
+
+    @Nonnull
     public VCodeListItemEntity createItem(@Nonnull Integer codeListId, @Nonnull CodeListItemEntity item) throws ResponseException {
         var codeList = requireManualCodeList(codeListId);
         item
