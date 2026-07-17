@@ -1,9 +1,9 @@
 import React from 'react';
 import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import SwapVert from '@aivot/mui-material-symbols-400-outlined/dist/swap-vert/SwapVert';
-import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import SwapVert from '@aivot/mui-material-symbols-400-n25-outlined/SwapVert';
+import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {ProcessEntity} from '../entities/process-entity';
 import {ProcessVersionEntity} from '../entities/process-version-entity';
 

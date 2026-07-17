@@ -1,5 +1,5 @@
 import {createElement, ReactElement} from 'react';
-import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
+import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import {BaseApiService} from '../../services/base-api-service';
 import {DataObjectSchema} from '../../modules/data-objects/models/data-object-schema';
 import {Page} from '../../models/dtos/page';

@@ -15,7 +15,7 @@ import {
     NoCodeOperand,
     NoCodeOperandError,
 } from '../../../../models/functions/no-code-expression';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {Collapse} from '../../../collapse/collapse';
 import {AuthoredElementValues, createDerivedRuntimeElementData} from '../../../../models/element-data';
 import {ElementDerivationContext} from '../../../../modules/elements/components/element-derivation-context';

@@ -1,10 +1,10 @@
 import {ReactElement} from 'react';
-import DraftOrders from '@aivot/mui-material-symbols-400-outlined/dist/draft-orders/DraftOrders';
+import DraftOrders from '@aivot/mui-material-symbols-400-n25-outlined/DraftOrders';
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
-import Inventory2 from '@aivot/mui-material-symbols-400-outlined/dist/inventory-2/Inventory2';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import Unpublished from '@aivot/mui-material-symbols-400-outlined/dist/unpublished/Unpublished';
-import CheckCircle from '@aivot/mui-material-symbols-400-outlined/dist/check-circle/CheckCircle';
+import Inventory2 from '@aivot/mui-material-symbols-400-n25-outlined/Inventory2';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import Unpublished from '@aivot/mui-material-symbols-400-n25-outlined/Unpublished';
+import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 
 export enum FormStatus {
     Drafted = 0,

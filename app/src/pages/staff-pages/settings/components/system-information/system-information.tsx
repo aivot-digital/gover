@@ -2,21 +2,21 @@ import React, {useEffect, useState} from 'react';
 import {Box, Button, CircularProgress, Typography} from '@mui/material';
 import {format} from 'date-fns';
 import {type HealthData, type HealthDataComponents, type Status} from '../../../../../models/dtos/health-data';
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
-import CheckCircleOutlineOutlinedIcon from '@mui/icons-material/CheckCircleOutlineOutlined';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import CheckCircleOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
 import {AppInfo} from '../../../../../app-info';
 import {StatusTable} from '../../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
 import {DebugInformationDialog} from '../../../../../dialogs/debug-information-dialog/debug-information-dialog';
 
-import TagIcon from '@mui/icons-material/Tag';
-import EventIcon from '@mui/icons-material/Event';
-import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import TagIcon from '@aivot/mui-material-symbols-400-n25-outlined/Tag';
+import EventIcon from '@aivot/mui-material-symbols-400-n25-outlined/Event';
+import HelpOutlineIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {downloadTextFile} from '../../../../../utils/download-utils';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {

@@ -1,5 +1,5 @@
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {Grid, Stack} from '@mui/material';
 import {
     isNoCodeNodeDataReference,

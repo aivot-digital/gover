@@ -1,19 +1,19 @@
 import React, {useCallback, useMemo} from 'react';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
 import {Typography} from '@mui/material';
-import {EditOutlined} from '@mui/icons-material';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import InsertLinkOutlinedIcon from '@mui/icons-material/InsertLinkOutlined';
+import InsertLinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import {ProviderLinksApiService} from '../../provider-links-api-service';
 import {ProviderLink} from '../../models/provider-link';
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
+import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 
 export function ProviderLinksListPage() {

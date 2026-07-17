@@ -12,10 +12,10 @@ import {
     Tooltip,
     Typography,
 } from '@mui/material';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Close from '@mui/icons-material/Close';
-import ImageOutlined from '@mui/icons-material/ImageOutlined';
-import BrokenImageOutlined from '@mui/icons-material/BrokenImageOutlined';
+import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
+import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
+import ImageOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Image';
+import BrokenImageOutlined from '@aivot/mui-material-symbols-400-n25-outlined/BrokenImage';
 import {AssetsApiService} from '../assets-api-service';
 import {type VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';

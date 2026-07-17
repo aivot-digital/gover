@@ -15,11 +15,11 @@ import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementIsInput} from '../../../data/element-type/element-is-input';
 import {ElementTreeEditorContentDispatcher} from './element-tree-editor-content-dispatcher';
 import {Actions} from '../../actions/actions';
-import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import {ElementType} from '../../../data/element-type/element-type';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {ElementsApiService} from '../../../modules/elements/elements-api-service';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 interface ElementTreeEditorProps<T extends AnyElement> {
     open: boolean;

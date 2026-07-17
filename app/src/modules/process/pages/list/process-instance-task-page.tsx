@@ -13,17 +13,17 @@ import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/
 import {ProcessTaskStatus, ProcessTaskStatusLabels} from '../../enums/process-task-status';
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {ListControlRef} from '../../../../components/generic-list/generic-list-props';
-import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
 import {ProcessInstanceEntity} from '../../entities/process-instance-entity';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
-import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../slices/shell-slice';
-import TaskAlt from '@aivot/mui-material-symbols-400-outlined/dist/task-alt/TaskAlt';
-import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
-import FactCheck from '@aivot/mui-material-symbols-400-outlined/dist/fact-check/FactCheck';
+import TaskAlt from '@aivot/mui-material-symbols-400-n25-outlined/TaskAlt';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
+import FactCheck from '@aivot/mui-material-symbols-400-n25-outlined/FactCheck';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
-import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
 
 interface ProcessInstanceTaskEntityWithNodeAndProvider extends ProcessInstanceTaskEntity {
     node: ProcessNodeEntity;

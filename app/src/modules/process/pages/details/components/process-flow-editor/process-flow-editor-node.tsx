@@ -4,7 +4,7 @@ import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState
 import Typography from '@mui/material/Typography';
 import {alpha} from '@mui/material/styles';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
-import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
+import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 import {KnownProviderIcons} from '../../../../data/known-provider-icons';
 import {ProcessFlowEditorNodeHandle} from './process-flow-editor-node-handle';
@@ -13,26 +13,26 @@ import {HANDLE_COLOR, HANDLE_SIZE, INTERACTIVE_HANDLE_SIZE} from './data/process
 import {type FlowNode, getFlowNodeWidth} from './utils/layout-utils';
 import {getNodeDescription, getNodeName} from './utils/node-utils';
 import {ProcessInstanceTaskStatusIcon} from '../../../../components/process-instance-task-status-icon';
-import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';
 import {ProcessInstanceEventDialog} from '../../../../dialogs/process-instance-event-dialog';
-import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
 import {getLatestTaskForEdge, getLatestTaskForNode} from './utils/runtime-task-utils';
-import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {ProcessTaskStatus} from '../../../../enums/process-task-status';
-import Link from '@mui/icons-material/Link';
-import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import Link from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {ProcessActionMenu, type ProcessActionMenuItem} from '../process-action-menu';
 import {ModuleIcons} from '../../../../../../shells/staff/data/module-icons';
-import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import {ProcessInstanceTaskApiService} from '../../../../services/process-instance-task-api-service';
 import {useAppDispatch} from '../../../../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/shell-slice';
-import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
-import Error from '@aivot/mui-material-symbols-400-outlined/dist/error/Error';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
+import Error from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();

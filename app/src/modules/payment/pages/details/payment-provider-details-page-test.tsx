@@ -6,7 +6,7 @@ import {PaymentProvidersApiService} from '../../payment-providers-api-service';
 import {GenericDetailsPageContext} from '../../../../components/generic-details-page/generic-details-page-context';
 import {isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {AlertComponent} from '../../../../components/alert/alert-component';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {PaymentProviderTestDataResponseDTO} from '../../dtos/payment-provider-test-data-response-dto';
 import {PaymentProviderTestDataRequestDTO} from '../../dtos/payment-provider-test-data-request-dto';
 import {useValidationErrors} from '../../../../hooks/use-validation-errors';

@@ -10,17 +10,17 @@ import {
     ProcessInstanceStatusColor,
     ProcessInstanceStatusLabels,
 } from '../../enums/process-instance-status';
-import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
-import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
+import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     GenericListFilter,
     type GenericListPropsFetchOptions,
     type ListControlRef,
 } from '../../../../components/generic-list/generic-list-props';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
-import News from '@aivot/mui-material-symbols-400-outlined/dist/news/News';
+import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';

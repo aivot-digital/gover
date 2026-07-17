@@ -1,6 +1,6 @@
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
-import SwapHoriz from '@mui/icons-material/SwapHoriz';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
+import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {ProcessActionMenu} from '../../process-action-menu';
 
 interface ProcessNodeEditorMenuProps {

@@ -12,7 +12,7 @@ import {TeamEntity} from '../../../teams/entities/team-entity';
 import {TeamsApiService} from '../../../teams/services/teams-api-service';
 import {ProcessSettingsDialogProcessInstanceAccessPresetTab} from './process-settings-dialog-process-instance-access-preset-tab';
 import {ProcessSettingsDialogGeneralTab, type ProcessSettingsDialogGeneralTabHandle} from './process-settings-dialog-general-tab';
-import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useRetainedDialogValue} from '../../../../hooks/use-retained-dialog-value';
 import {ProcessSettingsDialogVersionTab, type ProcessSettingsDialogVersionTabHandle} from './process-settings-dialog-version-tab';
 

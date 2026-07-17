@@ -7,7 +7,7 @@ import {type ReplicatingContainerLayout} from '../../models/elements/form/layout
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import React from 'react';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
-import SubdirectoryArrowLeftOutlinedIcon from '@mui/icons-material/SubdirectoryArrowLeftOutlined';
+import SubdirectoryArrowLeftOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SubdirectoryArrowLeft';
 import {type AuthoredElementValues} from '../../models/element-data';
 import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 

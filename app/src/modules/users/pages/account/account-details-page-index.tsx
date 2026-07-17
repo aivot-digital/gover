@@ -1,4 +1,7 @@
-import {ApiOutlined, BadgeOutlined, LockOutlined, MailOutlined} from '@mui/icons-material';
+import ApiOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Api';
+import BadgeOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Badge';
+import LockOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import MailOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
 import {Box, Button, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import {useSelector} from 'react-redux';
@@ -6,11 +9,10 @@ import {selectUser} from '../../../../slices/user-slice';
 import {stringOrDefault} from '../../../../utils/string-utils';
 import {StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
 import {StatusTable} from '../../../../components/status-table/status-table';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {SystemRolesApiService} from '../../../system/services/system-roles-api-service';
-import SupervisedUserCircle
-    from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import SupervisedUserCircle from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircle';
 
 export function AccountDetailsPageIndex() {
     const user = useSelector(selectUser);

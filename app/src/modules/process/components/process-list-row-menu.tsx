@@ -1,6 +1,6 @@
 import React from 'react';
 import {ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
-import MoveItem from '@aivot/mui-material-symbols-400-outlined/dist/move-item/MoveItem';
+import MoveItem from '@aivot/mui-material-symbols-400-n25-outlined/MoveItem';
 import {ProcessEntity} from '../entities/process-entity';
 
 interface ProcessListRowMenuProps {
