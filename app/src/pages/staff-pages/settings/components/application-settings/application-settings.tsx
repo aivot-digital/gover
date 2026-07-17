@@ -15,7 +15,7 @@ import {SelectFieldComponent} from '../../../../../components/select-field/selec
 import {type SelectFieldComponentOption} from '../../../../../components/select-field/select-field-component-option';
 import {useApi} from '../../../../../hooks/use-api';
 import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
@@ -36,15 +36,15 @@ import {SystemRolesApiService} from '../../../../../modules/system/services/syst
 import {useConfirm} from '../../../../../providers/confirm-provider';
 import {DepartmentSelectField} from '../../../../../modules/departments/components/department-select-field';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
-import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
-import SupervisedUserCircle
-    from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import Label from '@aivot/mui-material-symbols-400-n25-outlined/Label';
+import SupervisedUserCircle from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircle';
 import {
     SystemConfigDefinitionResponseDTO,
 } from '../../../../../modules/configs/dtos/system-config-definition-response-dto';
 import {ElementDerivationContext} from '../../../../../modules/elements/components/element-derivation-context';
 import {ElementType} from '../../../../../data/element-type/element-type';
 import {GroupLayout} from '../../../../../models/elements/form/layout/group-layout';
+import {isApiError} from '../../../../../models/api-error';
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
@@ -250,7 +250,7 @@ export function ApplicationSettings() {
         });
     }, [assetStorageProviders, configuredAssetStorageProvider]);
 
-    const handleSubmit = (event: FormEvent): void => {
+    const handleSubmit = async (event: FormEvent): Promise<void> => {
         event.preventDefault();
 
         if (editedConfig != null) {
@@ -320,41 +320,91 @@ export function ApplicationSettings() {
                     value: normalizedEditedConfig[key],
                 }));
 
-            const updatePromises = updatedConfigs
-                .map(config => {
-                    return new SystemConfigsApiService(api).update(config.key, {value: config.value});
+            const attachmentStorageProviderKey = SystemConfigKeys.storage.attachments.default_storage_provider;
+            const attachmentStorageProviderConfig = updatedConfigs
+                .find((config) => config.key === attachmentStorageProviderKey);
+            const regularConfigs = updatedConfigs
+                .filter((config) => config.key !== attachmentStorageProviderKey);
+            const saveConfig = (config: { key: string; value: string }, changeConfirmed: boolean = false) => {
+                return new SystemConfigsApiService(api).update(config.key, {
+                    value: config.value,
+                    changeConfirmed: changeConfirmed ? true : undefined,
                 });
+            };
 
-            Promise.all(updatePromises)
-                .then((configs) => {
-                    dispatch(showSuccessSnackbar('Einstellungen erfolgreich gespeichert'));
-                    dispatch(setSystemConfigs(configs));
+            try {
+                const savedAttachmentConfigs: Awaited<ReturnType<typeof saveConfig>>[] = [];
 
-                    const newThemeId =
-                        editedConfig[SystemConfigKeys.system.theme] ??
-                        config[SystemConfigKeys.system.theme];
+                if (attachmentStorageProviderConfig != null) {
+                    try {
+                        savedAttachmentConfigs.push(await saveConfig(attachmentStorageProviderConfig));
+                    } catch (err) {
+                        if (!isApiError(err) || err.status !== 409) {
+                            throw err;
+                        }
 
-                    const oldThemeId = config[SystemConfigKeys.system.theme];
-
-                    if (newThemeId != null && newThemeId !== oldThemeId) {
-                        confirm({
-                            title: 'Änderungen ausstehend',
+                        const attachmentStorageProviderChangeConfirmed = await confirm({
+                            title: 'Speicheranbieter für Vorgangsanlagen ändern',
+                            confirmButtonText: 'Speicheranbieter ändern',
+                            width: 'md',
                             children: (
-                                <Typography>
-                                    Die Änderungen am Erscheinungsbild werden erst nach einem "Neu Laden" der Anwendung
-                                    aktiv.
-                                </Typography>
+                                <>
+                                    <Typography sx={{mb: 1}}>
+                                        Das System hat laufende Vorgänge registriert. Der zentrale Speicheranbieter für
+                                        Vorgangsanlagen sollte in diesem Zustand nur bewusst geändert werden.
+                                    </Typography>
+                                    <Typography sx={{mb: 1}}>
+                                        Durch den Wechsel können Datenstrukturen auf mehrere Speicheranbieter aufgeteilt
+                                        werden. Außerdem kann der Zugriff auf bereits bestehende Anhänge innerhalb
+                                        aktiver Vorgänge verloren gehen.
+                                    </Typography>
+                                    <Typography>
+                                        Möchten Sie den Speicheranbieter trotzdem ändern?
+                                    </Typography>
+                                </>
                             ),
-                            hideCancelButton: true,
                         });
-                    }
 
-                    setEditedConfig({});
-                })
-                .catch((err) => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Einstellungen konnten nicht gespeichert werden'));
-                });
+                        if (!attachmentStorageProviderChangeConfirmed) {
+                            return;
+                        }
+
+                        savedAttachmentConfigs.push(await saveConfig(attachmentStorageProviderConfig, true));
+                    }
+                }
+
+                const configs = [
+                    ...savedAttachmentConfigs,
+                    ...await Promise.all(regularConfigs.map((config) => saveConfig(config))),
+                ];
+
+                dispatch(showSuccessSnackbar('Einstellungen erfolgreich gespeichert'));
+                dispatch(setSystemConfigs(configs));
+
+                const newThemeId =
+                    editedConfig[SystemConfigKeys.system.theme] ??
+                    config[SystemConfigKeys.system.theme];
+
+                const oldThemeId = config[SystemConfigKeys.system.theme];
+
+                if (newThemeId != null && newThemeId !== oldThemeId) {
+                    confirm({
+                        title: 'Änderungen ausstehend',
+                        children: (
+                            <Typography>
+                                Die Änderungen am Erscheinungsbild werden erst nach einem "Neu Laden" der Anwendung
+                                aktiv.
+                            </Typography>
+                        ),
+                        hideCancelButton: true,
+                    });
+                }
+
+                setEditedConfig({});
+            } catch (err) {
+                console.error(err);
+                dispatch(showApiErrorSnackbar(err, 'Einstellungen konnten nicht gespeichert werden'));
+            }
         }
     };
 

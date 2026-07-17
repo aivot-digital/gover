@@ -1,5 +1,5 @@
-import HelpIconOutlined from '@mui/icons-material/HelpOutline';
-import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
+import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
+import ErrorOutlineIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import {HintTooltip} from '../hint-tooltip/hint-tooltip';
 import React, {useState} from 'react';
 import {HintProps} from './hint-props';

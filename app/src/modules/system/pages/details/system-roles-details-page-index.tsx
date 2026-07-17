@@ -6,7 +6,7 @@ import {
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useNavigate} from 'react-router-dom';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {useFormManager} from '../../../../hooks/use-form-manager';
 import {useChangeBlocker} from '../../../../hooks/use-change-blocker';
@@ -23,7 +23,7 @@ import {
 } from '../../../../slices/shell-slice';
 import {type SystemRoleEntity} from '../../entities/system-role-entity';
 import {SystemRolesApiService} from '../../services/system-roles-api-service';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Grid from '@mui/material/Grid';
 import {PermissionEditor} from '../../../permissions/components/permission-editor';
 import {PermissionScope} from '../../../permissions/enums/permission-scope';

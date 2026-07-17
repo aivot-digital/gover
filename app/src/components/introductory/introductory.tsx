@@ -5,9 +5,9 @@ import {SystemConfigKeys} from '../../data/system-config-keys';
 import {AppMode} from '../../data/app-mode';
 import {StorageScope, StorageService} from '../../services/storage-service';
 import {StorageKey} from '../../data/storage-key';
-import HighlightOffOutlinedIcon from '@mui/icons-material/HighlightOffOutlined';
-import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
-import ArrowForwardOutlinedIcon from '@mui/icons-material/ArrowForwardOutlined';
+import HighlightOffOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
+import NorthWestOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/NorthWest';
+import ArrowForwardOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 
 interface IntroductoryProps {
     mode: AppMode;

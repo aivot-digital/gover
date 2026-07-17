@@ -1,11 +1,10 @@
-import {FC} from "react";
-import {SvgIconProps} from "@mui/material";
-import Start from "@aivot/mui-material-symbols-400-outlined/dist/start/Start";
-import Edit from "@aivot/mui-material-symbols-400-outlined/dist/edit/Edit";
-import EmergencyHome from "@aivot/mui-material-symbols-400-outlined/dist/emergency-home/EmergencyHome";
-import Check from "@aivot/mui-material-symbols-400-outlined/dist/check/Check";
-import FramePerson from "@aivot/mui-material-symbols-400-outlined/dist/frame-person/FramePerson";
-import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
+import Start from '@aivot/mui-material-symbols-400-n25-outlined/Start';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import EmergencyHome from '@aivot/mui-material-symbols-400-n25-outlined/EmergencyHome';
+import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
+import FramePerson from '@aivot/mui-material-symbols-400-n25-outlined/FramePerson';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 
 export enum ProcessHistoryEventType {
     Create = 'Create',
@@ -25,7 +24,7 @@ export const ProcessHistoryEventTypeLabels: Record<ProcessHistoryEventType, stri
     [ProcessHistoryEventType.Complete]: 'Abschluss',
 };
 
-export const ProcessHistoryEventTypeIcons: Record<ProcessHistoryEventType, FC<SvgIconProps>> = {
+export const ProcessHistoryEventTypeIcons: Record<ProcessHistoryEventType, SvgIconComponent> = {
     [ProcessHistoryEventType.Create]: Add,
     [ProcessHistoryEventType.Start]: Start,
     [ProcessHistoryEventType.Update]: Edit,

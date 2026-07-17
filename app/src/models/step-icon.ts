@@ -1,7 +1,7 @@
-import {SvgIcon} from '@mui/material';
+import {type SvgIconComponent} from '../types/svg-icon-component';
 
 export interface StepIcon {
     id: string;
-    def: typeof SvgIcon,
+    def: SvgIconComponent,
     label: string;
 }

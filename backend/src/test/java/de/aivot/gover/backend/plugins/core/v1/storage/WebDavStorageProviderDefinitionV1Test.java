@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -101,7 +102,11 @@ class WebDavStorageProviderDefinitionV1Test {
                   </d:response>
                   <d:response>
                     <d:href>/dav/gover/file.txt</d:href>
-                    <d:propstat><d:prop><d:getcontentlength>42</d:getcontentlength></d:prop></d:propstat>
+                    <d:propstat><d:prop>
+                      <d:getcontentlength>42</d:getcontentlength>
+                      <d:creationdate>2026-01-02T03:04:05Z</d:creationdate>
+                      <d:getlastmodified>Fri, 02 Jan 2026 04:05:06 GMT</d:getlastmodified>
+                    </d:prop></d:propstat>
                   </d:response>
                 </d:multistatus>
                 """;
@@ -112,6 +117,8 @@ class WebDavStorageProviderDefinitionV1Test {
         assertEquals("/dav/gover/", resources.get(0).href());
         assertTrue(resources.get(0).collection());
         assertEquals(42L, resources.get(1).sizeInBytes());
+        assertEquals(Instant.parse("2026-01-02T03:04:05Z"), resources.get(1).created());
+        assertEquals(Instant.parse("2026-01-02T04:05:06Z"), resources.get(1).updated());
     }
 
     @Test

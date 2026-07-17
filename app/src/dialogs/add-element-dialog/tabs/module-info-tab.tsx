@@ -1,7 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import {Box, Chip, Typography} from '@mui/material';
-import ExtensionOutlinedIcon from '@mui/icons-material/ExtensionOutlined';
-import OpenInNewOutlinedIcon from '@mui/icons-material/OpenInNewOutlined';
+import ExtensionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
+import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectSystemConfigValue} from '../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../data/system-config-keys';

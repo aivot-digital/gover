@@ -25,9 +25,9 @@ import {TeamEntity} from '../../../teams/entities/team-entity';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {Actions} from '../../../../components/actions/actions';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
 

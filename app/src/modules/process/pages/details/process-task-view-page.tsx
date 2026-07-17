@@ -1,9 +1,9 @@
 import React, {type ReactElement, type ReactNode} from 'react';
 import {Typography} from '@mui/material';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
-import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
-import Replay from '@aivot/mui-material-symbols-400-outlined/dist/replay/Replay';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
+import Replay from '@aivot/mui-material-symbols-400-n25-outlined/Replay';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {Chip} from '../../../../components/chip/chip';
@@ -46,6 +46,7 @@ const PROCESS_INSTANCE_STATUS_COLORS: Record<ProcessInstanceStatus, 'default' | 
 const PROCESS_TASK_STATUS_COLORS: Record<ProcessTaskStatus, 'default' | 'info' | 'success' | 'warning' | 'error'> = {
     [ProcessTaskStatus.Running]: 'info',
     [ProcessTaskStatus.Paused]: 'warning',
+    [ProcessTaskStatus.AwaitingPayment]: 'warning',
     [ProcessTaskStatus.Completed]: 'success',
     [ProcessTaskStatus.Aborted]: 'error',
     [ProcessTaskStatus.Failed]: 'error',

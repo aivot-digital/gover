@@ -29,7 +29,7 @@ import {
     getProcessTaskNodeIcon,
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
-import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
+import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 import {isApiError, isApiUnreachableError, isOfflineApiError} from '../../../../models/api-error';
 import {

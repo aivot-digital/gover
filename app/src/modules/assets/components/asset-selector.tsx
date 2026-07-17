@@ -1,14 +1,14 @@
 import {SelectAssetDialog} from '../../../dialogs/select-asset-dialog/select-asset-dialog';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, CircularProgress, IconButton, InputAdornment, TextField, Tooltip, Typography} from '@mui/material';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Close from '@mui/icons-material/Close';
+import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
+import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import {AssetsApiService} from '../assets-api-service';
 import {type VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
-import FileOpen from '@aivot/mui-material-symbols-400-outlined/dist/file-open/FileOpen';
+import FileOpen from '@aivot/mui-material-symbols-400-n25-outlined/FileOpen';
 
 interface AssetSelectorProps {
     label: string;

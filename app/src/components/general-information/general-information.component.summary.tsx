@@ -2,7 +2,7 @@ import Box from '@mui/material/Box';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
 import Typography from '@mui/material/Typography';
-import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import EditNoteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EditNote';
 import React, {useMemo} from 'react';
 import {type IntroductionStepElement} from '../../models/elements/steps/introduction-step-element';
 import {type BaseSummaryProps} from '../../summaries/base-summary';

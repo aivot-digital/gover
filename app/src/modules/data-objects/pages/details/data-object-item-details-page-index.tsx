@@ -17,7 +17,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import {DataObjectSchema} from '../../models/data-object-schema';
 import {DataObjectSchemasApiService} from '../../data-object-schemas-api-service';
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {DataObjectItem} from '../../models/data-object-item';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog-v2';
@@ -28,7 +28,7 @@ import {format as formatDateTime} from 'date-fns/format';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {createDerivedRuntimeElementData, isDerivedRuntimeElementData} from '../../../../models/element-data';
 
 export function DataObjectItemDetailsPageIndex() {

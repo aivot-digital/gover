@@ -1,4 +1,4 @@
-import Refresh from '@mui/icons-material/Refresh';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
 import {
     Button,
     Dialog,

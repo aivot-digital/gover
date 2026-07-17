@@ -3,9 +3,8 @@ package de.aivot.gover.backend.user.services;
 import de.aivot.gover.backend.core.models.HttpResponseImpl;
 import de.aivot.gover.backend.core.services.HttpService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
-import de.aivot.gover.backend.models.config.KeyCloakOIDCConfig;
+import de.aivot.gover.backend.models.config.KeycloakConfig;
 import de.aivot.gover.backend.user.models.KeycloakUser;
-import de.aivot.gover.backend.user.services.KeyCloakApiService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
@@ -32,8 +31,9 @@ class KeyCloakApiServiceTest {
     void setUp() {
         MockitoAnnotations.openMocks(this);
 
-        var config = new KeyCloakOIDCConfig();
+        var config = new KeycloakConfig();
         config.setHostname("https://keycloak.example.com");
+        config.setInternalHostname(config.getHostname());
         config.setRealm("staff");
         config.setBackendClientId("backend-client");
         config.setBackendClientSecret("backend-secret");

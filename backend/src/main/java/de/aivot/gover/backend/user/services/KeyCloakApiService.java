@@ -8,7 +8,7 @@ import de.aivot.gover.backend.core.models.HttpServiceHeaders;
 import de.aivot.gover.backend.core.services.HttpService;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
-import de.aivot.gover.backend.models.config.KeyCloakOIDCConfig;
+import de.aivot.gover.backend.models.config.KeycloakConfig;
 import de.aivot.gover.backend.user.models.KeycloakUser;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -35,11 +35,11 @@ import java.util.Optional;
 public class KeyCloakApiService {
     private final static Logger logger = LoggerFactory.getLogger(KeyCloakApiService.class);
 
-    private final KeyCloakOIDCConfig keyCloakOIDCConfig;
+    private final KeycloakConfig keyCloakOIDCConfig;
     private final HttpService httpService;
 
     @Autowired
-    public KeyCloakApiService(KeyCloakOIDCConfig keyCloakOIDCConfig, HttpService httpService) {
+    public KeyCloakApiService(KeycloakConfig keyCloakOIDCConfig, HttpService httpService) {
         this.keyCloakOIDCConfig = keyCloakOIDCConfig;
         this.httpService = httpService;
     }
@@ -69,7 +69,7 @@ public class KeyCloakApiService {
 
         URI uri;
         try {
-            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users");
+            uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users");
         } catch (URISyntaxException e) {
             throw ResponseException
                     .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da die Keycloak-URL ungültig ist.", e);
@@ -192,7 +192,7 @@ public class KeyCloakApiService {
 
         URI uri;
         try {
-            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId);
+            uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId);
         } catch (URISyntaxException e) {
             throw ResponseException
                     .internalServerError("Die Mitarbeiter:in konnte nicht erstellt werden, da die Keycloak-URL ungültig ist.", e);
@@ -232,7 +232,7 @@ public class KeyCloakApiService {
 
         URI uri;
         try {
-            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/execute-actions-email");
+            uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/execute-actions-email");
         } catch (URISyntaxException e) {
             throw ResponseException
                     .internalServerError("Der Passwort-Reset kann nicht initiiert werden, da die Keycloak-URL ungültig ist.", e);
@@ -283,7 +283,7 @@ public class KeyCloakApiService {
 
         URI uri;
         try {
-            uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/reset-password");
+            uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + userId + "/reset-password");
         } catch (URISyntaxException e) {
             throw ResponseException
                     .internalServerError("Das Passwort der Mitarbeiter:in konnte nicht gesetzt werden, da die Keycloak-URL ungültig ist.", e);
@@ -388,7 +388,7 @@ public class KeyCloakApiService {
 
     public void deleteUser(String id) {
         try {
-            var response = httpService.delete(new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + id), HttpServiceHeaders.create().withAuthorizationBearer(getAccessToken()));
+            var response = httpService.delete(new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + "/users/" + id), HttpServiceHeaders.create().withAuthorizationBearer(getAccessToken()));
 
             if (response.getStatusCode().isError()) {
                 logger.error("Mitarbeiter:in mit der ID {} konnte nicht gelöscht werden. Status-Code: {}", id, response.getStatusCode());
@@ -410,7 +410,7 @@ public class KeyCloakApiService {
     private HttpResponse<String> get(String path) throws URISyntaxException, IOException, HttpConnectionException {
         var accessToken = getAccessToken();
 
-        var uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
+        var uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
 
         logger.info("Starting GET request to Keycloak API at {}", uri);
 
@@ -433,7 +433,7 @@ public class KeyCloakApiService {
     private <T> ResponseEntity<T> post(String path, String body, Class<T> clazz) throws URISyntaxException, IOException, RestClientResponseException, HttpConnectionException {
         var accessToken = getAccessToken();
 
-        var uri = new URI(keyCloakOIDCConfig.getHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
+        var uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/admin/realms/" + keyCloakOIDCConfig.getRealm() + path);
 
         logger.info("Starting POST request to Keycloak API at {}", uri);
 
@@ -468,7 +468,7 @@ public class KeyCloakApiService {
         var requestBody = Map.of("grant_type", "client_credentials", "client_id", keyCloakOIDCConfig.getBackendClientId(), "client_secret", keyCloakOIDCConfig.getBackendClientSecret());
 
         // Create the uri for the token endpoint
-        var uri = new URI(keyCloakOIDCConfig.getHostname() + "/realms/" + keyCloakOIDCConfig.getRealm() + "/protocol/openid-connect/token");
+        var uri = new URI(keyCloakOIDCConfig.getInternalHostname() + "/realms/" + keyCloakOIDCConfig.getRealm() + "/protocol/openid-connect/token");
 
         // Build the request for fetching the access token
 

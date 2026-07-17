@@ -6,7 +6,7 @@ import {
 } from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {useSearchParams} from 'react-router-dom';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityResultState} from '../../enums/identity-result-state';
 import {IdentityStateQueryParam} from '../../constants/identity-state-query-param';

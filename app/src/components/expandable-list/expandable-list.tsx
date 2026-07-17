@@ -1,7 +1,7 @@
 import React, {ReactNode, useEffect, useState} from 'react';
 import {Box, Button, Divider, List, SxProps, Theme, Typography, useTheme} from '@mui/material';
-import UnfoldLessOutlinedIcon from '@mui/icons-material/UnfoldLessOutlined';
-import UnfoldMoreOutlinedIcon from '@mui/icons-material/UnfoldMoreOutlined';
+import UnfoldLessOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
+import UnfoldMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
 
 const srOnly: SxProps<Theme> = {
     position: 'absolute',

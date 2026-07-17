@@ -1,10 +1,10 @@
 import React, {type ReactNode} from 'react';
 import {Box, ButtonBase, CircularProgress, FormControl, FormHelperText, FormLabel, IconButton, Stack, Tooltip, Typography} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material';
-import AttachFile from '@aivot/mui-material-symbols-400-outlined/dist/attach-file/AttachFile';
-import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
-import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
+import AttachFile from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
+import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
+import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 
 export interface ProcessAttachmentDisplayItem {
     key: string;

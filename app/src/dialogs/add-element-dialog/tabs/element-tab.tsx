@@ -10,7 +10,7 @@ import {
     Divider,
     Typography,
 } from '@mui/material';
-import ExpandMore from '@mui/icons-material/ExpandMore';
+import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {generateElementWithDefaultValues} from '../../../utils/generate-element-with-default-values';
 import {getElementNameForType} from '../../../data/element-type/element-names';

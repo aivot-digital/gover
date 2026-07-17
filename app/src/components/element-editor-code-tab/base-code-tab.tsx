@@ -4,12 +4,12 @@ import {RichTextInputComponent} from '../rich-text-input-component/rich-text-inp
 import {FunctionSelector} from './components/function-selector/function-selector';
 import {BaseCodeTabProps} from './base-code-tab-props';
 import {Actions} from '../actions/actions';
-import MoreVertOutlinedIcon from '@mui/icons-material/MoreVertOutlined';
-import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import MoreVertOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import SwapHorizOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {ElementEditorSectionHeader} from '../element-editor-section-header/element-editor-section-header';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 export function BaseCodeTab(props: PropsWithChildren<BaseCodeTabProps>) {
     const [anchorEl, setAnchorEl] = useState<Element>();

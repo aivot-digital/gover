@@ -1,6 +1,6 @@
 import React from 'react';
 import {Box, Chip, Typography} from '@mui/material';
-import MenuOutlinedIcon from '@mui/icons-material/MenuOutlined';
+import MenuOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Menu';
 import {type Preset} from '../../../models/entities/preset';
 import {type AnyElement} from '../../../models/elements/any-element';
 import {cloneElement} from '../../../utils/clone-element';

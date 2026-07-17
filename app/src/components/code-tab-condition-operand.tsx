@@ -6,7 +6,7 @@ import {type ElementType} from '../data/element-type/element-type';
 import {getConditionOperatorHint} from '../data/condition-operator';
 import {SelectFieldComponent} from './select-field/select-field-component';
 import {TextFieldComponent} from './text-field/text-field-component';
-import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
+import CachedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Cached';
 
 interface ReferenceProps {
     reference: string;

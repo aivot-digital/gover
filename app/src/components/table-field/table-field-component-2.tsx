@@ -4,11 +4,11 @@ import React, {ReactNode, useMemo, useState} from 'react';
 import {ConfirmDialog} from '../../dialogs/confirm-dialog/confirm-dialog';
 import {GridColType} from '@mui/x-data-grid/models/colDef/gridColType';
 import {Actions} from '../actions/actions';
-import AddIcon from '@mui/icons-material/Add';
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
+import AddIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import HelpOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {Action} from '../actions/actions-props';
 import {InfoDialog} from '../../dialogs/info-dialog/info-dialog';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {getSelectedRowIds, hasSelectedGridRows} from './table-field-selection';
 
 interface TableField<T extends GridValidRowModel, K extends keyof T & string> {

@@ -8,10 +8,10 @@ import {SelectFieldComponent} from './select-field/select-field-component';
 import {generateComponentTitle} from '../utils/generate-component-title';
 import {TextFieldComponent} from './text-field/text-field-component';
 import {NumberFieldComponent} from './number-field/number-field-component';
-import CachedOutlinedIcon from '@mui/icons-material/CachedOutlined';
+import CachedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Cached';
 import {isStringArray} from '../utils/is-string-array';
 import {ElementWithParents, generateElementNameWithParent} from '../utils/flatten-elements';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 interface CodeTabConditionProps {
     allElements: ElementWithParents[];

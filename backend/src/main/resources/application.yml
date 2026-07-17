@@ -91,8 +91,8 @@ spring:
   mail:
     host: ${GOVER_SMTP_HOST}
     port: ${GOVER_SMTP_PORT}
-    username: ${GOVER_SMTP_USERNAME}
-    password: ${GOVER_SMTP_PASSWORD}
+    username: ${GOVER_SMTP_USERNAME:}
+    password: ${GOVER_SMTP_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -103,20 +103,10 @@ spring:
   security:
     # Configure oidc authentication details
     oauth2:
-      client:
-        registration:
-          keycloak:
-            client-id: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
-            client-secret: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_SECRET:}"
-            authorization-grant-type: authorization_code
-            scope: profile,email
-        provider:
-          keycloak:
-            issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
-            user-name-attribute: preferred_username
       resourceserver:
         jwt:
           issuer-uri: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}/realms/${GOVER_KEYCLOAK_OIDC_REALM}"
+          jwk-set-uri: "${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${GOVER_KEYCLOAK_OIDC_HOSTNAME}}/realms/${GOVER_KEYCLOAK_OIDC_REALM}/protocol/openid-connect/certs"
 
   rabbitmq:
     host: "${GOVER_RABBITMQ_HOST}"
@@ -208,35 +198,29 @@ gover:
       maxTokens: "${GOVER_AI_COMPLETION_MAX_TOKENS:1000}"
     processDataTransformation:
       maxTokens: "${GOVER_AI_PROCESS_DATA_TRANSFORMATION_MAX_TOKENS:4000}"
-  fileExtensions: "${GOVER_FILE_EXTENSIONS}"
-  contentTypes: "${GOVER_CONTENT_TYPES}"
+  fileExtensions: "${GOVER_FILE_EXTENSIONS:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,ppt,pptx,odt,fodt,ods,fods,odp,fodp,odg,fodg,odf}"
+  contentTypes: "${GOVER_CONTENT_TYPES:application/pdf,image/png,image/jpeg,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/msexcel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/mspowerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation,application/vnd.oasis.opendocument.text,application/vnd.oasis.opendocument.spreadsheet,application/vnd.oasis.opendocument.presentation,application/vnd.oasis.opendocument.graphics,application/vnd.oasis.opendocument.formula}"
   maxSubmissionCopyRetryCount: 3
   bootstrapAdminMail: "${GOVER_BOOTSTRAP_ADMIN_MAIL:}"
   registryHostname: "${GOVER_TEMPLATE_REGISTRY_URL:}"
 
 # Configure the details for fetching, managing and updating the gover user data from keycloak
 keycloak:
-  oidc:
-    hostname: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}"
-    realm: "${GOVER_KEYCLOAK_OIDC_REALM}"
-    frontendClientId: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
-    backendClientId: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID}"
-    backendClientSecret: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}"
+  hostname: "${GOVER_KEYCLOAK_OIDC_HOSTNAME}"
+  internalHostname: "${GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME:${GOVER_KEYCLOAK_OIDC_HOSTNAME}}"
+  realm: "${GOVER_KEYCLOAK_OIDC_REALM}"
+  frontendClientId: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID}"
+  frontendClientSecret: "${GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_SECRET:}"
+  backendClientId: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID}"
+  backendClientSecret: "${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}"
 
+# Configure the storage provider plugins
 storage:
-  # Set the path for locally stored files
-  localStoragePath: "${GOVER_STORAGE_LOCAL_PATH:./data}"
-
-  # Set the properties for the remote s3 storage
-  remoteEndpoint: "${GOVER_STORAGE_REMOTE_ENDPOINT:}"
-  remoteBucket: "${GOVER_STORAGE_REMOTE_BUCKET:}"
-  remoteAccessKey: "${GOVER_STORAGE_REMOTE_ACCESS_KEY:}"
-  remoteSecretKey: "${GOVER_STORAGE_REMOTE_SECRET_KEY:}"
-
   local:
     v1:
       allowed-local-roots: "${GOVER_STORAGE_LOCAL_ALLOWED_ROOTS:./data}"
 
+# Configure the openapi documentation for the backend application
 springdoc:
   apiDocs:
     path: "/api/public/docs/openapi.json"

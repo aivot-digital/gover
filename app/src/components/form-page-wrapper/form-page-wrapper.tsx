@@ -2,8 +2,8 @@ import React, {type FormEvent, type PropsWithChildren, useState} from 'react';
 import {type FormPageWrapperProps} from './form-page-wrapper-props';
 import {PageWrapper} from '../page-wrapper/page-wrapper';
 import {Box, Button, Tab, Tabs} from '@mui/material';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 export function FormPageWrapper(props: PropsWithChildren<FormPageWrapperProps>) {
     const {

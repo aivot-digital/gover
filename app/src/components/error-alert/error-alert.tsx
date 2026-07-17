@@ -4,7 +4,7 @@ import {AnyElement} from '../../models/elements/any-element';
 import {Link, Typography} from '@mui/material';
 import {SummaryAttachmentsTooLargeKey} from '../summary/summary.component.view';
 import {ElementType} from '../../data/element-type/element-type';
-import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';
 import {isAnyElementWithChildren} from '../../models/elements/any-element-with-children';
 import {generateComponentTitle} from '../../utils/generate-component-title';

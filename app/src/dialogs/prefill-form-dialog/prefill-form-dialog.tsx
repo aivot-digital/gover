@@ -15,16 +15,16 @@ import MuiCollapse from '@mui/material/Collapse';
 import {uploadObjectFile} from '../../utils/download-utils';
 import {isAnyInputElement} from '../../models/elements/form/input/any-input-element';
 import {getElementNameForType} from '../../data/element-type/element-names';
-import QrCode2OutlinedIcon from '@mui/icons-material/QrCode2Outlined';
-import ImportExportOutlinedIcon from '@mui/icons-material/ImportExportOutlined';
-import CloudUploadOutlinedIcon from '@mui/icons-material/CloudUploadOutlined';
-import ContentPasteOutlinedIcon from '@mui/icons-material/ContentPasteOutlined';
-import {ExpandMoreOutlined} from '@mui/icons-material';
+import QrCode2OutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/QrCode2';
+import ImportExportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapVert';
+import CloudUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
+import ContentPasteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentPaste';
+import ExpandMoreOutlined from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';
 import Chip from '@mui/material/Chip';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import {
     AuthoredElementValues,
     createDerivedRuntimeElementData,

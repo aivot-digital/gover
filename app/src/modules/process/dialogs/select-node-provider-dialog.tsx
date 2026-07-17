@@ -10,9 +10,9 @@ import {
     Divider,
     Typography,
 } from '@mui/material';
-import Assignment from '@aivot/mui-material-symbols-400-outlined/dist/assignment/Assignment';
-import ExpandMore from '@mui/icons-material/ExpandMore';
-import Add from '@mui/icons-material/Add';
+import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
+import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {KnownProviderIcons} from '../data/known-provider-icons';
 import {ProviderTypeStyles} from '../data/provider-type-styles';

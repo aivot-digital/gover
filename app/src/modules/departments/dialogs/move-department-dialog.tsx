@@ -10,7 +10,7 @@ import {
     TextField,
     Typography
 } from '@mui/material';
-import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
+import MoveGroup from '@aivot/mui-material-symbols-400-n25-outlined/MoveGroup';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {DepartmentEntity} from '../entities/department-entity';
 import {VDepartmentShadowedEntity} from '../entities/v-department-shadowed-entity';

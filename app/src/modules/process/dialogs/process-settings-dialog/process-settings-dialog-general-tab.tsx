@@ -1,7 +1,7 @@
 import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useState} from 'react';
 import {Box, Button, CircularProgress, InputAdornment, Stack} from '@mui/material';
-import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
-import MoveGroup from '@aivot/mui-material-symbols-400-outlined/dist/move-group/MoveGroup';
+import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
+import MoveGroup from '@aivot/mui-material-symbols-400-n25-outlined/MoveGroup';
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
