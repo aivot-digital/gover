@@ -12,6 +12,7 @@ import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
 import org.graalvm.polyglot.proxy.ProxyArray;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedHashMap;
@@ -27,7 +28,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     private final CodeListService codeListService;
 
     @Autowired
-    public CodeListJavascriptV1(CodeListService codeListService) {
+    public CodeListJavascriptV1(@Lazy CodeListService codeListService) {
         this.codeListService = codeListService;
     }
 
