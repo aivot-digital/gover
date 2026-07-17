@@ -1,9 +1,10 @@
-import React, {useContext, useMemo, useState} from 'react';
-import {Alert, Box, Button, Grid, Stack, Typography} from '@mui/material';
+import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import {Alert, Box, Button, CircularProgress, Grid, Stack, Typography} from '@mui/material';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useNavigate} from 'react-router-dom';
 import * as yup from 'yup';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
@@ -22,12 +23,11 @@ import {CodeListSourceType, CodeListSourceTypeLabels, isCodeListSyncable} from '
 import {CodeListStatus} from '../../enums/code-list-status';
 import {AssetSelector} from '../../../assets/components/asset-selector';
 import {isStringNotNullOrEmpty} from '../../../../utils/string-utils';
-import {Actions} from '../../../../components/actions/actions';
-import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {StringListInput2} from '../../../../components/string-list-input/string-list-input-2';
 import {StorageProviderStatus} from '../../../storage/enums/storage-provider-status';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
+import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
 
 const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
     value,
@@ -39,6 +39,17 @@ const DefaultManualCodeListValueColumnIndex = 1;
 const DefaultManualCodeListLabelColumnIndex = 0;
 const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
 const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übertragen wird.';
+const XRepositoryMetadataHint = 'Geben Sie die versionsspezifische URN ein und rufen Sie die Metadaten ab, um die Spaltenstruktur der Codeliste zu laden.';
+const CsvMetadataHint = 'Wählen Sie eine CSV-Datei aus. Die Metadaten werden automatisch abgerufen, um die Spaltenstruktur der Codeliste zu laden.';
+const MetadataFetchMinRuntime = 600;
+
+type MetadataFetchResult = {
+    success: true;
+    columns: string[];
+} | {
+    success: false;
+    error: unknown;
+};
 
 const CodeListSchema = yup.object({
     name: yup.string()
@@ -93,6 +104,65 @@ function sanitizeCodeList(codeList: CodeList): CodeList {
     };
 }
 
+function isValidXRepositoryUrn(value: string): boolean {
+    const trimmedValue = value.trim();
+    return trimmedValue.toLowerCase().startsWith('urn:') && trimmedValue.length > 4 && !/\s/.test(trimmedValue);
+}
+
+function isValidUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value.trim());
+}
+
+function isValidMetadataSourceRef(sourceType: CodeListSourceType, sourceRef: string): boolean {
+    switch (sourceType) {
+        case CodeListSourceType.Asset:
+            return isValidUuid(sourceRef);
+        case CodeListSourceType.XRepository:
+            return isValidXRepositoryUrn(sourceRef);
+        default:
+            return false;
+    }
+}
+
+function getMetadataRequestKey(sourceType: CodeListSourceType, sourceRef: string): string {
+    return `${sourceType}:${sourceRef}`;
+}
+
+function getMetadataColumnsPatch(
+    codeList: CodeList,
+    columns: string[],
+): Pick<CodeList, 'columns' | 'valueColumnIndex' | 'labelColumnIndex'> {
+    const lastIndex = Math.max(columns.length - 1, 0);
+
+    return {
+        columns,
+        valueColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.valueColumnIndex, lastIndex),
+        labelColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.labelColumnIndex, lastIndex),
+    };
+}
+
+async function fetchMetadataColumns(
+    apiService: CodeListsApiService,
+    sourceType: CodeListSourceType,
+    sourceRef: string,
+): Promise<MetadataFetchResult> {
+    try {
+        const columns = sourceType === CodeListSourceType.Asset
+            ? await apiService.getAssetColumns(sourceRef)
+            : await apiService.getXRepositoryColumns(sourceRef);
+
+        return {
+            success: true,
+            columns,
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error,
+        };
+    }
+}
+
 export function CodeListDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
@@ -118,11 +188,121 @@ export function CodeListDetailsPageIndex() {
     const apiService = useMemo(() => new CodeListsApiService(), []);
     const changeBlocker = useChangeBlocker(item, codeList);
     const [showConfirmDelete, setShowConfirmDelete] = useState(false);
+    const [metadataFetchTrigger, setMetadataFetchTrigger] = useState(0);
+    const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
+    const metadataFetchIdRef = useRef(0);
+    const lastMetadataRequestKeyRef = useRef<string | null>(null);
 
     const columnOptions = useMemo(() => (codeList?.columns ?? []).map((column, index) => ({
         value: index.toString(),
         label: column,
     })), [codeList?.columns]);
+
+    const runMetadataFetch = (
+        sourceType: CodeListSourceType,
+        sourceRef: string,
+        options: {
+            onError?: () => void;
+            successMessage?: string;
+        } = {},
+    ): boolean => {
+        if (codeList == null) {
+            return false;
+        }
+
+        const fetchId = metadataFetchIdRef.current + 1;
+        metadataFetchIdRef.current = fetchId;
+        setIsFetchingMetadata(true);
+
+        withAsyncWrapper<void, MetadataFetchResult>({
+            desiredMinRuntime: MetadataFetchMinRuntime,
+            // Keep the loading indicator visible long enough to avoid flicker on fast metadata responses.
+            main: async () => fetchMetadataColumns(apiService, sourceType, sourceRef),
+        })
+            .then((result) => {
+                if (metadataFetchIdRef.current !== fetchId) {
+                    // Ignore stale responses after the user selected another source.
+                    return;
+                }
+
+                if (!result.success) {
+                    options.onError?.();
+                    dispatch(showApiErrorSnackbar(result.error, 'Beim Abrufen der Metadaten ist ein Fehler aufgetreten.'));
+                    return;
+                }
+
+                handleInputPatch(getMetadataColumnsPatch(codeList, result.columns));
+
+                if (options.successMessage != null) {
+                    dispatch(showSuccessSnackbar(options.successMessage));
+                }
+            })
+            .catch((err) => {
+                if (metadataFetchIdRef.current !== fetchId) {
+                    return;
+                }
+
+                options.onError?.();
+                dispatch(showApiErrorSnackbar(err, 'Beim Abrufen der Metadaten ist ein Fehler aufgetreten.'));
+            })
+            .finally(() => {
+                if (metadataFetchIdRef.current === fetchId) {
+                    setIsFetchingMetadata(false);
+                }
+            });
+
+        return true;
+    };
+
+    useEffect(() => {
+        if (
+            codeList == null ||
+            metadataFetchTrigger === 0 ||
+            !isEditable ||
+            isBusy
+        ) {
+            return;
+        }
+
+        const sourceRef = (codeList.sourceRef ?? '').trim();
+        const sourceType = codeList.sourceType;
+        const requestKey = getMetadataRequestKey(sourceType, sourceRef);
+
+        if (sourceType !== CodeListSourceType.Asset) {
+            setIsFetchingMetadata(false);
+            return;
+        }
+
+        if (
+            sourceRef.length === 0 ||
+            !isValidMetadataSourceRef(sourceType, sourceRef)
+        ) {
+            setIsFetchingMetadata(false);
+            return;
+        }
+
+        if (lastMetadataRequestKeyRef.current === requestKey) {
+            return;
+        }
+
+        lastMetadataRequestKeyRef.current = requestKey;
+        runMetadataFetch(sourceType, sourceRef, {
+            onError: () => {
+                lastMetadataRequestKeyRef.current = null;
+            },
+        });
+
+        return () => {
+            metadataFetchIdRef.current += 1;
+        };
+    }, [
+        apiService,
+        codeList?.sourceRef,
+        codeList?.sourceType,
+        metadataFetchTrigger,
+        isEditable,
+        isBusy,
+    ]);
 
     if (codeList == null) {
         return <GenericDetailsSkeleton/>;
@@ -130,13 +310,7 @@ export function CodeListDetailsPageIndex() {
 
     const handleColumnsChange = (value: string | null) => {
         const columns = parseColumns(value);
-        const lastIndex = Math.max(columns.length - 1, 0);
-
-        handleInputPatch({
-            columns,
-            valueColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.valueColumnIndex, lastIndex),
-            labelColumnIndex: columns.length === 0 ? 0 : Math.min(codeList.labelColumnIndex, lastIndex),
-        });
+        handleInputPatch(getMetadataColumnsPatch(codeList, columns));
     };
 
     const handleSourceTypeChange = (value: string | null) => {
@@ -154,6 +328,29 @@ export function CodeListDetailsPageIndex() {
                 ? DefaultManualCodeListLabelColumnIndex
                 : codeList.labelColumnIndex,
             status: isCodeListSyncable(sourceType) ? CodeListStatus.SyncPending : CodeListStatus.Synced,
+        });
+    };
+
+    const handleAssetSourceRefChange = (value: string | null) => {
+        lastMetadataRequestKeyRef.current = null;
+        handleInputChange('sourceRef')(value ?? '');
+        setMetadataFetchTrigger((current) => current + 1);
+    };
+
+    const handleFetchXRepositoryMetadata = () => {
+        const sourceRef = (codeList.sourceRef ?? '').trim();
+
+        if (
+            !isValidMetadataSourceRef(CodeListSourceType.XRepository, sourceRef) ||
+            isFetchingMetadata ||
+            isBusy ||
+            !isEditable
+        ) {
+            return;
+        }
+
+        runMetadataFetch(CodeListSourceType.XRepository, sourceRef, {
+            successMessage: 'XRepository-Metadaten wurden erfolgreich abgerufen.',
         });
     };
 
@@ -339,83 +536,70 @@ export function CodeListDetailsPageIndex() {
                     />
                 </Grid>
 
-
-                <Grid size={{xs: 12}}>
-                    {
-                        codeList.sourceType === CodeListSourceType.Asset &&
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                        >
+                {
+                    isCodeListSyncable(codeList.sourceType) &&
+                    <Grid size={{xs: 12}}>
+                        {
+                            codeList.sourceType === CodeListSourceType.Asset &&
                             <AssetSelector
                                 label="CSV-Datei"
                                 selectLabel="CSV-Datei"
                                 value={isStringNotNullOrEmpty(codeList.sourceRef) ? codeList.sourceRef : null}
-                                onChange={handleInputChange('sourceRef')}
+                                onChange={handleAssetSourceRefChange}
                                 required={true}
                                 error={errors.sourceRef}
+                                hint={isFetchingMetadata ? 'Metadaten werden abgerufen...' : CsvMetadataHint}
                                 disabled={isBusy || !isEditable}
+                                isBusy={isFetchingMetadata}
+                                mimetype="text/csv"
                             />
+                        }
 
-                            <Actions
-                                actions={[
-                                    {
-                                        icon: <Download/>,
-                                        tooltip: 'Metadaten abrufen',
-                                        onClick: () => {
-                                            new CodeListsApiService()
-                                                .getAssetColumns(codeList.sourceRef ?? '')
-                                                .then((columns) => {
-                                                    handleInputChange('columns')(columns);
-                                                })
-                                                .catch((err) => {
-                                                    dispatch(showApiErrorSnackbar(err, 'Beim Abrufen der Spalten ist ein Fehler aufgetreten.'))
-                                                });
-                                        },
-                                    },
-                                ]}
-                            />
-                        </Stack>
-                    }
+                        {
+                            codeList.sourceType === CodeListSourceType.XRepository &&
+                            <Stack
+                                direction={{xs: 'column', md: 'row'}}
+                                spacing={2}
+                            >
+                                <Box sx={{flex: 1, minWidth: 0}}>
+                                    <TextFieldComponent
+                                        label="XRepository-URN"
+                                        value={codeList.sourceRef}
+                                        onChange={handleInputChange('sourceRef')}
+                                        onBlur={handleInputBlur('sourceRef')}
+                                        required={true}
+                                        error={errors.sourceRef}
+                                        disabled={isBusy || !isEditable}
+                                        hint={isFetchingMetadata ? 'Metadaten werden abgerufen...' : XRepositoryMetadataHint}
+                                    />
+                                </Box>
 
-                    {
-                        codeList.sourceType === CodeListSourceType.XRepository &&
-                        <Stack
-                            direction="row"
-                            spacing={2}
-                        >
-                            <TextFieldComponent
-                                label="XRepository-URN"
-                                value={codeList.sourceRef}
-                                onChange={handleInputChange('sourceRef')}
-                                onBlur={handleInputBlur('sourceRef')}
-                                required={true}
-                                error={errors.sourceRef}
-                                disabled={isBusy || !isEditable}
-                                hint="Verwenden Sie die spezifische Versionskennung der XRepository-Codeliste."
-                            />
-
-                            <Actions
-                                actions={[
-                                    {
-                                        icon: <Download/>,
-                                        tooltip: 'Metadaten abrufen',
-                                        onClick: () => {
-                                            new CodeListsApiService()
-                                                .getXRepositoryColumns(codeList.sourceRef ?? '')
-                                                .then((columns) => {
-                                                    handleInputChange('columns')(columns);
-                                                })
-                                                .catch((err) => {
-                                                    dispatch(showApiErrorSnackbar(err, 'Beim Abrufen der Spalten ist ein Fehler aufgetreten.'))
-                                                });
-                                        },
-                                    },
-                                ]}
-                            />
-                        </Stack>
-                    }
-                </Grid>
+                                <Box>
+                                    <Button
+                                        variant="outlined"
+                                        onClick={handleFetchXRepositoryMetadata}
+                                        disabled={
+                                            isBusy ||
+                                            !isEditable ||
+                                            isFetchingMetadata ||
+                                            !isValidMetadataSourceRef(CodeListSourceType.XRepository, codeList.sourceRef ?? '')
+                                        }
+                                        startIcon={
+                                            isFetchingMetadata
+                                                ? <CircularProgress size={18} color="inherit"/>
+                                                : <Download/>
+                                        }
+                                        sx={{
+                                            mt: {xs: 0, md: 3},
+                                        }}
+                                    >
+                                        Metadaten abrufen
+                                    </Button>
+                                </Box>
+                            </Stack>
+                        }
+                    </Grid>
+                }
 
                 <Grid size={{xs: 12}}>
                     <StringListInput2

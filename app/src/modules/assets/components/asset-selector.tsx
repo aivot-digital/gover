@@ -22,6 +22,7 @@ interface AssetSelectorProps {
     mimetype?: string;
     onlyPublic?: boolean;
     placeholder?: string;
+    isBusy?: boolean;
 }
 
 export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
@@ -37,6 +38,7 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
         mimetype,
         onlyPublic,
         placeholder = 'Keine Datei ausgewählt',
+        isBusy = false,
     } = props;
 
     const dispatch = useAppDispatch();
@@ -289,6 +291,14 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
                                     mr: -0.5,
                                 }}
                             >
+                                {
+                                    isBusy &&
+                                    <CircularProgress
+                                        size={18}
+                                        color="inherit"
+                                    />
+                                }
+
                                 <Tooltip
                                     title={clearTooltip}
                                     arrow
