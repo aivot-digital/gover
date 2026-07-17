@@ -91,7 +91,9 @@ export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
 const FORM_PLUGIN_KEY = 'de.aivot.form';
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
-// Obsolet, use ProviderTypeStyles instead
+/**
+ * @deprecated Obsolete, use ProviderTypeStyles instead
+ */
 const PROCESS_NODE_TYPE_LABELS: Record<ProcessNodeType, string> = {
     [ProcessNodeType.Trigger]: 'Auslöser',
     [ProcessNodeType.Action]: 'Aktionen',
