@@ -49,7 +49,9 @@ export function CodeListsListPage() {
                         Manuelle Listen werden direkt gepflegt. Listen aus XRepository oder CSV-Dateien werden aus ihrer Quelle synchronisiert.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                        Auswahlwerte von Codelisten können in öffentlichen Formularen verwendet und über die
+                        öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Hinterlegen Sie daher keine
+                        vertraulichen Informationen.
                     </Typography>
                 </>
             ),

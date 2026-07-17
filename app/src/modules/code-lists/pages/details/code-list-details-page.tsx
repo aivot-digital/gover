@@ -91,7 +91,9 @@ export function CodeListDetailsPage(): ReactNode {
                                     Synchronisierte Listen beziehen ihre Einträge aus XRepository oder einer CSV-Datei.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
+                                    Auswahlwerte von Codelisten können in öffentlichen Formularen verwendet und über
+                                    die öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Hinterlegen Sie
+                                    daher keine vertraulichen Informationen.
                                 </Typography>
                             </>
                         ),

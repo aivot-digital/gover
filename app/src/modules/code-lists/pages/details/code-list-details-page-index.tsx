@@ -468,13 +468,6 @@ export function CodeListDetailsPageIndex() {
                 Legen Sie Quelle, Spalten und die Zuordnung von Beschriftung und Wert fest.
             </Typography>
 
-            <Alert
-                severity="info"
-                sx={{mb: 2}}
-            >
-                Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
-            </Alert>
-
             <Grid
                 container
                 columnSpacing={4}
@@ -534,6 +527,14 @@ export function CodeListDetailsPageIndex() {
                         error={errors.description}
                         disabled={isBusy || !isEditable}
                     />
+                </Grid>
+
+                <Grid size={{xs: 12, lg: 6}}>
+                    <Alert severity="info">
+                        Auswahlwerte von Codelisten können in öffentlichen Formularen verwendet und über die
+                        öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Hinterlegen Sie daher keine
+                        vertraulichen Informationen.
+                    </Alert>
                 </Grid>
 
                 {

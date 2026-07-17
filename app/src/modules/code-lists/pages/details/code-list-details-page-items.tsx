@@ -1,5 +1,5 @@
 import React, {useCallback, useContext, useMemo, useRef, useState} from 'react';
-import {Alert, Box, Button, Typography} from '@mui/material';
+import {Alert, AlertTitle, Box, Button, Typography} from '@mui/material';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import CloudUpload from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -325,19 +325,16 @@ export function CodeListDetailsPageItems() {
                 severity="info"
                 sx={{mb: 2}}
             >
-                Alle Codelisten sind öffentlich verfügbar und dürfen keine vertraulichen Informationen enthalten.
-            </Alert>
+                <AlertTitle>
+                    {isManual ? 'Öffentliche Auswahlwerte' : 'Synchronisierte Auswahlwerte'}
+                </AlertTitle>
 
-            {
-                !isManual &&
-                <Alert
-                    severity="info"
-                    sx={{mb: 2}}
-                >
-                    Einträge synchronisierter Codelisten werden aus der Quelle gelesen und können hier nicht direkt
-                    bearbeitet werden.
-                </Alert>
-            }
+                {
+                    isManual
+                        ? 'Die Auswahlwerte dieser Codeliste können in öffentlichen Formularen verwendet und über die öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Erfassen Sie keine vertraulichen Informationen.'
+                        : 'Diese Auswahlwerte werden aus der Quelle synchronisiert und können hier nicht direkt bearbeitet werden. Nach der Synchronisierung sind sie in öffentlichen Formularen und über die öffentliche Codelisten-API ohne Anmeldung abrufbar. Die Quelle darf daher keine vertraulichen Informationen enthalten.'
+                }
+            </Alert>
 
             <GenericList<CodeListItem>
                 controlRef={listControlRef}
