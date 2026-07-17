@@ -34,6 +34,12 @@ const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
     label: CodeListSourceTypeLabels[value],
 })).filter((option) => option.value !== CodeListSourceType.Plugin);
 
+const DefaultManualCodeListColumns = ['Beschriftung', 'Wert'];
+const DefaultManualCodeListValueColumnIndex = 1;
+const DefaultManualCodeListLabelColumnIndex = 0;
+const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
+const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übertragen wird.';
+
 const CodeListSchema = yup.object({
     name: yup.string()
         .trim()
@@ -135,11 +141,18 @@ export function CodeListDetailsPageIndex() {
 
     const handleSourceTypeChange = (value: string | null) => {
         const sourceType = (value ?? CodeListSourceType.Manual) as CodeListSourceType;
+        const useDefaultManualColumns = sourceType === CodeListSourceType.Manual && codeList.columns.length === 0;
 
         handleInputPatch({
             sourceType,
             sourceRef: '',
-            columns: sourceType === CodeListSourceType.Manual && codeList.columns.length === 0 ? ['value', 'label'] : codeList.columns,
+            columns: useDefaultManualColumns ? [...DefaultManualCodeListColumns] : codeList.columns,
+            valueColumnIndex: useDefaultManualColumns
+                ? DefaultManualCodeListValueColumnIndex
+                : codeList.valueColumnIndex,
+            labelColumnIndex: useDefaultManualColumns
+                ? DefaultManualCodeListLabelColumnIndex
+                : codeList.labelColumnIndex,
             status: isCodeListSyncable(sourceType) ? CodeListStatus.SyncPending : CodeListStatus.Synced,
         });
     };
@@ -255,7 +268,7 @@ export function CodeListDetailsPageIndex() {
                 Allgemeine Angaben
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Legen Sie Quelle, Spalten und die Zuordnung von Wert und Beschriftung fest.
+                Legen Sie Quelle, Spalten und die Zuordnung von Beschriftung und Wert fest.
             </Typography>
 
             <Alert
@@ -312,7 +325,7 @@ export function CodeListDetailsPageIndex() {
                     }
                 </Grid>
 
-                <Grid size={{xs: 12}}>
+                <Grid size={{xs: 12, lg: 6}}>
                     <TextFieldComponent
                         label="Beschreibung"
                         value={codeList.description}
@@ -422,23 +435,25 @@ export function CodeListDetailsPageIndex() {
 
                 <Grid size={{xs: 12, lg: 6}}>
                     <SelectFieldComponent
-                        label="Wert-Spalte"
-                        value={codeList.valueColumnIndex.toString()}
-                        onChange={(value) => handleInputChange('valueColumnIndex')(Number.parseInt(value ?? '0', 10))}
-                        options={columnOptions}
-                        required={codeList.columns.length > 0}
-                        error={errors.valueColumnIndex}
-                        disabled={isBusy || !isEditable || codeList.columns.length === 0}
-                    />
-                </Grid>
-                <Grid size={{xs: 12, lg: 6}}>
-                    <SelectFieldComponent
                         label="Beschriftungs-Spalte"
                         value={codeList.labelColumnIndex.toString()}
                         onChange={(value) => handleInputChange('labelColumnIndex')(Number.parseInt(value ?? '0', 10))}
                         options={columnOptions}
                         required={codeList.columns.length > 0}
+                        hint={CodeListLabelColumnHint}
                         error={errors.labelColumnIndex}
+                        disabled={isBusy || !isEditable || codeList.columns.length === 0}
+                    />
+                </Grid>
+                <Grid size={{xs: 12, lg: 6}}>
+                    <SelectFieldComponent
+                        label="Wert-Spalte"
+                        value={codeList.valueColumnIndex.toString()}
+                        onChange={(value) => handleInputChange('valueColumnIndex')(Number.parseInt(value ?? '0', 10))}
+                        options={columnOptions}
+                        required={codeList.columns.length > 0}
+                        hint={CodeListValueColumnHint}
+                        error={errors.valueColumnIndex}
                         disabled={isBusy || !isEditable || codeList.columns.length === 0}
                     />
                 </Grid>

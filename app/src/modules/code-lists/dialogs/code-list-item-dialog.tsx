@@ -14,6 +14,25 @@ interface CodeListItemDialogProps {
     onSave: (columns: string[]) => void;
 }
 
+const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
+const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übertragen wird.';
+
+function getCodeListColumnHint(
+    index: number,
+    labelColumnIndex: number,
+    valueColumnIndex: number,
+): string | undefined {
+    if (index === labelColumnIndex) {
+        return CodeListLabelColumnHint;
+    }
+
+    if (index === valueColumnIndex) {
+        return CodeListValueColumnHint;
+    }
+
+    return undefined;
+}
+
 export function CodeListItemDialog(props: CodeListItemDialogProps) {
     const {
         open,
@@ -79,6 +98,11 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
                                         label={column}
                                         value={columns[index] ?? ''}
                                         onChange={handleColumnChange(index)}
+                                        hint={getCodeListColumnHint(
+                                            index,
+                                            codeList.labelColumnIndex,
+                                            codeList.valueColumnIndex,
+                                        )}
                                         disabled={isBusy}
                                     />
                                 </Grid>

@@ -98,13 +98,13 @@ export function CodeListDetailsPageItems() {
 
         return [
             {
-                field: 'value',
-                headerName: 'Wert',
+                field: 'label',
+                headerName: 'Beschriftung',
                 flex: 1,
             },
             {
-                field: 'label',
-                headerName: 'Beschriftung',
+                field: 'value',
+                headerName: 'Wert',
                 flex: 1,
             },
         ];
