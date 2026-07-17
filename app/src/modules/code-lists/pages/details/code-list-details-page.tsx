@@ -55,19 +55,20 @@ export function CodeListDetailsPage(): ReactNode {
                         ? (
                             <CodeListStatusChip
                                 status={item.status}
+                                sourceType={item.sourceType}
                                 statusMessage={item.statusMessage}
                                 lastSync={item.lastSync}
                             />
                         )
                         : undefined,
-                    actions: [
+                    actions: item != null && item.id !== 0 && isCodeListSyncable(item.sourceType) ? [
                         {
                             tooltip: 'Codeliste synchronisieren (veraltete Einträge behalten)',
                             icon: <Sync />,
                             onClick: () => {
                                 void handleSync(item, true);
                             },
-                            disabled: item == null || item.id === 0 || !isCodeListSyncable(item.sourceType) || isSyncing || !hasAccess,
+                            disabled: isSyncing || !hasAccess,
                         },
                         {
                             tooltip: 'Codeliste synchronisieren (veraltete Einträge entfernen)',
@@ -75,9 +76,9 @@ export function CodeListDetailsPage(): ReactNode {
                             onClick: () => {
                                 void handleSync(item, false);
                             },
-                            disabled: item == null || item.id === 0 || !isCodeListSyncable(item.sourceType) || isSyncing || !hasAccess,
+                            disabled: isSyncing || !hasAccess,
                         },
-                    ],
+                    ] : [],
                     helpDialog: {
                         title: 'Hilfe zu Codelisten',
                         tooltip: 'Hilfe anzeigen',

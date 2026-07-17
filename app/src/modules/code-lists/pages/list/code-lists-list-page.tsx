@@ -101,11 +101,12 @@ export function CodeListsListPage() {
         {
             field: 'status',
             headerName: 'Status',
-            width: 210,
+            width: 280,
             renderCell: (params) => (
                 <CellContentWrapper>
                     <CodeListStatusChip
                         status={params.row.status}
+                        sourceType={params.row.sourceType}
                         statusMessage={params.row.statusMessage}
                         lastSync={params.row.lastSync}
                     />

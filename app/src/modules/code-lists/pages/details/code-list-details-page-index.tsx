@@ -1,10 +1,13 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {Alert, Box, Button, CircularProgress, Grid, Stack, Typography} from '@mui/material';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
+import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {useNavigate} from 'react-router-dom';
 import * as yup from 'yup';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
+import {format} from 'date-fns';
+import {de} from 'date-fns/locale';
 import {
     GenericDetailsPageContext,
     GenericDetailsPageContextType,
@@ -27,6 +30,7 @@ import {StringListInput2} from '../../../../components/string-list-input/string-
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
+import {StatusTable} from '../../../../components/status-table/status-table';
 
 const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
     value,
@@ -160,6 +164,26 @@ async function fetchMetadataColumns(
             error,
         };
     }
+}
+
+function parseIsoLocal(value: string): Date | null {
+    // JS Date supports milliseconds only; trim potential microseconds (e.g. .718476 -> .718).
+    const normalized = value.replace(/(\.\d{3})\d+/, '$1');
+    const date = new Date(normalized);
+    return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function formatSyncTimestamp(value: string | null | undefined): string {
+    if (value == null || value.length === 0) {
+        return 'Noch nicht synchronisiert';
+    }
+
+    const date = parseIsoLocal(value);
+    if (date == null) {
+        return 'Zeitpunkt konnte nicht gelesen werden';
+    }
+
+    return `${format(date, 'dd.MM.yyyy – HH:mm:ss', {locale: de})} Uhr`;
 }
 
 export function CodeListDetailsPageIndex() {
@@ -307,6 +331,15 @@ export function CodeListDetailsPageIndex() {
         return <GenericDetailsSkeleton/>;
     }
 
+    const isExistingSyncableCodeList = codeList.id !== 0 && isCodeListSyncable(codeList.sourceType);
+    const statusTableItems = [
+        {
+            label: 'Letzte Synchronisierung',
+            icon: <Sync/>,
+            children: formatSyncTimestamp(codeList.lastSync),
+        },
+    ];
+
     const handleColumnsChange = (value: string | null) => {
         const columns = parseColumns(value);
         handleInputPatch(getMetadataColumnsPatch(codeList, columns));
@@ -431,6 +464,7 @@ export function CodeListDetailsPageIndex() {
             )}
 
             {
+                isCodeListSyncable(codeList.sourceType) &&
                 codeList.status == CodeListStatus.SyncFailed &&
                 codeList.statusMessage != null &&
                 <AlertComponent
@@ -466,6 +500,15 @@ export function CodeListDetailsPageIndex() {
             <Typography sx={{mb: 2, maxWidth: 900}}>
                 Legen Sie Quelle, Spalten und die Zuordnung von Beschriftung und Wert fest.
             </Typography>
+
+            {
+                isExistingSyncableCodeList &&
+                <StatusTable
+                    sx={{mt: 4, mb: 3}}
+                    cardVariant="outlined"
+                    items={statusTableItems}
+                />
+            }
 
             <Grid
                 container
