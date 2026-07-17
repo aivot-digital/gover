@@ -536,7 +536,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dateiname des PDF-Dokuments (z.B. dokument.pdf)."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Sie können den Dateinamen ohne Dateiendung oder mit der Dateiendung .pdf angeben."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String fileName;
