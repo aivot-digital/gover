@@ -10,7 +10,7 @@ import {ModuleInfoTab} from './tabs/module-info-tab';
 import {AnyElement} from '../../models/elements/any-element';
 import {type Preset} from '../../models/entities/preset';
 import {PresetInfoTab} from './tabs/preset-info-tab';
-import Add from '@mui/icons-material/Add';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {SelectionDialogShell} from '../../components/selection-dialog/selection-dialog-shell';
 import {useRetainedDialogValue} from '../../hooks/use-retained-dialog-value';
 import {
@@ -18,7 +18,7 @@ import {
 } from '../../modules/process/pages/details/components/process-node-editor/process-node-editor-context';
 import {SelectionListRow} from '../../components/selection-dialog/selection-list-row';
 import {getElementIconForType} from '../../data/element-type/element-icons';
-import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showSuccessSnackbar} from '../../slices/snackbar-slice';
 import {cloneElement} from '../../utils/clone-element';

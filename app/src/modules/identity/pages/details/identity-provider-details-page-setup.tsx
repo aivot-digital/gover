@@ -3,9 +3,9 @@ import React, {useContext, useMemo} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
 import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details-dto';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
-import LinkOutlinedIcon from '@mui/icons-material/LinkOutlined';
-import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
-import {SettingsSuggestOutlined} from '@mui/icons-material';
+import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
+import SettingsSuggestOutlined from '@aivot/mui-material-symbols-400-n25-outlined/SettingsSuggest';
 import {SamlMetadataDialog} from '../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog';
 
 interface SetupInfoBlockProps {

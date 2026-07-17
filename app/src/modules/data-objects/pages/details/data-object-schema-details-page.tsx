@@ -6,10 +6,10 @@ import {DataObjectSchema} from '../../models/data-object-schema';
 import {useParams} from 'react-router-dom';
 import {useMemo, useRef} from 'react';
 import {downloadObjectFile} from '../../../../utils/download-utils';
-import CloudDownloadOutlinedIcon from '@mui/icons-material/CloudDownloadOutlined';
+import CloudDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CloudDownload';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {DataObject} from '@mui/icons-material';
-import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
+import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 
 export function DataObjectSchemaDetailsPage() {

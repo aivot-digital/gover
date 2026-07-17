@@ -1,6 +1,6 @@
 import React from 'react';
 import {type BoxLinkProps} from './box-link-props';
-import NorthWestOutlinedIcon from '@mui/icons-material/NorthWestOutlined';
+import NorthWestOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/NorthWest';
 import {Box, Link} from '@mui/material';
 import Balancer from 'react-wrap-balancer';
 

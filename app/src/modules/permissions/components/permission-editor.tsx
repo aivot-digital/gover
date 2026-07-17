@@ -15,12 +15,12 @@ import {
 } from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
-import UnfoldMoreIcon from '@mui/icons-material/UnfoldMore';
-import UnfoldLessIcon from '@mui/icons-material/UnfoldLess';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import {CompareArrows} from '@mui/icons-material';
-import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Deselect';
-import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
+import UnfoldMoreIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldMore';
+import UnfoldLessIcon from '@aivot/mui-material-symbols-400-n25-outlined/UnfoldLess';
+import MoreVertIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import CompareArrows from '@aivot/mui-material-symbols-400-n25-outlined/CompareArrows';
+import Deselect from '@aivot/mui-material-symbols-400-n25-outlined/Deselect';
+import SelectAll from '@aivot/mui-material-symbols-400-n25-outlined/SelectAll';
 import {PermissionApiService} from '../permission-api-service';
 
 import {AlertComponent} from '../../../components/alert/alert-component';

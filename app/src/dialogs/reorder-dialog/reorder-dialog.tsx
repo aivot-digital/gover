@@ -4,7 +4,7 @@ import {DialogProps} from '@mui/material/Dialog';
 import {Button, Dialog, DialogActions, DialogContent, List, ListItem, ListItemIcon, ListItemText} from '@mui/material';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {useEffect, useRef, useState} from 'react';
-import DragIndicator from '@aivot/mui-material-symbols-400-outlined/dist/drag-indicator/DragIndicator';
+import DragIndicator from '@aivot/mui-material-symbols-400-n25-outlined/DragIndicator';
 
 export interface ReorderItem<T> {
     index: number;

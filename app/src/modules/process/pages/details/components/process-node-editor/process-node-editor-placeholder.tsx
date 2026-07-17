@@ -1,10 +1,10 @@
 import {Box, Button, Typography} from '@mui/material';
 import {ProcessNodeEditorPlaceholderIllustration} from './components/process-node-editor-placeholder-illustration';
-import Counter1 from '@aivot/mui-material-symbols-400-outlined/dist/counter-1/Counter1';
-import Counter2 from '@aivot/mui-material-symbols-400-outlined/dist/counter-2/Counter2';
-import Counter3 from '@aivot/mui-material-symbols-400-outlined/dist/counter-3/Counter3';
+import Counter1 from '@aivot/mui-material-symbols-400-n25-outlined/Counter1';
+import Counter2 from '@aivot/mui-material-symbols-400-n25-outlined/Counter2';
+import Counter3 from '@aivot/mui-material-symbols-400-n25-outlined/Counter3';
 import {type ReactNode} from 'react';
-import MenuBook from '@aivot/mui-material-symbols-400-outlined/dist/menu-book/MenuBook';
+import MenuBook from '@aivot/mui-material-symbols-400-n25-outlined/MenuBook';
 import {useNotImplemented} from '../../../../../../hooks/use-not-implemented';
 
 const placeholderList: {

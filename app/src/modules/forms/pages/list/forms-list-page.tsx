@@ -3,7 +3,7 @@ import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-p
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Box, type SxProps, type Theme} from '@mui/material';
 import React, {useCallback, useMemo, useRef} from 'react';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
+import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectMemberships} from '../../../../slices/user-slice';
 import Typography from '@mui/material/Typography';
@@ -13,7 +13,7 @@ import {
     GenericListPropsFetchOptions,
     ListControlRef,
 } from '../../../../components/generic-list/generic-list-props';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {GenericPageHeaderProps} from '../../../../components/generic-page-header/generic-page-header-props';
 import {FormTriggerApiService, FormTriggerListItem} from '../../services/form-trigger-api-service';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
@@ -21,7 +21,7 @@ import {CellLink} from '../../../../components/cell-link/cell-link';
 import {ProcessStatusChip} from '../../../process/components/process-status/process-status-chip';
 import {Action} from '../../../../components/actions/actions-props';
 import {ProcessStatus} from '../../../process/enums/process-status';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 
 const shrinkableCellLinkSx: SxProps<Theme> = {

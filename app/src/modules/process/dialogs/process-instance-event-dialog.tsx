@@ -11,8 +11,8 @@ import {
     TableHead,
     TableRow,
 } from '@mui/material';
-import {FC, useEffect, useMemo, useState} from 'react';
-import {SvgIconProps} from '@mui/material';
+import {useEffect, useMemo, useState} from 'react';
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
 import {ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
 import {ProcessInstanceEventApiService} from '../services/process-instance-event-api-service';
 import {ProcessInstanceApiService} from '../services/process-instance-api-service';
@@ -27,16 +27,16 @@ import {User} from '../../users/models/user';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
 import {format} from 'date-fns/format';
 import Typography from '@mui/material/Typography';
-import AccountBox from '@aivot/mui-material-symbols-400-outlined/dist/account-box/AccountBox';
-import Memory from '@aivot/mui-material-symbols-400-outlined/dist/memory/Memory';
-import Info from '@aivot/mui-material-symbols-400-outlined/dist/info/Info';
-import Warning from '@aivot/mui-material-symbols-400-outlined/dist/warning/Warning';
-import EmergencyHome from '@aivot/mui-material-symbols-400-outlined/dist/emergency-home/EmergencyHome';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import AccountBox from '@aivot/mui-material-symbols-400-n25-outlined/AccountBox';
+import Memory from '@aivot/mui-material-symbols-400-n25-outlined/Memory';
+import Info from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import Warning from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
+import EmergencyHome from '@aivot/mui-material-symbols-400-n25-outlined/EmergencyHome';
+import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {withDelay} from '../../../utils/with-delay';
 import {ExpandableCodeBlock} from '../../../components/expandable-code-block/expandable-code-block';
-import ChevronLeft from '@aivot/mui-material-symbols-400-outlined/dist/chevron-left/ChevronLeft';
+import ChevronLeft from '@aivot/mui-material-symbols-400-n25-outlined/ChevronLeft';
 import {ProcessInstanceEntity} from '../entities/process-instance-entity';
 import {StatusTable} from '../../../components/status-table/status-table';
 import {StatusTablePropsItem} from '../../../components/status-table/status-table-props';
@@ -338,7 +338,7 @@ const ProcessNodeExecutionLogLevelLabels: Record<ProcessNodeExecutionLogLevel, s
     [ProcessNodeExecutionLogLevel.Error]: 'Fehler',
 };
 
-const ProcessNodeExecutionLogLevelIcons: Record<ProcessNodeExecutionLogLevel, FC<SvgIconProps>> = {
+const ProcessNodeExecutionLogLevelIcons: Record<ProcessNodeExecutionLogLevel, SvgIconComponent> = {
     [ProcessNodeExecutionLogLevel.Debug]: BugReport,
     [ProcessNodeExecutionLogLevel.Info]: Info,
     [ProcessNodeExecutionLogLevel.Warn]: Warning,

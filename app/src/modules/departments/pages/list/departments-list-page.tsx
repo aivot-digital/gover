@@ -1,10 +1,10 @@
 import {Button, Container, Paper, Typography} from '@mui/material';
 import React, {useEffect, useState} from 'react';
 import {Link} from 'react-router-dom';
-import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
-import EditOutlined from '@mui/icons-material/EditOutlined';
-import GroupOutlined from '@mui/icons-material/GroupOutlined';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import GroupOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Group';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../../../components/generic-page-header/generic-page-header';
 import {type Action} from '../../../../components/actions/actions-props';

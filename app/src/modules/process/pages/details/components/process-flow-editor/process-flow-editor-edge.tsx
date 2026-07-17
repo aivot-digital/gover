@@ -1,6 +1,6 @@
 import {BaseEdge, EdgeLabelRenderer, type EdgeProps} from '@xyflow/react';
 import {Box, IconButton, Tooltip, useTheme} from '@mui/material';
-import {Add} from '@mui/icons-material';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import React, {type ReactNode, useMemo} from 'react';
 import {useProcessFlowEditorContext} from './process-flow-editor-context';
 import {type FlowEdge, type FlowPathPoint} from './utils/layout-utils';
@@ -12,7 +12,7 @@ import {
     HANDLE_WIDTH,
 } from './data/process-flow-constants';
 import './process-flow-editor-animations.css';
-import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import Typography from '@mui/material/Typography';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
 import {ExpandableCodeBlock} from '../../../../../../components/expandable-code-block/expandable-code-block';

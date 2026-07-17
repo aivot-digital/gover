@@ -2,12 +2,12 @@ import {NoCodeExpression} from '../../../../models/functions/no-code-expression'
 import {NoCodeOperatorDetailsDTO} from '../../../../models/dtos/no-code-operator-details-dto';
 import {Box, Typography} from '@mui/material';
 import {Actions} from '../../../actions/actions';
-import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
-import SwitchAccessShortcutAddIcon from '@mui/icons-material/SwitchAccessShortcutAdd';
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
+import SwapHorizIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
+import SwitchAccessShortcutAddIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwitchAccessShortcutAdd';
+import HelpOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import React from 'react';
-import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 interface ExpressionHeaderProps {
     expression: NoCodeExpression;

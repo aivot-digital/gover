@@ -5,7 +5,7 @@ import {TextFieldComponent} from '../../../../components/text-field/text-field-c
 import {useNavigate} from 'react-router-dom';
 import {StorageProvidersApiService} from '../../storage-providers-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {type StorageProviderAdditionalData} from './storage-provider-details-page-additional-data';
@@ -25,18 +25,18 @@ import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../.
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
 import Tooltip from '@mui/material/Tooltip';
-import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {bytesToMegabytes, megabytesToBytes} from '../../../../utils/bytes-megabytes-conversion';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {format} from 'date-fns';
 import {StatusTable} from '../../../../components/status-table/status-table';
-import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
+import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {
     ComputedElementErrors,
     DerivedRuntimeElementData,

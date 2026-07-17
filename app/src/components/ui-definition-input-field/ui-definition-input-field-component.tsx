@@ -16,8 +16,8 @@ import {
     useTheme,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
-import MobileLayout from '@aivot/mui-material-symbols-400-outlined/dist/mobile-layout/MobileLayout';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import MobileLayout from '@aivot/mui-material-symbols-400-n25-outlined/MobileLayout';
 import {DialogTitleWithClose} from '../dialog-title-with-close/dialog-title-with-close';
 import {flattenElements} from '../../utils/flatten-elements';
 import {getElementNameForType} from '../../data/element-type/element-names';
@@ -44,15 +44,15 @@ import {isRootElement} from '../../models/elements/form-layout-element';
 import {UiDefinitionEmptyState} from '../ui-definition-empty-state/ui-definition-empty-state';
 import {deepEquals} from '../../utils/equality-utils';
 import {Actions} from '../actions/actions';
-import Undo from '@mui/icons-material/Undo';
-import Redo from '@mui/icons-material/Redo';
-import DoneAll from '@aivot/mui-material-symbols-400-outlined/dist/done-all/DoneAll';
-import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
-import VisibilityOff from '@aivot/mui-material-symbols-400-outlined/dist/visibility-off/VisibilityOff';
+import Undo from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
+import Redo from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
+import DoneAll from '@aivot/mui-material-symbols-400-n25-outlined/DoneAll';
+import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
+import VisibilityOff from '@aivot/mui-material-symbols-400-n25-outlined/VisibilityOff';
 import {useNotImplemented} from '../../hooks/use-not-implemented';
-import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
-import TouchApp from '@aivot/mui-material-symbols-400-outlined/dist/touch-app/TouchApp';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import TouchApp from '@aivot/mui-material-symbols-400-n25-outlined/TouchApp';
 import {
     selectDisableElementContextMenu,
     toggleElementContextMenu,

@@ -8,7 +8,7 @@ import {selectDevToolsTab, setDevToolsTab} from '../../slices/admin-settings-sli
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {Actions} from '../actions/actions';
 import {Action} from '../actions/actions-props';
-import CloseIcon from '@mui/icons-material/Close';
+import CloseIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import {LogLevel, selectLogLevel, setLogLevel} from '../../slices/logging-slice';
 import {LogLevelIcon} from '../log-level-icon/log-level-icon';
 import {AuthoredElementValues, DerivedRuntimeElementData} from '../../models/element-data';

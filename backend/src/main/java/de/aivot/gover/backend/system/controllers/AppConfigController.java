@@ -35,13 +35,13 @@ public class AppConfigController {
     private final SystemService systemService;
     private final KnownExtensionsService knownExtensionsService;
 
-    @Value("${keycloak.oidc.hostname}")
+    @Value("${keycloak.hostname}")
     private String oidcIssuerURI;
 
-    @Value("${spring.security.oauth2.client.registration.keycloak.client-id}")
+    @Value("${keycloak.frontendClientId}")
     private String oidcClientId;
 
-    @Value("${keycloak.oidc.realm}")
+    @Value("${keycloak.realm}")
     private String oidcRealm;
 
     @Autowired
@@ -119,6 +119,7 @@ public class AppConfigController {
         appConfig.put(MODULE_FLAGS_KEY, goverConfig.getModuleFlags());
         appConfig.put(PROCESS_NODE_LIMITS_KEY, goverConfig.getProcessNodeLimits());
 
+        // TODO: This data should not be required in the fronted because the backend handles the authentication flow
         var oidc = new HashMap<String, String>();
         oidc.put(OIDC_HOSTNAME_KEY, oidcIssuerURI);
         oidc.put(OIDC_REALM_KEY, oidcRealm);

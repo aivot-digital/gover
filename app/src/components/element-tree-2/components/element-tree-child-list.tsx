@@ -1,7 +1,7 @@
 import {AnyElement} from '../../../models/elements/any-element';
 import {Box, Paper, Typography} from '@mui/material';
 import {ElementTreeItem} from './element-tree-item';
-import Add from '@aivot/mui-material-symbols-400-outlined/dist/add/Add';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {useEffect, useMemo, useRef, useState} from 'react';
 import {useDragLayer, useDrop} from 'react-dnd';
 import {ELEMENT_TREE_DND_ITEM_TYPE, ElementTreeDragItem, useElementTreeContext} from '../element-tree-context';

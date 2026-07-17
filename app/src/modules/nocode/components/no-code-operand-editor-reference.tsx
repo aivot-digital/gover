@@ -1,11 +1,11 @@
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import Functions from '@aivot/mui-material-symbols-400-outlined/dist/functions/Functions';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Functions from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import {isNoCodeReference, NoCodeOperandError, NoCodeReference} from '../../../models/functions/no-code-expression';
 import {SelectFieldComponent} from '../../../components/select-field/select-field-component';
 import {NoCodeDataType} from '../../../data/no-code-data-type';
 import {generateComponentPath, generateComponentTitle} from '../../../utils/generate-component-title';
-import MyLocation from '@aivot/mui-material-symbols-400-outlined/dist/my-location/MyLocation';
-import DatabaseSearch from '@aivot/mui-material-symbols-400-outlined/dist/database-search/DatabaseSearch';
+import MyLocation from '@aivot/mui-material-symbols-400-n25-outlined/MyLocation';
+import DatabaseSearch from '@aivot/mui-material-symbols-400-n25-outlined/DatabaseSearch';
 import {ElementWithParents} from '../../../utils/flatten-elements';
 import {SelectElementDialog} from '../../../dialogs/select-element-dialog/select-element-dialog';
 import {useMemo, useState} from 'react';

@@ -1,8 +1,8 @@
 import {Box, Button, ButtonGroup, Typography} from '@mui/material';
-import Article from '@aivot/mui-material-symbols-400-outlined/dist/article/Article';
-import DatabaseSearch from '@aivot/mui-material-symbols-400-outlined/dist/database-search/DatabaseSearch';
-import Help from '@aivot/mui-material-symbols-400-outlined/dist/help/Help';
-import MyLocation from '@aivot/mui-material-symbols-400-outlined/dist/my-location/MyLocation';
+import Article from '@aivot/mui-material-symbols-400-n25-outlined/Article';
+import DatabaseSearch from '@aivot/mui-material-symbols-400-n25-outlined/DatabaseSearch';
+import Help from '@aivot/mui-material-symbols-400-n25-outlined/Help';
+import MyLocation from '@aivot/mui-material-symbols-400-n25-outlined/MyLocation';
 import {NoCodeOperand} from '../../../models/functions/no-code-expression';
 import {useState} from 'react';
 import {InfoDialog} from '../../../dialogs/info-dialog/info-dialog';

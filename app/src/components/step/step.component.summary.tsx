@@ -8,7 +8,7 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {setCurrentStep} from '../../slices/stepper-slice';
 import {getStepIcon} from '../../data/step-icons';
 import {type BaseSummaryProps} from '../../summaries/base-summary';
-import EditNoteOutlinedIcon from '@mui/icons-material/EditNoteOutlined';
+import EditNoteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/EditNote';
 import {SummaryDispatcherComponent} from '../summary-dispatcher.component';
 import {useViewDispatcherContext} from '../view-dispatcher/view-dispatcher.context';
 import {resolveSummaryStepIndex} from '../../utils/resolve-summary-step-index';

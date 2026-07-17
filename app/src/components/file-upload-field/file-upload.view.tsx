@@ -5,9 +5,9 @@ import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
 import {BaseViewProps} from '../../views/base-view';
-import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
+import BackupOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Backup';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploadElementItem[]>) {
     const {
