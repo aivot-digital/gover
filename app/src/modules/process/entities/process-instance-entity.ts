@@ -14,7 +14,7 @@ export interface ProcessInstanceEntity {
     started: string; // ISO date string
     updated: string; // ISO date string
     finished: string | null; // ISO date string
-    runtime: string | null; // ISO 8601 duration string
+    runtime: number | null; // Milliseconds
     initialPayload: Record<string, any>;
     initialNodeId: number;
     keepUntil: string | null; // ISO date string

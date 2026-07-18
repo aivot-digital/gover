@@ -5,8 +5,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import de.aivot.gover.backend.core.jackson.DurationToMillisecondsSerializer;
 import de.aivot.gover.backend.core.jackson.FallbackZoneInstantDeserializer;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -40,6 +42,7 @@ public class ObjectMapperFactory {
     private static JavaTimeModule createJavaTimeModule() {
         var module = new JavaTimeModule();
         module.addDeserializer(Instant.class, new FallbackZoneInstantDeserializer());
+        module.addSerializer(Duration.class, new DurationToMillisecondsSerializer());
         return module;
     }
 
