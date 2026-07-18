@@ -2,7 +2,7 @@ import {Box, Button, Grid, Typography, useTheme} from '@mui/material';
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {humanizeFileSize} from '../../utils/humanization-utils';
 import {BaseSummaryProps} from '../../summaries/base-summary';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {BaseApiService} from '../../services/base-api-service';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../slices/snackbar-slice';

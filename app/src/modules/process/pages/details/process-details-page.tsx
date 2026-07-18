@@ -67,7 +67,7 @@ import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
 import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
-import AttachFile from '@aivot/mui-material-symbols-400-outlined/dist/attach-file/AttachFile';
+import AttachFile from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 import {getNodeName} from './components/process-flow-editor/utils/node-utils';
 import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';

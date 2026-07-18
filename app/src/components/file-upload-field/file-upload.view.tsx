@@ -8,7 +8,7 @@ import {BaseViewProps} from '../../views/base-view';
 import BackupOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Backup';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {BaseApiService} from '../../services/base-api-service';
 
 const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
