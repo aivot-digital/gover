@@ -1,16 +1,16 @@
-import {humanizeNumber, humanizeNumberCapitalized, pluralize} from './humanization-utils';
+import {humanizeNumberCapitalized, pluralize} from './humanization-utils';
 
 const iso8601DurationRegex = /^(-)?P(?:([.,\d]+)Y)?(?:([.,\d]+)M)?(?:([.,\d]+)W)?(?:([.,\d]+)D)?(?:T(?:([.,\d]+)H)?(?:([.,\d]+)M)?(?:([.,\d]+)S)?)?$/;
 
 export function parseISO8601Duration(iso8601Duration: string): {
     sign: '+' | '-';
-    years?: number;
-    months?: number;
-    weeks?: number;
-    days?: number;
-    hours?: number;
-    minutes?: number;
-    seconds?: number;
+    years: number;
+    months: number;
+    weeks: number;
+    days: number;
+    hours: number;
+    minutes: number;
+    seconds: number;
 } {
     const matches = iso8601Duration.match(iso8601DurationRegex);
 
@@ -41,6 +41,29 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         seconds,
     } = parseISO8601Duration(iso8602Duration);
 
+    return humanizeDuration(years, months, weeks, days, hours, minutes, seconds);
+}
+
+
+export function humanizeMillisecondsDuration(milliseconds: number): string {
+    const seconds = Math.floor(milliseconds / 1000) % 60;
+    const minutes = Math.floor(milliseconds / (1000 * 60)) % 60;
+    const hours = Math.floor(milliseconds / (1000 * 60 * 60)) % 24;
+    const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24));
+
+    return humanizeDuration(0, 0, 0, days, hours, minutes, seconds);
+}
+
+
+function humanizeDuration(
+    years: number,
+    months: number,
+    weeks: number,
+    days: number,
+    hours: number,
+    minutes: number,
+    seconds: number,
+): string {
     const sb: string[] = [];
 
     if (hours != null && hours > 24) {
@@ -52,7 +75,7 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb.push(
             humanizeNumberCapitalized(years, {1: 'Ein'}) +
             ' ' +
-            pluralize(years, 'Jahr', 'Jahre')
+            pluralize(years, 'Jahr', 'Jahre'),
         );
     }
 
@@ -60,7 +83,7 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb.push(
             humanizeNumberCapitalized(months, {1: 'Einen'}) +
             ' ' +
-            pluralize(months, 'Monat', 'Monate')
+            pluralize(months, 'Monat', 'Monate'),
         );
     }
 
@@ -68,7 +91,7 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb.push(
             humanizeNumberCapitalized(weeks, {1: 'Eine'}) +
             ' ' +
-            pluralize(weeks, 'Woche', 'Wochen')
+            pluralize(weeks, 'Woche', 'Wochen'),
         );
     }
 
@@ -76,7 +99,7 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb.push(
             humanizeNumberCapitalized(days, {1: 'Einen'}) +
             ' ' +
-            pluralize(days, 'Tag', 'Tage')
+            pluralize(days, 'Tag', 'Tage'),
         );
     }
 
@@ -84,7 +107,7 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb.push(
             humanizeNumberCapitalized(hours, {1: 'Eine'}) +
             ' ' +
-            pluralize(hours, 'Stunde', 'Stunden')
+            pluralize(hours, 'Stunde', 'Stunden'),
         );
     }
 
@@ -92,7 +115,7 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb.push(
             humanizeNumberCapitalized(minutes, {1: 'Eine'}) +
             ' ' +
-            pluralize(minutes, 'Minute', 'Minute')
+            pluralize(minutes, 'Minute', 'Minuten'),
         );
     }
 
@@ -100,7 +123,7 @@ export function humanizeISO8601Duration(iso8602Duration: string): string {
         sb.push(
             humanizeNumberCapitalized(seconds, {1: 'Eine'}) +
             ' ' +
-            pluralize(seconds, 'Sekunde', 'Sekunden')
+            pluralize(seconds, 'Sekunde', 'Sekunden'),
         );
     }
 
