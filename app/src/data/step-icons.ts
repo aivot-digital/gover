@@ -41,7 +41,7 @@ import CalendarMonthOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outli
 import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import ChangeCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ChangeCircle';
 import SwapHorizontalCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHorizontalCircle';
-import OfflineBoltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OfflineBolt';
+import BoltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Bolt';
 import GavelOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Gavel';
 import BadgeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Badge';
 import PaymentOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CreditCard';
@@ -52,7 +52,7 @@ import PetsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Pets'
 import PeopleAltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Groups';
 import StorefrontOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Storefront';
 import PublicOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Public';
-import PhoneAndroidOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/PhoneAndroid';
+import MobileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mobile';
 import ConstructionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Construction';
 import InsertDriveFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
 import QuestionAnswerOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Forum';
@@ -68,7 +68,7 @@ export const StepIcons: StepIcon[] = [
     {id: 'check', def: CheckCircleOutlineOutlinedIcon, label: 'Bestätigung (Haken)'},
     {id: 'change', def: ChangeCircleOutlinedIcon, label: 'Änderung (Kreis mit Pfeilen)'},
     {id: 'swap', def: SwapHorizontalCircleOutlinedIcon, label: 'Tausch (Wechselpfeile)'},
-    {id: 'bolt', def: OfflineBoltOutlinedIcon, label: 'Schnellaktion (Blitz)'},
+    {id: 'bolt', def: BoltOutlinedIcon, label: 'Schnellaktion (Blitz)'},
     {id: 'calendar', def: CalendarMonthOutlinedIcon, label: 'Kalender (Monatssymbol)'},
     {id: 'clock', def: AccessTimeOutlinedIcon, label: 'Zeit (Uhr)'},
     {id: 'location', def: LocationOnOutlinedIcon, label: 'Standort (Kartenpin)'},
@@ -119,7 +119,7 @@ export const StepIcons: StepIcon[] = [
     // Verkehr & Mobilität
     {id: 'car', def: DirectionsCarFilledOutlinedIcon, label: 'Auto (Fahrzeug)'},
     {id: 'shipping', def: LocalShippingOutlinedIcon, label: 'Lieferung (LKW)'},
-    {id: 'mobile', def: PhoneAndroidOutlinedIcon, label: 'Mobilgerät (Smartphone)'},
+    {id: 'mobile', def: MobileOutlinedIcon, label: 'Mobilgerät (Smartphone)'},
 
     // Sonstiges
     {id: 'pets', def: PetsOutlinedIcon, label: 'Tiere (Pfote)'},

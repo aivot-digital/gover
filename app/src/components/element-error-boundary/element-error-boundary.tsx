@@ -1,7 +1,7 @@
 import React, {ErrorInfo} from 'react';
 import {AlertComponent} from '../alert/alert-component';
 import {Accordion, AccordionDetails, AccordionSummary, Typography} from '@mui/material';
-import ExpandMoreIcon from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandMoreIcon from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import {AnyElement} from '../../models/elements/any-element';
 
 interface ElementErrorBoundaryProps {

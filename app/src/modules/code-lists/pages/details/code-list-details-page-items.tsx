@@ -3,7 +3,7 @@ import {Alert, AlertTitle, Box, Button, Typography} from '@mui/material';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import CloudUpload from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
-import FileDownload from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
+import FileDownload from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {GridColDef} from '@mui/x-data-grid';
 import {

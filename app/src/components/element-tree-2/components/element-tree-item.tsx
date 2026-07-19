@@ -19,7 +19,7 @@ import {isAnyInputElement} from '../../../models/elements/form/input/any-input-e
 import {Action} from '../../actions/actions-props';
 import {DefaultTabs} from '../../element-editor/default-tabs';
 import {ElementWithParents} from '../../../utils/flatten-elements';
-import OfflineBoltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OfflineBolt';
+import BoltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Bolt';
 import {ELEMENT_TREE_LAYOUT} from '../element-tree-layout';
 import ContentPaste from '@aivot/mui-material-symbols-400-n25-outlined/ContentPaste';
 import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
@@ -619,7 +619,7 @@ function getIcons<T extends AnyElement>(root: AnyElement,
 
     if (referencingElementLabels.length > 0) {
         actions.push({
-            icon: <OfflineBoltOutlinedIcon/>,
+            icon: <BoltOutlinedIcon/>,
             tooltip: 'Von Element(en) referenziert: ' + referencingElementLabels.join(', '),
             onClick: () => {
 
