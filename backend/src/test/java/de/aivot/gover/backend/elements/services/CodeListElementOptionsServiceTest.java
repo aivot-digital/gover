@@ -11,6 +11,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputEle
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElementOption;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -99,15 +100,37 @@ class CodeListElementOptionsServiceTest {
         var element = new SelectInputElement()
                 .setOptionsSource(OptionsSourceType.CodeList);
 
-        assertThrows(ResponseException.class, () -> service.resolve(element));
+        var error = assertThrows(ResponseException.class, () -> service.resolve(element));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertEquals("Für die Codelisten-Optionen muss eine Codeliste ausgewählt sein.", error.getMessage());
+    }
+
+    @Test
+    void rejectsDeletedCodeListLikeMissingCodeListId() {
+        var codeListRepository = codeListRepository();
+        var service = new CodeListElementOptionsService(null, codeListRepository);
+        var element = new SelectInputElement()
+                .setOptionsSource(OptionsSourceType.CodeList)
+                .setCodeListId(7);
+
+        var error = assertThrows(ResponseException.class, () -> service.resolve(element));
+
+        assertEquals(HttpStatus.BAD_REQUEST, error.getStatus());
+        assertEquals("Für die Codelisten-Optionen muss eine Codeliste ausgewählt sein.", error.getMessage());
     }
 
     private static CodeListRepository codeListRepository(int codeListId) {
         var codeListRepository = mock(CodeListRepository.class);
+        when(codeListRepository.existsById(codeListId)).thenReturn(true);
         when(codeListRepository.findById(codeListId)).thenReturn(Optional.of(
                 new CodeListEntity().setId(codeListId)
         ));
         return codeListRepository;
+    }
+
+    private static CodeListRepository codeListRepository() {
+        return mock(CodeListRepository.class);
     }
 
     private static VCodeListItemEntity item(String value, String label) {

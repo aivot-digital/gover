@@ -16,6 +16,7 @@ import java.util.List;
 
 @Service
 public class CodeListElementOptionsService {
+    private static final String MISSING_CODE_LIST_SELECTION_MESSAGE = "Für die Codelisten-Optionen muss eine Codeliste ausgewählt sein.";
 
     private final VCodeListItemRepository vCodeListItemRepository;
     private final CodeListRepository codeListRepository;
@@ -40,7 +41,7 @@ public class CodeListElementOptionsService {
     private SelectInputElement resolveSelect(@Nonnull SelectInputElement element) throws ResponseException {
         var copy = copy(element, SelectInputElement.class);
         copy
-                .setOptions(listAsSelect(requireCodeListId(element.getCodeListId())))
+                .setOptions(listAsSelect(requireConfiguredCodeListId(element.getCodeListId())))
                 .setDependsOnSelectFieldId(null);
         return copy;
     }
@@ -48,14 +49,14 @@ public class CodeListElementOptionsService {
     @Nonnull
     private RadioInputElement resolveRadio(@Nonnull RadioInputElement element) throws ResponseException {
         var copy = copy(element, RadioInputElement.class);
-        copy.setOptions(listAsRadio(requireCodeListId(element.getCodeListId())));
+        copy.setOptions(listAsRadio(requireConfiguredCodeListId(element.getCodeListId())));
         return copy;
     }
 
     @Nonnull
     private MultiCheckboxInputElement resolveMultiCheckbox(@Nonnull MultiCheckboxInputElement element) throws ResponseException {
         var copy = copy(element, MultiCheckboxInputElement.class);
-        copy.setOptions(listAsMultiCheckbox(requireCodeListId(element.getCodeListId())));
+        copy.setOptions(listAsMultiCheckbox(requireConfiguredCodeListId(element.getCodeListId())));
         return copy;
     }
 
@@ -101,9 +102,18 @@ public class CodeListElementOptionsService {
     @Nonnull
     private Integer requireCodeListId(Integer codeListId) throws ResponseException {
         if (codeListId == null || codeListId <= 0) {
-            throw ResponseException.badRequest("Für die Codelisten-Optionen muss eine Codeliste ausgewählt sein.");
+            throw ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE);
         }
         return codeListId;
+    }
+
+    @Nonnull
+    private Integer requireConfiguredCodeListId(Integer codeListId) throws ResponseException {
+        var checkedCodeListId = requireCodeListId(codeListId);
+        if (!codeListRepository.existsById(checkedCodeListId)) {
+            throw ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE);
+        }
+        return checkedCodeListId;
     }
 
     @Nonnull

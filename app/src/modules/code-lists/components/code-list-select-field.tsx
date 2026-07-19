@@ -7,29 +7,41 @@ interface CodeListSelectFieldProps {
     label?: string;
     hint?: string;
     value: number | null | undefined;
-    onChange: (value: number | null) => void;
+    onChange: (value: number | undefined) => void;
     disabled?: boolean;
     required?: boolean;
 }
 
 export function CodeListSelectField(props: CodeListSelectFieldProps) {
+    const {
+        label,
+        hint,
+        value,
+        onChange,
+        disabled,
+        required,
+    } = props;
     const [codeLists, setCodeLists] = useState<CodeList[]>([]);
     const [loading, setLoading] = useState(false);
+    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         let active = true;
         setLoading(true);
+        setLoaded(false);
 
         new CodeListsApiService()
             .listAllOrdered('name', 'ASC')
             .then((page) => {
                 if (active) {
                     setCodeLists(page.content);
+                    setLoaded(true);
                 }
             })
             .catch(() => {
                 if (active) {
                     setCodeLists([]);
+                    setLoaded(false);
                 }
             })
             .finally(() => {
@@ -43,6 +55,19 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
         };
     }, []);
 
+    useEffect(() => {
+        if (!loaded || disabled === true || value == null) {
+            return;
+        }
+
+        if (codeLists.some((codeList) => codeList.id === value)) {
+            return;
+        }
+
+        // Remove stale references so deleted codelists behave like a missing codelist selection.
+        onChange(undefined);
+    }, [codeLists, disabled, loaded, onChange, value]);
+
     const options = useMemo(() => {
         return codeLists.map((codeList) => ({
             label: codeList.name,
@@ -53,13 +78,13 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
 
     return (
         <SelectFieldComponent
-            label={props.label ?? 'Codeliste'}
-            hint={props.hint}
-            value={props.value}
-            onChange={(value) => props.onChange(value)}
+            label={label ?? 'Codeliste'}
+            hint={hint}
+            value={value}
+            onChange={(value) => onChange(value ?? undefined)}
             options={options}
-            disabled={props.disabled}
-            required={props.required}
+            disabled={disabled}
+            required={required}
             emptyStatePlaceholder={loading ? 'Codelisten werden geladen...' : 'Keine Codelisten verfügbar'}
         />
     );
