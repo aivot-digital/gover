@@ -187,10 +187,12 @@ export function SystemInformation(): React.ReactElement {
             {
                 label: 'Aktivierte Module',
                 icon: <Extension/>,
-                children: AppConfig
-                    .moduleFlags
-                    .map((f) => ModuleFlagLabels[f])
-                    .join(', '),
+                children: AppConfig.moduleFlags.length === 0
+                    ? <i>Keine aktiven Module</i>
+                    : AppConfig
+                        .moduleFlags
+                        .map((f) => ModuleFlagLabels[f])
+                        .join(', '),
             },
         ];
 
