@@ -85,16 +85,17 @@ export function CodeListDetailsPage(): ReactNode {
                         content: (
                             <>
                                 <Typography>
-                                    Codelisten stellen zentrale Werte für Auswahlfelder bereit.
+                                    Codelisten bündeln wiederverwendbare Auswahlwerte für Formulare, Prozesse und Schnittstellen.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Einträge manueller Listen können im Tab Einträge gepflegt werden.
-                                    Synchronisierte Listen beziehen ihre Einträge aus XRepository oder einer CSV-Datei.
+                                    Jede Codeliste legt fest, welche Beschriftung Benutzer:innen angezeigt wird und welcher technische Wert gespeichert oder weitergegeben wird.
                                 </Typography>
                                 <Typography sx={{mt: 2}}>
-                                    Auswahlwerte von Codelisten können in öffentlichen Formularen verwendet und über
-                                    die öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Hinterlegen Sie
-                                    daher keine vertraulichen Informationen.
+                                    Einträge können manuell gepflegt oder aus XRepository bzw. einer CSV-Datei synchronisiert werden.
+                                </Typography>
+                                <Typography sx={{mt: 2}}>
+                                    Da Codelisten in öffentlichen Formularen genutzt und über die öffentliche Codelisten-API ohne Anmeldung abgerufen werden können,
+                                    dürfen sie keine vertraulichen Informationen enthalten.
                                 </Typography>
                             </>
                         ),

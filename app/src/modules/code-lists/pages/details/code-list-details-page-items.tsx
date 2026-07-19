@@ -209,7 +209,7 @@ export function CodeListDetailsPageItems() {
             title: 'CSV importieren',
             children: (
                 <Typography>
-                    Der Import ersetzt alle bestehenden Einträge dieser Codeliste.
+                    Beim Import werden alle bestehenden Einträge dieser Codeliste ersetzt.
                 </Typography>
             ),
             confirmButtonText: 'CSV importieren',
@@ -267,40 +267,61 @@ export function CodeListDetailsPageItems() {
                 key="actions"
                 sx={{
                     display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
                     gap: 1,
                     flexWrap: 'wrap',
+                    width: '100%',
                 }}
             >
-                <Button
-                    variant="outlined"
-                    startIcon={<FileDownload/>}
-                    onClick={handleExportCsv}
-                    disabled={isCsvBusy}
-                >
-                    CSV exportieren
-                </Button>
                 {
                     canManageItems &&
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            gap: 1,
+                            flexWrap: 'wrap',
+                        }}
+                    >
+                        <Button
+                            variant="contained"
+                            startIcon={<Add/>}
+                            onClick={handleOpenCreateDialog}
+                            disabled={(codeList?.columns.length ?? 0) === 0}
+                        >
+                            Eintrag hinzufügen
+                        </Button>
+                    </Box>
+                }
+
+                <Box
+                    sx={{
+                        display: 'flex',
+                        gap: 1,
+                        flexWrap: 'wrap',
+                        ml: 'auto',
+                    }}
+                >
                     <Button
                         variant="outlined"
-                        startIcon={<CloudUpload/>}
-                        onClick={handleImportCsv}
+                        startIcon={<FileDownload/>}
+                        onClick={handleExportCsv}
                         disabled={isCsvBusy}
                     >
-                        CSV importieren
+                        CSV exportieren
                     </Button>
-                }
-                {
-                    canManageItems &&
-                    <Button
-                        variant="contained"
-                        startIcon={<Add/>}
-                        onClick={handleOpenCreateDialog}
-                        disabled={(codeList?.columns.length ?? 0) === 0}
-                    >
-                        Eintrag hinzufügen
-                    </Button>
-                }
+                    {
+                        canManageItems &&
+                        <Button
+                            variant="outlined"
+                            startIcon={<CloudUpload/>}
+                            onClick={handleImportCsv}
+                            disabled={isCsvBusy}
+                        >
+                            CSV importieren
+                        </Button>
+                    }
+                </Box>
             </Box>,
         ];
     }, [canManageItems, codeList?.columns.length, handleExportCsv, handleImportCsv, isCsvBusy, isSavedCodeList]);
@@ -318,7 +339,7 @@ export function CodeListDetailsPageItems() {
                 Einträge
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Verwalten Sie die Werte dieser Codeliste.
+                Prüfen und verwalten Sie die Auswahlwerte dieser Codeliste.
             </Typography>
 
             <Alert

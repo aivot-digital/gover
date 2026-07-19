@@ -41,7 +41,7 @@ const DefaultManualCodeListColumns = ['Beschriftung', 'Wert'];
 const DefaultManualCodeListValueColumnIndex = 1;
 const DefaultManualCodeListLabelColumnIndex = 0;
 const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
-const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übertragen wird.';
+const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben wird.';
 const XRepositoryMetadataHint = 'Geben Sie die versionsspezifische URN ein und rufen Sie die Metadaten ab, um die Spaltenstruktur der Codeliste zu laden.';
 const CsvMetadataHint = 'Wählen Sie eine CSV-Datei aus. Die Metadaten werden automatisch abgerufen, um die Spaltenstruktur der Codeliste zu laden.';
 const MetadataFetchMinRuntime = 600;
@@ -498,7 +498,7 @@ export function CodeListDetailsPageIndex() {
                 Allgemeine Angaben
             </Typography>
             <Typography sx={{mb: 2, maxWidth: 900}}>
-                Legen Sie Quelle, Spalten und die Zuordnung von Beschriftung und Wert fest.
+                Legen Sie Quelle, Beschreibung, Spaltenstruktur sowie die Zuordnung von Beschriftung und technischem Wert fest.
             </Typography>
 
             {
@@ -533,7 +533,7 @@ export function CodeListDetailsPageIndex() {
                     {
                         codeList.sourceType === CodeListSourceType.Plugin &&
                         <TextFieldComponent
-                            label="Quelle"
+                            label="Quelle der Einträge"
                             value="Plugin"
                             onChange={() => {
                             }}
@@ -546,7 +546,7 @@ export function CodeListDetailsPageIndex() {
                     {
                         codeList.sourceType !== CodeListSourceType.Plugin &&
                         <SelectFieldComponent
-                            label="Quelle"
+                            label="Quelle der Einträge"
                             value={codeList.sourceType}
                             onChange={handleSourceTypeChange}
                             options={SourceTypeOptions}

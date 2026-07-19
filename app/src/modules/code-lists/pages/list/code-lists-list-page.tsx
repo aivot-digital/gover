@@ -43,15 +43,17 @@ export function CodeListsListPage() {
             content: (
                 <>
                     <Typography>
-                        Codelisten verwalten wiederverwendbare Werte und Beschriftungen für Formulare und Prozesse.
+                        Codelisten bündeln wiederverwendbare Auswahlwerte für Formulare, Prozesse und Schnittstellen.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Manuelle Listen werden direkt gepflegt. Listen aus XRepository oder CSV-Dateien werden aus ihrer Quelle synchronisiert.
+                        Jede Codeliste legt fest, welche Beschriftung Benutzer:innen angezeigt wird und welcher technische Wert gespeichert oder weitergegeben wird.
                     </Typography>
                     <Typography sx={{mt: 2}}>
-                        Auswahlwerte von Codelisten können in öffentlichen Formularen verwendet und über die
-                        öffentliche Codelisten-API ohne Anmeldung abgerufen werden. Hinterlegen Sie daher keine
-                        vertraulichen Informationen.
+                        Einträge können manuell gepflegt oder aus XRepository bzw. einer CSV-Datei synchronisiert werden.
+                    </Typography>
+                    <Typography sx={{mt: 2}}>
+                        Da Codelisten in öffentlichen Formularen genutzt und über die öffentliche Codelisten-API ohne Anmeldung abgerufen werden können,
+                        dürfen sie keine vertraulichen Informationen enthalten.
                     </Typography>
                 </>
             ),

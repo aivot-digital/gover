@@ -1,9 +1,10 @@
 import React, {useEffect, useState} from 'react';
-import {Alert, Dialog, DialogActions, DialogContent, DialogTitle, Button, Grid} from '@mui/material';
+import {Alert, Dialog, DialogActions, DialogContent, Button, Grid} from '@mui/material';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
 import {CodeList} from '../models/code-list';
 import {CodeListItem} from '../models/code-list-item';
+import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 
 interface CodeListItemDialogProps {
     open: boolean;
@@ -15,7 +16,7 @@ interface CodeListItemDialogProps {
 }
 
 const CodeListLabelColumnHint = 'Der Anzeigename, der für Benutzer:innen angezeigt wird.';
-const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übertragen wird.';
+const CodeListValueColumnHint = 'Der technische Schlüssel, der im Hintergrund gespeichert und an nachfolgende Prozessschritte oder Systeme übergeben wird.';
 
 function getCodeListColumnHint(
     index: number,
@@ -62,6 +63,7 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
     };
 
     const hasColumns = codeList.columns.length > 0;
+    const handleClose = isBusy ? () => undefined : onClose;
 
     return (
         <Dialog
@@ -70,9 +72,9 @@ export function CodeListItemDialog(props: CodeListItemDialogProps) {
             fullWidth
             maxWidth="md"
         >
-            <DialogTitle>
+            <DialogTitleWithClose onClose={handleClose}>
                 {item == null ? 'Eintrag hinzufügen' : 'Eintrag bearbeiten'}
-            </DialogTitle>
+            </DialogTitleWithClose>
             <DialogContent>
                 {
                     !hasColumns &&
