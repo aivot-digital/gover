@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
+import FormatListBulleted from '@aivot/mui-material-symbols-400-n25-outlined/FormatListBulleted';
 import {Typography} from '@mui/material';
 import {GridColDef} from '@mui/x-data-grid';
 import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
@@ -125,6 +126,11 @@ export function CodeListsListPage() {
             to: `/code-lists/${item.id}`,
             tooltip: hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen',
         },
+        {
+            icon: <FormatListBulleted />,
+            to: `/code-lists/${item.id}/items`,
+            tooltip: 'Einträge anzeigen',
+        },
     ], [hasAccess]);
 
     return (
@@ -150,7 +156,7 @@ export function CodeListsListPage() {
                     />
                 }
                 noSearchResultsPlaceholder="Keine Codelisten gefunden"
-                rowActionsCount={1}
+                rowActionsCount={2}
                 rowActions={rowActions}
                 defaultSortField="name"
                 disableFullWidthToggle
