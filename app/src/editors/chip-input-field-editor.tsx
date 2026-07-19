@@ -5,6 +5,20 @@ import {TextFieldComponent} from '../components/text-field/text-field-component'
 import {NumberFieldComponent} from '../components/number-field/number-field-component';
 import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {OptionListInput} from '../components/option-list-input/option-list-input';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {SelectFieldComponent} from '../components/select-field/select-field-component';
+import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+
+const optionsSourceOptions = [
+    {
+        label: 'Manuelle Eingabe',
+        value: OptionsSourceType.Manual,
+    },
+    {
+        label: 'System-Codeliste',
+        value: OptionsSourceType.CodeList,
+    },
+];
 
 export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElement>) {
     const {
@@ -18,6 +32,8 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
         return null;
     }
 
+    const optionsSource = element.optionsSource ?? OptionsSourceType.Manual;
+    const usesManualSuggestions = optionsSource === OptionsSourceType.Manual;
     const effectiveMaxItems = element.maxItems != null && element.maxItems > 0 ? element.maxItems : undefined;
 
     const effectiveMinItems = element.required === true && element.minItems != null && element.minItems > 0
@@ -130,29 +146,77 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
             <Grid
                 size={{
                     xs: 12,
+                    lg: 6,
                 }}
             >
-                <OptionListInput
-                    label="Vorschläge"
-                    addLabel="Vorschlag hinzufügen"
-                    hint="Die Liste unterstützt bei der Eingabe und kann weiterhin frei ergänzt werden. Bei Vorschlägen sind Anzeige und Wert identisch; das Wert-Feld wird automatisch aus der Anzeige übernommen."
-                    noItemsHint="Derzeit sind keine Vorschläge hinterlegt."
-                    value={suggestions}
-                    onChange={(items) => {
-                        const normalizedSuggestions = items?.map((entry) => entry.label.trim());
+                <SelectFieldComponent
+                    label="Vorschläge definieren über"
+                    value={optionsSource}
+                    onChange={(value) => {
+                        const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
 
                         onPatch({
-                            suggestions: normalizedSuggestions,
+                            optionsSource: nextSource,
+                            codeListId: nextSource === OptionsSourceType.CodeList ? element.codeListId : undefined,
                         });
                     }}
-                    allowEmpty={true}
+                    options={optionsSourceOptions}
                     disabled={!editable}
-                    variant="outlined"
-                    keyLabel="Wert"
-                    labelLabel="Anzeige"
-                    disableKeyField={true}
+                    required
                 />
             </Grid>
+
+            {
+                !usesManualSuggestions &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
+                    }}
+                >
+                    <CodeListSelectField
+                        value={element.codeListId}
+                        hint="Aus der Codeliste werden die Beschriftungen als Vorschläge übernommen. Die technischen Werte werden für Chip-Eingaben nicht verwendet."
+                        onChange={(codeListId) => {
+                            onPatch({
+                                codeListId,
+                            });
+                        }}
+                        disabled={!editable}
+                        required
+                    />
+                </Grid>
+            }
+
+            {
+                usesManualSuggestions &&
+                <Grid
+                    size={{
+                        xs: 12,
+                    }}
+                >
+                    <OptionListInput
+                        label="Vorschläge"
+                        addLabel="Vorschlag hinzufügen"
+                        hint="Die Liste unterstützt bei der Eingabe und kann weiterhin frei ergänzt werden. Bei Vorschlägen sind Anzeige und Wert identisch; das Wert-Feld wird automatisch aus der Anzeige übernommen."
+                        noItemsHint="Derzeit sind keine Vorschläge hinterlegt."
+                        value={suggestions}
+                        onChange={(items) => {
+                            const normalizedSuggestions = items?.map((entry) => entry.label.trim());
+
+                            onPatch({
+                                suggestions: normalizedSuggestions,
+                            });
+                        }}
+                        allowEmpty={true}
+                        disabled={!editable}
+                        variant="outlined"
+                        keyLabel="Wert"
+                        labelLabel="Anzeige"
+                        disableKeyField={true}
+                    />
+                </Grid>
+            }
         </Grid>
     );
 }

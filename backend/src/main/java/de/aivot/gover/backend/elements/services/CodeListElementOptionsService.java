@@ -33,6 +33,7 @@ public class CodeListElementOptionsService {
             case SelectInputElement select when select.getOptionsSource() == OptionsSourceType.CodeList -> resolveSelect(select);
             case RadioInputElement radio when radio.getOptionsSource() == OptionsSourceType.CodeList -> resolveRadio(radio);
             case MultiCheckboxInputElement multiCheckbox when multiCheckbox.getOptionsSource() == OptionsSourceType.CodeList -> resolveMultiCheckbox(multiCheckbox);
+            case ChipInputElement chipInput when chipInput.getOptionsSource() == OptionsSourceType.CodeList -> resolveChipInput(chipInput);
             default -> element;
         };
     }
@@ -43,6 +44,13 @@ public class CodeListElementOptionsService {
         copy
                 .setOptions(listAsSelect(requireConfiguredCodeListId(element.getCodeListId())))
                 .setDependsOnSelectFieldId(null);
+        return copy;
+    }
+
+    @Nonnull
+    private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
+        var copy = copy(element, ChipInputElement.class);
+        copy.setSuggestions(listAsChipInputSuggestions(requireConfiguredCodeListId(element.getCodeListId())));
         return copy;
     }
 
@@ -89,6 +97,20 @@ public class CodeListElementOptionsService {
                 .map(item -> new MultiCheckboxInputElementOption()
                         .setValue(item.getValue())
                         .setLabel(item.getLabel()))
+                .toList();
+    }
+
+    @Nonnull
+    public List<String> listAsChipInputSuggestions(@Nonnull Integer codeListId) throws ResponseException {
+        requireCodeList(codeListId);
+        return vCodeListItemRepository
+                .findAllByCodeListIdOrderByIdAsc(codeListId)
+                .stream()
+                // Chip inputs store plain strings, so codelists can only provide label-based suggestions here.
+                .map(item -> item.getLabel())
+                .filter(label -> label != null && !label.isBlank())
+                .map(String::trim)
+                .distinct()
                 .toList();
     }
 

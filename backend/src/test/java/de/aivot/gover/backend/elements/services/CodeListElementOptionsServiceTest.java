@@ -5,6 +5,7 @@ import de.aivot.gover.backend.codeLists.entities.VCodeListItemEntity;
 import de.aivot.gover.backend.codeLists.repositories.CodeListRepository;
 import de.aivot.gover.backend.codeLists.repositories.VCodeListItemRepository;
 import de.aivot.gover.backend.elements.enums.OptionsSourceType;
+import de.aivot.gover.backend.elements.models.elements.form.input.ChipInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.MultiCheckboxInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.RadioInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElement;
@@ -92,6 +93,28 @@ class CodeListElementOptionsServiceTest {
         var resolved = assertInstanceOf(MultiCheckboxInputElement.class, service.resolve(element));
 
         assertEquals("Berlin", resolved.getOptions().getFirst().getLabel());
+    }
+
+    @Test
+    void resolvesChipInputSuggestionsFromCodeListLabels() throws Exception {
+        var codeListRepository = codeListRepository(7);
+        var itemRepository = mock(VCodeListItemRepository.class);
+        var service = new CodeListElementOptionsService(itemRepository, codeListRepository);
+        var element = new ChipInputElement()
+                .setOptionsSource(OptionsSourceType.CodeList)
+                .setCodeListId(7)
+                .setSuggestions(List.of("Old"));
+
+        when(itemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
+                item("001", "Berlin"),
+                item("002", "Hamburg"),
+                item("003", "Berlin")
+        ));
+
+        var resolved = assertInstanceOf(ChipInputElement.class, service.resolve(element));
+
+        assertEquals(List.of("Berlin", "Hamburg"), resolved.getSuggestions());
+        assertEquals(List.of("Old"), element.getSuggestions());
     }
 
     @Test

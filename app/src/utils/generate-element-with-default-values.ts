@@ -418,6 +418,8 @@ const elementConstructors: {
         label: 'Tag-Liste (Schlagwörter)',
         placeholder: 'Eintrag hinzufügen',
         suggestions: undefined,
+        optionsSource: OptionsSourceType.Manual,
+        codeListId: undefined,
         minItems: undefined,
         maxItems: undefined,
         allowDuplicates: false,
