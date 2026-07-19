@@ -17,11 +17,11 @@ import {CodeListSelectField} from '../modules/code-lists/components/code-list-se
 
 const optionsSourceOptions = [
     {
-        label: 'Manuell konfigurieren',
+        label: 'Manuelle Eingabe',
         value: OptionsSourceType.Manual,
     },
     {
-        label: 'Codeliste verwenden',
+        label: 'System-Codeliste',
         value: OptionsSourceType.CodeList,
     },
 ];
@@ -86,7 +86,7 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                 }}
             >
                 <SelectFieldComponent
-                    label="Optionsquelle"
+                    label="Optionen definieren über"
                     value={optionsSource}
                     onChange={(value) => {
                         const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;

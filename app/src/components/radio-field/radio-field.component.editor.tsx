@@ -2,6 +2,7 @@ import {type RadioFieldElement} from '../../models/elements/form/input/radio-fie
 import {type BaseEditorProps} from '../../editors/base-editor';
 import {OptionListInput} from '../option-list-input/option-list-input';
 import React from 'react';
+import {Grid} from '@mui/material';
 import {CheckboxFieldComponent} from '../checkbox-field/checkbox-field-component';
 import {OptionsSourceType} from '../../models/elements/form/input/options-source-type';
 import {SelectFieldComponent} from '../select-field/select-field-component';
@@ -9,11 +10,11 @@ import {CodeListSelectField} from '../../modules/code-lists/components/code-list
 
 const optionsSourceOptions = [
     {
-        label: 'Manuell konfigurieren',
+        label: 'Manuelle Eingabe',
         value: OptionsSourceType.Manual,
     },
     {
-        label: 'Codeliste verwenden',
+        label: 'System-Codeliste',
         value: OptionsSourceType.CodeList,
     },
 ];
@@ -24,21 +25,45 @@ export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldEleme
 
     return (
         <>
-            <SelectFieldComponent
-                label="Optionsquelle"
-                value={optionsSource}
-                onChange={(value) => {
-                    const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
+            <Grid
+                container
+                columnSpacing={4}
+                rowSpacing={2}
+            >
+                <Grid size={{xs: 12, lg: 6}}>
+                    <SelectFieldComponent
+                        label="Optionen definieren über"
+                        value={optionsSource}
+                        onChange={(value) => {
+                            const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
 
-                    props.onPatch({
-                        optionsSource: nextSource,
-                        codeListId: nextSource === OptionsSourceType.CodeList ? props.element.codeListId : undefined,
-                    });
-                }}
-                options={optionsSourceOptions}
-                disabled={!props.editable}
-                required
-            />
+                            props.onPatch({
+                                optionsSource: nextSource,
+                                codeListId: nextSource === OptionsSourceType.CodeList ? props.element.codeListId : undefined,
+                            });
+                        }}
+                        options={optionsSourceOptions}
+                        disabled={!props.editable}
+                        required
+                    />
+                </Grid>
+
+                {
+                    !usesManualOptions &&
+                    <Grid size={{xs: 12, lg: 6}}>
+                        <CodeListSelectField
+                            value={props.element.codeListId}
+                            onChange={(codeListId) => {
+                                props.onPatch({
+                                    codeListId,
+                                });
+                            }}
+                            disabled={!props.editable}
+                            required
+                        />
+                    </Grid>
+                }
+            </Grid>
 
             {
                 usesManualOptions &&
@@ -56,20 +81,6 @@ export function RadioFieldComponentEditor(props: BaseEditorProps<RadioFieldEleme
                     allowEmpty={false}
                     disabled={!props.editable}
                     variant="outlined"
-                />
-            }
-
-            {
-                !usesManualOptions &&
-                <CodeListSelectField
-                    value={props.element.codeListId}
-                    onChange={(codeListId) => {
-                        props.onPatch({
-                            codeListId,
-                        });
-                    }}
-                    disabled={!props.editable}
-                    required
                 />
             }
 
