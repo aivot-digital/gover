@@ -12,11 +12,13 @@ export function GenericPageHeader(props: GenericPageHeaderProps) {
     const [isHelpDialogOpen, toggleIsHelpDialogOpen] = useReducer((isHelpDialogOpen) => !isHelpDialogOpen, false);
 
     const actions: Action[] = useMemo(() => {
+        const headerActions = props.actions ?? [];
+        const hasVisibleHeaderActions = headerActions.some((action) => action !== 'separator' && action.visible !== false);
         const _actions = [
-            ...(props.actions ?? []),
+            ...headerActions,
         ];
 
-        if (props.actions != null && props.helpDialog != null) {
+        if (hasVisibleHeaderActions && props.helpDialog != null) {
             _actions.push('separator');
         }
 
