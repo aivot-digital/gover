@@ -5,6 +5,7 @@ interface ProcessInstanceAccessControlPresetFilter {
     sourceTeamId: number;
     sourceDepartmentId: number;
     targetProcessId: number;
+    targetProcessIds: number[];
     targetProcessVersion: number;
 }
 
