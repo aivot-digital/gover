@@ -113,11 +113,20 @@ with aggregated_system_permissions as (select usr.id                            
                                                           on dra.department_membership_id = dm.id
                                                 left join domain_roles dr
                                                           on dr.id = dra.domain_role_id
-                                       group by usr.id, dm.department_id)
-select usr.id                                                                                 as user_id,
-       adp.department_id                                                                      as department_id,
-       bool_or(adp.is_direct_member)                                                          as is_direct_member,
-       bool_or(adp.is_indirect_member)                                                        as is_indirect_member,
+                                       group by usr.id, dm.department_id),
+     user_department_scope as (select user_id, department_id
+                               from aggregated_domain_permissions
+
+                               union
+
+                               select asp.user_id, dep.id as department_id
+                               from aggregated_system_permissions asp
+                                        cross join departments dep
+                               where cardinality(asp.system_role_permissions) > 0)
+select uds.user_id                                                                            as user_id,
+       uds.department_id                                                                      as department_id,
+       coalesce(bool_or(adp.is_direct_member), false)                                         as is_direct_member,
+       coalesce(bool_or(adp.is_indirect_member), false)                                       as is_indirect_member,
        array_unique_union_agg(asp.direct_system_role_permissions)                             as direct_system_role_permissions,
        array_unique_union_agg(asp.indirect_system_role_permissions)                           as indirect_system_role_permissions,
        array_unique_union_agg(asp.system_role_permissions)                                    as system_role_permissions,
@@ -138,7 +147,8 @@ select usr.id                                                                   
        )                                                                                      as indirect_permissions,
        array_unique_union_multi_agg(asp.system_role_permissions, adp.domain_role_permissions) as permissions,
        array_unique_union_multi_agg(asp.deputy_for_user_ids, adp.deputy_for_user_ids)         as deputy_for_user_ids
-from users usr
-         right join aggregated_domain_permissions adp on adp.user_id = usr.id
-         left join aggregated_system_permissions asp on asp.user_id = usr.id
-group by usr.id, adp.department_id;
+from user_department_scope uds
+         left join aggregated_domain_permissions adp
+                   on adp.user_id = uds.user_id and adp.department_id = uds.department_id
+         left join aggregated_system_permissions asp on asp.user_id = uds.user_id
+group by uds.user_id, uds.department_id;
