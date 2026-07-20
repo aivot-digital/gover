@@ -122,7 +122,12 @@ public class UserRoleService implements EntityService<UserRoleEntity, Integer> {
         permissionProviders
                 .stream()
                 .filter(PermissionProvider::supportsDomainRoleAssignment)
-                .flatMap(provider -> Arrays.stream(provider.getPermissions()))
+                .flatMap(provider -> {
+                    var excludedPermissions = provider.getExcludedFromDomainRoleAssignment();
+
+                    return Arrays.stream(provider.getPermissions())
+                            .filter(permission -> !excludedPermissions.contains(permission.permission()));
+                })
                 .map(permission -> permission.permission())
                 .forEach(supportedPermissions::add);
 

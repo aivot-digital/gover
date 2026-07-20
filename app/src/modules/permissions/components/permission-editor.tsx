@@ -48,6 +48,7 @@ function normalizeSearch(value: string): string {
 
 export type PermissionGroup = Pick<PermissionProvider, 'contextLabel' | 'permissions'> & {
     availabilityWarningLabel?: string;
+    assignmentHint?: string | null;
 };
 
 interface PermissionEditorProps {
@@ -98,10 +99,24 @@ export function PermissionEditor(props: PermissionEditorProps): React.ReactEleme
     }, [dispatch]);
 
     const assignablePermissions = useMemo(() => {
-        // System roles see every provider; domain roles only see providers that opted into domain-role assignment.
-        return onlyDomainRoleAssignable
-            ? apiPermissions.filter((g) => g.supportsDomainRoleAssignment)
-            : apiPermissions;
+        // System roles see every provider. Domain roles see opted-in providers minus permissions
+        // whose backend checks are intentionally system-wide even though their provider is domain-capable.
+        if (!onlyDomainRoleAssignable) {
+            return apiPermissions;
+        }
+
+        return apiPermissions
+            .filter((g) => g.supportsDomainRoleAssignment)
+            .map((g) => {
+                const excludedPermissions = new Set(g.excludedFromDomainRoleAssignment ?? []);
+
+                return {
+                    ...g,
+                    permissions: g.permissions.filter((permission) => !excludedPermissions.has(permission.permission)),
+                    assignmentHint: g.domainRoleAssignmentHint,
+                };
+            })
+            .filter((g) => g.permissions.length > 0);
     }, [apiPermissions, onlyDomainRoleAssignable]);
 
     const selectedPermissions = value ?? [];

@@ -4,6 +4,8 @@ import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import org.springframework.stereotype.Component;
 
+import java.util.Set;
+
 @Component
 public class DepartmentPermissionProvider implements PermissionProvider {
     public static final String DEPARTMENT_CREATE = "department.create";
@@ -38,5 +40,15 @@ public class DepartmentPermissionProvider implements PermissionProvider {
     @Override
     public boolean supportsDomainRoleAssignment() {
         return true;
+    }
+
+    @Override
+    public Set<String> getExcludedFromDomainRoleAssignment() {
+        return Set.of(DEPARTMENT_CREATE);
+    }
+
+    @Override
+    public String getDomainRoleAssignmentHint() {
+        return "Das Erstellen von Organisationseinheiten ist systemweit geregelt und kann nicht über Domänenrollen vergeben werden.";
     }
 }

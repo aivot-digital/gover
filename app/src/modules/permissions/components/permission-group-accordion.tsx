@@ -138,6 +138,16 @@ export function PermissionGroupAccordion(props: PermissionGroupAccordionProps): 
             </AccordionSummary>
 
             <AccordionDetails>
+                {group.assignmentHint != null && (
+                    <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{mb: 2}}
+                    >
+                        {group.assignmentHint}
+                    </Typography>
+                )}
+
                 <Box
                     sx={{
                         display: 'grid',
