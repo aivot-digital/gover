@@ -4,7 +4,6 @@ import {GenericDetailsPageContext} from '../../../../components/generic-details-
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
 import {useApi} from '../../../../hooks/use-api';
 import {useNavigate} from 'react-router-dom';
-import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../../utils/string-utils';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
 import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
@@ -52,6 +51,7 @@ export function SecretsDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext(GenericDetailsPageContext);
     const canDeleteSecret = useCheckSystemPermission(Permission.SECRET_DELETE);
 
@@ -70,9 +70,8 @@ export function SecretsDetailsPageIndex() {
     const secret = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-    const editPermission = isStringNullOrEmpty(secret?.key)
-        ? Permission.SECRET_CREATE
-        : Permission.SECRET_UPDATE;
+    const isNewSecret = isNewItem === true;
+    const editPermission = isNewSecret ? Permission.SECRET_CREATE : Permission.SECRET_UPDATE;
     const editDisabledTooltip = !isEditable
         ? formatMissingPermissionTooltip(editPermission)
         : undefined;
@@ -98,7 +97,7 @@ export function SecretsDetailsPageIndex() {
 
             setIsBusy(true);
 
-            if (isStringNullOrEmpty(secret.key)) {
+            if (isNewSecret) {
                 apiService
                     .create(secret)
                     .then((newSecret) => {
@@ -140,30 +139,32 @@ export function SecretsDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        if (isStringNotNullOrEmpty(secret.key)) {
-            setIsBusy(true);
-
-            apiService
-                .destroy(secret.key)
-                .then(() => {
-                    reset(); // prevent change blocker by resetting unsaved changes
-                    navigate('/secrets', {
-                        replace: true,
-                    });
-                    dispatch(showSuccessSnackbar('Das Geheimnis wurde erfolgreich gelöscht.'));
-                })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Beim Löschen des Geheimnisses ist ein Fehler aufgetreten.'));
-                    setIsBusy(false);
-                });
+        if (isNewSecret) {
+            return;
         }
+
+        setIsBusy(true);
+
+        apiService
+            .destroy(secret.key)
+            .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
+                navigate('/secrets', {
+                    replace: true,
+                });
+                dispatch(showSuccessSnackbar('Das Geheimnis wurde erfolgreich gelöscht.'));
+            })
+            .catch(err => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Beim Löschen des Geheimnisses ist ein Fehler aufgetreten.'));
+                setIsBusy(false);
+            });
     };
 
     return (
         <Box>
             {
-                isStringNotNullOrEmpty(secret.key) &&
+                !isNewSecret &&
                 <TextFieldComponent
                     label="Schlüssel"
                     value={secret.key}
@@ -250,7 +251,7 @@ export function SecretsDetailsPageIndex() {
                 </DisabledTooltip>
 
                 {
-                    isStringNotNullOrEmpty(secret.key) &&
+                    !isNewSecret &&
                     <DisabledTooltip
                         title={editDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
@@ -268,7 +269,7 @@ export function SecretsDetailsPageIndex() {
                 }
 
                 {
-                    isStringNotNullOrEmpty(secret.key) &&
+                    !isNewSecret &&
                     <DisabledTooltip
                         title={deleteDisabledTooltip}
                         disabled={isBusy || !canDeleteSecret}

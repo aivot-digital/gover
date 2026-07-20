@@ -52,8 +52,10 @@ export function ThemeDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Theme, undefined>;
-    const editPermission = item?.id === 0 ? Permission.THEME_CREATE : Permission.THEME_UPDATE;
+    const isNewTheme = isNewItem === true;
+    const editPermission = isNewTheme ? Permission.THEME_CREATE : Permission.THEME_UPDATE;
     const canDeleteTheme = useCheckSystemPermission(Permission.THEME_DELETE);
 
     const {
@@ -105,7 +107,7 @@ export function ThemeDetailsPageIndex() {
 
             setIsBusy(true);
 
-            if (theme.id === 0) {
+            if (isNewTheme) {
                 apiService
                     .create(theme)
                     .then((newTheme) => {
@@ -147,7 +149,7 @@ export function ThemeDetailsPageIndex() {
     };
 
     const checkAndHandleDelete = async () => {
-        if (theme.id === 0) return;
+        if (isNewTheme) return;
 
         setIsBusy(true);
         try {
@@ -191,7 +193,7 @@ export function ThemeDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
-        if (theme.id === 0) return;
+        if (isNewTheme) return;
 
         setIsBusy(true);
         apiService.destroy(theme.id)
@@ -436,7 +438,7 @@ export function ThemeDetailsPageIndex() {
                 </DisabledTooltip>
 
                 {
-                    theme.id !== 0 &&
+                    !isNewTheme &&
                     <DisabledTooltip
                         title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
@@ -454,7 +456,7 @@ export function ThemeDetailsPageIndex() {
                 }
 
                 {
-                    theme.id !== 0 &&
+                    !isNewTheme &&
                     <DisabledTooltip
                         title={deleteDisabledTooltip}
                         disabled={isBusy || deleteDisabledByPermission}

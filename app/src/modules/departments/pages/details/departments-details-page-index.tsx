@@ -213,6 +213,7 @@ export function DepartmentsDetailsPageIndex() {
         setIsBusy,
         isEditable,
         additionalData,
+        isNewItem,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, DepartmentsDetailsPageAdditionalData>;
 
     const departmentSchema = useMemo(
@@ -233,12 +234,13 @@ export function DepartmentsDetailsPageIndex() {
     const apiService = useMemo(() => new DepartmentApiService(), []);
     const department = currentItem;
     const changeBlocker = useChangeBlocker(item, currentItem);
-    const editPermission = department?.id === 0 ? Permission.DEPARTMENT_CREATE : Permission.DEPARTMENT_UPDATE;
+    const isNewDepartment = isNewItem === true;
+    const editPermission = isNewDepartment ? Permission.DEPARTMENT_CREATE : Permission.DEPARTMENT_UPDATE;
     const canDeleteDepartment = useCheckDepartmentPermission(
-        department?.id === 0 ? undefined : department?.id,
+        isNewDepartment ? undefined : department?.id,
         Permission.DEPARTMENT_DELETE,
     );
-    const effectiveDepartmentDepth = department?.id === 0 && parentOrgUnitId != null && additionalData?.shadowedDepartment != null
+    const effectiveDepartmentDepth = isNewDepartment && parentOrgUnitId != null && additionalData?.shadowedDepartment != null
         ? additionalData.shadowedDepartment.depth + 1
         : department?.depth ?? 0;
 
@@ -318,7 +320,7 @@ export function DepartmentsDetailsPageIndex() {
             return;
         }
 
-        if (department.id === 0) {
+        if (isNewDepartment) {
             setInheritedDepartment(parentOrgUnitId != null ? additionalData?.shadowedDepartment ?? null : null);
             return;
         }
@@ -351,7 +353,7 @@ export function DepartmentsDetailsPageIndex() {
         return () => {
             isActive = false;
         };
-    }, [department?.id, department?.parentDepartmentId, parentOrgUnitId, additionalData?.shadowedDepartment]);
+    }, [department?.id, department?.parentDepartmentId, parentOrgUnitId, additionalData?.shadowedDepartment, isNewDepartment]);
 
     if (department == null || availableThemes == null) {
         return (
@@ -374,7 +376,7 @@ export function DepartmentsDetailsPageIndex() {
             return;
         }
 
-        if (department.id === 0 && effectiveDepartmentDepth > getMaxDepartmentDepth()) {
+        if (isNewDepartment && effectiveDepartmentDepth > getMaxDepartmentDepth()) {
             dispatch(showErrorSnackbar(`Organisationseinheiten sind auf ${getMaxDepartmentDepth() + 1} Ebenen beschränkt.`));
             return;
         }
@@ -390,7 +392,7 @@ export function DepartmentsDetailsPageIndex() {
 
         setIsBusy(true);
 
-        if (department.id === 0) {
+        if (isNewDepartment) {
             const parentId = parseInt(searchParams.get(NewParentIdQueryParam) ?? '');
 
             apiService
@@ -438,7 +440,7 @@ export function DepartmentsDetailsPageIndex() {
     };
 
     const checkAndHandleDelete = async () => {
-        if (department.id === 0) {
+        if (isNewDepartment) {
             return;
         }
 
@@ -479,7 +481,7 @@ export function DepartmentsDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
-        if (department.id === 0) return;
+        if (isNewDepartment) return;
 
         setIsBusy(true);
         apiService.destroy(department.id)
@@ -495,10 +497,10 @@ export function DepartmentsDetailsPageIndex() {
     };
 
     const doNotShadow = department.depth === 0 && parentOrgUnitId == null;
-    const canMoveDepartment = department.id !== 0 && isEditable && hasNotChanged;
+    const canMoveDepartment = !isNewDepartment && isEditable && hasNotChanged;
     const moveDisabledReason = isBusy
         ? 'Bitte warten, bis die aktuelle Aktion abgeschlossen ist.'
-            : department.id === 0
+            : isNewDepartment
                 ? 'Die Organisationseinheit kann erst nach dem Anlegen verschoben werden.'
                 : !isEditable
                     ? formatMissingPermissionTooltip(Permission.DEPARTMENT_UPDATE)
@@ -509,7 +511,7 @@ export function DepartmentsDetailsPageIndex() {
     const orgUnitPathParts = (() => {
         const safeName = department.name?.trim() || 'Unbenannt';
 
-        if (department.id === 0 && parentOrgUnitId != null && additionalData?.shadowedDepartment != null) {
+        if (isNewDepartment && parentOrgUnitId != null && additionalData?.shadowedDepartment != null) {
             const parentPath = [
                 ...(additionalData.shadowedDepartment.parentNames ?? []),
                 additionalData.shadowedDepartment.name,
@@ -1017,7 +1019,7 @@ export function DepartmentsDetailsPageIndex() {
                 </DisabledTooltip>
 
                 {
-                    department.id !== 0 &&
+                    !isNewDepartment &&
                     <DisabledTooltip
                         title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
@@ -1035,7 +1037,7 @@ export function DepartmentsDetailsPageIndex() {
                 }
 
                 {
-                    department.id !== 0 &&
+                    !isNewDepartment &&
                     <Box
                         sx={{
                             display: 'flex',

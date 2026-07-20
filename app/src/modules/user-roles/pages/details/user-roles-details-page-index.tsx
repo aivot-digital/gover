@@ -45,8 +45,10 @@ export function UserRolesDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext(GenericDetailsPageContext);
-    const editPermission = item?.id === 0 ? Permission.DOMAIN_ROLE_CREATE : Permission.DOMAIN_ROLE_UPDATE;
+    const isNewRole = isNewItem === true;
+    const editPermission = isNewRole ? Permission.DOMAIN_ROLE_CREATE : Permission.DOMAIN_ROLE_UPDATE;
     const canDeleteDomainRole = useCheckSystemPermission(Permission.DOMAIN_ROLE_DELETE);
     const refreshPermissionSet = useRefreshPermissionSet();
 
@@ -104,7 +106,7 @@ export function UserRolesDetailsPageIndex() {
 
             setIsBusy(true);
 
-            if (entity.id === 0) {
+            if (isNewRole) {
                 apiService
                     .create(entity as any)
                     .then((newRole) => {
@@ -148,25 +150,27 @@ export function UserRolesDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        if (entity.id !== 0) {
-            setIsBusy(true);
-
-            apiService
-                .destroy(entity.id)
-                .then(() => {
-                    reset(); // prevent change blocker by resetting unsaved changes
-                    refreshPermissionsAfterRoleChange();
-                    navigate('/user-roles', {
-                        replace: true,
-                    });
-                    dispatch(showSuccessSnackbar('Die Domänenrolle wurde erfolgreich gelöscht.'));
-                })
-                .catch(err => {
-                    console.error(err);
-                    dispatch(showErrorSnackbar('Beim Löschen der Domänenrolle ist ein Fehler aufgetreten.'));
-                    setIsBusy(false);
-                });
+        if (isNewRole) {
+            return;
         }
+
+        setIsBusy(true);
+
+        apiService
+            .destroy(entity.id)
+            .then(() => {
+                reset(); // prevent change blocker by resetting unsaved changes
+                refreshPermissionsAfterRoleChange();
+                navigate('/user-roles', {
+                    replace: true,
+                });
+                dispatch(showSuccessSnackbar('Die Domänenrolle wurde erfolgreich gelöscht.'));
+            })
+            .catch(err => {
+                console.error(err);
+                dispatch(showErrorSnackbar('Beim Löschen der Domänenrolle ist ein Fehler aufgetreten.'));
+                setIsBusy(false);
+            });
     };
 
     return (
@@ -263,7 +267,7 @@ export function UserRolesDetailsPageIndex() {
                 </DisabledTooltip>
 
                 {
-                    entity.id !== 0 &&
+                    !isNewRole &&
                     <DisabledTooltip
                         title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
@@ -281,7 +285,7 @@ export function UserRolesDetailsPageIndex() {
                 }
 
                 {
-                    entity.id !== 0 &&
+                    !isNewRole &&
                     <DisabledTooltip
                         title={deleteDisabledTooltip}
                         disabled={isBusy || deleteDisabledByPermission}

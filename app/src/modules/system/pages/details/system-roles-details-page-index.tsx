@@ -65,8 +65,10 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext<GenericDetailsPageContextType<SystemRoleEntity, void>>(GenericDetailsPageContext);
-    const editPermission = systemRole?.id === 0 ? Permission.SYSTEM_ROLE_CREATE : Permission.SYSTEM_ROLE_UPDATE;
+    const isNewSystemRole = isNewItem === true;
+    const editPermission = isNewSystemRole ? Permission.SYSTEM_ROLE_CREATE : Permission.SYSTEM_ROLE_UPDATE;
     const canDeleteSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_DELETE);
     const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
     const refreshPermissionSet = useRefreshPermissionSet();
@@ -105,7 +107,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
             )));
     };
 
-    const currentSystemRoleId = editedSystemRole?.id ?? 0;
+    const currentSystemRoleId = isNewSystemRole ? 0 : editedSystemRole?.id ?? 0;
     const isDefaultSystemRole =
         currentSystemRoleId !== 0 &&
         defaultSystemRoleId != null &&
@@ -304,7 +306,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
 
         setIsBusy(true);
 
-        if (editedSystemRole.id === 0) {
+        if (isNewSystemRole) {
             apiService
                 .create(editedSystemRole as any)
                 .then((newRole) => {
@@ -350,7 +352,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     };
 
     const handleDelete = (): void => {
-        if (editedSystemRole.id === 0) {
+        if (isNewSystemRole) {
             return;
         }
 
@@ -504,7 +506,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     </Button>
                 </DisabledTooltip>
 
-                {editedSystemRole.id !== 0 && (
+                {!isNewSystemRole && (
                     <DisabledTooltip
                         title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
@@ -519,7 +521,7 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
                     </DisabledTooltip>
                 )}
 
-                {editedSystemRole.id !== 0 && (
+                {!isNewSystemRole && (
                     <Tooltip
                         title={deleteTooltip}
                         arrow

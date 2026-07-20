@@ -37,6 +37,7 @@ export function TeamsDetailsPageIndex() {
         isBusy,
         setIsBusy,
         isEditable,
+        isNewItem,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<TeamEntity, void>;
 
     const {
@@ -51,9 +52,10 @@ export function TeamsDetailsPageIndex() {
 
     const apiService = useMemo(() => new TeamsApiService(), []);
     const changeBlocker = useChangeBlocker(item, team);
-    const editPermission = team?.id === 0 ? Permission.TEAM_CREATE : Permission.TEAM_UPDATE;
+    const isNewTeam = isNewItem === true;
+    const editPermission = isNewTeam ? Permission.TEAM_CREATE : Permission.TEAM_UPDATE;
     const canDeleteTeam = useCheckTeamPermission(
-        team?.id === 0 ? undefined : team?.id,
+        isNewTeam ? undefined : team?.id,
         Permission.TEAM_DELETE,
     );
 
@@ -86,7 +88,7 @@ export function TeamsDetailsPageIndex() {
 
             setIsBusy(true);
 
-            if (team.id === 0) {
+            if (isNewTeam) {
                 apiService
                     .create({
                         id: 0,
@@ -138,7 +140,7 @@ export function TeamsDetailsPageIndex() {
     };
 
     const confirmDelete = () => {
-        if (team.id === 0) return;
+        if (isNewTeam) return;
 
         setIsBusy(true);
         apiService.destroy(team.id)
@@ -219,7 +221,7 @@ export function TeamsDetailsPageIndex() {
                 </DisabledTooltip>
 
                 {
-                    team.id !== 0 &&
+                    !isNewTeam &&
                     <DisabledTooltip
                         title={saveDisabledTooltip}
                         disabled={isBusy || hasNotChanged || !isEditable}
@@ -237,7 +239,7 @@ export function TeamsDetailsPageIndex() {
                 }
 
                 {
-                    team.id !== 0 &&
+                    !isNewTeam &&
                     <DisabledTooltip
                         title={deleteDisabledTooltip}
                         disabled={isBusy || deleteDisabledByPermission}
