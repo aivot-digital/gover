@@ -6,32 +6,8 @@ import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {Permission} from '../../../../data/permissions/permission';
-import {useCallback} from 'react';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectPermissions} from '../../../../slices/user-slice';
-import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function ThemeDetailsPage() {
-    const permissions = useAppSelector(selectPermissions);
-    const canCreateTheme = checkSystemPermission(permissions, Permission.THEME_CREATE);
-    const canUpdateTheme = checkSystemPermission(permissions, Permission.THEME_UPDATE);
-    const isEditable = useCallback((item: Theme | undefined) => {
-        if (item == null) {
-            return false;
-        }
-
-        return item.id === 0 ? canCreateTheme : canUpdateTheme;
-    }, [canCreateTheme, canUpdateTheme]);
-    const hasAccess = useCallback((item: Theme | undefined) => {
-        if (item == null) {
-            return;
-        }
-
-        hasSystemPermission(permissions, item.id === 0
-            ? Permission.THEME_CREATE
-            : Permission.THEME_READ);
-    }, [permissions]);
-
     return (
         <PageWrapper
             title="Erscheinungsbild bearbeiten"
@@ -39,8 +15,14 @@ export function ThemeDetailsPage() {
             background
         >
             <GenericDetailsPage<Theme, number, undefined>
-                hasAccess={hasAccess}
-                isEditable={isEditable}
+                permissionCheck={{
+                    create: Permission.THEME_CREATE,
+                    read: Permission.THEME_READ,
+                    update: Permission.THEME_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <PaletteOutlinedIcon />,
                     title: 'Erscheinungsbild bearbeiten',
@@ -68,7 +50,7 @@ export function ThemeDetailsPage() {
                     {
                         path: '/themes/:id/departments',
                         label: 'Organisationseinheiten',
-                        isDisabled: (item) => !item?.id,
+                        onlyExisting: true,
                     },
                 ]}
                 initializeItem={(api) => new ThemesApiService(api).initialize()}

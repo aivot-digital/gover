@@ -6,44 +6,9 @@ import {GenericPageHeaderPropsHelpDialog} from '../../../../components/generic-p
 import {TeamsApiService} from '../../services/teams-api-service';
 import {TeamEntity} from "../../entities/team-entity";
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
-import {useCallback} from 'react';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {
-    checkSystemPermission,
-    checkTeamPermission,
-    formatMissingPermissionTooltip,
-    hasSystemPermission,
-    hasTeamPermission,
-} from '../../../permissions/utils/permission-utils';
 
 export function TeamsDetailsPage() {
-    const permissions = useAppSelector(selectPermissions);
-    const isEditable = useCallback((item: TeamEntity | undefined) => {
-        if (item == null) {
-            return false;
-        }
-
-        if (item.id === 0) {
-            return checkSystemPermission(permissions, Permission.TEAM_CREATE);
-        }
-
-        return checkTeamPermission(permissions, item.id, Permission.TEAM_UPDATE);
-    }, [permissions]);
-    const hasAccess = useCallback((item: TeamEntity | undefined) => {
-        if (item == null) {
-            return;
-        }
-
-        if (item.id === 0) {
-            hasSystemPermission(permissions, Permission.TEAM_CREATE);
-            return;
-        }
-
-        hasTeamPermission(permissions, item.id, Permission.TEAM_READ);
-    }, [permissions]);
-
     return (
         <PageWrapper
             title="Team bearbeiten"
@@ -51,8 +16,15 @@ export function TeamsDetailsPage() {
             background
         >
             <GenericDetailsPage<TeamEntity, number, void>
-                hasAccess={hasAccess}
-                isEditable={isEditable}
+                permissionCheck={{
+                    create: Permission.TEAM_CREATE,
+                    read: Permission.TEAM_READ,
+                    update: Permission.TEAM_UPDATE,
+                    scope: {
+                        type: 'team',
+                        getResourceId: (item) => item.id,
+                    },
+                }}
                 header={{
                     icon: ModuleIcons.teams,
                     title: 'Team bearbeiten',
@@ -66,10 +38,8 @@ export function TeamsDetailsPage() {
                     {
                         path: '/teams/:id/members',
                         label: 'Teammitglieder',
-                        isDisabled: (item) => !item?.id || !checkTeamPermission(permissions, item.id, Permission.TEAM_MEMBERSHIP_READ),
-                        disabledTooltip: (item) => item?.id
-                            ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_READ)
-                            : undefined,
+                        onlyExisting: true,
+                        requiredPermission: Permission.TEAM_MEMBERSHIP_READ,
                     },
                 ]}
                 initializeItem={(api) => TeamsApiService.initialize()}

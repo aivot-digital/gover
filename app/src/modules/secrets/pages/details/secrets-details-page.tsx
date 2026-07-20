@@ -4,37 +4,11 @@ import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {SecretsApiService} from '../../secrets-api-service';
 import {Secret} from '../../models/secret';
-import React, {useCallback} from 'react';
+import React from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {Permission} from '../../../../data/permissions/permission';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectPermissions} from '../../../../slices/user-slice';
-import {checkSystemPermission, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function SecretsDetailsPage() {
-    const permissions = useAppSelector(selectPermissions);
-    const canCreateSecret = checkSystemPermission(permissions, Permission.SECRET_CREATE);
-    const canUpdateSecret = checkSystemPermission(permissions, Permission.SECRET_UPDATE);
-
-    const isEditable = useCallback((item: Secret | undefined) => {
-        if (item == null) {
-            return false;
-        }
-
-        return item.key === ''
-            ? canCreateSecret
-            : canUpdateSecret;
-    }, [canCreateSecret, canUpdateSecret]);
-    const hasAccess = useCallback((item: Secret | undefined) => {
-        if (item == null) {
-            return;
-        }
-
-        hasSystemPermission(permissions, item.key === ''
-            ? Permission.SECRET_CREATE
-            : Permission.SECRET_READ);
-    }, [permissions]);
-
     return (
         <PageWrapper
             title="Geheimnis bearbeiten"
@@ -42,8 +16,14 @@ export function SecretsDetailsPage() {
             background
         >
             <GenericDetailsPage<Secret, string, undefined>
-                hasAccess={hasAccess}
-                isEditable={isEditable}
+                permissionCheck={{
+                    create: Permission.SECRET_CREATE,
+                    read: Permission.SECRET_READ,
+                    update: Permission.SECRET_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <KeyOutlinedIcon />,
                     title: 'Geheimnis bearbeiten',

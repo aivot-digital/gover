@@ -1,4 +1,10 @@
-import {GenericDetailsPageProps} from './generic-details-page-props';
+import {
+    type GenericDetailsPagePermissionConfig,
+    type GenericDetailsPagePermissionScope,
+    type GenericDetailsPageProps,
+    type GenericDetailsPageTabPermission,
+    type TabConfig,
+} from './generic-details-page-props';
 import {Box, Button, Container, Paper, Stack, Tab, Tabs, Typography} from '@mui/material';
 import React, {type ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {Api, useApi} from '../../hooks/use-api';
@@ -12,6 +18,21 @@ import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBullet
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {addEntityHistoryItem} from '../../slices/entity-history-slice';
 import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
+import {useAppSelector} from '../../hooks/use-app-selector';
+import {selectPermissions} from '../../slices/user-slice';
+import {
+    checkAnyDepartmentPermission,
+    checkAnyTeamPermission,
+    checkDepartmentPermission,
+    checkProcessInstancePermission,
+    checkProcessPermission,
+    checkSystemPermission,
+    checkTeamPermission,
+    createPermissionDeniedError,
+    formatMissingPermissionTooltip,
+    type PermissionLike,
+} from '../../modules/permissions/utils/permission-utils';
+import {type PermissionSet} from '../../modules/permissions/models/permission-set';
 
 export const DEFAULT_ID_PARAM = 'id';
 export const NEW_ID_INDICATOR = 'new';
@@ -20,6 +41,13 @@ interface DataFetchResult<ItemType, AdditionalData> {
     item: ItemType;
     additionalData: AdditionalData;
 }
+
+type ResolvedTabState = {
+    disabled: boolean;
+    disabledByOnlyExisting: boolean;
+    missingPermission?: PermissionLike;
+    tooltip?: ReactNode;
+};
 
 async function fetchData<ItemType, ID, AdditionalData>(api: Api, id: ID, props: GenericDetailsPageProps<ItemType, ID, AdditionalData>): Promise<DataFetchResult<ItemType, AdditionalData>> {
     let item: ItemType;
@@ -42,10 +70,133 @@ async function fetchData<ItemType, ID, AdditionalData>(api: Api, id: ID, props: 
     });
 }
 
+function checkScopedPermission<ItemType>(
+    permissionSet: PermissionSet | undefined,
+    item: ItemType | undefined,
+    scope: GenericDetailsPagePermissionScope<ItemType>,
+    permission: PermissionLike,
+): boolean {
+    // Keep the generic page aligned with the permission utility semantics: system permissions grant
+    // global access, while scoped permissions only grant access for the resolved resource id.
+    switch (scope.type) {
+        case 'system':
+            return checkSystemPermission(permissionSet, permission);
+        case 'anyDepartment':
+            return checkAnyDepartmentPermission(permissionSet, permission);
+        case 'anyTeam':
+            return checkAnyTeamPermission(permissionSet, permission);
+        case 'department':
+            return item != null && checkDepartmentPermission(permissionSet, scope.getResourceId(item), permission);
+        case 'team':
+            return item != null && checkTeamPermission(permissionSet, scope.getResourceId(item), permission);
+        case 'process':
+            return item != null && checkProcessPermission(permissionSet, scope.getResourceId(item), permission);
+        case 'processInstance':
+            return item != null && checkProcessInstancePermission(permissionSet, scope.getResourceId(item), permission);
+    }
+}
+
+function resolveTabPermission<ItemType>(
+    requiredPermission: GenericDetailsPageTabPermission<ItemType> | undefined,
+    defaultScope: GenericDetailsPagePermissionScope<ItemType> | undefined,
+): { permission: PermissionLike; scope: GenericDetailsPagePermissionScope<ItemType> } | undefined {
+    if (requiredPermission == null) {
+        return undefined;
+    }
+
+    if (typeof requiredPermission === 'object' && 'permission' in requiredPermission) {
+        return {
+            permission: requiredPermission.permission,
+            scope: requiredPermission.scope ?? defaultScope ?? {type: 'system'},
+        };
+    }
+
+    return {
+        permission: requiredPermission,
+        scope: defaultScope ?? {type: 'system'},
+    };
+}
+
+function resolveTabState<ItemType>(
+    tab: TabConfig<ItemType>,
+    item: ItemType | undefined,
+    isNewItem: boolean,
+    permissionSet: PermissionSet | undefined,
+    defaultScope: GenericDetailsPagePermissionScope<ItemType> | undefined,
+): ResolvedTabState {
+    const disabledByOnlyExisting = tab.onlyExisting === true && (isNewItem || item == null);
+    const disabledByCustomCheck = tab.isDisabled?.(item) ?? false;
+    const requiredPermission = resolveTabPermission(tab.requiredPermission, defaultScope);
+    const missingPermission = !disabledByOnlyExisting && requiredPermission != null && !checkScopedPermission(permissionSet, item, requiredPermission.scope, requiredPermission.permission)
+        ? requiredPermission.permission
+        : undefined;
+    const explicitTooltip = typeof tab.disabledTooltip === 'function'
+        ? tab.disabledTooltip(item)
+        : tab.disabledTooltip;
+
+    return {
+        disabled: disabledByOnlyExisting || disabledByCustomCheck || missingPermission != null,
+        disabledByOnlyExisting: disabledByOnlyExisting,
+        missingPermission: missingPermission,
+        tooltip: explicitTooltip ??
+            (missingPermission != null ? formatMissingPermissionTooltip(missingPermission) : undefined) ??
+            (disabledByOnlyExisting ? 'Dieser Tab ist erst nach dem Anlegen verfügbar.' : undefined),
+    };
+}
+
+function ensureConfiguredAccess<ItemType>(
+    item: ItemType | undefined,
+    isNewItem: boolean,
+    permissionSet: PermissionSet | undefined,
+    permissionConfig: GenericDetailsPagePermissionConfig<ItemType> | undefined,
+): void {
+    if (item == null || permissionConfig == null) {
+        return;
+    }
+
+    const permission = isNewItem ? permissionConfig.create : permissionConfig.read;
+    if (permission == null) {
+        return;
+    }
+
+    const hasPermission = isNewItem
+        ? checkSystemPermission(permissionSet, permission)
+        : checkScopedPermission(permissionSet, item, permissionConfig.scope, permission);
+
+    if (!hasPermission) {
+        throw createPermissionDeniedError(permission);
+    }
+}
+
+function checkConfiguredEditability<ItemType>(
+    item: ItemType | undefined,
+    isNewItem: boolean,
+    permissionSet: PermissionSet | undefined,
+    permissionConfig: GenericDetailsPagePermissionConfig<ItemType> | undefined,
+): boolean {
+    if (permissionConfig == null) {
+        return true;
+    }
+
+    if (item == null) {
+        return false;
+    }
+
+    const permission = isNewItem ? permissionConfig.create : permissionConfig.update;
+    if (permission == null) {
+        return true;
+    }
+
+    return isNewItem
+        ? checkSystemPermission(permissionSet, permission)
+        : checkScopedPermission(permissionSet, item, permissionConfig.scope, permission);
+}
+
 export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericDetailsPageProps<ItemType, ID, AdditionalData>) {
     const {
         entityType,
         isEditable,
+        permissionCheck,
     } = props;
 
     const api = useApi();
@@ -55,6 +206,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const [notFound, setNotFound] = useState(false);
     const [loadError, setLoadError] = useState<ApiError>();
     const dispatch = useAppDispatch();
+    const permissionSet = useAppSelector(selectPermissions);
 
     const ID_PARAM = props.idParam ?? DEFAULT_ID_PARAM;
     const id = useMemo(() => {
@@ -93,10 +245,10 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
 
     const resolvedTabs = useMemo(() => {
         if (typeof props.tabs === 'function') {
-            return props.tabs(item);
+            return props.tabs(item, isNewItem);
         }
         return props.tabs;
-    }, [props.tabs, item]);
+    }, [props.tabs, item, isNewItem]);
 
     const currentTab: number = useMemo(() => {
         return resolvedTabs
@@ -219,8 +371,26 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     }
 
     if (!notFound) {
-        props.hasAccess?.(item);
+        // Custom checks take precedence for detail pages whose access rules cannot be expressed by
+        // the standard create/read/update permission contract.
+        if (props.hasAccess != null) {
+            props.hasAccess(item);
+        } else {
+            ensureConfiguredAccess(item, isNewItem, permissionSet, permissionCheck);
+        }
+
+        const currentTabState = currentTab >= 0
+            ? resolveTabState(resolvedTabs[currentTab], item, isNewItem, permissionSet, permissionCheck?.scope)
+            : undefined;
+
+        if (item != null && currentTabState?.missingPermission != null) {
+            throw createPermissionDeniedError(currentTabState.missingPermission);
+        }
     }
+
+    const resolvedIsEditable = isEditable != null
+        ? isEditable(item)
+        : checkConfiguredEditability(item, isNewItem, permissionSet, permissionCheck);
 
     return (
         <>
@@ -248,7 +418,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                             value={currentTab}
                                             onChange={(_, index: number) => {
                                                 const tab = resolvedTabs[index];
-                                                if (tab.isDisabled?.(item)) {
+                                                if (resolveTabState(tab, item, isNewItem, permissionSet, permissionCheck?.scope).disabled) {
                                                     return;
                                                 }
                                                 navigate(generatePath(tab.path, resolvedPathParams));
@@ -257,10 +427,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                             {
                                                 resolvedTabs.length > 1 &&
                                                 resolvedTabs.map((tab, index) => {
-                                                    const disabled = tab.isDisabled?.(item) ?? false;
-                                                    const disabledTooltip = typeof tab.disabledTooltip === 'function'
-                                                        ? tab.disabledTooltip(item)
-                                                        : tab.disabledTooltip;
+                                                    const tabState = resolveTabState(tab, item, isNewItem, permissionSet, permissionCheck?.scope);
 
                                                     return (
                                                         <Tab
@@ -268,15 +435,15 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                                             value={index}
                                                             label={(
                                                                 <DisabledTabLabel
-                                                                    disabled={disabled}
-                                                                    tooltip={disabledTooltip}
+                                                                    disabled={tabState.disabled}
+                                                                    tooltip={tabState.tooltip}
                                                                 >
                                                                     {tab.label}
                                                                 </DisabledTabLabel>
                                                             )}
-                                                            aria-disabled={disabled}
-                                                            tabIndex={disabled ? -1 : undefined}
-                                                            sx={disabled ? {
+                                                            aria-disabled={tabState.disabled}
+                                                            tabIndex={tabState.disabled ? -1 : undefined}
+                                                            sx={tabState.disabled ? {
                                                                 color: 'text.disabled',
                                                                 cursor: 'not-allowed',
                                                                 '&:hover': {
@@ -354,7 +521,7 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
                                         isBusy: isBusy,
                                         setIsBusy: setIsBusy,
                                         refresh: refresh,
-                                        isEditable: isEditable != null ? isEditable(item) : true,
+                                        isEditable: resolvedIsEditable,
                                     }}
                                 >
                                     <Outlet />

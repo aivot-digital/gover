@@ -9,17 +9,7 @@ import {DepartmentEntity} from '../../entities/department-entity';
 import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../services/department-api-service';
 import {VDepartmentShadowedApiService} from '../../services/v-department-shadowed-api-service';
-import {useCallback} from 'react';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {
-    checkDepartmentPermission,
-    checkSystemPermission,
-    formatMissingPermissionTooltip,
-    hasDepartmentPermission,
-    hasSystemPermission,
-} from '../../../permissions/utils/permission-utils';
 
 export const NewParentIdQueryParam = 'parentId';
 
@@ -29,31 +19,6 @@ export interface DepartmentsDetailsPageAdditionalData {
 
 export function DepartmentsDetailsPage() {
     const [searchParams, _] = useSearchParams();
-    const permissions = useAppSelector(selectPermissions);
-
-    const isEditable = useCallback((item: DepartmentEntity | undefined) => {
-        if (item == null) {
-            return false;
-        }
-
-        if (item.id === 0) {
-            return checkSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
-        }
-
-        return checkDepartmentPermission(permissions, item.id, Permission.DEPARTMENT_UPDATE);
-    }, [permissions]);
-    const hasAccess = useCallback((item: DepartmentEntity | undefined) => {
-        if (item == null) {
-            return;
-        }
-
-        if (item.id === 0) {
-            hasSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
-            return;
-        }
-
-        hasDepartmentPermission(permissions, item.id, Permission.DEPARTMENT_READ);
-    }, [permissions]);
 
     return (
         <PageWrapper
@@ -62,8 +27,15 @@ export function DepartmentsDetailsPage() {
             background
         >
             <GenericDetailsPage<DepartmentEntity, number, DepartmentsDetailsPageAdditionalData>
-                hasAccess={hasAccess}
-                isEditable={isEditable}
+                permissionCheck={{
+                    create: Permission.DEPARTMENT_CREATE,
+                    read: Permission.DEPARTMENT_READ,
+                    update: Permission.DEPARTMENT_UPDATE,
+                    scope: {
+                        type: 'department',
+                        getResourceId: (item) => item.id,
+                    },
+                }}
                 header={{
                     icon: <BusinessOutlinedIcon />,
                     title: 'Organisationseinheit bearbeiten',
@@ -77,18 +49,14 @@ export function DepartmentsDetailsPage() {
                     {
                         path: '/departments/:id/members',
                         label: 'Mitarbeiter:innen',
-                        isDisabled: (item) => !item?.id || !checkDepartmentPermission(permissions, item.id, Permission.DEPARTMENT_MEMBERSHIP_READ),
-                        disabledTooltip: (item) => item?.id
-                            ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_READ)
-                            : undefined,
+                        onlyExisting: true,
+                        requiredPermission: Permission.DEPARTMENT_MEMBERSHIP_READ,
                     },
                     {
                         path: '/departments/:id/processes',
                         label: 'Verwaltete Prozesse',
-                        isDisabled: (item) => !item?.id || !checkDepartmentPermission(permissions, item.id, Permission.PROCESS_DEFINITION_READ),
-                        disabledTooltip: (item) => item?.id && !checkDepartmentPermission(permissions, item.id, Permission.PROCESS_DEFINITION_READ)
-                            ? formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_READ)
-                            : undefined,
+                        onlyExisting: true,
+                        requiredPermission: Permission.PROCESS_DEFINITION_READ,
                     },
                 ]}
                 initializeItem={(api) => DepartmentApiService.initialize()}

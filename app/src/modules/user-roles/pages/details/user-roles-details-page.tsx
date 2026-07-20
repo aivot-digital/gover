@@ -1,45 +1,14 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import React, {useCallback} from 'react';
+import React from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {Permission} from '../../../../data/permissions/permission';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectPermissions} from '../../../../slices/user-slice';
-import {
-    checkAnyDepartmentPermission,
-    checkAnyTeamPermission,
-    checkSystemPermission,
-    formatMissingPermissionTooltip,
-    hasSystemPermission,
-} from '../../../permissions/utils/permission-utils';
 
 export function UserRolesDetailsPage() {
-    const permissions = useAppSelector(selectPermissions);
-    const canCreateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_CREATE);
-    const canUpdateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_UPDATE);
-    const canReadAnyDepartmentMemberships = checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_READ);
-    const canReadAnyTeamMemberships = checkAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_READ);
-    const isEditable = useCallback((item: UserRoleResponseDTO | undefined) => {
-        if (item == null) {
-            return false;
-        }
-
-        return item.id === 0 ? canCreateDomainRole : canUpdateDomainRole;
-    }, [canCreateDomainRole, canUpdateDomainRole]);
-    const hasAccess = useCallback((item: UserRoleResponseDTO | undefined) => {
-        if (item == null) {
-            return;
-        }
-
-        hasSystemPermission(permissions, item.id === 0
-            ? Permission.DOMAIN_ROLE_CREATE
-            : Permission.DOMAIN_ROLE_READ);
-    }, [permissions]);
-
     return (
         <PageWrapper
             title="Domänenrolle bearbeiten"
@@ -47,8 +16,14 @@ export function UserRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<UserRoleResponseDTO, number, undefined>
-                hasAccess={hasAccess}
-                isEditable={isEditable}
+                permissionCheck={{
+                    create: Permission.DOMAIN_ROLE_CREATE,
+                    read: Permission.DOMAIN_ROLE_READ,
+                    update: Permission.DOMAIN_ROLE_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: ModuleIcons.roles,
                     title: 'Domänenrolle bearbeiten',
@@ -84,18 +59,24 @@ export function UserRolesDetailsPage() {
                     {
                         path: '/user-roles/:id/department-memberships',
                         label: 'Zuordnungen in Organisationseinheiten',
-                        isDisabled: (item) => !item?.id || !canReadAnyDepartmentMemberships,
-                        disabledTooltip: (item) => item?.id && !canReadAnyDepartmentMemberships
-                            ? formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_READ)
-                            : undefined,
+                        onlyExisting: true,
+                        requiredPermission: {
+                            permission: Permission.DEPARTMENT_MEMBERSHIP_READ,
+                            scope: {
+                                type: 'anyDepartment',
+                            },
+                        },
                     },
                     {
                         path: '/user-roles/:id/team-memberships',
                         label: 'Zuordnungen in Teams',
-                        isDisabled: (item) => !item?.id || !canReadAnyTeamMemberships,
-                        disabledTooltip: (item) => item?.id && !canReadAnyTeamMemberships
-                            ? formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_READ)
-                            : undefined,
+                        onlyExisting: true,
+                        requiredPermission: {
+                            permission: Permission.TEAM_MEMBERSHIP_READ,
+                            scope: {
+                                type: 'anyTeam',
+                            },
+                        },
                     },
                 ]}
                 initializeItem={(api) => new UserRolesApiService().initialize()}

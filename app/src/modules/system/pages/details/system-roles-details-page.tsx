@@ -1,7 +1,7 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import React, {useCallback} from 'react';
+import React from 'react';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";
@@ -14,31 +14,9 @@ import {
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
 import {Permission} from '../../../../data/permissions/permission';
-import {selectPermissions} from '../../../../slices/user-slice';
-import {checkSystemPermission, formatMissingPermissionTooltip, hasSystemPermission} from '../../../permissions/utils/permission-utils';
 
 export function SystemRolesDetailsPage() {
-    const permissions = useAppSelector(selectPermissions);
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
-    const canCreateSystemRole = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_CREATE);
-    const canUpdateSystemRole = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_UPDATE);
-    const canReadUsers = checkSystemPermission(permissions, Permission.USER_READ);
-    const isEditable = useCallback((item: SystemRoleEntity | undefined) => {
-        if (item == null) {
-            return false;
-        }
-
-        return item.id === 0 ? canCreateSystemRole : canUpdateSystemRole;
-    }, [canCreateSystemRole, canUpdateSystemRole]);
-    const hasAccess = useCallback((item: SystemRoleEntity | undefined) => {
-        if (item == null) {
-            return;
-        }
-
-        hasSystemPermission(permissions, item.id === 0
-            ? Permission.SYSTEM_ROLE_CREATE
-            : Permission.SYSTEM_ROLE_READ);
-    }, [permissions]);
 
     return (
         <PageWrapper
@@ -47,8 +25,14 @@ export function SystemRolesDetailsPage() {
             background
         >
             <GenericDetailsPage<SystemRoleEntity, number, void>
-                hasAccess={hasAccess}
-                isEditable={isEditable}
+                permissionCheck={{
+                    create: Permission.SYSTEM_ROLE_CREATE,
+                    read: Permission.SYSTEM_ROLE_READ,
+                    update: Permission.SYSTEM_ROLE_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={(item, isNewItem, notFound) => ({
                     icon: ModuleIcons.roles,
                     title: 'Systemrolle bearbeiten',
@@ -87,10 +71,8 @@ export function SystemRolesDetailsPage() {
                     {
                         path: '/system-roles/:id/members',
                         label: 'Zugeordnete Mitarbeiter:innen',
-                        isDisabled: (item) => !item?.id || !canReadUsers,
-                        disabledTooltip: (item) => item?.id && !canReadUsers
-                            ? formatMissingPermissionTooltip(Permission.USER_READ)
-                            : undefined,
+                        onlyExisting: true,
+                        requiredPermission: Permission.USER_READ,
                     },
                 ]}
                 initializeItem={(api) => SystemRolesApiService.initialize()}
