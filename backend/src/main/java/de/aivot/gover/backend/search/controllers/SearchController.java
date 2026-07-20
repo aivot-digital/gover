@@ -2,12 +2,14 @@ package de.aivot.gover.backend.search.controllers;
 
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
+import de.aivot.gover.backend.permissions.models.PermissionProvider;
 import de.aivot.gover.backend.plugin.services.PluginUtils;
 import de.aivot.gover.backend.plugins.form.FormPlugin;
 import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
 import de.aivot.gover.backend.search.entities.SearchItemEntity;
+import de.aivot.gover.backend.search.filters.SearchFilter;
 import de.aivot.gover.backend.search.repositories.SearchEntityRepository;
-import de.aivot.gover.backend.utils.StringUtils;
+import de.aivot.gover.backend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +25,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * This controller is responsible for handling requests to the secrets API. A secret is used to store sensitive information like passwords, API keys, etc.
  */
@@ -35,13 +39,20 @@ import org.springframework.web.bind.annotation.RestController;
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class SearchController {
     private final SearchEntityRepository searchEntityRepository;
+    private final List<PermissionProvider.SearchPermission> searchPermissions;
 
     private static final String[] allowedProcessNodeDefinitionKeys = {
             PluginUtils.combineComponentKey(FormPlugin.PLUGIN_KEY, FormTriggerNodeV1.NODE_KEY),
     };
 
-    public SearchController(SearchEntityRepository searchEntityRepository) {
+    public SearchController(SearchEntityRepository searchEntityRepository,
+                            List<PermissionProvider> pp) {
         this.searchEntityRepository = searchEntityRepository;
+
+        searchPermissions = pp
+                .stream()
+                .flatMap(permissionProvider -> permissionProvider.getSearchPermissions().stream())
+                .toList();
     }
 
     @GetMapping("")
@@ -55,12 +66,16 @@ public class SearchController {
             @Nonnull @RequestParam(defaultValue = "") String search,
             @Nullable @RequestParam(required = false) String originTable
     ) throws ResponseException {
-        if (StringUtils.isNotNullOrEmpty(originTable)) {
-            return searchEntityRepository
-                    .search(search, originTable, allowedProcessNodeDefinitionKeys, pageable);
-        }
+        var spec = new SearchFilter(
+                UserService.getIdFromJWT(jwt),
+                search,
+                originTable,
+                allowedProcessNodeDefinitionKeys,
+                searchPermissions
+        )
+                .build();
 
         return searchEntityRepository
-                .search(search, allowedProcessNodeDefinitionKeys, pageable);
+                .findAll(spec, pageable);
     }
 }
