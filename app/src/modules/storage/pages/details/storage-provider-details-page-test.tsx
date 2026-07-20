@@ -7,6 +7,10 @@ import type {StorageProviderEntity} from '../../entities/storage-provider-entity
 import {StorageProvidersApiService} from '../../storage-providers-api-service';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
+import {Permission} from '../../../../data/permissions/permission';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function StorageProviderDetailsPageTest() {
     const {
@@ -16,6 +20,7 @@ export function StorageProviderDetailsPageTest() {
     const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
     const [isTesting, setIsTesting] = useState(false);
     const [writable, setWritable] = useState(false);
+    const canTestWritable = useCheckSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     useEffect(() => {
         setTestResult(null);
@@ -23,6 +28,8 @@ export function StorageProviderDetailsPageTest() {
 
     const handleTest = async () => {
         if (!storageProvider) return;
+        if (writable && !canTestWritable) return;
+
         setIsTesting(true);
         setTestResult(null);
         try {
@@ -57,8 +64,14 @@ export function StorageProviderDetailsPageTest() {
                 label="Beschreibbarkeit testen (optional)"
                 value={writable}
                 onChange={setWritable}
-                disabled={!!storageProvider?.readOnlyStorage}
-                hint={storageProvider?.readOnlyStorage ? 'Diese Option ist deaktiviert, da der Speicheranbieter als read-only (nur lesend) konfiguriert ist.' : undefined}
+                disabled={!!storageProvider?.readOnlyStorage || !canTestWritable}
+                hint={
+                    storageProvider?.readOnlyStorage
+                        ? 'Diese Option ist deaktiviert, da der Speicheranbieter als read-only (nur lesend) konfiguriert ist.'
+                        : !canTestWritable
+                            ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE)
+                            : undefined
+                }
             />
 
             <Box
@@ -67,14 +80,19 @@ export function StorageProviderDetailsPageTest() {
                     mb: 2,
                 }}
             >
-                <Button
-                    onClick={handleTest}
-                    variant="contained"
-                    startIcon={<ScienceOutlinedIcon />}
-                    disabled={storageProvider == null || isTesting}
+                <DisabledTooltip
+                    title={formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE)}
+                    disabled={writable && !canTestWritable}
                 >
-                    Speicheranbieter testen
-                </Button>
+                    <Button
+                        onClick={handleTest}
+                        variant="contained"
+                        startIcon={<ScienceOutlinedIcon />}
+                        disabled={storageProvider == null || isTesting || (writable && !canTestWritable)}
+                    >
+                        Speicheranbieter testen
+                    </Button>
+                </DisabledTooltip>
             </Box>
 
             {testResult && (

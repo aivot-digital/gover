@@ -16,6 +16,10 @@ import {type StorageProviderStatus} from '../../enums/storage-provider-status';
 import {StorageStatusChip} from '../../components/storage-status-chip';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 
 const availableFilter = [
     {
@@ -34,6 +38,9 @@ const availableFilter = [
 
 export function StorageProvidersListPage(): ReactNode {
     const navigate = useNavigate();
+    useHasSystemPermission(Permission.STORAGE_PROVIDER_READ);
+    const canCreateStorageProvider = useCheckSystemPermission(Permission.STORAGE_PROVIDER_CREATE);
+    const canUpdateStorageProvider = useCheckSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
     const [definitions, setDefinitions] = useState<StorageProviderDefinition[]>([]);
     const [selectedDefinitionKey, setSelectedDefinitionKey] = useState<string | undefined>(undefined);
 
@@ -53,6 +60,8 @@ export function StorageProvidersListPage(): ReactNode {
                 icon: <AddOutlinedIcon/>,
                 to: '/storage-providers/new',
                 variant: 'contained' as const,
+                disabled: !canCreateStorageProvider,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_CREATE),
             },
         ],
         helpDialog: {
@@ -79,7 +88,7 @@ export function StorageProvidersListPage(): ReactNode {
                 </>
             ),
         },
-    }), []);
+    }), [canCreateStorageProvider]);
 
     const definitionOptions = useMemo(() => definitions.map((def) => ({
         value: def.key,
@@ -126,7 +135,7 @@ export function StorageProvidersListPage(): ReactNode {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/storage-providers/${params.id}`}
-                    title="Konfiguration bearbeiten"
+                    title={canUpdateStorageProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -163,17 +172,17 @@ export function StorageProvidersListPage(): ReactNode {
                 );
             },
         },
-    ], [definitions]);
+    ], [definitions, canUpdateStorageProvider]);
 
     const getRowIdentifier = useCallback((row: StorageProviderEntity) => row.id.toString(), []);
 
     const rowActions = useCallback((item: StorageProviderEntity) => [
         {
-            icon: <EditOutlined/>,
+            icon: canUpdateStorageProvider ? <EditOutlined/> : <Visibility/>,
             to: `/storage-providers/${item.id}`,
-            tooltip: 'Konfiguration bearbeiten',
+            tooltip: canUpdateStorageProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
         },
-    ], []);
+    ], [canUpdateStorageProvider]);
 
     return (
         <>
@@ -199,6 +208,8 @@ export function StorageProvidersListPage(): ReactNode {
                             description="Speicheranbieter verbinden Gover mit Dateispeichern für Uploads, Anlagen und erzeugte Dokumente."
                             addText="Neuen Speicheranbieter anlegen"
                             onAdd={() => navigate('/storage-providers/new')}
+                            addDisabled={!canCreateStorageProvider}
+                            addDisabledTooltip={formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_CREATE)}
                         />
                     }
                     noSearchResultsPlaceholder="Keine Speicheranbieter gefunden"
