@@ -14,7 +14,6 @@ import {showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackba
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';

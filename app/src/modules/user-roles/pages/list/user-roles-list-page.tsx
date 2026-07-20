@@ -6,7 +6,6 @@ import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';

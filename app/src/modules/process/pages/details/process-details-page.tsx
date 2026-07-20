@@ -42,7 +42,6 @@ import {useConfirm} from '../../../../providers/confirm-provider';
 import {type ProcessTestClaimEntity} from '../../entities/process-test-claim-entity';
 import {type User} from '../../../users/models/user';
 import {UsersApiService} from '../../../users/users-api-service';
-import {useUser} from '../../../../hooks/use-admin-guard';
 import {resolveUserName} from '../../../users/utils/resolve-user-name';
 import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
@@ -78,6 +77,8 @@ import {ProcessTestClaimProcessInstancesDialog} from '../../dialogs/process-test
 import {useNotImplemented} from '../../../../hooks/use-not-implemented';
 import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../slices/user-slice';
 import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {generateId} from '../../../../utils/id-utils';
@@ -274,7 +275,7 @@ export function ProcessDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const confirm = useConfirm();
-    const user = useUser();
+    const user = useAppSelector(selectUser);
     const notImplemented = useNotImplemented();
     const refreshPermissionSet = useRefreshPermissionSet();
 

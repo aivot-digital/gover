@@ -2,7 +2,6 @@ import {GenericListPage} from '../../../../components/generic-list-page/generic-
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Dialog, DialogContent, Typography} from '@mui/material';
-import {useUser} from '../../../../hooks/use-admin-guard';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
 import {ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
@@ -25,6 +24,8 @@ import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useRetainedDialogValue} from '../../../../hooks/use-retained-dialog-value';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+import {selectUser} from '../../../../slices/user-slice';
 
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
@@ -34,7 +35,7 @@ interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntit
 }
 
 export function ProcessAssignedTaskListPage() {
-    const user = useUser();
+    const user = useAppSelector(selectUser);
     const listRef = useRef<ListControlRef | null>(null);
     const [selectedTaskData, setSelectedTaskData] = useState<ProcessInstanceTaskEntityWithInstance | null>(null);
     const isTaskDataDialogOpen = selectedTaskData != null;

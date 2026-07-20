@@ -26,8 +26,6 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {GenericDetailsSkeleton} from '../../../../components/generic-details-page/generic-details-skeleton';
 import {ImageSelector} from '../../../assets/components/image-selector';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import {addSnackbarMessage, removeSnackbarMessage, SnackbarSeverity, SnackbarType} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Page} from '../../../../models/dtos/page';
 import {Permission} from '../../../../data/permissions/permission';

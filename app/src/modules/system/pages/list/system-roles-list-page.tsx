@@ -7,7 +7,6 @@ import {Typography} from '@mui/material';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import React, {useCallback, useMemo} from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {SystemRoleEntity} from "../../entities/system-role-entity";

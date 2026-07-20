@@ -7,7 +7,6 @@ import {Typography} from '@mui/material';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import GroupOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Group';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {TeamsApiService} from '../../services/teams-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
