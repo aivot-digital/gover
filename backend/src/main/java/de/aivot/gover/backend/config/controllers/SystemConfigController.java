@@ -8,10 +8,12 @@ import de.aivot.gover.backend.config.dtos.SystemConfigResponseDto;
 import de.aivot.gover.backend.config.entities.SystemConfigEntity;
 import de.aivot.gover.backend.config.filters.SystemConfigFilter;
 import de.aivot.gover.backend.config.models.SystemConfigDefinition;
+import de.aivot.gover.backend.config.permissions.ConfigPermissionProvider;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
@@ -45,25 +47,33 @@ public class SystemConfigController {
     private final ScopedAuditService auditService;
     private final SystemConfigService systemConfigService;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public SystemConfigController(AuditService auditService,
                                   SystemConfigService systemConfigService,
-                                  UserService userService) {
+                                  UserService userService,
+                                  PermissionService permissionService) {
         this.auditService = auditService.createScopedAuditService(SystemConfigController.class, "Systemkonfiguration");
         this.systemConfigService = systemConfigService;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List System Configurations",
-            description = "Retrieve a paginated list of system configurations with optional filtering."
+            description = "Retrieve a paginated list of system configurations with optional filtering. " +
+                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "“."
     )
     public Page<SystemConfigResponseDto> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid SystemConfigFilter filter
     ) throws ResponseException {
+        permissionService
+                .hasSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
+
         return systemConfigService
                 .list(pageable, filter)
                 .map(entity -> {
@@ -82,9 +92,15 @@ public class SystemConfigController {
     @GetMapping("definitions/")
     @Operation(
             summary = "List System Configuration Definitions",
-            description = "Retrieve a list of all system configuration definitions. This endpoint can be used to get metadata about the available system configurations, such as their types, categories and descriptions. This is especially useful for clients to dynamically adapt to available configurations."
+            description = "Retrieve a list of all system configuration definitions. This endpoint can be used to get metadata about the available system configurations, such as their types, categories and descriptions. This is especially useful for clients to dynamically adapt to available configurations. " +
+                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_READ + "“."
     )
-    public List<SystemConfigDefinition<?>> list() throws ResponseException {
+    public List<SystemConfigDefinition<?>> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt
+    ) throws ResponseException {
+        permissionService
+                .hasSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
+
         return systemConfigService
                 .getSystemConfigDefinitions();
     }
@@ -93,7 +109,7 @@ public class SystemConfigController {
     @Operation(
             summary = "Update System Configuration",
             description = "Update the value of a specific system configuration identified by its key. " +
-                    "Requires system administrator permissions."
+                    "This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "“."
     )
     public SystemConfigResponseDto update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -102,9 +118,10 @@ public class SystemConfigController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSystemAdmin()
-                .orElseThrow(ResponseException::noSystemAdminPermission);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
 
         var def = systemConfigService
                 .getDefinition(key)
