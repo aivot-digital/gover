@@ -1,9 +1,34 @@
 import React, {ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Badge, Box, Button, Chip, createTheme, Divider, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Menu, MenuItem, Paper, Snackbar, ThemeProvider, Typography, useTheme} from '@mui/material';
+import {
+    Badge,
+    Box,
+    Button,
+    Chip,
+    createTheme,
+    Divider,
+    List,
+    ListItem,
+    ListItemButton,
+    ListItemIcon,
+    ListItemText,
+    Menu,
+    MenuItem,
+    Paper,
+    Snackbar,
+    ThemeProvider,
+    Typography,
+    useTheme,
+} from '@mui/material';
 import {Link, useLocation} from 'react-router-dom';
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
-import {selectMinimizeDrawer, selectShowAboutGoverDialog, setMinimizeDrawer, setShowAboutGoverDialog, setShowSearchDialog} from '../../../slices/shell-slice';
+import {
+    selectMinimizeDrawer,
+    selectShowAboutGoverDialog,
+    setMinimizeDrawer,
+    setShowAboutGoverDialog,
+    setShowSearchDialog,
+} from '../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ShellUserMenu} from './shell-user-menu';
 import {ModuleIcons, ModuleIconsFilled} from '../data/module-icons';
@@ -39,7 +64,9 @@ import {StorageProvidersApiService} from '../../../modules/storage/storage-provi
 import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
 import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
-import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {
+    subscribeProcessAssignedTaskCountRefreshEvent,
+} from '../../../modules/process/utils/process-assigned-task-count-events';
 import {Permission} from '../../../data/permissions/permission';
 import {checkAnyDepartmentPermission, checkSystemPermission} from '../../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
@@ -134,7 +161,10 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 label: 'Marktplatz',
                 disabled: true,
                 children: [
-                    {...drawerModuleIcon('departments'), label: 'Durchsuchen'},
+                    {
+                        ...drawerModuleIcon('departments'),
+                        label: 'Durchsuchen',
+                    },
                 ],
             },
         ],
@@ -146,26 +176,54 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 ...drawerModuleIcon('organization'),
                 label: 'Organisation',
                 children: [
-                    {...drawerModuleIcon('departments'), label: 'Organisationseinheiten', to: '/departments'},
-                    {...drawerModuleIcon('teams'), label: 'Teams', to: '/teams'},
-                    {...drawerModuleIcon('users'), label: 'Mitarbeiter:innen', to: '/users',
-                        requiredSystemPermission: Permission.USER_READ,},
                     {
-                        ...drawerIcon(<SupervisedUserCircle />, <SupervisedUserCircleFilled />),
+                        ...drawerModuleIcon('departments'),
+                        label: 'Organisationseinheiten',
+                        to: '/departments',
+                    },
+                    {
+                        ...drawerModuleIcon('teams'),
+                        label: 'Teams',
+                        to: '/teams',
+                    },
+                    {
+                        ...drawerModuleIcon('users'),
+                        label: 'Mitarbeiter:innen',
+                        to: '/users',
+                        requiredSystemPermission: Permission.USER_READ,
+                    },
+                    {
+                        ...drawerIcon(<SupervisedUserCircle/>, <SupervisedUserCircleFilled/>),
                         label: 'Rollenverwaltung',
                         children: [
-                            {...drawerModuleIcon('roles'), label: 'Systemrollen', to: '/system-roles',
-                                requiredSystemPermission: Permission.SYSTEM_ROLE_READ,},
-                            {...drawerModuleIcon('roles'), label: 'Domänenrollen', to: '/user-roles',
-                                requiredSystemPermission: Permission.DOMAIN_ROLE_READ,},
+                            {
+                                ...drawerModuleIcon('roles'),
+                                label: 'Systemrollen',
+                                to: '/system-roles',
+                                requiredSystemPermission: Permission.SYSTEM_ROLE_READ,
+                            },
+                            {
+                                ...drawerModuleIcon('roles'),
+                                label: 'Domänenrollen',
+                                to: '/user-roles',
+                                requiredSystemPermission: Permission.DOMAIN_ROLE_READ,
+                            },
                         ],
                     },
-                    {...drawerIcon(<FamilyHistory/>, <FamilyHistoryFilled/>), label: 'Organigramm', to: '/organization-chart',
-                        isVisible: (permissions) => checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),},
+                    {
+                        ...drawerIcon(<FamilyHistory/>, <FamilyHistoryFilled/>),
+                        label: 'Organigramm',
+                        to: '/organization-chart',
+                        isVisible: (permissions) => checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),
+                    },
                 ],
             },
-            {...drawerModuleIcon('assets'), label: 'Dateien & Medien', to: '/assets',
-                requiredSystemPermission: Permission.ASSET_READ,},
+            {
+                ...drawerModuleIcon('assets'),
+                label: 'Dateien & Medien',
+                to: '/assets',
+                requiredSystemPermission: Permission.ASSET_READ,
+            },
             {
                 ...drawerModuleIcon('dataModels'),
                 label: 'Datenmodelle',
@@ -176,10 +234,18 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 ...drawerModuleIcon('settings'),
                 label: 'Konfiguration',
                 children: [
-                    {...drawerModuleIcon('settings'), label: 'Allgemeine Einstellungen', to: '/settings/app',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
-                    {...drawerIcon(<ReadinessScore />, <ReadinessScoreFilled />), label: 'Systeminformationen', to: '/settings/status',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
+                    {
+                        ...drawerModuleIcon('settings'),
+                        label: 'Allgemeine Einstellungen',
+                        to: '/settings/app',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
+                    {
+                        ...drawerIcon(<ReadinessScore/>, <ReadinessScoreFilled/>),
+                        label: 'Systeminformationen',
+                        to: '/settings/status',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
                     {
                         ...drawerModuleIcon('audit'),
                         label: 'Audit-Log',
@@ -192,28 +258,60 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         to: '/themes',
                         requiredSystemPermission: Permission.THEME_READ,
                     },
-                    {...drawerModuleIcon('themes'), label: 'Erscheinungsbild', to: '/themes',
-                        requiredSystemPermission: Permission.THEME_READ,},
-                    {...drawerModuleIcon('secrets'), label: 'Systemvariablen', to: '/secrets',
-                        requiredSystemPermission: Permission.SECRET_READ,},
                     {
-                        ...drawerIcon(<Api />, <ApiFilled />),
+                        ...drawerModuleIcon('themes'),
+                        label: 'Erscheinungsbild',
+                        to: '/themes',
+                        requiredSystemPermission: Permission.THEME_READ,
+                    },
+                    {
+                        ...drawerModuleIcon('secrets'),
+                        label: 'Systemvariablen',
+                        to: '/secrets',
+                        requiredSystemPermission: Permission.SECRET_READ,
+                    },
+                    {
+                        ...drawerIcon(<Api/>, <ApiFilled/>),
                         label: 'Anbindungen',
                         children: [
-                            {...drawerModuleIcon('identity'), label: 'Identitätsanbieter', to: '/identity-providers',
-                                requiredSystemPermission: Permission.IDENTITY_PROVIDER_READ,},
-                            {...drawerModuleIcon('payment'), label: 'Zahlungsanbieter', to: '/payment-providers',
-                                requiredSystemPermission: Permission.PAYMENT_PROVIDER_READ,},
-                            {...drawerModuleIcon('storage'), label: 'Speicheranbieter', to: '/storage-providers',
-                                requiredSystemPermission: Permission.STORAGE_PROVIDER_READ,},
+                            {
+                                ...drawerModuleIcon('identity'),
+                                label: 'Identitätsanbieter',
+                                to: '/identity-providers',
+                                requiredSystemPermission: Permission.IDENTITY_PROVIDER_READ,
+                            },
+                            {
+                                ...drawerModuleIcon('payment'),
+                                label: 'Zahlungsanbieter',
+                                to: '/payment-providers',
+                                requiredSystemPermission: Permission.PAYMENT_PROVIDER_READ,
+                            },
+                            {
+                                ...drawerModuleIcon('storage'),
+                                label: 'Speicheranbieter',
+                                to: '/storage-providers',
+                                requiredSystemPermission: Permission.STORAGE_PROVIDER_READ,
+                            },
                         ],
                     },
-                    {...drawerModuleIcon('extensions'), label: 'Erweiterungen', to: '/settings/extensions',
-                        requiredSystemPermission: Permission.PLUGIN_READ,},
-                    {...drawerIcon(<ForwardToInbox />, <ForwardToInboxFilled />), label: 'SMTP-Test (legacy)', to: '/settings/smtp',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
-                    {...drawerModuleIcon('providerLinks'), label: 'Links (legacy)', to: '/provider-links',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
+                    {
+                        ...drawerModuleIcon('extensions'),
+                        label: 'Erweiterungen',
+                        to: '/settings/extensions',
+                        requiredSystemPermission: Permission.PLUGIN_READ,
+                    },
+                    {
+                        ...drawerIcon(<ForwardToInbox/>, <ForwardToInboxFilled/>),
+                        label: 'SMTP-Test (legacy)',
+                        to: '/settings/smtp',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
+                    {
+                        ...drawerModuleIcon('providerLinks'),
+                        label: 'Links (legacy)',
+                        to: '/provider-links',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
+                    },
                 ],
             },
         ],
@@ -440,7 +538,7 @@ export function ShellDrawer() {
             event.preventDefault();
             dispatch(setShowSearchDialog(true));
         },
-        { enableOnFormTags: false }
+        {enableOnFormTags: false},
     );
 
     return (
@@ -461,19 +559,33 @@ export function ShellDrawer() {
                     }}
                     elevation={1}
                 >
-                    <Box sx={{display: 'flex', flexDirection: 'column', px: 1.75,}}>
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        px: 1.75,
+                    }}>
                         {/* Header */}
-                        <Box sx={{display: 'flex', flexDirection: minimizeDrawer ? 'column' : 'row', mb: 3}}>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: minimizeDrawer ? 'column' : 'row',
+                            mb: 3,
+                        }}>
                             <Link
                                 to="/"
                                 title="Zurück zur Übersicht"
-                                style={{display: 'flex', alignItems: 'center', textDecoration: 'none'}}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    textDecoration: 'none',
+                                }}
                             >
-                                <ShellDrawerLogo minimize={minimizeDrawer} />
+                                <ShellDrawerLogo minimize={minimizeDrawer}/>
                             </Link>
 
                             {!minimizeDrawer && (
-                                <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} setNotificationsAnchorEl={setNotificationsAnchorEl} />
+                                <ShellDrawerUserActions minimizeDrawer={minimizeDrawer}
+                                                        setUserMenuAnchorEl={setUserMenuAnchorEl}
+                                                        setNotificationsAnchorEl={setNotificationsAnchorEl}/>
                             )}
                         </Box>
 
@@ -481,7 +593,7 @@ export function ShellDrawer() {
                         <Box sx={{mb: minimizeDrawer ? 0 : 2}}>
                             {!minimizeDrawer ? (
                                 <Button
-                                    startIcon={<SearchFilled />}
+                                    startIcon={<SearchFilled/>}
                                     variant="outlined"
                                     fullWidth
                                     onClick={handleToggleSearchDialog}
@@ -502,7 +614,12 @@ export function ShellDrawer() {
                                         },
                                     }}
                                 >
-                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        width: '100%',
+                                        alignItems: 'center',
+                                    }}>
                                         <span>Suche</span>
                                         <Box
                                             sx={{
@@ -518,7 +635,7 @@ export function ShellDrawer() {
                                                 color: 'rgba(255,255,255,0.8)',
                                                 transform: 'translateX(7px) translateY(-1px)',
                                             }}
-                                            title={"Tastenkürzel zum Öffnen der Suche (" + shortcutLabel + ")"}
+                                            title={'Tastenkürzel zum Öffnen der Suche (' + shortcutLabel + ')'}
                                         >
                                             {shortcutLabel}
                                         </Box>
@@ -544,7 +661,7 @@ export function ShellDrawer() {
                                     direction="column"
                                     actions={[
                                         {
-                                            icon: <SearchFilled />,
+                                            icon: <SearchFilled/>,
                                             tooltip: 'Suche',
                                             onClick: handleToggleSearchDialog,
                                         },
@@ -590,10 +707,23 @@ export function ShellDrawer() {
 
                     <Box sx={{flexGrow: 1}}></Box>
 
-                    <Box sx={{display: 'flex', flexDirection: 'column', px: 1.75}}>
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        px: 1.75,
+                    }}>
                         {/* Footer */}
-                        <Divider sx={{borderColor: 'rgba(255, 255, 255, 0.1)', mx: -1.75, mb: 1.75}} />
-                        <Box sx={{display: 'flex', flexDirection: minimizeDrawer ? 'column' : 'row', justifyContent: 'space-between', alignItems: 'center'}}>
+                        <Divider sx={{
+                            borderColor: 'rgba(255, 255, 255, 0.1)',
+                            mx: -1.75,
+                            mb: 1.75,
+                        }}/>
+                        <Box sx={{
+                            display: 'flex',
+                            flexDirection: minimizeDrawer ? 'column' : 'row',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                        }}>
                             {!minimizeDrawer && (
                                 <Button
                                     variant="contained"
@@ -601,8 +731,11 @@ export function ShellDrawer() {
                                     href="https://docs.gover.digital"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    startIcon={<Description fontSize="small" />}
-                                    endIcon={<OpenInNew sx={{ fontSize: '1rem!important', opacity: 0.6 }} />}
+                                    startIcon={<Description fontSize="small"/>}
+                                    endIcon={<OpenInNew sx={{
+                                        fontSize: '1rem!important',
+                                        opacity: 0.6,
+                                    }}/>}
                                     sx={{
                                         textTransform: 'none',
                                         color: 'white',
@@ -617,18 +750,24 @@ export function ShellDrawer() {
                             )}
                             {minimizeDrawer && (
                                 <>
-                                    <ShellDrawerUserActions minimizeDrawer={minimizeDrawer} setUserMenuAnchorEl={setUserMenuAnchorEl} setNotificationsAnchorEl={setNotificationsAnchorEl} />
+                                    <ShellDrawerUserActions minimizeDrawer={minimizeDrawer}
+                                                            setUserMenuAnchorEl={setUserMenuAnchorEl}
+                                                            setNotificationsAnchorEl={setNotificationsAnchorEl}/>
                                     <Box sx={{height: 10}}/>
                                 </>
                             )}
                             <Actions
-                                sx={{flex: 0, display: 'flex', justifyContent: 'right'}}
+                                sx={{
+                                    flex: 0,
+                                    display: 'flex',
+                                    justifyContent: 'right',
+                                }}
                                 color="inherit"
                                 direction={minimizeDrawer ? 'column' : 'row'}
                                 actions={[
                                     {
                                         tooltip: minimizeDrawer ? 'Maximieren' : 'Minimieren',
-                                        icon: minimizeDrawer ? <Start /> : <KeyboardTabRtl />,
+                                        icon: minimizeDrawer ? <Start/> : <KeyboardTabRtl/>,
                                         onClick: handleToggleDrawer,
                                     },
                                 ]}
@@ -674,7 +813,10 @@ interface DrawerGroupProps {
     minimizeDrawer: boolean;
 }
 
-function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
+function DrawerGroup({
+                         group,
+                         minimizeDrawer,
+                     }: DrawerGroupProps) {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [activeItem, setActiveItem] = useState<DrawerItem | null>(null);
 
@@ -699,7 +841,7 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
             '&.MuiIconButton-root:hover': {
                 color: 'primary.dark',
                 backgroundColor: 'secondary.main',
-            }
+            },
         };
 
         return (
@@ -727,14 +869,16 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
 
                         return item.children == null
                             ? {
-                                icon: <DrawerNavigationIcon item={item} active={isActive} />,
+                                icon: <DrawerNavigationIcon item={item}
+                                                            active={isActive}/>,
                                 tooltip: item.label,
                                 to: item.to ?? '',
                                 disabled: item.disabled,
                                 activeStyle: isActive ? actionActiveStyle : {},
                             }
                             : {
-                                icon: <DrawerNavigationIcon item={item} active={isActive} />,
+                                icon: <DrawerNavigationIcon item={item}
+                                                            active={isActive}/>,
                                 tooltip: item.label,
                                 onClick: (e: any) => handleOpenMenu(e, item),
                                 disabled: item.disabled,
@@ -789,7 +933,10 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
 /* -----------------------------
  * DrawerListItem (recursive)
  * ----------------------------- */
-function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number }) {
+function DrawerListItem({
+                            item,
+                            level = 0,
+                        }: { item: DrawerItem; level?: number }) {
     const location = useLocation();
     const pathname = location.pathname;
 
@@ -808,11 +955,27 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
     };
 
     const labelSizeScale =
-        level === 0 ? {fontSize: '1rem', fontWeight: 600} :
-            {fontSize: '0.8rem', fontWeight: 600};
+        level === 0 ? {
+                fontSize: '1rem',
+                fontWeight: 600,
+            } :
+            {
+                fontSize: '0.8rem',
+                fontWeight: 600,
+            };
     const iconSizeScale =
-        level === 0 ? {'& .MuiSvgIcon-root': {width: 24, fontSize: '1.5rem'}} :
-            {'& .MuiSvgIcon-root': {width: 20, fontSize: '1.25rem'}};
+        level === 0 ? {
+                '& .MuiSvgIcon-root': {
+                    width: 24,
+                    fontSize: '1.5rem',
+                },
+            } :
+            {
+                '& .MuiSvgIcon-root': {
+                    width: 20,
+                    fontSize: '1.25rem',
+                },
+            };
 
     const activeStyles =
         level === 0
@@ -885,7 +1048,7 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                                     height: '14px',
                                     backgroundColor: 'primary.light',
                                     transform: 'translate(calc(13px * -1), calc(13px * -0.4))',
-                                    mask: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' viewBox='0 0 14 14'%3E%3Cpath d='M1 1v4a8 8 0 0 0 8 8h4' stroke='%23efefef' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E\") 50% 50% / 100% no-repeat",
+                                    mask: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'14\' height=\'14\' fill=\'none\' viewBox=\'0 0 14 14\'%3E%3Cpath d=\'M1 1v4a8 8 0 0 0 8 8h4\' stroke=\'%23efefef\' stroke-width=\'2\' stroke-linecap=\'round\'/%3E%3C/svg%3E") 50% 50% / 100% no-repeat',
                                 },
                             }
                             : {}),
@@ -898,9 +1061,10 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                     }}
                 >
                     <ListItemIcon>
-                        <DrawerNavigationIcon item={item} active={isActive} />
+                        <DrawerNavigationIcon item={item}
+                                              active={isActive}/>
                     </ListItemIcon>
-                    <ListItemText primary={item.label} />
+                    <ListItemText primary={item.label}/>
                     {item.chipContent != null && (
                         <Chip
                             label={item.chipContent}
@@ -928,9 +1092,13 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                             }}
                         />
                     )}
-                    <Box className={'toggle-icon'} sx={{display: 'flex', alignItems: 'center'}}>
+                    <Box className={'toggle-icon'}
+                         sx={{
+                             display: 'flex',
+                             alignItems: 'center',
+                         }}>
                         {item.children &&
-                            (expanded ? <KeyboardArrowDown sx={{ml: 0.5}}/> : <ChevronForward sx={{ml: 0.5}} />)
+                            (expanded ? <KeyboardArrowDown sx={{ml: 0.5}}/> : <ChevronForward sx={{ml: 0.5}}/>)
                         }
                     </Box>
                 </ListItemButton>
@@ -987,8 +1155,14 @@ function NestedMenu({
             anchorEl={anchorEl}
             open={open}
             onClose={onClose}
-            anchorOrigin={{vertical: 'bottom', horizontal: 'right'}}
-            transformOrigin={{vertical: 'top', horizontal: 'left'}}
+            anchorOrigin={{
+                vertical: 'bottom',
+                horizontal: 'right',
+            }}
+            transformOrigin={{
+                vertical: 'top',
+                horizontal: 'left',
+            }}
             MenuListProps={{dense: true}}
             disableAutoFocusItem
         >
@@ -1044,10 +1218,15 @@ function NestedMenuItem({
                 selected={isActive}
                 sx={menuItemSx}
             >
-                <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
-                    <DrawerNavigationIcon item={item} active={isActive} />
+                <Box sx={{
+                    width: 24,
+                    display: 'inline-flex',
+                    justifyContent: 'center',
+                }}>
+                    <DrawerNavigationIcon item={item}
+                                          active={isActive}/>
                 </Box>
-                <Box sx={{ flex: 1 }}>{item.label}</Box>
+                <Box sx={{flex: 1}}>{item.label}</Box>
             </MenuItem>
         );
     }
@@ -1061,11 +1240,16 @@ function NestedMenuItem({
                 selected={isActive}
                 sx={menuItemSx}
             >
-                <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
-                    <DrawerNavigationIcon item={item} active={isActive} />
+                <Box sx={{
+                    width: 24,
+                    display: 'inline-flex',
+                    justifyContent: 'center',
+                }}>
+                    <DrawerNavigationIcon item={item}
+                                          active={isActive}/>
                 </Box>
-                <Box sx={{ flex: 1 }}>{item.label}</Box>
-                {hasChildren && <ChevronForward />}
+                <Box sx={{flex: 1}}>{item.label}</Box>
+                {hasChildren && <ChevronForward/>}
             </MenuItem>
 
             {hasChildren && (
@@ -1073,13 +1257,21 @@ function NestedMenuItem({
                     anchorEl={submenuAnchor}
                     open={Boolean(submenuAnchor)}
                     onClose={() => setSubmenuAnchor(null)}
-                    anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
-                    transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                    MenuListProps={{ dense: true }}
+                    anchorOrigin={{
+                        vertical: 'top',
+                        horizontal: 'right',
+                    }}
+                    transformOrigin={{
+                        vertical: 'top',
+                        horizontal: 'left',
+                    }}
+                    MenuListProps={{dense: true}}
                     disableAutoFocusItem
                 >
                     {item.children!.map((child) => (
-                        <NestedMenuItem key={child.label} item={child} onAnyClose={onAnyClose} />
+                        <NestedMenuItem key={child.label}
+                                        item={child}
+                                        onAnyClose={onAnyClose}/>
                     ))}
                 </Menu>
             )}
@@ -1088,8 +1280,11 @@ function NestedMenuItem({
 }
 
 
-function DrawerNavigationIcon({item, active}: {item: DrawerItem; active: boolean}) {
-    const defaultIcon = item.icon ?? <PageInfo />;
+function DrawerNavigationIcon({
+                                  item,
+                                  active,
+                              }: { item: DrawerItem; active: boolean }) {
+    const defaultIcon = item.icon ?? <PageInfo/>;
 
     if (item.activeIcon == null) {
         return defaultIcon;
@@ -1135,8 +1330,16 @@ function DrawerNavigationIcon({item, active}: {item: DrawerItem; active: boolean
 }
 
 
-function ShellDrawerUserActions(props: {minimizeDrawer: boolean, setUserMenuAnchorEl: (el: HTMLElement) => void, setNotificationsAnchorEl: (el: HTMLElement) => void}) {
-    const {minimizeDrawer, setUserMenuAnchorEl, setNotificationsAnchorEl} = props;
+function ShellDrawerUserActions(props: {
+    minimizeDrawer: boolean,
+    setUserMenuAnchorEl: (el: HTMLElement) => void,
+    setNotificationsAnchorEl: (el: HTMLElement) => void
+}) {
+    const {
+        minimizeDrawer,
+        setUserMenuAnchorEl,
+        setNotificationsAnchorEl,
+    } = props;
     return (
         <Actions
             sx={{
@@ -1153,15 +1356,24 @@ function ShellDrawerUserActions(props: {minimizeDrawer: boolean, setUserMenuAnch
                         overlap="circular"
                         badgeContent=" "
                         invisible={false}
-                        sx={{'& .MuiBadge-badge': {top: 5, right: 5, borderColor: 'primary.dark', borderWidth: 2, borderStyle: 'solid', transform: 'scale(1.5) translate(50%, -50%)'}}}
+                        sx={{
+                            '& .MuiBadge-badge': {
+                                top: 5,
+                                right: 5,
+                                borderColor: 'primary.dark',
+                                borderWidth: 2,
+                                borderStyle: 'solid',
+                                transform: 'scale(1.5) translate(50%, -50%)',
+                            },
+                        }}
                     >
-                        <Notifications />
+                        <Notifications/>
                     </Badge>,
                     tooltip: 'Benachrichtigungen',
                     onClick: (event) => setNotificationsAnchorEl(event.currentTarget as HTMLElement),
-            },
+                },
                 {
-                    icon: <ShellDrawerUserIcon />,
+                    icon: <ShellDrawerUserIcon/>,
                     tooltip: 'Mein Konto',
                     onClick: (event) => setUserMenuAnchorEl(event.currentTarget as HTMLElement),
                 },
@@ -1169,7 +1381,7 @@ function ShellDrawerUserActions(props: {minimizeDrawer: boolean, setUserMenuAnch
             direction={minimizeDrawer ? 'column' : 'row'}
             tooltipPlacement={minimizeDrawer ? 'right' : 'bottom'}
         />
-    )
+    );
 }
 
 function isDrawerItemActive(item: DrawerItem, pathname: string): boolean {
