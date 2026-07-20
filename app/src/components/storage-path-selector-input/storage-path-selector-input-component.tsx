@@ -71,6 +71,21 @@ function normalizeDirectoryPath(path: string | null | undefined): string | null 
     return normalized;
 }
 
+function normalizeTypedPath(path: string | null | undefined): string | null {
+    if (path == null || path.trim().length === 0) {
+        return null;
+    }
+
+    return path.trim();
+}
+
+function containsTemplateTag(path: string | null | undefined): boolean {
+    return path?.includes('{{') === true ||
+           path?.includes('{%') === true ||
+           path?.includes('{!') === true ||
+           path?.includes('{#') === true;
+}
+
 function normalizeAllowedTypes(types: StorageProviderType[] | null | undefined): StorageProviderType[] {
     return types ?? StorageProviderTypes;
 }
@@ -167,11 +182,14 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
         };
     }, [providers, value?.storageProviderId]);
 
-    const selectedPath = normalizeDirectoryPath(value?.path);
+    const selectedPath = value?.path ?? null;
+    const explorerPath = containsTemplateTag(selectedPath)
+        ? ROOT_PATH
+        : normalizeDirectoryPath(selectedPath) ?? ROOT_PATH;
     const isReadonlyOrDisabled = disabled === true || readOnly === true;
     const canBrowse = !isReadonlyOrDisabled && value?.storageProviderId != null;
     const helperText = error ?? loadError ?? (
-        value?.storageProviderId != null && selectedPath == null
+        value?.storageProviderId != null && normalizeTypedPath(selectedPath) == null
             ? 'Wählen Sie einen Ordner im Speicheranbieter aus.'
             : hint
     );
@@ -185,6 +203,28 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
         onChange({
             storageProviderId: provider.id,
             path: provider.id === value?.storageProviderId ? selectedPath : null,
+        });
+    };
+
+    const handlePathChange = (path: string): void => {
+        if (value?.storageProviderId == null) {
+            return;
+        }
+
+        onChange({
+            storageProviderId: value.storageProviderId,
+            path,
+        });
+    };
+
+    const handlePathBlur = (): void => {
+        if (value?.storageProviderId == null) {
+            return;
+        }
+
+        onChange({
+            storageProviderId: value.storageProviderId,
+            path: normalizeTypedPath(selectedPath),
         });
     };
 
@@ -279,13 +319,17 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                         label={label}
                         required={required}
                         value={selectedPath ?? ''}
+                        onChange={(event) => {
+                            handlePathChange(event.target.value);
+                        }}
+                        onBlur={handlePathBlur}
                         placeholder={placeholder ?? 'Ordner auswählen'}
                         error={error != null}
                         helperText={helperText}
-                        disabled={disabled}
+                        disabled={disabled || value?.storageProviderId == null}
                         fullWidth={true}
                         InputProps={{
-                            readOnly: true,
+                            readOnly: readOnly,
                             endAdornment: (
                                 <InputAdornment position="end">
                                     {value != null && !isReadonlyOrDisabled && (
@@ -362,7 +406,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                     {value?.storageProviderId != null && (
                         <StorageExplorer
                             providerId={value.storageProviderId}
-                            initialPath={selectedPath ?? ROOT_PATH}
+                            initialPath={explorerPath}
                             onFolderSelect={handleFolderSelect}
                             folderSelectLabel="Diesen Ordner auswählen"
                             showTopNavigationBar={true}

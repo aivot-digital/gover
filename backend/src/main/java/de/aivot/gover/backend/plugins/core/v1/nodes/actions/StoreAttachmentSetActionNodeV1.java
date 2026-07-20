@@ -4,16 +4,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import de.aivot.gover.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.gover.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.gover.backend.elements.annotations.LayoutElementPOJOBinding;
+import de.aivot.gover.backend.elements.annotations.ReplicatingContainerLayoutElementElementPOJOBinding;
 import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.elements.ElementVisibilityFunctions;
 import de.aivot.gover.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
-import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElement;
-import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElementOption;
+import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElementValue;
+import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.nocode.models.NoCodeExpression;
+import de.aivot.gover.backend.nocode.models.NoCodeReference;
+import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
+import de.aivot.gover.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionException;
@@ -30,7 +37,6 @@ import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecution
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
-import de.aivot.gover.backend.storage.entities.StorageProviderEntity;
 import de.aivot.gover.backend.storage.enums.StorageProviderType;
 import de.aivot.gover.backend.storage.models.StorageItemMetadata;
 import de.aivot.gover.backend.storage.repositories.StorageProviderRepository;
@@ -45,9 +51,11 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 @Component
 public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> {
@@ -55,8 +63,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
     private static final String PORT_NAME = "output";
 
-    private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
-    private static final String OUTPUT_NAME_ATTACHMENT_SET_DATA_KEY = "attachmentSetDataKey";
+    private static final String OUTPUT_NAME_RESULTS = "results";
     private static final String OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT = "storagePathsFromRoot";
     private static final String OUTPUT_NAME_FILE_NAMES = "fileNames";
     private static final String OUTPUT_NAME_COUNT = "count";
@@ -130,24 +137,27 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         }
 
         layout
-                .findChild(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, SelectInputElement.class)
-                .ifPresent(field -> field.setOptions(storageProviderRepository
-                        .findAll()
-                        .stream()
-                        .filter(provider -> !Boolean.TRUE.equals(provider.getReadOnlyStorage()) && !StorageProviderType.Attachments.equals(provider.getType()))
-                        .sorted(Comparator.comparing(StorageProviderEntity::getName, String.CASE_INSENSITIVE_ORDER))
-                        .map(provider -> SelectInputElementOption.of(
-                                provider.getId().toString(),
-                                provider.getName(),
-                                provider.getType().getLabel()
-                        ))
-                        .toList()));
-
-        layout
-                .findChild(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
+                .findChild(AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
                 .ifPresent(field -> field
                         .setMinItems(1)
                         .setMaxItems(1));
+
+        layout
+                .findChild(AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
+                .ifPresent(field -> field.setAllowedStorageProviderTypes(List.of(
+                        StorageProviderType.Assets,
+                        StorageProviderType.External
+                )));
+
+        layout
+                .findChild(AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
+                .ifPresent(field -> field.setVisibility(ElementVisibilityFunctions
+                        .of(NoCodeExpression.of(
+                                NoCodeEqualsOperator.OPERATOR_ID,
+                                new NoCodeReference(AttachmentSetStorageConfig.CUSTOMIZE_FILE_NAME_FIELD_ID),
+                                new NoCodeStaticValue(true)
+                        ))
+                        .recalculateReferencedIds()));
 
         return layout;
     }
@@ -168,8 +178,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     @Override
     public List<ProcessNodeOutput> getOutputs() {
         return List.of(
-                new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PROVIDER_ID, "Speicheranbieter-ID", "Die ID des Ziel-Speicheranbieters."),
-                new ProcessNodeOutput(OUTPUT_NAME_ATTACHMENT_SET_DATA_KEY, "Anlagensatz", "Der Datenschlüssel des gespeicherten Anlagensatzes."),
+                new ProcessNodeOutput(OUTPUT_NAME_RESULTS, "Ablageergebnisse", "Die Ergebnisse je konfiguriertem Anlagensatz."),
                 new ProcessNodeOutput(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, "Speicherpfade", "Die Pfade der gespeicherten Dateien im Ziel-Speicheranbieter."),
                 new ProcessNodeOutput(OUTPUT_NAME_FILE_NAMES, "Dateinamen", "Die Dateinamen der gespeicherten Dateien."),
                 new ProcessNodeOutput(OUTPUT_NAME_COUNT, "Anzahl", "Die Anzahl der gespeicherten Dateien.")
@@ -188,35 +197,52 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                                                            @Nonnull StoreAttachmentSetActionNodeConfig configuration) {
         var errors = new HashMap<String, List<String>>();
 
-        try {
-            var storageProviderId = parseStorageProviderId(configuration.storageProviderId);
-            var storageProvider = storageProviderRepository.findById(storageProviderId).orElse(null);
-            if (storageProvider == null) {
-                errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of("Der ausgewählte Speicheranbieter wurde nicht gefunden."));
-            } else if (Boolean.TRUE.equals(storageProvider.getReadOnlyStorage())) {
-                errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of("Der ausgewählte Speicheranbieter ist schreibgeschützt."));
-            } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
-                errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of("Der ausgewählte Speicheranbieter ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden."));
+        var attachmentSetConfigs = configuration.attachmentSets == null ? List.<AttachmentSetStorageConfig>of() : configuration.attachmentSets;
+        if (attachmentSetConfigs.isEmpty()) {
+            addError(errors, StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, "Es muss mindestens ein Anlagensatz konfiguriert werden.");
+        }
+
+        for (var i = 0; i < attachmentSetConfigs.size(); i++) {
+            var rowIndex = i + 1;
+            var attachmentSetConfig = attachmentSetConfigs.get(i);
+
+            if (resolveSingleAttachmentSetDataKey(attachmentSetConfig.attachmentSetDataKeys) == null) {
+                addError(errors, AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, "Eintrag %d: Es muss genau ein Anlagensatz ausgewählt werden.".formatted(rowIndex));
             }
-        } catch (ProcessNodeExecutionException e) {
-            errors.put(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, List.of(e.getMessage()));
-        }
 
-        if (resolveSingleAttachmentSetDataKey(configuration.attachmentSetDataKeys) == null) {
-            errors.put(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, List.of("Es muss genau ein Anlagensatz ausgewählt werden."));
-        }
+            var storageProviderId = resolveStorageProviderId(attachmentSetConfig.storagePath);
+            if (storageProviderId == null) {
+                addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Es muss ein Speicheranbieter ausgewählt werden.".formatted(rowIndex));
+            } else {
+                var storageProvider = storageProviderRepository.findById(storageProviderId).orElse(null);
+                if (storageProvider == null) {
+                    addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter wurde nicht gefunden.".formatted(rowIndex));
+                } else if (Boolean.TRUE.equals(storageProvider.getReadOnlyStorage())) {
+                    addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist schreibgeschützt.".formatted(rowIndex));
+                } else if (StorageProviderType.Attachments.equals(storageProvider.getType())) {
+                    addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der ausgewählte Speicheranbieter ist ein Speicher für Prozessanlagen und kann nicht als Ziel verwendet werden.".formatted(rowIndex));
+                }
+            }
 
-        if (StringUtils.isNullOrEmpty(configuration.targetPath)) {
-            errors.put(StoreAttachmentSetActionNodeConfig.TARGET_PATH_FIELD_ID, List.of("Der Zielpfad muss angegeben werden."));
-        } else {
-            var diagnostics = templateRenderService.validateInterpolationSyntax(configuration.targetPath);
-            if (!diagnostics.isEmpty()) {
-                errors.put(
-                        StoreAttachmentSetActionNodeConfig.TARGET_PATH_FIELD_ID,
-                        diagnostics.stream()
-                                .map(diagnostic -> "Zeile %d: %s".formatted(diagnostic.lineNumber(), diagnostic.message()))
-                                .toList()
-                );
+            var targetPath = resolveConfiguredPath(attachmentSetConfig.storagePath);
+            if (targetPath == null) {
+                addError(errors, AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, "Eintrag %d: Der Zielpfad muss angegeben werden.".formatted(rowIndex));
+            } else {
+                var diagnostics = templateRenderService.validateInterpolationSyntax(targetPath);
+                if (!diagnostics.isEmpty()) {
+                    for (var diagnostic : diagnostics) {
+                        addError(
+                                errors,
+                                AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID,
+                                "Eintrag %d, Zeile %d: %s".formatted(rowIndex, diagnostic.lineNumber(), diagnostic.message())
+                        );
+                    }
+                }
+            }
+
+            if (Boolean.TRUE.equals(attachmentSetConfig.customizeFileName)
+                && StringUtils.isNullOrEmpty(attachmentSetConfig.fileName)) {
+                addError(errors, AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, "Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
             }
         }
 
@@ -226,68 +252,101 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     @Nonnull
     @Override
     public AuthoredElementValues cleanConfigurationForExport(@Nonnull AuthoredElementValues configuration) {
-        configuration.remove(StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID);
+        var attachmentSets = configuration.get(StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
+        if (attachmentSets instanceof List<?> attachmentSetList) {
+            for (var attachmentSet : attachmentSetList) {
+                if (!(attachmentSet instanceof Map<?, ?> attachmentSetMap)) {
+                    continue;
+                }
+
+                var storagePath = attachmentSetMap.get(AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID);
+                if (storagePath instanceof Map<?, ?> storagePathMap) {
+                    storagePathMap.remove("storageProviderId");
+                }
+            }
+        }
         return configuration;
     }
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context) throws ProcessNodeExecutionException {
         var configuration = context.getConfigurationOfExecutingNode();
-        var storageProviderId = parseStorageProviderId(configuration.storageProviderId);
-        ensureWritableStorageProvider(storageProviderId);
-
-        var attachmentSetDataKey = resolveSingleAttachmentSetDataKey(configuration.attachmentSetDataKeys);
-        if (attachmentSetDataKey == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Es muss genau ein Anlagensatz ausgewählt werden.");
+        var attachmentSetConfigs = configuration.attachmentSets == null ? List.<AttachmentSetStorageConfig>of() : configuration.attachmentSets;
+        if (attachmentSetConfigs.isEmpty()) {
+            throw new ProcessNodeExecutionExceptionMissingValue("Es muss mindestens ein Anlagensatz konfiguriert werden.");
         }
-
-        var renderedTargetPath = interpolateTargetPath(context, configuration.targetPath);
-        if (StringUtils.isNullOrEmpty(renderedTargetPath)) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Zielpfad wurde nicht angegeben oder leer interpoliert.");
-        }
-
-        var attachments = resolveProcessAttachmentsBySetDataKey(context, attachmentSetDataKey)
-                .stream()
-                .sorted(Comparator
-                        .comparing(ProcessInstanceAttachmentEntity::getFileName, String.CASE_INSENSITIVE_ORDER)
-                        .thenComparing(attachment -> Objects.toString(attachment.getKey(), "")))
-                .toList();
 
         var storagePaths = new ArrayList<String>();
         var fileNames = new ArrayList<String>();
+        var results = new ArrayList<Map<String, Object>>();
         var createdFolders = new HashSet<String>();
 
-        for (var i = 0; i < attachments.size(); i++) {
-            var attachment = attachments.get(i);
-            var targetPath = resolveTargetPath(renderedTargetPath.trim(), attachment.getFileName(), i + 1);
-            ensureParentFolders(storageProviderId, targetPath, createdFolders);
+        for (var rowIndex = 0; rowIndex < attachmentSetConfigs.size(); rowIndex++) {
+            var attachmentSetConfig = attachmentSetConfigs.get(rowIndex);
+            var storageProviderId = resolveRequiredStorageProviderId(attachmentSetConfig.storagePath);
+            ensureWritableStorageProvider(storageProviderId);
 
-            try (var attachmentContent = storageService.getDocumentContent(
-                    attachment.getStorageProviderId(),
-                    attachment.getStoragePathFromRoot()
-            )) {
-                var storedDocument = storageService.storeDocument(
-                        storageProviderId,
-                        targetPath,
-                        attachmentContent,
-                        StorageItemMetadata.empty()
-                );
-                storagePaths.add(storedDocument.getPathFromRoot());
-                fileNames.add(storedDocument.getName());
-            } catch (IOException | ResponseException e) {
-                throw new ProcessNodeExecutionExceptionUnknown(
-                        e,
-                        "Der Prozess-Anhang %s konnte nicht im Speicheranbieter %d gespeichert werden: %s",
-                        StringUtils.quote(attachment.getFileName()),
-                        storageProviderId,
-                        e.getMessage()
-                );
+            var attachmentSetDataKey = resolveSingleAttachmentSetDataKey(attachmentSetConfig.attachmentSetDataKeys);
+            if (attachmentSetDataKey == null) {
+                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Es muss genau ein Anlagensatz ausgewählt werden.".formatted(rowIndex + 1));
             }
+
+            var renderedTargetFolderPath = interpolateTargetPath(context, resolveConfiguredPath(attachmentSetConfig.storagePath), rowIndex + 1);
+            var normalizedTargetFolderPath = normalizeFolderPath(renderedTargetFolderPath);
+            if (normalizedTargetFolderPath == null) {
+                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben oder leer interpoliert.".formatted(rowIndex + 1));
+            }
+
+            var attachments = resolveProcessAttachmentsBySetDataKey(context, attachmentSetDataKey);
+            var setStoragePaths = new ArrayList<String>();
+            var setFileNames = new ArrayList<String>();
+            var usedCustomFileNames = new LinkedHashSet<String>();
+
+            for (var i = 0; i < attachments.size(); i++) {
+                var attachment = attachments.get(i);
+                var attachmentIndex = i + 1;
+                var targetFolderPath = applyFileIndex(normalizedTargetFolderPath, attachmentIndex);
+                var storedFileName = resolveStoredFileName(attachmentSetConfig, attachment.getFileName(), attachmentIndex, usedCustomFileNames, rowIndex + 1);
+                var targetPath = appendPathSegment(targetFolderPath, storedFileName);
+                ensureParentFolders(storageProviderId, targetPath, createdFolders);
+
+                try (var attachmentContent = storageService.getDocumentContent(
+                        attachment.getStorageProviderId(),
+                        attachment.getStoragePathFromRoot()
+                )) {
+                    var storedDocument = storageService.storeDocument(
+                            storageProviderId,
+                            targetPath,
+                            attachmentContent,
+                            StorageItemMetadata.empty()
+                    );
+                    storagePaths.add(storedDocument.getPathFromRoot());
+                    fileNames.add(storedDocument.getName());
+                    setStoragePaths.add(storedDocument.getPathFromRoot());
+                    setFileNames.add(storedDocument.getName());
+                } catch (IOException | ResponseException e) {
+                    throw new ProcessNodeExecutionExceptionUnknown(
+                            e,
+                            "Der Prozess-Anhang %s konnte nicht im Speicheranbieter %d gespeichert werden: %s",
+                            StringUtils.quote(attachment.getFileName()),
+                            storageProviderId,
+                            e.getMessage()
+                    );
+                }
+            }
+
+            results.add(Map.of(
+                    "storageProviderId", storageProviderId,
+                    "attachmentSetDataKey", attachmentSetDataKey,
+                    "targetFolderPath", normalizedTargetFolderPath,
+                    "storagePathsFromRoot", setStoragePaths,
+                    "fileNames", setFileNames,
+                    "count", setStoragePaths.size()
+            ));
         }
 
         var metadata = new HashMap<String, Object>();
-        metadata.put(OUTPUT_NAME_STORAGE_PROVIDER_ID, storageProviderId);
-        metadata.put(OUTPUT_NAME_ATTACHMENT_SET_DATA_KEY, attachmentSetDataKey);
+        metadata.put(OUTPUT_NAME_RESULTS, results);
         metadata.put(OUTPUT_NAME_STORAGE_PATHS_FROM_ROOT, storagePaths);
         metadata.put(OUTPUT_NAME_FILE_NAMES, fileNames);
         metadata.put(OUTPUT_NAME_COUNT, storagePaths.size());
@@ -320,24 +379,6 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         }
     }
 
-    @Nonnull
-    private Integer parseStorageProviderId(@Nullable String rawStorageProviderId) throws ProcessNodeExecutionException {
-        var storageProviderId = StringUtils.toNullableTrimmedString(rawStorageProviderId);
-        if (storageProviderId == null) {
-            throw new ProcessNodeExecutionExceptionMissingValue("Der Speicheranbieter muss ausgewählt werden.");
-        }
-
-        try {
-            return Integer.parseInt(storageProviderId);
-        } catch (NumberFormatException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                    e,
-                    "Die Speicheranbieter-ID %s ist ungültig.",
-                    StringUtils.quote(storageProviderId)
-            );
-        }
-    }
-
     @Nullable
     private String resolveSingleAttachmentSetDataKey(@Nullable List<String> attachmentSetDataKeys) {
         if (attachmentSetDataKeys == null) {
@@ -358,7 +399,10 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     private List<ProcessInstanceAttachmentEntity> resolveProcessAttachmentsBySetDataKey(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
                                                                                         @Nonnull String attachmentSetDataKey) throws ProcessNodeExecutionException {
         var attachmentSets = processInstanceAttachmentSetService
-                .findAllByProcessInstanceIdAndDataKey(context.getThisProcessInstance().getId(), attachmentSetDataKey);
+                .findAllByProcessInstanceIdAndDataKey(context.getThisProcessInstance().getId(), attachmentSetDataKey)
+                .stream()
+                .sorted(Comparator.comparing(attachmentSet -> attachmentSet.getId()))
+                .toList();
 
         if (attachmentSets.isEmpty()) {
             throw new ProcessNodeExecutionExceptionMissingValue(
@@ -370,7 +414,13 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
         var attachments = new ArrayList<ProcessInstanceAttachmentEntity>();
         for (var attachmentSet : attachmentSets) {
-            attachments.addAll(processInstanceAttachmentService.findAllByAttachmentSetId(attachmentSet.getId()));
+            attachments.addAll(processInstanceAttachmentService
+                    .findAllByAttachmentSetId(attachmentSet.getId())
+                    .stream()
+                    .sorted(Comparator
+                            .comparing(ProcessInstanceAttachmentEntity::getPosition)
+                            .thenComparing(attachment -> Objects.toString(attachment.getKey(), "")))
+                    .toList());
         }
 
         if (attachments.isEmpty()) {
@@ -385,69 +435,163 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
     @Nonnull
     private String interpolateTargetPath(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
-                                         @Nullable String targetPath) throws ProcessNodeExecutionException {
+                                         @Nullable String targetPath,
+                                         int rowIndex) throws ProcessNodeExecutionException {
         try {
             var renderedTargetPath = templateRenderService.interpolate(context.getCurrentProcessExecutionData(), targetPath);
             if (renderedTargetPath == null) {
-                throw new ProcessNodeExecutionExceptionMissingValue("Der Zielpfad wurde nicht angegeben.");
+                throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben.".formatted(rowIndex));
             }
             return renderedTargetPath;
         } catch (IllegalArgumentException e) {
-            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Der Zielpfad ist syntaktisch ungültig: %s", e.getMessage());
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(e, "Eintrag %d: Der Zielpfad ist syntaktisch ungültig: %s", rowIndex, e.getMessage());
         } catch (ProcessNodeExecutionException e) {
             throw e;
         } catch (RuntimeException e) {
-            throw new ProcessNodeExecutionExceptionUnknown(e, "Der Zielpfad konnte nicht interpoliert werden: %s", e.getMessage());
+            throw new ProcessNodeExecutionExceptionUnknown(e, "Eintrag %d: Der Zielpfad konnte nicht interpoliert werden: %s", rowIndex, e.getMessage());
         }
     }
 
     @Nonnull
-    private static String resolveTargetPath(@Nonnull String renderedPath,
-                                            @Nonnull String originalFileName,
-                                            int attachmentIndex) {
-        var originalExtension = extractOriginalExtension(originalFileName);
-        var basePath = removeConfiguredExtension(renderedPath);
-        var configuredExtension = renderedPath.substring(basePath.length());
-
-        if (basePath.contains("#")) {
-            basePath = basePath.replace("#", Integer.toString(attachmentIndex));
-        } else if (attachmentIndex > 1) {
-            basePath = appendNumericSuffix(basePath, attachmentIndex);
+    private static String resolveStoredFileName(@Nonnull AttachmentSetStorageConfig attachmentSetConfig,
+                                                @Nonnull String originalFileName,
+                                                int attachmentIndex,
+                                                @Nonnull Set<String> usedCustomFileNames,
+                                                int rowIndex) throws ProcessNodeExecutionException {
+        if (!Boolean.TRUE.equals(attachmentSetConfig.customizeFileName)) {
+            return originalFileName;
         }
 
-        return basePath + (originalExtension.isEmpty() ? configuredExtension : originalExtension);
+        var configuredFileName = StringUtils.toNullableTrimmedString(attachmentSetConfig.fileName);
+        if (configuredFileName == null) {
+            throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Dateiname bei Speicherung muss angegeben werden.".formatted(rowIndex));
+        }
+
+        var configuredBaseFileName = removeExtensionFromConfiguredFileName(configuredFileName)
+                .replace("#", Integer.toString(attachmentIndex));
+        var resolvedFileName = StringUtils
+                .extractExtensionFromFileName(originalFileName)
+                .map(extension -> configuredBaseFileName + "." + extension)
+                .orElse(configuredBaseFileName);
+
+        resolvedFileName = ensureUniqueFileName(resolvedFileName, usedCustomFileNames);
+        validateResolvedFileName(resolvedFileName, rowIndex);
+        usedCustomFileNames.add(resolvedFileName);
+        return resolvedFileName;
     }
 
     @Nonnull
-    private static String removeConfiguredExtension(@Nonnull String path) {
-        var lastSlashIndex = Math.max(path.lastIndexOf('/'), path.lastIndexOf('\\'));
-        var lastDotIndex = path.lastIndexOf('.');
-        if (lastDotIndex <= lastSlashIndex + 1 || lastDotIndex == path.length() - 1) {
-            return path;
+    private static String removeExtensionFromConfiguredFileName(@Nonnull String configuredFileName) {
+        var lastDotIndex = configuredFileName.lastIndexOf('.');
+        if (lastDotIndex <= 0) {
+            return configuredFileName;
         }
 
-        var configuredExtension = path.substring(lastDotIndex + 1);
-        if (configuredExtension.contains("#")) {
-            return path;
-        }
-
-        return path.substring(0, lastDotIndex);
+        return configuredFileName.substring(0, lastDotIndex);
     }
 
     @Nonnull
-    private static String appendNumericSuffix(@Nonnull String path,
+    private static String ensureUniqueFileName(@Nonnull String requestedFileName,
+                                               @Nonnull Set<String> usedFileNames) {
+        if (!usedFileNames.contains(requestedFileName)) {
+            return requestedFileName;
+        }
+
+        for (var suffix = 2; ; suffix++) {
+            var candidate = appendNumericSuffix(requestedFileName, suffix);
+            if (!usedFileNames.contains(candidate)) {
+                return candidate;
+            }
+        }
+    }
+
+    @Nonnull
+    private static String appendNumericSuffix(@Nonnull String fileName,
                                               int suffix) {
-        return path + "-" + suffix;
+        var lastDotIndex = fileName.lastIndexOf('.');
+        if (lastDotIndex <= 0) {
+            return fileName + "-" + suffix;
+        }
+
+        return fileName.substring(0, lastDotIndex) +
+               "-" +
+               suffix +
+               fileName.substring(lastDotIndex);
+    }
+
+    private static void validateResolvedFileName(@Nonnull String resolvedFileName,
+                                                 int rowIndex) throws ProcessNodeExecutionException {
+        if (resolvedFileName.length() > 255) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Eintrag %d: Der konfigurierte Dateiname bei Speicherung ist zu lang.",
+                    rowIndex
+            );
+        }
+
+        if (resolvedFileName.contains("/") || resolvedFileName.contains("\\") || resolvedFileName.contains("\r") || resolvedFileName.contains("\n")) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Eintrag %d: Der konfigurierte Dateiname bei Speicherung ist ungültig.",
+                    rowIndex
+            );
+        }
+    }
+
+    @Nullable
+    private static String normalizeFolderPath(@Nullable String path) {
+        var normalizedPath = StringUtils.toNullableTrimmedString(path);
+        if (normalizedPath == null) {
+            return null;
+        }
+
+        normalizedPath = normalizedPath.replace('\\', '/').replaceAll("/+", "/");
+        if (!normalizedPath.startsWith("/")) {
+            normalizedPath = "/" + normalizedPath;
+        }
+        if (!normalizedPath.endsWith("/")) {
+            normalizedPath += "/";
+        }
+
+        return normalizedPath;
     }
 
     @Nonnull
-    private static String extractOriginalExtension(@Nonnull String originalFileName) {
-        var lastDotIndex = originalFileName.lastIndexOf('.');
-        if (lastDotIndex <= 0 || lastDotIndex == originalFileName.length() - 1) {
-            return "";
-        }
+    private static String applyFileIndex(@Nonnull String path,
+                                         int attachmentIndex) {
+        return path.replace("#", Integer.toString(attachmentIndex));
+    }
 
-        return originalFileName.substring(lastDotIndex);
+    @Nonnull
+    private static String appendPathSegment(@Nonnull String folderPath,
+                                            @Nonnull String fileName) {
+        if (folderPath.endsWith("/")) {
+            return folderPath + fileName;
+        }
+        return folderPath + "/" + fileName;
+    }
+
+    @Nullable
+    private static Integer resolveStorageProviderId(@Nullable StoragePathSelectorInputElementValue storagePath) {
+        return storagePath == null ? null : storagePath.getStorageProviderId();
+    }
+
+    @Nullable
+    private static String resolveConfiguredPath(@Nullable StoragePathSelectorInputElementValue storagePath) {
+        return storagePath == null ? null : StringUtils.toNullableTrimmedString(storagePath.getPath());
+    }
+
+    @Nonnull
+    private static Integer resolveRequiredStorageProviderId(@Nullable StoragePathSelectorInputElementValue storagePath) throws ProcessNodeExecutionExceptionMissingValue {
+        var storageProviderId = resolveStorageProviderId(storagePath);
+        if (storageProviderId == null) {
+            throw new ProcessNodeExecutionExceptionMissingValue("Der Speicheranbieter muss ausgewählt werden.");
+        }
+        return storageProviderId;
+    }
+
+    private static void addError(@Nonnull Map<String, List<String>> errors,
+                                 @Nonnull String fieldId,
+                                 @Nonnull String message) {
+        errors.computeIfAbsent(fieldId, ignored -> new ArrayList<>()).add(message);
     }
 
     private void ensureParentFolders(@Nonnull Integer storageProviderId,
@@ -468,7 +612,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
             currentPath.append('/').append(segment);
             var folderPath = currentPath + "/";
-            if (!createdFolders.add(folderPath)) {
+            if (!createdFolders.add(storageProviderId + ":" + folderPath)) {
                 continue;
             }
 
@@ -488,31 +632,55 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
     @LayoutElementPOJOBinding(id = NODE_KEY, type = ElementType.ConfigLayout)
     public static class StoreAttachmentSetActionNodeConfig {
-        public static final String STORAGE_PROVIDER_ID_FIELD_ID = "storage_provider_id";
-        public static final String ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "attachment_set_data_keys";
-        public static final String TARGET_PATH_FIELD_ID = "target_path";
+        public static final String ATTACHMENT_SETS_FIELD_ID = "attachment_sets";
 
-        @InputElementPOJOBinding(id = STORAGE_PROVIDER_ID_FIELD_ID, type = ElementType.Select, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Speicheranbieter"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Speicheranbieter, in dem die Anhänge gespeichert werden sollen."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
-        })
-        public String storageProviderId;
+        public List<AttachmentSetStorageConfig> attachmentSets;
+    }
+
+    @ReplicatingContainerLayoutElementElementPOJOBinding(id = StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, properties = {
+            @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = "Konfigurieren Sie alle Anlagensätze, die gespeichert werden sollen."),
+            @ElementPOJOBindingProperty(key = "required", boolValue = true),
+            @ElementPOJOBindingProperty(key = "headlineTemplate", strValue = "Anlagensatz #"),
+            @ElementPOJOBindingProperty(key = "addLabel", strValue = "Anlagensatz hinzufügen"),
+            @ElementPOJOBindingProperty(key = "removeLabel", strValue = "Anlagensatz entfernen")
+    })
+    public static class AttachmentSetStorageConfig {
+        public static final String ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "attachment_set_data_keys";
+        public static final String STORAGE_PATH_FIELD_ID = "storage_path";
+        public static final String CUSTOMIZE_FILE_NAME_FIELD_ID = "customize_file_name";
+        public static final String FILE_NAME_FIELD_ID = "file_name";
 
         @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensatz"),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensatz der Prozessinstanz, dessen Anhänge gespeichert werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "minItems", intValue = 1),
-                @ElementPOJOBindingProperty(key = "maxItems", intValue = 1)
+                @ElementPOJOBindingProperty(key = "maxItems", intValue = 1),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
         public List<String> attachmentSetDataKeys;
 
-        @InputElementPOJOBinding(id = TARGET_PATH_FIELD_ID, type = ElementType.Text, properties = {
+        @InputElementPOJOBinding(id = STORAGE_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Pfad im Ziel-Speicheranbieter. Vorlagen-Tags sind erlaubt. Optional kann # als 1-basierter Dateiindex verwendet werden."),
-                @ElementPOJOBindingProperty(key = "required", boolValue = true)
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Der Pfad unter welchem der Anlagensatz gespeichert wird. Vorlagen-Tags sind erlaubt. Verwenden Sie \"#\" zur Angabe der aktuellen Dateinummerierung im Pfad."),
+                @ElementPOJOBindingProperty(key = "required", boolValue = true),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
         })
-        public String targetPath;
+        public StoragePathSelectorInputElementValue storagePath;
+
+        @InputElementPOJOBinding(id = CUSTOMIZE_FILE_NAME_FIELD_ID, type = ElementType.Checkbox, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Dateinamen anpassen"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Wenn aktiviert, wird ein eigener Dateiname bei Speicherung verwendet."),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
+        })
+        public Boolean customizeFileName;
+
+        @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname bei Speicherung"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Optional. Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der gespeicherten Datei. Werden mehrere Dateien gespeichert, wird ab der zweiten Datei ein Index angehängt, zum Beispiel DATEINAME-2.pdf."),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
+        })
+        public String fileName;
     }
 }

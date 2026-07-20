@@ -2,7 +2,10 @@ package de.aivot.gover.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
-import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElementValue;
+import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -36,6 +39,7 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,14 +47,14 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class StoreAttachmentSetActionNodeV1Test {
@@ -60,6 +64,7 @@ class StoreAttachmentSetActionNodeV1Test {
     private static final Long PROCESS_INSTANCE_ID = 99L;
     private static final Long TASK_ID = 456L;
     private static final Integer TARGET_STORAGE_PROVIDER_ID = 77;
+    private static final Integer SECOND_TARGET_STORAGE_PROVIDER_ID = 88;
 
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
     private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
@@ -78,8 +83,10 @@ class StoreAttachmentSetActionNodeV1Test {
 
         when(storageProviderRepository.findById(TARGET_STORAGE_PROVIDER_ID))
                 .thenReturn(Optional.of(storageProvider(TARGET_STORAGE_PROVIDER_ID, "Ziel", false)));
+        when(storageProviderRepository.findById(SECOND_TARGET_STORAGE_PROVIDER_ID))
+                .thenReturn(Optional.of(storageProvider(SECOND_TARGET_STORAGE_PROVIDER_ID, "Weiteres Ziel", false)));
         when(storageService.storeDocument(
-                eq(TARGET_STORAGE_PROVIDER_ID),
+                any(Integer.class),
                 anyString(),
                 any(InputStream.class),
                 any(StorageItemMetadata.class)
@@ -105,77 +112,89 @@ class StoreAttachmentSetActionNodeV1Test {
     }
 
     @Test
-    void getConfigurationLayout_UsesSingleProcessInstanceAttachmentSetSelector() throws Exception {
-        when(storageProviderRepository.findAll()).thenReturn(List.of(
-                storageProvider(1, "Read-only", true),
-                storageProvider(2, "Writable", false)
-        ));
-
+    void getConfigurationLayout_UsesReplicatingAttachmentSetConfigWithStoragePathSelector() throws Exception {
         var layout = node.getConfigurationLayout(null);
 
+        var attachmentSets = layout
+                .findChild(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, ReplicatingContainerLayoutElement.class)
+                .orElseThrow();
+        assertEquals("Anlagensatz #", attachmentSets.getHeadlineTemplate());
+
         var attachmentSetField = layout
-                .findChild(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
+                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, ProcessInstanceAttachmentSetSelectElement.class)
                 .orElseThrow();
         assertEquals(1, attachmentSetField.getMinItems());
         assertEquals(1, attachmentSetField.getMaxItems());
 
-        var storageProviderField = layout
-                .findChild(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, SelectInputElement.class)
+        var storagePathField = layout
+                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, StoragePathSelectorInputElement.class)
                 .orElseThrow();
-        assertEquals(1, storageProviderField.getOptions().size());
-        assertEquals("2", storageProviderField.getOptions().getFirst().getValue());
+        assertEquals(List.of(StorageProviderType.Assets, StorageProviderType.External), storagePathField.getAllowedStorageProviderTypes());
+
+        var fileNameField = layout
+                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
+                .orElseThrow();
+        assertNotNull(fileNameField.getVisibility());
     }
 
     @Test
-    void init_ReplacesHashWithOneBasedIndexAndPreservesOriginalExtensions() throws Exception {
+    void init_StoresMultipleAttachmentSetsInPositionOrderUsingRenderedFolderPathsAndOriginalFileNames() throws Exception {
         arrangeAttachmentSet(
-                attachment("zeta.docx", 11, "/source/zeta.docx"),
-                attachment("alpha.PDF", 11, "/source/alpha.pdf")
+                "documents",
+                321,
+                attachment("zeta.docx", 2, 11, "/source/zeta.docx"),
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf")
+        );
+        arrangeAttachmentSet(
+                "proofs",
+                322,
+                attachment("hundeversicherung.pdf", 1, 12, "/source/hundeversicherung.pdf")
         );
 
-        var configuration = configuration("/case/{{caseId}}/attachment-#.ignored");
+        var configuration = configuration(
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/documents"),
+                attachmentSetConfig("proofs", SECOND_TARGET_STORAGE_PROVIDER_ID, "/proofs/")
+        );
         var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context(configuration)));
 
         assertEquals("output", result.getViaPort());
         assertEquals(List.of(
-                "/case/123/attachment-1.PDF",
-                "/case/123/attachment-2.docx"
+                "/case/123/documents/alpha.PDF",
+                "/case/123/documents/zeta.docx",
+                "/proofs/hundeversicherung.pdf"
         ), result.getNodeData().get("storagePathsFromRoot"));
-        assertEquals(2, result.getNodeData().get("count"));
+        assertEquals(List.of("alpha.PDF", "zeta.docx", "hundeversicherung.pdf"), result.getNodeData().get("fileNames"));
+        assertEquals(3, result.getNodeData().get("count"));
         assertEquals(List.of(
-                new StoredDocument("/case/123/attachment-1.PDF", "pdf"),
-                new StoredDocument("/case/123/attachment-2.docx", "docx")
+                new StoredDocument("/case/123/documents/alpha.PDF", "alpha.PDF"),
+                new StoredDocument("/case/123/documents/zeta.docx", "zeta.docx"),
+                new StoredDocument("/proofs/hundeversicherung.pdf", "hundeversicherung.pdf")
         ), storedDocuments);
 
-        verify(storageService, times(1)).createFolder(TARGET_STORAGE_PROVIDER_ID, "/case/");
-        verify(storageService, times(1)).createFolder(TARGET_STORAGE_PROVIDER_ID, "/case/123/");
+        @SuppressWarnings("unchecked")
+        var results = (List<Map<String, Object>>) result.getNodeData().get("results");
+        assertEquals(2, results.size());
+        assertEquals("documents", results.getFirst().get("attachmentSetDataKey"));
+        assertEquals(TARGET_STORAGE_PROVIDER_ID, results.getFirst().get("storageProviderId"));
     }
 
     @Test
-    void init_AddsNumericSuffixFromSecondAttachmentWhenNoHashExists() throws Exception {
+    void init_CustomizesFileNamesAndPostfixesDuplicates() throws Exception {
         arrangeAttachmentSet(
-                attachment("alpha.PDF", 11, "/source/alpha.pdf"),
-                attachment("zeta.docx", 11, "/source/zeta.docx")
+                "documents",
+                321,
+                attachment("alpha.PDF", 1, 11, "/source/alpha.pdf"),
+                attachment("beta.pdf", 2, 11, "/source/beta.pdf")
         );
 
-        var configuration = configuration("/case/{{caseId}}/attachment.pdf");
+        var configuration = configuration(
+                attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/#", true, "stored-name.ignored")
+        );
         node.init(context(configuration));
 
         assertEquals(List.of(
-                new StoredDocument("/case/123/attachment.PDF", "pdf"),
-                new StoredDocument("/case/123/attachment-2.docx", "docx")
-        ), storedDocuments);
-    }
-
-    @Test
-    void init_PreservesConfiguredExtensionWhenOriginalFileNameHasNone() throws Exception {
-        arrangeAttachmentSet(attachment("README", 11, "/source/README"));
-
-        var configuration = configuration("/case/{{caseId}}/attachment.pdf");
-        node.init(context(configuration));
-
-        assertEquals(List.of(
-                new StoredDocument("/case/123/attachment.pdf", "docx")
+                new StoredDocument("/case/123/1/stored-name.pdf", "alpha.PDF"),
+                new StoredDocument("/case/123/2/stored-name-2.pdf", "beta.pdf")
         ), storedDocuments);
     }
 
@@ -188,57 +207,98 @@ class StoreAttachmentSetActionNodeV1Test {
 
         assertThrows(
                 ProcessNodeExecutionExceptionMissingValue.class,
-                () -> node.init(context(configuration("/case/{{caseId}}/attachment.pdf")))
+                () -> node.init(context(configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/"))))
         );
     }
 
     @Test
-    void cleanConfigurationForExport_RemovesStorageProviderId() {
+    void validateConfiguration_ValidatesTemplateSyntaxInStoragePath() {
+        var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{"));
+
+        var errors = node.validateConfiguration(processNode(), configuration);
+
+        assertNotNull(errors);
+        assertTrue(errors.get(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID).getFirst().contains("Zeile"));
+    }
+
+    @Test
+    void cleanConfigurationForExport_RemovesNestedStorageProviderId() {
+        var storagePath = new LinkedHashMap<String, Object>();
+        storagePath.put("storageProviderId", TARGET_STORAGE_PROVIDER_ID);
+        storagePath.put("path", "/case/{{caseId}}/");
+
+        var attachmentSet = new LinkedHashMap<String, Object>();
+        attachmentSet.put(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID, storagePath);
+        attachmentSet.put(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.ATTACHMENT_SET_DATA_KEYS_FIELD_ID, List.of("documents"));
+
         var configuration = new AuthoredElementValues();
-        configuration.put(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID, "77");
-        configuration.put(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.TARGET_PATH_FIELD_ID, "/case/file");
+        configuration.put(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID, List.of(attachmentSet));
 
         var cleaned = node.cleanConfigurationForExport(configuration);
 
-        assertNull(cleaned.get(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.STORAGE_PROVIDER_ID_FIELD_ID));
-        assertEquals("/case/file", cleaned.get(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.TARGET_PATH_FIELD_ID));
+        @SuppressWarnings("unchecked")
+        var cleanedAttachmentSets = (List<Map<String, Object>>) cleaned.get(StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig.ATTACHMENT_SETS_FIELD_ID);
+        @SuppressWarnings("unchecked")
+        var cleanedStoragePath = (Map<String, Object>) cleanedAttachmentSets.getFirst().get(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.STORAGE_PATH_FIELD_ID);
+        assertNull(cleanedStoragePath.get("storageProviderId"));
+        assertEquals("/case/{{caseId}}/", cleanedStoragePath.get("path"));
     }
 
-    private void arrangeAttachmentSet(ProcessInstanceAttachmentEntity... attachments) throws Exception {
-        when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, "documents"))
-                .thenReturn(List.of(new ProcessInstanceAttachmentSetEntity().setId(321)));
-        when(processInstanceAttachmentService.findAllByAttachmentSetId(321))
+    private void arrangeAttachmentSet(String dataKey,
+                                      Integer attachmentSetId,
+                                      ProcessInstanceAttachmentEntity... attachments) throws Exception {
+        when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, dataKey))
+                .thenReturn(List.of(new ProcessInstanceAttachmentSetEntity().setId(attachmentSetId).setDataKey(dataKey).setName(dataKey)));
+        when(processInstanceAttachmentService.findAllByAttachmentSetId(attachmentSetId))
                 .thenReturn(List.of(attachments));
 
         for (var attachment : attachments) {
             when(storageService.getDocumentContent(
-                    attachment.getStorageProviderId(),
-                    attachment.getStoragePathFromRoot()
-            )).thenReturn(new ByteArrayInputStream(attachment.getFileName().startsWith("alpha")
-                    ? "pdf".getBytes()
-                    : "docx".getBytes()));
+                    eq(attachment.getStorageProviderId()),
+                    eq(attachment.getStoragePathFromRoot())
+            )).thenReturn(new ByteArrayInputStream(attachment.getFileName().getBytes(StandardCharsets.UTF_8)));
         }
     }
 
     private static ProcessInstanceAttachmentEntity attachment(String fileName,
+                                                              Integer position,
                                                               Integer storageProviderId,
                                                               String storagePathFromRoot) {
         return new ProcessInstanceAttachmentEntity()
                 .setKey(UUID.randomUUID())
                 .setFileName(fileName)
-                .setPosition(1)
+                .setPosition(position)
                 .setAttachmentSetId(321)
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setStorageProviderId(storageProviderId)
                 .setStoragePathFromRoot(storagePathFromRoot);
     }
 
-    private static StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration(String targetPath) {
+    private static StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig... attachmentSets) {
         var configuration = new StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig();
-        configuration.storageProviderId = TARGET_STORAGE_PROVIDER_ID.toString();
-        configuration.attachmentSetDataKeys = List.of("documents");
-        configuration.targetPath = targetPath;
+        configuration.attachmentSets = List.of(attachmentSets);
         return configuration;
+    }
+
+    private static StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig attachmentSetConfig(String attachmentSetDataKey,
+                                                                                                Integer storageProviderId,
+                                                                                                String targetPath) {
+        return attachmentSetConfig(attachmentSetDataKey, storageProviderId, targetPath, false, null);
+    }
+
+    private static StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig attachmentSetConfig(String attachmentSetDataKey,
+                                                                                                Integer storageProviderId,
+                                                                                                String targetPath,
+                                                                                                boolean customizeFileName,
+                                                                                                String fileName) {
+        var config = new StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig();
+        config.attachmentSetDataKeys = List.of(attachmentSetDataKey);
+        config.storagePath = new StoragePathSelectorInputElementValue()
+                .setStorageProviderId(storageProviderId)
+                .setPath(targetPath);
+        config.customizeFileName = customizeFileName;
+        config.fileName = fileName;
+        return config;
     }
 
     private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
