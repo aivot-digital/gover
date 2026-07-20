@@ -336,7 +336,7 @@ const ElementTypeBackendName: Record<ElementType, string> = {
     [ElementType.SummaryLayout]: 'SummaryLayout',
     [ElementType.ProcessDataKeyInput]: 'ProcessDataKeyInput',
     [ElementType.ProcessAttachmentDisplay]: 'ProcessAttachmentDisplay',
-    [ElementType.ProcessAttachmentNameChipInput]: 'ProcessAttachmentNameChipInput',
+    [ElementType.ProcessInstanceAttachmentSetSelect]: 'ProcessInstanceAttachmentSetSelect',
     [ElementType.ProcessIdentityIdInput]: 'ProcessIdentityIdInput',
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElement',
 };
@@ -388,7 +388,7 @@ const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
     [ElementType.SummaryLayout]: null,
     [ElementType.ProcessDataKeyInput]: 'String',
     [ElementType.ProcessAttachmentDisplay]: null,
-    [ElementType.ProcessAttachmentNameChipInput]: 'List<String>',
+    [ElementType.ProcessInstanceAttachmentSetSelect]: 'List<String>',
     [ElementType.ProcessIdentityIdInput]: 'List<String>',
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElementValue',
 };

@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
+import {Box, Button, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -47,11 +47,14 @@ import {resolveUserName} from '../../../users/utils/resolve-user-name';
 import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
 import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
+import {type ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
+import {type ProcessInstanceAttachmentSetEntity} from '../../entities/process-instance-attachment-set-entity';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
+import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
+import {ProcessInstanceAttachmentSetApiService} from '../../services/process-instance-attachment-set-api-service';
 import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {BaseApiService, RequestOptions} from '../../../../services/base-api-service';
-import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
 import {ProcessDetailsPageSkeleton} from './components/process-details-page-skeleton';
@@ -63,6 +66,7 @@ import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
 import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
+import AttachFile from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 import {getNodeName} from './components/process-flow-editor/utils/node-utils';
 import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
@@ -86,6 +90,10 @@ import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
 import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
+import {
+    buildProcessInstanceAttachmentSetItems,
+    ProcessInstanceAttachmentSetList,
+} from '../../components/process-instance-attachment-set-list';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -104,11 +112,6 @@ const PROCESS_NODE_TYPE_LABELS: Record<ProcessNodeType, string> = {
 const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
 export const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
 const EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX = 24;
-
-interface RuntimeAttachment {
-    key: string;
-    fileName: string;
-}
 
 export interface ProcessFlow {
     definition: ProcessEntity;
@@ -501,6 +504,8 @@ export function ProcessDetailsPage(): ReactNode {
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
+        attachments: ProcessInstanceAttachmentEntity[];
+        attachmentSets: ProcessInstanceAttachmentSetEntity[];
     } | null>(null);
     const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
@@ -547,54 +552,7 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, []);
 
-    const runtimeAttachments = useMemo(() => {
-        if (runtimeData == null) {
-            return [];
-        }
-
-        const collected = new Map<string, RuntimeAttachment>();
-
-        const addAttachment = (attachmentLike: any): void => {
-            if (attachmentLike == null || typeof attachmentLike !== 'object') {
-                return;
-            }
-
-            const key = typeof attachmentLike.attachmentKey === 'string'
-                ? attachmentLike.attachmentKey
-                : typeof attachmentLike.key === 'string'
-                    ? attachmentLike.key
-                    : null;
-            if (key == null || key.trim().length === 0 || collected.has(key)) {
-                return;
-            }
-
-            const fileName = typeof attachmentLike.fileName === 'string'
-                ? attachmentLike.fileName
-                : typeof attachmentLike.filename === 'string'
-                    ? attachmentLike.filename
-                    : `Anhang ${collected.size + 1}`;
-
-            collected.set(key, {
-                key,
-                fileName,
-            });
-        };
-
-        for (const task of runtimeData.tasks) {
-            addAttachment(task?.nodeData);
-        }
-
-        const payloadAttachments = runtimeData.instance.initialPayload?.attachments;
-        if (Array.isArray(payloadAttachments)) {
-            for (const payloadAttachment of payloadAttachments) {
-                addAttachment(payloadAttachment);
-            }
-        }
-
-        return Array.from(collected.values());
-    }, [runtimeData]);
-
-    const handleDownloadAttachment = async (attachment: RuntimeAttachment): Promise<void> => {
+    const handleDownloadAttachment = useCallback(async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
         try {
             const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=true`);
             const objectUrl = URL.createObjectURL(blob);
@@ -612,7 +570,7 @@ export function ProcessDetailsPage(): ReactNode {
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
         }
-    };
+    }, [dispatch]);
 
     // Fetch the available node providers on mount to display them in the add node dialog
     useEffect(() => {
@@ -796,6 +754,66 @@ export function ProcessDetailsPage(): ReactNode {
 
     const isFlowEditorReady = requiredFlowNodeProviderSignature.length === 0 || flowNodeProviders.length === requiredFlowNodeProviders.length;
     const shouldKeepFlowEditorMounted = flowEditorKey != null && readyFlowEditorKey === flowEditorKey;
+
+    const processInstanceAttachmentSetItems = useMemo(() => {
+        if (runtimeData == null || processFlow == null) {
+            return [];
+        }
+
+        const tasksById = new Map(runtimeData.tasks.map((task) => [task.id, task]));
+        const nodesById = new Map(processFlow.nodes.map((node) => [node.id, node]));
+
+        return buildProcessInstanceAttachmentSetItems(
+            runtimeData.attachmentSets,
+            runtimeData.attachments,
+            {includeEmpty: true},
+        ).map((item) => {
+            const task = item.attachmentSet.processInstanceTaskId == null
+                ? runtimeData.tasks.find((candidate) => candidate.processNodeId === runtimeData.instance.initialNodeId)
+                : tasksById.get(item.attachmentSet.processInstanceTaskId);
+            const nodeId = task?.processNodeId ?? (
+                item.attachmentSet.processInstanceTaskId == null ? runtimeData.instance.initialNodeId : null
+            );
+            const node = nodeId == null ? null : nodesById.get(nodeId);
+            const provider = node == null
+                ? null
+                : flowNodeProviderCache[getProcessNodeProviderKey(
+                    node.processNodeDefinitionKey,
+                    node.processNodeDefinitionVersion,
+                )];
+
+            return {
+                ...item,
+                createdByLabel: node == null
+                    ? 'Unbekanntes Prozesselement'
+                    : provider == null
+                        ? (node.name ?? node.processNodeDefinitionKey)
+                        : getNodeName(node, provider),
+            };
+        });
+    }, [flowNodeProviderCache, processFlow, runtimeData]);
+
+    const handleOpenAttachmentSetsDialog = useCallback((): void => {
+        if (processInstanceAttachmentSetItems.length === 0) {
+            return;
+        }
+
+        void confirm({
+            title: 'Anlagensätze',
+            width: 'md',
+            hideCancelButton: true,
+            confirmButtonText: 'Schließen',
+            children: (
+                <ProcessInstanceAttachmentSetList
+                    items={processInstanceAttachmentSetItems}
+                    title={null}
+                    onDownload={(attachment) => {
+                        void handleDownloadAttachment(attachment);
+                    }}
+                />
+            ),
+        });
+    }, [confirm, handleDownloadAttachment, processInstanceAttachmentSetItems]);
 
     const selectedNode = useMemo(() => {
         if (processFlow == null) {
@@ -1069,16 +1087,24 @@ export function ProcessDetailsPage(): ReactNode {
                     new ProcessInstanceTaskApiService().listAll({
                         processInstanceId: instanceId,
                     }),
+                    new ProcessInstanceAttachmentApiService().listAll({
+                        processInstanceId: instanceId,
+                    }),
+                    new ProcessInstanceAttachmentSetApiService().listAll({
+                        processInstanceId: instanceId,
+                    }),
                     /* new ProcessInstanceEventApiService().listAll({
                         processInstanceId: instanceId,
                     })*/Promise.resolve([]),
                 ]);
             })
-            .then(([instance, tasks, events]) => {
+            .then(([instance, tasks, attachments, attachmentSets, events]) => {
                 setRuntimeData({
                     instance,
                     tasks: tasks.content,
-                    events: [],
+                    attachments: attachments.content,
+                    attachmentSets: attachmentSets.content,
+                    events,
                 });
             })
             .catch((error) => {
@@ -2073,6 +2099,13 @@ export function ProcessDetailsPage(): ReactNode {
                 },
                 disabled: runtimeData == null,
             },
+            {
+                tooltip: 'Anlagensätze anzeigen',
+                ariaLabel: 'Anlagensätze anzeigen',
+                icon: <AttachFile/>,
+                onClick: handleOpenAttachmentSetsDialog,
+                visible: processInstanceAttachmentSetItems.length > 0,
+            },
             'separator' as const,
         ];
 
@@ -2180,6 +2213,8 @@ export function ProcessDetailsPage(): ReactNode {
         instanceId,
         isRefreshingRuntimeData,
         loadRuntimeData,
+        handleOpenAttachmentSetsDialog,
+        processInstanceAttachmentSetItems.length,
         runtimeData,
         notImplemented,
         handleDeleteProcess,
@@ -2313,6 +2348,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                 editable={isProcessStructureEditable}
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
+                                                onDownloadAttachment={handleDownloadAttachment}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
                                                 topLeftPanel={
                                                     currentTestClaim == null ? undefined : (
@@ -2508,46 +2544,6 @@ export function ProcessDetailsPage(): ReactNode {
                                 }
                             </Box>
 
-                            {
-                                runtimeData != null && runtimeAttachments.length > 0 &&
-                                <Paper
-                                    sx={{
-                                        mt: 2,
-                                        p: 2,
-                                        display: 'flex',
-                                        flexWrap: 'wrap',
-                                        alignItems: 'center',
-                                        gap: 1,
-                                    }}
-                                >
-                                    <Typography variant="h6">
-                                        Anhänge
-                                    </Typography>
-
-                                    {
-                                        runtimeAttachments.map((attachment) => (
-                                            <Chip
-                                                key={attachment.key}
-                                                variant="outlined"
-                                                label={attachment.fileName}
-                                                sx={{
-                                                    maxWidth: 320,
-                                                    '& .MuiChip-label': {
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                    },
-                                                }}
-                                                onDelete={() => {
-                                                    void handleDownloadAttachment(attachment);
-                                                }}
-                                                deleteIcon={
-                                                    <Download color="primary"/>
-                                                }
-                                            />
-                                        ))
-                                    }
-                                </Paper>
-                            }
                         </Box>
                     </Allotment.Pane>
 

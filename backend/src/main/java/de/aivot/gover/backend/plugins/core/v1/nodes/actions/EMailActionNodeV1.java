@@ -23,6 +23,7 @@ import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
 import de.aivot.gover.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.exceptions.*;
 import de.aivot.gover.backend.process.models.*;
@@ -35,6 +36,7 @@ import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecution
 import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.gover.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -64,11 +66,12 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     private static final String OUTPUT_NAME_BCC = "bcc";
     private static final String OUTPUT_NAME_SUBJECT = "subject";
     private static final String OUTPUT_NAME_CONTENT = "content";
-    private static final String OUTPUT_NAME_ATTACHMENT_FILE_NAMES = "attachmentFileNames";
+    private static final String OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS = "attachmentSetDataKeys";
 
     private final GoverConfig goverConfig;
     private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final StorageService storageService;
     private final JavaMailSenderImpl mailSender;
     private final AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService;
@@ -76,11 +79,13 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     public EMailActionNodeV1(GoverConfig goverConfig,
                              TemplateRenderService templateRenderService,
                              ProcessInstanceAttachmentService processInstanceAttachmentService,
+                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                              StorageService storageService,
                              JavaMailSenderImpl mailSender, AssignmentContextAssigneeResolverService assignmentContextAssigneeResolverService) {
         this.goverConfig = goverConfig;
         this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.storageService = storageService;
         this.mailSender = mailSender;
         this.assignmentContextAssigneeResolverService = assignmentContextAssigneeResolverService;
@@ -231,9 +236,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                         "Der HTML-Inhalt der versendeten E-Mail."
                 ),
                 new ProcessNodeOutput(
-                        OUTPUT_NAME_ATTACHMENT_FILE_NAMES,
-                        "Anhang-Dateinamen",
-                        "Die Dateinamen der als E-Mail-Anhang versendeten Prozess-Anhänge."
+                        OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS,
+                        "Anlagensätze",
+                        "Die Datenschlüssel der als E-Mail-Anhang versendeten Anlagensätze."
                 )
         );
     }
@@ -477,9 +482,9 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
                 .interpolate(processData, config.bcc);
         var recipientsBCC = StringUtils.isNullOrEmpty(recipientsBccStr) ? null : recipientsBccStr.split(",");
 
-        var attachmentFileNames = config.attachmentFileNames;
-        if (attachmentFileNames == null) {
-            attachmentFileNames = new ArrayList<>();
+        var attachmentSetDataKeys = config.attachmentSetDataKeys;
+        if (attachmentSetDataKeys == null) {
+            attachmentSetDataKeys = new ArrayList<>();
         }
 
         Parser parser = Parser.builder().build();
@@ -505,46 +510,25 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
             helper.setSubject(subject);
             helper.setText(contentHtml, true);
 
-            for (var attachmentFileName : attachmentFileNames) {
-                var attachments = processInstanceAttachmentService
-                        .findAllByProcessInstanceIdAndFileName(
-                                processInstance.getId(),
-                                attachmentFileName
+            for (var attachmentSetDataKey : attachmentSetDataKeys) {
+                for (var attachment : resolveProcessAttachmentsBySetDataKey(processInstance, attachmentSetDataKey)) {
+                    try (var attachmentContent = storageService
+                            .getDocumentContent(
+                                    attachment.getStorageProviderId(),
+                                    attachment.getStoragePathFromRoot()
+                            )) {
+                        helper.addAttachment(
+                                attachment.getFileName(),
+                                new ByteArrayResource(attachmentContent.readAllBytes())
                         );
-
-                if (attachments.isEmpty()) {
-                    throw new ProcessNodeExecutionExceptionMissingValue(
-                            "Der Prozess-Anhang mit dem Dateinamen %s wurde in der Prozess-Instanz %d nicht gefunden.",
-                            StringUtils.quote(attachmentFileName),
-                            processInstance.getId()
-                    );
-                }
-                if (attachments.size() > 1) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Der Prozess-Anhang mit dem Dateinamen %s ist in der Prozess-Instanz %d nicht eindeutig vorhanden.",
-                            StringUtils.quote(attachmentFileName),
-                            processInstance.getId()
-                    );
-                }
-
-                var attachment = attachments.getFirst();
-
-                try (var attachmentContent = storageService
-                        .getDocumentContent(
-                                attachment.getStorageProviderId(),
-                                attachment.getStoragePathFromRoot()
-                        )) {
-                    helper.addAttachment(
-                            attachmentFileName,
-                            new ByteArrayResource(attachmentContent.readAllBytes())
-                    );
-                } catch (IOException | ResponseException e) {
-                    throw new ProcessNodeExecutionExceptionUnknown(
-                            e,
-                            "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
-                            StringUtils.quote(attachmentFileName),
-                            e.getMessage()
-                    );
+                    } catch (IOException | ResponseException e) {
+                        throw new ProcessNodeExecutionExceptionUnknown(
+                                e,
+                                "Der Inhalt des Prozess-Anhangs %s konnte nicht geladen werden: %s",
+                                StringUtils.quote(attachment.getFileName()),
+                                e.getMessage()
+                        );
+                    }
                 }
             }
         } catch (MessagingException | ProcessNodeExecutionExceptionUnknown exception) {
@@ -571,7 +555,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         metadata.put(OUTPUT_NAME_BCC, recipientsBCC);
         metadata.put(OUTPUT_NAME_SUBJECT, subject);
         metadata.put(OUTPUT_NAME_CONTENT, contentHtml);
-        metadata.put(OUTPUT_NAME_ATTACHMENT_FILE_NAMES, attachmentFileNames);
+        metadata.put(OUTPUT_NAME_ATTACHMENT_SET_DATA_KEYS, attachmentSetDataKeys);
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
@@ -586,6 +570,40 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     }
 
     @Nonnull
+    private List<ProcessInstanceAttachmentEntity> resolveProcessAttachmentsBySetDataKey(@Nonnull ProcessInstanceEntity processInstance,
+                                                                                        @Nonnull String attachmentSetDataKey) throws ProcessNodeExecutionException {
+        var normalizedDataKey = StringUtils.toNullableTrimmedString(attachmentSetDataKey);
+        if (normalizedDataKey == null) {
+            return List.of();
+        }
+
+        var attachmentSets = processInstanceAttachmentSetService
+                .findAllByProcessInstanceIdAndDataKey(processInstance.getId(), normalizedDataKey);
+
+        if (attachmentSets.isEmpty()) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der Anlagensatz mit dem Datenschlüssel %s wurde in der Prozess-Instanz %d nicht gefunden.",
+                    StringUtils.quote(normalizedDataKey),
+                    processInstance.getId()
+            );
+        }
+
+        var attachments = new ArrayList<ProcessInstanceAttachmentEntity>();
+        for (var attachmentSet : attachmentSets) {
+            attachments.addAll(processInstanceAttachmentService.findAllByAttachmentSetId(attachmentSet.getId()));
+        }
+
+        if (attachments.isEmpty()) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anhänge.",
+                    StringUtils.quote(normalizedDataKey)
+            );
+        }
+
+        return attachments;
+    }
+
+    @Nonnull
     @Override
     public Class<EMailActionNodeConfig> getNodeConfigurationClass() {
         return EMailActionNodeConfig.class;
@@ -595,7 +613,7 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
     public static class EMailActionNodeConfig {
         public static final String RECIPIENT_FIELD_ID = "to";
         public static final String BCC_RECIPIENT_FIELD_ID = "bcc";
-        public static final String ATTACHMENT_FILE_NAMES_FIELD_ID = "attachment_file_names";
+        public static final String ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "attachment_file_names";
 
         public static final String EXECUTION_TYPE_FIELD_ID = "execution_type";
         public static final String EXECUTION_TYPE_MANUAL = "manual";
@@ -615,12 +633,12 @@ public class EMailActionNodeV1 implements ProcessNodeDefinition<EMailActionNodeV
         })
         public String bcc;
 
-        @InputElementPOJOBinding(id = ATTACHMENT_FILE_NAMES_FIELD_ID, type = ElementType.ProcessAttachmentNameChipInput, properties = {
-                @ElementPOJOBindingProperty(key = "label", strValue = "Dateinamen der Anhänge"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dateinamen von Prozessanhängen, die später als E-Mail-Anhänge hinzugefügt werden sollen."),
+        @InputElementPOJOBinding(id = ATTACHMENT_SET_DATA_KEYS_FIELD_ID, type = ElementType.ProcessInstanceAttachmentSetSelect, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Anlagensätze"),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Anlagensätze der Prozessinstanz, deren Anhänge später als E-Mail-Anhänge hinzugefügt werden sollen."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = false)
         })
-        public List<String> attachmentFileNames;
+        public List<String> attachmentSetDataKeys;
 
         @InputElementPOJOBinding(id = EXECUTION_TYPE_FIELD_ID, type = ElementType.Radio, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Ausführungsart"),

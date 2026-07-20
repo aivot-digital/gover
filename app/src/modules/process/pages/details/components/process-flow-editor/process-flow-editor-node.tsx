@@ -33,6 +33,10 @@ import {clearLoadingMessage, setLoadingMessage} from '../../../../../../slices/s
 import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import Error from '@aivot/mui-material-symbols-400-n25-outlined/Error';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import {
+    buildTaskProcessInstanceAttachmentSetItems,
+    ProcessInstanceAttachmentSetList,
+} from '../../../../components/process-instance-attachment-set-list';
 
 function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
     const theme = useTheme();
@@ -61,6 +65,7 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
         showTargetHandles,
         runtimeData,
         onReloadRuntimeData,
+        onDownloadAttachment,
         nodeProblems,
         showNodeProblemsForNodes,
     } = useProcessFlowEditorContext();
@@ -82,6 +87,19 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
 
         return getLatestTaskForNode(runtimeData.tasks, node.id);
     }, [node.id, runtimeData]);
+
+    const associatedAttachmentSetItems = useMemo(() => {
+        if (runtimeData == null || associatedTask == null) {
+            return [];
+        }
+
+        return buildTaskProcessInstanceAttachmentSetItems(
+            runtimeData.instance,
+            associatedTask,
+            runtimeData.attachmentSets,
+            runtimeData.attachments,
+        );
+    }, [associatedTask, runtimeData]);
 
     const associatedProblem = useMemo(() => {
         return nodeProblems.find((problem) => problem.node.id === node.id) || null;
@@ -612,6 +630,14 @@ function ProcessFlowEditorNodeComponent(props: NodeProps<FlowNode>): ReactNode {
                                                 </Typography>
                                                 <ExpandableCodeBlock
                                                     value={JSON.stringify(associatedTask?.nodeData, null, 2)}
+                                                />
+
+                                                <ProcessInstanceAttachmentSetList
+                                                    items={associatedAttachmentSetItems}
+                                                    sx={{mt: 2}}
+                                                    onDownload={onDownloadAttachment == null ? undefined : (attachment) => {
+                                                        void onDownloadAttachment(attachment);
+                                                    }}
                                                 />
                                             </>
                                         ),

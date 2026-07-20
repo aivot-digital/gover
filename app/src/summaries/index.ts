@@ -81,7 +81,7 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.NoCodeInput]: NoCodeInputSummary,
     [ElementType.SummaryLayout]: SummaryLayoutSummary,
     [ElementType.ProcessDataKeyInput]: TextFieldSummary,
-    [ElementType.ProcessAttachmentNameChipInput]: ChipInputFieldSummary,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: ChipInputFieldSummary,
     [ElementType.ProcessIdentityIdInput]: ChipInputFieldSummary,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
     [ElementType.ProcessAttachmentDisplay]: null,

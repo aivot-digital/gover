@@ -37,6 +37,7 @@ import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutio
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskUpdated;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionContextUIStaff;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.gover.backend.process.services.ProcessDataService;
 import de.aivot.gover.backend.process.services.CaseNumberGeneratorService;
 import de.aivot.gover.backend.process.services.ProcessInstanceService;
@@ -445,7 +446,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final ProcessInstanceEntity instance;
 
         private TestProcessInstanceService(ProcessInstanceEntity instance) {
-            super(null, null, null, null, mock(CaseNumberGeneratorService.class));
+            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class));
             this.instance = instance;
         }
 
@@ -639,7 +640,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class PassthroughTaskViewMultipartInputService extends FileUploadMultipartInputService {
         private PassthroughTaskViewMultipartInputService() {
-            super(null, null);
+            super(null, null, null);
         }
 
         @Override
@@ -656,7 +657,7 @@ class StaffProcessInstanceTaskViewControllerTest {
 
     private static final class TestProcessDataService extends ProcessDataService {
         private TestProcessDataService() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         @Override
