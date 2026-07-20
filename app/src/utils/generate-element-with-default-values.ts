@@ -56,6 +56,7 @@ import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
+import {StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -140,6 +141,7 @@ const elementConstructors: {
     [ElementType.ProcessInstanceAttachmentSetSelect]: (id: string) => ProcessInstanceAttachmentSetSelectElement;
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
+    [ElementType.StoragePathSelector]: (id: string) => StoragePathSelectorInputElement;
     [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
 } = {
     [ElementType.FormLayout]: (id) => ({
@@ -510,6 +512,12 @@ const elementConstructors: {
     [ElementType.HtmlTemplateInput]: (id) => ({
         ...makeInputBase(ElementType.HtmlTemplateInput, id),
         label: 'HTML-Vorlage',
+    }),
+    [ElementType.StoragePathSelector]: (id) => ({
+        ...makeInputBase(ElementType.StoragePathSelector, id),
+        label: 'Speicherpfad',
+        placeholder: 'Ordner auswählen',
+        allowedStorageProviderTypes: undefined,
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),

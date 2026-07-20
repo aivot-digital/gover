@@ -43,6 +43,7 @@ import {ProcessAttachmentDisplayEditor} from './process-attachment-display-edito
 import {
     ProcessInstanceAttachmentSetSelectFieldEditor,
 } from './process-instance-attachment-set-select-field-editor';
+import {StoragePathSelectorInputFieldEditor} from './storage-path-selector-input-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -177,6 +178,9 @@ export const editors: ElementTypesMap<EditorSet | null> = {
         default: ChipInputFieldEditor,
     },
     [ElementType.HtmlTemplateInput]: null,
+    [ElementType.StoragePathSelector]: {
+        default: StoragePathSelectorInputFieldEditor,
+    },
     [ElementType.ProcessAttachmentDisplay]: {
         default: ProcessAttachmentDisplayEditor,
     },

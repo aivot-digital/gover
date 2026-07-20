@@ -132,6 +132,8 @@ function elementToValueType(element: AnyElement): string {
             return 'Record<string, unknown>';
         case ElementType.HtmlTemplateInput:
             return '{assetKey: string | null; slots: Record<string, string | null>}';
+        case ElementType.StoragePathSelector:
+            return '{storageProviderId: number | null | undefined; path: string | null | undefined}';
         case ElementType.IdentityConfigElement:
             return '{identityProviderKey: string | null | undefined; identityAttributes: Record<string, unknown> | null | undefined}';
         case ElementType.FileUpload:

@@ -34,6 +34,7 @@ import {UiDefinitionInputSummary} from './ui-definition-input-summary';
 import {SummaryLayoutSummary} from './summary-layout-summary';
 import {HtmlTemplateInputSummary} from './html-template-input-summary';
 import {GeneralInformationComponentSummary} from '../components/general-information/general-information.component.summary';
+import {StoragePathSelectorInputSummary} from './storage-path-selector-input-summary';
 
 export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.FormLayout]: RootSummary,
@@ -84,5 +85,6 @@ export const summaries: ElementTypesMap<BaseSummary<any, any> | null> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: ChipInputFieldSummary,
     [ElementType.ProcessIdentityIdInput]: ChipInputFieldSummary,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputSummary,
+    [ElementType.StoragePathSelector]: StoragePathSelectorInputSummary,
     [ElementType.ProcessAttachmentDisplay]: null,
 };

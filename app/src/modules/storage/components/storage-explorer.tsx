@@ -53,6 +53,9 @@ interface StorageExplorerProps {
     filterMimeTypes?: string[];
     filterItem?: (item: StorageIndexItem) => boolean;
     loadFolderItems?: (providerId: number, path: string) => Promise<StorageIndexItem[]>;
+    initialPath?: string | null;
+    onFolderSelect?: (path: string) => void;
+    folderSelectLabel?: string;
     onFileSelect?: (item: StorageIndexItem) => void;
     allowFileDownload?: boolean;
     showContainerBorder?: boolean;
@@ -221,6 +224,9 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         filterMimeTypes,
         filterItem,
         loadFolderItems,
+        initialPath,
+        onFolderSelect,
+        folderSelectLabel,
         onFileSelect,
         allowFileDownload = false,
         showContainerBorder = false,
@@ -299,7 +305,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
     }, [fetchFolderItems, folderCache, treeLoadingPaths]);
 
     useEffect(() => {
-        setCurrentPath(ROOT_PATH);
+        setCurrentPath(normalizeDirectoryPath(initialPath ?? ROOT_PATH));
         setDialogItem(undefined);
         setFolderCache({});
         setExpandedPaths([ROOT_PATH]);
@@ -314,7 +320,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Speicheranbieter konnte nicht geladen werden.'));
             });
-    }, [providerId]);
+    }, [initialPath, providerId]);
 
     useEffect(() => {
         setIsLoading(true);
@@ -1004,6 +1010,18 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             >
                                 {folderCount} Ordner, {fileCount} Dateien
                             </Typography>
+                            {onFolderSelect != null && (
+                                <Button
+                                    variant="contained"
+                                    startIcon={<FolderOutlinedIcon/>}
+                                    onClick={() => {
+                                        onFolderSelect(currentPath);
+                                    }}
+                                    disabled={isLoading}
+                                >
+                                    {folderSelectLabel ?? 'Ordner auswählen'}
+                                </Button>
+                            )}
                         </Stack>
 
                         <DataGrid

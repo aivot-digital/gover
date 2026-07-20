@@ -97,6 +97,7 @@ const YupSchemaMap: {
     [ElementType.ProcessDataKeyInput]: processDataKeyInputFieldToYup,
     [ElementType.NoCodeInput]: noCodeInputFieldToYup,
     [ElementType.HtmlTemplateInput]: htmlTemplateInputFieldToYup,
+    [ElementType.StoragePathSelector]: storagePathSelectorInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
     [ElementType.ProcessInstanceAttachmentSetSelect]: chipInputFieldToYup,
     [ElementType.ProcessIdentityIdInput]: chipInputFieldToYup,
@@ -129,6 +130,30 @@ function htmlTemplateInputFieldToYup(elem: AnyInputElement): Schema {
     }
 
     return schema;
+}
+
+function storagePathSelectorInputFieldToYup(elem: AnyInputElement): Schema {
+    return yup
+        .object()
+        .shape({
+            storageProviderId: yup.number().nullable(),
+            path: yup.string().trim().nullable(),
+        })
+        .nullable()
+        .test(
+            'storage-path-selector-complete',
+            `${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`,
+            (value: any) => {
+                const hasStorageProvider = value?.storageProviderId != null;
+                const hasPath = typeof value?.path === 'string' && value.path.trim().length > 0;
+
+                if (!hasStorageProvider && !hasPath) {
+                    return elem.required !== true;
+                }
+
+                return hasStorageProvider && hasPath;
+            },
+        );
 }
 
 function textFieldToYup(elem: TextFieldElement): Schema {

@@ -339,6 +339,7 @@ const ElementTypeBackendName: Record<ElementType, string> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'ProcessInstanceAttachmentSetSelect',
     [ElementType.ProcessIdentityIdInput]: 'ProcessIdentityIdInput',
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElement',
+    [ElementType.StoragePathSelector]: 'StoragePathSelector',
 };
 
 const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
@@ -391,4 +392,5 @@ const ElementTypeBackendValueClass: Record<ElementType, string | null> = {
     [ElementType.ProcessInstanceAttachmentSetSelect]: 'List<String>',
     [ElementType.ProcessIdentityIdInput]: 'List<String>',
     [ElementType.HtmlTemplateInput]: 'HtmlTemplateInputElementValue',
+    [ElementType.StoragePathSelector]: 'StoragePathSelectorInputElementValue',
 };
