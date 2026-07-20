@@ -67,7 +67,8 @@ public class ProcessDataService {
      */
     @Nonnull
     public ProcessExecutionData foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
-                                                        @Nullable Integer previousNodeId) {
+                                                        @Nullable Integer previousNodeId,
+                                                        @Nonnull ProcessInstanceTaskEntity currentTask) {
         var nodes = processDefinitionNodeRepository
                 .findAllByProcessId(
                         instance.getProcessId()
@@ -93,7 +94,7 @@ public class ProcessDataService {
         var allData = new ProcessExecutionData();
 
         allData.put("$", getProcessData(instance, previousTask));
-        allData.put("$$", getInstanceData(instance, previousNode, tasks, nodes));
+        allData.put("$$", getInstanceData(instance, previousNode, tasks, nodes, currentTask));
         allData.put("_", getNodeData(tasks, nodes));
 
         return allData;
@@ -109,7 +110,8 @@ public class ProcessDataService {
     private Map<String, Object> getInstanceData(@Nonnull ProcessInstanceEntity instance,
                                                 @Nullable ProcessNodeEntity previousNode,
                                                 @Nonnull List<ProcessInstanceTaskEntity> tasks,
-                                                @Nonnull List<ProcessNodeEntity> nodes) {
+                                                @Nonnull List<ProcessNodeEntity> nodes,
+                                                @Nonnull ProcessInstanceTaskEntity currentTask) {
         var initialNode = processDefinitionNodeRepository
                 .findById(instance.getInitialNodeId())
                 .orElseThrow(() -> new RuntimeException("Initial node not found for process instance " + instance.getId()));
@@ -132,6 +134,7 @@ public class ProcessDataService {
         instanceData.put("previousNodeDataKey", previousNode != null ? previousNode.getDataKey() : null);
         instanceData.put("attachmentSets", getAttachmentSetData(allAttachmentSets, allAttachments));
         instanceData.put("taskMetadata", getTaskMetaData(tasks, nodes));
+        instanceData.put("currentTaskId", currentTask.getId());
 
         return instanceData;
     }

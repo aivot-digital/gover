@@ -661,7 +661,8 @@ class StaffProcessInstanceTaskViewControllerTest {
 
         @Override
         public ProcessExecutionData foldProcessInstanceData(@Nonnull ProcessInstanceEntity instance,
-                                                            Integer previousNodeId) {
+                                                            Integer previousNodeId,
+                                                            @Nonnull ProcessInstanceTaskEntity currentTask) {
             return new ProcessExecutionData();
         }
     }
