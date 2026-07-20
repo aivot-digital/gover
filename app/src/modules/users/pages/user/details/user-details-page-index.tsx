@@ -1,9 +1,9 @@
 import {Box, Button, Grid, InputAdornment, TextField, Typography} from '@mui/material';
 import React, {useContext, useEffect, useMemo, useState} from 'react';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import LockResetOutlinedIcon from '@mui/icons-material/LockResetOutlined';
-import FileDownloadOutlinedIcon from '@mui/icons-material/FileDownloadOutlined';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
+import LockResetOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LockReset';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {
@@ -21,7 +21,7 @@ import {TextFieldComponent} from '../../../../../components/text-field/text-fiel
 import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/checkbox-field-component';
 import {useFormManager} from '../../../../../hooks/use-form-manager';
 import * as yup from 'yup';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {SelectFieldComponent} from '../../../../../components/select-field-2/select-field-component';
 import {CreateUserResponseDTO, UsersApiService} from '../../../users-api-service';
 import {useConfirm} from '../../../../../providers/confirm-provider';

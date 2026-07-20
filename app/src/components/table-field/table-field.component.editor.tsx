@@ -3,7 +3,7 @@ import {TableFieldComponentColumnModel, TableFieldElement} from '../../models/el
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 import {BaseEditorProps} from '../../editors/base-editor';
 import {NumberFieldComponent} from '../number-field/number-field-component';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {generateId} from '../../utils/id-utils';
 
 export function TableFieldComponentEditor(props: BaseEditorProps<TableFieldElement>) {

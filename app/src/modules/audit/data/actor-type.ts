@@ -1,7 +1,7 @@
-import {SvgIconComponent} from '@mui/icons-material';
-import AccountTree from '@mui/icons-material/AccountTree';
-import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
-import Borg from '@aivot/mui-material-symbols-400-outlined/dist/borg/Borg';
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
+import AccountTree from '@aivot/mui-material-symbols-400-n25-outlined/AccountTree';
+import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
+import Borg from '@aivot/mui-material-symbols-400-n25-outlined/Borg';
 
 type ActorDefault = 'System' |
     'Process' |

@@ -3,9 +3,9 @@ import {Button, Dialog, DialogActions, DialogContent, Typography} from '@mui/mat
 import {GenericDetailsPage} from '../../../components/generic-details-page/generic-details-page';
 import {Asset} from '../models/asset';
 import {AssetsApiService} from '../assets-api-service';
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import DriveFileMoveOutlinedIcon from '@aivot/mui-material-symbols-400-outlined/dist/drive-file-move/DriveFileMove';
-import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import InsertDriveFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
+import DriveFileMoveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/DriveFileMove';
+import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import React, {useMemo, useState} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
@@ -14,12 +14,12 @@ import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackba
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
 import {PromptDialog} from '../../../dialogs/prompt-dialog/prompt-dialog';
-import SaveAs from '@aivot/mui-material-symbols-400-outlined/dist/save-as/SaveAs';
+import SaveAs from '@aivot/mui-material-symbols-400-n25-outlined/SaveAs';
 import {downloadBlobFile} from '../../../utils/download-utils';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {Action} from '../../../components/actions/actions-props';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
-import SwapHoriz from '@aivot/mui-material-symbols-400-outlined/dist/swap-horiz/SwapHoriz';
+import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {StorageProviderEntity} from '../../storage/entities/storage-provider-entity';
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
@@ -347,7 +347,7 @@ export function AssetDetailsPage() {
                         content: (
                             <>
                                 <Typography>
-                                    Dokumente und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
+                                    Dateien und Medieninhalte sind Dateien, die in der Anwendung hochgeladen und
                                     verwaltet werden können.
                                     In dieser Oberfläche können Sie die im System verfügbaren Dateien einsehen und
                                     bearbeiten.

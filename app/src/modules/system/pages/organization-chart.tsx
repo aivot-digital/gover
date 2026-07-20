@@ -1,6 +1,6 @@
 import {Box, Skeleton, Stack, Typography} from '@mui/material';
-import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
-import Groups from '@aivot/mui-material-symbols-400-outlined/dist/groups/Groups';
+import FamilyHistory from '@aivot/mui-material-symbols-400-n25-outlined/FamilyHistory';
+import Groups from '@aivot/mui-material-symbols-400-n25-outlined/Groups';
 import {useEffect, useState} from 'react';
 import {useSearchParams} from 'react-router-dom';
 import {GenericPageHeader} from '../../../components/generic-page-header/generic-page-header';

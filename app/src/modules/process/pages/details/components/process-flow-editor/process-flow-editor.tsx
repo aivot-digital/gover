@@ -42,12 +42,14 @@ import {alpha} from '@mui/material/styles';
 import {type ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import {type ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
-import Add from '@mui/icons-material/Add';
-import Remove from '@mui/icons-material/Remove';
-import CropFree from '@mui/icons-material/CropFree';
-import Lock from '@mui/icons-material/Lock';
-import LockOpen from '@mui/icons-material/LockOpen';
-import ViewRealSize from '@aivot/mui-material-symbols-400-outlined/dist/view-real-size/ViewRealSize';
+import {type ProcessInstanceAttachmentEntity} from '../../../../entities/process-instance-attachment-entity';
+import {type ProcessInstanceAttachmentSetEntity} from '../../../../entities/process-instance-attachment-set-entity';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
+import CropFree from '@aivot/mui-material-symbols-400-n25-outlined/CropFree';
+import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import LockOpen from '@aivot/mui-material-symbols-400-n25-outlined/LockOpen';
+import ViewRealSize from '@aivot/mui-material-symbols-400-n25-outlined/ViewRealSize';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 import {
@@ -112,8 +114,11 @@ interface ProcessFlowEditorProps {
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
+        attachments: ProcessInstanceAttachmentEntity[];
+        attachmentSets: ProcessInstanceAttachmentSetEntity[];
     } | null;
     onReloadRuntimeData: () => void;
+    onDownloadAttachment?: (attachment: ProcessInstanceAttachmentEntity) => void | Promise<void>;
     topLeftPanel?: ReactNode;
     topRightPanel?: ReactNode;
 
@@ -451,6 +456,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
 
         runtimeData,
         onReloadRuntimeData,
+        onDownloadAttachment,
         topLeftPanel,
         topRightPanel,
 
@@ -520,6 +526,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartCloneNode: onStartCloneNode ?? NOOP_START_CLONE_NODE,
 
         onReloadRuntimeData: onReloadRuntimeData,
+        onDownloadAttachment,
 
         onAddFollowUpNode: onAddFollowUpNode ?? NOOP_ADD_FOLLOW_UP_NODE,
         onAddInbetweenNode: onAddInbetweenNode ?? NOOP_ADD_INBETWEEN_NODE,
@@ -539,6 +546,7 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         onStartReplaceNode,
         onStartCloneNode,
         runtimeData,
+        onDownloadAttachment,
         onReloadRuntimeData,
         selectedNode,
         showTargetHandles,

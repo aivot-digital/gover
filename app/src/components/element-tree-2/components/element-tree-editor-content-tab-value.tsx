@@ -4,7 +4,7 @@ import {CodeEditor} from '../../code-editor/code-editor';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {SelectElementDialog} from '../../../dialogs/select-element-dialog/select-element-dialog';
 import {showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
-import LocationSearchingIcon from '@mui/icons-material/LocationSearching';
+import LocationSearchingIcon from '@aivot/mui-material-symbols-400-n25-outlined/LocationSearching';
 import {createLowCodeContextType} from '../../../utils/create-low-code-context-type';
 import {ReferenceCheck} from '../../element-editor-code-tab/components/reference-check/reference-check';
 import {editor} from 'monaco-editor';

@@ -1,9 +1,9 @@
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
-import EditOutlined from '@mui/icons-material/EditOutlined';
-import ManageAccountsOutlined from '@mui/icons-material/ManageAccountsOutlined';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import ManageAccountsOutlined from '@aivot/mui-material-symbols-400-n25-outlined/ManageAccounts';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {GenericList} from '../../../../../components/generic-list/generic-list';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';
@@ -15,10 +15,10 @@ import {
 } from '../../../../../components/generic-details-page/generic-details-page-context';
 import {GenericDetailsSkeleton} from '../../../../../components/generic-details-page/generic-details-skeleton';
 import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {UserRoleChips} from '../../../../user-roles/components/user-role-chips';
 import {Button} from "@mui/material";
-import Add from "@aivot/mui-material-symbols-400-outlined/dist/add/Add";
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {SearchBaseDialog} from "../../../../../dialogs/search-base-dialog/search-base-dialog";
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
 import {showApiErrorSnackbar, showErrorSnackbar} from "../../../../../slices/snackbar-slice";

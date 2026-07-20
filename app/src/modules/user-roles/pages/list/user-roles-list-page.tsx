@@ -2,11 +2,12 @@ import {GenericListPage} from '../../../../components/generic-list-page/generic-
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
-import {EditOutlined} from '@mui/icons-material';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {CellLink} from '../../../../components/cell-link/cell-link';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {UserRoleResponseDTO} from '../../dtos/user-role-response-dto';
 import {UserRolesApiService} from '../../user-roles-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";

@@ -1,12 +1,13 @@
 import React, {ComponentType, useCallback, useMemo, useState} from 'react';
 import Grid from '@mui/material/Grid';
 import IconButton from '@mui/material/IconButton';
-import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {Box, Divider, ListItemIcon, ListItemText, Menu, MenuItem, Typography} from '@mui/material';
-import {ContentPaste, Edit} from '@mui/icons-material';
-import JumpToElement from '@aivot/mui-material-symbols-400-outlined/dist/jump-to-element/JumpToElement';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import ContentCopy from '@aivot/mui-material-symbols-400-outlined/dist/content-copy/ContentCopy';
+import ContentPaste from '@aivot/mui-material-symbols-400-n25-outlined/ContentPaste';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import JumpToElement from '@aivot/mui-material-symbols-400-n25-outlined/JumpToElement';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import {BaseViewProps} from '../../views/base-view';
 import {AnyElement} from '../../models/elements/any-element';
 import {useAppSelector} from '../../hooks/use-app-selector';

@@ -1,6 +1,6 @@
 import React, {type FormEvent, useState} from 'react';
 import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
-import SendOutlinedIcon from '@mui/icons-material/SendOutlined';
+import SendOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Send';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 
 export function SmtpTest() {

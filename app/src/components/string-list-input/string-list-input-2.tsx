@@ -1,7 +1,7 @@
 import {Box, FormControl, FormLabel, Paper, SxProps} from '@mui/material';
 import React, {useState} from 'react';
 import {TextFieldComponent} from '../text-field/text-field-component';
-import SwapHorizOutlinedIcon from '@mui/icons-material/SwapHorizOutlined';
+import SwapHorizOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
 import {Actions} from '../actions/actions';
 import {TableFieldComponent2} from '../table-field/table-field-component-2';
 

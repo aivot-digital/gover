@@ -5,9 +5,9 @@ import {Box, Button, Divider, IconButton, MenuItem, TextField, Typography} from 
 import {ConditionSetOperator} from '../data/condition-set-operator';
 import {ConditionOperator} from '../data/condition-operator';
 import {CodeTabCondition} from './code-tab-condition';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {ElementWithParents} from '../utils/flatten-elements';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 interface CodeTabConditionSetEditorProps {
     element: AnyElement;

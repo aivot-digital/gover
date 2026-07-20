@@ -121,7 +121,7 @@ export function FileUploadEditor(props: BaseEditorProps<FileUploadElement>) {
                             submittedFileName: val,
                         });
                     }}
-                    hint="Optional. Wenn gesetzt, werden hochgeladene Dateien bei der Einreichung unter diesem Dateinamen gespeichert. Ohne Endung wird die Original-Endung übernommen."
+                    hint="Optional. Wenn gesetzt, wird dieser Wert als Dateiname ohne Endung verwendet. Die Dateiendung kommt immer von der hochgeladenen Datei. Werden mehrere Dateien hochgeladen, wird ab der zweiten Datei ein Index angehängt, zum Beispiel DATEINAME-2.pdf."
                     disabled={!props.editable}
                 />
             </Grid>

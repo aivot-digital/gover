@@ -13,8 +13,8 @@ import {generatePath, Link, matchPath, Outlet, useLocation, useNavigate, usePara
 import {GenericDetailsPageContext} from './generic-details-page-context';
 import {ApiError, isApiError} from '../../models/api-error';
 import NotFoundIllustration from './resource-not-found-illustration.svg?react';
-import ArrowBackOutlinedIcon from '@mui/icons-material/ArrowBackOutlined';
-import FormatListBulletedOutlinedIcon from '@mui/icons-material/FormatListBulletedOutlined';
+import ArrowBackOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
+import FormatListBulletedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FormatListBulleted';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {addEntityHistoryItem} from '../../slices/entity-history-slice';
 import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';

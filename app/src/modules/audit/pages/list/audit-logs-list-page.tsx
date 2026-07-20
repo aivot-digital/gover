@@ -9,7 +9,7 @@ import {AuditLogFilter, AuditLogFilterOptions, AuditLogsApiService} from '../../
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {AUDIT_LOG_READ_PERMISSION} from '../../constants/audit-permissions';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../../data/trigger-type';
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';

@@ -6,6 +6,7 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceRepository;
 import de.aivot.gover.backend.process.services.CaseNumberGeneratorService;
 import de.aivot.gover.backend.process.services.ProcessInstanceRetentionCleanupService;
@@ -151,7 +152,7 @@ class ProcessInstanceRetentionCleanupServiceTest {
         private final List<ProcessInstanceEntity> deletedProcessInstances = new ArrayList<>();
 
         private TestProcessInstanceService() {
-            super(null, null, null, null, mock(CaseNumberGeneratorService.class));
+            super(null, null, mock(ProcessInstanceAttachmentSetRepository.class), null, null, mock(CaseNumberGeneratorService.class));
         }
 
         @Override

@@ -6,7 +6,7 @@ import {
 } from '../../../components/generic-details-page/generic-details-page-context';
 import {useApi} from '../../../hooks/use-api';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useChangeBlocker} from '../../../hooks/use-change-blocker';
@@ -24,15 +24,15 @@ import {UsersApiService} from '../../users/users-api-service';
 import {resolveUserName} from '../../users/utils/resolve-user-name';
 import {format} from 'date-fns';
 import {StatusTable} from '../../../components/status-table/status-table';
-import {BadgeOutlined} from '@mui/icons-material';
+import BadgeOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Badge';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
-import LinkIcon from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import LinkIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
 import {StorageMetadataAttributesEditor} from '../../storage/components/storage-metadata-attributes-editor';
 import {downloadBlobFile} from '../../../utils/download-utils';
-import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
-import Public from '@aivot/mui-material-symbols-400-outlined/dist/public/Public';
+import Label from '@aivot/mui-material-symbols-400-n25-outlined/Label';
+import Public from '@aivot/mui-material-symbols-400-n25-outlined/Public';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {deepEquals} from '../../../utils/equality-utils';
 import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
@@ -351,12 +351,19 @@ export function AssetDetailsPageIndex() {
 
                     {
                         storageProvider != null && storageProvider.metadataAttributes.length > 0 && (
-                            <Box sx={{mt: 3, maxWidth: 900}}>
-                                <Typography variant="h6"
-                                            sx={{mb: 1}}>
+                            <Box sx={{mt: 3}}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{mb: 1}}
+                                >
                                     Metadaten
                                 </Typography>
-                                <Typography sx={{mb: 2}}>
+                                <Typography
+                                    sx={{
+                                        mb: 2,
+                                        maxWidth: 900,
+                                    }}
+                                >
                                     Hinterlegen Sie optional zusätzliche Metadaten für die Datei entsprechend den
                                     konfigurierten Attributen des Speicheranbieters.
                                 </Typography>
@@ -367,9 +374,11 @@ export function AssetDetailsPageIndex() {
                                     onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
                                 />
                                 {canCreateAsset && !hasSelectedFile && (
-                                    <Typography variant="body2"
-                                                color="text.secondary"
-                                                sx={{mt: 1}}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{mt: 1}}
+                                    >
                                         Metadaten sind bearbeitbar, sobald eine Datei ausgewählt wurde.
                                     </Typography>
                                 )}
@@ -435,37 +444,37 @@ export function AssetDetailsPageIndex() {
                                 ),
                             },
                             ...(asset.isPrivate
-                                ? []
-                                : [
-                                    {
-                                        label: 'Link zur Datei',
-                                        icon: <LinkIcon/>,
-                                        children: (
-                                            <Stack
-                                                direction="row"
-                                                alignItems="center"
-                                                spacing={1}
-                                                sx={{
-                                                    mt: 0.5,
-                                                }}
-                                            >
-                                                <Link
-                                                    href={AssetsApiService.useAssetLinkOfAsset(asset)}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
+                                    ? []
+                                    : [
+                                        {
+                                            label: 'Link zur Datei',
+                                            icon: <LinkIcon/>,
+                                            children: (
+                                                <Stack
+                                                    direction="row"
+                                                    alignItems="center"
+                                                    spacing={1}
+                                                    sx={{
+                                                        mt: 0.5,
+                                                    }}
                                                 >
-                                                    {AssetsApiService.useAssetLinkOfAsset(asset)}
-                                                </Link>
+                                                    <Link
+                                                        href={AssetsApiService.useAssetLinkOfAsset(asset)}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                    >
+                                                        {AssetsApiService.useAssetLinkOfAsset(asset)}
+                                                    </Link>
 
-                                                <CopyToClipboardButton
-                                                    text={AssetsApiService.useAssetLinkOfAsset(asset)}
-                                                    successMessage="Link in Zwischenablage kopiert!"
-                                                    errorMessage="Fehler beim Kopieren des Links!"
-                                                />
-                                            </Stack>
-                                        ),
-                                    },
-                                ]
+                                                    <CopyToClipboardButton
+                                                        text={AssetsApiService.useAssetLinkOfAsset(asset)}
+                                                        successMessage="Link in Zwischenablage kopiert!"
+                                                        errorMessage="Fehler beim Kopieren des Links!"
+                                                    />
+                                                </Stack>
+                                            ),
+                                        },
+                                    ]
                             ),
 
                         ]}
@@ -475,8 +484,10 @@ export function AssetDetailsPageIndex() {
                         storageProvider != null &&
                         storageProvider.metadataAttributes.length > 0 && (
                             <Box sx={{mt: 3, maxWidth: 900}}>
-                                <Typography variant="h6"
-                                            sx={{mb: 1}}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{mb: 1}}
+                                >
                                     Metadaten
                                 </Typography>
                                 <Typography sx={{mb: 2}}>
@@ -490,17 +501,21 @@ export function AssetDetailsPageIndex() {
                                     onChange={(metadata) => handleInputChange('metadata')(metadata as any)}
                                 />
                                 {canEditExistingMetadata && (
-                                    <Typography variant="body2"
-                                                color="text.secondary"
-                                                sx={{mt: 1}}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{mt: 1}}
+                                    >
                                         Metadaten können unabhängig vom Dateiinhalt geändert werden. Änderungen
                                         werden erst nach dem Speichern wirksam.
                                     </Typography>
                                 )}
                                 {!canEditExistingMetadata && (
-                                    <Typography variant="body2"
-                                                color="text.secondary"
-                                                sx={{mt: 1}}>
+                                    <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{mt: 1}}
+                                    >
                                         Metadaten können bei schreibgeschützten Speicheranbietern nicht geändert werden.
                                     </Typography>
                                 )}

@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react';
 import {Box, Button, Stack} from '@mui/material';
-import Edit from '@aivot/mui-material-symbols-400-outlined/dist/edit/Edit';
+import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {AssetSelector} from '../../modules/assets/components/asset-selector';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';

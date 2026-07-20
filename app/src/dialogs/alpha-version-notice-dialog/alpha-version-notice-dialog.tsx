@@ -11,7 +11,7 @@ import {
     Stack,
     Typography,
 } from '@mui/material';
-import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
+import ReportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
 import {alpha} from '@mui/material/styles';
 import {format} from 'date-fns/format';
 import {AppInfo} from '../../app-info';

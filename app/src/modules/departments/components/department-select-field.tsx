@@ -1,10 +1,10 @@
 import {Box, IconButton, InputAdornment, TextField, Tooltip, Typography} from '@mui/material';
-import ChevronRight from '@mui/icons-material/ChevronRight';
-import Close from '@mui/icons-material/Close';
+import ChevronRight from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
+import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import React, {useState} from 'react';
 import {type VDepartmentShadowedEntity, type VDepartmentShadowedEntityWithChildren} from '../entities/v-department-shadowed-entity';
 import {getDepartmentPath, getDepartmentTypeIcons} from '../utils/department-utils';
-import GroupWork from '@aivot/mui-material-symbols-400-outlined/dist/group-work/GroupWork';
+import GroupWork from '@aivot/mui-material-symbols-400-n25-outlined/GroupWork';
 import {SelectDepartmentDialog} from '../dialogs/select-department-dialog';
 
 interface DepartmentSelectFieldProps {

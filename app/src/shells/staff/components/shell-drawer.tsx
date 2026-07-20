@@ -6,30 +6,35 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {selectMinimizeDrawer, selectShowAboutGoverDialog, setMinimizeDrawer, setShowAboutGoverDialog, setShowSearchDialog} from '../../../slices/shell-slice';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
 import {ShellUserMenu} from './shell-user-menu';
-import {ModuleIcons} from '../data/module-icons';
+import {ModuleIcons, ModuleIconsFilled} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
 import {useHotkeys} from 'react-hotkeys-hook';
 import {formatShortcut} from '../../../utils/format-shortcut';
 
-import KeyboardTabRtl from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-tab-rtl/KeyboardTabRtl';
-import SearchFilled from '@aivot/mui-material-symbols-400-outlined/dist/search/SearchFilled';
-import ChevronForward from '@aivot/mui-material-symbols-400-outlined/dist/chevron-forward/ChevronForward';
-import KeyboardArrowDown from '@aivot/mui-material-symbols-400-outlined/dist/keyboard-arrow-down/KeyboardArrowDown';
-import Notifications from '@aivot/mui-material-symbols-400-outlined/dist/notifications/Notifications';
-import ForwardToInbox from '@aivot/mui-material-symbols-400-outlined/dist/forward-to-inbox/ForwardToInbox';
-import PageInfo from '@aivot/mui-material-symbols-400-outlined/dist/page-info/PageInfo';
-import Start from '@aivot/mui-material-symbols-400-outlined/dist/start/Start';
+import KeyboardTabRtl from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardTabRtl';
+import SearchFilled from '@aivot/mui-material-symbols-400-n25-outlined/SearchFilled';
+import ChevronForward from '@aivot/mui-material-symbols-400-n25-outlined/ChevronForward';
+import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
+import Notifications from '@aivot/mui-material-symbols-400-n25-outlined/Notifications';
+import ForwardToInbox from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInbox';
+import PageInfo from '@aivot/mui-material-symbols-400-n25-outlined/PageInfo';
+import Start from '@aivot/mui-material-symbols-400-n25-outlined/Start';
 import ShellDrawerLogo from './shell-drawer-logo';
 import ShellDrawerUserIcon from './shell-drawer-user-icon';
 import SimpleBar from 'simplebar-react';
-import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
-import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
+import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import {AboutGoverDialog} from './about-gover-dialog';
 import {ShellNotificationsMenu} from './shell-notifications-menu';
-import Api from '@aivot/mui-material-symbols-400-outlined/dist/api/Api';
-import ReadinessScore from '@aivot/mui-material-symbols-400-outlined/dist/readiness-score/ReadinessScore';
-import FamilyHistory from '@aivot/mui-material-symbols-400-outlined/dist/family-history/FamilyHistory';
-import SupervisedUserCircle from '@aivot/mui-material-symbols-400-outlined/dist/supervised-user-circle/SupervisedUserCircle';
+import Api from '@aivot/mui-material-symbols-400-n25-outlined/Api';
+import ApiFilled from '@aivot/mui-material-symbols-400-n25-outlined/ApiFilled';
+import ReadinessScore from '@aivot/mui-material-symbols-400-n25-outlined/ReadinessScore';
+import ReadinessScoreFilled from '@aivot/mui-material-symbols-400-n25-outlined/ReadinessScoreFilled';
+import FamilyHistory from '@aivot/mui-material-symbols-400-n25-outlined/FamilyHistory';
+import FamilyHistoryFilled from '@aivot/mui-material-symbols-400-n25-outlined/FamilyHistoryFilled';
+import SupervisedUserCircle from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircle';
+import SupervisedUserCircleFilled from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircleFilled';
+import ForwardToInboxFilled from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInboxFilled';
 import {StorageProvidersApiService} from '../../../modules/storage/storage-providers-api-service';
 import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
 import {selectPermissions, selectUser} from '../../../slices/user-slice';
@@ -52,6 +57,7 @@ interface DrawerGroup {
 
 export interface DrawerItem {
     icon: ReactNode;
+    activeIcon?: ReactNode;
     label: string;
     to?: string;
     children?: DrawerItem[];
@@ -61,12 +67,22 @@ export interface DrawerItem {
     isVisible?: (permissions: PermissionSet | undefined) => boolean;
 }
 
+const drawerModuleIcon = (name: keyof typeof ModuleIcons): Pick<DrawerItem, 'icon' | 'activeIcon'> => ({
+    icon: ModuleIcons[name],
+    activeIcon: ModuleIconsFilled[name],
+});
+
+const drawerIcon = (icon: ReactNode, activeIcon: ReactNode): Pick<DrawerItem, 'icon' | 'activeIcon'> => ({
+    icon,
+    activeIcon,
+});
+
 const BaseDrawerGroups: DrawerGroup[] = [
     {
         title: null,
         items: [
             {
-                icon: ModuleIcons.dashboard,
+                ...drawerModuleIcon('dashboard'),
                 label: 'Übersicht',
                 to: '/',
             },
@@ -76,27 +92,27 @@ const BaseDrawerGroups: DrawerGroup[] = [
         title: 'Bearbeitung',
         items: [
             {
-                icon: ModuleIcons.tasks,
+                ...drawerModuleIcon('tasks'),
                 label: 'Aufgaben',
                 to: '/tasks',
             },
             {
-                icon: ModuleIcons.submissions,
+                ...drawerModuleIcon('submissions'),
                 label: 'Vorgänge',
                 to: '/process-instances',
             },
             {
-                icon: ModuleIcons.processes,
+                ...drawerModuleIcon('processes'),
                 label: 'Prozesse',
                 to: '/processes',
             },
             {
-                icon: ModuleIcons.forms,
+                ...drawerModuleIcon('forms'),
                 label: 'Formulare',
                 to: '/forms',
             },
             {
-                icon: ModuleIcons.dataObjects,
+                ...drawerModuleIcon('dataObjects'),
                 label: 'Datenobjekte',
                 to: '/data-objects',
                 requiredSystemPermission: Permission.OBJECT_ITEM_READ,
@@ -107,18 +123,18 @@ const BaseDrawerGroups: DrawerGroup[] = [
         title: 'Nachnutzung',
         items: [
             {
-                icon: ModuleIcons.presets,
+                ...drawerModuleIcon('presets'),
                 label: 'Vorlagen',
                 to: '/presets',
                 disabled: true,
                 requiredSystemPermission: Permission.PRESET_READ,
             },
             {
-                icon: ModuleIcons.marketplace,
+                ...drawerModuleIcon('marketplace'),
                 label: 'Marktplatz',
                 disabled: true,
                 children: [
-                    {icon: ModuleIcons.departments, label: 'Durchsuchen'},
+                    {...drawerModuleIcon('departments'), label: 'Durchsuchen'},
                 ],
             },
         ],
@@ -127,73 +143,45 @@ const BaseDrawerGroups: DrawerGroup[] = [
         title: 'Verwaltung',
         items: [
             {
-                icon: ModuleIcons.organization,
+                ...drawerModuleIcon('organization'),
                 label: 'Organisation',
                 children: [
-                    {icon: ModuleIcons.departments, label: 'Organisationseinheiten', to: '/departments'},
-                    {icon: ModuleIcons.teams, label: 'Teams', to: '/teams'},
+                    {...drawerModuleIcon('departments'), label: 'Organisationseinheiten', to: '/departments'},
+                    {...drawerModuleIcon('teams'), label: 'Teams', to: '/teams'},
+                    {...drawerModuleIcon('users'), label: 'Mitarbeiter:innen', to: '/users',
+                        requiredSystemPermission: Permission.USER_READ,},
                     {
-                        icon: ModuleIcons.users,
-                        label: 'Mitarbeiter:innen',
-                        to: '/users',
-                        requiredSystemPermission: Permission.USER_READ,
-                    },
-                    {
-                        icon: <SupervisedUserCircle />,
+                        ...drawerIcon(<SupervisedUserCircle />, <SupervisedUserCircleFilled />),
                         label: 'Rollenverwaltung',
                         children: [
-                            {
-                                icon: ModuleIcons.roles,
-                                label: 'Systemrollen',
-                                to: '/system-roles',
-                                requiredSystemPermission: Permission.SYSTEM_ROLE_READ,
-                            },
-                            {
-                                icon: ModuleIcons.roles,
-                                label: 'Domänenrollen',
-                                to: '/user-roles',
-                                requiredSystemPermission: Permission.DOMAIN_ROLE_READ,
-                            },
+                            {...drawerModuleIcon('roles'), label: 'Systemrollen', to: '/system-roles',
+                                requiredSystemPermission: Permission.SYSTEM_ROLE_READ,},
+                            {...drawerModuleIcon('roles'), label: 'Domänenrollen', to: '/user-roles',
+                                requiredSystemPermission: Permission.DOMAIN_ROLE_READ,},
                         ],
                     },
-                    {
-                        icon: <FamilyHistory/>,
-                        label: 'Organigramm',
-                        to: '/organization-chart',
-                        isVisible: (permissions) => checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),
-                    },
+                    {...drawerIcon(<FamilyHistory/>, <FamilyHistoryFilled/>), label: 'Organigramm', to: '/organization-chart',
+                        isVisible: (permissions) => checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),},
                 ],
             },
+            {...drawerModuleIcon('assets'), label: 'Dateien & Medien', to: '/assets',
+                requiredSystemPermission: Permission.ASSET_READ,},
             {
-                icon: ModuleIcons.assets,
-                label: 'Dateien & Medien',
-                to: '/assets',
-                requiredSystemPermission: Permission.ASSET_READ,
-            },
-            {
-                icon: ModuleIcons.dataModels,
+                ...drawerModuleIcon('dataModels'),
                 label: 'Datenmodelle',
                 to: '/data-models',
                 requiredSystemPermission: Permission.OBJECT_SCHEMA_READ,
             },
             {
-                icon: ModuleIcons.settings,
+                ...drawerModuleIcon('settings'),
                 label: 'Konfiguration',
                 children: [
+                    {...drawerModuleIcon('settings'), label: 'Allgemeine Einstellungen', to: '/settings/app',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
+                    {...drawerIcon(<ReadinessScore />, <ReadinessScoreFilled />), label: 'Systeminformationen', to: '/settings/status',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
                     {
-                        icon: ModuleIcons.settings,
-                        label: 'Allgemeine Einstellungen',
-                        to: '/settings/app',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
-                    },
-                    {
-                        icon: <ReadinessScore />,
-                        label: 'Systeminformationen',
-                        to: '/settings/status',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
-                    },
-                    {
-                        icon: ModuleIcons.audit,
+                        ...drawerModuleIcon('audit'),
                         label: 'Audit-Log',
                         to: '/audit-log',
                         requiredSystemPermission: Permission.AUDIT_LOG_READ,
@@ -204,54 +192,28 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         to: '/themes',
                         requiredSystemPermission: Permission.THEME_READ,
                     },
+                    {...drawerModuleIcon('themes'), label: 'Erscheinungsbild', to: '/themes',
+                        requiredSystemPermission: Permission.THEME_READ,},
+                    {...drawerModuleIcon('secrets'), label: 'Systemvariablen', to: '/secrets',
+                        requiredSystemPermission: Permission.SECRET_READ,},
                     {
-                        icon: ModuleIcons.secrets,
-                        label: 'Systemvariablen',
-                        to: '/secrets',
-                        requiredSystemPermission: Permission.SECRET_READ,
-                    },
-                    {
-                        icon: <Api />,
+                        ...drawerIcon(<Api />, <ApiFilled />),
                         label: 'Anbindungen',
                         children: [
-                            {
-                                icon: ModuleIcons.identity,
-                                label: 'Identitätsanbieter',
-                                to: '/identity-providers',
-                                requiredSystemPermission: Permission.IDENTITY_PROVIDER_READ,
-                            },
-                            {
-                                icon: ModuleIcons.payment,
-                                label: 'Zahlungsanbieter',
-                                to: '/payment-providers',
-                                requiredSystemPermission: Permission.PAYMENT_PROVIDER_READ,
-                            },
-                            {
-                                icon: ModuleIcons.storage,
-                                label: 'Speicheranbieter',
-                                to: '/storage-providers',
-                                requiredSystemPermission: Permission.STORAGE_PROVIDER_READ,
-                            },
+                            {...drawerModuleIcon('identity'), label: 'Identitätsanbieter', to: '/identity-providers',
+                                requiredSystemPermission: Permission.IDENTITY_PROVIDER_READ,},
+                            {...drawerModuleIcon('payment'), label: 'Zahlungsanbieter', to: '/payment-providers',
+                                requiredSystemPermission: Permission.PAYMENT_PROVIDER_READ,},
+                            {...drawerModuleIcon('storage'), label: 'Speicheranbieter', to: '/storage-providers',
+                                requiredSystemPermission: Permission.STORAGE_PROVIDER_READ,},
                         ],
                     },
-                    {
-                        icon: ModuleIcons.extensions,
-                        label: 'Erweiterungen',
-                        to: '/settings/extensions',
-                        requiredSystemPermission: Permission.PLUGIN_READ,
-                    },
-                    {
-                        icon: <ForwardToInbox />,
-                        label: 'SMTP-Test (legacy)',
-                        to: '/settings/smtp',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
-                    },
-                    {
-                        icon: ModuleIcons.providerLinks,
-                        label: 'Links (legacy)',
-                        to: '/provider-links',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
-                    },
+                    {...drawerModuleIcon('extensions'), label: 'Erweiterungen', to: '/settings/extensions',
+                        requiredSystemPermission: Permission.PLUGIN_READ,},
+                    {...drawerIcon(<ForwardToInbox />, <ForwardToInboxFilled />), label: 'SMTP-Test (legacy)', to: '/settings/smtp',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
+                    {...drawerModuleIcon('providerLinks'), label: 'Links (legacy)', to: '/provider-links',
+                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,},
                 ],
             },
         ],
@@ -297,7 +259,7 @@ export function ShellDrawer() {
                     .slice()
                     .sort((a, b) => a.name.localeCompare(b.name, 'de'))
                     .map((provider) => ({
-                        icon: ModuleIcons.storage,
+                        ...drawerModuleIcon('storage'),
                         label: provider.name,
                         to: `/assets/providers/${provider.id}`,
                     }));
@@ -390,14 +352,14 @@ export function ShellDrawer() {
 
                 const providerChildren: DrawerItem[] = isLoadingAssetStorageProviders
                     ? [{
-                        icon: ModuleIcons.storage,
+                        ...drawerModuleIcon('storage'),
                         label: 'Speicheranbieter laden...',
                         disabled: true,
                     }]
                     : assetStorageProviderItems.length > 0
                         ? assetStorageProviderItems
                         : [{
-                            icon: ModuleIcons.storage,
+                            ...drawerModuleIcon('storage'),
                             label: 'Keine Asset-Speicheranbieter',
                             disabled: true,
                         }];
@@ -760,23 +722,25 @@ function DrawerGroup({group, minimizeDrawer}: DrawerGroupProps) {
                         },
                     }}
                     color="inherit"
-                    actions={group.items.map((item) =>
-                        item.children == null
+                    actions={group.items.map((item) => {
+                        const isActive = isDrawerItemActive(item, pathname);
+
+                        return item.children == null
                             ? {
-                                icon: item.icon,
+                                icon: <DrawerNavigationIcon item={item} active={isActive} />,
                                 tooltip: item.label,
                                 to: item.to ?? '',
                                 disabled: item.disabled,
-                                activeStyle: isDrawerItemActive(item, pathname) ? actionActiveStyle : {},
+                                activeStyle: isActive ? actionActiveStyle : {},
                             }
                             : {
-                                icon: item.icon,
+                                icon: <DrawerNavigationIcon item={item} active={isActive} />,
                                 tooltip: item.label,
                                 onClick: (e: any) => handleOpenMenu(e, item),
                                 disabled: item.disabled,
-                                activeStyle: isDrawerItemActive(item, pathname) ? actionActiveStyle : {},
-                            },
-                    )}
+                                activeStyle: isActive ? actionActiveStyle : {},
+                            };
+                    })}
                     dense
                     direction="column"
                     tooltipPlacement="right"
@@ -934,9 +898,7 @@ function DrawerListItem({item, level = 0}: { item: DrawerItem; level?: number })
                     }}
                 >
                     <ListItemIcon>
-                        {
-                            item.icon ?? <PageInfo />
-                        }
+                        <DrawerNavigationIcon item={item} active={isActive} />
                     </ListItemIcon>
                     <ListItemText primary={item.label} />
                     {item.chipContent != null && (
@@ -1050,6 +1012,20 @@ function NestedMenuItem({
 }) {
     const [submenuAnchor, setSubmenuAnchor] = useState<HTMLElement | null>(null);
     const hasChildren = !!item.children?.length;
+    const location = useLocation();
+    const pathname = location.pathname;
+    const isActive = useMemo(() => isDrawerItemActive(item, pathname), [item, pathname]);
+    const menuItemSx = {
+        minWidth: 220,
+        gap: 1,
+        '&.Mui-selected': {
+            color: 'primary.main',
+            backgroundColor: 'action.selected',
+        },
+        '&.Mui-selected:hover': {
+            backgroundColor: 'action.hover',
+        },
+    };
 
     const handleToggleSubmenu = (e: React.MouseEvent<HTMLElement>) => {
         e.stopPropagation();
@@ -1065,10 +1041,11 @@ function NestedMenuItem({
                 to={item.to}
                 onClick={onAnyClose}
                 disabled={item.disabled}
-                sx={{ minWidth: 220, gap: 1 }}
+                selected={isActive}
+                sx={menuItemSx}
             >
                 <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
-                    {item.icon ?? <PageInfo />}
+                    <DrawerNavigationIcon item={item} active={isActive} />
                 </Box>
                 <Box sx={{ flex: 1 }}>{item.label}</Box>
             </MenuItem>
@@ -1078,9 +1055,14 @@ function NestedMenuItem({
     // Submenu item
     return (
         <>
-            <MenuItem onClick={handleToggleSubmenu} disabled={item.disabled} sx={{ minWidth: 220, gap: 1 }}>
+            <MenuItem
+                onClick={handleToggleSubmenu}
+                disabled={item.disabled}
+                selected={isActive}
+                sx={menuItemSx}
+            >
                 <Box sx={{ width: 24, display: 'inline-flex', justifyContent: 'center' }}>
-                    {item.icon ?? <PageInfo />}
+                    <DrawerNavigationIcon item={item} active={isActive} />
                 </Box>
                 <Box sx={{ flex: 1 }}>{item.label}</Box>
                 {hasChildren && <ChevronForward />}
@@ -1102,6 +1084,53 @@ function NestedMenuItem({
                 </Menu>
             )}
         </>
+    );
+}
+
+
+function DrawerNavigationIcon({item, active}: {item: DrawerItem; active: boolean}) {
+    const defaultIcon = item.icon ?? <PageInfo />;
+
+    if (item.activeIcon == null) {
+        return defaultIcon;
+    }
+
+    return (
+        <Box
+            component="span"
+            className="drawer-navigation-icon"
+            sx={{
+                display: 'inline-grid',
+                alignItems: 'center',
+                justifyContent: 'center',
+                '& .drawer-navigation-icon-slot': {
+                    gridArea: '1 / 1',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    transition: 'opacity 120ms ease',
+                },
+                '& .drawer-navigation-icon-default': {
+                    opacity: active ? 0 : 1,
+                },
+                '& .drawer-navigation-icon-active': {
+                    opacity: active ? 1 : 0,
+                },
+            }}
+        >
+            <Box
+                component="span"
+                className="drawer-navigation-icon-slot drawer-navigation-icon-default"
+            >
+                {defaultIcon}
+            </Box>
+            <Box
+                component="span"
+                className="drawer-navigation-icon-slot drawer-navigation-icon-active"
+            >
+                {item.activeIcon}
+            </Box>
+        </Box>
     );
 }
 

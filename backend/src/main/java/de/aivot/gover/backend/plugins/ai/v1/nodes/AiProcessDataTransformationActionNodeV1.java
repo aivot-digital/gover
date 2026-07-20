@@ -254,7 +254,7 @@ public class AiProcessDataTransformationActionNodeV1 implements ProcessNodeDefin
         // Reset the forwarded data keys because this node might completely clear the process data layer
         return new ProcessNodeDefinitionMetadata(
                 new LinkedList<>(previousMetadata.reusableUiDefinitions()),
-                new LinkedList<>(previousMetadata.forwardedAttachments()),
+                new LinkedList<>(previousMetadata.forwardedAttachmentSets()),
                 new LinkedList<>(),
                 new LinkedList<>(previousMetadata.forwardedIdentities())
         );

@@ -210,15 +210,21 @@ export function AssetDetailsPageNew() {
                             <Box
                                 sx={{
                                     mt: 3,
-                                    maxWidth: 900,
                                 }}
                             >
-                                <Typography variant="h6"
-                                            sx={{mb: 1}}>
+                                <Typography
+                                    variant="h6"
+                                    sx={{mb: 1}}
+                                >
                                     Metadaten
                                 </Typography>
 
-                                <Typography sx={{mb: 2}}>
+                                <Typography
+                                    sx={{
+                                        mb: 2,
+                                        maxWidth: 900,
+                                    }}
+                                >
                                     Hinterlegen Sie optional zusätzliche Metadaten für die Datei entsprechend den
                                     konfigurierten Attributen des Speicheranbieters.
                                 </Typography>

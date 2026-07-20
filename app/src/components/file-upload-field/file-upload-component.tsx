@@ -3,9 +3,9 @@ import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableCo
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
 import {showErrorSnackbar} from '../../slices/snackbar-slice';
 import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
-import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
+import BackupOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Backup';
 import {FileUploadComponentProps} from './file-upload-component-props';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 
 export function FileUploadComponent(props: FileUploadComponentProps) {
     const theme = useTheme();

@@ -1,7 +1,7 @@
 import {Box, Button, Typography} from '@mui/material';
 import React from 'react';
 import {EmptyDataListPlaceholderProps} from './empty-data-list-placeholder-props';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 
 export function EmptyDataListPlaceholder(props: EmptyDataListPlaceholderProps) {

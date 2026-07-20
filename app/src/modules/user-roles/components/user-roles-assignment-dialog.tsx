@@ -15,9 +15,9 @@ import {
     Typography,
 } from '@mui/material';
 import {useCallback, useEffect, useMemo, useState} from 'react';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
-import Deselect from '@aivot/mui-material-symbols-400-outlined/dist/deselect/Deselect';
-import SelectAll from '@aivot/mui-material-symbols-400-outlined/dist/select-all/SelectAll';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
+import Deselect from '@aivot/mui-material-symbols-400-n25-outlined/Deselect';
+import SelectAll from '@aivot/mui-material-symbols-400-n25-outlined/SelectAll';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {AlertComponent} from '../../../components/alert/alert-component';
 import {UserRolesApiService} from '../user-roles-api-service';

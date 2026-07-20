@@ -1,7 +1,7 @@
-import {SvgIconComponent} from '@mui/icons-material';
-import DraftOrders from '@aivot/mui-material-symbols-400-outlined/dist/draft-orders/DraftOrders';
-import Unpublished from '@aivot/mui-material-symbols-400-outlined/dist/unpublished/Unpublished';
-import CheckCircle from '@aivot/mui-material-symbols-400-outlined/dist/check-circle/CheckCircle';
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
+import DraftOrders from '@aivot/mui-material-symbols-400-n25-outlined/DraftOrders';
+import Unpublished from '@aivot/mui-material-symbols-400-n25-outlined/Unpublished';
+import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 
 export enum ProcessStatus {
     Drafted = 'Drafted',

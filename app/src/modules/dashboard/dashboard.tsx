@@ -2,7 +2,7 @@ import {PageWrapper} from '../../components/page-wrapper/page-wrapper';
 import {GenericPageHeader} from '../../components/generic-page-header/generic-page-header';
 import {ModuleIcons} from '../../shells/staff/data/module-icons';
 import {Box, Container, Divider, Grid, Typography} from '@mui/material';
-import Logout from '@aivot/mui-material-symbols-400-outlined/dist/logout/Logout';
+import Logout from '@aivot/mui-material-symbols-400-n25-outlined/Logout';
 import React, {useState} from 'react';
 import {DashboardStatsPanel} from './components/dashboard-stats-panel';
 import {useLogout} from '../../hooks/use-logout';

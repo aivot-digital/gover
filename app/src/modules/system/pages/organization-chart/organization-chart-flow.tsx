@@ -32,14 +32,14 @@ import {
     useTheme,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import Add from '@mui/icons-material/Add';
-import Remove from '@mui/icons-material/Remove';
-import CropFree from '@mui/icons-material/CropFree';
-import Lock from '@mui/icons-material/Lock';
-import LockOpen from '@mui/icons-material/LockOpen';
-import Groups from '@aivot/mui-material-symbols-400-outlined/dist/groups/Groups';
-import ViewRealSize from '@aivot/mui-material-symbols-400-outlined/dist/view-real-size/ViewRealSize';
-import OpenInNew from '@aivot/mui-material-symbols-400-outlined/dist/open-in-new/OpenInNew';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
+import CropFree from '@aivot/mui-material-symbols-400-n25-outlined/CropFree';
+import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import LockOpen from '@aivot/mui-material-symbols-400-n25-outlined/LockOpen';
+import Groups from '@aivot/mui-material-symbols-400-n25-outlined/Groups';
+import ViewRealSize from '@aivot/mui-material-symbols-400-n25-outlined/ViewRealSize';
+import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {memo, type CSSProperties, type ReactNode, useCallback, useEffect, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {StringAvatar} from '../../../../components/avatar/string-avatar';

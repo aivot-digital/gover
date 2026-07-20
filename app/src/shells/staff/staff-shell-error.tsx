@@ -2,12 +2,12 @@ import {Link, useNavigate} from 'react-router-dom';
 import {PropsWithChildren, ReactNode} from 'react';
 import {Box, Button, Typography} from '@mui/material';
 import {ErrorMessage} from '../../slices/shell-slice';
-import ScanDelete from '@aivot/mui-material-symbols-400-outlined/dist/scan-delete/ScanDelete';
+import ScanDelete from '@aivot/mui-material-symbols-400-n25-outlined/ScanDelete';
 import {ModuleIcons} from './data/module-icons';
-import ArrowBack from '@aivot/mui-material-symbols-400-outlined/dist/arrow-back/ArrowBack';
-import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
-import Warning from '@aivot/mui-material-symbols-400-outlined/dist/warning/Warning';
-import Block from '@aivot/mui-material-symbols-400-outlined/dist/block/Block';
+import ArrowBack from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
+import Warning from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
+import Block from '@aivot/mui-material-symbols-400-n25-outlined/Block';
 
 interface StaffShellErrorProps {
     error: ErrorMessage;

@@ -1,15 +1,15 @@
 import React from 'react';
-import InsertDriveFileOutlinedIcon from '@mui/icons-material/InsertDriveFileOutlined';
-import PictureAsPdfOutlinedIcon from '@mui/icons-material/PictureAsPdfOutlined';
-import ImageOutlinedIcon from '@mui/icons-material/ImageOutlined';
-import AudiotrackOutlinedIcon from '@mui/icons-material/AudiotrackOutlined';
-import VideoLibraryOutlinedIcon from '@mui/icons-material/VideoLibraryOutlined';
-import DescriptionOutlinedIcon from '@mui/icons-material/DescriptionOutlined';
-import CodeOutlinedIcon from '@mui/icons-material/CodeOutlined';
-import TextSnippetOutlinedIcon from '@mui/icons-material/TextSnippetOutlined';
-import StorageOutlinedIcon from '@mui/icons-material/StorageOutlined';
-import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
-import Folder from '@aivot/mui-material-symbols-400-outlined/dist/folder/Folder';
+import InsertDriveFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
+import PictureAsPdfOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/PictureAsPdf';
+import ImageOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Image';
+import AudiotrackOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MusicNote';
+import VideoLibraryOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/VideoLibrary';
+import DescriptionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Description';
+import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
+import TextSnippetOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/TextSnippet';
+import StorageOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Storage';
+import LockOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import Folder from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
 import {type SvgIconProps} from '@mui/material';
 
 /**

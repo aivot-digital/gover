@@ -1,11 +1,11 @@
 import React from 'react';
 import {Rating as MuiRating, useTheme} from '@mui/material';
 import {type IconContainerProps} from '@mui/material/Rating';
-import MoodBadOutlinedIcon from '@mui/icons-material/MoodBadOutlined';
-import SentimentDissatisfiedOutlinedIcon from '@mui/icons-material/SentimentDissatisfiedOutlined';
-import SentimentNeutralOutlinedIcon from '@mui/icons-material/SentimentNeutralOutlined';
-import SentimentSatisfiedAltOutlinedIcon from '@mui/icons-material/SentimentSatisfiedAltOutlined';
-import EmojiEmotionsOutlinedIcon from '@mui/icons-material/EmojiEmotionsOutlined';
+import MoodBadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MoodBad';
+import SentimentDissatisfiedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SentimentDissatisfied';
+import SentimentNeutralOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SentimentNeutral';
+import SentimentSatisfiedAltOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SentimentSatisfied';
+import EmojiEmotionsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SentimentVerySatisfied';
 
 interface RatingProps {
     value?: number;

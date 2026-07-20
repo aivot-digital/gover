@@ -98,7 +98,7 @@ const YupSchemaMap: {
     [ElementType.NoCodeInput]: noCodeInputFieldToYup,
     [ElementType.HtmlTemplateInput]: htmlTemplateInputFieldToYup,
     [ElementType.ReplicatingContainer]: replicatingContainerToYup,
-    [ElementType.ProcessAttachmentNameChipInput]: chipInputFieldToYup,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: chipInputFieldToYup,
     [ElementType.ProcessIdentityIdInput]: chipInputFieldToYup,
 };
 

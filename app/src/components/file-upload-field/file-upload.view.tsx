@@ -2,12 +2,16 @@ import React, {useMemo, useRef, useState} from 'react';
 import {Box, Button, FormLabel, IconButton, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography, useMediaQuery, useTheme} from '@mui/material';
 import {FileUploadElement, FileUploadElementItem} from '../../models/elements/form/input/file-upload-element';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {showErrorSnackbar} from '../../slices/snackbar-slice';
+import {showApiErrorSnackbar, showErrorSnackbar} from '../../slices/snackbar-slice';
 import {humanizeFileSize, humanizeNumber, pluralize} from '../../utils/humanization-utils';
 import {BaseViewProps} from '../../views/base-view';
-import BackupOutlinedIcon from '@mui/icons-material/BackupOutlined';
+import BackupOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Backup';
 import {hasDerivableAspects} from '../../utils/has-derivable-aspects';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
+import {BaseApiService} from '../../services/base-api-service';
+
+const PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX = 'process-instance-attachment:';
 
 export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploadElementItem[]>) {
     const {
@@ -51,6 +55,11 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
     };
 
     const handleRemove = (file: FileUploadElementItem) => {
+        // Persisted process attachments are backend-owned; removing them here would only corrupt the form value.
+        if (isProcessInstanceAttachment(file)) {
+            return;
+        }
+
         if (value != null) {
             const index = value.indexOf(file);
             if (index >= 0) {
@@ -58,6 +67,31 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                 updatedFiles.splice(index, 1);
                 setValue(updatedFiles.length > 0 ? updatedFiles : null);
             }
+        }
+    };
+
+    const handleDownload = async (file: FileUploadElementItem) => {
+        const attachmentKey = resolveProcessInstanceAttachmentKey(file);
+        if (attachmentKey == null) {
+            return;
+        }
+
+        try {
+            const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachmentKey)}/file/?download=true`);
+            const objectUrl = URL.createObjectURL(blob);
+
+            const link = document.createElement('a');
+            link.href = objectUrl;
+            link.download = file.name;
+            link.style.display = 'none';
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            URL.revokeObjectURL(objectUrl);
+        } catch (error) {
+            dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
         }
     };
 
@@ -153,43 +187,50 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
                         </TableHead>
                         <TableBody>
                             {
-                                value.map(file => (
-                                    <TableRow
-                                        key={file.uri}
-                                    >
-                                        <TableCell>
-                                            {file.name}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            {humanizeFileSize(file.size)}
-                                        </TableCell>
-                                        <TableCell align="right">
-                                            {
-                                                isBreakpointMdAndDown ?
-                                                    <IconButton
-                                                        onClick={() => handleRemove(file)}
-                                                        disabled={isDisabled || isBusy}
-                                                    >
-                                                        <Delete
-                                                            fontSize="small"
-                                                        />
-                                                    </IconButton> :
-                                                    <Button
-                                                        variant="outlined"
-                                                        onClick={() => handleRemove(file)}
-                                                        disabled={isDisabled || isBusy}
-                                                        startIcon={
-                                                            <Delete
-                                                                fontSize="small"
-                                                            />
-                                                        }
-                                                    >
-                                                        Entfernen
-                                                    </Button>
-                                            }
-                                        </TableCell>
-                                    </TableRow>
-                                ))
+                                value.map(file => {
+                                    const isPersistedAttachment = isProcessInstanceAttachment(file);
+
+                                    return (
+                                        <TableRow
+                                            key={file.uri}
+                                        >
+                                            <TableCell>
+                                                {file.name}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                {humanizeFileSize(file.size)}
+                                            </TableCell>
+                                            <TableCell align="right">
+                                                {
+                                                    isBreakpointMdAndDown ?
+                                                        <IconButton
+                                                            aria-label={isPersistedAttachment ? `${file.name} herunterladen` : `${file.name} entfernen`}
+                                                            onClick={() => isPersistedAttachment ? void handleDownload(file) : handleRemove(file)}
+                                                            disabled={!isPersistedAttachment && (isDisabled || isBusy)}
+                                                        >
+                                                            {
+                                                                isPersistedAttachment ?
+                                                                    <Download fontSize="small" /> :
+                                                                    <Delete fontSize="small" />
+                                                            }
+                                                        </IconButton> :
+                                                        <Button
+                                                            variant="outlined"
+                                                            onClick={() => isPersistedAttachment ? void handleDownload(file) : handleRemove(file)}
+                                                            disabled={!isPersistedAttachment && (isDisabled || isBusy)}
+                                                            startIcon={
+                                                                isPersistedAttachment ?
+                                                                    <Download fontSize="small" /> :
+                                                                    <Delete fontSize="small" />
+                                                            }
+                                                        >
+                                                            {isPersistedAttachment ? 'Herunterladen' : 'Entfernen'}
+                                                        </Button>
+                                                }
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })
                             }
                         </TableBody>
                     </Table>
@@ -361,4 +402,17 @@ export function FileUploadView(props: BaseViewProps<FileUploadElement, FileUploa
             }
         </Box>
     );
+}
+
+function isProcessInstanceAttachment(file: FileUploadElementItem): boolean {
+    return file.uri.startsWith(PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX);
+}
+
+function resolveProcessInstanceAttachmentKey(file: FileUploadElementItem): string | null {
+    if (!file.uri.startsWith(PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX)) {
+        return null;
+    }
+
+    const attachmentKey = file.uri.slice(PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX.length).trim();
+    return attachmentKey.length === 0 ? null : attachmentKey;
 }

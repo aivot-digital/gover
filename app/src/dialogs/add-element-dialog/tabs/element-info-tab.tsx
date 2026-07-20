@@ -1,6 +1,6 @@
 import React, {type ReactNode} from 'react';
 import {Box, Divider, Typography} from '@mui/material';
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
+import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -1214,7 +1214,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
         </Box>
     ),
     [ElementType.ProcessDataKeyInput]: null,
-    [ElementType.ProcessAttachmentNameChipInput]: null,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: null,
     [ElementType.ProcessIdentityIdInput]: null,
     [ElementType.HtmlTemplateInput]: null,
     [ElementType.CodeInput]: (
@@ -1339,9 +1339,9 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.ProcessAttachmentDisplay]: (
         <Box>
             <Typography>
-                Das Element zeigt alle Vorgangsanhänge an, deren Dateiname exakt mit dem festgelegten Dateinamen
-                übereinstimmt. Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen
-                werden. Ein optionaler Hinweis ergänzt die Darstellung um weitere Informationen.
+                Das Element zeigt alle Vorgangsanhänge aus einem Anlagensatz mit dem festgelegten Schlüssel an.
+                Gefundene Anhänge können in einem neuen Tab angesehen und bei Bedarf heruntergeladen werden.
+                Eine optionale Beschriftung und ein Hinweis ergänzen die Darstellung um weitere Informationen.
             </Typography>
 
             <Divider sx={{my: 4}}>
@@ -1349,6 +1349,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <ProcessAttachmentDisplayComponent
+                labelText="Bescheide"
                 items={[
                     {
                         key: 'example',

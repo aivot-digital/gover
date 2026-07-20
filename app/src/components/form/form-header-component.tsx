@@ -14,14 +14,14 @@ import {
 import {showDialog} from '../../slices/app-slice';
 import {Logo} from '../logo/logo';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import HelpOutlineOutlinedIcon from '@mui/icons-material/HelpOutlineOutlined';
-import AccessibilityNewOutlinedIcon from '@mui/icons-material/AccessibilityNewOutlined';
+import HelpOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
+import AccessibilityNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccessibilityNew';
 import {AccessibilityDialogId} from '../../dialogs/accessibility-dialog/accessibility-dialog';
 import {HelpDialogId} from '../../dialogs/help-dialog/help.dialog';
 import Balancer from 'react-wrap-balancer';
-import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
 import {useConfirm} from '../../providers/confirm-provider';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {FormLayoutElement, resolveFormNodeName} from '../../models/elements/form-layout-element';
 import {ProcessEntity} from '../../modules/process/entities/process-entity';
 import {ProcessVersionEntity} from '../../modules/process/entities/process-version-entity';

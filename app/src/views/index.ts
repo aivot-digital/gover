@@ -41,7 +41,7 @@ import {SummaryLayoutView} from './summary-layout-view';
 import {ProcessDataKeyInputFieldView} from './process-data-key-input-field-view';
 import {IdentityConfigView} from './identity-config-view';
 import {ProcessAttachmentDisplayView} from './process-attachment-display-view';
-import {ProcessAttachmentNameChipInputFieldView} from './process-attachment-name-chip-input-field-view';
+import {ProcessInstanceAttachmentSetSelectFieldView} from './process-instance-attachment-set-select-field-view';
 import {ProcessIdentityIdInputFieldView} from './process-identity-id-input-field-view';
 import {HtmlTemplateInputView} from './html-template-input-view';
 
@@ -91,7 +91,7 @@ export const views: Record<ElementType, BaseView<any, any> | null> = {
     [ElementType.NoCodeInput]: NoCodeInputFieldView,
     [ElementType.SummaryLayout]: SummaryLayoutView,
     [ElementType.ProcessDataKeyInput]: ProcessDataKeyInputFieldView,
-    [ElementType.ProcessAttachmentNameChipInput]: ProcessAttachmentNameChipInputFieldView,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: ProcessInstanceAttachmentSetSelectFieldView,
     [ElementType.ProcessIdentityIdInput]: ProcessIdentityIdInputFieldView,
     [ElementType.HtmlTemplateInput]: HtmlTemplateInputView,
     [ElementType.ProcessAttachmentDisplay]: ProcessAttachmentDisplayView,

@@ -15,15 +15,14 @@
     "preview:customer": "VITE_APP_MODE=customer vite preview --config vite.config.customer.js"
   },
   "dependencies": {
-    "@aivot/mui-material-symbols-400-outlined": "^1.0.4",
+    "@aivot/mui-material-symbols-400-n25-outlined": "^1.1.1",
     "@dagrejs/dagre": "^1.1.8",
     "@date-io/date-fns": "^3.2.1",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mdxeditor/editor": "^4.0.4",
     "@monaco-editor/react": "^4.7.0",
-    "@mui/icons-material": "^7.2.0",
-    "@mui/material": "^7.2.0",
+    "@mui/material": "^7.3.2",
     "@mui/x-data-grid": "^8.11.3",
     "@mui/x-date-pickers": "^8.11.3",
     "@reduxjs/toolkit": "^2.8.2",

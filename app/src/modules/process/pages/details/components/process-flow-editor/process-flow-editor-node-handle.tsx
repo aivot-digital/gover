@@ -6,9 +6,9 @@ import {type ProcessNodePort} from '../../../../services/process-node-provider-a
 import Chip from '@mui/material/Chip';
 import {alpha} from '@mui/material/styles';
 import {useConfirm} from '../../../../../../providers/confirm-provider';
-import {Add} from '@mui/icons-material';
-import Link from '@mui/icons-material/Link';
-import LinkOffOutlinedIcon from '@mui/icons-material/LinkOffOutlined';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Link from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import LinkOffOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LinkOff';
 import {
     ADD_BUTTON_DISTANCE,
     ADD_BUTTON_ICON_SIZE,

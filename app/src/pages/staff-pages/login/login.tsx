@@ -1,9 +1,9 @@
 import {Box, Button, Paper, Typography} from '@mui/material';
 import React, {useMemo} from 'react';
 import {MetaElement} from '../../../components/meta-element/meta-element';
-import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
+import LoginOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Login';
 import {AuthService} from '../../../services/auth-service';
-import AccountCircle from '@aivot/mui-material-symbols-400-outlined/dist/account-circle/AccountCircle';
+import AccountCircle from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import {useLocation} from 'react-router-dom';
 
 export function Login() {

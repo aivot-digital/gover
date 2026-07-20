@@ -29,7 +29,7 @@ import {
     getProcessTaskNodeIcon,
     type ProcessTaskDetailsPageItem,
 } from './process-task-view-page';
-import Task from '@aivot/mui-material-symbols-400-outlined/dist/task/Task';
+import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
 import {dispatchProcessAssignedTaskCountRefreshEvent} from '../../utils/process-assigned-task-count-events';
 import {isApiError, isApiUnreachableError, isOfflineApiError} from '../../../../models/api-error';
 import {
@@ -40,7 +40,9 @@ import {deepEquals} from '../../../../utils/equality-utils';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {AuthService} from '../../../../services/auth-service';
 import type {ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
+import type {ProcessInstanceAttachmentSetEntity} from '../../entities/process-instance-attachment-set-entity';
 import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
+import {ProcessInstanceAttachmentSetApiService} from '../../services/process-instance-attachment-set-api-service';
 import {ProcessTaskViewAttachmentProvider} from './process-task-view-attachment-context';
 import {BaseApiService} from '../../../../services/base-api-service';
 
@@ -75,6 +77,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
     const [derivedErrors, setDerivedErrors] = useState<DerivedRuntimeElementData | null>(null);
     const [pendingBlockedNavigation, setPendingBlockedNavigation] = useState<Blocker | null>(null);
     const [taskAttachments, setTaskAttachments] = useState<ProcessInstanceAttachmentEntity[]>([]);
+    const [taskAttachmentSets, setTaskAttachmentSets] = useState<ProcessInstanceAttachmentSetEntity[]>([]);
     const [isLoadingTaskAttachments, setIsLoadingTaskAttachments] = useState(false);
 
     const hasUnsavedChanges = useMemo(() => {
@@ -303,6 +306,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
         if (item?.instance == null) {
             setTaskAttachments([]);
+            setTaskAttachmentSets([]);
             setIsLoadingTaskAttachments(false);
             return () => {
                 cancelled = true;
@@ -310,18 +314,24 @@ export function ProcessTaskViewPageEdit(): ReactNode {
         }
 
         setTaskAttachments([]);
+        setTaskAttachmentSets([]);
         setIsLoadingTaskAttachments(true);
 
-        new ProcessInstanceAttachmentApiService()
-            .listAll({
+        Promise.all([
+            new ProcessInstanceAttachmentApiService().listAll({
                 processInstanceId: item.instance.id,
-            })
-            .then((page) => {
+            }),
+            new ProcessInstanceAttachmentSetApiService().listAll({
+                processInstanceId: item.instance.id,
+            }),
+        ])
+            .then(([attachmentPage, attachmentSetPage]) => {
                 if (cancelled) {
                     return;
                 }
 
-                setTaskAttachments(page.content);
+                setTaskAttachments(attachmentPage.content);
+                setTaskAttachmentSets(attachmentSetPage.content);
             })
             .catch((err) => {
                 if (cancelled) {
@@ -330,6 +340,7 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
                 dispatch(showApiErrorSnackbar(err, 'Die Vorgangsanhänge konnten nicht geladen werden.'));
                 setTaskAttachments([]);
+                setTaskAttachmentSets([]);
             })
             .finally(() => {
                 if (cancelled) {
@@ -419,10 +430,11 @@ export function ProcessTaskViewPageEdit(): ReactNode {
 
     const taskViewAttachmentContextValue = useMemo(() => ({
         attachments: taskAttachments,
+        attachmentSets: taskAttachmentSets,
         isLoadingAttachments: isLoadingTaskAttachments,
         viewAttachment: handleViewAttachment,
         downloadAttachment: handleDownloadAttachment,
-    }), [handleDownloadAttachment, handleViewAttachment, isLoadingTaskAttachments, taskAttachments]);
+    }), [handleDownloadAttachment, handleViewAttachment, isLoadingTaskAttachments, taskAttachmentSets, taskAttachments]);
 
     const handleEventClick = async (evt: TaskViewEvent) => {
         if (item == null || taskView == null) {

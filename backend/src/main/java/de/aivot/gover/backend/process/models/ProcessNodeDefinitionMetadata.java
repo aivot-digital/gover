@@ -26,7 +26,7 @@ public record ProcessNodeDefinitionMetadata(
         @Nonnull
         List<ReusableUiDefinition> reusableUiDefinitions,
         @Nonnull
-        List<ForwardedAttachment> forwardedAttachments,
+        List<ForwardedAttachmentSet> forwardedAttachmentSets,
         @Nonnull
         List<ForwardedProcessDataKey> forwardedProcessDataKeys,
         @Nonnull
@@ -34,6 +34,7 @@ public record ProcessNodeDefinitionMetadata(
 ) {
     private static final String COMPLETE_FORM_LABEL = "Gesamtes Formular";
     private static final String FALLBACK_UI_DEFINITION_LABEL = "UI-Definition";
+    private static final int MAX_ATTACHMENT_SET_DATA_KEY_LENGTH = 255;
     private static final Pattern ELEMENT_ID_PATTERN = Pattern.compile("^[a-z][a-zA-Z0-9_]*$");
 
     public static ProcessNodeDefinitionMetadata empty() {
@@ -48,7 +49,7 @@ public record ProcessNodeDefinitionMetadata(
     public static ProcessNodeDefinitionMetadata reuse(ProcessNodeDefinitionMetadata previous) {
         return new ProcessNodeDefinitionMetadata(
                 new LinkedList<>(previous.reusableUiDefinitions()),
-                new LinkedList<>(previous.forwardedAttachments()),
+                new LinkedList<>(previous.forwardedAttachmentSets()),
                 new LinkedList<>(previous.forwardedProcessDataKeys()),
                 new LinkedList<>(previous.forwardedIdentities())
         );
@@ -71,19 +72,20 @@ public record ProcessNodeDefinitionMetadata(
         return this;
     }
 
-    public ProcessNodeDefinitionMetadata addForwardedAttachment(@Nonnull
-                                                                String fileName,
-                                                                @Nonnull
-                                                                String label,
-                                                                @Nullable
-                                                                String subLabel,
-                                                                @Nonnull
-                                                                ProcessNodeEntity origin) {
-        return addForwardedAttachment(new ForwardedAttachment(fileName, label, subLabel, origin));
+    public ProcessNodeDefinitionMetadata addForwardedAttachmentSet(@Nonnull
+                                                                   String dataKey,
+                                                                   @Nonnull
+                                                                   String label,
+                                                                   @Nullable
+                                                                   String subLabel,
+                                                                   boolean isMultifile,
+                                                                   @Nonnull
+                                                                   ProcessNodeEntity origin) {
+        return addForwardedAttachmentSet(new ForwardedAttachmentSet(dataKey, label, subLabel, isMultifile, origin));
     }
 
-    public ProcessNodeDefinitionMetadata addForwardedAttachment(ForwardedAttachment forwardedAttachment) {
-        forwardedAttachments.add(forwardedAttachment);
+    public ProcessNodeDefinitionMetadata addForwardedAttachmentSet(ForwardedAttachmentSet forwardedAttachmentSet) {
+        forwardedAttachmentSets.add(forwardedAttachmentSet);
         return this;
     }
 
@@ -152,14 +154,20 @@ public record ProcessNodeDefinitionMetadata(
                 );
             }
 
-            if (e instanceof FileUploadInputElement f && StringUtils.isNotNullOrEmpty(f.getSubmittedFileName())) {
-                // TODO: Try to guess the extensions
-                this.addForwardedAttachment(
-                        f.getSubmittedFileName(),
-                        f.getSubmittedFileName(),
-                        StringUtils.isNotNullOrEmpty(f.getLabel()) ? f.getLabel() : f.getId(),
-                        origin
-                );
+            if (e instanceof FileUploadInputElement f) {
+                var attachmentSetDataKey = resolveAttachmentSetDataKey(f);
+                if (attachmentSetDataKey != null) {
+                    var isMultifile = Boolean.TRUE.equals(f.getIsMultifile()) ||
+                                      parents.stream().anyMatch(ReplicatingContainerLayoutElement.class::isInstance);
+
+                    this.addForwardedAttachmentSet(
+                            attachmentSetDataKey,
+                            StringUtils.isNotNullOrEmpty(f.getLabel()) ? f.getLabel() : attachmentSetDataKey,
+                            f.getHint(),
+                            isMultifile,
+                            origin
+                    );
+                }
             }
 
             if (e instanceof GenericStepElement s) {
@@ -256,6 +264,21 @@ public record ProcessNodeDefinitionMetadata(
         return prefix + "_" + UUID.randomUUID().toString().replace("-", "_");
     }
 
+    @Nullable
+    private static String resolveAttachmentSetDataKey(@Nonnull FileUploadInputElement element) {
+        var sourceKey = StringUtils.toNullableTrimmedString(element.getDestinationKey());
+        if (sourceKey == null) {
+            sourceKey = StringUtils.toNullableTrimmedString(element.getId());
+        }
+
+        if (sourceKey == null) {
+            return null;
+        }
+
+        var dataKey = sourceKey.replace('.', '_');
+        return dataKey.length() > MAX_ATTACHMENT_SET_DATA_KEY_LENGTH ? null : dataKey;
+    }
+
     public record ReusableUiDefinition(
             @Nonnull
             String label,
@@ -268,13 +291,14 @@ public record ProcessNodeDefinitionMetadata(
     ) {
     }
 
-    public record ForwardedAttachment(
+    public record ForwardedAttachmentSet(
             @Nonnull
-            String fileName,
+            String dataKey,
             @Nonnull
             String label,
             @Nullable
             String subLabel,
+            boolean isMultifile,
             @Nonnull
             ProcessNodeEntity origin
     ) {

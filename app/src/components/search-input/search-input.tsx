@@ -1,7 +1,7 @@
 import {Box, IconButton, InputAdornment, SxProps, TextField} from '@mui/material';
 import React from 'react';
-import Search from '@aivot/mui-material-symbols-400-outlined/dist/search/Search';
-import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
+import Search from '@aivot/mui-material-symbols-400-n25-outlined/Search';
+import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 
 export interface SearchInputProps {
     value: string;

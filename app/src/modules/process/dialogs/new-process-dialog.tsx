@@ -13,16 +13,16 @@ import {
     InputAdornment,
     Step,
     StepLabel,
-    type SvgIconProps,
     type SxProps,
 } from '@mui/material';
 import {type StepIconProps} from '@mui/material/StepIcon';
-import React, {type FC, type ReactNode, useEffect, useMemo, useState} from 'react';
+import React, {type ReactNode, useEffect, useMemo, useState} from 'react';
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
 import Typography from '@mui/material/Typography';
-import UploadFile from '@aivot/mui-material-symbols-400-outlined/dist/upload-file/UploadFile';
-import Check from '@aivot/mui-material-symbols-400-outlined/dist/check/Check';
-import Draft from '@aivot/mui-material-symbols-400-outlined/dist/draft/Draft';
-import LinkIcon from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
+import UploadFile from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
+import Check from '@aivot/mui-material-symbols-400-n25-outlined/Check';
+import Draft from '@aivot/mui-material-symbols-400-n25-outlined/Draft';
+import LinkIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import {uploadObjectFile} from '../../../utils/download-utils';
 import {type ProcessExport} from '../entities/process-export';
 import {VDepartmentShadowedApiService} from '../../departments/services/v-department-shadowed-api-service';
@@ -32,21 +32,21 @@ import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {TextFieldComponent} from '../../../components/text-field/text-field-component';
-import ArrowBack from '@aivot/mui-material-symbols-400-outlined/dist/arrow-back/ArrowBack';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
+import ArrowBack from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
+import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
 import {isStringNotNullOrEmpty, quoteString} from '../../../utils/string-utils';
-import Save from '@aivot/mui-material-symbols-400-outlined/dist/save/Save';
+import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {ProcessDefinitionApiService} from '../services/process-definition-api-service';
-import AddBox from '@aivot/mui-material-symbols-400-outlined/dist/add-box/AddBox';
+import AddBox from '@aivot/mui-material-symbols-400-n25-outlined/AddBox';
 import {ProcessStatus} from '../enums/process-status';
 import {ProcessTemplatesService, type TemplateRegistryProcessItem} from '../services/process-templates-service';
-import Flowsheet from '@aivot/mui-material-symbols-400-outlined/dist/flowsheet/Flowsheet';
+import Flowsheet from '@aivot/mui-material-symbols-400-n25-outlined/Flowsheet';
 import {useNavigate} from 'react-router-dom';
 import {SHOW_ERRORS_ROUTER_STATE} from '../pages/details/process-details-page';
 import {AlertComponent} from '../../../components/alert/alert-component';
 import {StatusTable} from '../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../components/status-table/status-table-props';
-import Label from '@aivot/mui-material-symbols-400-outlined/dist/label/Label';
+import Label from '@aivot/mui-material-symbols-400-n25-outlined/Label';
 import {DepartmentSelectField} from '../../departments/components/department-select-field';
 import {type VDepartmentShadowedEntityWithChildren} from '../../departments/entities/v-department-shadowed-entity';
 import {normalizeProcessSlugInput, PROCESS_SLUG_MAX_LENGTH, validateProcessSlug} from '../utils/process-slug-utils';
@@ -889,7 +889,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
 }
 
 interface ProcessTemplateCardProps {
-    Icon: FC<SvgIconProps>;
+    Icon: SvgIconComponent;
     title: string;
     description: string;
     onClick: () => void;

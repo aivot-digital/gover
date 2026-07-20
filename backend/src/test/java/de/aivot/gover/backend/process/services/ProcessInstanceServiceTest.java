@@ -5,11 +5,8 @@ import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentRepository;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceRepository;
-import de.aivot.gover.backend.process.services.CaseNumberGeneratorService;
-import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
-import de.aivot.gover.backend.process.services.ProcessInstanceService;
-import de.aivot.gover.backend.process.services.ProcessVersionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -50,6 +47,7 @@ class ProcessInstanceServiceTest {
         var service = new ProcessInstanceService(
                 processInstanceRepository,
                 mock(ProcessInstanceAttachmentRepository.class),
+                mock(ProcessInstanceAttachmentSetRepository.class),
                 mock(ProcessInstanceAttachmentService.class),
                 processVersionService,
                 caseNumberGeneratorService
@@ -89,6 +87,7 @@ class ProcessInstanceServiceTest {
         var service = new ProcessInstanceService(
                 processInstanceRepository,
                 mock(ProcessInstanceAttachmentRepository.class),
+                mock(ProcessInstanceAttachmentSetRepository.class),
                 mock(ProcessInstanceAttachmentService.class),
                 processVersionService,
                 caseNumberGeneratorService

@@ -1,7 +1,7 @@
 import React, {type ReactNode} from 'react';
 import {Box, Button, Typography} from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 
 interface SelectionListRowProps {
     icon: ReactNode;

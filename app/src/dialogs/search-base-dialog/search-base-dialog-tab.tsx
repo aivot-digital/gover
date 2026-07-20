@@ -3,8 +3,8 @@ import {useEffect, useMemo, useState} from 'react';
 import Fuse from 'fuse.js';
 import {SearchInput} from '../../components/search-input/search-input';
 import {SearchBaseDialogTabProps} from './search-base-dialog-tab-props';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import CancelOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Cancel';
 import {isStringNullOrEmpty} from '../../utils/string-utils';
 
 export function SearchBaseDialogTab<T>(props: SearchBaseDialogTabProps<T>) {

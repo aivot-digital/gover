@@ -10,10 +10,10 @@ import {
     Tooltip,
     Typography
 } from '@mui/material';
-import MyLocationOutlinedIcon from '@mui/icons-material/MyLocationOutlined';
-import NearMeOutlinedIcon from '@mui/icons-material/NearMeOutlined';
-import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
-import ClearOutlinedIcon from '@mui/icons-material/ClearOutlined';
+import MyLocationOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/MyLocation';
+import NearMeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/NearMe';
+import SearchOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Search';
+import ClearOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {MapPointValue} from '../../models/elements/form/input/map-point-field-element';
 import {
