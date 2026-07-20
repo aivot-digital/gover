@@ -106,9 +106,9 @@ with aggregated_system_permissions as (select usr.id                            
                                        from users usr
                                                 left join v_user_is_recursively_deputy_for dpty
                                                           on usr.id = dpty.deputy_user_id
-                                                left join department_memberships dm
-                                                          on dm.user_id = dpty.original_user_id or
-                                                             dm.user_id = usr.id
+                                                right join department_memberships dm
+                                                           on dm.user_id = dpty.original_user_id or
+                                                              dm.user_id = usr.id
                                                 left join domain_role_assignments dra
                                                           on dra.department_membership_id = dm.id
                                                 left join domain_roles dr
@@ -139,6 +139,6 @@ select usr.id                                                                   
        array_unique_union_multi_agg(asp.system_role_permissions, adp.domain_role_permissions) as permissions,
        array_unique_union_multi_agg(asp.deputy_for_user_ids, adp.deputy_for_user_ids)         as deputy_for_user_ids
 from users usr
+         right join aggregated_domain_permissions adp on adp.user_id = usr.id
          left join aggregated_system_permissions asp on asp.user_id = usr.id
-         left join aggregated_domain_permissions adp on adp.user_id = usr.id
 group by usr.id, adp.department_id;
