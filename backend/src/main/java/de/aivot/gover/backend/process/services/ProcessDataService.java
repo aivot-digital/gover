@@ -2,18 +2,22 @@ package de.aivot.gover.backend.process.services;
 
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentRepository;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.gover.backend.process.repositories.ProcessNodeRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,13 +33,16 @@ public class ProcessDataService {
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final ProcessNodeRepository processDefinitionNodeRepository;
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
+    private final ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository;
 
     public ProcessDataService(ProcessInstanceTaskRepository processInstanceTaskRepository,
                               ProcessNodeRepository processDefinitionNodeRepository,
-                              ProcessInstanceAttachmentRepository processInstanceAttachmentRepository) {
+                              ProcessInstanceAttachmentRepository processInstanceAttachmentRepository,
+                              ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository) {
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.processDefinitionNodeRepository = processDefinitionNodeRepository;
         this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
+        this.processInstanceAttachmentSetRepository = processInstanceAttachmentSetRepository;
     }
 
     /**
@@ -109,6 +116,8 @@ public class ProcessDataService {
 
         List<ProcessInstanceAttachmentEntity> allAttachments = processInstanceAttachmentRepository
                 .findAllByProcessInstanceId(instance.getId());
+        List<ProcessInstanceAttachmentSetEntity> allAttachmentSets = processInstanceAttachmentSetRepository
+                .findAllByProcessInstanceId(instance.getId());
 
         Map<String, Object> instanceData = new HashMap<>();
 
@@ -121,17 +130,75 @@ public class ProcessDataService {
         instanceData.put("assignedUserId", instance.getAssignedUserId());
         instanceData.put("initialNodeDataKey", initialNode.getDataKey());
         instanceData.put("previousNodeDataKey", previousNode != null ? previousNode.getDataKey() : null);
-        instanceData.put("attachments", allAttachments
-                .stream()
-                .map((att) -> Map.of(
-                        "filename", att.getFileName(),
-                        "storageProviderId", att.getStorageProviderId(),
-                        "storagePathFromRoot", att.getStoragePathFromRoot()
-                ))
-                .toList());
+        instanceData.put("attachmentSets", getAttachmentSetData(allAttachmentSets, allAttachments));
         instanceData.put("taskMetadata", getTaskMetaData(tasks, nodes));
 
         return instanceData;
+    }
+
+    @Nonnull
+    private Map<String, Object> getAttachmentSetData(@Nonnull List<ProcessInstanceAttachmentSetEntity> attachmentSets,
+                                                     @Nonnull List<ProcessInstanceAttachmentEntity> attachments) {
+        var attachmentsBySetId = new HashMap<Integer, List<ProcessInstanceAttachmentEntity>>();
+        for (var attachment : attachments) {
+            attachmentsBySetId
+                    .computeIfAbsent(attachment.getAttachmentSetId(), ignored -> new ArrayList<>())
+                    .add(attachment);
+        }
+
+        var result = new LinkedHashMap<String, Object>();
+        for (var attachmentSet : attachmentSets) {
+            @SuppressWarnings("unchecked")
+            var attachmentSetData = (Map<String, Object>) result.computeIfAbsent(
+                    attachmentSet.getDataKey(),
+                    ignored -> createAttachmentSetGroupData(attachmentSet)
+            );
+            var attachmentData = attachmentsBySetId
+                    .getOrDefault(attachmentSet.getId(), List.of())
+                    .stream()
+                    .map(this::getAttachmentData)
+                    .toList();
+
+            @SuppressWarnings("unchecked")
+            var sets = (List<Map<String, Object>>) attachmentSetData.get("sets");
+            sets.add(getAttachmentSetItemData(attachmentSet, attachmentData));
+
+            @SuppressWarnings("unchecked")
+            var allSetAttachments = (List<Map<String, Object>>) attachmentSetData.get("attachments");
+            allSetAttachments.addAll(attachmentData);
+        }
+        return result;
+    }
+
+    @Nonnull
+    private Map<String, Object> createAttachmentSetGroupData(@Nonnull ProcessInstanceAttachmentSetEntity attachmentSet) {
+        var attachmentSetData = new LinkedHashMap<String, Object>();
+        attachmentSetData.put("name", attachmentSet.getName());
+        attachmentSetData.put("dataKey", attachmentSet.getDataKey());
+        attachmentSetData.put("sets", new ArrayList<Map<String, Object>>());
+        attachmentSetData.put("attachments", new ArrayList<Map<String, Object>>());
+        return attachmentSetData;
+    }
+
+    @Nonnull
+    private Map<String, Object> getAttachmentSetItemData(@Nonnull ProcessInstanceAttachmentSetEntity attachmentSet,
+                                                         @Nonnull List<Map<String, Object>> attachments) {
+        var attachmentSetData = new LinkedHashMap<String, Object>();
+        attachmentSetData.put("id", attachmentSet.getId());
+        attachmentSetData.put("name", attachmentSet.getName());
+        attachmentSetData.put("dataKey", attachmentSet.getDataKey());
+        attachmentSetData.put("processInstanceTaskId", attachmentSet.getProcessInstanceTaskId());
+        attachmentSetData.put("attachments", attachments);
+        return attachmentSetData;
+    }
+
+    @Nonnull
+    private Map<String, Object> getAttachmentData(@Nonnull ProcessInstanceAttachmentEntity attachment) {
+        return Map.of(
+                "filename", attachment.getFileName(),
+                "storageProviderId", attachment.getStorageProviderId(),
+                "storagePathFromRoot", attachment.getStoragePathFromRoot()
+        );
     }
 
     @Nonnull

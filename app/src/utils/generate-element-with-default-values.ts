@@ -52,7 +52,7 @@ import {SummaryLayoutElement} from '../models/elements/form/layout/summary-layou
 import {ProcessDataKeyInputFieldElement} from '../models/elements/form/input/process-data-key-input-field-element';
 import {IdentityConfigElement} from '../models/elements/form/input/identity-config-element';
 import {ProcessAttachmentDisplayElement} from '../models/elements/form/content/process-attachment-display-element';
-import {ProcessAttachmentNameChipInputElement} from '../models/elements/form/input/process-attachment-name-chip-input-element';
+import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form/input/process-instance-attachment-set-select-element';
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
@@ -137,7 +137,7 @@ const elementConstructors: {
     [ElementType.NoCodeInput]: (id: string) => NoCodeInputFieldElement;
     [ElementType.SummaryLayout]: (id: string) => SummaryLayoutElement;
     [ElementType.ProcessDataKeyInput]: (id: string) => ProcessDataKeyInputFieldElement;
-    [ElementType.ProcessAttachmentNameChipInput]: (id: string) => ProcessAttachmentNameChipInputElement;
+    [ElementType.ProcessInstanceAttachmentSetSelect]: (id: string) => ProcessInstanceAttachmentSetSelectElement;
     [ElementType.ProcessIdentityIdInput]: (id: string) => ProcessIdentityIdInputElement;
     [ElementType.HtmlTemplateInput]: (id: string) => HtmlTemplateInputElement;
     [ElementType.ProcessAttachmentDisplay]: (id: string) => ProcessAttachmentDisplayElement;
@@ -491,14 +491,12 @@ const elementConstructors: {
         label: 'Prozessdaten-Schlüssel',
         disableWildCards: false,
     }),
-    [ElementType.ProcessAttachmentNameChipInput]: (id) => ({
-        ...makeInputBase(ElementType.ProcessAttachmentNameChipInput, id),
-        label: 'Vorgangsanhänge',
-        placeholder: 'Anhang hinzufügen',
-        suggestions: undefined,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: (id) => ({
+        ...makeInputBase(ElementType.ProcessInstanceAttachmentSetSelect, id),
+        label: 'Anlagensätze',
+        placeholder: 'Anlagensatz auswählen',
         minItems: undefined,
         maxItems: undefined,
-        allowDuplicates: false,
     }),
     [ElementType.ProcessIdentityIdInput]: (id) => ({
         ...makeInputBase(ElementType.ProcessIdentityIdInput, id),
@@ -515,7 +513,9 @@ const elementConstructors: {
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),
-        fileName: undefined,
+        attachmentSetKey: undefined,
+        label: undefined,
+        hint: undefined,
     }),
 };
 

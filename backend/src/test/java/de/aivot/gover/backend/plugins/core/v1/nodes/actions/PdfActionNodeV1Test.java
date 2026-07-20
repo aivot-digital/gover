@@ -3,12 +3,14 @@ package de.aivot.gover.backend.plugins.core.v1.nodes.actions;
 import de.aivot.gover.backend.asset.entities.AssetEntity;
 import de.aivot.gover.backend.asset.services.AssetService;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.gover.backend.elements.models.elements.form.input.HtmlTemplateInputElementResolver;
 import de.aivot.gover.backend.elements.models.elements.form.input.HtmlTemplateInputElementValue;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.gover.backend.plugins.core.v1.nodes.actions.PdfActionNodeV1;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -16,11 +18,13 @@ import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
+import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.models.ProcessNodeExecutionLogger;
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceHistoryEventRepository;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.services.PdfService;
 import de.aivot.gover.backend.storage.services.StorageService;
@@ -37,8 +41,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -55,6 +61,7 @@ class PdfActionNodeV1Test {
 
     private PdfService pdfService;
     private ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private AssetService assetService;
     private StorageService storageService;
     private PdfActionNodeV1 node;
@@ -63,6 +70,7 @@ class PdfActionNodeV1Test {
     void setUp() throws Exception {
         pdfService = mock(PdfService.class);
         processInstanceAttachmentService = mock(ProcessInstanceAttachmentService.class);
+        processInstanceAttachmentSetService = mock(ProcessInstanceAttachmentSetService.class);
         assetService = mock(AssetService.class);
         storageService = mock(StorageService.class);
 
@@ -76,6 +84,10 @@ class PdfActionNodeV1Test {
                             .setStorageProviderId(7)
                             .setStoragePathFromRoot("attachments/report.pdf");
                 });
+        when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
+                .thenAnswer(invocation -> invocation
+                        .getArgument(0, ProcessInstanceAttachmentSetEntity.class)
+                        .setId(321));
 
         node = createNode(new PassthroughTemplateRenderService());
     }
@@ -97,6 +109,13 @@ class PdfActionNodeV1Test {
         );
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
         assertEquals("application/pdf", result.getNodeData().get("mimeType"));
+
+        @SuppressWarnings("unchecked")
+        var files = (List<FileUploadInputElementItem>) result.getNodeData().get("files");
+        assertEquals(1, files.size());
+        assertEquals("report.pdf", files.getFirst().getName());
+        assertEquals(9, files.getFirst().getSize());
+        assertTrue(files.getFirst().getUri().startsWith("process-instance-attachment:"));
     }
 
     @Test
@@ -139,6 +158,18 @@ class PdfActionNodeV1Test {
                 ""
         );
         assertEquals("report.pdf", result.getNodeData().get("fileName"));
+    }
+
+    @Test
+    void getMetadata_ShouldForwardPdfAttachmentSetAsSingleFile() {
+        var metadata = node.getMetadata(processNode(), codeConfiguration("<html></html>"), ProcessNodeDefinitionMetadata.empty());
+
+        assertEquals(1, metadata.forwardedAttachmentSets().size());
+
+        var attachmentSet = metadata.forwardedAttachmentSets().getFirst();
+        assertEquals("pdfNode", attachmentSet.dataKey());
+        assertEquals("report", attachmentSet.label());
+        assertFalse(attachmentSet.isMultifile());
     }
 
     private static ProcessNodeExecutionInitContext context(String html) {
@@ -194,6 +225,7 @@ class PdfActionNodeV1Test {
                 pdfService,
                 templateRenderService,
                 processInstanceAttachmentService,
+                processInstanceAttachmentSetService,
                 htmlTemplateInputElementResolver
         );
     }

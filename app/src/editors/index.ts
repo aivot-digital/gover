@@ -40,6 +40,9 @@ import {CodeInputFieldEditor} from './code-input-field-editor';
 import {NoCodeInputFieldEditor} from './no-code-input-field-editor';
 import {UiDefinitionInputFieldEditor} from './ui-definition-input-field-editor';
 import {ProcessAttachmentDisplayEditor} from './process-attachment-display-editor';
+import {
+    ProcessInstanceAttachmentSetSelectFieldEditor,
+} from './process-instance-attachment-set-select-field-editor';
 
 export interface EditorTab {
     label: string;
@@ -167,8 +170,8 @@ export const editors: ElementTypesMap<EditorSet | null> = {
     },
     [ElementType.SummaryLayout]: null,
     [ElementType.ProcessDataKeyInput]: null,
-    [ElementType.ProcessAttachmentNameChipInput]: {
-        default: ChipInputFieldEditor,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: {
+        default: ProcessInstanceAttachmentSetSelectFieldEditor,
     },
     [ElementType.ProcessIdentityIdInput]: {
         default: ChipInputFieldEditor,

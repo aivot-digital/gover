@@ -18,6 +18,7 @@ import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
 import de.aivot.gover.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionException;
@@ -32,7 +33,9 @@ import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutio
 import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResultTaskCompleted;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.gover.backend.process.services.FileUploadMultipartInputService;
 import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.services.PdfService;
 import de.aivot.gover.backend.utils.StringUtils;
@@ -57,6 +60,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     private static final String OUTPUT_NAME_ATTACHMENT_KEY = "attachmentKey";
     private static final String OUTPUT_NAME_STORAGE_PROVIDER_ID = "storageProviderId";
     private static final String OUTPUT_NAME_STORAGE_PATH_FROM_ROOT = "storagePathFromRoot";
+    private static final String OUTPUT_NAME_FILES = "files";
     private static final String HEADER_HTML_SECTION_SEPARATOR = "<!-- KOPFZEILE -->";
     private static final String FOOTER_HTML_SECTION_SEPARATOR = "<!-- FUSSZEILE -->";
     private static final Pattern HTML_DOCUMENT_BLOCK_PATTERN = Pattern.compile(
@@ -67,15 +71,18 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
     private final PdfService pdfService;
     private final TemplateRenderService templateRenderService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final HtmlTemplateInputElementResolver htmlTemplateInputElementResolver;
 
     public PdfActionNodeV1(PdfService pdfService,
                            TemplateRenderService templateRenderService,
                            ProcessInstanceAttachmentService processInstanceAttachmentService,
+                           ProcessInstanceAttachmentSetService processInstanceAttachmentSetService,
                            HtmlTemplateInputElementResolver htmlTemplateInputElementResolver) {
         this.pdfService = pdfService;
         this.templateRenderService = templateRenderService;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
         this.htmlTemplateInputElementResolver = htmlTemplateInputElementResolver;
     }
 
@@ -218,6 +225,11 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
                         OUTPUT_NAME_SIZE_BYTES,
                         "Dateigröße in Bytes",
                         "Die Größe des erzeugten PDF-Dokuments in Bytes."
+                ),
+                new ProcessNodeOutput(
+                        OUTPUT_NAME_FILES,
+                        "Dateien",
+                        "Die erzeugten Dateien im Format des Datei-Upload-Feldes."
                 )
         );
     }
@@ -233,10 +245,11 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         return ProcessNodeDefinitionMetadata
                 .reuse(previousMetadata)
-                .addForwardedAttachment(
-                        configuration.fileName,
+                .addForwardedAttachmentSet(
+                        processNodeEntity.getDataKey(),
                         configuration.fileName,
                         null,
+                        false,
                         processNodeEntity
                 );
     }
@@ -301,13 +314,21 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         ProcessInstanceAttachmentEntity attachment;
         try {
+            var attachmentSet = processInstanceAttachmentSetService.create(
+                    new ProcessInstanceAttachmentSetEntity()
+                            .setName(fileName)
+                            .setDataKey(context.getThisNode().getDataKey())
+                            .setProcessInstanceId(context.getThisProcessInstance().getId())
+                            .setProcessInstanceTaskId(context.getThisTask().getId())
+            );
+
             attachment = processInstanceAttachmentService.create(
                     ProcessInstanceAttachmentEntity.of(
                             fileName,
                             context.getThisProcessInstance().getId(),
                             context.getThisTask().getId(),
                             pdfBytes
-                    )
+                    ).setAttachmentSetId(attachmentSet.getId())
             );
         } catch (ResponseException e) {
             throw new ProcessNodeExecutionExceptionUnknown(
@@ -324,6 +345,15 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
         metadata.put(OUTPUT_NAME_ATTACHMENT_KEY, attachment.getKey());
         metadata.put(OUTPUT_NAME_STORAGE_PROVIDER_ID, attachment.getStorageProviderId());
         metadata.put(OUTPUT_NAME_STORAGE_PATH_FROM_ROOT, attachment.getStoragePathFromRoot());
+        try {
+            metadata.put(OUTPUT_NAME_FILES, List.of(FileUploadMultipartInputService.buildAttachmentItem(attachment, pdfBytes.length)));
+        } catch (ResponseException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Fehler beim Erstellen der Dateiliste für das erzeugte PDF: %s",
+                    e.getMessage()
+            );
+        }
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
@@ -506,7 +536,7 @@ public class PdfActionNodeV1 implements ProcessNodeDefinition<PdfActionNodeV1.Pd
 
         @InputElementPOJOBinding(id = FILE_NAME_FIELD_ID, type = ElementType.Text, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateiname"),
-                @ElementPOJOBindingProperty(key = "hint", strValue = "Dateiname des PDF-Dokuments (z.B. dokument.pdf)."),
+                @ElementPOJOBindingProperty(key = "hint", strValue = "Sie können den Dateinamen ohne Dateiendung oder mit der Dateiendung .pdf angeben."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true)
         })
         public String fileName;

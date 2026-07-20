@@ -12,10 +12,12 @@ describe('generateElementWithDefaultValues', () => {
         expect(element.copyValueTemplate).toBeUndefined();
     });
 
-    it('should initialize process attachment display elements with an empty file name', () => {
+    it('should initialize process attachment display elements without a configured attachment set key', () => {
         const element = generateElementWithDefaultValues(ElementType.ProcessAttachmentDisplay) as ProcessAttachmentDisplayElement;
 
-        expect(element.fileName).toBeUndefined();
+        expect(element.attachmentSetKey).toBeUndefined();
+        expect(element.label).toBeUndefined();
+        expect(element.hint).toBeUndefined();
     });
 
     it('should initialize file upload elements without a submitted file name override', () => {

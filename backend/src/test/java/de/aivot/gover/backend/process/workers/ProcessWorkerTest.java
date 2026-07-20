@@ -7,40 +7,29 @@ import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
-import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
-import de.aivot.gover.backend.process.models.ProcessNodeDefinition;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionException;
-import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.gover.backend.process.models.ProcessNodeDefinition;
 import de.aivot.gover.backend.process.models.ProcessNodeExecutionLogger;
-import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResult;
 import de.aivot.gover.backend.process.models.ProcessNodePort;
-import de.aivot.gover.backend.process.repositories.ProcessInstanceRepository;
-import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentRepository;
-import de.aivot.gover.backend.process.repositories.ProcessInstanceTaskRepository;
-import de.aivot.gover.backend.process.repositories.ProcessNodeRepository;
+import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutionResult;
+import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
+import de.aivot.gover.backend.process.repositories.*;
 import de.aivot.gover.backend.process.services.ProcessDataService;
 import de.aivot.gover.backend.process.services.ProcessNodeDefinitionService;
 import de.aivot.gover.backend.process.services.ProcessNodeExecutionLoggerFactory;
 import de.aivot.gover.backend.process.services.ProcessNodeService;
-import de.aivot.gover.backend.process.workers.ProcessNodeExecutionResultHandler;
-import de.aivot.gover.backend.process.workers.ProcessWorker;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import jakarta.annotation.Nonnull;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.UUID;
+import java.util.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ProcessWorkerTest {
     @Test
@@ -115,6 +104,10 @@ class ProcessWorkerTest {
             case "findAllByProcessInstanceId" -> List.of();
             default -> defaultValue(args);
         });
+        var processInstanceAttachmentSetRepository = createProxy(ProcessInstanceAttachmentSetRepository.class, (methodName, args) -> switch (methodName) {
+            case "findAllByProcessInstanceId" -> List.of();
+            default -> defaultValue(args);
+        });
 
         var resultHandler = new TestProcessNodeExecutionResultHandler();
 
@@ -127,7 +120,8 @@ class ProcessWorkerTest {
                 new ProcessDataService(
                         processInstanceTaskRepository,
                         processNodeRepository,
-                        processInstanceAttachmentRepository
+                        processInstanceAttachmentRepository,
+                        processInstanceAttachmentSetRepository
                 ),
                 new TestProcessNodeExecutionLoggerFactory(),
                 new TestProcessNodeService()

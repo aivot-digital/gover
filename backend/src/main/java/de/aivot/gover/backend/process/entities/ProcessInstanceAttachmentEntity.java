@@ -25,6 +25,10 @@ public class ProcessInstanceAttachmentEntity {
     private String fileName;
 
     @Nonnull
+    @NotNull(message = "Die ID des Anlagensatzes darf nicht null sein.")
+    private Integer attachmentSetId;
+
+    @Nonnull
     @NotNull(message = "Die ID der Prozessinstanz darf nicht null sein.")
     private Long processInstanceId;
 
@@ -59,6 +63,7 @@ public class ProcessInstanceAttachmentEntity {
     // Full constructor for easier creation of the entity
     public ProcessInstanceAttachmentEntity(@Nonnull UUID key,
                                            @Nonnull String fileName,
+                                           @Nonnull Integer attachmentSetId,
                                            @Nonnull Long processInstanceId,
                                            @Nullable Long processInstanceTaskId,
                                            @Nonnull Integer storageProviderId,
@@ -67,6 +72,7 @@ public class ProcessInstanceAttachmentEntity {
                                            byte[] fileBytes) {
         this.key = key;
         this.fileName = fileName;
+        this.attachmentSetId = attachmentSetId;
         this.processInstanceId = processInstanceId;
         this.processInstanceTaskId = processInstanceTaskId;
         this.storageProviderId = storageProviderId;
@@ -84,6 +90,7 @@ public class ProcessInstanceAttachmentEntity {
         return new ProcessInstanceAttachmentEntity(
                 null,
                 fileName,
+                null,
                 processInstanceId,
                 processInstanceTaskId,
                 null,
@@ -114,6 +121,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setFileName(@Nonnull String fileName) {
         this.fileName = fileName;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getAttachmentSetId() {
+        return attachmentSetId;
+    }
+
+    public ProcessInstanceAttachmentEntity setAttachmentSetId(@Nonnull Integer attachmentSetId) {
+        this.attachmentSetId = attachmentSetId;
         return this;
     }
 

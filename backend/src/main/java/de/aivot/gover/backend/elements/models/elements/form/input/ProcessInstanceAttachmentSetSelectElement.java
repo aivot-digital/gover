@@ -12,7 +12,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-public class ProcessAttachmentNameChipInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
+public class ProcessInstanceAttachmentSetSelectElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
     @Nullable
     private String placeholder;
 
@@ -22,8 +22,8 @@ public class ProcessAttachmentNameChipInputElement extends BaseInputElement<List
     @Nullable
     private Integer maxItems;
 
-    public ProcessAttachmentNameChipInputElement() {
-        super(ElementType.ProcessAttachmentNameChipInput);
+    public ProcessInstanceAttachmentSetSelectElement() {
+        super(ElementType.ProcessInstanceAttachmentSetSelect);
     }
 
     @Nullable
@@ -113,7 +113,7 @@ public class ProcessAttachmentNameChipInputElement extends BaseInputElement<List
         if (o == null || getClass() != o.getClass()) return false;
         if (!super.equals(o)) return false;
 
-        ProcessAttachmentNameChipInputElement that = (ProcessAttachmentNameChipInputElement) o;
+        ProcessInstanceAttachmentSetSelectElement that = (ProcessInstanceAttachmentSetSelectElement) o;
         return Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(minItems, that.minItems)
                 && Objects.equals(maxItems, that.maxItems);
@@ -133,7 +133,7 @@ public class ProcessAttachmentNameChipInputElement extends BaseInputElement<List
         return placeholder;
     }
 
-    public ProcessAttachmentNameChipInputElement setPlaceholder(@Nullable String placeholder) {
+    public ProcessInstanceAttachmentSetSelectElement setPlaceholder(@Nullable String placeholder) {
         this.placeholder = placeholder;
         return this;
     }
@@ -143,7 +143,7 @@ public class ProcessAttachmentNameChipInputElement extends BaseInputElement<List
         return minItems;
     }
 
-    public ProcessAttachmentNameChipInputElement setMinItems(@Nullable Integer minItems) {
+    public ProcessInstanceAttachmentSetSelectElement setMinItems(@Nullable Integer minItems) {
         this.minItems = minItems;
         return this;
     }
@@ -153,7 +153,7 @@ public class ProcessAttachmentNameChipInputElement extends BaseInputElement<List
         return maxItems;
     }
 
-    public ProcessAttachmentNameChipInputElement setMaxItems(@Nullable Integer maxItems) {
+    public ProcessInstanceAttachmentSetSelectElement setMaxItems(@Nullable Integer maxItems) {
         this.maxItems = maxItems;
         return this;
     }
