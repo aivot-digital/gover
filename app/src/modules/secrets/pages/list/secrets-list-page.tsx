@@ -17,19 +17,19 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {checkSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {hasSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function SecretsListPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    useHasSystemPermission(Permission.SECRET_READ);
+    useRequireSystemPermission(Permission.SECRET_READ);
     const permissions = useAppSelector(selectPermissions);
-    const canCreateSecret = checkSystemPermission(permissions, Permission.SECRET_CREATE);
-    const canUpdateSecrets = checkSystemPermission(permissions, Permission.SECRET_UPDATE);
+    const canCreateSecret = hasSystemPermission(permissions, Permission.SECRET_CREATE);
+    const canUpdateSecrets = hasSystemPermission(permissions, Permission.SECRET_UPDATE);
 
     const header = useMemo(() => ({
         icon: <KeyOutlinedIcon />,

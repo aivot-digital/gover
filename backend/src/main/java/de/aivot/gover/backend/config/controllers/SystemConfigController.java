@@ -72,7 +72,7 @@ public class SystemConfigController {
             @Nonnull @ParameterObject @Valid SystemConfigFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
+                .requireSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
 
         return systemConfigService
                 .list(pageable, filter)
@@ -99,7 +99,7 @@ public class SystemConfigController {
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
+                .requireSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
 
         return systemConfigService
                 .getSystemConfigDefinitions();
@@ -121,7 +121,7 @@ public class SystemConfigController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
+                .requireSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
 
         var def = systemConfigService
                 .getDefinition(key)

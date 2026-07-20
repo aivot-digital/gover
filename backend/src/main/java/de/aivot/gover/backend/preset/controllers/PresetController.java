@@ -73,7 +73,7 @@ public class PresetController {
             @Nonnull @ParameterObject @Valid PresetFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
 
         return presetRepository
                 .findAll(filter.build(), pageable);
@@ -95,7 +95,7 @@ public class PresetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_CREATE);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_CREATE);
 
         var newEntity = requestDTO
                 .toEntity();
@@ -137,7 +137,7 @@ public class PresetController {
             @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
 
         return presetRepository
                 .findById(key)
@@ -168,7 +168,7 @@ public class PresetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
 
         var preset = presetRepository
                 .findById(key)
@@ -215,7 +215,7 @@ public class PresetController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_DELETE);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_DELETE);
 
         var preset = presetRepository
                 .findById(key)

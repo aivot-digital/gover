@@ -44,7 +44,7 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 const DefaultStorageProcessAttachmentsSystemConfigDefinitionKey = 'storage.attachments.default_storage_provider';
@@ -120,7 +120,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const {registerSyncPreparationHandler} = useStorageProviderDetailsPageSyncContext();
-    const canDeleteStorageProvider = useCheckSystemPermission(Permission.STORAGE_PROVIDER_DELETE);
+    const canDeleteStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_DELETE);
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);

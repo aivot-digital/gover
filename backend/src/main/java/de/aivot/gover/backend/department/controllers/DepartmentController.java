@@ -78,9 +78,9 @@ public class DepartmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_READ)) {
             if (filter.getId() != null) {
-                permissionService.hasDepartmentPermission(
+                permissionService.requireDepartmentPermission(
                         user.getId(),
                         filter.getId(),
                         DepartmentPermissionProvider.DEPARTMENT_READ
@@ -123,7 +123,7 @@ public class DepartmentController {
                 .orElseThrow(ResponseException::unauthorized);
 
         // Creating departments changes the organization structure and is always controlled system-wide.
-        permissionService.hasSystemPermission(
+        permissionService.requireSystemPermission(
                 execUser.getId(),
                 DepartmentPermissionProvider.DEPARTMENT_CREATE
         );
@@ -163,7 +163,7 @@ public class DepartmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 id,
                 DepartmentPermissionProvider.DEPARTMENT_READ
@@ -188,7 +188,7 @@ public class DepartmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 id,
                 DepartmentPermissionProvider.DEPARTMENT_UPDATE
@@ -238,7 +238,7 @@ public class DepartmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 id,
                 DepartmentPermissionProvider.DEPARTMENT_DELETE

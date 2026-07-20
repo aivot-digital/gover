@@ -16,17 +16,17 @@ import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../components/generic-list/generic-list-props';
 import {
-    useCheckSystemPermission,
     useHasSystemPermission,
+    useRequireSystemPermission,
 } from '../../../modules/permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../modules/permissions/utils/permission-utils';
 
 export function PresetListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.PRESET_READ);
-    const canCreatePreset = useCheckSystemPermission(Permission.PRESET_CREATE);
-    const canUpdatePreset = useCheckSystemPermission(Permission.PRESET_UPDATE);
+    useRequireSystemPermission(Permission.PRESET_READ);
+    const canCreatePreset = useHasSystemPermission(Permission.PRESET_CREATE);
+    const canUpdatePreset = useHasSystemPermission(Permission.PRESET_UPDATE);
     const [showAddPresetDialog, setShowAddPresetDialog] = useState(false);
 
     const navigateTo = useCallback((preset: Preset): void => {

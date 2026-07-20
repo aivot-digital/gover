@@ -75,7 +75,7 @@ public class PaymentProviderController {
             @Nonnull @ParameterObject @Valid PaymentProviderFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
 
         return paymentProviderService
                 .list(pageable, filter)
@@ -97,7 +97,7 @@ public class PaymentProviderController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE);
+                .requireSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE);
 
         var created = paymentProviderService
                 .create(requestDTO.toEntity());
@@ -127,7 +127,7 @@ public class PaymentProviderController {
             @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
 
         return paymentProviderService
                 .retrieve(key)
@@ -151,7 +151,7 @@ public class PaymentProviderController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE);
+                .requireSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE);
 
         var existing = paymentProviderService
                 .retrieve(key)
@@ -193,7 +193,7 @@ public class PaymentProviderController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_DELETE);
+                .requireSystemPermission(execUser.getId(), PaymentProviderPermissionProvider.PAYMENT_PROVIDER_DELETE);
 
         var deleted = paymentProviderService
                 .delete(key);
@@ -221,7 +221,7 @@ public class PaymentProviderController {
             @Nonnull @RequestBody @Valid PaymentProviderTestDataRequestDTO requestDTO
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_UPDATE);
 
         var result = paymentProviderTestService.test(
                 key,

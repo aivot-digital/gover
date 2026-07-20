@@ -31,13 +31,13 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {createDerivedRuntimeElementData, isDerivedRuntimeElementData} from '../../../../models/element-data';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const canDeleteDataObjectItem = useCheckSystemPermission(Permission.OBJECT_ITEM_DELETE);
+    const canDeleteDataObjectItem = useHasSystemPermission(Permission.OBJECT_ITEM_DELETE);
 
     const dataObjectKey = useParams().schemaKey;
     const api = useApi();

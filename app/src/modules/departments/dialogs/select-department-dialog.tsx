@@ -9,7 +9,7 @@ import {VDepartmentShadowedApiService} from '../services/v-department-shadowed-a
 import {useAppSelector} from '../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../slices/user-slice';
 import {Permission} from '../../../data/permissions/permission';
-import {checkDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
+import {hasDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 interface SelectDepartmentDialogProps {
     open: boolean;
@@ -117,7 +117,7 @@ export function SelectDepartmentDialog(props: SelectDepartmentDialogProps): Reac
                     )}
                     getActions={(department) => {
                         const canSelectDepartment = isDepartmentSelectable?.(department) ??
-                            checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
+                            hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
                         const disabledTooltip = canSelectDepartment ?
                             undefined :
                             getDepartmentDisabledTooltip?.(department) ?? formatMissingPermissionTooltip(Permission.DEPARTMENT_READ);

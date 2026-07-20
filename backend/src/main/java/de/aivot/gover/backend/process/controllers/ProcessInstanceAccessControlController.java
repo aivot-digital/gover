@@ -74,7 +74,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 processId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -96,9 +96,9 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
     protected Page<ProcessInstanceAccessControlEntity> performList(@Nonnull UserEntity user,
                                                                    @Nonnull Pageable pageable,
                                                                    @Nonnull ProcessInstanceAccessControlFilter filter) throws ResponseException {
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE)) {
             if (filter.getTargetProcessInstanceId() != null) {
-                permissionService.hasProcessInstancePermission(
+                permissionService.requireProcessInstancePermission(
                         user.getId(),
                         filter.getTargetProcessInstanceId().longValue(),
                         ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -132,7 +132,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
     @Override
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull ProcessInstanceAccessControlEntity newItem) throws ResponseException {
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 newItem.getTargetProcessInstanceId().longValue(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -146,7 +146,7 @@ public class ProcessInstanceAccessControlController extends GenericCrudControlle
                 .retrieve(itemid)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 existing.getTargetProcessInstanceId().longValue(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE

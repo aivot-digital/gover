@@ -56,7 +56,7 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull ProcessTestClaimEntity newItem) throws ResponseException {
         var canPublishTestSystemwide = permissionService
-                .checkSystemPermission(
+                .hasSystemPermission(
                         execUser,
                         ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
                 );
@@ -108,7 +108,7 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
                                                        @Nonnull Pageable pageable,
                                                        @Nonnull ProcessTestClaimFilter filter) throws ResponseException {
         var canReadProcessSystemwide = permissionService
-                .checkSystemPermission(
+                .hasSystemPermission(
                         user,
                         ProcessPermissionProvider.PROCESS_DEFINITION_READ
                 );
@@ -140,7 +140,7 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
     protected void checkRetrievePermissions(@Nonnull UserEntity execUser,
                                             @Nonnull Integer itemid) throws ResponseException {
         var canReadProcessSystemwide = permissionService
-                .checkSystemPermission(
+                .hasSystemPermission(
                         execUser,
                         ProcessPermissionProvider.PROCESS_DEFINITION_READ
                 );
@@ -187,7 +187,7 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
     protected void checkDeletePermission(@Nonnull UserEntity execUser,
                                          @Nonnull Integer itemid) throws ResponseException {
         var canPublishTestAsSystemAdmin = permissionService
-                .checkSystemPermission(
+                .hasSystemPermission(
                         execUser,
                         ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
                 );
@@ -200,11 +200,12 @@ public class ProcessTestClaimController extends GenericCrudController<ProcessTes
                 .retrieve(itemid)
                 .orElseThrow(ResponseException::notFound);
 
-        var canPublishTestAsDomainMember = processTestClaimRepository.hasProcessPermission(
-                execUser.getId(),
-                entity.getProcessId(),
-                ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
-        );
+        var canPublishTestAsDomainMember = processTestClaimRepository
+                .hasProcessPermission(
+                        execUser.getId(),
+                        entity.getProcessId(),
+                        ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_TEST
+                );
 
         if (canPublishTestAsDomainMember) {
             return;

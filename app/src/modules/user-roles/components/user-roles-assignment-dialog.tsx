@@ -32,7 +32,7 @@ import {
     VDepartmentMembershipWithDetailsEntity,
 } from '../../departments/entities/v-department-membership-with-details-entity';
 import {VTeamMembershipWithDetailsEntity} from '../../teams/entities/v-team-membership-with-details-entity';
-import {useCheckSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {isApiError} from '../../../models/api-error';
 import {useRetainedDialogValue} from '../../../hooks/use-retained-dialog-value';
@@ -55,7 +55,7 @@ type MembershipType<T extends 'orgUnit' | 'team'> =
 
 export function UserRolesAssignmentDialog(props: UserRolesAssignmentDialogProps) {
     const dispatch = useAppDispatch();
-    const canReadDomainRoles = useCheckSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const canReadDomainRoles = useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
 
     const {
         open,

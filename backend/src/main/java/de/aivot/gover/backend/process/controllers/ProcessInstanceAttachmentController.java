@@ -81,9 +81,9 @@ public class ProcessInstanceAttachmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
             if (filter.getProcessInstanceId() != null) {
-                permissionService.hasProcessInstancePermission(
+                permissionService.requireProcessInstancePermission(
                         user.getId(),
                         filter.getProcessInstanceId(),
                         ProcessPermissionProvider.PROCESS_INSTANCE_READ
@@ -130,7 +130,7 @@ public class ProcessInstanceAttachmentController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 processInstanceId,
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -178,7 +178,7 @@ public class ProcessInstanceAttachmentController {
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 attachment.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_READ
@@ -205,7 +205,7 @@ public class ProcessInstanceAttachmentController {
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 attachment.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_READ
@@ -251,7 +251,7 @@ public class ProcessInstanceAttachmentController {
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 existing.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -293,7 +293,7 @@ public class ProcessInstanceAttachmentController {
                 .retrieve(key)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 existing.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE

@@ -21,7 +21,7 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {copyToClipboardText} from '../../../../utils/copy-to-clipboard';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const SecretSchema = yup.object({
@@ -54,7 +54,7 @@ export function SecretsDetailsPageIndex() {
         isEditable,
         isNewItem,
     } = useContext(GenericDetailsPageContext);
-    const canDeleteSecret = useCheckSystemPermission(Permission.SECRET_DELETE);
+    const canDeleteSecret = useHasSystemPermission(Permission.SECRET_DELETE);
 
     const {
         currentItem,

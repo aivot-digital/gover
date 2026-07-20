@@ -86,7 +86,7 @@ public class ProcessInstanceTaskController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(execUser.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+        if (!permissionService.hasSystemPermission(execUser.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
             // Tasks inherit visibility from their owning process instance.
             filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
                 var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
@@ -145,7 +145,7 @@ public class ProcessInstanceTaskController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 newTask.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK
@@ -188,7 +188,7 @@ public class ProcessInstanceTaskController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 task.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_READ
@@ -215,7 +215,7 @@ public class ProcessInstanceTaskController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 existing.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK
@@ -260,7 +260,7 @@ public class ProcessInstanceTaskController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 deleted.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK
@@ -305,7 +305,7 @@ public class ProcessInstanceTaskController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 taskEntity.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_EDIT_TASK

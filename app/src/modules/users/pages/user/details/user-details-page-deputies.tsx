@@ -32,7 +32,7 @@ import {formatISODate} from "../../../../../utils/date-utils";
 import {addDays} from "date-fns/addDays";
 import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 
 const deletedUserDeputyTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
@@ -85,9 +85,9 @@ function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
 
 export function UserDetailsPageDeputies() {
     const dispatch = useAppDispatch();
-    const canCreateDeputy = useCheckSystemPermission(Permission.DEPUTY_CREATE);
-    const canDeleteDeputy = useCheckSystemPermission(Permission.DEPUTY_DELETE);
-    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
+    const canCreateDeputy = useHasSystemPermission(Permission.DEPUTY_CREATE);
+    const canDeleteDeputy = useHasSystemPermission(Permission.DEPUTY_DELETE);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
     const refreshPermissionSet = useRefreshPermissionSet();
 
     const listControlRef = useRef<ListControlRef | null>(null);

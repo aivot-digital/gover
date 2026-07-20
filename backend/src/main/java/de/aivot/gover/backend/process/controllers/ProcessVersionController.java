@@ -81,9 +81,9 @@ public class ProcessVersionController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
             if (filter.getProcessId() != null) {
-                permissionService.hasProcessPermission(
+                permissionService.requireProcessPermission(
                         user.getId(),
                         filter.getProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -130,7 +130,7 @@ public class ProcessVersionController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasProcessPermission(
+                .requireProcessPermission(
                         execUser.getId(),
                         processDefinition.getId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -190,7 +190,7 @@ public class ProcessVersionController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 processDefinitionId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -226,7 +226,7 @@ public class ProcessVersionController {
         var existingMap = AuditLogPayload.toMap(existing);
 
         permissionService
-                .hasProcessPermission(
+                .requireProcessPermission(
                         execUser.getId(),
                         existing.getProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -272,7 +272,7 @@ public class ProcessVersionController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 processDefinitionId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -313,7 +313,7 @@ public class ProcessVersionController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 processDefinitionId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -346,7 +346,7 @@ public class ProcessVersionController {
                 .retrieve(versionId)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 version.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL
@@ -389,7 +389,7 @@ public class ProcessVersionController {
                 .retrieve(versionId)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 version.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_PUBLISH_LOCAL

@@ -76,9 +76,9 @@ public class ProcessChangeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT)) {
             if (filter.getProcessDefinitionId() != null) {
-                permissionService.hasProcessPermission(
+                permissionService.requireProcessPermission(
                         user.getId(),
                         filter.getProcessDefinitionId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT
@@ -120,7 +120,7 @@ public class ProcessChangeController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasProcessPermission(
+                .requireProcessPermission(
                         execUser.getId(),
                         newChange.getProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -161,7 +161,7 @@ public class ProcessChangeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 change.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_AUDIT
@@ -189,7 +189,7 @@ public class ProcessChangeController {
                 .orElseThrow(ResponseException::notFound);
 
         permissionService
-                .hasProcessPermission(
+                .requireProcessPermission(
                         execUser.getId(),
                         existing.getProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -232,7 +232,7 @@ public class ProcessChangeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 existing.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE

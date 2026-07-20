@@ -50,7 +50,7 @@ public class StorageProviderDefinitionController {
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderDefinitions
                 .stream()
@@ -70,7 +70,7 @@ public class StorageProviderDefinitionController {
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderDefinitions
                 .stream()

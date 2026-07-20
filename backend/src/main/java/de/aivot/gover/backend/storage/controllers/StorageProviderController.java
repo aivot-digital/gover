@@ -94,7 +94,7 @@ public class StorageProviderController {
             @Nonnull @ParameterObject @Valid StorageProviderFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderService
                 .list(pageable, filter);
@@ -110,7 +110,7 @@ public class StorageProviderController {
             @Nonnull @RequestBody @Valid StorageProviderEntity newStorageProvider
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_CREATE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_CREATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -140,7 +140,7 @@ public class StorageProviderController {
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         return storageProviderService
                 .retrieve(id)
@@ -158,7 +158,7 @@ public class StorageProviderController {
             @Nonnull @RequestBody @Valid StorageProviderEntity update
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -188,7 +188,7 @@ public class StorageProviderController {
             @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_DELETE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_DELETE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -216,7 +216,7 @@ public class StorageProviderController {
             @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_UPDATE);
 
         var execUser = userService.fromJWTOrThrow(jwt);
 
@@ -259,7 +259,7 @@ public class StorageProviderController {
             HttpServletRequest request
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         var normalizedPath = getNormalizedPath(request, true);
 
@@ -280,7 +280,7 @@ public class StorageProviderController {
             @RequestParam(name = "includeMissing", defaultValue = "false") boolean includeMissing
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
 
         storageProviderService
                 .retrieve(id)
@@ -331,7 +331,7 @@ public class StorageProviderController {
             @PathVariable Integer id,
             @RequestParam(name = "writable", required = false, defaultValue = "false") boolean writable
     ) throws ResponseException {
-        permissionService.hasSystemPermission(
+        permissionService.requireSystemPermission(
                 jwt,
                 writable
                         ? StoragePermissionProvider.STORAGE_PROVIDER_UPDATE

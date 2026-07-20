@@ -15,15 +15,15 @@ import {GenericListPropsFetchOptions} from '../../../../components/generic-list/
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {checkSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {hasSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 export function UserRolesListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
+    useRequireSystemPermission(Permission.DOMAIN_ROLE_READ);
     const permissions = useAppSelector(selectPermissions);
-    const canCreateDomainRole = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_CREATE);
-    const canUpdateDomainRoles = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_UPDATE);
+    const canCreateDomainRole = hasSystemPermission(permissions, Permission.DOMAIN_ROLE_CREATE);
+    const canUpdateDomainRoles = hasSystemPermission(permissions, Permission.DOMAIN_ROLE_UPDATE);
 
     const header = useMemo(() => ({
         icon: ModuleIcons.roles,

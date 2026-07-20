@@ -67,9 +67,9 @@ public class VTeamMembershipWithDetailsController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
             if (filter.getTeamId() != null) {
-                permissionService.hasTeamPermission(
+                permissionService.requireTeamPermission(
                         user.getId(),
                         filter.getTeamId(),
                         TeamPermissionProvider.TEAM_MEMBERSHIP_READ
@@ -96,7 +96,7 @@ public class VTeamMembershipWithDetailsController {
         var page = vTeamMembershipWithDetailsService
                 .list(pageable, filter);
 
-        if (!permissionService.checkSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
             return page.map(VTeamMembershipWithDetailsController::redactDomainRoleDetails);
         }
 
@@ -120,13 +120,13 @@ public class VTeamMembershipWithDetailsController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 membership.getTeamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_READ
         );
 
-        if (!permissionService.checkSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
             return redactDomainRoleDetails(membership);
         }
 

@@ -29,7 +29,7 @@ import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {showExperimentalFeatures} from '../../../hooks/use-show-experimental-features';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
 import {Permission} from '../../../data/permissions/permission';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../permissions/hooks/use-permissions';
 import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 import {type AssetStorageProvider} from '../models/asset-storage-provider';
 
@@ -44,9 +44,9 @@ export function AssetDetailsPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const notImplemented = useNotImplemented();
-    useHasSystemPermission(Permission.ASSET_READ);
-    const canCreateAsset = useCheckSystemPermission(Permission.ASSET_CREATE);
-    const canUpdateAsset = useCheckSystemPermission(Permission.ASSET_UPDATE);
+    useRequireSystemPermission(Permission.ASSET_READ);
+    const canCreateAsset = useHasSystemPermission(Permission.ASSET_CREATE);
+    const canUpdateAsset = useHasSystemPermission(Permission.ASSET_UPDATE);
 
     const [asset, setAsset] = useState<Asset | null>(null);
     const [storageProvider, setStorageProvider] = useState<AssetStorageProvider | null>(null);

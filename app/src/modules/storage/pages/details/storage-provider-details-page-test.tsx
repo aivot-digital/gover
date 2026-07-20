@@ -8,7 +8,7 @@ import {StorageProvidersApiService} from '../../storage-providers-api-service';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {Permission} from '../../../../data/permissions/permission';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
@@ -20,7 +20,7 @@ export function StorageProviderDetailsPageTest() {
     const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
     const [isTesting, setIsTesting] = useState(false);
     const [writable, setWritable] = useState(false);
-    const canTestWritable = useCheckSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
+    const canTestWritable = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     useEffect(() => {
         setTestResult(null);

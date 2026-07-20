@@ -54,7 +54,7 @@ public class AssetStorageProviderController {
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         return storageProviderService
                 .listAllByType(StorageProviderType.Assets)
@@ -74,7 +74,7 @@ public class AssetStorageProviderController {
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+                .requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
 
         return AssetStorageProviderDTO.fromEntity(getAssetStorageProvider(id));
     }

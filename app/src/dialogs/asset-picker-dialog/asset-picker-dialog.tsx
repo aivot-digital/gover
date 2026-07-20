@@ -28,7 +28,7 @@ import {AssetExplorer} from '../../modules/storage/components/asset-explorer';
 import {useConfirm} from '../../providers/confirm-provider';
 import {getFileTypeFilterSummary} from '../../utils/file-type-label';
 import {type AssetStorageProvider} from '../../modules/assets/models/asset-storage-provider';
-import {useCheckSystemPermission} from '../../modules/permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../modules/permissions/hooks/use-permissions';
 import {Permission} from '../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../modules/permissions/utils/permission-utils';
 
@@ -55,7 +55,7 @@ export function AssetPickerDialog(props: PropsWithChildren<AssetPickerDialogProp
     const api = useApi();
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
-    const canUpdateAssets = useCheckSystemPermission(Permission.ASSET_UPDATE);
+    const canUpdateAssets = useHasSystemPermission(Permission.ASSET_UPDATE);
     const [providers, setProviders] = useState<AssetStorageProvider[]>([]);
     const [isLoadingProviders, setIsLoadingProviders] = useState(false);
     const [hasProviderLoadError, setHasProviderLoadError] = useState(false);

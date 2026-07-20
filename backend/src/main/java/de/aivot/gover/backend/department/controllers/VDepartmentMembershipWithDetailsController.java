@@ -66,9 +66,9 @@ public class VDepartmentMembershipWithDetailsController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
             if (filter.getDepartmentId() != null) {
-                permissionService.hasDepartmentPermission(
+                permissionService.requireDepartmentPermission(
                         user.getId(),
                         filter.getDepartmentId(),
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
@@ -94,7 +94,7 @@ public class VDepartmentMembershipWithDetailsController {
 
         var page = service.list(pageable, filter);
 
-        if (!permissionService.checkSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
             return page.map(VDepartmentMembershipWithDetailsController::redactDomainRoleDetails);
         }
 
@@ -118,13 +118,13 @@ public class VDepartmentMembershipWithDetailsController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 membership.getDepartmentId(),
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
         );
 
-        if (!permissionService.checkSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ)) {
             return redactDomainRoleDetails(membership);
         }
 

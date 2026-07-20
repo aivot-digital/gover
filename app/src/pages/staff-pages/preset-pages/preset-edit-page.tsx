@@ -52,8 +52,8 @@ import {RootStructureActionsContextProvider} from '../../../components/form/root
 import {ElementTree} from '../../../components/element-tree-2/element-tree';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {
-    useCheckSystemPermission,
     useHasSystemPermission,
+    useRequireSystemPermission,
 } from '../../../modules/permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../modules/permissions/utils/permission-utils';
@@ -63,9 +63,9 @@ export function PresetEditPage() {
     const api = useApi();
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
-    useHasSystemPermission(Permission.PRESET_READ);
-    const canUpdatePreset = useCheckSystemPermission(Permission.PRESET_UPDATE);
-    const canDeletePreset = useCheckSystemPermission(Permission.PRESET_DELETE);
+    useRequireSystemPermission(Permission.PRESET_READ);
+    const canUpdatePreset = useHasSystemPermission(Permission.PRESET_UPDATE);
+    const canDeletePreset = useHasSystemPermission(Permission.PRESET_DELETE);
     const updatePresetDisabledTooltip = formatMissingPermissionTooltip(Permission.PRESET_UPDATE);
     const deletePresetDisabledTooltip = formatMissingPermissionTooltip(Permission.PRESET_DELETE);
 

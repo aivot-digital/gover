@@ -7,11 +7,11 @@ import {
     type ExtensionsDetailsPageItem,
     loadExtensionsDetailsPageItem,
 } from '../../../../pages/staff-pages/settings/components/extensions/extensions';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 
 export function ExtensionsPage() {
-    useHasSystemPermission(Permission.PLUGIN_READ);
+    useRequireSystemPermission(Permission.PLUGIN_READ);
 
     return (
         <PageWrapper

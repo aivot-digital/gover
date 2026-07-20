@@ -15,7 +15,7 @@ import {ProcessStatusChipGroup} from '../../../process/components/process-status
 import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {hasDepartmentPermission} from '../../../permissions/utils/permission-utils';
+import {requireDepartmentPermission} from '../../../permissions/utils/permission-utils';
 
 const filters = [
     {
@@ -89,7 +89,7 @@ export function DepartmentsDetailsPageProcesses() {
         return null;
     }
 
-    hasDepartmentPermission(permissions, item.id, Permission.PROCESS_DEFINITION_READ);
+    requireDepartmentPermission(permissions, item.id, Permission.PROCESS_DEFINITION_READ);
 
     return (
         <Box>

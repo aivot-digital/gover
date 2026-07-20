@@ -52,7 +52,7 @@ public class PermissionService {
         this.processInstanceRepository = processInstanceRepository;
     }
 
-    public boolean checkSystemPermission(@Nullable String userId,
+    public boolean hasSystemPermission(@Nullable String userId,
                                          @Nonnull String permission) {
         if (userId == null) {
             return false;
@@ -61,22 +61,22 @@ public class PermissionService {
                 .hasPermission(userId, permission);
     }
 
-    public boolean checkSystemPermission(@Nullable Jwt jwt,
+    public boolean hasSystemPermission(@Nullable Jwt jwt,
                                          @Nonnull String permission) {
-        return checkSystemPermission(UserService.getIdFromJWT(jwt), permission);
+        return hasSystemPermission(UserService.getIdFromJWT(jwt), permission);
     }
 
-    public boolean checkSystemPermission(@Nullable UserEntity user,
+    public boolean hasSystemPermission(@Nullable UserEntity user,
                                          @Nonnull String permission) {
         if (user == null) {
             return false;
         }
-        return checkSystemPermission(user.getId(), permission);
+        return hasSystemPermission(user.getId(), permission);
     }
 
-    public void hasSystemPermission(@Nullable String userId,
+    public void requireSystemPermission(@Nullable String userId,
                                     @Nonnull String permission) throws ResponseException {
-        if (!checkSystemPermission(userId, permission)) {
+        if (!hasSystemPermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s auf Systemebene.",
                     StringUtils.quote(permission)
@@ -84,12 +84,12 @@ public class PermissionService {
         }
     }
 
-    public void hasSystemPermission(@Nullable Jwt jwt,
+    public void requireSystemPermission(@Nullable Jwt jwt,
                                     @Nonnull String permission) throws ResponseException {
-        hasSystemPermission(UserService.getIdFromJWT(jwt), permission);
+        requireSystemPermission(UserService.getIdFromJWT(jwt), permission);
     }
 
-    public boolean checkDepartmentPermission(@Nullable String userId,
+    public boolean hasDepartmentPermission(@Nullable String userId,
                                              @Nonnull Integer departmentId,
                                              @Nonnull String permission) {
         if (userId == null) {
@@ -107,10 +107,10 @@ public class PermissionService {
                 .getDepartmentsWithPermission(userId, permission);
     }
 
-    public void hasDepartmentPermission(@Nonnull String userId,
+    public void requireDepartmentPermission(@Nonnull String userId,
                                         @Nonnull Integer departmentId,
                                         @Nonnull String permission) throws ResponseException {
-        if (!checkDepartmentPermission(userId, departmentId, permission)) {
+        if (!hasDepartmentPermission(userId, departmentId, permission)) {
             var departmentName = departmentRepository
                     .findById(departmentId)
                     .map(DepartmentEntity::getName)
@@ -125,7 +125,7 @@ public class PermissionService {
         }
     }
 
-    public boolean checkInAnyDepartmentPermission(@Nullable String userId,
+    public boolean hasInAnyDepartmentPermission(@Nullable String userId,
                                                   @Nonnull String permission) {
         if (userId == null) {
             return false;
@@ -135,9 +135,9 @@ public class PermissionService {
                 || vUserSystemPermissionRepository.hasPermission(userId, permission);
     }
 
-    public void hasInAnyDepartmentPermission(@Nonnull String userId,
+    public void requireInAnyDepartmentPermission(@Nonnull String userId,
                                              @Nonnull String permission) throws ResponseException {
-        if (!checkInAnyDepartmentPermission(userId, permission)) {
+        if (!hasInAnyDepartmentPermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s in mindestens einer Organisationseinheit.",
                     StringUtils.quote(permission)
@@ -145,7 +145,7 @@ public class PermissionService {
         }
     }
 
-    public boolean checkTeamPermission(@Nullable String userId,
+    public boolean hasTeamPermission(@Nullable String userId,
                                        @Nonnull Integer teamId,
                                        @Nonnull String permission) {
         if (userId == null) {
@@ -163,10 +163,10 @@ public class PermissionService {
                 .getTeamsWithPermission(userId, permission);
     }
 
-    public void hasTeamPermission(@Nonnull String userId,
+    public void requireTeamPermission(@Nonnull String userId,
                                   @Nonnull Integer teamId,
                                   @Nonnull String permission) throws ResponseException {
-        if (!checkTeamPermission(userId, teamId, permission)) {
+        if (!hasTeamPermission(userId, teamId, permission)) {
             var teamName = teamRepository
                     .findById(teamId)
                     .map(TeamEntity::getName)
@@ -181,7 +181,7 @@ public class PermissionService {
         }
     }
 
-    public boolean checkInAnyTeamPermission(@Nullable String userId,
+    public boolean hasInAnyTeamPermission(@Nullable String userId,
                                             @Nonnull String permission) {
         if (userId == null) {
             return false;
@@ -191,9 +191,9 @@ public class PermissionService {
                 || vUserSystemPermissionRepository.hasPermission(userId, permission);
     }
 
-    public void hasInAnyTeamPermission(@Nonnull String userId,
+    public void requireInAnyTeamPermission(@Nonnull String userId,
                                        @Nonnull String permission) throws ResponseException {
-        if (!checkInAnyTeamPermission(userId, permission)) {
+        if (!hasInAnyTeamPermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s in mindestens einem Team.",
                     StringUtils.quote(permission)
@@ -201,7 +201,7 @@ public class PermissionService {
         }
     }
 
-    public boolean checkProcessPermission(@Nullable String userId,
+    public boolean hasProcessPermission(@Nullable String userId,
                                           @Nonnull Integer processId,
                                           @Nonnull String permission) {
         if (userId == null) {
@@ -219,10 +219,10 @@ public class PermissionService {
                 .getProcessIdsWithPermission(userId, permission);
     }
 
-    public void hasProcessPermission(@Nonnull String userId,
+    public void requireProcessPermission(@Nonnull String userId,
                                      @Nonnull Integer processId,
                                      @Nonnull String permission) throws ResponseException {
-        if (!checkProcessPermission(userId, processId, permission)) {
+        if (!hasProcessPermission(userId, processId, permission)) {
             var processName = processRepository
                     .findById(processId)
                     .map(ProcessEntity::getInternalTitle)
@@ -237,7 +237,7 @@ public class PermissionService {
         }
     }
 
-    public boolean checkInAnyProcessPermission(@Nullable String userId,
+    public boolean hasInAnyProcessPermission(@Nullable String userId,
                                                @Nonnull String permission) {
         if (userId == null) {
             return false;
@@ -247,9 +247,9 @@ public class PermissionService {
                 || vUserSystemPermissionRepository.hasPermission(userId, permission);
     }
 
-    public void hasInAnyProcessPermission(@Nonnull String userId,
+    public void requireInAnyProcessPermission(@Nonnull String userId,
                                           @Nonnull String permission) throws ResponseException {
-        if (!checkInAnyProcessPermission(userId, permission)) {
+        if (!hasInAnyProcessPermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s in mindestens einem Prozess.",
                     StringUtils.quote(permission)
@@ -257,7 +257,7 @@ public class PermissionService {
         }
     }
 
-    public boolean checkProcessInstancePermission(@Nullable String userId,
+    public boolean hasProcessInstancePermission(@Nullable String userId,
                                                   @Nonnull Long processInstanceId,
                                                   @Nonnull String permission) {
         if (userId == null) {
@@ -275,10 +275,10 @@ public class PermissionService {
                 .getProcessInstanceIdsWithPermission(userId, permission);
     }
 
-    public void hasProcessInstancePermission(@Nonnull String userId,
+    public void requireProcessInstancePermission(@Nonnull String userId,
                                              @Nonnull Long processInstanceId,
                                              @Nonnull String permission) throws ResponseException {
-        if (!checkProcessInstancePermission(userId, processInstanceId, permission)) {
+        if (!hasProcessInstancePermission(userId, processInstanceId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s für den Vorgang mit der ID %s.",
                     StringUtils.quote(permission),
@@ -287,7 +287,7 @@ public class PermissionService {
         }
     }
 
-    public boolean checkInAnyProcessInstancePermission(@Nullable String userId,
+    public boolean hasInAnyProcessInstancePermission(@Nullable String userId,
                                                        @Nonnull String permission) {
         if (userId == null) {
             return false;
@@ -297,9 +297,9 @@ public class PermissionService {
                 || vUserSystemPermissionRepository.hasPermission(userId, permission);
     }
 
-    public void hasInAnyProcessInstancePermission(@Nonnull String userId,
+    public void requireInAnyProcessInstancePermission(@Nonnull String userId,
                                                   @Nonnull String permission) throws ResponseException {
-        if (!checkInAnyProcessInstancePermission(userId, permission)) {
+        if (!hasInAnyProcessInstancePermission(userId, permission)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s in mindestens einem Vorgang.",
                     StringUtils.quote(permission)

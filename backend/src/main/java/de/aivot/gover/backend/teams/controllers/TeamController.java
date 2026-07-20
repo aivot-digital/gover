@@ -71,9 +71,9 @@ public class TeamController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), TeamPermissionProvider.TEAM_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), TeamPermissionProvider.TEAM_READ)) {
             if (filter.getId() != null) {
-                permissionService.hasTeamPermission(
+                permissionService.requireTeamPermission(
                         user.getId(),
                         filter.getId(),
                         TeamPermissionProvider.TEAM_READ
@@ -115,7 +115,7 @@ public class TeamController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasSystemPermission(
+        permissionService.requireSystemPermission(
                 user.getId(),
                 TeamPermissionProvider.TEAM_CREATE
         );
@@ -149,7 +149,7 @@ public class TeamController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 id,
                 TeamPermissionProvider.TEAM_READ
@@ -174,7 +174,7 @@ public class TeamController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 id,
                 TeamPermissionProvider.TEAM_UPDATE
@@ -214,7 +214,7 @@ public class TeamController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 id,
                 TeamPermissionProvider.TEAM_DELETE

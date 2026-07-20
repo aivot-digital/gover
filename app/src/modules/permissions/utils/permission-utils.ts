@@ -20,24 +20,24 @@ export function formatMissingPermissionTooltip(permission: PermissionLike): stri
 }
 
 // Frontend checks mirror backend semantics: a matching system permission grants the action globally.
-export function checkSystemPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
+export function hasSystemPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
     return permissionSet?.systemPermissions
         ?.some((entry) => entry != null && entry.permissions?.includes(permission)) ?? false;
 }
 
-// The has* helpers throw route errors so StaffShell can render the existing access-denied handling.
-export function hasSystemPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
-    if (!checkSystemPermission(permissionSet, permission)) {
+// The require* helpers throw route errors so StaffShell can render the existing access-denied handling.
+export function requireSystemPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
+    if (!hasSystemPermission(permissionSet, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
 
-export function checkDepartmentPermission(
+export function hasDepartmentPermission(
     permissionSet: PermissionSet | undefined,
     departmentId: number | undefined,
     permission: PermissionLike,
 ): boolean {
-    return checkSystemPermission(permissionSet, permission) ||
+    return hasSystemPermission(permissionSet, permission) ||
         (
             departmentId != null &&
             (permissionSet?.departmentPermissions
@@ -45,36 +45,36 @@ export function checkDepartmentPermission(
         );
 }
 
-export function hasDepartmentPermission(
+export function requireDepartmentPermission(
     permissionSet: PermissionSet | undefined,
     departmentId: number | undefined,
     permission: PermissionLike,
 ): void {
-    if (!checkDepartmentPermission(permissionSet, departmentId, permission)) {
+    if (!hasDepartmentPermission(permissionSet, departmentId, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
 
-export function checkAnyDepartmentPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
-    return checkSystemPermission(permissionSet, permission) ||
+export function hasAnyDepartmentPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
+    return hasSystemPermission(permissionSet, permission) ||
         (
             permissionSet?.departmentPermissions
                 ?.some((entry) => entry != null && entry.permissions?.includes(permission)) ?? false
         );
 }
 
-export function hasAnyDepartmentPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
-    if (!checkAnyDepartmentPermission(permissionSet, permission)) {
+export function requireAnyDepartmentPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
+    if (!hasAnyDepartmentPermission(permissionSet, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
 
-export function checkTeamPermission(
+export function hasTeamPermission(
     permissionSet: PermissionSet | undefined,
     teamId: number | undefined,
     permission: PermissionLike,
 ): boolean {
-    return checkSystemPermission(permissionSet, permission) ||
+    return hasSystemPermission(permissionSet, permission) ||
         (
             teamId != null &&
             (permissionSet?.teamPermissions
@@ -82,36 +82,36 @@ export function checkTeamPermission(
         );
 }
 
-export function hasTeamPermission(
+export function requireTeamPermission(
     permissionSet: PermissionSet | undefined,
     teamId: number | undefined,
     permission: PermissionLike,
 ): void {
-    if (!checkTeamPermission(permissionSet, teamId, permission)) {
+    if (!hasTeamPermission(permissionSet, teamId, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
 
-export function checkAnyTeamPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
-    return checkSystemPermission(permissionSet, permission) ||
+export function hasAnyTeamPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
+    return hasSystemPermission(permissionSet, permission) ||
         (
             permissionSet?.teamPermissions
                 ?.some((entry) => entry != null && entry.permissions?.includes(permission)) ?? false
         );
 }
 
-export function hasAnyTeamPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
-    if (!checkAnyTeamPermission(permissionSet, permission)) {
+export function requireAnyTeamPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): void {
+    if (!hasAnyTeamPermission(permissionSet, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
 
-export function checkProcessPermission(
+export function hasProcessPermission(
     permissionSet: PermissionSet | undefined,
     processId: number | undefined,
     permission: PermissionLike,
 ): boolean {
-    return checkSystemPermission(permissionSet, permission) ||
+    return hasSystemPermission(permissionSet, permission) ||
         (
             processId != null &&
             (permissionSet?.processPermissions
@@ -119,22 +119,22 @@ export function checkProcessPermission(
         );
 }
 
-export function hasProcessPermission(
+export function requireProcessPermission(
     permissionSet: PermissionSet | undefined,
     processId: number | undefined,
     permission: PermissionLike,
 ): void {
-    if (!checkProcessPermission(permissionSet, processId, permission)) {
+    if (!hasProcessPermission(permissionSet, processId, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
 
-export function checkProcessInstancePermission(
+export function hasProcessInstancePermission(
     permissionSet: PermissionSet | undefined,
     processInstanceId: number | undefined,
     permission: PermissionLike,
 ): boolean {
-    return checkSystemPermission(permissionSet, permission) ||
+    return hasSystemPermission(permissionSet, permission) ||
         (
             processInstanceId != null &&
             (permissionSet?.processInstancePermissions
@@ -142,12 +142,12 @@ export function checkProcessInstancePermission(
         );
 }
 
-export function hasProcessInstancePermission(
+export function requireProcessInstancePermission(
     permissionSet: PermissionSet | undefined,
     processInstanceId: number | undefined,
     permission: PermissionLike,
 ): void {
-    if (!checkProcessInstancePermission(permissionSet, processInstanceId, permission)) {
+    if (!hasProcessInstancePermission(permissionSet, processInstanceId, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }

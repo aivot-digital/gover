@@ -69,7 +69,7 @@ public class ProviderLinkController {
             @Nonnull @ParameterObject @Valid ProviderLinkFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
+                .requireSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
 
         return listProviderLinks(pageable, filter);
     }
@@ -110,7 +110,7 @@ public class ProviderLinkController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_CREATE);
+                .requireSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_CREATE);
 
         var entity = providerLinkService
                 .create(requestDTO.toEntity());
@@ -141,7 +141,7 @@ public class ProviderLinkController {
             @Nonnull @PathVariable Integer id
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
+                .requireSystemPermission(jwt, ConfigPermissionProvider.SYSTEM_CONFIG_READ);
 
         return providerLinkService
                 .retrieve(id)
@@ -165,7 +165,7 @@ public class ProviderLinkController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
+                .requireSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
 
         var entity = providerLinkService
                 .update(id, requestDTO.toEntity());
@@ -200,7 +200,7 @@ public class ProviderLinkController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_DELETE);
+                .requireSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_DELETE);
 
         var link = providerLinkService
                 .delete(id);

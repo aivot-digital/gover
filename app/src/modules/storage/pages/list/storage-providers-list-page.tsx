@@ -16,7 +16,7 @@ import {type StorageProviderStatus} from '../../enums/storage-provider-status';
 import {StorageStatusChip} from '../../components/storage-status-chip';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
@@ -38,9 +38,9 @@ const availableFilter = [
 
 export function StorageProvidersListPage(): ReactNode {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.STORAGE_PROVIDER_READ);
-    const canCreateStorageProvider = useCheckSystemPermission(Permission.STORAGE_PROVIDER_CREATE);
-    const canUpdateStorageProvider = useCheckSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
+    useRequireSystemPermission(Permission.STORAGE_PROVIDER_READ);
+    const canCreateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_CREATE);
+    const canUpdateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
     const [definitions, setDefinitions] = useState<StorageProviderDefinition[]>([]);
     const [selectedDefinitionKey, setSelectedDefinitionKey] = useState<string | undefined>(undefined);
 

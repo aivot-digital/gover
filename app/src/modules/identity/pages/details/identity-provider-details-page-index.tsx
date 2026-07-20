@@ -40,7 +40,7 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Page} from '../../../../models/dtos/page';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 // allows absolute and relative URLs
@@ -167,8 +167,8 @@ export function IdentityProviderDetailsPageIndex() {
     const navigate = useNavigate();
     const api = useApi();
     const showConfirm = useConfirm();
-    const canDeleteIdentityProvider = useCheckSystemPermission(Permission.IDENTITY_PROVIDER_DELETE);
-    const canReadSecrets = useCheckSystemPermission(Permission.SECRET_READ);
+    const canDeleteIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_DELETE);
+    const canReadSecrets = useHasSystemPermission(Permission.SECRET_READ);
 
     const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
 

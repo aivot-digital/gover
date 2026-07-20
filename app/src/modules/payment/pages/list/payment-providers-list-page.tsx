@@ -16,7 +16,7 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
@@ -24,9 +24,9 @@ const apiService = new PaymentProvidersApiService();
 
 export function PaymentProvidersListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.PAYMENT_PROVIDER_READ);
-    const canCreatePaymentProvider = useCheckSystemPermission(Permission.PAYMENT_PROVIDER_CREATE);
-    const canUpdatePaymentProvider = useCheckSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
+    useRequireSystemPermission(Permission.PAYMENT_PROVIDER_READ);
+    const canCreatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_CREATE);
+    const canUpdatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
 
     const [definitions, setDefinitions] = useState<PaymentProviderDefinitionResponseDTO[]>([]);
 

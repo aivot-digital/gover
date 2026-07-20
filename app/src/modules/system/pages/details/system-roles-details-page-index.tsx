@@ -29,7 +29,7 @@ import {type SelectFieldComponentOption} from '../../../../components/select-fie
 import {pluralize} from '../../../../utils/humanization-utils';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {isApiError} from '../../../../models/api-error';
 
@@ -69,8 +69,8 @@ export function SystemRolesDetailsPageIndex(): ReactNode {
     } = useContext<GenericDetailsPageContextType<SystemRoleEntity, void>>(GenericDetailsPageContext);
     const isNewSystemRole = isNewItem === true;
     const editPermission = isNewSystemRole ? Permission.SYSTEM_ROLE_CREATE : Permission.SYSTEM_ROLE_UPDATE;
-    const canDeleteSystemRole = useCheckSystemPermission(Permission.SYSTEM_ROLE_DELETE);
-    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
+    const canDeleteSystemRole = useHasSystemPermission(Permission.SYSTEM_ROLE_DELETE);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
     const refreshPermissionSet = useRefreshPermissionSet();
 
     const {

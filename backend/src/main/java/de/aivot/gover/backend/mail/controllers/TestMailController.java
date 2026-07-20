@@ -61,7 +61,7 @@ public class TestMailController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
+                .requireSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
 
         try {
             testMailService

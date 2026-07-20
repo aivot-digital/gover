@@ -104,7 +104,7 @@ public class PermissionsController {
                 .orElseThrow(ResponseException::unauthorized);
 
         if (!Objects.equals(user.getId(), userId)) {
-            permissionService.hasSystemPermission(user.getId(), PermissionSetPermissionProvider.PERMISSION_SET_READ);
+            permissionService.requireSystemPermission(user.getId(), PermissionSetPermissionProvider.PERMISSION_SET_READ);
         }
 
         return buildPermissionSet(userId);

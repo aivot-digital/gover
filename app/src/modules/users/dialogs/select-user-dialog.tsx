@@ -4,7 +4,7 @@ import {useEffect, useMemo, useState} from 'react';
 import {UsersApiService} from '../users-api-service';
 import {resolveUserName} from '../utils/resolve-user-name';
 import {SearchBaseDialogTabProps} from '../../../dialogs/search-base-dialog/search-base-dialog-tab-props';
-import {useCheckSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
@@ -19,7 +19,7 @@ interface SelectUserDialogProps {
 
 export function SelectUserDialog(props: SelectUserDialogProps) {
     const dispatch = useAppDispatch();
-    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
 
     const [users, setUsers] = useState<User[]>([]);
     const [isLoadingUsers, setIsLoadingUsers] = useState(false);

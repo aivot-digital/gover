@@ -39,7 +39,7 @@ import {
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 const ID_FIELD_ID = '$id';
@@ -104,7 +104,7 @@ const IdGenOptions = [
 export function DataObjectSchemaDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const canDeleteDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_DELETE);
+    const canDeleteDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_DELETE);
 
     const location = useLocation();
 

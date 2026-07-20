@@ -4,11 +4,11 @@ import {GenericPageHeader} from '../../../components/generic-page-header/generic
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {Paper} from '@mui/material';
 import {SmtpTest} from '../../../pages/staff-pages/settings/components/smtp-test/smtp-test';
-import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useRequireSystemPermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 
 export function SmtpTestPage() {
-    useHasSystemPermission(Permission.SYSTEM_CONFIG_READ);
+    useRequireSystemPermission(Permission.SYSTEM_CONFIG_READ);
 
     return (
         <PageWrapper

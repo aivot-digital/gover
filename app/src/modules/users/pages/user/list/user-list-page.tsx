@@ -20,7 +20,7 @@ import {SystemRolesApiService} from '../../../../system/services/system-roles-ap
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../slices/snackbar-slice';
 import {GenericListPropsFetchOptions} from '../../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../../data/permissions/permission';
 import {isApiError} from '../../../../../models/api-error';
 import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
@@ -43,11 +43,11 @@ const Filters = [
 export function UserListPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    useHasSystemPermission(Permission.USER_READ);
+    useRequireSystemPermission(Permission.USER_READ);
     const systemRolesApiService = useMemo(() => new SystemRolesApiService(), []);
-    const canCreateUser = useCheckSystemPermission(Permission.USER_CREATE);
-    const canUpdateUser = useCheckSystemPermission(Permission.USER_UPDATE);
-    const canReadSystemRoles = useCheckSystemPermission(Permission.SYSTEM_ROLE_READ);
+    const canCreateUser = useHasSystemPermission(Permission.USER_CREATE);
+    const canUpdateUser = useHasSystemPermission(Permission.USER_UPDATE);
+    const canReadSystemRoles = useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
     const [systemRoleNamesById, setSystemRoleNamesById] = useState<Record<number, string>>({});
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
     const [systemRolesAccessDenied, setSystemRolesAccessDenied] = useState(false);

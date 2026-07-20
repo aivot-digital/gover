@@ -14,7 +14,7 @@ import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../.
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
 import {ChipInputFieldComponent} from '../../../../components/chip-input-field/chip-input-field-component';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 
 const actorFilters = [
@@ -83,7 +83,7 @@ function trimValue(value: string | undefined, maxLength: number = 28): string {
 }
 
 export function AuditLogsListPage(): ReactNode {
-    useHasSystemPermission(AUDIT_LOG_READ_PERMISSION);
+    useRequireSystemPermission(AUDIT_LOG_READ_PERMISSION);
     const confirm = useConfirm();
 
     const [filterOptions, setFilterOptions] = useState<AuditLogFilterOptions>({

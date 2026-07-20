@@ -35,8 +35,8 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {
-    useCheckSystemPermission,
-    useCheckTeamPermission,
+    useHasSystemPermission,
+    useHasTeamPermission,
     useRefreshPermissionSet,
 } from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
@@ -48,12 +48,12 @@ export function TeamsDetailsPageMembers() {
     const {
         item,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<TeamEntity, void>;
-    const canReadMemberships = useCheckTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_READ);
-    const canCreateMembership = useCheckTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_CREATE);
-    const canUpdateMembership = useCheckTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_UPDATE);
-    const canDeleteMembership = useCheckTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_DELETE);
-    const canReadDomainRoles = useCheckSystemPermission(Permission.DOMAIN_ROLE_READ);
-    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
+    const canReadMemberships = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_READ);
+    const canCreateMembership = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_CREATE);
+    const canUpdateMembership = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_UPDATE);
+    const canDeleteMembership = useHasTeamPermission(item?.id, Permission.TEAM_MEMBERSHIP_DELETE);
+    const canReadDomainRoles = useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
 
     const showConfirm = useConfirm();
 

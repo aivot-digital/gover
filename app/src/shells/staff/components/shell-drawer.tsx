@@ -66,7 +66,7 @@ import {
     subscribeProcessAssignedTaskCountRefreshEvent,
 } from '../../../modules/process/utils/process-assigned-task-count-events';
 import {Permission} from '../../../data/permissions/permission';
-import {checkAnyDepartmentPermission, checkSystemPermission} from '../../../modules/permissions/utils/permission-utils';
+import {hasAnyDepartmentPermission, hasSystemPermission} from '../../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
 import {AssetsApiService} from '../../../modules/assets/assets-api-service';
 
@@ -142,7 +142,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 label: 'Datenobjekte',
                 to: '/data-objects',
                 requiredSystemPermission: Permission.OBJECT_ITEM_READ,
-                isVisible: (permissions) => checkSystemPermission(permissions, Permission.OBJECT_SCHEMA_READ),
+                isVisible: (permissions) => hasSystemPermission(permissions, Permission.OBJECT_SCHEMA_READ),
             },
         ],
     },
@@ -214,7 +214,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         ...drawerIcon(<FamilyHistory/>, <FamilyHistoryFilled/>),
                         label: 'Organigramm',
                         to: '/organization-chart',
-                        isVisible: (permissions) => checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),
+                        isVisible: (permissions) => hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),
                     },
                 ],
             },
@@ -329,7 +329,7 @@ export function ShellDrawer() {
     const [isLoadingAssetStorageProviders, setIsLoadingAssetStorageProviders] = useState(true);
     const [assignedTaskCount, setAssignedTaskCount] = useState<number | null>(null);
     const hasDrawerSystemPermission = useCallback((permission: Permission | string): boolean => {
-        return checkSystemPermission(permissions, permission);
+        return hasSystemPermission(permissions, permission);
     }, [permissions]);
     const canReadAssets = hasDrawerSystemPermission(Permission.ASSET_READ);
 

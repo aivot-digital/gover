@@ -29,15 +29,15 @@ import {
 } from './organization-chart/organization-chart-utils';
 import {Permission} from '../../../data/permissions/permission';
 import {
-    checkDepartmentPermission,
-    checkTeamPermission,
+    hasDepartmentPermission,
+    hasTeamPermission,
     formatMissingPermissionTooltip,
 } from '../../permissions/utils/permission-utils';
 import {
-    useCheckAnyDepartmentPermission,
-    useCheckAnyTeamPermission,
-    useCheckSystemPermission,
     useHasAnyDepartmentPermission,
+    useHasAnyTeamPermission,
+    useHasSystemPermission,
+    useRequireAnyDepartmentPermission,
 } from '../../permissions/hooks/use-permissions';
 
 const SIMULATE_QUERY_PARAM = 'simulate';
@@ -46,11 +46,11 @@ export function OrganizationChart(): React.ReactElement {
     const dispatch = useAppDispatch();
     const permissionSet = useAppSelector(selectPermissions);
     const [searchParams] = useSearchParams();
-    useHasAnyDepartmentPermission(Permission.DEPARTMENT_READ);
-    const canReadTeams = useCheckAnyTeamPermission(Permission.TEAM_READ);
-    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
-    const canReadAnyDepartmentMemberships = useCheckAnyDepartmentPermission(Permission.DEPARTMENT_MEMBERSHIP_READ);
-    const canReadAnyTeamMemberships = useCheckAnyTeamPermission(Permission.TEAM_MEMBERSHIP_READ);
+    useRequireAnyDepartmentPermission(Permission.DEPARTMENT_READ);
+    const canReadTeams = useHasAnyTeamPermission(Permission.TEAM_READ);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
+    const canReadAnyDepartmentMemberships = useHasAnyDepartmentPermission(Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canReadAnyTeamMemberships = useHasAnyTeamPermission(Permission.TEAM_MEMBERSHIP_READ);
     const [rootDepartments, setRootDepartments] = useState<OrganizationChartDepartmentItem[]>();
     const [teams, setTeams] = useState<OrganizationChartTeamItem[]>();
     const [organizationChartView, setOrganizationChartView] = useState<OrganizationChartFlowView>('departments');
@@ -106,8 +106,8 @@ export function OrganizationChart(): React.ReactElement {
                         ...dept,
                         color: stringToPastelColor(dept.name),
                         children: [],
-                        canReadDetails: checkDepartmentPermission(permissionSet, dept.id, Permission.DEPARTMENT_READ),
-                        canReadMemberships: checkDepartmentPermission(permissionSet, dept.id, Permission.DEPARTMENT_MEMBERSHIP_READ),
+                        canReadDetails: hasDepartmentPermission(permissionSet, dept.id, Permission.DEPARTMENT_READ),
+                        canReadMemberships: hasDepartmentPermission(permissionSet, dept.id, Permission.DEPARTMENT_MEMBERSHIP_READ),
                         members: [],
                     };
                 }
@@ -133,8 +133,8 @@ export function OrganizationChart(): React.ReactElement {
                     .map((team) => ({
                         ...team,
                         color: stringToPastelColor(team.name),
-                        canReadDetails: checkTeamPermission(permissionSet, team.id, Permission.TEAM_READ),
-                        canReadMemberships: checkTeamPermission(permissionSet, team.id, Permission.TEAM_MEMBERSHIP_READ),
+                        canReadDetails: hasTeamPermission(permissionSet, team.id, Permission.TEAM_READ),
+                        canReadMemberships: hasTeamPermission(permissionSet, team.id, Permission.TEAM_MEMBERSHIP_READ),
                         members: [],
                     }));
 

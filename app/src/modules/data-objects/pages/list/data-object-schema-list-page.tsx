@@ -17,15 +17,15 @@ import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject'
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function DataObjectSchemaListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.OBJECT_SCHEMA_READ);
-    const canCreateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_CREATE);
-    const canUpdateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
+    useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canCreateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_CREATE);
+    const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const handleImport = useCallback(() => {
         uploadObjectFile<DataObjectSchema>('application/json')

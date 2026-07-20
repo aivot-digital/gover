@@ -20,8 +20,8 @@ import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {checkSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {hasSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 const activeThemeChip = (
     <Chip
@@ -38,11 +38,11 @@ const activeThemeChip = (
 
 export function ThemeListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.THEME_READ);
+    useRequireSystemPermission(Permission.THEME_READ);
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
     const permissions = useAppSelector(selectPermissions);
-    const canCreateTheme = checkSystemPermission(permissions, Permission.THEME_CREATE);
-    const canUpdateThemes = checkSystemPermission(permissions, Permission.THEME_UPDATE);
+    const canCreateTheme = hasSystemPermission(permissions, Permission.THEME_CREATE);
+    const canUpdateThemes = hasSystemPermission(permissions, Permission.THEME_UPDATE);
 
     const header = useMemo(() => ({
         icon: <PaletteOutlinedIcon />,

@@ -69,7 +69,7 @@ public class ThemeController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ThemePermissionProvider.THEME_READ);
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_READ);
 
         return service
                 .list(pageable, filter)
@@ -91,7 +91,7 @@ public class ThemeController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ThemePermissionProvider.THEME_CREATE);
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_CREATE);
 
         var newTheme = newThemeRequest
                 .toEntity();
@@ -138,7 +138,7 @@ public class ThemeController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ThemePermissionProvider.THEME_READ);
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_READ);
 
         return service
                 .retrieve(id)
@@ -163,7 +163,7 @@ public class ThemeController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ThemePermissionProvider.THEME_UPDATE);
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_UPDATE);
 
         var changedTheme = changeThemeRequest
                 .toEntity();
@@ -210,7 +210,7 @@ public class ThemeController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), ThemePermissionProvider.THEME_DELETE);
+                .requireSystemPermission(user.getId(), ThemePermissionProvider.THEME_DELETE);
 
         var deletedTheme = service
                 .delete(id);

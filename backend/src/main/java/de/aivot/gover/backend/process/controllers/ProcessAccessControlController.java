@@ -53,9 +53,9 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     protected Page<ProcessAccessControlEntity> performList(@Nonnull UserEntity user,
                                                            @Nonnull Pageable pageable,
                                                            @Nonnull ProcessAccessControlFilter filter) throws ResponseException {
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)) {
             if (filter.getTargetProcessId() != null) {
-                permissionService.hasProcessPermission(
+                permissionService.requireProcessPermission(
                         user.getId(),
                         filter.getTargetProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -86,7 +86,7 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
     @Override
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull ProcessAccessControlEntity newItem) throws ResponseException {
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 newItem.getTargetProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -100,7 +100,7 @@ public class ProcessAccessControlController extends GenericCrudController<Proces
                 .retrieve(itemid)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 existing.getTargetProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE

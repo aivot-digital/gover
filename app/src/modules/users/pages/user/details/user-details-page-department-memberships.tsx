@@ -44,9 +44,9 @@ import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../../slices/user-slice';
 import {Permission} from '../../../../../data/permissions/permission';
 import {
-    checkAnyDepartmentPermission,
-    checkDepartmentPermission,
-    checkSystemPermission,
+    hasAnyDepartmentPermission,
+    hasDepartmentPermission,
+    hasSystemPermission,
     formatMissingPermissionTooltip,
 } from '../../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
@@ -72,9 +72,9 @@ export function UserDetailsPageDepartmentMemberships() {
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
 
     const canManageMemberships = user != null && !user.deletedInIdp;
-    const canReadDomainRoles = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_READ);
-    const canReadAnyDepartment = checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ);
-    const canCreateAnyDepartmentMembership = checkAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
+    const canReadDomainRoles = hasSystemPermission(permissions, Permission.DOMAIN_ROLE_READ);
+    const canReadAnyDepartment = hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ);
+    const canCreateAnyDepartmentMembership = hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
     const canOpenSelectNewDepartmentDialog = canManageMemberships &&
         canReadAnyDepartment &&
         canCreateAnyDepartmentMembership &&
@@ -119,7 +119,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     return;
                 }
 
-                setAvailableDepartments(content.filter((department) => checkDepartmentPermission(
+                setAvailableDepartments(content.filter((department) => hasDepartmentPermission(
                     permissions,
                     department.id,
                     Permission.DEPARTMENT_MEMBERSHIP_CREATE,
@@ -165,7 +165,7 @@ export function UserDetailsPageDepartmentMemberships() {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
-            !checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE)
+            !hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE)
         ) {
             return;
         }
@@ -204,7 +204,7 @@ export function UserDetailsPageDepartmentMemberships() {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
-            !checkDepartmentPermission(permissions, membership.departmentId, Permission.DEPARTMENT_MEMBERSHIP_UPDATE)
+            !hasDepartmentPermission(permissions, membership.departmentId, Permission.DEPARTMENT_MEMBERSHIP_UPDATE)
         ) {
             return;
         }
@@ -253,7 +253,7 @@ export function UserDetailsPageDepartmentMemberships() {
     };
 
     const handleDeleteMembership = (membership: VDepartmentMembershipWithDetailsEntity) => {
-        if (!checkDepartmentPermission(permissions, membership.departmentId, Permission.DEPARTMENT_MEMBERSHIP_DELETE)) {
+        if (!hasDepartmentPermission(permissions, membership.departmentId, Permission.DEPARTMENT_MEMBERSHIP_DELETE)) {
             return;
         }
 
@@ -353,11 +353,11 @@ export function UserDetailsPageDepartmentMemberships() {
                     loadingPlaceholder="Lade Organisationseinheiten…"
                     noSearchResultsPlaceholder="Keine Organisationseinheiten gefunden"
                     rowActions={(item) => {
-                        const canReadDepartment = checkDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_READ);
-                        const canUpdateDepartment = checkDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_UPDATE);
+                        const canReadDepartment = hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_READ);
+                        const canUpdateDepartment = hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_UPDATE);
                         const canUpdateMembership = canManageMemberships &&
-                            checkDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
-                        const canDeleteMembership = checkDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
+                            hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
+                        const canDeleteMembership = hasDepartmentPermission(permissions, item.departmentId, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
 
                         return [
                             {
@@ -474,7 +474,7 @@ function buildColumns(
             renderCell: (params) => {
                 const departmentName = String(params.row.departmentName);
 
-                if (!checkDepartmentPermission(permissions, params.row.departmentId, Permission.DEPARTMENT_READ)) {
+                if (!hasDepartmentPermission(permissions, params.row.departmentId, Permission.DEPARTMENT_READ)) {
                     return departmentName;
                 }
 

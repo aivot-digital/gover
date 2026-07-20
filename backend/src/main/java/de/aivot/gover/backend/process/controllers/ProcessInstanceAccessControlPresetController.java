@@ -53,9 +53,9 @@ public class ProcessInstanceAccessControlPresetController extends GenericCrudCon
     protected Page<ProcessInstanceAccessControlPresetEntity> performList(@Nonnull UserEntity user,
                                                                          @Nonnull Pageable pageable,
                                                                          @Nonnull ProcessInstanceAccessControlPresetFilter filter) throws ResponseException {
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE)) {
             if (filter.getTargetProcessId() != null) {
-                permissionService.hasProcessPermission(
+                permissionService.requireProcessPermission(
                         user.getId(),
                         filter.getTargetProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -86,7 +86,7 @@ public class ProcessInstanceAccessControlPresetController extends GenericCrudCon
     @Override
     protected void checkCreatePermissions(@Nonnull UserEntity execUser,
                                           @Nonnull ProcessInstanceAccessControlPresetEntity newItem) throws ResponseException {
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 newItem.getTargetProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -100,7 +100,7 @@ public class ProcessInstanceAccessControlPresetController extends GenericCrudCon
                 .retrieve(itemid)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 existing.getTargetProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE

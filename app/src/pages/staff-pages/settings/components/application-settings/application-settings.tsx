@@ -39,9 +39,9 @@ import {ElementType} from '../../../../../data/element-type/element-type';
 import {GroupLayout} from '../../../../../models/elements/form/layout/group-layout';
 import {isApiError} from '../../../../../models/api-error';
 import {
-    useCheckAnyDepartmentPermission,
-    useCheckSystemPermission,
+    useHasAnyDepartmentPermission,
     useHasSystemPermission,
+    useRequireSystemPermission,
 } from '../../../../../modules/permissions/hooks/use-permissions';
 import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../../modules/permissions/utils/permission-utils';
@@ -52,12 +52,12 @@ export function ApplicationSettings() {
     const api = useApi();
     const confirm = useConfirm();
 
-    useHasSystemPermission(Permission.SYSTEM_CONFIG_READ);
-    const canUpdateSystemConfig = useCheckSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
-    const canReadThemes = useCheckSystemPermission(Permission.THEME_READ);
-    const canReadSystemRoles = useCheckSystemPermission(Permission.SYSTEM_ROLE_READ);
-    const canReadStorageProviders = useCheckSystemPermission(Permission.STORAGE_PROVIDER_READ);
-    const canReadDepartments = useCheckAnyDepartmentPermission(Permission.DEPARTMENT_READ);
+    useRequireSystemPermission(Permission.SYSTEM_CONFIG_READ);
+    const canUpdateSystemConfig = useHasSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
+    const canReadThemes = useHasSystemPermission(Permission.THEME_READ);
+    const canReadSystemRoles = useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
+    const canReadStorageProviders = useHasSystemPermission(Permission.STORAGE_PROVIDER_READ);
+    const canReadDepartments = useHasAnyDepartmentPermission(Permission.DEPARTMENT_READ);
     const updateDisabledTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_CONFIG_UPDATE);
     const themeReadHint = formatMissingPermissionTooltip(Permission.THEME_READ);
     const systemRoleReadHint = formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_READ);

@@ -64,9 +64,9 @@ public class VDepartmentMembershipWithPermissionsController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
             if (filter.getDepartmentId() != null) {
-                permissionService.hasDepartmentPermission(
+                permissionService.requireDepartmentPermission(
                         user.getId(),
                         filter.getDepartmentId(),
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
@@ -110,7 +110,7 @@ public class VDepartmentMembershipWithPermissionsController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 membership.getDepartmentId(),
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ

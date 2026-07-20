@@ -71,7 +71,7 @@ public class UserRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ);
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ);
 
         return userRoleService
                 .list(pageable, filter)
@@ -93,7 +93,7 @@ public class UserRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_CREATE);
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_CREATE);
 
         var created = userRoleService
                 .create(requestDTO.toEntity());
@@ -137,7 +137,7 @@ public class UserRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ);
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_READ);
 
         return userRoleService
                 .retrieve(id)
@@ -161,7 +161,7 @@ public class UserRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_UPDATE);
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_UPDATE);
 
         var result = userRoleService
                 .update(id, requestDTO.toEntity());
@@ -205,7 +205,7 @@ public class UserRoleController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_DELETE);
+                .requireSystemPermission(execUser.getId(), DomainRolePermissionProvider.DOMAIN_ROLE_DELETE);
 
         var entity = userRoleService
                 .retrieve(id)

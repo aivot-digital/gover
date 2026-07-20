@@ -14,15 +14,15 @@ import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function ProviderLinksListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.SYSTEM_CONFIG_READ);
-    const canCreateProviderLink = useCheckSystemPermission(Permission.SYSTEM_CONFIG_CREATE);
-    const canUpdateProviderLink = useCheckSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
+    useRequireSystemPermission(Permission.SYSTEM_CONFIG_READ);
+    const canCreateProviderLink = useHasSystemPermission(Permission.SYSTEM_CONFIG_CREATE);
+    const canUpdateProviderLink = useHasSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
 
     const header = useMemo(() => ({
         icon: <InsertLinkOutlinedIcon />,

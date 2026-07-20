@@ -66,11 +66,11 @@ public class VDepartmentShadowedController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_READ)) {
             List<Integer> readableDepartmentIds;
 
             if (filter.getId() != null) {
-                permissionService.hasDepartmentPermission(
+                permissionService.requireDepartmentPermission(
                         user.getId(),
                         filter.getId(),
                         DepartmentPermissionProvider.DEPARTMENT_READ
@@ -129,7 +129,7 @@ public class VDepartmentShadowedController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 id,
                 DepartmentPermissionProvider.DEPARTMENT_READ

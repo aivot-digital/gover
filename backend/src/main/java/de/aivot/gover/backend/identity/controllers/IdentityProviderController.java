@@ -75,7 +75,7 @@ public class IdentityProviderController {
             @Nonnull @ParameterObject @Valid IdentityProviderFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ);
+                .requireSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ);
 
         return identityProviderService
                 .list(pageable, filter)
@@ -96,8 +96,8 @@ public class IdentityProviderController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE) &&
-                !permissionService.checkSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE)) {
+        if (!permissionService.hasSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE) &&
+                !permissionService.hasSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE)) {
             throw ResponseException.forbidden(
                     "Sie benötigen die Berechtigung %s oder %s auf Systemebene.",
                     StringUtils.quote(IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE),
@@ -127,7 +127,7 @@ public class IdentityProviderController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE);
+                .requireSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_CREATE);
 
         var created = identityProviderService
                 .create(requestDTO.toEntity());
@@ -157,7 +157,7 @@ public class IdentityProviderController {
             @Nonnull @PathVariable UUID key
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ);
+                .requireSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_READ);
 
         return identityProviderService
                 .retrieve(key)
@@ -182,7 +182,7 @@ public class IdentityProviderController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE);
+                .requireSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE);
 
         // TODO: Check if the identity provide ris used in process node configs and prevent the disabling if so.
 
@@ -218,7 +218,7 @@ public class IdentityProviderController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_DELETE);
+                .requireSystemPermission(user.getId(), IdentityProviderPermissionProvider.IDENTITY_PROVIDER_DELETE);
 
         var entity = identityProviderService
                 .retrieve(key)

@@ -16,7 +16,7 @@ import {VTeamMembershipWithDetailsEntity} from '../../../teams/entities/v-team-m
 import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {hasAnyTeamPermission} from '../../../permissions/utils/permission-utils';
+import {requireAnyTeamPermission} from '../../../permissions/utils/permission-utils';
 
 const columns: Array<GridColDef<VTeamMembershipWithDetailsEntity>> = [
     {
@@ -59,7 +59,7 @@ export function UserRolesDetailsPageTeamMemberships() {
         );
     }
 
-    hasAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_READ);
+    requireAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_READ);
 
     return (
         <>

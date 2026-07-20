@@ -18,8 +18,8 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
 import {
-    checkDepartmentPermission,
-    checkSystemPermission,
+    hasDepartmentPermission,
+    hasSystemPermission,
     formatMissingPermissionTooltip,
 } from '../../../permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../permissions/models/permission-set';
@@ -29,7 +29,7 @@ import {getDepartmentTypeLabel, getMaxDepartmentDepth} from '../../utils/departm
 export function DepartmentsListPage(): React.ReactElement {
     const rootDepartmentTypeLabel = getDepartmentTypeLabel(0);
     const permissions = useAppSelector(selectPermissions);
-    const canCreateRootDepartment = checkSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
+    const canCreateRootDepartment = hasSystemPermission(permissions, Permission.DEPARTMENT_CREATE);
 
     const [
         rootDepartments,
@@ -55,7 +55,7 @@ export function DepartmentsListPage(): React.ReactElement {
     }, []);
 
     const getDepartmentHref = useCallback((department: VDepartmentShadowedEntityWithChildren) => {
-        return checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ)
+        return hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ)
             ? `/departments/${department.id}`
             : undefined;
     }, [permissions]);
@@ -134,11 +134,11 @@ function getDepartmentActions(
 ): Action[] {
     const maxDepartmentDepth = getMaxDepartmentDepth();
     const canAddChildDepartment = department.depth < maxDepartmentDepth;
-    const canCreateChildDepartment = checkSystemPermission(permissions, Permission.DEPARTMENT_CREATE) && canAddChildDepartment;
-    const canReadDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
-    const canUpdateDepartment = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_UPDATE);
-    const canReadMemberships = checkDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_READ);
-    const canReadProcesses = checkDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_READ);
+    const canCreateChildDepartment = hasSystemPermission(permissions, Permission.DEPARTMENT_CREATE) && canAddChildDepartment;
+    const canReadDepartment = hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_READ);
+    const canUpdateDepartment = hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_UPDATE);
+    const canReadMemberships = hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canReadProcesses = hasDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_READ);
 
     return [
         {

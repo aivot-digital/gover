@@ -50,7 +50,7 @@ public class PaymentProviderDefinitionController {
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
 
         return paymentProviderDefinitions
                 .stream()
@@ -75,7 +75,7 @@ public class PaymentProviderDefinitionController {
             @Nonnull @PathVariable String key
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
 
         var definition = paymentProviderDefinitions
                 .stream()
@@ -99,7 +99,7 @@ public class PaymentProviderDefinitionController {
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
 
         var definition = paymentProviderDefinitions
                 .stream()

@@ -23,7 +23,7 @@ import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {usePrompt} from '../../../providers/prompt-provider';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
@@ -34,9 +34,9 @@ export function AssetListPage() {
     const {storageProviderId} = useParams<{ storageProviderId?: string }>();
     const [searchParams] = useSearchParams();
     const listControlRef = useRef<ListControlRef>(null);
-    useHasSystemPermission(Permission.ASSET_READ);
-    const canCreateAsset = useCheckSystemPermission(Permission.ASSET_CREATE);
-    const canDeleteAsset = useCheckSystemPermission(Permission.ASSET_DELETE);
+    useRequireSystemPermission(Permission.ASSET_READ);
+    const canCreateAsset = useHasSystemPermission(Permission.ASSET_CREATE);
+    const canDeleteAsset = useHasSystemPermission(Permission.ASSET_DELETE);
 
     const confirm = useConfirm();
     const prompt = usePrompt();

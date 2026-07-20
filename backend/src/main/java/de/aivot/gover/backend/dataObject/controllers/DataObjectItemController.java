@@ -74,7 +74,7 @@ public class DataObjectItemController {
             @Nonnull @PathVariable String schemaKey
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_READ);
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_READ);
 
         filter.setSchemaKey(schemaKey);
 
@@ -103,7 +103,7 @@ public class DataObjectItemController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_ITEM_CREATE);
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_ITEM_CREATE);
 
         var schema = schemaService
                 .retrieve(schemaKey)
@@ -148,7 +148,7 @@ public class DataObjectItemController {
             @Nonnull @PathVariable String itemId
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_READ);
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_ITEM_READ);
 
         var schema = schemaService
                 .retrieve(schemaKey)
@@ -180,7 +180,7 @@ public class DataObjectItemController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_ITEM_UPDATE);
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_ITEM_UPDATE);
 
         var schema = schemaService
                 .retrieve(schemaKey)
@@ -232,7 +232,7 @@ public class DataObjectItemController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_ITEM_DELETE);
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_ITEM_DELETE);
 
         var id = new DataObjectItemEntityId(schemaKey, itemId);
         var deleted = service.delete(id);

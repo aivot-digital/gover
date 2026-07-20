@@ -41,9 +41,9 @@ import {useAppSelector} from '../../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../../slices/user-slice';
 import {Permission} from '../../../../../data/permissions/permission';
 import {
-    checkAnyTeamPermission,
-    checkSystemPermission,
-    checkTeamPermission,
+    hasAnyTeamPermission,
+    hasSystemPermission,
+    hasTeamPermission,
     formatMissingPermissionTooltip,
 } from '../../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
@@ -69,9 +69,9 @@ export function UserDetailsPageTeamMemberships() {
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VTeamMembershipWithDetailsEntity | null>(null);
 
     const canManageMemberships = user != null && !user.deletedInIdp;
-    const canReadDomainRoles = checkSystemPermission(permissions, Permission.DOMAIN_ROLE_READ);
-    const canReadAnyTeam = checkAnyTeamPermission(permissions, Permission.TEAM_READ);
-    const canCreateAnyTeamMembership = checkAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_CREATE);
+    const canReadDomainRoles = hasSystemPermission(permissions, Permission.DOMAIN_ROLE_READ);
+    const canReadAnyTeam = hasAnyTeamPermission(permissions, Permission.TEAM_READ);
+    const canCreateAnyTeamMembership = hasAnyTeamPermission(permissions, Permission.TEAM_MEMBERSHIP_CREATE);
     const canOpenSelectNewTeamDialog = canManageMemberships &&
         canReadAnyTeam &&
         canCreateAnyTeamMembership &&
@@ -114,7 +114,7 @@ export function UserDetailsPageTeamMemberships() {
                     return;
                 }
 
-                setAvailableTeams(content.filter((team) => checkTeamPermission(
+                setAvailableTeams(content.filter((team) => hasTeamPermission(
                     permissions,
                     team.id,
                     Permission.TEAM_MEMBERSHIP_CREATE,
@@ -160,7 +160,7 @@ export function UserDetailsPageTeamMemberships() {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
-            !checkTeamPermission(permissions, team.id, Permission.TEAM_MEMBERSHIP_CREATE)
+            !hasTeamPermission(permissions, team.id, Permission.TEAM_MEMBERSHIP_CREATE)
         ) {
             return;
         }
@@ -199,7 +199,7 @@ export function UserDetailsPageTeamMemberships() {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
-            !checkTeamPermission(permissions, membership.teamId, Permission.TEAM_MEMBERSHIP_UPDATE)
+            !hasTeamPermission(permissions, membership.teamId, Permission.TEAM_MEMBERSHIP_UPDATE)
         ) {
             return;
         }
@@ -248,7 +248,7 @@ export function UserDetailsPageTeamMemberships() {
     };
 
     const handleDeleteMembership = (membership: VTeamMembershipWithDetailsEntity) => {
-        if (!checkTeamPermission(permissions, membership.teamId, Permission.TEAM_MEMBERSHIP_DELETE)) {
+        if (!hasTeamPermission(permissions, membership.teamId, Permission.TEAM_MEMBERSHIP_DELETE)) {
             return;
         }
 
@@ -348,11 +348,11 @@ export function UserDetailsPageTeamMemberships() {
                     loadingPlaceholder="Lade Teams…"
                     noSearchResultsPlaceholder="Keine Teams gefunden"
                     rowActions={(item) => {
-                        const canReadTeam = checkTeamPermission(permissions, item.teamId, Permission.TEAM_READ);
-                        const canUpdateTeam = checkTeamPermission(permissions, item.teamId, Permission.TEAM_UPDATE);
+                        const canReadTeam = hasTeamPermission(permissions, item.teamId, Permission.TEAM_READ);
+                        const canUpdateTeam = hasTeamPermission(permissions, item.teamId, Permission.TEAM_UPDATE);
                         const canUpdateMembership = canManageMemberships &&
-                            checkTeamPermission(permissions, item.teamId, Permission.TEAM_MEMBERSHIP_UPDATE);
-                        const canDeleteMembership = checkTeamPermission(permissions, item.teamId, Permission.TEAM_MEMBERSHIP_DELETE);
+                            hasTeamPermission(permissions, item.teamId, Permission.TEAM_MEMBERSHIP_UPDATE);
+                        const canDeleteMembership = hasTeamPermission(permissions, item.teamId, Permission.TEAM_MEMBERSHIP_DELETE);
 
                         return [
                             {
@@ -465,7 +465,7 @@ function buildColumns(
             renderCell: (params) => {
                 const teamName = String(params.row.teamName);
 
-                if (!checkTeamPermission(permissions, params.row.teamId, Permission.TEAM_READ)) {
+                if (!hasTeamPermission(permissions, params.row.teamId, Permission.TEAM_READ)) {
                     return teamName;
                 }
 

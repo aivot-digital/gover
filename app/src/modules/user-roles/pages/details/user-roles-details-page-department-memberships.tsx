@@ -20,7 +20,7 @@ import {
 import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {hasAnyDepartmentPermission} from '../../../permissions/utils/permission-utils';
+import {requireAnyDepartmentPermission} from '../../../permissions/utils/permission-utils';
 
 const columns: Array<GridColDef<VDepartmentMembershipWithDetailsEntity>> = [
     {
@@ -63,7 +63,7 @@ export function UserRolesDetailsPageDepartmentMemberships() {
         );
     }
 
-    hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_READ);
+    requireAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_READ);
 
     return (
         <>

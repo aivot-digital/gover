@@ -34,7 +34,7 @@ import {
 import {DomainAndUserSelectItem} from '../../../../models/elements/form/input/domain-user-select-field-element';
 import {AssignmentContextValue} from '../../../../models/elements/form/input/assignment-context-field-element';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
@@ -42,11 +42,11 @@ export function DataObjectItemListPage() {
     const navigate = useNavigate();
     const api = useApi();
     const schemaKey = useParams().schemaKey;
-    useHasSystemPermission(Permission.OBJECT_ITEM_READ);
-    useHasSystemPermission(Permission.OBJECT_SCHEMA_READ);
-    const canCreateDataObjectItem = useCheckSystemPermission(Permission.OBJECT_ITEM_CREATE);
-    const canUpdateDataObjectItem = useCheckSystemPermission(Permission.OBJECT_ITEM_UPDATE);
-    const canUpdateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
+    useRequireSystemPermission(Permission.OBJECT_ITEM_READ);
+    useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canCreateDataObjectItem = useHasSystemPermission(Permission.OBJECT_ITEM_CREATE);
+    const canUpdateDataObjectItem = useHasSystemPermission(Permission.OBJECT_ITEM_UPDATE);
+    const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const [dataObjectSchema, setDataObjectSchema] = useState<DataObjectSchema>();
 

@@ -84,7 +84,7 @@ public class PluginController {
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PluginPermissionProvider.PLUGIN_READ);
+                .requireSystemPermission(jwt, PluginPermissionProvider.PLUGIN_READ);
 
         return pluginList;
     }
@@ -100,7 +100,7 @@ public class PluginController {
             @Nonnull @PathVariable String pluginKey
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PluginPermissionProvider.PLUGIN_READ);
+                .requireSystemPermission(jwt, PluginPermissionProvider.PLUGIN_READ);
 
         var plugin = pluginMap.get(pluginKey);
 

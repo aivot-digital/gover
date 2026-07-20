@@ -16,7 +16,7 @@ import {SystemRoleEntity} from "../../entities/system-role-entity";
 import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
-import {hasSystemPermission} from '../../../permissions/utils/permission-utils';
+import {requireSystemPermission} from '../../../permissions/utils/permission-utils';
 
 const columns: Array<GridColDef<User>> = [
     {
@@ -46,7 +46,7 @@ export function SystemRolesDetailsPageMembers() {
         );
     }
 
-    hasSystemPermission(permissions, Permission.USER_READ);
+    requireSystemPermission(permissions, Permission.USER_READ);
 
     return (
         <>

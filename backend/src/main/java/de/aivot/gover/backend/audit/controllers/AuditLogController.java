@@ -56,7 +56,7 @@ public class AuditLogController {
             @Nonnull @ParameterObject @Valid AuditLogFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, AuditPermissionProvider.AUDIT_LOG_READ);
+                .requireSystemPermission(jwt, AuditPermissionProvider.AUDIT_LOG_READ);
 
         return auditLogService
                 .list(pageable, filter);
@@ -71,7 +71,7 @@ public class AuditLogController {
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, AuditPermissionProvider.AUDIT_LOG_READ);
+                .requireSystemPermission(jwt, AuditPermissionProvider.AUDIT_LOG_READ);
 
         return auditLogService.getFilterOptions();
     }
@@ -86,7 +86,7 @@ public class AuditLogController {
             @Nonnull @PathVariable Long id
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, AuditPermissionProvider.AUDIT_LOG_READ);
+                .requireSystemPermission(jwt, AuditPermissionProvider.AUDIT_LOG_READ);
 
         return auditLogService
                 .retrieve(id)

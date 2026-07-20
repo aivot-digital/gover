@@ -12,13 +12,13 @@ import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData'
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 
 export function DataObjectListPage() {
-    useHasSystemPermission(Permission.OBJECT_ITEM_READ);
-    useHasSystemPermission(Permission.OBJECT_SCHEMA_READ);
-    const canUpdateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
+    useRequireSystemPermission(Permission.OBJECT_ITEM_READ);
+    useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const header = useMemo(() => ({
         icon: <DataObject />,

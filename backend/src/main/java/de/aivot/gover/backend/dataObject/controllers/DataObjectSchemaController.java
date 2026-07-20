@@ -67,7 +67,7 @@ public class DataObjectSchemaController {
             @Nonnull @ParameterObject @Valid DataObjectSchemaFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_READ);
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_READ);
 
         return service
                 .list(pageable, filter);
@@ -88,7 +88,7 @@ public class DataObjectSchemaController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE);
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_CREATE);
 
         var created = service.create(newDataObjectEntity);
 
@@ -121,7 +121,7 @@ public class DataObjectSchemaController {
             @Nonnull @PathVariable String key
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_READ);
+                .requireSystemPermission(jwt, DataObjectPermissionProvider.OBJECT_SCHEMA_READ);
 
         return service
                 .retrieve(key)
@@ -144,7 +144,7 @@ public class DataObjectSchemaController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE);
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_UPDATE);
 
         var updated = service
                 .update(key, updatedDataObjectEntity);
@@ -181,7 +181,7 @@ public class DataObjectSchemaController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_DELETE);
+                .requireSystemPermission(execUser.getId(), DataObjectPermissionProvider.OBJECT_SCHEMA_DELETE);
 
         var deleted = service.delete(key);
 

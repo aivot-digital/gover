@@ -84,13 +84,13 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .setTeamAssignment(true)
                 .setOrgUnitAssignment(false);
 
-        if (!permissionService.checkSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
             if (filter.getTeamMembershipId() != null) {
                 var membership = teamMembershipService
                         .retrieve(filter.getTeamMembershipId())
                         .orElseThrow(ResponseException::notFound);
 
-                permissionService.hasTeamPermission(
+                permissionService.requireTeamPermission(
                         user.getId(),
                         membership.getTeamId(),
                         TeamPermissionProvider.TEAM_MEMBERSHIP_READ
@@ -147,7 +147,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .retrieve(newAssignment.getTeamMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 membership.getTeamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE
@@ -201,7 +201,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .retrieve(assignment.getTeamMembershipId())
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 membership.getTeamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_READ
@@ -236,7 +236,7 @@ public class VTeamUserRoleAssignmentWithDetailsController {
                 .retrieve(entity.getTeamMembershipId())
                 .orElseThrow(ResponseException::badRequest);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 membership.getTeamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE

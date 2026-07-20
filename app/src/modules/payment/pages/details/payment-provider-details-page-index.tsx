@@ -32,7 +32,7 @@ import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../mode
 import {Page} from '../../../../models/dtos/page';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 type PaymentProviderEditableFields =
@@ -77,7 +77,7 @@ export function PaymentProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const showConfirm = useConfirm();
-    const canDeletePaymentProvider = useCheckSystemPermission(Permission.PAYMENT_PROVIDER_DELETE);
+    const canDeletePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_DELETE);
 
     const [derivedRuntimeConfigData, setDerivedRuntimeConfigData] = useState<DerivedRuntimeElementData | null>(null);
     const [paymentProviderSchema, setPaymentProviderSchema] = useState<PaymentProviderYupSchemaType>(BasePaymentProviderYupSchema);

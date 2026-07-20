@@ -4,11 +4,11 @@ import {GenericPageHeader} from '../../../components/generic-page-header/generic
 import {Paper} from '@mui/material';
 import {SystemInformation} from '../../../pages/staff-pages/settings/components/system-information/system-information';
 import ReadinessScore from '@aivot/mui-material-symbols-400-n25-outlined/ReadinessScore';
-import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useRequireSystemPermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 
 export function SystemStatusPage() {
-    useHasSystemPermission(Permission.SYSTEM_CONFIG_READ);
+    useRequireSystemPermission(Permission.SYSTEM_CONFIG_READ);
 
     return (
         <PageWrapper

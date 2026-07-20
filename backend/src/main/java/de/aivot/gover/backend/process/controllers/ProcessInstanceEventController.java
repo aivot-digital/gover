@@ -68,9 +68,9 @@ public class ProcessInstanceEventController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
             if (filter.getProcessInstanceId() != null) {
-                permissionService.hasProcessInstancePermission(
+                permissionService.requireProcessInstancePermission(
                         user.getId(),
                         filter.getProcessInstanceId(),
                         ProcessPermissionProvider.PROCESS_INSTANCE_READ
@@ -111,7 +111,7 @@ public class ProcessInstanceEventController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 newEvent.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -151,7 +151,7 @@ public class ProcessInstanceEventController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 event.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_READ
@@ -178,7 +178,7 @@ public class ProcessInstanceEventController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 existing.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -220,7 +220,7 @@ public class ProcessInstanceEventController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 existing.getProcessInstanceId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE

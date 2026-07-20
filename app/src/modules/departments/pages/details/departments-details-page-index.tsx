@@ -34,7 +34,7 @@ import {VDepartmentShadowedApiService} from '../../services/v-department-shadowe
 import {VDepartmentShadowedEntity} from '../../entities/v-department-shadowed-entity';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckDepartmentPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasDepartmentPermission} from '../../../permissions/hooks/use-permissions';
 import {isApiError} from '../../../../models/api-error';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 import {AlertComponent} from '../../../../components/alert/alert-component';
@@ -236,7 +236,7 @@ export function DepartmentsDetailsPageIndex() {
     const changeBlocker = useChangeBlocker(item, currentItem);
     const isNewDepartment = isNewItem === true;
     const editPermission = isNewDepartment ? Permission.DEPARTMENT_CREATE : Permission.DEPARTMENT_UPDATE;
-    const canDeleteDepartment = useCheckDepartmentPermission(
+    const canDeleteDepartment = useHasDepartmentPermission(
         isNewDepartment ? undefined : department?.id,
         Permission.DEPARTMENT_DELETE,
     );

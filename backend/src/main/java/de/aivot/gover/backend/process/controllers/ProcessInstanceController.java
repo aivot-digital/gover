@@ -95,7 +95,7 @@ public class ProcessInstanceController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(execUser.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
+        if (!permissionService.hasSystemPermission(execUser.getId(), ProcessPermissionProvider.PROCESS_INSTANCE_READ)) {
             // Keep all caller filters and add an EXISTS guard against the resolved process-instance permission view.
             filter.addAdditionalSpecification((root, query, criteriaBuilder) -> {
                 var subquery = query.subquery(VUserProcessInstanceAccessPermissionsEntity.class);
@@ -133,7 +133,7 @@ public class ProcessInstanceController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 newInstance.getProcessId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_TRIGGER
@@ -172,7 +172,7 @@ public class ProcessInstanceController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 instance.getId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_READ
@@ -199,7 +199,7 @@ public class ProcessInstanceController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 execUser.getId(),
                 existing.getId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -240,7 +240,7 @@ public class ProcessInstanceController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 processInstance.getId(),
                 ProcessPermissionProvider.PROCESS_INSTANCE_UPDATE
@@ -339,7 +339,7 @@ public class ProcessInstanceController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessInstancePermission(
+        permissionService.requireProcessInstancePermission(
                 user.getId(),
                 id,
                 ProcessPermissionProvider.PROCESS_INSTANCE_DELETE

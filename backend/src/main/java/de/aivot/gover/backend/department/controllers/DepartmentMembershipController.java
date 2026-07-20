@@ -83,9 +83,9 @@ public class DepartmentMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ)) {
             if (filter.getDepartmentId() != null) {
-                permissionService.hasDepartmentPermission(
+                permissionService.requireDepartmentPermission(
                         user.getId(),
                         filter.getDepartmentId(),
                         DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
@@ -127,7 +127,7 @@ public class DepartmentMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 execUser.getId(),
                 newMembership.departmentId(),
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_CREATE
@@ -189,7 +189,7 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 membership.getDepartmentId(),
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_READ
@@ -218,7 +218,7 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 execUser.getId(),
                 existingMembership.getDepartmentId(),
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_UPDATE
@@ -268,7 +268,7 @@ public class DepartmentMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 existingMembership.getDepartmentId(),
                 DepartmentPermissionProvider.DEPARTMENT_MEMBERSHIP_DELETE

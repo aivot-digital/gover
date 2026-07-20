@@ -30,7 +30,7 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Page} from '../../../../models/dtos/page';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const ThemeSchema = yup.object({
@@ -56,7 +56,7 @@ export function ThemeDetailsPageIndex() {
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Theme, undefined>;
     const isNewTheme = isNewItem === true;
     const editPermission = isNewTheme ? Permission.THEME_CREATE : Permission.THEME_UPDATE;
-    const canDeleteTheme = useCheckSystemPermission(Permission.THEME_DELETE);
+    const canDeleteTheme = useHasSystemPermission(Permission.THEME_DELETE);
 
     const {
         currentItem,

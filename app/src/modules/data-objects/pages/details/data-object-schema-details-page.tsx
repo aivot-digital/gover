@@ -11,14 +11,14 @@ import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import {Permission} from '../../../../data/permissions/permission';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function DataObjectSchemaDetailsPage() {
     const itemRef = useRef<DataObjectSchema | null>(null);
     const schemaKey = useParams().key;
     const isNew = useMemo(() => schemaKey === NEW_ID_INDICATOR, [schemaKey]);
-    const canReadDataObjectItems = useCheckSystemPermission(Permission.OBJECT_ITEM_READ);
+    const canReadDataObjectItems = useHasSystemPermission(Permission.OBJECT_ITEM_READ);
 
     const handleExport = () => {
         const item = itemRef.current;

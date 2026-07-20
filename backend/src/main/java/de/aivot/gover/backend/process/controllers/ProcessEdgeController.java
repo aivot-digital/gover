@@ -72,9 +72,9 @@ public class ProcessEdgeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
             if (filter.getProcessDefinitionId() != null) {
-                permissionService.hasProcessPermission(
+                permissionService.requireProcessPermission(
                         user.getId(),
                         filter.getProcessDefinitionId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -115,7 +115,7 @@ public class ProcessEdgeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 newEdge.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -155,7 +155,7 @@ public class ProcessEdgeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 edge.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -182,7 +182,7 @@ public class ProcessEdgeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 existing.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -231,7 +231,7 @@ public class ProcessEdgeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 existing.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE

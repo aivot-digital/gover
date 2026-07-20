@@ -52,7 +52,7 @@ public class VUserDeputyWithDetailsController extends GenericReadController<VUse
                                                              @Nonnull VUserDeputyWithDetailsFilter filter) throws ResponseException {
         var specification = filter.build();
 
-        if (!permissionService.checkSystemPermission(user.getId(), UserPermissionProvider.DEPUTY_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), UserPermissionProvider.DEPUTY_READ)) {
             specification = addRelatedDeputyRestriction(specification, user.getId());
         }
 
@@ -66,7 +66,7 @@ public class VUserDeputyWithDetailsController extends GenericReadController<VUse
                 .retrieve(itemId)
                 .orElseThrow(ResponseException::notFound);
 
-        if (permissionService.checkSystemPermission(execUser.getId(), UserPermissionProvider.DEPUTY_READ)
+        if (permissionService.hasSystemPermission(execUser.getId(), UserPermissionProvider.DEPUTY_READ)
                 || isRelatedToUser(entity, execUser.getId())) {
             return;
         }

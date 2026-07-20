@@ -36,8 +36,8 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {
-    useCheckDepartmentPermission,
-    useCheckSystemPermission,
+    useHasDepartmentPermission,
+    useHasSystemPermission,
     useRefreshPermissionSet,
 } from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
@@ -49,12 +49,12 @@ export function DepartmentsDetailsPageMembers() {
     const {
         item,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<DepartmentEntity, undefined>;
-    const canReadMemberships = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_READ);
-    const canCreateMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
-    const canUpdateMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
-    const canDeleteMembership = useCheckDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
-    const canReadDomainRoles = useCheckSystemPermission(Permission.DOMAIN_ROLE_READ);
-    const canReadUsers = useCheckSystemPermission(Permission.USER_READ);
+    const canReadMemberships = useHasDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_READ);
+    const canCreateMembership = useHasDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
+    const canUpdateMembership = useHasDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_UPDATE);
+    const canDeleteMembership = useHasDepartmentPermission(item?.id, Permission.DEPARTMENT_MEMBERSHIP_DELETE);
+    const canReadDomainRoles = useHasSystemPermission(Permission.DOMAIN_ROLE_READ);
+    const canReadUsers = useHasSystemPermission(Permission.USER_READ);
 
     const showConfirm = useConfirm();
 

@@ -13,7 +13,7 @@ import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {GenericDetailsPageControlRef} from '../../../../components/generic-details-page/generic-details-page-props';
 import {Permission} from '../../../../data/permissions/permission';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 type StorageProviderSyncPreparationHandler = () => Promise<boolean>;
@@ -34,7 +34,7 @@ export function useStorageProviderDetailsPageSyncContext(): StorageProviderDetai
 
 export function StorageProviderDetailsPage(): ReactNode {
     const dispatch = useAppDispatch();
-    const canUpdateStorageProvider = useCheckSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
+    const canUpdateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     const [provider, setProvider] = useState<StorageProviderEntity>();
     const [isSyncing, setIsSyncing] = useState(false);

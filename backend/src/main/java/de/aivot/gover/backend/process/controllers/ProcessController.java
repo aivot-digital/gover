@@ -128,7 +128,7 @@ public class ProcessController {
                     .retrieve(processId)
                     .orElseThrow(ResponseException::notFound);
 
-            permissionService.hasProcessPermission(
+            permissionService.requireProcessPermission(
                     execUser.getId(),
                     process.getId(),
                     ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -159,7 +159,7 @@ public class ProcessController {
                 .orElseThrow(ResponseException::badRequest);
 
         permissionService
-                .hasDepartmentPermission(
+                .requireDepartmentPermission(
                         execUser.getId(),
                         department.getId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
@@ -200,7 +200,7 @@ public class ProcessController {
                 .retrieve(exportData.process().getDepartmentId())
                 .orElseThrow(ResponseException::badRequest);
 
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 execUser.getId(),
                 department.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
@@ -331,7 +331,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 proc.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -362,7 +362,7 @@ public class ProcessController {
         var existingMap = objectMapper
                 .convertValue(existing, Map.class);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 existing.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -411,7 +411,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 process.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -438,7 +438,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 process.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -472,7 +472,7 @@ public class ProcessController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 id,
                 ProcessPermissionProvider.PROCESS_DEFINITION_DELETE
@@ -519,14 +519,14 @@ public class ProcessController {
                 .convertValue(process, Map.class);
 
         // Check if the user has edit permission for the process in the original department
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 process.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
         // Check if the user has create permission for the process in the target department
-        permissionService.hasDepartmentPermission(
+        permissionService.requireDepartmentPermission(
                 user.getId(),
                 targetDepartmentId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_CREATE
@@ -594,7 +594,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 process.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -713,7 +713,7 @@ public class ProcessController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 existing.getId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ

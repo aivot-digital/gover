@@ -68,7 +68,7 @@ public class PaymentTransactionController {
             @Nonnull @ParameterObject @Valid PaymentTransactionFilter filter
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
 
         return paymentTransactionService
                 .list(pageable, filter)
@@ -87,7 +87,7 @@ public class PaymentTransactionController {
 
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
 
         return paymentTransactionService
                 .retrieve(key)

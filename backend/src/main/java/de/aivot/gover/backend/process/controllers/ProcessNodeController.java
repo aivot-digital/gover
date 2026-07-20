@@ -129,9 +129,9 @@ public class ProcessNodeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), ProcessPermissionProvider.PROCESS_DEFINITION_READ)) {
             if (filter.getProcessId() != null) {
-                permissionService.hasProcessPermission(
+                permissionService.requireProcessPermission(
                         user.getId(),
                         filter.getProcessId(),
                         ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -172,7 +172,7 @@ public class ProcessNodeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 newNode.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -212,7 +212,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 node.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -241,7 +241,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 existing.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -319,7 +319,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 existing.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -358,7 +358,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 existingNode.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -401,7 +401,7 @@ public class ProcessNodeController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 execUser.getId(),
                 processId,
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -479,7 +479,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 node.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -525,7 +525,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 node.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ
@@ -552,7 +552,7 @@ public class ProcessNodeController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 node.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
@@ -607,7 +607,7 @@ public class ProcessNodeController {
                 .findById(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasProcessPermission(
+        permissionService.requireProcessPermission(
                 user.getId(),
                 node.getProcessId(),
                 ProcessPermissionProvider.PROCESS_DEFINITION_READ

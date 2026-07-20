@@ -38,7 +38,7 @@ import {deepEquals} from '../../../utils/equality-utils';
 import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {Permission} from '../../../data/permissions/permission';
-import {useCheckSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
 import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
 
@@ -66,9 +66,9 @@ export function AssetDetailsPageIndex() {
         setIsBusy,
         isEditable,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<Asset, AssetDetailsPageAdditionalData>;
-    const canCreateAssets = useCheckSystemPermission(Permission.ASSET_CREATE);
-    const canUpdateAssets = useCheckSystemPermission(Permission.ASSET_UPDATE);
-    const canDeleteAssets = useCheckSystemPermission(Permission.ASSET_DELETE);
+    const canCreateAssets = useHasSystemPermission(Permission.ASSET_CREATE);
+    const canUpdateAssets = useHasSystemPermission(Permission.ASSET_UPDATE);
+    const canDeleteAssets = useHasSystemPermission(Permission.ASSET_DELETE);
 
     const {
         currentItem,

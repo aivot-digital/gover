@@ -71,9 +71,9 @@ public class TeamMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        if (!permissionService.checkSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
+        if (!permissionService.hasSystemPermission(user.getId(), TeamPermissionProvider.TEAM_MEMBERSHIP_READ)) {
             if (filter.getTeamId() != null) {
-                permissionService.hasTeamPermission(
+                permissionService.requireTeamPermission(
                         user.getId(),
                         filter.getTeamId(),
                         TeamPermissionProvider.TEAM_MEMBERSHIP_READ
@@ -115,7 +115,7 @@ public class TeamMembershipController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 execUser.getId(),
                 createDTO.teamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_CREATE
@@ -159,7 +159,7 @@ public class TeamMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 user.getId(),
                 membership.getTeamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_READ
@@ -187,7 +187,7 @@ public class TeamMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 execUser.getId(),
                 existing.getTeamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_UPDATE
@@ -229,7 +229,7 @@ public class TeamMembershipController {
                 .retrieve(id)
                 .orElseThrow(ResponseException::notFound);
 
-        permissionService.hasTeamPermission(
+        permissionService.requireTeamPermission(
                 execUser.getId(),
                 entity.getTeamId(),
                 TeamPermissionProvider.TEAM_MEMBERSHIP_DELETE

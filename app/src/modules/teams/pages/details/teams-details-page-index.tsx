@@ -16,7 +16,7 @@ import {TeamEntity} from "../../entities/team-entity";
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckTeamPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasTeamPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const TeamSchema = yup.object({
@@ -54,7 +54,7 @@ export function TeamsDetailsPageIndex() {
     const changeBlocker = useChangeBlocker(item, team);
     const isNewTeam = isNewItem === true;
     const editPermission = isNewTeam ? Permission.TEAM_CREATE : Permission.TEAM_UPDATE;
-    const canDeleteTeam = useCheckTeamPermission(
+    const canDeleteTeam = useHasTeamPermission(
         isNewTeam ? undefined : team?.id,
         Permission.TEAM_DELETE,
     );

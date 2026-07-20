@@ -17,8 +17,8 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
 import {
-    checkSystemPermission,
-    checkTeamPermission,
+    hasSystemPermission,
+    hasTeamPermission,
     formatMissingPermissionTooltip,
 } from '../../../permissions/utils/permission-utils';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
@@ -26,7 +26,7 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 export function TeamsListPage() {
     const navigate = useNavigate();
     const permissions = useAppSelector(selectPermissions);
-    const canCreateTeam = checkSystemPermission(permissions, Permission.TEAM_CREATE);
+    const canCreateTeam = hasSystemPermission(permissions, Permission.TEAM_CREATE);
 
     const header = useMemo(() => ({
         icon: ModuleIcons.teams,
@@ -81,8 +81,8 @@ export function TeamsListPage() {
             headerName: 'Name',
             flex: 1,
             renderCell: (params: any) => {
-                const canReadTeam = checkTeamPermission(permissions, params.row.id, Permission.TEAM_READ);
-                const canUpdateTeam = checkTeamPermission(permissions, params.row.id, Permission.TEAM_UPDATE);
+                const canReadTeam = hasTeamPermission(permissions, params.row.id, Permission.TEAM_READ);
+                const canUpdateTeam = hasTeamPermission(permissions, params.row.id, Permission.TEAM_UPDATE);
 
                 if (!canReadTeam) {
                     return (
@@ -107,9 +107,9 @@ export function TeamsListPage() {
     const getRowIdentifier = useCallback((row: TeamEntity) => row.id.toString(), []);
 
     const rowActions = useCallback((item: TeamEntity) => {
-        const canReadTeam = checkTeamPermission(permissions, item.id, Permission.TEAM_READ);
-        const canUpdateTeam = checkTeamPermission(permissions, item.id, Permission.TEAM_UPDATE);
-        const canReadMemberships = checkTeamPermission(permissions, item.id, Permission.TEAM_MEMBERSHIP_READ);
+        const canReadTeam = hasTeamPermission(permissions, item.id, Permission.TEAM_READ);
+        const canUpdateTeam = hasTeamPermission(permissions, item.id, Permission.TEAM_UPDATE);
+        const canReadMemberships = hasTeamPermission(permissions, item.id, Permission.TEAM_MEMBERSHIP_READ);
 
         return [
             {

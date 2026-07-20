@@ -19,7 +19,7 @@ import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {PermissionEditor} from '../../../permissions/components/permission-editor';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const UserRoleSchema = yup.object({
@@ -49,7 +49,7 @@ export function UserRolesDetailsPageIndex() {
     } = useContext(GenericDetailsPageContext);
     const isNewRole = isNewItem === true;
     const editPermission = isNewRole ? Permission.DOMAIN_ROLE_CREATE : Permission.DOMAIN_ROLE_UPDATE;
-    const canDeleteDomainRole = useCheckSystemPermission(Permission.DOMAIN_ROLE_DELETE);
+    const canDeleteDomainRole = useHasSystemPermission(Permission.DOMAIN_ROLE_DELETE);
     const refreshPermissionSet = useRefreshPermissionSet();
 
     const {

@@ -13,7 +13,7 @@ import {GenericPageHeader} from '../../../components/generic-page-header/generic
 import {ModuleIcons} from '../../../shells/staff/data/module-icons';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
-import {useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {useRequireSystemPermission} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
 import {type AssetStorageProvider} from '../models/asset-storage-provider';
 import {DisabledTooltip} from '../../../components/disabled-tooltip/disabled-tooltip';
@@ -30,8 +30,8 @@ export function AssetDetailsPageNew() {
         storageProviderId: string;
     }>();
     const [searchParams] = useSearchParams();
-    useHasSystemPermission(Permission.ASSET_READ);
-    useHasSystemPermission(Permission.ASSET_CREATE);
+    useRequireSystemPermission(Permission.ASSET_READ);
+    useRequireSystemPermission(Permission.ASSET_CREATE);
 
     const [storageProvider, setStorageProvider] = useState<AssetStorageProvider | null>(null);
     const [newAssetData, setNewAssetData] = useState<{

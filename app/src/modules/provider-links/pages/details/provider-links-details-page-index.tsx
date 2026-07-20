@@ -17,7 +17,7 @@ import {GenericDetailsSkeleton} from '../../../../components/generic-details-pag
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export const ProviderLinkSchema = yup.object({
@@ -46,7 +46,7 @@ export function ProviderLinksDetailsPageIndex() {
         isEditable,
         isNewItem,
     } = useContext(GenericDetailsPageContext);
-    const canDeleteProviderLink = useCheckSystemPermission(Permission.SYSTEM_CONFIG_DELETE);
+    const canDeleteProviderLink = useHasSystemPermission(Permission.SYSTEM_CONFIG_DELETE);
 
     const {
         currentItem,

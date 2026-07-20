@@ -15,7 +15,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
 import {isApiError} from '../../../models/api-error';
 import {useConfirm} from '../../../providers/confirm-provider';
-import {useCheckProcessPermission} from '../../permissions/hooks/use-permissions';
+import {useHasProcessPermission} from '../../permissions/hooks/use-permissions';
 
 interface ProcessPublishDialogProps {
     process: ProcessEntity;
@@ -37,7 +37,7 @@ export function ProcessPublishDialog(props: ProcessPublishDialogProps & DialogPr
     const dispatch = useAppDispatch();
     const showConfirm = useConfirm();
 
-    const canPublish = useCheckProcessPermission(process.id, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL);
+    const canPublish = useHasProcessPermission(process.id, Permission.PROCESS_DEFINITION_PUBLISH_LOCAL);
     const replacesPublishedVersion = process.publishedVersion != null && process.publishedVersion !== version.processVersion;
 
     const [publishError, setPublishError] = useState<string>();

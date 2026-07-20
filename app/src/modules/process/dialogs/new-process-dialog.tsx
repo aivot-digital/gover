@@ -52,7 +52,7 @@ import {type VDepartmentShadowedEntityWithChildren} from '../../departments/enti
 import {normalizeProcessSlugInput, PROCESS_SLUG_MAX_LENGTH, validateProcessSlug} from '../utils/process-slug-utils';
 import {useRefreshPermissionSet} from '../../permissions/hooks/use-permissions';
 import {Permission} from '../../../data/permissions/permission';
-import {checkDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
+import {hasDepartmentPermission, formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 interface NewProcessDialogProps {
     open: boolean;
@@ -769,7 +769,7 @@ export function NewProcessDialog(props: NewProcessDialogProps): ReactNode {
                                     value={selectedDepartment}
                                     departments={availableDepartments}
                                     isDepartmentSelectable={(department) => (
-                                        checkDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_CREATE)
+                                        hasDepartmentPermission(permissions, department.id, Permission.PROCESS_DEFINITION_CREATE)
                                     )}
                                     getDepartmentDisabledTooltip={() => (
                                         formatMissingPermissionTooltip(Permission.PROCESS_DEFINITION_CREATE)

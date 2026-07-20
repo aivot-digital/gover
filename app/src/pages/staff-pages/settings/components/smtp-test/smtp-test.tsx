@@ -2,13 +2,13 @@ import React, {type FormEvent, useState} from 'react';
 import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
 import SendOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Send';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
-import {useCheckSystemPermission} from '../../../../../modules/permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../../../modules/permissions/hooks/use-permissions';
 import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../../modules/permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function SmtpTest() {
-    const canTestSmtp = useCheckSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
+    const canTestSmtp = useHasSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
     const testDisabledTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_CONFIG_UPDATE);
     const [targetEmail, setTargetEmail] = useState('');
     const [isSending, setIsSending] = useState(false);

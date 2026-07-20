@@ -21,13 +21,13 @@ import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectPermissions} from '../../slices/user-slice';
 import {
-    checkAnyDepartmentPermission,
-    checkAnyTeamPermission,
-    checkDepartmentPermission,
-    checkProcessInstancePermission,
-    checkProcessPermission,
-    checkSystemPermission,
-    checkTeamPermission,
+    hasAnyDepartmentPermission,
+    hasAnyTeamPermission,
+    hasDepartmentPermission,
+    hasProcessInstancePermission,
+    hasProcessPermission,
+    hasSystemPermission,
+    hasTeamPermission,
     createPermissionDeniedError,
     formatMissingPermissionTooltip,
     type PermissionLike,
@@ -80,19 +80,19 @@ function checkScopedPermission<ItemType>(
     // global access, while scoped permissions only grant access for the resolved resource id.
     switch (scope.type) {
         case 'system':
-            return checkSystemPermission(permissionSet, permission);
+            return hasSystemPermission(permissionSet, permission);
         case 'anyDepartment':
-            return checkAnyDepartmentPermission(permissionSet, permission);
+            return hasAnyDepartmentPermission(permissionSet, permission);
         case 'anyTeam':
-            return checkAnyTeamPermission(permissionSet, permission);
+            return hasAnyTeamPermission(permissionSet, permission);
         case 'department':
-            return item != null && checkDepartmentPermission(permissionSet, scope.getResourceId(item), permission);
+            return item != null && hasDepartmentPermission(permissionSet, scope.getResourceId(item), permission);
         case 'team':
-            return item != null && checkTeamPermission(permissionSet, scope.getResourceId(item), permission);
+            return item != null && hasTeamPermission(permissionSet, scope.getResourceId(item), permission);
         case 'process':
-            return item != null && checkProcessPermission(permissionSet, scope.getResourceId(item), permission);
+            return item != null && hasProcessPermission(permissionSet, scope.getResourceId(item), permission);
         case 'processInstance':
-            return item != null && checkProcessInstancePermission(permissionSet, scope.getResourceId(item), permission);
+            return item != null && hasProcessInstancePermission(permissionSet, scope.getResourceId(item), permission);
     }
 }
 
@@ -160,7 +160,7 @@ function ensureConfiguredAccess<ItemType>(
     }
 
     const hasPermission = isNewItem
-        ? checkSystemPermission(permissionSet, permission)
+        ? hasSystemPermission(permissionSet, permission)
         : checkScopedPermission(permissionSet, item, permissionConfig.scope, permission);
 
     if (!hasPermission) {
@@ -188,7 +188,7 @@ function checkConfiguredEditability<ItemType>(
     }
 
     return isNewItem
-        ? checkSystemPermission(permissionSet, permission)
+        ? hasSystemPermission(permissionSet, permission)
         : checkScopedPermission(permissionSet, item, permissionConfig.scope, permission);
 }
 

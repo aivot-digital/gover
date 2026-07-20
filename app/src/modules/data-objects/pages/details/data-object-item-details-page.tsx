@@ -13,13 +13,13 @@ import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import {Permission} from '../../../../data/permissions/permission';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 export function DataObjectItemDetailsPage() {
     const schemaKey = useParams().schemaKey;
-    useHasSystemPermission(Permission.OBJECT_ITEM_READ);
-    useHasSystemPermission(Permission.OBJECT_SCHEMA_READ);
-    const canUpdateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
+    useRequireSystemPermission(Permission.OBJECT_ITEM_READ);
+    useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const api = useApi();
 

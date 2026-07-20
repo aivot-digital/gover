@@ -77,7 +77,7 @@ public class SecretController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_READ);
+                .requireSystemPermission(user.getId(), SecretPermissionProvider.SECRET_READ);
 
         return secretService
                 .list(pageable, filter)
@@ -109,7 +109,7 @@ public class SecretController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_CREATE);
+                .requireSystemPermission(user.getId(), SecretPermissionProvider.SECRET_CREATE);
 
         // Save the secret with the authenticated user
         SecretEntity result = null;
@@ -158,7 +158,7 @@ public class SecretController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_READ);
+                .requireSystemPermission(user.getId(), SecretPermissionProvider.SECRET_READ);
 
         return secretService
                 .retrieve(key)
@@ -196,7 +196,7 @@ public class SecretController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_UPDATE);
+                .requireSystemPermission(user.getId(), SecretPermissionProvider.SECRET_UPDATE);
 
         // Save the updated secret
         var result = secretService
@@ -229,7 +229,7 @@ public class SecretController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), SecretPermissionProvider.SECRET_DELETE);
+                .requireSystemPermission(user.getId(), SecretPermissionProvider.SECRET_DELETE);
 
         var entity = secretService
                 .delete(key);

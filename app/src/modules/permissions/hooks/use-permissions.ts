@@ -5,13 +5,6 @@ import {selectPermissions, selectUser, setPermissions} from '../../../slices/use
 import {PermissionApiService} from '../permission-api-service';
 import {broadcastCrossTabInvalidation} from '../../../hooks/use-cross-tab-invalidation';
 import {
-    checkAnyDepartmentPermission,
-    checkAnyTeamPermission,
-    checkDepartmentPermission,
-    checkProcessInstancePermission,
-    checkProcessPermission,
-    checkSystemPermission,
-    checkTeamPermission,
     hasAnyDepartmentPermission,
     hasAnyTeamPermission,
     hasDepartmentPermission,
@@ -19,6 +12,13 @@ import {
     hasProcessPermission,
     hasSystemPermission,
     hasTeamPermission,
+    requireAnyDepartmentPermission,
+    requireAnyTeamPermission,
+    requireDepartmentPermission,
+    requireProcessInstancePermission,
+    requireProcessPermission,
+    requireSystemPermission,
+    requireTeamPermission,
     type PermissionLike,
 } from '../utils/permission-utils';
 
@@ -56,96 +56,96 @@ export function useRefreshPermissionSet() {
     }, [dispatch, userId]);
 }
 
-export function useCheckSystemPermission(permission: PermissionLike): boolean {
+export function useHasSystemPermission(permission: PermissionLike): boolean {
     const permissionSet = useAppSelector(selectPermissions);
-    return checkSystemPermission(permissionSet, permission);
+    return hasSystemPermission(permissionSet, permission);
 }
 
-export function useHasSystemPermission(permission: PermissionLike): void {
+export function useRequireSystemPermission(permission: PermissionLike): void {
     const permissionSet = useAppSelector(selectPermissions);
-    hasSystemPermission(permissionSet, permission);
-}
-
-export function useCheckDepartmentPermission(
-    departmentId: number | undefined,
-    permission: PermissionLike,
-): boolean {
-    const permissionSet = useAppSelector(selectPermissions);
-    return checkDepartmentPermission(permissionSet, departmentId, permission);
+    requireSystemPermission(permissionSet, permission);
 }
 
 export function useHasDepartmentPermission(
     departmentId: number | undefined,
     permission: PermissionLike,
-): void {
-    const permissionSet = useAppSelector(selectPermissions);
-    hasDepartmentPermission(permissionSet, departmentId, permission);
-}
-
-export function useCheckAnyDepartmentPermission(permission: PermissionLike): boolean {
-    const permissionSet = useAppSelector(selectPermissions);
-    return checkAnyDepartmentPermission(permissionSet, permission);
-}
-
-export function useHasAnyDepartmentPermission(permission: PermissionLike): void {
-    const permissionSet = useAppSelector(selectPermissions);
-    hasAnyDepartmentPermission(permissionSet, permission);
-}
-
-export function useCheckTeamPermission(
-    teamId: number | undefined,
-    permission: PermissionLike,
 ): boolean {
     const permissionSet = useAppSelector(selectPermissions);
-    return checkTeamPermission(permissionSet, teamId, permission);
+    return hasDepartmentPermission(permissionSet, departmentId, permission);
+}
+
+export function useRequireDepartmentPermission(
+    departmentId: number | undefined,
+    permission: PermissionLike,
+): void {
+    const permissionSet = useAppSelector(selectPermissions);
+    requireDepartmentPermission(permissionSet, departmentId, permission);
+}
+
+export function useHasAnyDepartmentPermission(permission: PermissionLike): boolean {
+    const permissionSet = useAppSelector(selectPermissions);
+    return hasAnyDepartmentPermission(permissionSet, permission);
+}
+
+export function useRequireAnyDepartmentPermission(permission: PermissionLike): void {
+    const permissionSet = useAppSelector(selectPermissions);
+    requireAnyDepartmentPermission(permissionSet, permission);
 }
 
 export function useHasTeamPermission(
     teamId: number | undefined,
     permission: PermissionLike,
-): void {
-    const permissionSet = useAppSelector(selectPermissions);
-    hasTeamPermission(permissionSet, teamId, permission);
-}
-
-export function useCheckAnyTeamPermission(permission: PermissionLike): boolean {
-    const permissionSet = useAppSelector(selectPermissions);
-    return checkAnyTeamPermission(permissionSet, permission);
-}
-
-export function useHasAnyTeamPermission(permission: PermissionLike): void {
-    const permissionSet = useAppSelector(selectPermissions);
-    hasAnyTeamPermission(permissionSet, permission);
-}
-
-export function useCheckProcessPermission(
-    processId: number | undefined,
-    permission: PermissionLike,
 ): boolean {
     const permissionSet = useAppSelector(selectPermissions);
-    return checkProcessPermission(permissionSet, processId, permission);
+    return hasTeamPermission(permissionSet, teamId, permission);
+}
+
+export function useRequireTeamPermission(
+    teamId: number | undefined,
+    permission: PermissionLike,
+): void {
+    const permissionSet = useAppSelector(selectPermissions);
+    requireTeamPermission(permissionSet, teamId, permission);
+}
+
+export function useHasAnyTeamPermission(permission: PermissionLike): boolean {
+    const permissionSet = useAppSelector(selectPermissions);
+    return hasAnyTeamPermission(permissionSet, permission);
+}
+
+export function useRequireAnyTeamPermission(permission: PermissionLike): void {
+    const permissionSet = useAppSelector(selectPermissions);
+    requireAnyTeamPermission(permissionSet, permission);
 }
 
 export function useHasProcessPermission(
     processId: number | undefined,
     permission: PermissionLike,
-): void {
-    const permissionSet = useAppSelector(selectPermissions);
-    hasProcessPermission(permissionSet, processId, permission);
-}
-
-export function useCheckProcessInstancePermission(
-    processInstanceId: number | undefined,
-    permission: PermissionLike,
 ): boolean {
     const permissionSet = useAppSelector(selectPermissions);
-    return checkProcessInstancePermission(permissionSet, processInstanceId, permission);
+    return hasProcessPermission(permissionSet, processId, permission);
+}
+
+export function useRequireProcessPermission(
+    processId: number | undefined,
+    permission: PermissionLike,
+): void {
+    const permissionSet = useAppSelector(selectPermissions);
+    requireProcessPermission(permissionSet, processId, permission);
 }
 
 export function useHasProcessInstancePermission(
     processInstanceId: number | undefined,
     permission: PermissionLike,
+): boolean {
+    const permissionSet = useAppSelector(selectPermissions);
+    return hasProcessInstancePermission(permissionSet, processInstanceId, permission);
+}
+
+export function useRequireProcessInstancePermission(
+    processInstanceId: number | undefined,
+    permission: PermissionLike,
 ): void {
     const permissionSet = useAppSelector(selectPermissions);
-    hasProcessInstancePermission(permissionSet, processInstanceId, permission);
+    requireProcessInstancePermission(permissionSet, processInstanceId, permission);
 }

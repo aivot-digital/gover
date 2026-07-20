@@ -15,15 +15,15 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function IdentityProvidersListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.IDENTITY_PROVIDER_READ);
-    const canCreateIdentityProvider = useCheckSystemPermission(Permission.IDENTITY_PROVIDER_CREATE);
-    const canUpdateIdentityProvider = useCheckSystemPermission(Permission.IDENTITY_PROVIDER_UPDATE);
+    useRequireSystemPermission(Permission.IDENTITY_PROVIDER_READ);
+    const canCreateIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_CREATE);
+    const canUpdateIdentityProvider = useHasSystemPermission(Permission.IDENTITY_PROVIDER_UPDATE);
 
     const header = useMemo(() => ({
         icon: <BadgeOutlinedIcon />,

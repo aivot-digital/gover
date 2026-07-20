@@ -21,16 +21,16 @@ import {
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {checkSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {hasSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 export function SystemRolesListPage() {
     const navigate = useNavigate();
-    useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
+    useRequireSystemPermission(Permission.SYSTEM_ROLE_READ);
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
     const permissions = useAppSelector(selectPermissions);
-    const canCreateSystemRole = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_CREATE);
-    const canUpdateSystemRoles = checkSystemPermission(permissions, Permission.SYSTEM_ROLE_UPDATE);
+    const canCreateSystemRole = hasSystemPermission(permissions, Permission.SYSTEM_ROLE_CREATE);
+    const canUpdateSystemRoles = hasSystemPermission(permissions, Permission.SYSTEM_ROLE_UPDATE);
 
     const header = useMemo(() => ({
         icon: ModuleIcons.roles,

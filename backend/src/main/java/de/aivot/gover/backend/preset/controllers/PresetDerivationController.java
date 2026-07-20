@@ -66,7 +66,7 @@ public class PresetDerivationController {
             @RequestParam(value = "disableValidation") Optional<Boolean> disableValidation
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
 
         var preset = presetRepository
                 .findById(presetKey)

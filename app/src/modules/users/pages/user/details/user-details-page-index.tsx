@@ -34,7 +34,7 @@ import {InfoDialog} from '../../../../../dialogs/info-dialog/info-dialog';
 import {CopyToClipboardButton} from '../../../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 import {downloadTextFile} from '../../../../../utils/download-utils';
 import {AlertComponent} from '../../../../../components/alert/alert-component';
-import {useCheckSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
@@ -100,8 +100,8 @@ export function UserDetailsPageIndex() {
     const location = useLocation();
     const confirm = useConfirm();
     const refreshPermissionSet = useRefreshPermissionSet();
-    const canReadSystemRoles = useCheckSystemPermission(Permission.SYSTEM_ROLE_READ);
-    const canDeleteUser = useCheckSystemPermission(Permission.USER_DELETE);
+    const canReadSystemRoles = useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
+    const canDeleteUser = useHasSystemPermission(Permission.USER_DELETE);
     const deleteUserDisabledTooltip = formatMissingPermissionTooltip(Permission.USER_DELETE);
     const systemRoleReadDisabledTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_READ);
 

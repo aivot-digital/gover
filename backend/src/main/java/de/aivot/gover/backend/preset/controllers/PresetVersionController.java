@@ -85,7 +85,7 @@ public class PresetVersionController {
             @Nonnull @PathVariable UUID presetKey
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
 
         filter.setPresetKey(presetKey);
 
@@ -117,7 +117,7 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
 
         var preset = repository
                 .findById(presetKey)
@@ -172,7 +172,7 @@ public class PresetVersionController {
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
         permissionService
-                .hasSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
+                .requireSystemPermission(jwt, PresetPermissionProvider.PRESET_READ);
 
         var id = new PresetVersionEntityId(presetKey, version);
 
@@ -207,7 +207,7 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_UPDATE);
 
         var preset = repository
                 .findById(presetKey)
@@ -263,7 +263,7 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_DELETE);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_DELETE);
 
         var preset = repository
                 .findById(presetKey)
@@ -310,7 +310,7 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_PUBLISH_LOCAL);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_PUBLISH_LOCAL);
 
         var id = new PresetVersionEntityId(presetKey, version);
 
@@ -354,7 +354,7 @@ public class PresetVersionController {
                 .orElseThrow(ResponseException::unauthorized);
 
         permissionService
-                .hasSystemPermission(user.getId(), PresetPermissionProvider.PRESET_PUBLISH_LOCAL);
+                .requireSystemPermission(user.getId(), PresetPermissionProvider.PRESET_PUBLISH_LOCAL);
 
         var id = new PresetVersionEntityId(presetKey, version);
 
