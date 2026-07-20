@@ -10,14 +10,15 @@ import CloudDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outli
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {Permission} from '../../../../data/permissions/permission';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function DataObjectSchemaDetailsPage() {
     const itemRef = useRef<DataObjectSchema | null>(null);
     const schemaKey = useParams().key;
     const isNew = useMemo(() => schemaKey === NEW_ID_INDICATOR, [schemaKey]);
-
-    const userIsAdmin = useUserIsAdmin();
+    const canReadDataObjectItems = useCheckSystemPermission(Permission.OBJECT_ITEM_READ);
 
     const handleExport = () => {
         const item = itemRef.current;
@@ -38,6 +39,14 @@ export function DataObjectSchemaDetailsPage() {
             <GenericDetailsPage<DataObjectSchema, string, undefined>
                 idParam="key"
                 itemRef={itemRef}
+                permissionCheck={{
+                    create: Permission.OBJECT_SCHEMA_CREATE,
+                    read: Permission.OBJECT_SCHEMA_READ,
+                    update: Permission.OBJECT_SCHEMA_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <FolderData />,
                     title: 'Datenmodell bearbeiten',
@@ -68,13 +77,14 @@ export function DataObjectSchemaDetailsPage() {
                             onClick: handleExport,
                             variant: 'text',
                             label: 'Exportieren',
-                            visible: userIsAdmin,
                         },
                         {
                             label: 'Datenobjekte anzeigen',
                             to: `/data-objects/${schemaKey}`,
                             variant: 'text',
                             icon: <DataObject />,
+                            disabled: !canReadDataObjectItems,
+                            disabledTooltip: formatMissingPermissionTooltip(Permission.OBJECT_ITEM_READ),
                         },
                     ],
                 }}

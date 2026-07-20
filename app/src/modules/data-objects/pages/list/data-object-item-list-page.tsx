@@ -24,7 +24,6 @@ import {format} from 'date-fns/format';
 import {parseISO} from 'date-fns/parseISO';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {TimeFieldComponentModelMode} from '../../../../models/elements/form/input/time-field-element';
@@ -35,16 +34,19 @@ import {
 import {DomainAndUserSelectItem} from '../../../../models/elements/form/input/domain-user-select-field-element';
 import {AssignmentContextValue} from '../../../../models/elements/form/input/assignment-context-field-element';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function DataObjectItemListPage() {
     const navigate = useNavigate();
     const api = useApi();
     const schemaKey = useParams().schemaKey;
-
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    useHasSystemPermission(Permission.OBJECT_ITEM_READ);
+    useHasSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canCreateDataObjectItem = useCheckSystemPermission(Permission.OBJECT_ITEM_CREATE);
+    const canUpdateDataObjectItem = useCheckSystemPermission(Permission.OBJECT_ITEM_UPDATE);
+    const canUpdateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const [dataObjectSchema, setDataObjectSchema] = useState<DataObjectSchema>();
 
@@ -84,7 +86,7 @@ export function DataObjectItemListPage() {
                 renderCell: (params) => (
                     <CellLink
                         to={`/data-objects/${dataObjectSchema.key}/${params.id}`}
-                        title={hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen'}
+                        title={canUpdateDataObjectItem ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen'}
                     >
                         {String(params.value)}
                     </CellLink>
@@ -92,7 +94,7 @@ export function DataObjectItemListPage() {
             },
             ...dataObjectSchemaExtractDisplayFields(dataObjectSchema),
         ];
-    }, [dataObjectSchema, hasAccess]);
+    }, [dataObjectSchema, canUpdateDataObjectItem]);
 
     const dataObjectSchemaKey = dataObjectSchema?.key ?? '';
     const dataObjectSchemaName = dataObjectSchema?.name ?? '';
@@ -105,15 +107,15 @@ export function DataObjectItemListPage() {
                 icon: <FolderData />,
                 to: `/data-models/${dataObjectSchemaKey}`,
                 variant: 'text' as const,
-                label: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+                label: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
             },
             {
                 label: 'Neues Datenobjekt',
                 icon: <AddOutlinedIcon />,
                 to: `/data-objects/${dataObjectSchemaKey}/new`,
                 variant: 'contained' as const,
-                disabled: !hasAccess,
-                tooltip: !hasAccess ? 'Sie haben keine Berechtigung zum Anlegen von Datenobjekten' : undefined,
+                disabled: !canCreateDataObjectItem,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.OBJECT_ITEM_CREATE),
             },
         ],
         helpDialog: {
@@ -137,7 +139,7 @@ export function DataObjectItemListPage() {
                 </>
             ),
         },
-    }), [dataObjectSchemaKey, dataObjectSchemaName, hasAccess]);
+    }), [dataObjectSchemaKey, dataObjectSchemaName, canCreateDataObjectItem, canUpdateDataObjectSchema]);
 
     const fetchDataObjectItems = useCallback((options: GenericListPropsFetchOptions<DataObjectItem>) => {
         return new DataObjectItemsApiService(options.api, dataObjectSchemaKey)
@@ -156,16 +158,16 @@ export function DataObjectItemListPage() {
 
     const rowActions = useCallback((item: DataObjectItem) => [
         {
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+            icon: canUpdateDataObjectItem ? <EditOutlined /> : <Visibility />,
             to: `/data-objects/${item.schemaKey}/${item.id}`,
-            tooltip: hasAccess ? 'Datenobjekt bearbeiten' : 'Datenobjekte anzeigen',
+            tooltip: canUpdateDataObjectItem ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen',
         },
         {
             icon: ModuleIcons.dataModels,
             to: `/data-models/${item.schemaKey}`,
-            tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+            tooltip: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
         },
-    ], [hasAccess]);
+    ], [canUpdateDataObjectItem, canUpdateDataObjectSchema]);
 
     if (dataObjectSchema == null) {
         return (
@@ -190,8 +192,10 @@ export function DataObjectItemListPage() {
                     <EmptyDataListPlaceholder
                         title="Noch keine Datenobjekte angelegt"
                         description="Datenobjekte sind einzelne Datensätze eines Datenmodells, die zentral gepflegt und wiederverwendet werden können."
-                        addText={hasAccess ? "Neues Datenobjekt anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate(`/data-objects/${dataObjectSchemaKey}/new`) : undefined}
+                        addText="Neues Datenobjekt anlegen"
+                        onAdd={() => navigate(`/data-objects/${dataObjectSchemaKey}/new`)}
+                        addDisabled={!canCreateDataObjectItem}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.OBJECT_ITEM_CREATE)}
                     />
                 }
                 noSearchResultsPlaceholder="Keine Datenobjekte gefunden"

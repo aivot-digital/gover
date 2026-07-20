@@ -9,16 +9,16 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import {DataObjectSchema} from '../../models/data-object-schema';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function DataObjectListPage() {
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    useHasSystemPermission(Permission.OBJECT_ITEM_READ);
+    useHasSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canUpdateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const header = useMemo(() => ({
         icon: <DataObject />,
@@ -75,7 +75,7 @@ export function DataObjectListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/data-objects/${params.row.key}`}
-                    title={hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen'}
+                    title="Datenobjekte zu diesem Modell anzeigen"
                 >
                     {String(params.value)}
                 </CellLink>
@@ -86,7 +86,7 @@ export function DataObjectListPage() {
             headerName: 'Beschreibung',
             flex: 2,
         },
-    ], [hasAccess]);
+    ], []);
 
     const getRowIdentifier = useCallback((row: DataObjectSchema) => row.key.toString(), []);
 
@@ -97,11 +97,11 @@ export function DataObjectListPage() {
             tooltip: 'Datenobjekte zu diesem Modell anzeigen',
         },
         {
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+            icon: canUpdateDataObjectSchema ? <EditOutlined /> : <Visibility />,
             to: `/data-models/${item.key}`,
-            tooltip: hasAccess ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+            tooltip: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
         },
-    ], [hasAccess]);
+    ], [canUpdateDataObjectSchema]);
 
     return (
         <>

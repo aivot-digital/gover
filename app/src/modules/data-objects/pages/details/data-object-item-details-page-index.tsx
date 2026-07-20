@@ -27,18 +27,17 @@ import Grid from '@mui/material/Grid';
 import {format as formatDateTime} from 'date-fns/format';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {createDerivedRuntimeElementData, isDerivedRuntimeElementData} from '../../../../models/element-data';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const canDeleteDataObjectItem = useCheckSystemPermission(Permission.OBJECT_ITEM_DELETE);
 
     const dataObjectKey = useParams().schemaKey;
     const api = useApi();
@@ -86,6 +85,7 @@ export function DataObjectItemDetailsPageIndex() {
         isNewItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext<GenericDetailsPageContextType<DataObjectItem, void>>(GenericDetailsPageContext);
 
     const {
@@ -108,6 +108,13 @@ export function DataObjectItemDetailsPageIndex() {
         showConfirmDialog: showConfirmDeleteDialog,
         hideConfirmDialog: hideConfirmDeleteDialog,
     } = useConfirmDialog();
+    const editPermission = isNewItem ? Permission.OBJECT_ITEM_CREATE : Permission.OBJECT_ITEM_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeleteDataObjectItem
+        ? formatMissingPermissionTooltip(Permission.OBJECT_ITEM_DELETE)
+        : undefined;
 
     useEffect(() => {
         if (errors == null || Object.keys(errors).length === 0 || currentDataObjectItem == null || dataObjectSchema == null) {
@@ -148,7 +155,7 @@ export function DataObjectItemDetailsPageIndex() {
             return;
         }
 
-        if (isBusy) {
+        if (isBusy || !isEditable) {
             return;
         }
 
@@ -214,6 +221,10 @@ export function DataObjectItemDetailsPageIndex() {
     };
 
     const handleDelete = () => {
+        if (!canDeleteDataObjectItem) {
+            return;
+        }
+
         showConfirmDeleteDialog({
             title: 'Datenobjekt löschen',
             state: {},
@@ -319,7 +330,7 @@ export function DataObjectItemDetailsPageIndex() {
                     handleInputChange('data')(changedElementData);
                 }}
                 onDerivedDataChange={setDerivedData}
-                disabled={!hasAccess}
+                disabled={!isEditable}
             />
 
             <Box
@@ -329,30 +340,38 @@ export function DataObjectItemDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
-                    disabled={isBusy || hasNotChanged || !hasAccess}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
+                    disabled={isBusy || hasNotChanged || !isEditable}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     !isNewItem &&
-                    <Button
-                        variant="outlined"
-                        onClick={handleDelete}
-                        disabled={isBusy || !hasAccess}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete/>}
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || !canDeleteDataObjectItem}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={handleDelete}
+                            disabled={isBusy || !canDeleteDataObjectItem}
+                            color="error"
+                            startIcon={<Delete/>}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

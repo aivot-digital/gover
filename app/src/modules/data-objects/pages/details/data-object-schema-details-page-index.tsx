@@ -31,13 +31,16 @@ import {isApiError} from '../../../../models/api-error';
 import {generateElementWithDefaultValues} from '../../../../utils/generate-element-with-default-values';
 import {TextFieldElement} from '../../../../models/elements/form/input/text-field-element';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {ElementDisplayContext} from '../../../../data/element-type/element-child-options';
 import {
     UiDefinitionInputFieldComponent,
 } from '../../../../components/ui-definition-input-field/ui-definition-input-field-component';
 import {GroupLayout} from '../../../../models/elements/form/layout/group-layout';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 const ID_FIELD_ID = '$id';
 
@@ -101,10 +104,7 @@ const IdGenOptions = [
 export function DataObjectSchemaDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    const canDeleteDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_DELETE);
 
     const location = useLocation();
 
@@ -116,6 +116,7 @@ export function DataObjectSchemaDetailsPageIndex() {
         isNewItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext<GenericDetailsPageContextType<DataObjectSchema, void>>(GenericDetailsPageContext);
 
     const {
@@ -138,6 +139,13 @@ export function DataObjectSchemaDetailsPageIndex() {
     }, [isNewItem, location, originalDataObject]);
 
     const confirm = useConfirm();
+    const editPermission = isNewItem ? Permission.OBJECT_SCHEMA_CREATE : Permission.OBJECT_SCHEMA_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeleteDataObjectSchema
+        ? formatMissingPermissionTooltip(Permission.OBJECT_SCHEMA_DELETE)
+        : undefined;
 
     const availableDisplayFields: MultiCheckboxOptions[] = useMemo(() => {
         if (currentDataObject == null) {
@@ -164,7 +172,7 @@ export function DataObjectSchemaDetailsPageIndex() {
             return;
         }
 
-        if (isBusy) {
+        if (isBusy || !isEditable) {
             return;
         }
 
@@ -226,7 +234,7 @@ export function DataObjectSchemaDetailsPageIndex() {
     };
 
     const handleDelete = () => {
-        if (originalDataObject == null || isNewItem) {
+        if (originalDataObject == null || isNewItem || !canDeleteDataObjectSchema) {
             return;
         }
 
@@ -275,7 +283,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 value={currentDataObject.key}
                 onChange={handleInputChange('key')}
                 onBlur={handleInputBlur('key')}
-                disabled={!isNewItem || isBusy || !hasAccess}
+                disabled={!isNewItem || isBusy || !isEditable}
                 error={errors.key}
                 maxCharacters={64}
                 minCharacters={3}
@@ -292,7 +300,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 value={currentDataObject.name}
                 onChange={handleInputChange('name')}
                 onBlur={handleInputBlur('name')}
-                disabled={isBusy || !hasAccess}
+                disabled={isBusy || !isEditable}
                 error={errors.name}
                 minCharacters={3}
                 maxCharacters={255}
@@ -306,7 +314,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                 onChange={handleInputChange('description')}
                 onBlur={handleInputBlur('description')}
                 multiline={true}
-                disabled={isBusy || !hasAccess}
+                disabled={isBusy || !isEditable}
                 error={errors.description}
                 minCharacters={10}
                 maxCharacters={500}
@@ -359,7 +367,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         }
                     }}
                     options={IdGenOptions}
-                    disabled={isBusy || !hasAccess || !isNewItem}
+                    disabled={isBusy || !isEditable || !isNewItem}
                 />
             }
 
@@ -373,11 +381,11 @@ export function DataObjectSchemaDetailsPageIndex() {
                     value={currentDataObject.idGen}
                     onChange={handleInputChange('idGen')}
                     onBlur={handleInputBlur('idGen')}
-                    disabled={isBusy || !hasAccess || !isNewItem}
                     error={errors.idGen}
                     minCharacters={3}
                     maxCharacters={64}
                     hint="Muster für automatisch generierte IDs. Unterstützte Platzhalter: %Y (Jahr), %M (Monat), %D (Tag), %I1–%I9 (fortlaufende Nummer mit führenden Nullen in gewählter Zahl). Der Platzhalter %I… muss zwingend enthalten sein und am Anfang ODER am Ende stehen (z. B. %Y-%M-%D-%I4)."
+                    disabled={isBusy || !isEditable || !isNewItem}
                 />
             }
 
@@ -395,6 +403,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         }
                     }}
                     displayContext={ElementDisplayContext.DataObjectSchema}
+                    disabled={isBusy || !isEditable}
                 />
 
                 {
@@ -408,6 +417,7 @@ export function DataObjectSchemaDetailsPageIndex() {
                         }}
                         options={availableDisplayFields}
                         displayInline
+                        disabled={isBusy || !isEditable}
                     />
                 }
             </Box>
@@ -419,30 +429,38 @@ export function DataObjectSchemaDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
-                    disabled={isBusy || hasNotChanged || !hasAccess}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
+                    disabled={isBusy || hasNotChanged || !isEditable}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     !isNewItem &&
-                    <Button
-                        variant="outlined"
-                        onClick={handleDelete}
-                        disabled={isBusy || !hasAccess}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete/>}
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || !canDeleteDataObjectSchema}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={handleDelete}
+                            disabled={isBusy || !canDeleteDataObjectSchema}
+                            color="error"
+                            startIcon={<Delete/>}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

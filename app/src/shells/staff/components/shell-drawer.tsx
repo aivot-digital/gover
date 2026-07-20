@@ -143,6 +143,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 label: 'Datenobjekte',
                 to: '/data-objects',
                 requiredSystemPermission: Permission.OBJECT_ITEM_READ,
+                isVisible: (permissions) => checkSystemPermission(permissions, Permission.OBJECT_SCHEMA_READ),
             },
         ],
     },

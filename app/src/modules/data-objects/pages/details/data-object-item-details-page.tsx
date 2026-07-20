@@ -12,9 +12,14 @@ import {DataObjectItem} from '../../models/data-object-item';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
+import {Permission} from '../../../../data/permissions/permission';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 
 export function DataObjectItemDetailsPage() {
     const schemaKey = useParams().schemaKey;
+    useHasSystemPermission(Permission.OBJECT_ITEM_READ);
+    useHasSystemPermission(Permission.OBJECT_SCHEMA_READ);
+    const canUpdateDataObjectSchema = useCheckSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const api = useApi();
 
@@ -47,6 +52,14 @@ export function DataObjectItemDetailsPage() {
             background
         >
             <GenericDetailsPage<DataObjectItem, string, void>
+                permissionCheck={{
+                    create: Permission.OBJECT_ITEM_CREATE,
+                    read: Permission.OBJECT_ITEM_READ,
+                    update: Permission.OBJECT_ITEM_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <DataObject />,
                     title: `Datenobjekt bearbeiten: ${dataObjectSchema.name}`,
@@ -76,7 +89,7 @@ export function DataObjectItemDetailsPage() {
                             icon: <FolderData />,
                             to: `/data-models/${dataObjectSchema.key}`,
                             variant: 'text',
-                            label: 'Datenmodell bearbeiten',
+                            label: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
                         },
                     ],
                 }}
