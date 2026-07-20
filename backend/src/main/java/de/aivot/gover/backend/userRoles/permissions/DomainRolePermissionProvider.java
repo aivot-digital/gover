@@ -2,7 +2,10 @@ package de.aivot.gover.backend.userRoles.permissions;
 
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class DomainRolePermissionProvider implements PermissionProvider {
@@ -24,5 +27,14 @@ public class DomainRolePermissionProvider implements PermissionProvider {
                 PermissionEntry.of(DOMAIN_ROLE_UPDATE, "Domänenrolle bearbeiten", "Erlaubt das Bearbeiten von Domänenrollen."),
                 PermissionEntry.of(DOMAIN_ROLE_DELETE, "Domänenrolle löschen", "Erlaubt das Löschen von Domänenrollen."),
         };
+    }
+
+    @Nonnull
+    @Override
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "domain_roles",
+                DOMAIN_ROLE_READ
+        ));
     }
 }

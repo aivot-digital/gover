@@ -2,7 +2,10 @@ package de.aivot.gover.backend.storage.permissions;
 
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class StoragePermissionProvider implements PermissionProvider {
@@ -40,5 +43,14 @@ public class StoragePermissionProvider implements PermissionProvider {
                         "Erlaubt das Löschen von Speicheranbietern."
                 )
         };
+    }
+
+    @Nonnull
+    @Override
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "storage_providers",
+                STORAGE_PROVIDER_READ
+        ));
     }
 }
