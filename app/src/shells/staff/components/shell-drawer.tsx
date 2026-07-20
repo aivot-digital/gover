@@ -253,12 +253,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         requiredSystemPermission: Permission.AUDIT_LOG_READ,
                     },
                     {
-                        icon: ModuleIcons.themes,
-                        label: 'Erscheinungsbild',
-                        to: '/themes',
-                        requiredSystemPermission: Permission.THEME_READ,
-                    },
-                    {
                         ...drawerModuleIcon('themes'),
                         label: 'Erscheinungsbild',
                         to: '/themes',
