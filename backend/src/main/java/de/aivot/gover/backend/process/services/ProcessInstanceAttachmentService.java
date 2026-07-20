@@ -138,6 +138,7 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
         var details = new LinkedHashMap<String, Object>();
         details.put("attachmentKey", attachment.getKey());
         details.put("fileName", attachment.getFileName());
+        details.put("position", attachment.getPosition());
         details.put("attachmentSetId", attachment.getAttachmentSetId());
         details.put("processInstanceId", attachment.getProcessInstanceId());
         details.put("processInstanceTaskId", attachment.getProcessInstanceTaskId());

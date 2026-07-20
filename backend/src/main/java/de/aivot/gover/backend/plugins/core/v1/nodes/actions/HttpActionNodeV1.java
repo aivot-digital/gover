@@ -359,6 +359,7 @@ public class HttpActionNodeV1 implements ProcessNodeDefinition<HttpActionNodeV1C
                 attachment = processInstanceAttachmentService.create(
                         ProcessInstanceAttachmentEntity.of(
                                 fileName,
+                                1,
                                 context.getThisProcessInstance().getId(),
                                 context.getThisTask().getId(),
                                 responseBytes

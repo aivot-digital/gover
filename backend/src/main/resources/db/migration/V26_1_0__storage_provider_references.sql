@@ -40,5 +40,8 @@ create table process_instance_attachments
     -- If this is null, the attachment was added automatically by the system
     uploaded_by_user_id      varchar(36)  null references users (id) on delete restrict,
 
+    -- The position of the attachment in the attachment set, starting from 1
+    position                 integer      not null default 1,
+
     foreign key (storage_provider_id, storage_path_from_root) references storage_index_items (storage_provider_id, path_from_root)
 );

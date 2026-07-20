@@ -105,6 +105,7 @@ public class ProcessInstanceAttachmentController {
         // Save attachment entity (actual file storage logic should be implemented in service)
         var attachment = new ProcessInstanceAttachmentEntity()
                 .setKey(UUID.randomUUID())
+                .setPosition(1)
                 .setProcessInstanceId(processInstanceId)
                 .setProcessInstanceTaskId(processInstanceTaskId)
                 .setUploadedByUserId(execUser.getId());

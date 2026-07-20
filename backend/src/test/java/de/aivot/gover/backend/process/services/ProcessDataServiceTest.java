@@ -81,6 +81,7 @@ class ProcessDataServiceTest {
                 UUID.randomUUID(),
                 "first.pdf",
                 1,
+                1,
                 42L,
                 null,
                 5,
@@ -91,6 +92,7 @@ class ProcessDataServiceTest {
         var thirdAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "third.pdf",
+                3,
                 2,
                 42L,
                 99L,
@@ -102,6 +104,7 @@ class ProcessDataServiceTest {
         var secondAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "second.pdf",
+                2,
                 1,
                 42L,
                 null,

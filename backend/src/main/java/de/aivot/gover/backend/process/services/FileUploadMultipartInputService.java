@@ -205,7 +205,8 @@ public class FileUploadMultipartInputService {
             }
         }
 
-        for (var item : items) {
+        for (var itemIndex = 0; itemIndex < items.size(); itemIndex++) {
+            var item = items.get(itemIndex);
             if (!requiresUpload(item)) {
                 normalizedItems.add(createFileUploadItemMap(
                         item.getName(),
@@ -231,7 +232,7 @@ public class FileUploadMultipartInputService {
             }
 
             var attachment = ProcessInstanceAttachmentEntity
-                    .of(finalFileName, processInstanceId, processInstanceTaskId, fileBytes)
+                    .of(finalFileName, itemIndex + 1, processInstanceId, processInstanceTaskId, fileBytes)
                     .setUploadedByUserId(uploadedByUserId);
 
             var attachmentSet = resolveAttachmentSet(element, processInstanceId, processInstanceTaskId, attachmentSetsByDataKey);

@@ -284,6 +284,7 @@ public class WebhookTriggerControllerV1 {
                         createdInstance.getId()
                 );
 
+                var filePosition = 1;
                 for (var file : fileEntry.getValue()) {
                     byte[] bytes;
                     try {
@@ -294,6 +295,7 @@ public class WebhookTriggerControllerV1 {
 
                     var attachment = ProcessInstanceAttachmentEntity.of(
                             file.getOriginalFilename() != null ? file.getOriginalFilename() : "Unbenannte Datei.dat",
+                            filePosition++,
                             createdInstance.getId(),
                             null,
                             bytes

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -23,6 +24,11 @@ public class ProcessInstanceAttachmentEntity {
     @NotBlank(message = "Der Dateiname darf nicht leer sein sein.")
     @Size(max = 255, message = "Der Dateiname darf maximal 255 Zeichen lang sein.")
     private String fileName;
+
+    @Nonnull
+    @NotNull(message = "Die Position der Anlage darf nicht null sein.")
+    @Min(value = 1, message = "Die Position der Anlage muss größer oder gleich 1 sein.")
+    private Integer position;
 
     @Nonnull
     @NotNull(message = "Die ID des Anlagensatzes darf nicht null sein.")
@@ -63,6 +69,7 @@ public class ProcessInstanceAttachmentEntity {
     // Full constructor for easier creation of the entity
     public ProcessInstanceAttachmentEntity(@Nonnull UUID key,
                                            @Nonnull String fileName,
+                                           @Nonnull Integer position,
                                            @Nonnull Integer attachmentSetId,
                                            @Nonnull Long processInstanceId,
                                            @Nullable Long processInstanceTaskId,
@@ -72,6 +79,7 @@ public class ProcessInstanceAttachmentEntity {
                                            byte[] fileBytes) {
         this.key = key;
         this.fileName = fileName;
+        this.position = position;
         this.attachmentSetId = attachmentSetId;
         this.processInstanceId = processInstanceId;
         this.processInstanceTaskId = processInstanceTaskId;
@@ -83,6 +91,7 @@ public class ProcessInstanceAttachmentEntity {
 
     public static ProcessInstanceAttachmentEntity of(
             @Nonnull String fileName,
+            @Nonnull Integer position,
             @Nonnull Long processInstanceId,
             @Nullable Long processInstanceTaskId,
             @Nonnull byte[] fileBytes
@@ -90,6 +99,7 @@ public class ProcessInstanceAttachmentEntity {
         return new ProcessInstanceAttachmentEntity(
                 null,
                 fileName,
+                position,
                 null,
                 processInstanceId,
                 processInstanceTaskId,
@@ -121,6 +131,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setFileName(@Nonnull String fileName) {
         this.fileName = fileName;
+        return this;
+    }
+
+    @Nonnull
+    public Integer getPosition() {
+        return position;
+    }
+
+    public ProcessInstanceAttachmentEntity setPosition(@Nonnull Integer position) {
+        this.position = position;
         return this;
     }
 

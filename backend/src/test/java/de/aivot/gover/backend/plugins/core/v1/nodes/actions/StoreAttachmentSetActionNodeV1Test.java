@@ -226,6 +226,7 @@ class StoreAttachmentSetActionNodeV1Test {
         return new ProcessInstanceAttachmentEntity()
                 .setKey(UUID.randomUUID())
                 .setFileName(fileName)
+                .setPosition(1)
                 .setAttachmentSetId(321)
                 .setProcessInstanceId(PROCESS_INSTANCE_ID)
                 .setStorageProviderId(storageProviderId)
