@@ -115,7 +115,8 @@ public class StaffProcessInstanceTaskViewController {
         var processData = processDataService
                 .foldProcessInstanceData(
                         taskViewData.instance(),
-                        taskViewData.task().getPreviousProcessNodeId()
+                        taskViewData.task().getPreviousProcessNodeId(),
+                        taskViewData.task()
                 );
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
@@ -191,7 +192,8 @@ public class StaffProcessInstanceTaskViewController {
         var processData = processDataService
                 .foldProcessInstanceData(
                         taskViewData.instance(),
-                        taskViewData.task().getPreviousProcessNodeId()
+                        taskViewData.task().getPreviousProcessNodeId(),
+                        taskViewData.task()
                 );
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
@@ -354,7 +356,8 @@ public class StaffProcessInstanceTaskViewController {
         var incomingProcessExecutionData = processDataService
                 .foldProcessInstanceData(
                         taskViewData.instance(),
-                        taskViewData.task().getPreviousProcessNodeId()
+                        taskViewData.task().getPreviousProcessNodeId(),
+                        taskViewData.task()
                 );
 
         var context = new ProcessNodeExecutionContextUIStaff<NodeConfig>(
