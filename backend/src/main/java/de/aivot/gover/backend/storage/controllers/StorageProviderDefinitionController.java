@@ -4,21 +4,23 @@ import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElemen
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.openApi.OpenApiConstants;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
+import de.aivot.gover.backend.storage.permissions.StoragePermissionProvider;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-
-// TODO: Do we need permissions here?
 
 @RestController
 @RequestMapping("/api/storage-provider-definitions/")
@@ -29,18 +31,27 @@ import java.util.List;
 @SecurityRequirement(name = OpenApiConfiguration.Security)
 public class StorageProviderDefinitionController {
     private final List<StorageProviderDefinition<?>> storageProviderDefinitions;
+    private final PermissionService permissionService;
 
     @Autowired
-    public StorageProviderDefinitionController(List<StorageProviderDefinition<?>> storageProviderDefinitions) {
+    public StorageProviderDefinitionController(List<StorageProviderDefinition<?>> storageProviderDefinitions,
+                                               PermissionService permissionService) {
         this.storageProviderDefinitions = storageProviderDefinitions;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("")
     @Operation(
             summary = "List Storage Provider Definitions",
-            description = "Retrieve a list of all available storage provider definitions."
+            description = "Retrieve a list of all available storage provider definitions. " +
+                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“."
     )
-    public List<StorageProviderDefinitionDTO> list() throws ResponseException {
+    public List<StorageProviderDefinitionDTO> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt
+    ) throws ResponseException {
+        permissionService
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+
         return storageProviderDefinitions
                 .stream()
                 .map(StorageProviderDefinitionDTO::from)
@@ -50,12 +61,17 @@ public class StorageProviderDefinitionController {
     @GetMapping("{key}/{version}/")
     @Operation(
             summary = "Retrieve Storage Provider Definition",
-            description = "Retrieve a specific storage provider definition by its key and version."
+            description = "Retrieve a specific storage provider definition by its key and version. " +
+                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“."
     )
     public StorageProviderDefinitionDTO retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String key,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
+        permissionService
+                .hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+
         return storageProviderDefinitions
                 .stream()
                 .filter(def -> def.getKey().equals(key) && def.getMajorVersion().equals(version))

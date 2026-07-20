@@ -5,10 +5,12 @@ import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.payment.dtos.PaymentTransactionResponseDTO;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.filters.PaymentTransactionFilter;
+import de.aivot.gover.backend.payment.permissions.PaymentProviderPermissionProvider;
 import de.aivot.gover.backend.payment.services.PaymentProviderTestService;
 import de.aivot.gover.backend.payment.services.PaymentTransactionService;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.plugins.core.v1.payment.GirocheckoutPaymentProviderDefinitionV1;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -19,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -39,25 +43,33 @@ import java.util.Map;
 public class PaymentTransactionController {
     private final GoverConfig goverConfig;
     private final PaymentTransactionService paymentTransactionService;
+    private final PermissionService permissionService;
 
     @Autowired
     public PaymentTransactionController(
             GoverConfig goverConfig,
-            PaymentTransactionService paymentTransactionService
+            PaymentTransactionService paymentTransactionService,
+            PermissionService permissionService
     ) {
         this.goverConfig = goverConfig;
         this.paymentTransactionService = paymentTransactionService;
+        this.permissionService = permissionService;
     }
 
     @GetMapping("/api/payment-transactions/")
     @Operation(
             summary = "List Payment Transactions",
-            description = "Retrieve a paginated list of payment transactions with optional filtering."
+            description = "Retrieve a paginated list of payment transactions with optional filtering. " +
+                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
     )
     public Page<PaymentTransactionResponseDTO> list(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable,
             @Nonnull @ParameterObject @Valid PaymentTransactionFilter filter
     ) throws ResponseException {
+        permissionService
+                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+
         return paymentTransactionService
                 .list(pageable, filter)
                 .map(PaymentTransactionResponseDTO::fromEntity);
@@ -66,12 +78,17 @@ public class PaymentTransactionController {
     @GetMapping("/api/payment-transactions/{key}/")
     @Operation(
             summary = "Retrieve Payment Transaction",
-            description = "Retrieve a specific payment transaction by its unique key."
+            description = "Retrieve a specific payment transaction by its unique key. " +
+                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
     )
     public PaymentTransactionResponseDTO retrieve(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String key
 
     ) throws ResponseException {
+        permissionService
+                .hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+
         return paymentTransactionService
                 .retrieve(key)
                 .map(PaymentTransactionResponseDTO::fromEntity)

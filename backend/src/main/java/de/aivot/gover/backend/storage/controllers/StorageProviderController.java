@@ -322,14 +322,21 @@ public class StorageProviderController {
     @PostMapping("{id}/test/")
     @Operation(
             summary = "Test Storage Provider",
-            description = "Manually test the connection to a storage provider. Uses the same logic as the health check. Optionally checks for writability."
+            description = "Manually test the connection to a storage provider. Uses the same logic as the health check. " +
+                    "Requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_READ + ". " +
+                    "If writability is checked, this requires the permission " + StoragePermissionProvider.STORAGE_PROVIDER_UPDATE + "."
     )
     public Map<String, Object> testStorageProvider(
             @AuthenticationPrincipal Jwt jwt,
             @PathVariable Integer id,
             @RequestParam(name = "writable", required = false, defaultValue = "false") boolean writable
     ) throws ResponseException {
-        permissionService.hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+        permissionService.hasSystemPermission(
+                jwt,
+                writable
+                        ? StoragePermissionProvider.STORAGE_PROVIDER_UPDATE
+                        : StoragePermissionProvider.STORAGE_PROVIDER_READ
+        );
 
         var provider = storageProviderService.retrieve(id).orElseThrow(ResponseException::notFound);
         var def = storageProviderDefinitionService
