@@ -6,11 +6,9 @@ import InsertLinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined
 import {ProviderLinksApiService} from '../../provider-links-api-service';
 import {ProviderLink} from '../../models/provider-link';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function ProviderLinksDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
-
     return (
         <PageWrapper
             title="Link bearbeiten"
@@ -18,7 +16,14 @@ export function ProviderLinksDetailsPage() {
             background
         >
             <GenericDetailsPage<ProviderLink, number, undefined>
-                isEditable={() => userIsAdmin}
+                permissionCheck={{
+                    create: Permission.SYSTEM_CONFIG_CREATE,
+                    read: Permission.SYSTEM_CONFIG_READ,
+                    update: Permission.SYSTEM_CONFIG_UPDATE,
+                    scope: {
+                        type: 'system',
+                    },
+                }}
                 header={{
                     icon: <InsertLinkOutlinedIcon />,
                     title: 'Link bearbeiten',
@@ -47,7 +52,7 @@ export function ProviderLinksDetailsPage() {
                 }}
                 tabs={[
                     {
-                        path: '/links/:id',
+                        path: '/provider-links/:id',
                         label: '',
                     },
                 ]}

@@ -12,16 +12,17 @@ import {ProviderLink} from '../../models/provider-link';
 import OpenInNewOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function ProviderLinksListPage() {
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    useHasSystemPermission(Permission.SYSTEM_CONFIG_READ);
+    const canCreateProviderLink = useCheckSystemPermission(Permission.SYSTEM_CONFIG_CREATE);
+    const canUpdateProviderLink = useCheckSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
 
     const header = useMemo(() => ({
         icon: <InsertLinkOutlinedIcon />,
@@ -32,7 +33,8 @@ export function ProviderLinksListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/provider-links/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !canCreateProviderLink,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.SYSTEM_CONFIG_CREATE),
             },
         ],
         helpDialog: {
@@ -50,7 +52,7 @@ export function ProviderLinksListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), [canCreateProviderLink]);
 
     const fetchProviderLinks = useCallback((options: GenericListPropsFetchOptions<ProviderLink>) => {
         return new ProviderLinksApiService(options.api)
@@ -79,7 +81,7 @@ export function ProviderLinksListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/provider-links/${params.id}`}
-                    title={hasAccess ? 'Link bearbeiten' : 'Link anzeigen'}
+                    title={canUpdateProviderLink ? 'Link bearbeiten' : 'Link anzeigen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -90,22 +92,22 @@ export function ProviderLinksListPage() {
             headerName: 'Link',
             flex: 2,
         },
-    ], [hasAccess]);
+    ], [canUpdateProviderLink]);
 
     const getRowIdentifier = useCallback((row: ProviderLink) => row.id.toString(), []);
 
     const rowActions = useCallback((item: ProviderLink) => [
         {
-            icon: hasAccess ? <EditOutlined /> : <Visibility/>,
+            icon: canUpdateProviderLink ? <EditOutlined /> : <Visibility/>,
             to: `/provider-links/${item.id}`,
-            tooltip: hasAccess ? 'Link bearbeiten' : 'Link anzeigen',
+            tooltip: canUpdateProviderLink ? 'Link bearbeiten' : 'Link anzeigen',
         },
         {
             icon: <OpenInNewOutlinedIcon />,
             href: `${item.link}`,
             tooltip: 'Link aufrufen (öffnet in neuem Tab)',
         },
-    ], [hasAccess]);
+    ], [canUpdateProviderLink]);
 
     return (
         <PageWrapper
@@ -124,8 +126,10 @@ export function ProviderLinksListPage() {
                     <EmptyDataListPlaceholder
                         title="Noch keine Links angelegt"
                         description="Links verweisen auf externe Seiten oder interne Inhalte, die angemeldeten Nutzer:innen auf der Übersicht angeboten werden."
-                        addText={hasAccess ? "Neuen Link anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/provider-links/new') : undefined}
+                        addText="Neuen Link anlegen"
+                        onAdd={() => navigate('/provider-links/new')}
+                        addDisabled={!canCreateProviderLink}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.SYSTEM_CONFIG_CREATE)}
                     />
                 }
                 noSearchResultsPlaceholder="Keine Links gefunden"
