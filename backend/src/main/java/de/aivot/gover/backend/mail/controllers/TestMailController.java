@@ -1,10 +1,12 @@
 package de.aivot.gover.backend.mail.controllers;
 
+import de.aivot.gover.backend.config.permissions.ConfigPermissionProvider;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.mail.dtos.TestMailRequestDTO;
 import de.aivot.gover.backend.mail.dtos.TestMailResponseDTO;
 import de.aivot.gover.backend.mail.services.TestMailService;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.user.services.UserService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -33,19 +35,22 @@ import java.io.IOException;
 public class TestMailController {
     private final TestMailService testMailService;
     private final UserService userService;
+    private final PermissionService permissionService;
 
     @Autowired
     public TestMailController(
             TestMailService testMailService,
-            UserService userService) {
+            UserService userService,
+            PermissionService permissionService) {
         this.testMailService = testMailService;
         this.userService = userService;
+        this.permissionService = permissionService;
     }
 
     @PostMapping("")
     @Operation(
             summary = "Send Test Mail",
-            description = "Send a test mail to the specified email address."
+            description = "Send a test mail to the specified email address. This requires the permission „" + ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE + "“."
     )
     public TestMailResponseDTO test(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -53,9 +58,10 @@ public class TestMailController {
     ) throws ResponseException {
         var user = userService
                 .fromJWT(jwt)
-                .orElseThrow(ResponseException::unauthorized)
-                .asSuperAdmin()
-                .orElseThrow(ResponseException::forbidden);
+                .orElseThrow(ResponseException::unauthorized);
+
+        permissionService
+                .hasSystemPermission(user.getId(), ConfigPermissionProvider.SYSTEM_CONFIG_UPDATE);
 
         try {
             testMailService

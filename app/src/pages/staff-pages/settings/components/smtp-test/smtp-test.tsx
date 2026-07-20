@@ -2,14 +2,24 @@ import React, {type FormEvent, useState} from 'react';
 import {Alert, AlertTitle, Box, Button, CircularProgress, TextField, Typography} from '@mui/material';
 import SendOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Send';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
+import {useCheckSystemPermission} from '../../../../../modules/permissions/hooks/use-permissions';
+import {Permission} from '../../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../../../modules/permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function SmtpTest() {
+    const canTestSmtp = useCheckSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
+    const testDisabledTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_CONFIG_UPDATE);
     const [targetEmail, setTargetEmail] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [emailTestResult, setEmailTestResult] = useState<true | string>();
 
     const handleSubmit = (event: FormEvent): void => {
         event.preventDefault();
+
+        if (!canTestSmtp) {
+            return;
+        }
 
         setIsSending(true);
         setEmailTestResult(undefined);
@@ -142,26 +152,32 @@ export function SmtpTest() {
                         onBlur={() => {
                             setTargetEmail(targetEmail.trim());
                         }}
-                        disabled={isSending}
+                        disabled={isSending || !canTestSmtp}
                         required
                     />
 
-                    <Button
-                        type="submit"
-                        color="primary"
-                        variant="contained"
-                        startIcon={<SendOutlinedIcon
-                            sx={{
-                                marginTop: '-2px',
-                            }}
-                        />}
-                        sx={{
+                    <DisabledTooltip
+                        disabled={!canTestSmtp}
+                        title={testDisabledTooltip}
+                        wrapperSx={{
+                            display: 'inline-block',
                             mt: 4,
                         }}
-                        disabled={isSending}
                     >
-                        E-Mail-Versand testen
-                    </Button>
+                        <Button
+                            type="submit"
+                            color="primary"
+                            variant="contained"
+                            startIcon={<SendOutlinedIcon
+                                sx={{
+                                    marginTop: '-2px',
+                                }}
+                            />}
+                            disabled={isSending || !canTestSmtp}
+                        >
+                            E-Mail-Versand testen
+                        </Button>
+                    </DisabledTooltip>
                 </Box>
             </form>
         </>

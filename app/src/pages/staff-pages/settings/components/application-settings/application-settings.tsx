@@ -18,13 +18,6 @@ import {CheckboxFieldComponent} from '../../../../../components/checkbox-field/c
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {ThemesApiService} from '../../../../../modules/themes/themes-api-service';
 import {SystemConfigsApiService} from '../../../../../modules/configs/system-configs-api-service';
-import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../../slices/shell-slice';
 import {
     VDepartmentShadowedApiService,
 } from '../../../../../modules/departments/services/v-department-shadowed-api-service';
@@ -45,32 +38,31 @@ import {ElementDerivationContext} from '../../../../../modules/elements/componen
 import {ElementType} from '../../../../../data/element-type/element-type';
 import {GroupLayout} from '../../../../../models/elements/form/layout/group-layout';
 import {isApiError} from '../../../../../models/api-error';
+import {
+    useCheckAnyDepartmentPermission,
+    useCheckSystemPermission,
+    useHasSystemPermission,
+} from '../../../../../modules/permissions/hooks/use-permissions';
+import {Permission} from '../../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../../../modules/permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 
 export function ApplicationSettings() {
     const dispatch = useAppDispatch();
     const api = useApi();
     const confirm = useConfirm();
 
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-    });
-
-    useEffect(() => {
-        if (hasAccess) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'application-settings-no-access',
-            message: 'Die Anwendungseinstellungen können nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            type: SnackbarType.Dismissable,
-            severity: SnackbarSeverity.Warning,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('application-settings-no-access'));
-        };
-    }, [hasAccess]);
+    useHasSystemPermission(Permission.SYSTEM_CONFIG_READ);
+    const canUpdateSystemConfig = useCheckSystemPermission(Permission.SYSTEM_CONFIG_UPDATE);
+    const canReadThemes = useCheckSystemPermission(Permission.THEME_READ);
+    const canReadSystemRoles = useCheckSystemPermission(Permission.SYSTEM_ROLE_READ);
+    const canReadStorageProviders = useCheckSystemPermission(Permission.STORAGE_PROVIDER_READ);
+    const canReadDepartments = useCheckAnyDepartmentPermission(Permission.DEPARTMENT_READ);
+    const updateDisabledTooltip = formatMissingPermissionTooltip(Permission.SYSTEM_CONFIG_UPDATE);
+    const themeReadHint = formatMissingPermissionTooltip(Permission.THEME_READ);
+    const systemRoleReadHint = formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_READ);
+    const storageProviderReadHint = formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_READ);
+    const departmentReadHint = formatMissingPermissionTooltip(Permission.DEPARTMENT_READ);
 
     const [configDefinitions, setConfigDefinitions] = useState<SystemConfigDefinitionResponseDTO[]>([]);
     useEffect(() => {
@@ -114,7 +106,7 @@ export function ApplicationSettings() {
         });
     };
     const defaultSystemRoleError =
-        !isLoadingSystemRoles
+        canReadSystemRoles && !isLoadingSystemRoles
             ? systemRoleOptions.length === 0
                 ? 'Es ist keine Systemrolle vorhanden. Legen Sie zuerst eine Systemrolle an.'
                 : isStringNullOrEmpty(defaultSystemRoleValue)
@@ -122,7 +114,7 @@ export function ApplicationSettings() {
                     : undefined
             : undefined;
     const assetStorageProviderError =
-        !isLoadingAssetStorageProviders
+        canReadStorageProviders && !isLoadingAssetStorageProviders
             ? assetStorageProviders.length === 0
                 ? 'Es ist kein Speicheranbieter für Assets vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
                 : isStringNullOrEmpty(assetStorageProviderValue)
@@ -130,7 +122,7 @@ export function ApplicationSettings() {
                     : undefined
             : undefined;
     const attachmentStorageProviderError =
-        !isLoadingAttStorageProviders
+        canReadStorageProviders && !isLoadingAttStorageProviders
             ? attStorageProviders.length === 0
                 ? 'Es ist kein Speicheranbieter für Vorgangsanlagen vorhanden. Legen Sie zuerst einen Speicheranbieter an.'
                 : isStringNullOrEmpty(attachmentStorageProviderValue)
@@ -138,78 +130,160 @@ export function ApplicationSettings() {
                     : undefined
             : undefined;
 
+    // These dependent option lists are optional for read-only access to system settings.
+    // Skipping unauthorized lookups prevents unrelated 403 toasts while keeping the page readable.
     useEffect(() => {
+        if (!canReadThemes) {
+            setThemes([]);
+            return;
+        }
+
+        let isActive = true;
+
         new ThemesApiService(api)
             .listAll()
             .then((themes) => {
-                setThemes(themes.content.map((theme) => ({
-                    value: theme.id.toString(),
-                    label: theme.name,
-                })));
+                if (isActive) {
+                    setThemes(themes.content.map((theme) => ({
+                        value: theme.id.toString(),
+                        label: theme.name,
+                    })));
+                }
             })
             .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Erscheinungsbilder konnten nicht geladen werden'));
+                if (isActive) {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Erscheinungsbilder konnten nicht geladen werden'));
+                }
             });
+
+        return () => {
+            isActive = false;
+        };
+    }, [api, canReadThemes, dispatch]);
+
+    useEffect(() => {
+        if (!canReadSystemRoles) {
+            setSystemRoleOptions([]);
+            setHasSystemRolesLoadingError(false);
+            setIsLoadingSystemRoles(false);
+            return;
+        }
+
+        let isActive = true;
+        setIsLoadingSystemRoles(true);
+        setHasSystemRolesLoadingError(false);
 
         new SystemRolesApiService()
             .listAll()
             .then((roles) => {
-                setSystemRoleOptions(roles.content
-                    .map((role) => ({
-                        value: role.id.toString(),
-                        label: role.name,
-                        subLabel: role.description ?? undefined,
-                    }))
-                    .sort((a, b) => a.label.localeCompare(b.label)));
+                if (isActive) {
+                    setSystemRoleOptions(roles.content
+                        .map((role) => ({
+                            value: role.id.toString(),
+                            label: role.name,
+                            subLabel: role.description ?? undefined,
+                        }))
+                        .sort((a, b) => a.label.localeCompare(b.label)));
+                }
             })
             .catch((err) => {
-                setHasSystemRolesLoadingError(true);
-                dispatch(showApiErrorSnackbar(err, 'Die Liste der Systemrollen konnte nicht geladen werden'));
+                if (isActive) {
+                    setHasSystemRolesLoadingError(true);
+                    dispatch(showApiErrorSnackbar(err, 'Die Liste der Systemrollen konnte nicht geladen werden'));
+                }
             })
             .finally(() => {
-                setIsLoadingSystemRoles(false);
+                if (isActive) {
+                    setIsLoadingSystemRoles(false);
+                }
             });
+
+        return () => {
+            isActive = false;
+        };
+    }, [canReadSystemRoles, dispatch]);
+
+    useEffect(() => {
+        if (!canReadStorageProviders) {
+            setAssetStorageProviders([]);
+            setIsLoadingAssetStorageProviders(false);
+            return;
+        }
+
+        let isActive = true;
+        setIsLoadingAssetStorageProviders(true);
 
         new StorageProvidersApiService()
             .listAll({
                 type: StorageProviderType.Assets,
             })
             .then(({content: providers}) => {
-                setAssetStorageProviders(providers.map((prv) => ({
-                    value: prv.id.toString(),
-                    label: prv.name,
-                    subLabel: prv.description,
-                })));
+                if (isActive) {
+                    setAssetStorageProviders(providers.map((prv) => ({
+                        value: prv.id.toString(),
+                        label: prv.name,
+                        subLabel: prv.description,
+                    })));
+                }
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Assets konnte nicht geladen werden'));
+                if (isActive) {
+                    dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter für Assets konnte nicht geladen werden'));
+                }
             })
             .finally(() => {
-                setIsLoadingAssetStorageProviders(false);
+                if (isActive) {
+                    setIsLoadingAssetStorageProviders(false);
+                }
             });
+
+        return () => {
+            isActive = false;
+        };
+    }, [canReadStorageProviders, dispatch]);
+
+    useEffect(() => {
+        if (!canReadStorageProviders) {
+            setAttStorageProviders([]);
+            setIsLoadingAttStorageProviders(false);
+            return;
+        }
+
+        let isActive = true;
+        setIsLoadingAttStorageProviders(true);
 
         new StorageProvidersApiService()
             .listAll({
                 type: StorageProviderType.Attachments,
             })
             .then(({content: providers}) => {
-                setAttStorageProviders(providers.map((prv) => ({
-                    value: prv.id.toString(),
-                    label: prv.name,
-                    subLabel: prv.description,
-                })));
+                if (isActive) {
+                    setAttStorageProviders(providers.map((prv) => ({
+                        value: prv.id.toString(),
+                        label: prv.name,
+                        subLabel: prv.description,
+                    })));
+                }
             })
             .catch((err) => {
-                dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden'));
+                if (isActive) {
+                    dispatch(showApiErrorSnackbar(err, 'Die Liste der Speicheranbieter konnte nicht geladen werden'));
+                }
             })
             .finally(() => {
-                setIsLoadingAttStorageProviders(false);
+                if (isActive) {
+                    setIsLoadingAttStorageProviders(false);
+                }
             });
-    }, []);
+
+        return () => {
+            isActive = false;
+        };
+    }, [canReadStorageProviders, dispatch]);
 
     useEffect(() => {
-        if (attStorageProviders.length === 0) {
+        if (!canUpdateSystemConfig || attStorageProviders.length === 0) {
             return;
         }
 
@@ -227,10 +301,10 @@ export function ApplicationSettings() {
                 [SystemConfigKeys.storage.attachments.default_storage_provider]: attStorageProviders[0].value,
             };
         });
-    }, [attStorageProviders, configuredAttachmentStorageProvider]);
+    }, [attStorageProviders, canUpdateSystemConfig, configuredAttachmentStorageProvider]);
 
     useEffect(() => {
-        if (assetStorageProviders.length === 0) {
+        if (!canUpdateSystemConfig || assetStorageProviders.length === 0) {
             return;
         }
 
@@ -248,12 +322,12 @@ export function ApplicationSettings() {
                 [SystemConfigKeys.storage.assets.default_storage_provider]: assetStorageProviders[0].value,
             };
         });
-    }, [assetStorageProviders, configuredAssetStorageProvider]);
+    }, [assetStorageProviders, canUpdateSystemConfig, configuredAssetStorageProvider]);
 
     const handleSubmit = async (event: FormEvent): Promise<void> => {
         event.preventDefault();
 
-        if (editedConfig != null) {
+        if (canUpdateSystemConfig && editedConfig != null) {
             const normalizedEditedConfig = {
                 ...editedConfig,
             };
@@ -263,16 +337,22 @@ export function ApplicationSettings() {
                 {
                     key: SystemConfigKeys.storage.attachments.default_storage_provider,
                     options: attStorageProviders,
+                    canRead: canReadStorageProviders,
                     errorMessage: 'Für Vorgangsanlagen muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
                 },
                 {
                     key: SystemConfigKeys.storage.assets.default_storage_provider,
                     options: assetStorageProviders,
+                    canRead: canReadStorageProviders,
                     errorMessage: 'Für Assets muss ein zentraler Speicheranbieter vorhanden sein. Legen Sie zuerst einen Speicheranbieter an.',
                 },
             ];
 
             for (const requiredStorageProviderConfig of requiredStorageProviderConfigs) {
+                if (!requiredStorageProviderConfig.canRead) {
+                    continue;
+                }
+
                 const currentValue =
                     normalizedEditedConfig[requiredStorageProviderConfig.key] ??
                     config[requiredStorageProviderConfig.key];
@@ -295,7 +375,7 @@ export function ApplicationSettings() {
                 normalizedEditedConfig[SystemConfigKeys.users.defaultSystemRole] ??
                 config[SystemConfigKeys.users.defaultSystemRole];
 
-            if (isStringNullOrEmpty(currentDefaultSystemRole)) {
+            if (canReadSystemRoles && isStringNullOrEmpty(currentDefaultSystemRole)) {
                 if (systemRoleOptions.length === 0) {
                     dispatch(showErrorSnackbar('Für automatische Benutzerimporte muss mindestens eine Systemrolle vorhanden sein. Legen Sie zuerst eine Systemrolle an.'));
                     return;
@@ -409,14 +489,31 @@ export function ApplicationSettings() {
     };
 
     useEffect(() => {
+        if (!canReadDepartments) {
+            setDepartments([]);
+            return;
+        }
+
+        let isActive = true;
+
         new VDepartmentShadowedApiService()
-            .listAll()
-            .then(deps => setDepartments(deps.content))
+            .listAll({includeAncestors: true})
+            .then(deps => {
+                if (isActive) {
+                    setDepartments(deps.content);
+                }
+            })
             .catch((err) => {
-                console.error(err);
-                dispatch(showErrorSnackbar('Die Liste der Organisationseinheiten konnte nicht geladen werden'));
+                if (isActive) {
+                    console.error(err);
+                    dispatch(showErrorSnackbar('Die Liste der Organisationseinheiten konnte nicht geladen werden'));
+                }
             });
-    }, []);
+
+        return () => {
+            isActive = false;
+        };
+    }, [canReadDepartments, dispatch]);
 
     const [currentSettingsTab, setCurrentSettingsTab] = useState<string>();
     const availableTabs = useMemo(() => configDefinitions
@@ -490,6 +587,7 @@ export function ApplicationSettings() {
                         <ElementDerivationContext
                             element={currentGroup}
                             authoredElementValues={config}
+                            disabled={!canUpdateSystemConfig}
                             onAuthoredElementValuesChange={(updated) => {
                                 console.log(updated);
                                 dispatch(setSystemConfigsFromMap(updated));
@@ -502,19 +600,24 @@ export function ApplicationSettings() {
                             mt: 4,
                         }}
                     >
-                        <Button
-                            type="submit"
-                            disabled={hasNotChanged || !hasAccess}
-                            color="primary"
-                            variant="contained"
-                            startIcon={<SaveOutlinedIcon
-                                sx={{
-                                    marginTop: '-2px',
-                                }}
-                            />}
+                        <DisabledTooltip
+                            disabled={!canUpdateSystemConfig}
+                            title={updateDisabledTooltip}
                         >
-                            Speichern
-                        </Button>
+                            <Button
+                                type="submit"
+                                disabled={hasNotChanged || !canUpdateSystemConfig}
+                                color="primary"
+                                variant="contained"
+                                startIcon={<SaveOutlinedIcon
+                                    sx={{
+                                        marginTop: '-2px',
+                                    }}
+                                />}
+                            >
+                                Speichern
+                            </Button>
+                        </DisabledTooltip>
 
                         <Button
                             sx={{
@@ -522,7 +625,7 @@ export function ApplicationSettings() {
                             }}
                             type="button"
                             color="error"
-                            disabled={hasNotChanged || !hasAccess}
+                            disabled={hasNotChanged || !canUpdateSystemConfig}
                             onClick={() => {
                                 setEditedConfig({});
                             }}
@@ -581,7 +684,7 @@ export function ApplicationSettings() {
                                 });
                             }}
                             required
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig}
                             startIcon={<Label/>}
                         />
                     </Grid>
@@ -631,7 +734,8 @@ export function ApplicationSettings() {
                                             [SystemConfigKeys.system.theme]: val ?? '',
                                         });
                                     }}
-                                    disabled={!hasAccess}
+                                    disabled={!canUpdateSystemConfig || !canReadThemes}
+                                    hint={!canReadThemes ? themeReadHint : undefined}
                                     startIcon={ModuleIcons.themes}
                                 />
                             </Grid>
@@ -679,7 +783,7 @@ export function ApplicationSettings() {
                                     [SystemConfigKeys.gover.storeKey]: val ?? '',
                                 });
                             }}
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig}
                             startIcon={ModuleIcons.secrets}
                         />
                     </Grid>
@@ -716,7 +820,9 @@ export function ApplicationSettings() {
                         <SelectFieldComponent
                             label="Standard-Systemrolle für automatische Benutzerimporte"
                             hint={
-                                hasSystemRolesLoadingError
+                                !canReadSystemRoles
+                                    ? systemRoleReadHint
+                                    : hasSystemRolesLoadingError
                                     ? 'Die Systemrollen konnten nicht geladen werden. Bitte laden Sie die Seite neu oder prüfen Sie Ihre Berechtigungen.'
                                     : 'Diese Systemrolle wird bei neuen automatischen Benutzerimporten und -synchronisationen verwendet.'
                             }
@@ -729,10 +835,12 @@ export function ApplicationSettings() {
                             }}
                             required
                             error={defaultSystemRoleError}
-                            disabled={!hasAccess || isLoadingSystemRoles}
+                            disabled={!canUpdateSystemConfig || !canReadSystemRoles || isLoadingSystemRoles}
                             options={systemRoleOptions}
                             emptyStatePlaceholder={
-                                isLoadingSystemRoles
+                                !canReadSystemRoles
+                                    ? 'Keine Berechtigung zur Einsicht'
+                                    : isLoadingSystemRoles
                                     ? 'Systemrollen werden geladen…'
                                     : hasSystemRolesLoadingError
                                         ? 'Systemrollen konnten nicht geladen werden'
@@ -774,7 +882,7 @@ export function ApplicationSettings() {
                     >
                         <SelectFieldComponent
                             label="Zentraler Speicheranbieter für Vorgangsanlagen"
-                            hint="Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll."
+                            hint={!canReadStorageProviders ? storageProviderReadHint : 'Geben Sie den Speicheranbieter an, der standardmäßig für Vorgangsanlagen verwendet werden soll.'}
                             value={attachmentStorageProviderValue}
                             onChange={(val) => {
                                 setEditedConfig({
@@ -784,9 +892,9 @@ export function ApplicationSettings() {
                             }}
                             required
                             error={attachmentStorageProviderError}
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig || !canReadStorageProviders || isLoadingAttStorageProviders}
                             options={attStorageProviders}
-                            emptyStatePlaceholder="Keine Speicheranbieter für Vorgangsanlagen vorhanden"
+                            emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Vorgangsanlagen vorhanden'}
                             startIcon={ModuleIcons.storage}
                         />
                     </Grid>
@@ -824,7 +932,7 @@ export function ApplicationSettings() {
                     >
                         <SelectFieldComponent
                             label="Zentraler Speicheranbieter für Assets"
-                            hint="Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll."
+                            hint={!canReadStorageProviders ? storageProviderReadHint : 'Geben Sie den Speicheranbieter an, der standardmäßig für Assets verwendet werden soll.'}
                             value={assetStorageProviderValue}
                             onChange={(val) => {
                                 setEditedConfig({
@@ -834,9 +942,9 @@ export function ApplicationSettings() {
                             }}
                             required
                             error={assetStorageProviderError}
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig || !canReadStorageProviders || isLoadingAssetStorageProviders}
                             options={assetStorageProviders}
-                            emptyStatePlaceholder="Keine Speicheranbieter für Assets vorhanden"
+                            emptyStatePlaceholder={!canReadStorageProviders ? 'Keine Berechtigung zur Einsicht' : 'Keine Speicheranbieter für Assets vorhanden'}
                             startIcon={ModuleIcons.storage}
                         />
                     </Grid>
@@ -878,7 +986,8 @@ export function ApplicationSettings() {
                             onChange={(department) => {
                                 handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, department?.id ?? null);
                             }}
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig || !canReadDepartments}
+                            hint={!canReadDepartments ? departmentReadHint : undefined}
                         />
 
                     </Grid>
@@ -894,7 +1003,8 @@ export function ApplicationSettings() {
                             onChange={(department) => {
                                 handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, department?.id ?? null);
                             }}
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig || !canReadDepartments}
+                            hint={!canReadDepartments ? departmentReadHint : undefined}
                         />
                     </Grid>
                     <Grid
@@ -909,7 +1019,8 @@ export function ApplicationSettings() {
                             onChange={(department) => {
                                 handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, department?.id ?? null);
                             }}
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig || !canReadDepartments}
+                            hint={!canReadDepartments ? departmentReadHint : undefined}
                         />
                     </Grid>
                 </Grid>
@@ -931,7 +1042,7 @@ export function ApplicationSettings() {
                         });
                     }}
                     hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                    disabled={!hasAccess}
+                    disabled={!canUpdateSystemConfig}
                 />
                 <Typography
                     variant="subtitle1"
@@ -972,7 +1083,7 @@ export function ApplicationSettings() {
                                     [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
                                 });
                             }}
-                            disabled={!hasAccess}
+                            disabled={!canUpdateSystemConfig}
                             startIcon={ModuleIcons.providerLinks}
                         />
                     </Box>
@@ -987,26 +1098,31 @@ export function ApplicationSettings() {
                         });
                     }}
                     hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                    disabled={!hasAccess}
+                    disabled={!canUpdateSystemConfig}
                 />
                 <Box
                     sx={{
                         mt: 4,
                     }}
                 >
-                    <Button
-                        type="submit"
-                        disabled={hasNotChanged || !hasAccess}
-                        color="primary"
-                        variant="contained"
-                        startIcon={<SaveOutlinedIcon
-                            sx={{
-                                marginTop: '-2px',
-                            }}
-                        />}
+                    <DisabledTooltip
+                        disabled={!canUpdateSystemConfig}
+                        title={updateDisabledTooltip}
                     >
-                        Speichern
-                    </Button>
+                        <Button
+                            type="submit"
+                            disabled={hasNotChanged || !canUpdateSystemConfig}
+                            color="primary"
+                            variant="contained"
+                            startIcon={<SaveOutlinedIcon
+                                sx={{
+                                    marginTop: '-2px',
+                                }}
+                            />}
+                        >
+                            Speichern
+                        </Button>
+                    </DisabledTooltip>
 
                     <Button
                         sx={{
@@ -1014,7 +1130,7 @@ export function ApplicationSettings() {
                         }}
                         type="button"
                         color="error"
-                        disabled={hasNotChanged || !hasAccess}
+                        disabled={hasNotChanged || !canUpdateSystemConfig}
                         onClick={() => {
                             setEditedConfig({});
                         }}
