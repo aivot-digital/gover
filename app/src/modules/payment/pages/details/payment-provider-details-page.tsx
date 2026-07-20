@@ -6,12 +6,10 @@ import {Api} from '../../../../hooks/use-api';
 import {PaymentProviderAdditionalData} from './payment-provider-details-page-additional-data';
 import {PaymentProviderResponseDTO} from '../../dtos/payment-provider-response-dto';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function PaymentProviderDetailsPage() {
-    const userIsAdmin = useUserIsAdmin();
-
     return (
         <>
             <PageWrapper
@@ -20,7 +18,14 @@ export function PaymentProviderDetailsPage() {
                 background
             >
                 <GenericDetailsPage<PaymentProviderResponseDTO, string, PaymentProviderAdditionalData>
-                    isEditable={() => userIsAdmin}
+                    permissionCheck={{
+                        create: Permission.PAYMENT_PROVIDER_CREATE,
+                        read: Permission.PAYMENT_PROVIDER_READ,
+                        update: Permission.PAYMENT_PROVIDER_UPDATE,
+                        scope: {
+                            type: 'system',
+                        },
+                    }}
                     header={{
                         icon: ModuleIcons.payment,
                         title: 'Zahlungsdienstleister bearbeiten',
@@ -57,12 +62,14 @@ export function PaymentProviderDetailsPage() {
                         {
                             path: '/payment-providers/:id/test',
                             label: 'Testen',
-                            isDisabled: (item) => item?.key === '',
+                            onlyExisting: true,
+                            requiredPermission: Permission.PAYMENT_PROVIDER_UPDATE,
                         },
                         {
                             path: '/payment-providers/:id/tx',
                             label: 'Transaktionen',
-                            isDisabled: (item) => item?.key === '',
+                            onlyExisting: true,
+                            requiredPermission: Permission.PAYMENT_PROVIDER_READ,
                         },
                     ]}
                     initializeItem={() => new PaymentProvidersApiService().initialize()}

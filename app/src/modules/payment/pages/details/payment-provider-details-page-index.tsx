@@ -30,6 +30,10 @@ import {
 } from '../../../elements/components/element-derivation-context';
 import {ComputedElementErrors, DerivedRuntimeElementData} from '../../../../models/element-data';
 import {Page} from '../../../../models/dtos/page';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 type PaymentProviderEditableFields =
     'name' |
@@ -73,6 +77,7 @@ export function PaymentProviderDetailsPageIndex() {
     const dispatch = useAppDispatch();
     const navigate = useNavigate();
     const showConfirm = useConfirm();
+    const canDeletePaymentProvider = useCheckSystemPermission(Permission.PAYMENT_PROVIDER_DELETE);
 
     const [derivedRuntimeConfigData, setDerivedRuntimeConfigData] = useState<DerivedRuntimeElementData | null>(null);
     const [paymentProviderSchema, setPaymentProviderSchema] = useState<PaymentProviderYupSchemaType>(BasePaymentProviderYupSchema);
@@ -125,6 +130,13 @@ export function PaymentProviderDetailsPageIndex() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
+    const editPermission = isNewPaymentProvider ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeletePaymentProvider
+        ? formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_DELETE)
+        : undefined;
 
     useEffect(() => {
         if (selectedPaymentProviderDefinition?.configLayout == null) {
@@ -256,7 +268,7 @@ export function PaymentProviderDetailsPageIndex() {
 
     const checkAndHandleDelete = async () => {
         // New payment providers cannot be deleted
-        if (isNewPaymentProvider) {
+        if (isNewPaymentProvider || !canDeletePaymentProvider) {
             return;
         }
 
@@ -300,7 +312,7 @@ export function PaymentProviderDetailsPageIndex() {
 
     const handleDelete = () => {
         // New payment providers cannot be deleted
-        if (isNewPaymentProvider) {
+        if (isNewPaymentProvider || !canDeletePaymentProvider) {
             return;
         }
 
@@ -496,20 +508,25 @@ export function PaymentProviderDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
                     disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
                     <Button
                         onClick={handleRefreshDefinitions}
-                        disabled={isBusy || !isEditable}
+                        disabled={isBusy}
                     >
                         Auswahllisten neu laden <HelpIconOutlined
                         fontSize="small"
@@ -521,18 +538,21 @@ export function PaymentProviderDetailsPageIndex() {
                 {
                     !isNewPaymentProvider &&
                     !originalPaymentProvider.isEnabled &&
-                    <Button
-                        variant={'outlined'}
-                        onClick={checkAndHandleDelete}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete/>}
+                    <DisabledTooltip
+                        title={deleteDisabledTooltip}
+                        disabled={isBusy || !canDeletePaymentProvider}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={checkAndHandleDelete}
+                            disabled={isBusy || !canDeletePaymentProvider}
+                            color="error"
+                            startIcon={<Delete/>}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
 
                 {
