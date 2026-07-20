@@ -8,7 +8,6 @@ import MailOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
 import PeopleOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Group';
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {CellLink} from '../../../../../components/cell-link/cell-link';
-import {useAccessGuard} from '../../../../../hooks/use-admin-guard';
 import {UserFilter, UsersApiService} from '../../../users-api-service';
 import {type User} from '../../../../../models/entities/user';
 import Chip from '@mui/material/Chip';
@@ -21,9 +20,10 @@ import {SystemRolesApiService} from '../../../../system/services/system-roles-ap
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../slices/snackbar-slice';
 import {GenericListPropsFetchOptions} from '../../../../../components/generic-list/generic-list-props';
-import {useCheckSystemPermission} from '../../../../permissions/hooks/use-permissions';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../../data/permissions/permission';
 import {isApiError} from '../../../../../models/api-error';
+import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 
 const Filters = [
     {
@@ -43,11 +43,10 @@ const Filters = [
 export function UserListPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    useHasSystemPermission(Permission.USER_READ);
     const systemRolesApiService = useMemo(() => new SystemRolesApiService(), []);
+    const canCreateUser = useCheckSystemPermission(Permission.USER_CREATE);
+    const canUpdateUser = useCheckSystemPermission(Permission.USER_UPDATE);
     const canReadSystemRoles = useCheckSystemPermission(Permission.SYSTEM_ROLE_READ);
     const [systemRoleNamesById, setSystemRoleNamesById] = useState<Record<number, string>>({});
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
@@ -203,7 +202,8 @@ export function UserListPage() {
                 icon: <Add/>,
                 to: "/users/new",
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !canCreateUser,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.USER_CREATE),
             },
         ],
         helpDialog: {
@@ -226,7 +226,7 @@ export function UserListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), [canCreateUser]);
 
     const fetchUsers = useCallback((options: GenericListPropsFetchOptions<User>) => {
         const filters: Partial<UserFilter> = {
@@ -264,9 +264,9 @@ export function UserListPage() {
 
     const rowActions = useCallback((item: User) => [
         {
-            icon: hasAccess ? <EditOutlined/> : <Visibility/>,
+            icon: canUpdateUser ? <EditOutlined/> : <Visibility/>,
             to: `/users/${item.id}`,
-            tooltip: hasAccess ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
+            tooltip: canUpdateUser ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
         },
         {
             icon: <MailOutlined/>,
@@ -275,7 +275,7 @@ export function UserListPage() {
             disabled: item.deletedInIdp,
             disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
         },
-    ], [hasAccess]);
+    ], [canUpdateUser]);
 
     return (
         <PageWrapper
@@ -297,8 +297,10 @@ export function UserListPage() {
                     <EmptyDataListPlaceholder
                         title="Noch keine Mitarbeiter:innen angelegt"
                         description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Gover verwalten oder Aufgaben in Vorgängen bearbeiten."
-                        addText={hasAccess ? "Mitarbeiter:in anlegen" : undefined}
-                        onAdd={hasAccess ? () => navigate('/users/new') : undefined}
+                        addText="Mitarbeiter:in anlegen"
+                        onAdd={() => navigate('/users/new')}
+                        addDisabled={!canCreateUser}
+                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.USER_CREATE)}
                     />
                 }
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
