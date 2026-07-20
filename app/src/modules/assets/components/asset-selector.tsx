@@ -7,7 +7,6 @@ import {AssetsApiService} from '../assets-api-service';
 import {type VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../slices/snackbar-slice';
-import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import FileOpen from '@aivot/mui-material-symbols-400-n25-outlined/FileOpen';
 
 interface AssetSelectorProps {
@@ -65,8 +64,8 @@ export function AssetSelector(props: AssetSelectorProps): React.ReactElement {
 
                 setAsset(res);
 
-                return new StorageProvidersApiService()
-                    .retrieve(res.storageProviderId)
+                return new AssetsApiService()
+                    .retrieveStorageProvider(res.storageProviderId)
                     .then((provider) => {
                         if (!active) {
                             return;

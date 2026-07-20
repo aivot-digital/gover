@@ -60,8 +60,6 @@ import FamilyHistoryFilled from '@aivot/mui-material-symbols-400-n25-outlined/Fa
 import SupervisedUserCircle from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircle';
 import SupervisedUserCircleFilled from '@aivot/mui-material-symbols-400-n25-outlined/SupervisedUserCircleFilled';
 import ForwardToInboxFilled from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInboxFilled';
-import {StorageProvidersApiService} from '../../../modules/storage/storage-providers-api-service';
-import {StorageProviderType} from '../../../modules/storage/enums/storage-provider-type';
 import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 import {
@@ -70,6 +68,7 @@ import {
 import {Permission} from '../../../data/permissions/permission';
 import {checkAnyDepartmentPermission, checkSystemPermission} from '../../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
+import {AssetsApiService} from '../../../modules/assets/assets-api-service';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -349,11 +348,9 @@ export function ShellDrawer() {
 
         setIsLoadingAssetStorageProviders(true);
 
-        new StorageProvidersApiService()
-            .listAll({
-                type: StorageProviderType.Assets,
-            })
-            .then(({content: providers}) => {
+        new AssetsApiService()
+            .listStorageProviders()
+            .then((providers) => {
                 const providerItems = providers
                     .slice()
                     .sort((a, b) => a.name.localeCompare(b.name, 'de'))

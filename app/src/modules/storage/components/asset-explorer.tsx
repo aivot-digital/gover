@@ -42,12 +42,11 @@ import {type StorageIndexItem} from '../entities/storage-index-item-entity';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {getFileTypeIcon} from '../../../utils/file-type-icon';
-import {type StorageProviderEntity} from '../entities/storage-provider-entity';
 import {humanizeFileSize} from '../../../utils/humanization-utils';
 import {Page} from '../../../models/dtos/page';
 import {AssetsApiService} from '../../assets/assets-api-service';
-import {StorageProvidersApiService} from '../storage-providers-api-service';
 import {SearchInput} from '../../../components/search-input/search-input';
+import {type AssetStorageProvider} from '../../assets/models/asset-storage-provider';
 
 interface StorageExplorerProps {
     providerId: number;
@@ -301,7 +300,7 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
 
     const dispatch = useAppDispatch();
 
-    const [provider, setProvider] = useState<StorageProviderEntity>();
+    const [provider, setProvider] = useState<AssetStorageProvider>();
     const [currentPath, setCurrentPath] = useState<string>(ROOT_PATH);
     const [currentFolder, setCurrentFolder] = useState<StorageIndexItem[]>([]);
 
@@ -389,8 +388,8 @@ export function AssetExplorer(props: StorageExplorerProps): ReactNode {
 
         let isActive = true;
 
-        new StorageProvidersApiService()
-            .retrieve(providerId)
+        new AssetsApiService()
+            .retrieveStorageProvider(providerId)
             .then((loadedProvider) => {
                 if (!isActive) {
                     return;

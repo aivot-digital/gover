@@ -9,7 +9,6 @@ import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outline
 import React, {useMemo, useState} from 'react';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {useNavigate, useParams, useSearchParams} from 'react-router-dom';
-import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../slices/snackbar-slice';
 import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {AssetDetailsPageAdditionalData} from './asset-details-page-additional-data';
@@ -20,19 +19,19 @@ import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {Action} from '../../../components/actions/actions-props';
 import {FileUploadComponent} from '../../../components/file-upload-field/file-upload-component';
 import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
-import {StorageProviderEntity} from '../../storage/entities/storage-provider-entity';
 import {GenericDetailsSkeleton} from '../../../components/generic-details-page/generic-details-skeleton';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {
-    addSnackbarMessage, clearLoadingMessage,
-    removeSnackbarMessage,
+    clearLoadingMessage,
     setLoadingMessage,
-    SnackbarSeverity,
-    SnackbarType,
 } from '../../../slices/shell-slice';
 import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {showExperimentalFeatures} from '../../../hooks/use-show-experimental-features';
 import {useNotImplemented} from '../../../hooks/use-not-implemented';
+import {Permission} from '../../../data/permissions/permission';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
+import {type AssetStorageProvider} from '../models/asset-storage-provider';
 
 type UrlParamsType = {
     storageProviderId: string;
@@ -45,9 +44,12 @@ export function AssetDetailsPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
     const notImplemented = useNotImplemented();
+    useHasSystemPermission(Permission.ASSET_READ);
+    const canCreateAsset = useCheckSystemPermission(Permission.ASSET_CREATE);
+    const canUpdateAsset = useCheckSystemPermission(Permission.ASSET_UPDATE);
 
     const [asset, setAsset] = useState<Asset | null>(null);
-    const [storageProvider, setStorageProvider] = useState<StorageProviderEntity | null>(null);
+    const [storageProvider, setStorageProvider] = useState<AssetStorageProvider | null>(null);
 
     const [file, setFile] = useState<File[] | null>(null);
     const [uploadError, setUploadError] = useState<string>();
@@ -100,9 +102,19 @@ export function AssetDetailsPage() {
         return normalizedCurrentStoragePath;
     }, [normalizedCurrentStoragePath]);
 
-    const canMoveAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
-    const canCopyAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
-    const canRenameAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && !storageProviderReadOnly;
+    const canMoveAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && canUpdateAsset && !storageProviderReadOnly;
+    const canCopyAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && canCreateAsset && !storageProviderReadOnly;
+    const canRenameAsset = parsedStorageProviderId != null && normalizedCurrentStoragePath != null && canUpdateAsset && !storageProviderReadOnly;
+    const updateActionDisabledTooltip = !canUpdateAsset
+        ? formatMissingPermissionTooltip(Permission.ASSET_UPDATE)
+        : storageProviderReadOnly
+            ? 'Der Speicheranbieter ist schreibgeschützt.'
+            : 'Die Datei muss zuerst gespeichert werden.';
+    const copyActionDisabledTooltip = !canCreateAsset
+        ? formatMissingPermissionTooltip(Permission.ASSET_CREATE)
+        : storageProviderReadOnly
+            ? 'Der Speicheranbieter ist schreibgeschützt.'
+            : 'Die Datei muss zuerst gespeichert werden.';
 
     const parentRoute = `/assets/providers/${storageProviderId}?path=${encodeURIComponent(AssetsApiService.normalizeFolderPath(searchParams.get('path') ?? '/'))}`;
     const detailsPath = `/assets/providers/${storageProviderId}/files/*`;
@@ -192,7 +204,7 @@ export function AssetDetailsPage() {
     const handleConfirmRename = async (targetName: string) => {
         setIsRenameDialogOpen(false);
 
-        if (asset == null || storageProvider == null) {
+        if (!canRenameAsset || asset == null || storageProvider == null) {
             return;
         }
 
@@ -236,7 +248,7 @@ export function AssetDetailsPage() {
     };
 
     const handleReplace = (file: File) => {
-        if (asset == null || storageProvider == null) {
+        if (!canUpdateAsset || storageProviderReadOnly || asset == null || storageProvider == null) {
             return;
         }
 
@@ -275,18 +287,14 @@ export function AssetDetailsPage() {
             tooltip: 'Datei umbenennen',
             onClick: () => setIsRenameDialogOpen(true),
             disabled: !canRenameAsset,
-            disabledTooltip: storageProviderReadOnly
-                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht umbenannt werden.'
-                : 'Die Datei muss zuerst gespeichert werden, bevor sie umbenannt werden kann.',
+            disabledTooltip: updateActionDisabledTooltip,
         },
         {
             icon: <SwapHoriz/>,
             tooltip: 'Datei ersetzen',
             onClick: () => setIsReplaceDialogOpen(true),
             disabled: !canRenameAsset,
-            disabledTooltip: storageProviderReadOnly
-                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht ersetzt werden.'
-                : 'Die Datei muss zuerst gespeichert werden, bevor sie ersetzt werden kann.',
+            disabledTooltip: updateActionDisabledTooltip,
         },
         'separator',
         {
@@ -300,9 +308,7 @@ export function AssetDetailsPage() {
                 }
             },
             disabled: !canMoveAsset,
-            disabledTooltip: storageProviderReadOnly
-                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht verschoben werden.'
-                : 'Die Datei muss zuerst gespeichert werden, bevor sie verschoben werden kann.',
+            disabledTooltip: updateActionDisabledTooltip,
         },
         {
             icon: <ContentCopyOutlinedIcon/>,
@@ -315,9 +321,7 @@ export function AssetDetailsPage() {
                 }
             },
             disabled: !canCopyAsset,
-            disabledTooltip: storageProviderReadOnly
-                ? 'Der Speicheranbieter ist schreibgeschützt. Dateien können nicht kopiert werden.'
-                : 'Die Datei muss zuerst gespeichert werden, bevor sie kopiert werden kann.',
+            disabledTooltip: copyActionDisabledTooltip,
         },
     ];
 
@@ -379,8 +383,8 @@ export function AssetDetailsPage() {
                 }}
                 fetchAdditionalData={{
                     storageProvider: () => {
-                        return new StorageProvidersApiService()
-                            .retrieve(parsedStorageProviderId);
+                        return new AssetsApiService()
+                            .retrieveStorageProvider(parsedStorageProviderId);
                     },
                 }}
                 getTabTitle={(item: Asset) => {
@@ -402,7 +406,7 @@ export function AssetDetailsPage() {
                     to: parentRoute,
                 }}
                 entityType={ServerEntityType.Assets}
-                isEditable={() => !storageProviderReadOnly}
+                isEditable={() => canUpdateAsset}
             />
 
             {

@@ -15,7 +15,6 @@ import {getFileTypeLabel} from '../../../utils/file-type-label';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useParams, useSearchParams, useNavigate} from 'react-router-dom';
-import {StorageProvidersApiService} from '../../storage/storage-providers-api-service';
 import {useApi} from '../../../hooks/use-api';
 import {ListControlRef} from '../../../components/generic-list/generic-list-props';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
@@ -24,6 +23,9 @@ import {Breadcrumbs} from '../../../components/breadcrumbs/breadcrumbs';
 import {usePrompt} from '../../../providers/prompt-provider';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../permissions/hooks/use-permissions';
+import {Permission} from '../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../permissions/utils/permission-utils';
 
 export function AssetListPage() {
     const navigate = useNavigate();
@@ -32,6 +34,9 @@ export function AssetListPage() {
     const {storageProviderId} = useParams<{ storageProviderId?: string }>();
     const [searchParams] = useSearchParams();
     const listControlRef = useRef<ListControlRef>(null);
+    useHasSystemPermission(Permission.ASSET_READ);
+    const canCreateAsset = useCheckSystemPermission(Permission.ASSET_CREATE);
+    const canDeleteAsset = useCheckSystemPermission(Permission.ASSET_DELETE);
 
     const confirm = useConfirm();
     const prompt = usePrompt();
@@ -63,8 +68,8 @@ export function AssetListPage() {
             return;
         }
 
-        new StorageProvidersApiService()
-            .retrieve(parsedStorageProviderId)
+        new AssetsApiService()
+            .retrieveStorageProvider(parsedStorageProviderId)
             .then((provider) => {
                 setStorageProviderName(provider.name);
                 setStorageProviderReadOnly(provider.readOnlyStorage);
@@ -89,7 +94,7 @@ export function AssetListPage() {
     }, []);
 
     const handleCreateFolder = useCallback(() => {
-        if (parsedStorageProviderId == null || storageProviderReadOnly) {
+        if (parsedStorageProviderId == null || !canCreateAsset || storageProviderReadOnly) {
             return;
         }
 
@@ -134,8 +139,23 @@ export function AssetListPage() {
         handleListRefresh,
         parsedStorageProviderId,
         prompt,
+        canCreateAsset,
         storageProviderReadOnly,
     ]);
+
+    const createAssetDisabledTooltip = parsedStorageProviderId == null
+        ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
+        : !canCreateAsset
+            ? formatMissingPermissionTooltip(Permission.ASSET_CREATE)
+            : storageProviderReadOnly
+                ? 'Der ausgewählte Speicheranbieter ist schreibgeschützt.'
+                : undefined;
+    const canCreateAssetInCurrentProvider = parsedStorageProviderId != null && canCreateAsset && !storageProviderReadOnly;
+    const deleteAssetDisabledTooltip = !canDeleteAsset
+        ? formatMissingPermissionTooltip(Permission.ASSET_DELETE)
+        : storageProviderReadOnly
+            ? 'Der ausgewählte Speicheranbieter ist schreibgeschützt.'
+            : undefined;
 
     const header = useMemo(() => ({
         icon: <DriveFolderUploadOutlinedIcon/>,
@@ -144,10 +164,8 @@ export function AssetListPage() {
             {
                 icon: <CreateNewFolderOutlined/>,
                 tooltip: 'Neuen Ordner anlegen',
-                disabledTooltip: parsedStorageProviderId == null
-                    ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
-                    : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
-                disabled: parsedStorageProviderId == null || storageProviderReadOnly,
+                disabledTooltip: createAssetDisabledTooltip,
+                disabled: !canCreateAssetInCurrentProvider,
                 onClick: handleCreateFolder,
             },
             'separator' as const,
@@ -155,10 +173,8 @@ export function AssetListPage() {
                 label: 'Datei hochladen',
                 icon: <AddOutlinedIcon/>,
                 tooltip: 'Neues Dokument oder Medieninhalt anlegen',
-                disabledTooltip: parsedStorageProviderId == null
-                    ? 'Wählen Sie zuerst einen Speicheranbieter aus.'
-                    : 'Der ausgewählte Speicheranbieter ist schreibgeschützt.',
-                disabled: parsedStorageProviderId == null || storageProviderReadOnly,
+                disabledTooltip: createAssetDisabledTooltip,
+                disabled: !canCreateAssetInCurrentProvider,
                 to: uploadRoute,
                 variant: 'contained' as const,
             },
@@ -187,8 +203,9 @@ export function AssetListPage() {
     }), [
         handleCreateFolder,
         headerTitle,
+        canCreateAssetInCurrentProvider,
+        createAssetDisabledTooltip,
         parsedStorageProviderId,
-        storageProviderReadOnly,
         uploadRoute,
     ]);
 
@@ -351,10 +368,11 @@ export function AssetListPage() {
         {
             icon: <Delete/>,
             tooltip: 'Ordner löschen',
-            disabled: storageProviderReadOnly,
+            disabled: !canDeleteAsset || storageProviderReadOnly,
+            disabledTooltip: deleteAssetDisabledTooltip,
             onClick: async () => {
                 const providerId = item.storageProviderId ?? parsedStorageProviderId;
-                if (providerId == null || storageProviderReadOnly) {
+                if (providerId == null || !canDeleteAsset || storageProviderReadOnly) {
                     return;
                 }
 
@@ -391,7 +409,7 @@ export function AssetListPage() {
                     });
             },
         },
-    ] : [], [api, confirm, dispatch, handleListRefresh, parsedStorageProviderId, storageProviderReadOnly]);
+    ] : [], [api, confirm, dispatch, handleListRefresh, parsedStorageProviderId, canDeleteAsset, deleteAssetDisabledTooltip, storageProviderReadOnly]);
 
     return (
         <PageWrapper
@@ -409,10 +427,12 @@ export function AssetListPage() {
                 getRowIdentifier={getRowIdentifier}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
-                        title="Noch keine Dateien hochgeladen"
+                        title="Keine Dateien vorhanden"
                         description="Dateien sind hochgeladene Anlagen und Medien, die in Formularen, Prozessen oder Konfigurationen verwendet werden können."
-                        addText={parsedStorageProviderId != null && !storageProviderReadOnly ? "Datei hochladen" : undefined}
-                        onAdd={parsedStorageProviderId != null && !storageProviderReadOnly ? () => navigate(uploadRoute) : undefined}
+                        addText={parsedStorageProviderId != null ? "Datei hochladen" : undefined}
+                        onAdd={parsedStorageProviderId != null ? () => navigate(uploadRoute) : undefined}
+                        addDisabled={!canCreateAssetInCurrentProvider}
+                        addDisabledTooltip={createAssetDisabledTooltip}
                     />
                 }
                 noSearchResultsPlaceholder="Keine Dateien gefunden"
