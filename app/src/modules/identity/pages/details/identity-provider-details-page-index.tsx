@@ -36,15 +36,12 @@ import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ImageSelector} from '../../../assets/components/image-selector';
 import {useConfirm} from '../../../../providers/confirm-provider';
 import {hideLoadingOverlay, showLoadingOverlay} from '../../../../slices/loading-overlay-slice';
-import {useUserIsAdmin} from '../../../../hooks/use-admin-guard';
-import {
-    addSnackbarMessage,
-    removeSnackbarMessage,
-    SnackbarSeverity,
-    SnackbarType,
-} from '../../../../slices/shell-slice';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {Page} from '../../../../models/dtos/page';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {useCheckSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 // allows absolute and relative URLs
 const urlRegex = /^(https?:\/\/[^\s]+|\/[^\s]*)$/;
@@ -170,25 +167,8 @@ export function IdentityProviderDetailsPageIndex() {
     const navigate = useNavigate();
     const api = useApi();
     const showConfirm = useConfirm();
-
-    const userIsAdmin = useUserIsAdmin();
-
-    useEffect(() => {
-        if (userIsAdmin) {
-            return;
-        }
-
-        dispatch(addSnackbarMessage({
-            key: 'access-denied-identity-provider-details',
-            message: 'Dieser Nutzerkontenanbieter kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.',
-            type: SnackbarType.Dismissable,
-            severity: SnackbarSeverity.Warning,
-        }));
-
-        return () => {
-            dispatch(removeSnackbarMessage('access-denied-identity-provider-details'));
-        };
-    }, []);
+    const canDeleteIdentityProvider = useCheckSystemPermission(Permission.IDENTITY_PROVIDER_DELETE);
+    const canReadSecrets = useCheckSystemPermission(Permission.SECRET_READ);
 
     const [secrets, setSecrets] = useState<SecretEntityResponseDTO[]>();
 
@@ -205,6 +185,7 @@ export function IdentityProviderDetailsPageIndex() {
         isNewItem,
         isBusy,
         setIsBusy,
+        isEditable,
     } = useContext<GenericDetailsPageContextType<IdentityProviderDetailsDTO, void>>(GenericDetailsPageContext);
 
     const isSystemProvider = useMemo(() => (
@@ -236,18 +217,30 @@ export function IdentityProviderDetailsPageIndex() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
+    const editPermission = isNewItem ? Permission.IDENTITY_PROVIDER_CREATE : Permission.IDENTITY_PROVIDER_UPDATE;
+    const editDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledTooltip = !canDeleteIdentityProvider
+        ? formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_DELETE)
+        : undefined;
 
     useEffect(() => {
+        if (!canReadSecrets) {
+            setSecrets([]);
+            return;
+        }
+
         fetchSecrets(api)
             .then(setSecrets)
             .catch((err) => {
                 console.error(err);
             });
-    }, [api]);
+    }, [api, canReadSecrets]);
 
     const inputsDisabled = useMemo(() => (
-        isBusy || identityProvider == null || !userIsAdmin
-    ), [isBusy, identityProvider, userIsAdmin]);
+        isBusy || identityProvider == null || !isEditable
+    ), [isBusy, identityProvider, isEditable]);
 
     if (identityProvider == null || secrets == null) {
         return (
@@ -291,6 +284,10 @@ export function IdentityProviderDetailsPageIndex() {
     };
 
     const handleRefreshSecrets = () => {
+        if (!canReadSecrets) {
+            return;
+        }
+
         setIsBusy(true);
         fetchSecrets(api)
             .then(setSecrets)
@@ -505,6 +502,22 @@ export function IdentityProviderDetailsPageIndex() {
         'additionalParams',
         'Bitte füllen Sie alle Schlüssel/Wert-Paare vollständig aus.',
     );
+
+    const secretOptions = canReadSecrets
+        ? secrets.map((secret) => ({
+            value: secret.key,
+            label: secret.name,
+        }))
+        : identityProvider.clientSecretKey != null
+            ? [{
+                value: identityProvider.clientSecretKey,
+                label: 'Keine Berechtigung zur Einsicht',
+            }]
+            : [];
+
+    const secretSelectionHint = canReadSecrets
+        ? 'Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert.'
+        : formatMissingPermissionTooltip(Permission.SECRET_READ);
 
     return (
         <Box>
@@ -840,15 +853,11 @@ export function IdentityProviderDetailsPageIndex() {
                                 handleInputChange('clientSecretKey')(value);
                             }
                         }}
-                        disabled={inputsDisabled || isSystemProvider}
+                        disabled={inputsDisabled || isSystemProvider || !canReadSecrets}
                         options={
-                            secrets
-                                .map((secret) => ({
-                                    value: secret.key,
-                                    label: secret.name,
-                                }))
+                            secretOptions
                         }
-                        hint={'Nur notwendig, wenn der Nutzerkontenanbieter dies erfordert.'}
+                        hint={secretSelectionHint}
                     />
                 </Grid>
             </Grid>
@@ -992,30 +1001,44 @@ export function IdentityProviderDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
-                    disabled={isBusy || hasNotChanged}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<SaveOutlinedIcon/>}
+                <DisabledTooltip
+                    title={editDisabledTooltip}
+                    disabled={isBusy || hasNotChanged || !isEditable}
                 >
-                    Speichern
-                </Button>
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<SaveOutlinedIcon/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
 
                 {
                     !isSystemProvider &&
                     !inputsDisabled &&
-                    <Tooltip title={'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
-                        <Button
-                            onClick={handleRefreshSecrets}
-                            disabled={isBusy}
-                        >
-                            Geheimnisse neu laden <HelpIconOutlined
-                            fontSize="small"
-                            sx={{ml: 1}}
-                        />
-                        </Button>
-                    </Tooltip>
+                    <DisabledTooltip
+                        title={canReadSecrets
+                            ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
+                            : formatMissingPermissionTooltip(Permission.SECRET_READ)}
+                        disabled={isBusy || !canReadSecrets}
+                    >
+                        <span>
+                            <Tooltip title={canReadSecrets ? 'Aktualisieren Sie die Liste der Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.' : ''}>
+                                <Button
+                                    onClick={handleRefreshSecrets}
+                                    disabled={isBusy || !canReadSecrets}
+                                >
+                                    Geheimnisse neu laden <HelpIconOutlined
+                                    fontSize="small"
+                                    sx={{ml: 1}}
+                                />
+                                </Button>
+                            </Tooltip>
+                        </span>
+                    </DisabledTooltip>
                 }
 
                 {
@@ -1029,16 +1052,21 @@ export function IdentityProviderDetailsPageIndex() {
                     >
                         {
                             !originalIdentityProvider.isEnabled &&
-                            <Button
-                                variant="outlined"
-                                onClick={checkAndHandleDelete}
-                                disabled={isBusy}
-                                color="error"
-
-                                startIcon={<Delete/>}
+                            <DisabledTooltip
+                                title={deleteDisabledTooltip}
+                                disabled={isBusy || !canDeleteIdentityProvider}
                             >
-                                Löschen
-                            </Button>
+                                <Button
+                                    variant="outlined"
+                                    onClick={checkAndHandleDelete}
+                                    disabled={isBusy || !canDeleteIdentityProvider}
+                                    color="error"
+
+                                    startIcon={<Delete/>}
+                                >
+                                    Löschen
+                                </Button>
+                            </DisabledTooltip>
                         }
 
                         {

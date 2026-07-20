@@ -6,6 +6,7 @@ import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
+import {Permission} from '../../../../data/permissions/permission';
 
 export function IdentityProviderDetailsPage() {
     return (
@@ -16,6 +17,14 @@ export function IdentityProviderDetailsPage() {
                 background
             >
                 <GenericDetailsPage<IdentityProviderDetailsDTO, string, void>
+                    permissionCheck={{
+                        create: Permission.IDENTITY_PROVIDER_CREATE,
+                        read: Permission.IDENTITY_PROVIDER_READ,
+                        update: Permission.IDENTITY_PROVIDER_UPDATE,
+                        scope: {
+                            type: 'system',
+                        },
+                    }}
                     header={{
                         icon: <BadgeOutlinedIcon />,
                         title: 'Nutzerkontenanbieter bearbeiten',

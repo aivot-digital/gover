@@ -12,17 +12,18 @@ import BadgeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Badg
 import {IdentityProviderListDTO} from '../../models/identity-provider-list-dto';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
+import {useCheckSystemPermission, useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 export function IdentityProvidersListPage() {
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
+    useHasSystemPermission(Permission.IDENTITY_PROVIDER_READ);
+    const canCreateIdentityProvider = useCheckSystemPermission(Permission.IDENTITY_PROVIDER_CREATE);
+    const canUpdateIdentityProvider = useCheckSystemPermission(Permission.IDENTITY_PROVIDER_UPDATE);
 
     const header = useMemo(() => ({
         icon: <BadgeOutlinedIcon />,
@@ -33,7 +34,8 @@ export function IdentityProvidersListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/identity-providers/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !canCreateIdentityProvider,
+                disabledTooltip: formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_CREATE),
             },
         ],
         helpDialog: {
@@ -106,7 +108,7 @@ export function IdentityProvidersListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), [canCreateIdentityProvider]);
 
     const fetchIdentityProviders = useCallback((options: GenericListPropsFetchOptions<IdentityProviderListDTO>) => {
         return new IdentityProvidersApiService()
@@ -129,7 +131,7 @@ export function IdentityProvidersListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/identity-providers/${params.id}`}
-                    title={hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
+                    title={canUpdateIdentityProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                 >
                     {String(params.value)}
                     {params.row.isTestProvider && <Chip
@@ -170,22 +172,22 @@ export function IdentityProvidersListPage() {
                 </>
             ),
         },
-    ], [hasAccess]);
+    ], [canUpdateIdentityProvider]);
 
     const getRowIdentifier = useCallback((row: IdentityProviderListDTO) => row.key, []);
 
     const rowActions = useCallback((item: IdentityProviderListDTO) => [
         {
-            icon: hasAccess ? <EditOutlined /> : <Visibility />,
+            icon: canUpdateIdentityProvider ? <EditOutlined /> : <Visibility />,
             to: `/identity-providers/${item.key}`,
-            tooltip: hasAccess ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
+            tooltip: canUpdateIdentityProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
         },
         {
             icon: <ScienceOutlinedIcon />,
             to: `/identity-providers/${item.key}/test`,
             tooltip: 'Konfiguration testen',
         },
-    ], [hasAccess]);
+    ], [canUpdateIdentityProvider]);
 
     return (
         <>
@@ -205,8 +207,10 @@ export function IdentityProvidersListPage() {
                         <EmptyDataListPlaceholder
                             title="Noch keine Nutzerkontenanbieter angelegt"
                             description="Nutzerkontenanbieter verbinden Gover mit Anmeldeverfahren oder Benutzerquellen wie Verzeichnisdiensten."
-                            addText={hasAccess ? "Neuen Nutzerkontenanbieter anlegen" : undefined}
-                            onAdd={hasAccess ? () => navigate('/identity-providers/new') : undefined}
+                            addText="Neuen Nutzerkontenanbieter anlegen"
+                            onAdd={() => navigate('/identity-providers/new')}
+                            addDisabled={!canCreateIdentityProvider}
+                            addDisabledTooltip={formatMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_CREATE)}
                         />
                     }
                     noSearchResultsPlaceholder="Keine Nutzerkontenanbieter gefunden"
