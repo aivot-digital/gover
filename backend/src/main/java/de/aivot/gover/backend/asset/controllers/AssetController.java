@@ -673,7 +673,8 @@ public class AssetController {
     )
     @Operation(
             summary = "Copy an asset",
-            description = "Copy an asset file from a source path to a target path in the same storage provider."
+            description = "Copy an asset file from a source path to a target path in the same storage provider. " +
+                    "This requires the permissions " + AssetPermissionProvider.ASSET_READ + " and " + AssetPermissionProvider.ASSET_CREATE + "."
     )
     public VStorageIndexItemWithAssetEntity copyFile(
             @Nullable @AuthenticationPrincipal Jwt jwt,
@@ -684,8 +685,11 @@ public class AssetController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
+        // Copying reads the source asset and creates a new asset record at the target path.
         permissionService
-                .hasSystemPermission(user.getId(), AssetPermissionProvider.ASSET_UPDATE);
+                .hasSystemPermission(user.getId(), AssetPermissionProvider.ASSET_READ);
+        permissionService
+                .hasSystemPermission(user.getId(), AssetPermissionProvider.ASSET_CREATE);
 
         var storageProvider = getStorageProvider(storageProviderId);
         if (storageProvider.getReadOnlyStorage()) {
