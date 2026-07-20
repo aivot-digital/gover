@@ -1,8 +1,11 @@
 package de.aivot.gover.backend.search.entities;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+
+import java.util.List;
 
 @Entity
 @Table(name = "v_search_items")
@@ -15,6 +18,14 @@ public class SearchItemEntity {
     private String originTable;
 
     private String originTableSubset;
+
+    // SearchFilter needs this view-only column for word_similarity; no getter keeps it out of API responses.
+    @Column(name = "search_text")
+    private String searchText;
+
+    private String userId;
+
+    private List<String> permissions;
 
     public String getId() {
         return id;
@@ -49,6 +60,24 @@ public class SearchItemEntity {
 
     public SearchItemEntity setOriginTableSubset(String originTableSubset) {
         this.originTableSubset = originTableSubset;
+        return this;
+    }
+
+    public String getUserId() {
+        return userId;
+    }
+
+    public SearchItemEntity setUserId(String userId) {
+        this.userId = userId;
+        return this;
+    }
+
+    public List<String> getPermissions() {
+        return permissions;
+    }
+
+    public SearchItemEntity setPermissions(List<String> permissions) {
+        this.permissions = permissions;
         return this;
     }
 }
