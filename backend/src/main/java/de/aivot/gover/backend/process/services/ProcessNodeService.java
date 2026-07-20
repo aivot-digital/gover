@@ -12,9 +12,12 @@ import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.models.config.GoverConfig;
+import de.aivot.gover.backend.plugins.form.FormPlugin;
 import de.aivot.gover.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntityId;
+import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinition;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
@@ -49,6 +52,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     private final ProcessRepository processDefinitionRepository;
     private final ProcessVersionRepository processDefinitionVersionRepository;
     private final ProcessEdgeRepository processEdgeRepository;
+    private final GoverConfig goverConfig;
 
     @Autowired
     public ProcessNodeService(ProcessNodeRepository processNodeRepository,
@@ -56,7 +60,9 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                               ElementDerivationService elementDerivationService,
                               UserService userService,
                               ProcessRepository processDefinitionRepository,
-                              ProcessVersionRepository processDefinitionVersionRepository, ProcessEdgeRepository processEdgeRepository) {
+                              ProcessVersionRepository processDefinitionVersionRepository,
+                              ProcessEdgeRepository processEdgeRepository,
+                              GoverConfig goverConfig) {
         this.processNodeRepository = processNodeRepository;
         this.processNodeProviderService = processNodeProviderService;
         this.elementDerivationService = elementDerivationService;
@@ -64,6 +70,7 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         this.processDefinitionRepository = processDefinitionRepository;
         this.processDefinitionVersionRepository = processDefinitionVersionRepository;
         this.processEdgeRepository = processEdgeRepository;
+        this.goverConfig = goverConfig;
     }
 
     @Nonnull
@@ -85,6 +92,9 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                         StringUtils.quote(entity.getProcessNodeDefinitionKey()),
                         entity.getProcessNodeDefinitionVersion()
                 ));
+
+        validateProcessNodeDefinitionUsable(provider);
+        validateProcessNodeTypeCapacity(entity, provider, null);
 
         if (entity.getName() == null || StringUtils.isNullOrEmpty(entity.getName())) {
             entity.setName(provider.getName());
@@ -146,6 +156,9 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var provider = processNodeProviderService
                 .getProcessNodeDefinition(existingEntity)
                 .orElseThrow(ResponseException::badRequest);
+
+        validateProcessNodeDefinitionUsable(provider);
+        validateProcessNodeTypeCapacity(existingEntity, provider, existingEntity.getId());
 
         if (existingEntity.getName() == null || StringUtils.isNullOrEmpty(existingEntity.getName())) {
             existingEntity.setName(provider.getName());
@@ -238,6 +251,31 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
     public List<ProcessNodeEntity> findAllByProcessIdAndProcessVersion(Integer processId, Integer processVersion) {
         return processNodeRepository
                 .findAllByProcessIdAndProcessVersion(processId, processVersion);
+    }
+
+    /**
+     * Validates nodes before a whole process version is copied into an empty target version. This preflight keeps
+     * imports and draft creation from leaving behind a process shell when the module or limit policy rejects a later
+     * node in the batch.
+     */
+    public void validateNewProcessNodeBatch(@Nonnull List<ProcessNodeEntity> nodes) throws ResponseException {
+        var countsByType = new EnumMap<ProcessNodeType, Integer>(ProcessNodeType.class);
+
+        for (var node : nodes) {
+            var provider = processNodeProviderService
+                    .getProcessNodeDefinition(node)
+                    .orElseThrow(() -> ResponseException.badRequest(
+                            "Eine Prozesselementdefinition mit dem Schlüssel „%s“ und der Version „%d“ ist nicht verfügbar."
+                                    .formatted(node.getProcessNodeDefinitionKey(), node.getProcessNodeDefinitionVersion())
+                    ));
+
+            validateProcessNodeDefinitionUsable(provider);
+            countsByType.merge(provider.getType(), 1, Integer::sum);
+        }
+
+        for (var entry : countsByType.entrySet()) {
+            validateProcessNodeTypeBatchCapacity(entry.getKey(), entry.getValue());
+        }
     }
 
     @Nonnull
@@ -395,6 +433,8 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
         var commonErrors = new LinkedHashMap<String, List<String>>();
         var problems = new LinkedList<String>();
 
+        collectProcessNodePolicyProblems(node, provider, problems);
+
         if (StringUtils.isNullOrEmpty(node.getDataKey())) {
             var commonErrorMessage = "Der Datenschlüssel darf nicht leer sein.";
             addCommonError(
@@ -505,6 +545,117 @@ public class ProcessNodeService implements EntityService<ProcessNodeEntity, Inte
                 .toList();
 
         return String.join(" ", cleanedErrors);
+    }
+
+    private void collectProcessNodePolicyProblems(@Nonnull ProcessNodeEntity node,
+                                                  @Nonnull ProcessNodeDefinition<?> provider,
+                                                  @Nonnull List<String> problems) throws ResponseException {
+        if (isProcessNodeDefinitionDisabled(provider)) {
+            problems.add(createDisabledFormModuleMessage());
+        }
+
+        var type = provider.getType();
+        if (goverConfig.isProcessNodeTypeUnlimited(type)) {
+            return;
+        }
+
+        var limit = goverConfig.getProcessNodeLimit(type);
+        var count = countProcessNodesOfType(
+                node.getProcessId(),
+                node.getProcessVersion(),
+                type,
+                null
+        );
+
+        if (count > limit) {
+            problems.add(createProcessNodeLimitExceededMessage(type, limit));
+        }
+    }
+
+    private void validateProcessNodeDefinitionUsable(@Nonnull ProcessNodeDefinition<?> provider) throws ResponseException {
+        if (isProcessNodeDefinitionDisabled(provider)) {
+            throw ResponseException.badRequest(createDisabledFormModuleMessage());
+        }
+    }
+
+    private boolean isProcessNodeDefinitionDisabled(@Nonnull ProcessNodeDefinition<?> provider) {
+        return FormPlugin.PLUGIN_KEY.equals(provider.getParentPluginKey()) && !goverConfig.isFormModuleEnabled();
+    }
+
+    private void validateProcessNodeTypeCapacity(@Nonnull ProcessNodeEntity node,
+                                                 @Nonnull ProcessNodeDefinition<?> provider,
+                                                 @Nullable Integer excludedNodeId) throws ResponseException {
+        var type = provider.getType();
+        if (goverConfig.isProcessNodeTypeUnlimited(type)) {
+            return;
+        }
+
+        var limit = goverConfig.getProcessNodeLimit(type);
+        var count = countProcessNodesOfType(
+                node.getProcessId(),
+                node.getProcessVersion(),
+                type,
+                excludedNodeId
+        );
+
+        if (count >= limit) {
+            throw ResponseException.badRequest(createProcessNodeLimitExceededMessage(type, limit));
+        }
+    }
+
+    private void validateProcessNodeTypeBatchCapacity(@Nonnull ProcessNodeType type,
+                                                      int count) throws ResponseException {
+        if (goverConfig.isProcessNodeTypeUnlimited(type)) {
+            return;
+        }
+
+        var limit = goverConfig.getProcessNodeLimit(type);
+        if (count > limit) {
+            throw ResponseException.badRequest(createProcessNodeLimitExceededMessage(type, limit));
+        }
+    }
+
+    private long countProcessNodesOfType(@Nonnull Integer processId,
+                                         @Nonnull Integer processVersion,
+                                         @Nonnull ProcessNodeType type,
+                                         @Nullable Integer excludedNodeId) throws ResponseException {
+        var nodes = processNodeRepository.findAllByProcessIdAndProcessVersion(processId, processVersion);
+        long count = 0;
+
+        for (var node : nodes) {
+            if (Objects.equals(node.getId(), excludedNodeId)) {
+                continue;
+            }
+
+            var provider = processNodeProviderService
+                    .getProcessNodeDefinition(node)
+                    .orElseThrow(() -> ResponseException.internalServerError("No provider found for node with id " + node.getId()));
+
+            if (provider.getType() == type) {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private static String createDisabledFormModuleMessage() {
+        return "Die Formularerweiterung ist auf dieser Instanz nicht aktiviert. Prozesselemente dieses Plugins können nicht verwendet werden.";
+    }
+
+    private static String createProcessNodeLimitExceededMessage(@Nonnull ProcessNodeType type,
+                                                                int limit) {
+        return "In dieser Prozessversion sind maximal %d Prozesselemente vom Typ %s erlaubt."
+                .formatted(limit, StringUtils.quote(getProcessNodeTypeLabel(type)));
+    }
+
+    private static String getProcessNodeTypeLabel(@Nonnull ProcessNodeType type) {
+        return switch (type) {
+            case Trigger -> "Auslöser";
+            case Action -> "Aktion";
+            case FlowControl -> "Flusselement";
+            case Termination -> "Abschluss";
+        };
     }
 
     private static void addCommonError(@Nonnull Map<String, List<String>> commonErrors,
