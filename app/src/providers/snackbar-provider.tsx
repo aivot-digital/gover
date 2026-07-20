@@ -60,7 +60,9 @@ const SnackbarConsumer = () => {
             const autoHideDuration = SNACKBAR_AUTO_HIDE_DURATION_MS[severity];
 
             // replace hyphens with non-breaking hyphens, because Chrome does not respect word-break: keep-all
-            const formattedMessage = message.replace(/-/g, '\u2011');
+            // Remove this for now because it breaks the ability to copy technical information from the message.
+            // const formattedMessage = message.replace(/-/g, '\u2011');
+            const formattedMessage = message;
 
             enqueueSnackbar(message, {
                 key,

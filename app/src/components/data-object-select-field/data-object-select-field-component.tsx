@@ -1,5 +1,5 @@
 import {Autocomplete, Box, CircularProgress, TextField, Typography} from '@mui/material';
-import CheckIcon from '@mui/icons-material/Check';
+import CheckIcon from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import {SyntheticEvent, useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
     DataObjectSelectOption,

@@ -1,7 +1,7 @@
 import {Box, Button, Typography} from '@mui/material';
 import React, {useContext, useEffect, useState} from 'react';
 import {GenericDetailsPageContext, GenericDetailsPageContextType} from '../../../../components/generic-details-page/generic-details-page-context';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import type {StorageProviderEntity} from '../../entities/storage-provider-entity';
 import {StorageProvidersApiService} from '../../storage-providers-api-service';

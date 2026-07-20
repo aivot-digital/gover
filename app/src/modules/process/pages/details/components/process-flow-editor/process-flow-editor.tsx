@@ -44,12 +44,12 @@ import {type ProcessInstanceTaskEntity} from '../../../../entities/process-insta
 import {type ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
 import {type ProcessInstanceAttachmentEntity} from '../../../../entities/process-instance-attachment-entity';
 import {type ProcessInstanceAttachmentSetEntity} from '../../../../entities/process-instance-attachment-set-entity';
-import Add from '@mui/icons-material/Add';
-import Remove from '@mui/icons-material/Remove';
-import CropFree from '@mui/icons-material/CropFree';
-import Lock from '@mui/icons-material/Lock';
-import LockOpen from '@mui/icons-material/LockOpen';
-import ViewRealSize from '@aivot/mui-material-symbols-400-outlined/dist/view-real-size/ViewRealSize';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
+import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
+import CropFree from '@aivot/mui-material-symbols-400-n25-outlined/CropFree';
+import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
+import LockOpen from '@aivot/mui-material-symbols-400-n25-outlined/LockOpen';
+import ViewRealSize from '@aivot/mui-material-symbols-400-n25-outlined/ViewRealSize';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 import {

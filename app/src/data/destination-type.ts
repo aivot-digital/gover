@@ -1,7 +1,7 @@
-import {type SvgIconComponent} from '@mui/icons-material';
-import HttpOutlinedIcon from '@mui/icons-material/HttpOutlined';
-import EmailOutlinedIcon from '@mui/icons-material/EmailOutlined';
-import ShareOutlinedIcon from '@mui/icons-material/ShareOutlined';
+import {type SvgIconComponent} from '../types/svg-icon-component';
+import HttpOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Http';
+import EmailOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Mail';
+import ShareOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Share';
 
 export enum DestinationType {
     Mail = 'Mail',

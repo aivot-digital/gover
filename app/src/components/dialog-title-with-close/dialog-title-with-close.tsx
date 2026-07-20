@@ -1,6 +1,6 @@
 import {Box, DialogTitle, DialogTitleProps, IconButton, Tooltip, Typography, useTheme} from '@mui/material';
 import React from 'react';
-import CloseOutlinedIcon from '@mui/icons-material/CloseOutlined';
+import CloseOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import {Action} from '../actions/actions-props';
 import {Actions} from '../actions/actions';
 

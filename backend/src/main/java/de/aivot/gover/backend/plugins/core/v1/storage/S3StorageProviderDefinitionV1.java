@@ -36,6 +36,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -288,18 +289,19 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                 var folderPath = "/" + objectName;
                 if (normalizedPath.equals(folderPath)) {
                     folderMarkerExists = true;
+                    withLastModified(folder, item.lastModified());
                 } else if (subfolderPaths.add(folderPath)) {
                     if (recursive) {
                         retrieveFolder(config, folderPath, true)
                                 .ifPresent(folder::addSubfolder);
                     } else {
-                        folder.addSubfolder(new StorageFolder(
+                        folder.addSubfolder(withLastModified(new StorageFolder(
                                 folderPath,
                                 StringUtils.getLastPathSegment(folderPath),
                                 new LinkedList<>(),
                                 new LinkedList<>(),
                                 false
-                        ));
+                        ), item.lastModified()));
                     }
                 }
             } else {
@@ -319,12 +321,12 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
                     }
                 }
 
-                folder.addDocument(new StorageDocument(
+                folder.addDocument(withLastModified(new StorageDocument(
                         "/" + objectName,
                         StringUtils.getLastPathSegment(objectName),
                         item.size(),
                         metadata
-                ));
+                ), item.lastModified()));
             }
         }
 
@@ -602,12 +604,12 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
 
         var metadata = fromUserMetadata(response.userMetadata());
 
-        return Optional.of(new StorageDocument(
+        return Optional.of(withLastModified(new StorageDocument(
                 path,
                 StringUtils.getLastPathSegment(path),
                 response.size(),
                 metadata
-        ));
+        ), response.lastModified()));
     }
 
     @Nonnull
@@ -830,6 +832,18 @@ public class S3StorageProviderDefinitionV1 implements StorageProviderDefinition<
         }
 
         return metadata;
+    }
+
+    @Nonnull
+    private static <T extends StorageItem> T withLastModified(@Nonnull T item,
+                                                             @Nullable ZonedDateTime lastModified) {
+        if (lastModified != null) {
+            var timestamp = lastModified.toInstant();
+            item
+                    .setCreated(timestamp)
+                    .setUpdated(timestamp);
+        }
+        return item;
     }
 
     /**

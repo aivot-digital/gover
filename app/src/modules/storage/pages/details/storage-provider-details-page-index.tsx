@@ -5,7 +5,7 @@ import {TextFieldComponent} from '../../../../components/text-field/text-field-c
 import {useNavigate} from 'react-router-dom';
 import {StorageProvidersApiService} from '../../storage-providers-api-service';
 import {SelectFieldComponent} from '../../../../components/select-field/select-field-component';
-import SaveOutlinedIcon from '@mui/icons-material/SaveOutlined';
+import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {type StorageProviderAdditionalData} from './storage-provider-details-page-additional-data';
@@ -25,18 +25,18 @@ import {type StorageProviderEntity, StorageProviderMetadataAttribute} from '../.
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../enums/storage-provider-type';
 import Tooltip from '@mui/material/Tooltip';
-import HelpIconOutlined from '@mui/icons-material/HelpOutline';
+import HelpIconOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {NumberFieldComponent} from '../../../../components/number-field/number-field-component';
 import {TableFieldComponent2} from '../../../../components/table-field/table-field-component-2';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {bytesToMegabytes, megabytesToBytes} from '../../../../utils/bytes-megabytes-conversion';
 import {ConfirmDialog} from '../../../../dialogs/confirm-dialog/confirm-dialog';
 import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
 import {format} from 'date-fns';
 import {StatusTable} from '../../../../components/status-table/status-table';
-import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
+import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {
     ComputedElementErrors,
     DerivedRuntimeElementData,
@@ -46,6 +46,11 @@ import {useStorageProviderDetailsPageSyncContext} from './storage-provider-detai
 import {Hint} from '../../../../components/hint/hint';
 import {StorageProviderStatus} from '../../enums/storage-provider-status';
 import {isApiError} from '../../../../models/api-error';
+import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
+import {useAppSelector} from '../../../../hooks/use-app-selector';
+
+const DefaultStorageProcessAttachmentsSystemConfigDefinitionKey = 'storage.attachments.default_storage_provider';
+const DefaultStorageAssetsSystemConfigDefinitionKey = 'storage.assets.default_storage_provider';
 
 function getIndexedFieldError(
     errors: Record<string, any> | undefined,
@@ -140,6 +145,15 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     } = originalStorageProvider ?? {
         id: null,
     };
+
+    // Check if this provider is the default attachment storage
+    const defaultAttachmentStorage = useAppSelector(selectSystemConfigValue(DefaultStorageProcessAttachmentsSystemConfigDefinitionKey));
+    const isDefaultAttachmentStorage = useMemo(() => defaultAttachmentStorage === storageProviderId?.toString(), [defaultAttachmentStorage, storageProviderId]);
+
+    // Check if this is the default asset storage
+    const defaultAssetStorage = useAppSelector(selectSystemConfigValue(DefaultStorageAssetsSystemConfigDefinitionKey));
+    const isDefaultAssetStorage = useMemo(() => defaultAssetStorage === storageProviderId?.toString(), [defaultAssetStorage, storageProviderId]);
+
 
     // Store the state of the initial derivation to prevent the change blocker from firing after the first derivation.
     const [initialDerivationDone, setInitialDerivationDone] = useState(false);
@@ -380,6 +394,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             setIsBusy(false);
         }
     };
+
     const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
     const attributesError = getIndexedFieldError(
         errors,
@@ -396,6 +411,23 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             children: 'Dieser Speicheranbieter ist ein Systemanbieter und kann nicht verändert werden.',
         });
     }
+
+    if (isDefaultAttachmentStorage) {
+        statusTableItems.push({
+            label: 'Standardanbieter für Anhänge von Vorgängen',
+            icon: <HelpIconOutlined color="primary"/>,
+            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Anhänge von Vorgängen konfiguriert und kann nicht gelöscht werden.',
+        });
+    }
+
+    if (isDefaultAssetStorage) {
+        statusTableItems.push({
+            label: 'Standardanbieter für Dateien und Medien',
+            icon: <HelpIconOutlined color="primary"/>,
+            children: 'Dieser Speicheranbieter ist als der Standardanbieter für Dateien und Medien konfiguriert und kann nicht gelöscht werden.',
+        });
+    }
+
     statusTableItems.push({
         label: 'Zuletzt synchronisiert',
         icon: <Sync/>,
@@ -780,7 +812,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     Speichern
                 </Button>
 
-                <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
+                <Tooltip title="Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.">
                     <Button
                         onClick={handleRefreshDefinitions}
                         disabled={inputsDisabled}
@@ -795,18 +827,30 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                 {
                     editedStorageProvider.id !== 0 &&
                     originalStorageProvider != null &&
-                    <Button
-                        variant={'outlined'}
-                        onClick={() => setShowConfirmDialog(true)}
-                        disabled={inputsDisabled}
-                        color="error"
-                        sx={{
-                            marginLeft: 'auto',
-                        }}
-                        startIcon={<Delete/>}
+                    <Tooltip
+                        title={
+                            (isDefaultAttachmentStorage || isDefaultAssetStorage) ?
+                                'Dieser Speicheranbieter ist als Standardanbieter für Anhänge von Vorgängen oder Dateien und Medien konfiguriert und kann nicht gelöscht werden.' :
+                                'Löscht den Speicheranbieter. Bitte beachten Sie, dass die Ordner und Dokumente des Speicheranbieters nicht gelöscht werden.'
+                        }
                     >
-                        Löschen
-                    </Button>
+                        <Box
+                            component="span"
+                            sx={{
+                                marginLeft: 'auto',
+                            }}
+                        >
+                            <Button
+                                variant={'outlined'}
+                                onClick={() => setShowConfirmDialog(true)}
+                                disabled={inputsDisabled || isDefaultAttachmentStorage || isDefaultAssetStorage}
+                                color="error"
+                                startIcon={<Delete/>}
+                            >
+                                Löschen
+                            </Button>
+                        </Box>
+                    </Tooltip>
                 }
             </Box>
 

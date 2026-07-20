@@ -247,7 +247,6 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.MapPoint,
             ElementType.DataObjectSelect,
             ElementType.SummaryLayout,
-            ElementType.ProcessAttachmentDisplay,
         ],
         [ElementType.SummaryLayout]: [
             ElementType.GroupLayout,
@@ -261,6 +260,7 @@ export const ElementChildOptions: Record<ElementDisplayContext, Partial<Record<E
             ElementType.Table,
             ElementType.Text,
             ElementType.Time,
+            ElementType.FileUpload,
             ElementType.RichTextInput,
             ElementType.ChipInput,
             ElementType.DateTime,

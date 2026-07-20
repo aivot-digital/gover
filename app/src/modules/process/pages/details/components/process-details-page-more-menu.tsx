@@ -1,10 +1,10 @@
 import React, {type ReactNode, useMemo} from 'react';
-import History from '@aivot/mui-material-symbols-400-outlined/dist/history/History';
-import Comment from '@aivot/mui-material-symbols-400-outlined/dist/comment/Comment';
-import FileExport from '@aivot/mui-material-symbols-400-outlined/dist/file-export/FileExport';
-import Science from '@aivot/mui-material-symbols-400-outlined/dist/science/Science';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
-import Delete from '@aivot/mui-material-symbols-400-outlined/dist/delete/Delete';
+import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
+import Comment from '@aivot/mui-material-symbols-400-n25-outlined/Comment';
+import FileExport from '@aivot/mui-material-symbols-400-n25-outlined/FileExport';
+import Science from '@aivot/mui-material-symbols-400-n25-outlined/Science';
+import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';

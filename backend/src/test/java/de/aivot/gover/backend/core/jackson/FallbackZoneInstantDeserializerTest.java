@@ -43,7 +43,7 @@ class FallbackZoneInstantDeserializerTest {
     void springMapperShouldAssumeApplicationTimeZoneForOffsetlessInstants() {
         var builder = Jackson2ObjectMapperBuilder.json();
         new JacksonConfiguration()
-                .fallbackZoneInstantDeserializerCustomizer()
+                .customJacksonSerializers()
                 .customize(builder);
 
         var mapper = builder.build();

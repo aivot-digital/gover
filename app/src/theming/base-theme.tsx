@@ -1,10 +1,10 @@
 import {createTheme} from '@mui/material';
 import {deDE} from '@mui/x-data-grid/locales';
 import {deDE as coreDeDE} from '@mui/material/locale';
-import CheckCircleOutlinedIcon from '@mui/icons-material/CheckCircleOutlined';
-import ErrorOutlineOutlinedIcon from '@mui/icons-material/ErrorOutlineOutlined';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
-import ReportOutlinedIcon from '@mui/icons-material/ReportOutlined';
+import CheckCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
+import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
+import ReportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
 import type {} from '@mui/x-data-grid/themeAugmentation';
 
 const fontStackHeadlines = ['"Public Sans"',

@@ -6,7 +6,7 @@ import Box from '@mui/material/Box';
 import CircularProgress from '@mui/material/CircularProgress';
 import Tooltip from '@mui/material/Tooltip';
 import {AuthService} from '../../../services/auth-service';
-import Refresh from '@aivot/mui-material-symbols-400-outlined/dist/refresh/Refresh';
+import Refresh from '@aivot/mui-material-symbols-400-n25-outlined/Refresh';
 
 const expirationThresholdSeconds = 2 * 60; // 2 minutes
 

@@ -1,13 +1,13 @@
 import {Box, Button, Dialog, IconButton, Stack, Typography, useTheme} from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
-import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import CodeIcon from '@mui/icons-material/Code';
-import ListAltIcon from '@mui/icons-material/ListAlt';
+import CloseIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
+import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
+import CodeIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
+import ListAltIcon from '@aivot/mui-material-symbols-400-n25-outlined/ListAlt';
 import React from 'react';
 import {AppInfo} from '../../../app-info';
 import {createApiPath} from '../../../utils/url-path-utils';
 import {DebugInformationDialog} from '../../../dialogs/debug-information-dialog/debug-information-dialog';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 
 interface AboutGoverDialogProps {
     open: boolean;

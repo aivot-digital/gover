@@ -1,7 +1,9 @@
 package de.aivot.gover.backend.storage.models;
 
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
+import java.time.Instant;
 import java.util.Objects;
 
 /**
@@ -29,6 +31,12 @@ public abstract class StorageItem {
      * die richtige Behandlung des Elements zu gewährleisten, z.B. bei der Anzeige oder beim Zugriff auf den Inhalt.
      */
     private boolean isFolder;
+
+    @Nullable
+    private Instant created;
+
+    @Nullable
+    private Instant updated;
 
     /**
      * Erstellt ein neues StorageItem mit den angegebenen Eigenschaften. Der Pfad muss mit einem {@code "/"} beginnen und darf nicht mit einem {@code "/"} enden, es sei denn, es
@@ -87,6 +95,26 @@ public abstract class StorageItem {
 
     public StorageItem setFolder(boolean folder) {
         isFolder = folder;
+        return this;
+    }
+
+    @Nullable
+    public Instant getCreated() {
+        return created;
+    }
+
+    public StorageItem setCreated(@Nullable Instant created) {
+        this.created = created;
+        return this;
+    }
+
+    @Nullable
+    public Instant getUpdated() {
+        return updated;
+    }
+
+    public StorageItem setUpdated(@Nullable Instant updated) {
+        this.updated = updated;
         return this;
     }
 }

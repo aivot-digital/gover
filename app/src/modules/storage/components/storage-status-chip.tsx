@@ -4,11 +4,11 @@ import {
     StorageProviderStatusLabels,
 } from '../enums/storage-provider-status';
 import React, { type ReactNode, useEffect, useMemo, useState } from 'react';
-import { type SvgIconComponent } from '@mui/icons-material';
-import SyncProblem from '@aivot/mui-material-symbols-400-outlined/dist/sync-problem/SyncProblem';
-import SyncArrowDown from '@aivot/mui-material-symbols-400-outlined/dist/sync-arrow-down/SyncArrowDown';
-import Autoplay from '@aivot/mui-material-symbols-400-outlined/dist/autoplay/Autoplay';
-import CheckCircle from '@aivot/mui-material-symbols-400-outlined/dist/check-circle/CheckCircle';
+import {type SvgIconComponent} from '../../../types/svg-icon-component';
+import SyncProblem from '@aivot/mui-material-symbols-400-n25-outlined/SyncProblem';
+import SyncArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/SyncArrowDown';
+import Autoplay from '@aivot/mui-material-symbols-400-n25-outlined/Autoplay';
+import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
 import { Chip } from '../../../components/chip/chip';
 
 import { format, formatDistanceToNowStrict } from 'date-fns';

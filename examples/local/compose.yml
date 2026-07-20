@@ -1,0 +1,217 @@
+name: gover
+
+services:
+  gover_api:
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-alpha-117
+    restart: unless-stopped
+    command: serve
+    depends_on:
+      - gover_database
+      - keycloak
+      - clamav
+      - redis
+      - rabbitmq
+      - mailpit
+    environment:
+      GOVER_SERVER_PORT: 9595
+      GOVER_DB_HOST: gover_database
+      GOVER_DB_PORT: 5432
+      GOVER_DB_USERNAME: gover
+      GOVER_DB_PASSWORD: ${GOVER_DB_PASSWORD}
+      GOVER_DB_DATABASE: gover
+      GOVER_REDIS_HOST: redis
+      GOVER_REDIS_PORT: 6379
+      GOVER_REDIS_DATABASE: 0
+      GOVER_SMTP_HOST: mailpit
+      GOVER_SMTP_PORT: 1025
+      GOVER_SMTP_AUTH: false
+      GOVER_RABBITMQ_HOST: rabbitmq
+      GOVER_RABBITMQ_PORT: 5672
+      GOVER_RABBITMQ_USERNAME: gover
+      GOVER_RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      GOVER_CLAM_HOST: clamav
+      GOVER_CLAM_PORT: 3310
+      GOVER_GOTENBERG_HOST: localhost
+      GOVER_GOTENBERG_PORT: 3000
+      GOVER_KEYCLOAK_OIDC_HOSTNAME: http://localhost:9595/idp
+      GOVER_KEYCLOAK_OIDC_INTERNAL_HOSTNAME: http://keycloak:8080
+      GOVER_KEYCLOAK_OIDC_REALM: staff
+      GOVER_KEYCLOAK_OIDC_FRONTEND_CLIENT_ID: app
+      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_ID: backend
+      GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET: ${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
+      GOVER_SECRETS_KEY: ${GOVER_SECRETS_KEY}
+      GOVER_CAPTCHA_KEY: ${GOVER_CAPTCHA_KEY}
+      GOVER_HOSTNAME: http://localhost:9595
+      GOVER_TIMEZONE: Europe/Berlin
+      GOVER_FROM_MAIL: mail@example.com
+      GOVER_REPORT_MAIL: mail@example.com
+      GOVER_BOOTSTRAP_ADMIN_MAIL: admin@example.com
+    volumes:
+      - gover_data:/app/data
+    networks:
+      - gover
+      - gover_keycloak
+      - mail
+      - proxy
+
+  gover_app:
+    image: ghcr.io/aivot-digital/gover-next:5.0.0-alpha-117
+    restart: unless-stopped
+    command: web
+    network_mode: "service:gover_api"
+    depends_on:
+      - gover_api
+    environment:
+      GOVER_HOSTNAME: http://localhost:9595
+
+  gover_database:
+    image: docker.io/postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${GOVER_DB_PASSWORD}
+      POSTGRES_USER: gover
+      POSTGRES_DB: gover
+      PGDATA: /var/lib/postgresql/data/pgdata
+      PGTZ: Europe/Berlin
+    volumes:
+      - gover_database_data:/var/lib/postgresql/data
+    networks:
+      - gover
+
+  keycloak:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins:26.6.4.0
+    restart: unless-stopped
+    depends_on:
+      - keycloak_database
+    command: start-dev
+    environment:
+      KC_HOSTNAME: http://localhost:9595/idp
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_PORT: "8080"
+      KC_BOOTSTRAP_ADMIN_USERNAME: bootstrap_admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: bootstrap_admin
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_database:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      KC_FEATURES: transient-users,update-email,hostname:v2
+    networks:
+      - keycloak
+      - gover_keycloak
+      - mail
+      - proxy
+
+  keycloak_setup:
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.20
+    restart: on-failure
+    depends_on:
+      - keycloak
+    environment:
+      KEYCLOAK_URL: http://keycloak:8080
+      HOSTNAME: http://localhost:9595
+      KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME: bootstrap_admin
+      KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD: bootstrap_admin
+      KEYCLOAK_DEPLOYMENT_CLIENT_NAME: deployment
+      KEYCLOAK_DEPLOYMENT_CLIENT_SECRET: ${KEYCLOAK_DEPLOYMENT_CLIENT_SECRET}
+      KEYCLOAK_ADMIN_EMAIL: mail@example.com
+      KEYCLOAK_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KEYCLOAK_AVAILABILITYCHECK_ENABLED: "true"
+      KEYCLOAK_AVAILABILITYCHECK_TIMEOUT: 120s
+      LOGGING_LEVEL_HTTP: ERROR
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_USERNAME: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM: mail@example.com
+      SMTP_FROM_DISPLAY: GoverIDP
+      BACKEND_CLIENT_SECRET: ${GOVER_KEYCLOAK_OIDC_BACKEND_CLIENT_SECRET}
+    networks:
+      - keycloak
+
+  keycloak_database:
+    image: docker.io/postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      POSTGRES_USER: keycloak
+      POSTGRES_DB: keycloak
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - keycloak_database_data:/var/lib/postgresql/data
+    networks:
+      - keycloak
+
+  clamav:
+    image: docker.io/clamav/clamav:1.5-debian
+    restart: unless-stopped
+    networks:
+      - gover
+
+  redis:
+    image: docker.io/redis:8-alpine
+    restart: unless-stopped
+    networks:
+      - gover
+
+  gotenberg:
+    image: docker.io/gotenberg/gotenberg:8
+    restart: unless-stopped
+    network_mode: "service:gover_api"
+    environment:
+      CHROMIUM_DENY_PRIVATE_IPS: "true"
+      CHROMIUM_DENY_PUBLIC_IPS: "true"
+      CHROMIUM_ALLOW_LIST: "^(http://localhost:9595/|file:///tmp/)"
+
+  mailpit:
+    image: docker.io/axllent/mailpit:v1.30
+    restart: unless-stopped
+    environment:
+      MP_MAX_MESSAGES: 5000
+      MP_DATABASE: /data/mailpit.db
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+    volumes:
+      - mailpit_data:/data
+    ports:
+      - "9025:8025"
+    networks:
+      - mail
+
+  rabbitmq:
+    image: docker.io/rabbitmq:4-alpine
+    restart: unless-stopped
+    environment:
+      RABBITMQ_DEFAULT_USER: gover
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - gover
+
+  caddy:
+    image: docker.io/caddy:2-alpine
+    restart: unless-stopped
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:Z
+    ports:
+      - "9595:80"
+    networks:
+      - proxy
+
+
+volumes:
+  gover_data:
+  gover_database_data:
+  keycloak_database_data:
+  mailpit_data:
+  rabbitmq_data:
+
+
+networks:
+  gover:
+  keycloak:
+  gover_keycloak:
+  mail:
+  proxy:

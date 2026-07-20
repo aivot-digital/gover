@@ -1,5 +1,5 @@
 import {createElement, ReactElement} from 'react';
-import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {BaseApiService} from '../../services/base-api-service';
 import {DataObjectItem} from '../../modules/data-objects/models/data-object-item';
 import {Page} from '../../models/dtos/page';

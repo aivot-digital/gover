@@ -2,18 +2,18 @@ import {GenericListPage} from '../../../../components/generic-list-page/generic-
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
-import {EditOutlined} from '@mui/icons-material';
-import ScienceOutlinedIcon from '@mui/icons-material/ScienceOutlined';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
+import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Science';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {IdentityProvidersApiService} from '../../identity-providers-api-service';
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
+import BadgeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Badge';
 import {IdentityProviderListDTO} from '../../models/identity-provider-list-dto';
 import Chip from '@mui/material/Chip';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {useAccessGuard} from '../../../../hooks/use-admin-guard';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 

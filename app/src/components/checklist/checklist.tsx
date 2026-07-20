@@ -1,7 +1,8 @@
 import {type ChecklistProps} from './checklist-props';
 import {Divider, List, ListItem, ListItemIcon, ListItemText} from '@mui/material';
 import React from 'react';
-import {RadioButtonUncheckedOutlined, TaskAltOutlined} from '@mui/icons-material';
+import RadioButtonUncheckedOutlined from '@aivot/mui-material-symbols-400-n25-outlined/RadioButtonUnchecked';
+import TaskAltOutlined from '@aivot/mui-material-symbols-400-n25-outlined/TaskAlt';
 
 export function Checklist(props: ChecklistProps) {
     // @ts-ignore

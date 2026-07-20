@@ -1,6 +1,6 @@
 import {Button, Dialog, DialogActions, DialogContent, DialogTitle, Typography} from '@mui/material';
 import React, {useEffect, useMemo, useState} from 'react';
-import LoginOutlinedIcon from '@mui/icons-material/LoginOutlined';
+import LoginOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Login';
 import {AuthService} from '../../../services/auth-service';
 import {useLocation} from 'react-router-dom';
 import {createStaffPath} from '../../../utils/url-path-utils';

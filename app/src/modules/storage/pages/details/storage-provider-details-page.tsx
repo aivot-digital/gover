@@ -8,7 +8,7 @@ import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import React, {createContext, type ReactNode, useCallback, useContext, useRef, useState} from 'react';
 import {type StorageProviderEntity} from '../../entities/storage-provider-entity';
 import {StorageStatusChip} from '../../components/storage-status-chip';
-import Sync from '@aivot/mui-material-symbols-400-outlined/dist/sync/Sync';
+import Sync from '@aivot/mui-material-symbols-400-n25-outlined/Sync';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
 import {GenericDetailsPageControlRef} from '../../../../components/generic-details-page/generic-details-page-props';

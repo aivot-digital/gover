@@ -2,8 +2,8 @@ import HeroDecord from './hero-decor.svg';
 import {Box, Divider, Paper, Skeleton, SxProps, Typography, useTheme} from '@mui/material';
 import React from 'react';
 import {useAppSelector} from '../../../hooks/use-app-selector';
-import ArrowForward from '@aivot/mui-material-symbols-400-outlined/dist/arrow-forward/ArrowForward';
-import NorthWest from '@aivot/mui-material-symbols-400-outlined/dist/north-west/NorthWest';
+import ArrowForward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowForward';
+import NorthWest from '@aivot/mui-material-symbols-400-n25-outlined/NorthWest';
 
 interface DashboardHeroProps {
     sx?: SxProps;

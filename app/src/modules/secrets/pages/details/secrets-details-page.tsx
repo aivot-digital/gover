@@ -1,5 +1,5 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import KeyOutlinedIcon from '@mui/icons-material/KeyOutlined';
+import KeyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Key';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
 import {SecretsApiService} from '../../secrets-api-service';

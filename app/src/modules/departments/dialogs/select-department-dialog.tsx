@@ -1,6 +1,6 @@
 import {Dialog, DialogContent} from '@mui/material';
 import React, {useEffect, useState} from 'react';
-import CheckOutlined from '@mui/icons-material/CheckOutlined';
+import CheckOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Check';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {AlertComponent} from '../../../components/alert/alert-component';
 import {DepartmentBrowser} from '../components/department-browser';

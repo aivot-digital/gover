@@ -1,9 +1,10 @@
 import {GenericListPage} from '../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../components/page-wrapper/page-wrapper';
-import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
+import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
-import {CopyAllOutlined, EditOutlined} from '@mui/icons-material';
+import CopyAllOutlined from '@aivot/mui-material-symbols-400-n25-outlined/CopyAll';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../slices/user-slice';
 import React, {useCallback, useMemo, useState} from 'react';
@@ -17,7 +18,7 @@ import {GridColDef} from '@mui/x-data-grid';
 import {AddPresetDialog} from '../../../dialogs/preset-dialogs/add-preset-dialog/add-preset-dialog';
 import {useNavigate} from 'react-router-dom';
 import {CellContentWrapper} from '../../../components/cell-content-wrapper/cell-content-wrapper';
-import Visibility from '@aivot/mui-material-symbols-400-outlined/dist/visibility/Visibility';
+import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../components/generic-list/generic-list-props';
 
 const columns: Array<GridColDef<Preset>> = [

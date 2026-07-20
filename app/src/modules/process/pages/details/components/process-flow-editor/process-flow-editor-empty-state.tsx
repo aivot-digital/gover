@@ -2,7 +2,7 @@ import React, {type ReactNode} from 'react';
 import {Panel} from '@xyflow/react';
 import {Box, Button, Typography, useTheme} from '@mui/material';
 import {alpha, lighten} from '@mui/material/styles';
-import Add from '@mui/icons-material/Add';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
 import {ProviderTypeStyles} from '../../../../data/provider-type-styles';
 

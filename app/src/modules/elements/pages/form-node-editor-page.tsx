@@ -16,18 +16,18 @@ import {HelpDialog, HelpDialogId} from '../../../dialogs/help-dialog/help.dialog
 import {PrivacyDialog, PrivacyDialogId} from '../../../dialogs/privacy-dialog/privacy-dialog';
 import {ImprintDialog, ImprintDialogId} from '../../../dialogs/imprint-dialog/imprint-dialog';
 import {AccessibilityDialog, AccessibilityDialogId} from '../../../dialogs/accessibility-dialog/accessibility-dialog';
-import VisibilityOffOutlinedIcon from '@mui/icons-material/VisibilityOffOutlined';
-import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
-import RemoveDoneOutlinedIcon from '@mui/icons-material/RemoveDoneOutlined';
-import DoneAllOutlinedIcon from '@mui/icons-material/DoneAllOutlined';
+import VisibilityOffOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/VisibilityOff';
+import VisibilityOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
+import RemoveDoneOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/RemoveDone';
+import DoneAllOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/DoneAll';
 import {
     showApiErrorSnackbar,
     showErrorSnackbar,
     showSuccessSnackbar,
     showWarningSnackbar,
 } from '../../../slices/snackbar-slice';
-import UndoIcon from '@mui/icons-material/Undo';
-import RedoIcon from '@mui/icons-material/Redo';
+import UndoIcon from '@aivot/mui-material-symbols-400-n25-outlined/Undo';
+import RedoIcon from '@aivot/mui-material-symbols-400-n25-outlined/Redo';
 import {DeveloperTools} from '../../../components/developer-tools/developer-tools';
 import {
     AuthoredElementValues,
@@ -43,18 +43,18 @@ import {useElementSize} from '../../../utils/element-size';
 import {clearLoadingMessage, setLoadingMessage} from '../../../slices/shell-slice';
 import {PrefillFormDialog} from '../../../dialogs/prefill-form-dialog/prefill-form-dialog';
 import {copyToClipboardText} from '../../../utils/copy-to-clipboard';
-import QrCode from '@aivot/mui-material-symbols-400-outlined/dist/qr-code/QrCode';
-import MoreVert from '@aivot/mui-material-symbols-400-outlined/dist/more-vert/MoreVert';
-import Settings from '@aivot/mui-material-symbols-400-outlined/dist/settings/Settings';
+import QrCode from '@aivot/mui-material-symbols-400-n25-outlined/QrCode';
+import MoreVert from '@aivot/mui-material-symbols-400-n25-outlined/MoreVert';
+import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {type Action} from '../../../components/actions/actions-props';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
-import Link from '@aivot/mui-material-symbols-400-outlined/dist/link/Link';
-import Contract from '@aivot/mui-material-symbols-400-outlined/dist/contract/Contract';
-import Draw from '@aivot/mui-material-symbols-400-outlined/dist/draw/Draw';
-import AccountTree from '@aivot/mui-material-symbols-400-outlined/dist/account-tree/AccountTree';
-import SwipeVertical from '@aivot/mui-material-symbols-400-outlined/dist/swipe-vertical/SwipeVertical';
-import TouchApp from '@aivot/mui-material-symbols-400-outlined/dist/touch-app/TouchApp';
-import BugReport from '@aivot/mui-material-symbols-400-outlined/dist/bug-report/BugReport';
+import Link from '@aivot/mui-material-symbols-400-n25-outlined/Link';
+import Contract from '@aivot/mui-material-symbols-400-n25-outlined/Contract';
+import Draw from '@aivot/mui-material-symbols-400-n25-outlined/Draw';
+import AccountTree from '@aivot/mui-material-symbols-400-n25-outlined/AccountTree';
+import SwipeVertical from '@aivot/mui-material-symbols-400-n25-outlined/SwipeVertical';
+import TouchApp from '@aivot/mui-material-symbols-400-n25-outlined/TouchApp';
+import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {ElementDisplayContext} from '../../../data/element-type/element-child-options';
 import {
     ElementTreeInlineEditorContextProvider,
@@ -105,14 +105,14 @@ import {BaseTheme} from '../../../theming/base-theme';
 import {addEntityHistoryItem} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../shells/staff/data/server-entity-type';
 import {XdfApiService} from '../../xdf/v1/xdf-api-service';
-import Code from '@aivot/mui-material-symbols-400-outlined/dist/code/Code';
+import Code from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import {IdentityProvidersApiService} from '../../identity/identity-providers-api-service';
 import {
     IdentityConfigElementOptionWithProvider,
     IdentityConfigElementSlot,
     IdentityConfigElementSlotWithProviders,
 } from '../../../models/elements/form/input/identity-config-element';
-import IdentityPlatform from '@aivot/mui-material-symbols-400-outlined/dist/identity-platform/IdentityPlatform';
+import IdentityPlatform from '@aivot/mui-material-symbols-400-n25-outlined/IdentityPlatform';
 import {DialogTitleWithClose} from '../../../components/dialog-title-with-close/dialog-title-with-close';
 import {IdentityButton} from '../../identity/components/identity-button/identity-button';
 import {normalizeUiDefinitionForStorage} from '../../../utils/ui-definition-utils';

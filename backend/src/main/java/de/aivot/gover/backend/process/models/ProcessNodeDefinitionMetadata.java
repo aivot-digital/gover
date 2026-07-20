@@ -34,6 +34,7 @@ public record ProcessNodeDefinitionMetadata(
 ) {
     private static final String COMPLETE_FORM_LABEL = "Gesamtes Formular";
     private static final String FALLBACK_UI_DEFINITION_LABEL = "UI-Definition";
+    private static final int MAX_ATTACHMENT_SET_DATA_KEY_LENGTH = 255;
     private static final Pattern ELEMENT_ID_PATTERN = Pattern.compile("^[a-z][a-zA-Z0-9_]*$");
 
     public static ProcessNodeDefinitionMetadata empty() {
@@ -270,7 +271,12 @@ public record ProcessNodeDefinitionMetadata(
             sourceKey = StringUtils.toNullableTrimmedString(element.getId());
         }
 
-        return sourceKey == null ? null : sourceKey.replace('.', '_');
+        if (sourceKey == null) {
+            return null;
+        }
+
+        var dataKey = sourceKey.replace('.', '_');
+        return dataKey.length() > MAX_ATTACHMENT_SET_DATA_KEY_LENGTH ? null : dataKey;
     }
 
     public record ReusableUiDefinition(

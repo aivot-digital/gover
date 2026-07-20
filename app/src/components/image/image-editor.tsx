@@ -4,8 +4,8 @@ import {type BaseEditorProps} from '../../editors/base-editor';
 import {TextFieldComponent} from '../text-field/text-field-component';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../utils/string-utils';
 import {Alert, AlertTitle, Grid, Typography} from '@mui/material';
-import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
-import ImageSearchOutlinedIcon from '@mui/icons-material/ImageSearchOutlined';
+import AccessibilityNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccessibilityNew';
+import ImageSearchOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ImageSearch';
 import {SelectAssetDialog} from '../../dialogs/select-asset-dialog/select-asset-dialog';
 import {AssetsApiService} from '../../modules/assets/assets-api-service';
 

@@ -2,7 +2,7 @@ import React from 'react';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {useSelector} from 'react-redux';
 import {selectUser} from '../../../../slices/user-slice';
-import EditOutlined from '@mui/icons-material/EditOutlined';
+import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import {GenericList} from '../../../../components/generic-list/generic-list';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import Box from '@mui/material/Box';

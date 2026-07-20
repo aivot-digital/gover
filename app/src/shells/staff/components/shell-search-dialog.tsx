@@ -8,15 +8,15 @@ import {Page} from '../../../models/dtos/page';
 import {SearchItemResponseDto} from '../../../modules/search/dtos/search-item-response-dto';
 import {createSearchItemLink} from '../../../modules/search/utils/create-search-item-link';
 import {OriginTableIcons, OriginTableLabels} from '../../../modules/search/data/origin-table';
-import HelpClinic from '@aivot/mui-material-symbols-400-outlined/dist/help-clinic/HelpClinic';
+import HelpClinic from '@aivot/mui-material-symbols-400-n25-outlined/HelpClinic';
 import {Link} from 'react-router-dom';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../../../utils/string-utils';
 import Chip from '@mui/material/Chip';
 import {selectEntityHistory} from '../../../slices/entity-history-slice';
 import {ServerEntityType} from '../data/server-entity-type';
-import Search from '@aivot/mui-material-symbols-400-outlined/dist/search/Search';
-import Close from '@aivot/mui-material-symbols-400-outlined/dist/close/Close';
-import Lightbulb2 from '@aivot/mui-material-symbols-400-outlined/dist/lightbulb-2/Lightbulb2';
+import Search from '@aivot/mui-material-symbols-400-n25-outlined/Search';
+import Close from '@aivot/mui-material-symbols-400-n25-outlined/Close';
+import Lightbulb2 from '@aivot/mui-material-symbols-400-n25-outlined/Lightbulb2';
 import {withAsyncWrapper} from '../../../utils/with-async-wrapper';
 
 export function ShellSearchDialog() {

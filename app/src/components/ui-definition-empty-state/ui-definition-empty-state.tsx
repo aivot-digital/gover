@@ -1,5 +1,5 @@
 import React from 'react';
-import Add from '@mui/icons-material/Add';
+import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Box, Button, Typography, useTheme} from '@mui/material';
 import {alpha, keyframes} from '@mui/material/styles';
 

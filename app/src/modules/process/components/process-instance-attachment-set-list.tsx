@@ -1,8 +1,8 @@
 import React, {type ReactNode} from 'react';
 import {Box, IconButton, Tooltip, Typography} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material';
-import Description from '@aivot/mui-material-symbols-400-outlined/dist/description/Description';
-import Download from '@aivot/mui-material-symbols-400-outlined/dist/download/Download';
+import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
+import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import type {ProcessInstanceAttachmentEntity} from '../entities/process-instance-attachment-entity';
 import type {ProcessInstanceAttachmentSetEntity} from '../entities/process-instance-attachment-set-entity';
 import type {ProcessInstanceEntity} from '../entities/process-instance-entity';

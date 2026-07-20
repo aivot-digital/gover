@@ -124,6 +124,26 @@ class ProcessNodeDefinitionMetadataTest {
     }
 
     @Test
+    void withLayout_ShouldSkipFileUploadAttachmentSetWhenNormalizedDataKeyExceedsRuntimeLimit() {
+        var validDataKey = "x".repeat(255);
+
+        var groupLayout = new GroupLayoutElement();
+        groupLayout.setId("gp_uploads");
+        groupLayout.setName("Uploaddaten");
+        groupLayout.setChildren(new LinkedList<>(List.of(
+                fileUpload("fu_valid", validDataKey, "Gültiges Dokument", false),
+                fileUpload("fu_too_long", "x".repeat(256), "Zu langes Dokument", false)
+        )));
+
+        var metadata = ProcessNodeDefinitionMetadata
+                .empty()
+                .withLayout(groupLayout, origin());
+
+        assertEquals(1, metadata.forwardedAttachmentSets().size());
+        assertEquals(validDataKey, metadata.forwardedAttachmentSets().getFirst().dataKey());
+    }
+
+    @Test
     void forwardedAttachmentSet_ShouldSerializeMultifileFlagWithFrontendPropertyName() throws Exception {
         var metadata = ProcessNodeDefinitionMetadata
                 .empty()

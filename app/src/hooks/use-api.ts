@@ -5,7 +5,7 @@ import {useAppSelector} from './use-app-selector';
 import {clearAuthData, selectAuthData, setAuthData} from '../slices/auth-slice';
 import {isApiError} from '../models/api-error';
 import {ApiOptions, ApiService} from '../services/api-service';
-import {Api} from '@mui/icons-material';
+import Api from '@aivot/mui-material-symbols-400-n25-outlined/Api';
 import {BaseApiService, RequestOptions} from '../services/base-api-service';
 import {AuthService} from '../services/auth-service';
 

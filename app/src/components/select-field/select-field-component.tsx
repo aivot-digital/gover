@@ -33,6 +33,10 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                 <MenuItem
                     key={option.value}
                     value={option.value}
+                    sx={{
+                        maxWidth: '100%',
+                        overflow: 'hidden',
+                    }}
                 >
                     {
                         option.icon != null &&
@@ -44,6 +48,17 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                     <ListItemText
                         primary={option.label}
                         secondary={option.subLabel}
+                        sx={{
+                            minWidth: 0,
+                        }}
+                        slotProps={{
+                            primary: {
+                                noWrap: true,
+                            },
+                            secondary: {
+                                noWrap: true,
+                            },
+                        }}
                     />
                 </MenuItem>
             ));
@@ -98,6 +113,13 @@ export function SelectFieldComponent(props: SelectFieldComponentProps) {
                 renderValue: (value) => {
                     const option = options.find((option) => option.value === value);
                     return option?.label ?? '';
+                },
+                MenuProps: {
+                    PaperProps: {
+                        sx: {
+                            width: 0,
+                        },
+                    },
                 },
             }}
             size={size}

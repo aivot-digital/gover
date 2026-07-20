@@ -1,7 +1,7 @@
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
 import {GenericDetailsPage} from '../../../../components/generic-details-page/generic-details-page';
-import PaletteOutlinedIcon from '@mui/icons-material/PaletteOutlined';
+import PaletteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Palette';
 import {type Theme} from '../../models/theme';
 import {ThemesApiService} from '../../themes-api-service';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';

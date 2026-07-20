@@ -5,7 +5,7 @@ export enum StorageProviderType {
 }
 
 export const StorageProviderTypeLabels: Record<StorageProviderType, string> = {
-    [StorageProviderType.Assets]: 'Dokumente und Medien',
+    [StorageProviderType.Assets]: 'Dateien und Medien',
     [StorageProviderType.Attachments]: 'Prozessanlagen',
     [StorageProviderType.External]: 'Externe Dokumentenablage',
 };

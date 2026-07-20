@@ -22,10 +22,10 @@ The project contains the following modules and directories:
 - `./app`: The frontend application for both staff and customers
 - `./backend/src`: The source code of the Spring Boot backend application
 - `./backend/mails`: The module that contains the mail templates
-- `./devevelopment`: The module that contains the development setup
-    - `./dev/compose.yml`: The docker compose file for all local development services
-    - `./dev/gover.env`: An environment file containing the environment variables for the Gover application
-    - `./dev/examples`: A directory with example datasets to populate the local database with
+- `./development`: The module that contains the development setup
+    - `./development/compose.yml`: The docker compose file for all local development services
+    - `./development/gover.env`: An environment file containing the environment variables for the Gover application
+    - `./development/examples`: A directory with example datasets to populate the local database with
 - `./default-assets`: The directory that contains the default assets for the Gover service, such as default templates
   for PDFs
 - `./container`: The directory contains additional files for the container image
@@ -58,7 +58,7 @@ authentication.
 You can run these services with docker compose, which will pull the necessary images and start the containers for you.
 
 ```bash
-docker compose -f ./dev/docker-compose.yml up -d
+docker compose -f ./development/compose.yml up -d
 ```
 
 This command will spin up all necessary services in detached mode, allowing you to continue working in your terminal.
@@ -88,7 +88,7 @@ You can find more information about accessing the services in section 3 below.
 After running the above command, you can check the status of the services with the following command:
 
 ```bash
-docker compose -f ./dev/docker-compose.yml ps
+docker compose -f ./development/compose.yml ps
 ```
 
 The services for setting up the Keycloak and MinIO instance may take a few minutes to complete.
@@ -96,11 +96,11 @@ They will stop automatically after they have completed their setup.
 You can check the logs of these services to see when they have completed their setup with the following command:
 
 ```bash
-docker compose -f ./dev/docker-compose.yml logs -f keycloak-setup 
+docker compose -f ./development/compose.yml logs -f keycloak-setup 
 ```
 
 ```bash
-docker compose -f ./dev/docker-compose.yml logs -f s3-object-storage-setup
+docker compose -f ./development/compose.yml logs -f s3-object-storage-setup
 ```
 
 ### 2.3 Compile the mail templates
@@ -122,12 +122,12 @@ The following commands work in Linux, macOS terminal shells, and Windows WSL:
 
 ```bash
 set -a
-. ./dev/gover.env
+. ./development/gover.env
 set +a
 mvn spring-boot:run
 ```
 
-These commands load the environment variables from `./dev/gover.env` into your current shell session and then start the Spring Boot application.
+These commands load the environment variables from `./development/gover.env` into your current shell session and then start the Spring Boot application.
 
 ### 2.5 Start the frontend applications
 
@@ -168,7 +168,7 @@ You can connect to the database with the following credentials:
 | Username  | `gover`     |
 | Password  | `gover`     |
 
-You can find these credentials in the `./dev/docker-compose.yml` file under `services.gover-database.environment`.
+You can find these credentials in the `./development/compose.yml` file under `services.gover-database.environment`.
 
 ### 3.2 S3 Object Storage (MinIO)
 
@@ -184,7 +184,7 @@ You can access the MinIO web interface at [http://localhost:9001](http://localho
 | Username  | `admin`         |
 | Password  | `adminpassword` |
 
-You can find these credentials in the `./dev/docker-compose.yml` file under `services.s3-object-storage.environment`.
+You can find these credentials in the `./development/compose.yml` file under `services.s3-object-storage.environment`.
 
 The MinIO Setup Helper automatically creates a bucket named `gover` for storing the uploaded files and configures an access key and secret key for the application to access the MinIO instance.
 You can use the following Access Key and Secret Key to access the MinIO API:
@@ -194,7 +194,7 @@ You can use the following Access Key and Secret Key to access the MinIO API:
 | Access Key | `super-access-key` |
 | Secret Key | `super-secret-key` |
 
-You can find these credentials in the `./dev/docker-compose.yml` file under `services.s3-object-storage-setup.entrypoint`.
+You can find these credentials in the `./development/compose.yml` file under `services.s3-object-storage-setup.entrypoint`.
 
 ### 3.3 SMTP (Mailpit)
 
@@ -216,7 +216,7 @@ You can connect to the database with the following credentials:
 | Username  | `keycloak`  |
 | Password  | `keycloak`  |
 
-You can find these credentials in the `./dev/docker-compose.yml` file under `services.keycloak-database.environment`.
+You can find these credentials in the `./development/compose.yml` file under `services.keycloak-database.environment`.
 
 ### 3.5 Keycloak
 
@@ -229,7 +229,7 @@ After the successful setup, the **Bootstrap Admin** user is disabled and cannot 
 
 For future configurations of the Keycloak instance, a deployment client is created.
 This client can be used to configure Keycloak via the Keycloak Admin REST API, for example with the **Keycloak Admin CLI**.
-You can find the credentials for the deployment client in the `./dev/docker-compose.yml` file under `services.keycloak-setup.environment`.
+You can find the credentials for the deployment client in the `./development/compose.yml` file under `services.keycloak-setup.environment`.
 
 During the setup a new user with the username `superuser` and the e-mail `mail@example.com` is created.
 You can use this user to log in to the Keycloak admin console and manage the Keycloak instance.
@@ -240,7 +240,7 @@ You can use this user to log in to the Keycloak admin console and manage the Key
 | E-mail    | `mail@example.com`              |
 | Password  | `My-Super-Secret-Password-No.1` |
 
-You can find these credentials in the `./dev/docker-compose.yml` file under `services.keycloak-setup.environment`.
+You can find these credentials in the `./development/compose.yml` file under `services.keycloak-setup.environment`.
 
 On your first login, you will be prompted to change the password for the `superuser` account.
 Additionally, you need to set up an OTP for the account, as it is required by the security settings of the Keycloak instance.
@@ -263,7 +263,7 @@ Make sure to save the new password and the OTP secret in a secure place, as you 
   - no Gover super admin exists yet
 - In the default development setup, these values are different:
   - the Keycloak admin user `superuser` has the e-mail `mail@example.com`
-  - `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./dev/gover.env` is set to `admin@example.com`
+  - `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env` is set to `admin@example.com`
 
 Because of this, the default Keycloak user `superuser` does not become the bootstrap Gover super admin.
 
@@ -282,12 +282,12 @@ Make sure to disable the "Temporary" option, so the password does not expire aft
 The user is now available for logging into the staff frontend application.
 
 If this staff user should become the first Gover super admin, set the user's e-mail address to the value of `GOVER_BOOTSTRAP_ADMIN_MAIL` before the user logs into Gover for the first time.
-In the default development setup, that means using the e-mail address `admin@example.com`, or changing `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./dev/gover.env` before the first import/login.
+In the default development setup, that means using the e-mail address `admin@example.com`, or changing `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env` before the first import/login.
 
 **Bootstrap Gover Admin User:**
 
 When Keycloak users are synced into Gover, or when a user logs into Gover and is imported on demand, Gover checks whether that user should become the bootstrap super admin.
-Gover does this by comparing the imported user's e-mail address with the environment variable `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./dev/gover.env`.
+Gover does this by comparing the imported user's e-mail address with the environment variable `GOVER_BOOTSTRAP_ADMIN_MAIL` in `./development/gover.env`.
 If the e-mail address matches and no Gover super admin exists yet, that user receives the Gover system role `Superadministrator:in`, which grants full access to the Gover application.
 
 ### 3.6 Message Broker (RabbitMQ)
@@ -303,7 +303,7 @@ You can access the RabbitMQ management web interface at [http://localhost:15672]
 | Username  | `admin`         |
 | Password  | `adminpassword` |
 
-You can find these credentials in the `./dev/docker-compose.yml` file under `services.message-broker.environment`.
+You can find these credentials in the `./development/compose.yml` file under `services.message-broker.environment`.
 
 ## 4 Development
 

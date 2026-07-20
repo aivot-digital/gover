@@ -10,8 +10,8 @@ import {LoadingPlaceholder} from '../../../../components/loading-placeholder/loa
 import {DataObjectItemsApiService} from '../../data-object-items-api-service';
 import {DataObjectItem} from '../../models/data-object-item';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
-import DataObject from '@aivot/mui-material-symbols-400-outlined/dist/data-object/DataObject';
-import FolderData from '@aivot/mui-material-symbols-400-outlined/dist/folder-data/FolderData';
+import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
+import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 
 export function DataObjectItemDetailsPage() {
     const schemaKey = useParams().schemaKey;
