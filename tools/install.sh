@@ -18,7 +18,7 @@ redis_image="registry.opencode.de/open-code/oci/redis:8.2.3"
 gotenberg_image="docker.io/gotenberg/gotenberg:8.30.1-chromium"
 rabbitmq_image="dhi.io/rabbitmq:4.2"
 keycloak_image="ghcr.io/aivot-digital/keycloak-egov-plugins:26.5.7.0"
-keycloak_setup_image="ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.17"
+keycloak_setup_image="ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.20"
 caddy_image="dhi.io/caddy:2"
 gover_image="ghcr.io/aivot-digital/gover-next:5.0.0-alpha-71"
 

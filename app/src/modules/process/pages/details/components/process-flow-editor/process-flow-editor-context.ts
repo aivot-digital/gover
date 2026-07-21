@@ -3,6 +3,8 @@ import {type ProcessNodeEntity} from '../../../../entities/process-node-entity';
 import type {ProcessInstanceEntity} from '../../../../entities/process-instance-entity';
 import type {ProcessInstanceTaskEntity} from '../../../../entities/process-instance-task-entity';
 import type {ProcessInstanceEventEntity} from '../../../../entities/process-instance-event-entity';
+import type {ProcessInstanceAttachmentEntity} from '../../../../entities/process-instance-attachment-entity';
+import type {ProcessInstanceAttachmentSetEntity} from '../../../../entities/process-instance-attachment-set-entity';
 
 import {ProcessNodeProblems} from '../../../../entities/process-node-problems';
 
@@ -21,6 +23,7 @@ export interface ProcessFlowEditorContextType {
     onStartCloneNode: (node: ProcessNodeEntity) => void;
 
     onReloadRuntimeData: () => void;
+    onDownloadAttachment?: (attachment: ProcessInstanceAttachmentEntity) => void | Promise<void>;
 
     onAddFollowUpNode: (fromNodeId: number, viaPortKey: string) => void;
     onAddInbetweenNode: (forEdgeId: number) => void;
@@ -29,6 +32,8 @@ export interface ProcessFlowEditorContextType {
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
+        attachments: ProcessInstanceAttachmentEntity[];
+        attachmentSets: ProcessInstanceAttachmentSetEntity[];
     } | null;
 
     nodeProblems: ProcessNodeProblems[];

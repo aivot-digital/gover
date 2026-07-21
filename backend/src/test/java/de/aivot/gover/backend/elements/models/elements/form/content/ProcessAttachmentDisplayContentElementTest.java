@@ -14,7 +14,8 @@ class ProcessAttachmentDisplayContentElementTest {
         var serialized = ObjectMapperFactory
                 .getInstance()
                 .writeValueAsString(new ProcessAttachmentDisplayContentElement()
-                        .setFileName("evidence.pdf")
+                        .setAttachmentSetKey("case_documents")
+                        .setLabel("Fallunterlagen")
                         .setHint("Bitte prüfen Sie den Anhang."));
 
         var deserialized = ObjectMapperFactory
@@ -22,7 +23,8 @@ class ProcessAttachmentDisplayContentElementTest {
                 .readValue(serialized, BaseElement.class);
 
         assertInstanceOf(ProcessAttachmentDisplayContentElement.class, deserialized);
-        assertEquals("evidence.pdf", ((ProcessAttachmentDisplayContentElement) deserialized).getFileName());
+        assertEquals("case_documents", ((ProcessAttachmentDisplayContentElement) deserialized).getAttachmentSetKey());
+        assertEquals("Fallunterlagen", ((ProcessAttachmentDisplayContentElement) deserialized).getLabel());
         assertEquals("Bitte prüfen Sie den Anhang.", ((ProcessAttachmentDisplayContentElement) deserialized).getHint());
     }
 }

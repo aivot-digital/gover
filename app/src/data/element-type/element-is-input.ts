@@ -46,7 +46,7 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.NoCodeInput]: true,
     [ElementType.SummaryLayout]: false,
     [ElementType.ProcessDataKeyInput]: true,
-    [ElementType.ProcessAttachmentNameChipInput]: true,
+    [ElementType.ProcessInstanceAttachmentSetSelect]: true,
     [ElementType.ProcessIdentityIdInput]: true,
     [ElementType.HtmlTemplateInput]: true,
     [ElementType.ProcessAttachmentDisplay]: false,

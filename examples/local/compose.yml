@@ -103,7 +103,7 @@ services:
       - proxy
 
   keycloak_setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.19
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.20
     restart: on-failure
     depends_on:
       - keycloak

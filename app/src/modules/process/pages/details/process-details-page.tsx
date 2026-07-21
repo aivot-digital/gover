@@ -1,5 +1,5 @@
 import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from 'react';
-import {Box, Button, Chip, Divider, Paper, Typography} from '@mui/material';
+import {Box, Button, Divider, Paper, Typography} from '@mui/material';
 import {Outlet, useLocation, useNavigate, useParams, useSearchParams} from 'react-router-dom';
 import {type ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
@@ -17,7 +17,7 @@ import {
     ProcessNodeProviderApiService,
     ProcessNodeType,
 } from '../../services/process-node-provider-api-service';
-import {SelectNodeProviderDialog} from '../../dialogs/select-node-provider-dialog';
+import {type ProcessNodeTypeLimit, SelectNodeProviderDialog} from '../../dialogs/select-node-provider-dialog';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {
     addSnackbarMessage,
@@ -47,11 +47,14 @@ import {resolveUserName} from '../../../users/utils/resolve-user-name';
 import {type ProcessInstanceEntity} from '../../entities/process-instance-entity';
 import {type ProcessInstanceTaskEntity} from '../../entities/process-instance-task-entity';
 import {type ProcessInstanceEventEntity} from '../../entities/process-instance-event-entity';
+import {type ProcessInstanceAttachmentEntity} from '../../entities/process-instance-attachment-entity';
+import {type ProcessInstanceAttachmentSetEntity} from '../../entities/process-instance-attachment-set-entity';
 import {ProcessInstanceApiService} from '../../services/process-instance-api-service';
 import {ProcessInstanceTaskApiService} from '../../services/process-instance-task-api-service';
+import {ProcessInstanceAttachmentApiService} from '../../services/process-instance-attachment-api-service';
+import {ProcessInstanceAttachmentSetApiService} from '../../services/process-instance-attachment-set-api-service';
 import {ProcessInstanceStatus} from '../../enums/process-instance-status';
 import {BaseApiService, RequestOptions} from '../../../../services/base-api-service';
-import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import {getProcessNodeProviderKey} from './components/process-flow-editor/utils/process-flow-graph-utils';
 import {ProcessDetailsPageSkeleton} from './components/process-details-page-skeleton';
@@ -63,6 +66,7 @@ import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {type Action} from '../../../../components/actions/actions-props';
 import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
 import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
+import AttachFile from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
 import {ProcessConnectExistingNodeDialog} from './components/process-connect-existing-node-dialog';
 import {getNodeName} from './components/process-flow-editor/utils/node-utils';
 import SwapHoriz from '@aivot/mui-material-symbols-400-n25-outlined/SwapHoriz';
@@ -85,19 +89,29 @@ import {useProcessExport} from '../../../../hooks/use-process-export';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {NodeProblemsAlert} from '../../components/node-problems-alert';
 import {ProcessPublishDialog} from '../../dialogs/process-publish-dialog';
+import {getProcessNodeLimit, isFormModuleEnabled, isProcessNodeTypeUnlimited} from '../../../../utils/module-flags';
+import {
+    buildProcessInstanceAttachmentSetItems,
+    ProcessInstanceAttachmentSetList,
+} from '../../components/process-instance-attachment-set-list';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
+const FORM_PLUGIN_KEY = 'de.aivot.form';
 const PROCESS_DETAILS_PAGE_SKELETON_DELAY = 250;
+/**
+ * @deprecated Obsolete, use ProviderTypeStyles instead
+ */
+const PROCESS_NODE_TYPE_LABELS: Record<ProcessNodeType, string> = {
+    [ProcessNodeType.Trigger]: 'Auslöser',
+    [ProcessNodeType.Action]: 'Aktionen',
+    [ProcessNodeType.FlowControl]: 'Flusselemente',
+    [ProcessNodeType.Termination]: 'Abschlüsse',
+};
 
 const DISPLAYABLE_AREA = getMinDisplayableAreaWidth();
 export const MIN_EDITOR_DRAWER_WIDTH_PX = 540;
 const EDITOR_PANE_TOGGLE_BUTTON_SIZE_PX = 24;
-
-interface RuntimeAttachment {
-    key: string;
-    fileName: string;
-}
 
 export interface ProcessFlow {
     definition: ProcessEntity;
@@ -108,6 +122,11 @@ export interface ProcessFlow {
 
 interface ReplaceNodeRequest {
     nodeId: number;
+}
+
+interface NewNodeRequest {
+    fromNodeId: number;
+    viaPort: string;
 }
 
 interface NodeRefreshSignal {
@@ -139,6 +158,213 @@ function canReplaceNodeType(currentType: ProcessNodeType, replacementType: Proce
     }
 
     return true;
+}
+
+function isProcessNodeProviderEnabled(provider: ProcessNodeProvider): boolean {
+    return provider.parentPluginKey !== FORM_PLUGIN_KEY || isFormModuleEnabled();
+}
+
+function countProcessNodesOfType(
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    type: ProcessNodeType,
+    excludedNodeId?: number,
+): number {
+    if (processFlow == null) {
+        return 0;
+    }
+
+    return processFlow.nodes.filter((node) => {
+        if (node.id === excludedNodeId) {
+            return false;
+        }
+
+        const currentProvider = providerCache[getProcessNodeProviderKey(
+            node.processNodeDefinitionKey,
+            node.processNodeDefinitionVersion,
+        )];
+
+        return currentProvider?.type === type;
+    }).length;
+}
+
+function getProcessNodeTypeLimit(
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    type: ProcessNodeType,
+    excludedNodeId?: number,
+): ProcessNodeTypeLimit | undefined {
+    if (processFlow == null || isProcessNodeTypeUnlimited(type)) {
+        return undefined;
+    }
+
+    return {
+        current: countProcessNodesOfType(processFlow, providerCache, type, excludedNodeId),
+        limit: getProcessNodeLimit(type),
+    };
+}
+
+function getProcessNodeTypeLimits(
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): Partial<Record<ProcessNodeType, ProcessNodeTypeLimit>> {
+    const limits: Partial<Record<ProcessNodeType, ProcessNodeTypeLimit>> = {};
+
+    for (const type of Object.values(ProcessNodeType) as ProcessNodeType[]) {
+        const limit = getProcessNodeTypeLimit(processFlow, providerCache, type, excludedNodeId);
+
+        if (limit != null) {
+            limits[type] = limit;
+        }
+    }
+
+    return limits;
+}
+
+function isProcessNodeTypeLimitReached(
+    type: ProcessNodeType,
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): boolean {
+    return processFlow != null &&
+        !isProcessNodeTypeUnlimited(type) &&
+        countProcessNodesOfType(processFlow, providerCache, type, excludedNodeId) >= getProcessNodeLimit(type);
+}
+
+function canPlaceProcessNodeProvider(
+    provider: ProcessNodeProvider,
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): boolean {
+    if (!isProcessNodeProviderEnabled(provider)) {
+        return false;
+    }
+
+    if (processFlow == null || isProcessNodeTypeUnlimited(provider.type)) {
+        return true;
+    }
+
+    return countProcessNodesOfType(processFlow, providerCache, provider.type, excludedNodeId) < getProcessNodeLimit(provider.type);
+}
+
+function getProcessNodeLimitReachedEmptyMessage(
+    nodeProviders: ProcessNodeProvider[],
+    isCandidateProvider: (provider: ProcessNodeProvider) => boolean,
+    processFlow: ProcessFlow | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+    excludedNodeId?: number,
+): ReactNode | undefined {
+    const limitedTypes = new Set<ProcessNodeType>();
+
+    for (const provider of nodeProviders) {
+        if (
+            isCandidateProvider(provider) &&
+            isProcessNodeProviderEnabled(provider) &&
+            isProcessNodeTypeLimitReached(provider.type, processFlow, providerCache, excludedNodeId)
+        ) {
+            limitedTypes.add(provider.type);
+        }
+    }
+
+    if (limitedTypes.size === 0) {
+        return undefined;
+    }
+
+    if (limitedTypes.size === 1) {
+        const type = Array.from(limitedTypes)[0]!;
+        const limit = getProcessNodeTypeLimit(processFlow, providerCache, type, excludedNodeId);
+
+        if (limit == null) {
+            return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[type]} in dieser Prozessversion ist erreicht.`;
+        }
+
+        return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[type]} in dieser Prozessversion ist erreicht: ${limit.current}/${limit.limit}.`;
+    }
+
+    const limitLabels = Array
+        .from(limitedTypes)
+        .map((type) => {
+            const limit = getProcessNodeTypeLimit(processFlow, providerCache, type, excludedNodeId);
+            return limit == null
+                ? PROCESS_NODE_TYPE_LABELS[type]
+                : `${PROCESS_NODE_TYPE_LABELS[type]} ${limit.current}/${limit.limit}`;
+        });
+
+    return (
+        <Typography>
+            Die Limits für kompatible Prozesselemente in dieser Prozessversion sind erreicht: <br/>
+            {
+                limitLabels.map((l) => (
+                    <React.Fragment key={l}>
+                        {l} <br/>
+                    </React.Fragment>
+                ))
+            }
+        </Typography>
+    );
+}
+
+function isReplacementCandidateProvider(
+    provider: ProcessNodeProvider,
+    replaceNodeSource: ProcessNodeEntity | null,
+    providerCache: Record<string, ProcessNodeProvider>,
+): boolean {
+    if (replaceNodeSource == null) {
+        return false;
+    }
+
+    const currentProvider = providerCache[getProcessNodeProviderKey(
+        replaceNodeSource.processNodeDefinitionKey,
+        replaceNodeSource.processNodeDefinitionVersion,
+    )];
+    if (currentProvider == null) {
+        return false;
+    }
+
+    if (
+        provider.key === replaceNodeSource.processNodeDefinitionKey &&
+        provider.majorVersion === replaceNodeSource.processNodeDefinitionVersion
+    ) {
+        return false;
+    }
+
+    return canReplaceNodeType(currentProvider.type, provider.type);
+}
+
+function isFollowUpCandidateProvider(
+    provider: ProcessNodeProvider,
+    processFlow: ProcessFlow | null,
+    newNodeFor: NewNodeRequest | null,
+): boolean {
+    if (provider.type === ProcessNodeType.Trigger) {
+        return false;
+    }
+
+    if (processFlow == null || newNodeFor == null) {
+        return true;
+    }
+
+    const requiresOutgoingPort = processFlow.edges.some((edge) => (
+        edge.fromNodeId === newNodeFor.fromNodeId &&
+        edge.viaPort === newNodeFor.viaPort
+    ));
+
+    return !requiresOutgoingPort || provider.ports.length > 0;
+}
+
+function isInbetweenCandidateProvider(provider: ProcessNodeProvider): boolean {
+    return provider.type !== ProcessNodeType.Trigger && provider.ports.length > 0;
+}
+
+function getUnavailableProcessNodeProviderMessage(provider: ProcessNodeProvider): string {
+    if (!isProcessNodeProviderEnabled(provider)) {
+        return 'Die Formularerweiterung ist auf dieser Instanz nicht aktiviert.';
+    }
+
+    return `Das Limit für ${PROCESS_NODE_TYPE_LABELS[provider.type]} in dieser Prozessversion ist erreicht.`;
 }
 
 function formatOutgoingConnectionSummary(preservedOutgoingEdgeCount: number, removedOutgoingEdgeCount: number): string {
@@ -278,6 +504,8 @@ export function ProcessDetailsPage(): ReactNode {
         instance: ProcessInstanceEntity;
         tasks: ProcessInstanceTaskEntity[];
         events: ProcessInstanceEventEntity[];
+        attachments: ProcessInstanceAttachmentEntity[];
+        attachmentSets: ProcessInstanceAttachmentSetEntity[];
     } | null>(null);
     const [isRefreshingRuntimeData, setIsRefreshingRuntimeData] = useState(false);
     const [availableNodeProviders, setAvailableNodeProviders] = useState<ProcessNodeProvider[]>([]);
@@ -296,10 +524,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [showPublishDialog, setShowPublishDialog] = useState(false);
 
     const [showAddTriggerDialog, setShowAddTriggerDialog] = useState(false);
-    const [newNodeFor, setNewNodeFor] = useState<{
-        fromNodeId: number;
-        viaPort: string;
-    } | null>(null);
+    const [newNodeFor, setNewNodeFor] = useState<NewNodeRequest | null>(null);
     const [newNodeOnEdgeId, setNewNodeOnEdgeId] = useState<number | null>(null);
     const [replaceNodeRequest, setReplaceNodeRequest] = useState<ReplaceNodeRequest | null>(null);
     const [connectExistingNodeRequest, setConnectExistingNodeRequest] = useState<{
@@ -327,54 +552,7 @@ export function ProcessDetailsPage(): ReactNode {
         };
     }, []);
 
-    const runtimeAttachments = useMemo(() => {
-        if (runtimeData == null) {
-            return [];
-        }
-
-        const collected = new Map<string, RuntimeAttachment>();
-
-        const addAttachment = (attachmentLike: any): void => {
-            if (attachmentLike == null || typeof attachmentLike !== 'object') {
-                return;
-            }
-
-            const key = typeof attachmentLike.attachmentKey === 'string'
-                ? attachmentLike.attachmentKey
-                : typeof attachmentLike.key === 'string'
-                    ? attachmentLike.key
-                    : null;
-            if (key == null || key.trim().length === 0 || collected.has(key)) {
-                return;
-            }
-
-            const fileName = typeof attachmentLike.fileName === 'string'
-                ? attachmentLike.fileName
-                : typeof attachmentLike.filename === 'string'
-                    ? attachmentLike.filename
-                    : `Anhang ${collected.size + 1}`;
-
-            collected.set(key, {
-                key,
-                fileName,
-            });
-        };
-
-        for (const task of runtimeData.tasks) {
-            addAttachment(task?.nodeData);
-        }
-
-        const payloadAttachments = runtimeData.instance.initialPayload?.attachments;
-        if (Array.isArray(payloadAttachments)) {
-            for (const payloadAttachment of payloadAttachments) {
-                addAttachment(payloadAttachment);
-            }
-        }
-
-        return Array.from(collected.values());
-    }, [runtimeData]);
-
-    const handleDownloadAttachment = async (attachment: RuntimeAttachment): Promise<void> => {
+    const handleDownloadAttachment = useCallback(async (attachment: ProcessInstanceAttachmentEntity): Promise<void> => {
         try {
             const blob = await new BaseApiService().getBlob(`/api/process-instance-attachments/${encodeURIComponent(attachment.key)}/file/?download=true`);
             const objectUrl = URL.createObjectURL(blob);
@@ -392,7 +570,7 @@ export function ProcessDetailsPage(): ReactNode {
         } catch (error) {
             dispatch(showApiErrorSnackbar(error, 'Der Anhang konnte nicht heruntergeladen werden.'));
         }
-    };
+    }, [dispatch]);
 
     // Fetch the available node providers on mount to display them in the add node dialog
     useEffect(() => {
@@ -576,6 +754,66 @@ export function ProcessDetailsPage(): ReactNode {
 
     const isFlowEditorReady = requiredFlowNodeProviderSignature.length === 0 || flowNodeProviders.length === requiredFlowNodeProviders.length;
     const shouldKeepFlowEditorMounted = flowEditorKey != null && readyFlowEditorKey === flowEditorKey;
+
+    const processInstanceAttachmentSetItems = useMemo(() => {
+        if (runtimeData == null || processFlow == null) {
+            return [];
+        }
+
+        const tasksById = new Map(runtimeData.tasks.map((task) => [task.id, task]));
+        const nodesById = new Map(processFlow.nodes.map((node) => [node.id, node]));
+
+        return buildProcessInstanceAttachmentSetItems(
+            runtimeData.attachmentSets,
+            runtimeData.attachments,
+            {includeEmpty: true},
+        ).map((item) => {
+            const task = item.attachmentSet.processInstanceTaskId == null
+                ? runtimeData.tasks.find((candidate) => candidate.processNodeId === runtimeData.instance.initialNodeId)
+                : tasksById.get(item.attachmentSet.processInstanceTaskId);
+            const nodeId = task?.processNodeId ?? (
+                item.attachmentSet.processInstanceTaskId == null ? runtimeData.instance.initialNodeId : null
+            );
+            const node = nodeId == null ? null : nodesById.get(nodeId);
+            const provider = node == null
+                ? null
+                : flowNodeProviderCache[getProcessNodeProviderKey(
+                    node.processNodeDefinitionKey,
+                    node.processNodeDefinitionVersion,
+                )];
+
+            return {
+                ...item,
+                createdByLabel: node == null
+                    ? 'Unbekanntes Prozesselement'
+                    : provider == null
+                        ? (node.name ?? node.processNodeDefinitionKey)
+                        : getNodeName(node, provider),
+            };
+        });
+    }, [flowNodeProviderCache, processFlow, runtimeData]);
+
+    const handleOpenAttachmentSetsDialog = useCallback((): void => {
+        if (processInstanceAttachmentSetItems.length === 0) {
+            return;
+        }
+
+        void confirm({
+            title: 'Anlagensätze',
+            width: 'md',
+            hideCancelButton: true,
+            confirmButtonText: 'Schließen',
+            children: (
+                <ProcessInstanceAttachmentSetList
+                    items={processInstanceAttachmentSetItems}
+                    title={null}
+                    onDownload={(attachment) => {
+                        void handleDownloadAttachment(attachment);
+                    }}
+                />
+            ),
+        });
+    }, [confirm, handleDownloadAttachment, processInstanceAttachmentSetItems]);
 
     const selectedNode = useMemo(() => {
         if (processFlow == null) {
@@ -849,16 +1087,24 @@ export function ProcessDetailsPage(): ReactNode {
                     new ProcessInstanceTaskApiService().listAll({
                         processInstanceId: instanceId,
                     }),
+                    new ProcessInstanceAttachmentApiService().listAll({
+                        processInstanceId: instanceId,
+                    }),
+                    new ProcessInstanceAttachmentSetApiService().listAll({
+                        processInstanceId: instanceId,
+                    }),
                     /* new ProcessInstanceEventApiService().listAll({
                         processInstanceId: instanceId,
                     })*/Promise.resolve([]),
                 ]);
             })
-            .then(([instance, tasks, events]) => {
+            .then(([instance, tasks, attachments, attachmentSets, events]) => {
                 setRuntimeData({
                     instance,
                     tasks: tasks.content,
-                    events: [],
+                    attachments: attachments.content,
+                    attachmentSets: attachmentSets.content,
+                    events,
                 });
             })
             .catch((error) => {
@@ -1633,6 +1879,11 @@ export function ProcessDetailsPage(): ReactNode {
                 return;
             }
 
+            if (!canPlaceProcessNodeProvider(importedProvider, processFlow, flowNodeProviderCache)) {
+                dispatch(showErrorSnackbar(getUnavailableProcessNodeProviderMessage(importedProvider)));
+                return;
+            }
+
             dispatch(setLoadingMessage({
                 message: 'Importiere Prozesselement',
                 blocking: false,
@@ -1664,6 +1915,7 @@ export function ProcessDetailsPage(): ReactNode {
     }, [
         availableNodeProviders,
         dispatch,
+        flowNodeProviderCache,
         handleAddImportedFollowUpNode,
         handleAddImportedInbetweenNode,
         handleAddImportedTriggerNode,
@@ -1847,6 +2099,13 @@ export function ProcessDetailsPage(): ReactNode {
                 },
                 disabled: runtimeData == null,
             },
+            {
+                tooltip: 'Anlagensätze anzeigen',
+                ariaLabel: 'Anlagensätze anzeigen',
+                icon: <AttachFile/>,
+                onClick: handleOpenAttachmentSetsDialog,
+                visible: processInstanceAttachmentSetItems.length > 0,
+            },
             'separator' as const,
         ];
 
@@ -1954,6 +2213,8 @@ export function ProcessDetailsPage(): ReactNode {
         instanceId,
         isRefreshingRuntimeData,
         loadRuntimeData,
+        handleOpenAttachmentSetsDialog,
+        processInstanceAttachmentSetItems.length,
         runtimeData,
         notImplemented,
         handleDeleteProcess,
@@ -2087,6 +2348,7 @@ export function ProcessDetailsPage(): ReactNode {
                                                 editable={isProcessStructureEditable}
                                                 processFlow={processFlow}
                                                 nodeProviders={flowNodeProviders}
+                                                onDownloadAttachment={handleDownloadAttachment}
                                                 onAddTrigger={handleOpenAddTriggerDialog}
                                                 topLeftPanel={
                                                     currentTestClaim == null ? undefined : (
@@ -2282,46 +2544,6 @@ export function ProcessDetailsPage(): ReactNode {
                                 }
                             </Box>
 
-                            {
-                                runtimeData != null && runtimeAttachments.length > 0 &&
-                                <Paper
-                                    sx={{
-                                        mt: 2,
-                                        p: 2,
-                                        display: 'flex',
-                                        flexWrap: 'wrap',
-                                        alignItems: 'center',
-                                        gap: 1,
-                                    }}
-                                >
-                                    <Typography variant="h6">
-                                        Anhänge
-                                    </Typography>
-
-                                    {
-                                        runtimeAttachments.map((attachment) => (
-                                            <Chip
-                                                key={attachment.key}
-                                                variant="outlined"
-                                                label={attachment.fileName}
-                                                sx={{
-                                                    maxWidth: 320,
-                                                    '& .MuiChip-label': {
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                    },
-                                                }}
-                                                onDelete={() => {
-                                                    void handleDownloadAttachment(attachment);
-                                                }}
-                                                deleteIcon={
-                                                    <Download color="primary"/>
-                                                }
-                                            />
-                                        ))
-                                    }
-                                </Paper>
-                            }
                         </Box>
                     </Allotment.Pane>
 
@@ -2406,7 +2628,17 @@ export function ProcessDetailsPage(): ReactNode {
                         void handleImportNode('trigger');
                     },
                 }]}
-                filter={(provider) => provider.type === ProcessNodeType.Trigger}
+                filter={(provider) => (
+                    provider.type === ProcessNodeType.Trigger &&
+                    canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache)
+                )}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    (provider) => provider.type === ProcessNodeType.Trigger,
+                    processFlow,
+                    flowNodeProviderCache,
+                )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache)}
                 onClose={() => {
                     setShowAddTriggerDialog(false);
                 }}
@@ -2434,31 +2666,20 @@ export function ProcessDetailsPage(): ReactNode {
                 primaryActionLabel="Ersetzen"
                 primaryActionIcon={<SwapHoriz sx={{fontSize: 18}}/>}
                 filter={(provider) => {
-                    if (replaceNodeSource == null) {
+                    if (!isReplacementCandidateProvider(provider, replaceNodeSource, flowNodeProviderCache)) {
                         return false;
                     }
 
-                    const currentProvider = flowNodeProviderCache[getProcessNodeProviderKey(
-                        replaceNodeSource.processNodeDefinitionKey,
-                        replaceNodeSource.processNodeDefinitionVersion,
-                    )];
-                    if (currentProvider == null) {
-                        return false;
-                    }
-
-                    if (
-                        provider.key === replaceNodeSource.processNodeDefinitionKey &&
-                        provider.majorVersion === replaceNodeSource.processNodeDefinitionVersion
-                    ) {
-                        return false;
-                    }
-
-                    if (!canReplaceNodeType(currentProvider.type, provider.type)) {
-                        return false;
-                    }
-
-                    return true;
+                    return canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache, replaceNodeSource?.id);
                 }}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    (provider) => isReplacementCandidateProvider(provider, replaceNodeSource, flowNodeProviderCache),
+                    processFlow,
+                    flowNodeProviderCache,
+                    replaceNodeSource?.id,
+                )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache, replaceNodeSource?.id)}
                 onClose={() => {
                     setReplaceNodeRequest(null);
                 }}
@@ -2482,21 +2703,19 @@ export function ProcessDetailsPage(): ReactNode {
                     },
                 }]}
                 filter={(provider) => {
-                    if (provider.type === ProcessNodeType.Trigger) {
+                    if (!isFollowUpCandidateProvider(provider, processFlow, newNodeFor)) {
                         return false;
                     }
 
-                    if (newNodeFor == null) {
-                        return true;
-                    }
-
-                    const requiresOutgoingPort = processFlow.edges.some((edge) => (
-                        edge.fromNodeId === newNodeFor.fromNodeId &&
-                        edge.viaPort === newNodeFor.viaPort
-                    ));
-
-                    return !requiresOutgoingPort || provider.ports.length > 0;
+                    return canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache);
                 }}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    (provider) => isFollowUpCandidateProvider(provider, processFlow, newNodeFor),
+                    processFlow,
+                    flowNodeProviderCache,
+                )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache)}
                 onClose={() => {
                     setNewNodeFor(null);
                 }}
@@ -2514,9 +2733,16 @@ export function ProcessDetailsPage(): ReactNode {
                     },
                 }]}
                 filter={(provider) => (
-                    provider.type !== ProcessNodeType.Trigger &&
-                    provider.ports.length > 0
+                    isInbetweenCandidateProvider(provider) &&
+                    canPlaceProcessNodeProvider(provider, processFlow, flowNodeProviderCache)
                 )}
+                emptyFilteredMessage={getProcessNodeLimitReachedEmptyMessage(
+                    availableNodeProviders,
+                    isInbetweenCandidateProvider,
+                    processFlow,
+                    flowNodeProviderCache,
+                )}
+                nodeTypeLimits={getProcessNodeTypeLimits(processFlow, flowNodeProviderCache)}
                 onClose={() => {
                     setNewNodeOnEdgeId(null);
                 }}

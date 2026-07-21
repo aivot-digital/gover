@@ -15,7 +15,7 @@ export interface ProcessInstanceTaskEntity {
     started: string; // ISO date string
     updated: string; // ISO date string
     finished: string | null; // ISO date string
-    runtime: string | null; // ISO 8601 duration string
+    runtime: number | null; // Milliseconds
     runtimeData: Record<string, any>;
     nodeData: Record<string, any>;
     processData: Record<string, any>;

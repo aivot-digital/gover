@@ -6,6 +6,7 @@ import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntityId;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentRepository;
+import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentSetRepository;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -25,6 +26,7 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
 
     private final ProcessInstanceRepository processInstanceRepository;
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
+    private final ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
     private final ProcessVersionService processVersionService;
     private final CaseNumberGeneratorService caseNumberGeneratorService;
@@ -32,11 +34,13 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
     @Autowired
     public ProcessInstanceService(ProcessInstanceRepository processInstanceRepository,
                                   ProcessInstanceAttachmentRepository processInstanceAttachmentRepository,
+                                  ProcessInstanceAttachmentSetRepository processInstanceAttachmentSetRepository,
                                   ProcessInstanceAttachmentService processInstanceAttachmentService,
                                   ProcessVersionService processVersionService,
                                   CaseNumberGeneratorService caseNumberGeneratorService) {
         this.processInstanceRepository = processInstanceRepository;
         this.processInstanceAttachmentRepository = processInstanceAttachmentRepository;
+        this.processInstanceAttachmentSetRepository = processInstanceAttachmentSetRepository;
         this.processInstanceAttachmentService = processInstanceAttachmentService;
         this.processVersionService = processVersionService;
         this.caseNumberGeneratorService = caseNumberGeneratorService;
@@ -108,6 +112,10 @@ public class ProcessInstanceService implements EntityService<ProcessInstanceEnti
             processInstanceAttachmentService
                     .deleteEntity(attachment);
         }
+
+        processInstanceAttachmentSetRepository.deleteAll(
+                processInstanceAttachmentSetRepository.findAllByProcessInstanceId(entity.getId())
+        );
 
         processInstanceRepository.delete(entity);
     }

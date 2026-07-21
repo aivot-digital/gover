@@ -68,6 +68,8 @@ public class AppConfigController {
     private static final String SENTRY_DSN = "sentryDsn";
     private static final String APPLICATION_TIMEZONE_CONFIG_KEY = "applicationTimeZone";
     private static final String DEPARTMENT_LEVEL_LABELS_CONFIG_KEY = "departmentLevelLabels";
+    private static final String MODULE_FLAGS_KEY = "moduleFlags";
+    private static final String PROCESS_NODE_LIMITS_KEY = "processNodeLimits";
 
     private static final String OIDC_KEY = "oidc";
     private static final String OIDC_REALM_KEY = "realm";
@@ -114,6 +116,8 @@ public class AppConfigController {
         appConfig.put(SENTRY_DSN, goverConfig.getSentryWebApp());
         appConfig.put(APPLICATION_TIMEZONE_CONFIG_KEY, ApplicationTimeZone.getZoneIdValue());
         appConfig.put(DEPARTMENT_LEVEL_LABELS_CONFIG_KEY, goverConfig.getDepartmentLevelLabels());
+        appConfig.put(MODULE_FLAGS_KEY, goverConfig.getModuleFlags());
+        appConfig.put(PROCESS_NODE_LIMITS_KEY, goverConfig.getProcessNodeLimits());
 
         // TODO: This data should not be required in the fronted because the backend handles the authentication flow
         var oidc = new HashMap<String, String>();
