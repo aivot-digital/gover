@@ -1,9 +1,13 @@
-import {BadgeProps} from '@mui/material';
-import {Api} from '../../hooks/use-api';
-import {GenericPageHeaderProps} from '../generic-page-header/generic-page-header-props';
+import {type BadgeProps} from '@mui/material';
+import {type Api} from '../../hooks/use-api';
+import {type GenericPageHeaderProps} from '../generic-page-header/generic-page-header-props';
 import {type ReactNode, type RefObject} from 'react';
-import {ServerEntityType} from '../../shells/staff/data/server-entity-type';
-import {type PermissionLike} from '../../modules/permissions/utils/permission-utils';
+import {type ServerEntityType} from '../../shells/staff/data/server-entity-type';
+import {
+    type PermissionLike,
+    type PermissionRequirement,
+    type PermissionScope,
+} from '../../modules/permissions/utils/permission-utils';
 
 export type TabConfig<ItemType> = {
     path: string;
@@ -15,14 +19,7 @@ export type TabConfig<ItemType> = {
     disabledTooltip?: ReactNode | ((item: ItemType | undefined) => ReactNode);
 };
 
-export type GenericDetailsPagePermissionScope<ItemType> =
-    | { type: 'system' }
-    | { type: 'team'; getResourceId: (item: ItemType) => number | undefined }
-    | { type: 'department'; getResourceId: (item: ItemType) => number | undefined }
-    | { type: 'process'; getResourceId: (item: ItemType) => number | undefined }
-    | { type: 'processInstance'; getResourceId: (item: ItemType) => number | undefined }
-    | { type: 'anyTeam' }
-    | { type: 'anyDepartment' };
+export type GenericDetailsPagePermissionScope<ItemType> = PermissionScope<ItemType>;
 
 export type GenericDetailsPagePermissionConfig<ItemType> = {
     scope: GenericDetailsPagePermissionScope<ItemType>;
@@ -31,12 +28,7 @@ export type GenericDetailsPagePermissionConfig<ItemType> = {
     update?: PermissionLike;
 };
 
-export type GenericDetailsPageTabPermission<ItemType> =
-    | PermissionLike
-    | {
-        permission: PermissionLike;
-        scope?: GenericDetailsPagePermissionScope<ItemType>;
-    };
+export type GenericDetailsPageTabPermission<ItemType> = PermissionRequirement<ItemType>;
 
 export type GenericDetailsPageHeaderConfig<ItemType> =
     Omit<GenericPageHeaderProps, 'isBusy'>

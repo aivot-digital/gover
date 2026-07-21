@@ -2,7 +2,6 @@ import {
     type GenericDetailsPagePermissionConfig,
     type GenericDetailsPagePermissionScope,
     type GenericDetailsPageProps,
-    type GenericDetailsPageTabPermission,
     type TabConfig,
 } from './generic-details-page-props';
 import {Box, Button, Container, Paper, Stack, Tab, Tabs, Typography} from '@mui/material';
@@ -21,16 +20,12 @@ import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectPermissions} from '../../slices/user-slice';
 import {
-    hasAnyDepartmentPermission,
-    hasAnyTeamPermission,
-    hasDepartmentPermission,
-    hasProcessInstancePermission,
-    hasProcessPermission,
     hasSystemPermission,
-    hasTeamPermission,
+    hasScopedPermission,
     createPermissionDeniedError,
     formatMissingPermissionTooltip,
     type PermissionLike,
+    resolvePermissionRequirement,
 } from '../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../modules/permissions/models/permission-set';
 
@@ -70,53 +65,6 @@ async function fetchData<ItemType, ID, AdditionalData>(api: Api, id: ID, props: 
     });
 }
 
-function checkScopedPermission<ItemType>(
-    permissionSet: PermissionSet | undefined,
-    item: ItemType | undefined,
-    scope: GenericDetailsPagePermissionScope<ItemType>,
-    permission: PermissionLike,
-): boolean {
-    // Keep the generic page aligned with the permission utility semantics: system permissions grant
-    // global access, while scoped permissions only grant access for the resolved resource id.
-    switch (scope.type) {
-        case 'system':
-            return hasSystemPermission(permissionSet, permission);
-        case 'anyDepartment':
-            return hasAnyDepartmentPermission(permissionSet, permission);
-        case 'anyTeam':
-            return hasAnyTeamPermission(permissionSet, permission);
-        case 'department':
-            return item != null && hasDepartmentPermission(permissionSet, scope.getResourceId(item), permission);
-        case 'team':
-            return item != null && hasTeamPermission(permissionSet, scope.getResourceId(item), permission);
-        case 'process':
-            return item != null && hasProcessPermission(permissionSet, scope.getResourceId(item), permission);
-        case 'processInstance':
-            return item != null && hasProcessInstancePermission(permissionSet, scope.getResourceId(item), permission);
-    }
-}
-
-function resolveTabPermission<ItemType>(
-    requiredPermission: GenericDetailsPageTabPermission<ItemType> | undefined,
-    defaultScope: GenericDetailsPagePermissionScope<ItemType> | undefined,
-): { permission: PermissionLike; scope: GenericDetailsPagePermissionScope<ItemType> } | undefined {
-    if (requiredPermission == null) {
-        return undefined;
-    }
-
-    if (typeof requiredPermission === 'object' && 'permission' in requiredPermission) {
-        return {
-            permission: requiredPermission.permission,
-            scope: requiredPermission.scope ?? defaultScope ?? {type: 'system'},
-        };
-    }
-
-    return {
-        permission: requiredPermission,
-        scope: defaultScope ?? {type: 'system'},
-    };
-}
-
 function resolveTabState<ItemType>(
     tab: TabConfig<ItemType>,
     item: ItemType | undefined,
@@ -126,8 +74,8 @@ function resolveTabState<ItemType>(
 ): ResolvedTabState {
     const disabledByOnlyExisting = tab.onlyExisting === true && (isNewItem || item == null);
     const disabledByCustomCheck = tab.isDisabled?.(item) ?? false;
-    const requiredPermission = resolveTabPermission(tab.requiredPermission, defaultScope);
-    const missingPermission = !disabledByOnlyExisting && requiredPermission != null && !checkScopedPermission(permissionSet, item, requiredPermission.scope, requiredPermission.permission)
+    const requiredPermission = resolvePermissionRequirement(tab.requiredPermission, defaultScope);
+    const missingPermission = !disabledByOnlyExisting && requiredPermission != null && !hasScopedPermission(permissionSet, item, requiredPermission.scope, requiredPermission.permission)
         ? requiredPermission.permission
         : undefined;
     const explicitTooltip = typeof tab.disabledTooltip === 'function'
@@ -161,7 +109,7 @@ function ensureConfiguredAccess<ItemType>(
 
     const hasPermission = isNewItem
         ? hasSystemPermission(permissionSet, permission)
-        : checkScopedPermission(permissionSet, item, permissionConfig.scope, permission);
+        : hasScopedPermission(permissionSet, item, permissionConfig.scope, permission);
 
     if (!hasPermission) {
         throw createPermissionDeniedError(permission);
@@ -189,7 +137,7 @@ function checkConfiguredEditability<ItemType>(
 
     return isNewItem
         ? hasSystemPermission(permissionSet, permission)
-        : checkScopedPermission(permissionSet, item, permissionConfig.scope, permission);
+        : hasScopedPermission(permissionSet, item, permissionConfig.scope, permission);
 }
 
 export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericDetailsPageProps<ItemType, ID, AdditionalData>) {

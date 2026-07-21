@@ -19,6 +19,22 @@ export function formatMissingPermissionTooltip(permission: PermissionLike): stri
     return `Sie besitzen nicht die erforderliche Berechtigung (${permission}).`;
 }
 
+export type PermissionScope<ItemType> =
+    | { type: 'system' }
+    | { type: 'team'; getResourceId: (item: ItemType) => number | undefined }
+    | { type: 'department'; getResourceId: (item: ItemType) => number | undefined }
+    | { type: 'process'; getResourceId: (item: ItemType) => number | undefined }
+    | { type: 'processInstance'; getResourceId: (item: ItemType) => number | undefined }
+    | { type: 'anyTeam' }
+    | { type: 'anyDepartment' };
+
+export type PermissionRequirement<ItemType> =
+    | PermissionLike
+    | {
+        permission: PermissionLike;
+        scope?: PermissionScope<ItemType>;
+    };
+
 // Frontend checks mirror backend semantics: a matching system permission grants the action globally.
 export function hasSystemPermission(permissionSet: PermissionSet | undefined, permission: PermissionLike): boolean {
     return permissionSet?.systemPermissions
@@ -150,4 +166,51 @@ export function requireProcessInstancePermission(
     if (!hasProcessInstancePermission(permissionSet, processInstanceId, permission)) {
         throw createPermissionDeniedError(permission);
     }
+}
+
+export function hasScopedPermission<ItemType>(
+    permissionSet: PermissionSet | undefined,
+    item: ItemType | undefined,
+    scope: PermissionScope<ItemType>,
+    permission: PermissionLike,
+): boolean {
+    // System permissions act as global grants for scoped resources as well. Keep this central so
+    // generic page components cannot accidentally diverge from the backend permission semantics.
+    switch (scope.type) {
+        case 'system':
+            return hasSystemPermission(permissionSet, permission);
+        case 'anyDepartment':
+            return hasAnyDepartmentPermission(permissionSet, permission);
+        case 'anyTeam':
+            return hasAnyTeamPermission(permissionSet, permission);
+        case 'department':
+            return item != null && hasDepartmentPermission(permissionSet, scope.getResourceId(item), permission);
+        case 'team':
+            return item != null && hasTeamPermission(permissionSet, scope.getResourceId(item), permission);
+        case 'process':
+            return item != null && hasProcessPermission(permissionSet, scope.getResourceId(item), permission);
+        case 'processInstance':
+            return item != null && hasProcessInstancePermission(permissionSet, scope.getResourceId(item), permission);
+    }
+}
+
+export function resolvePermissionRequirement<ItemType>(
+    requiredPermission: PermissionRequirement<ItemType> | undefined,
+    defaultScope: PermissionScope<ItemType> | undefined,
+): { permission: PermissionLike; scope: PermissionScope<ItemType> } | undefined {
+    if (requiredPermission == null) {
+        return undefined;
+    }
+
+    if (typeof requiredPermission === 'object' && 'permission' in requiredPermission) {
+        return {
+            permission: requiredPermission.permission,
+            scope: requiredPermission.scope ?? defaultScope ?? {type: 'system'},
+        };
+    }
+
+    return {
+        permission: requiredPermission,
+        scope: defaultScope ?? {type: 'system'},
+    };
 }
