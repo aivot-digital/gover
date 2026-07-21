@@ -208,7 +208,8 @@ public class ProcessWorker {
         var processData = processDataService
                 .foldProcessInstanceData(
                         processInstance,
-                        previousNodeId
+                        previousNodeId,
+                        taskEntity
                 );
 
         ProcessNodeService.ProcessConfigurationDetails<NodeConfig> configuration;

@@ -37,6 +37,7 @@ import {
 import {ElementDerivationContext} from '../../../../../modules/elements/components/element-derivation-context';
 import {ElementType} from '../../../../../data/element-type/element-type';
 import {GroupLayout} from '../../../../../models/elements/form/layout/group-layout';
+import {ModuleFlag} from '../../../../../utils/module-flags';
 import {isApiError} from '../../../../../models/api-error';
 import {
     useHasAnyDepartmentPermission,
@@ -950,156 +951,160 @@ export function ApplicationSettings() {
                     </Grid>
                 </Grid>
 
-
-                <Typography
-                    variant="h6"
-                    sx={{
-                        mt: 4,
-                    }}
-                >
-                    Öffentliche Auflistung der veröffentlichten Formulare (Index-Seite)
-                </Typography>
-                <Typography
-                    sx={{
-                        maxWidth: 900,
-                        mb: 1.6,
-                    }}
-                >
-                    Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
-                    angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren
-                    und
-                    ggf. deaktivieren.
-                </Typography>
-                <Grid
-                    container
-                    columnSpacing={4}
-                >
-                    <Grid
-                        size={{
-                            xs: 12,
-                            lg: 4,
-                        }}
-                    >
-                        <DepartmentSelectField
-                            label="Text für das Impressum"
-                            value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId)}
-                            onChange={(department) => {
-                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, department?.id ?? null);
-                            }}
-                            disabled={!canUpdateSystemConfig || !canReadDepartments}
-                            hint={!canReadDepartments ? departmentReadHint : undefined}
-                        />
-
-                    </Grid>
-                    <Grid
-                        size={{
-                            xs: 12,
-                            lg: 4,
-                        }}
-                    >
-                        <DepartmentSelectField
-                            label="Text für die Datenschutzerklärung"
-                            value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId)}
-                            onChange={(department) => {
-                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, department?.id ?? null);
-                            }}
-                            disabled={!canUpdateSystemConfig || !canReadDepartments}
-                            hint={!canReadDepartments ? departmentReadHint : undefined}
-                        />
-                    </Grid>
-                    <Grid
-                        size={{
-                            xs: 12,
-                            lg: 4,
-                        }}
-                    >
-                        <DepartmentSelectField
-                            label="Text für die Erklärung der Barrierefreiheit"
-                            value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId)}
-                            onChange={(department) => {
-                                handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, department?.id ?? null);
-                            }}
-                            disabled={!canUpdateSystemConfig || !canReadDepartments}
-                            hint={!canReadDepartments ? departmentReadHint : undefined}
-                        />
-                    </Grid>
-                </Grid>
-                <Typography
-                    variant="caption"
-                    color={'text.secondary'}
-                >
-                    Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Sie können hier
-                    die
-                    Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
-                </Typography>
-                <CheckboxFieldComponent
-                    label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
-                    value={(editedConfig[SystemConfigKeys.provider.listingPage.disableGoverListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableGoverListingPage]) == 'true'}
-                    onChange={(checked) => {
-                        setEditedConfig({
-                            ...editedConfig,
-                            [SystemConfigKeys.provider.listingPage.disableGoverListingPage]: checked ? 'true' : '',
-                        });
-                    }}
-                    hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                    disabled={!canUpdateSystemConfig}
-                />
-                <Typography
-                    variant="subtitle1"
-                    sx={{
-                        mt: 4,
-                    }}
-                >
-                    Verweis auf Formular-Index aus Formularen heraus
-                </Typography>
-                <Typography
-                    sx={{
-                        maxWidth: 900,
-                        mb: 1.6,
-                    }}
-                >
-                    Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
-                    Diese Verlinkung dient der Barrierefreiheit
-                    (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
-                    und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
-                    Link ersetzen
-                    (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
-                </Typography>
                 {
-                    (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
-                    <Box>
-                        <TextFieldComponent
-                            label="Link zu externer Formular-Auflistung"
-                            placeholder="https://bad-musterstadt.de/formulare"
-                            hint="Der Link wird (soweit angegeben) anstelle des regulären Links mit dem Text „Weitere Formulare“ am Ende eines jeden Formulars angezeigt."
-                            value={editedConfig[SystemConfigKeys.provider.listingPage.customListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.customListingPageLink]}
-                            pattern={{
-                                regex: '^(https?://)([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$',
-                                message: 'Bitte geben Sie eine gültige URL ein (z.B. https://bad-musterstadt.de/formulare).',
+                    AppConfig.moduleFlags.includes(ModuleFlag.Form) &&
+                    <>
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                mt: 4,
                             }}
-                            onChange={(val) => {
+                        >
+                            Öffentliche Auflistung der veröffentlichten Formulare (Index-Seite)
+                        </Typography>
+                        <Typography
+                            sx={{
+                                maxWidth: 900,
+                                mb: 1.6,
+                            }}
+                        >
+                            Wenn die Domain des Systems direkt aufgerufen wird, wird eine öffentliche Index-Seite
+                            angezeigt, die alle veröffentlichten Formulare auflistet. Hier können Sie diese Seite konfigurieren
+                            und
+                            ggf. deaktivieren.
+                        </Typography>
+                        <Grid
+                            container
+                            columnSpacing={4}
+                        >
+                            <Grid
+                                size={{
+                                    xs: 12,
+                                    lg: 4,
+                                }}
+                            >
+                                <DepartmentSelectField
+                                    label="Text für das Impressum"
+                                    value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId)}
+                                    onChange={(department) => {
+                                        handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.imprintDepartmentId, department?.id ?? null);
+                                    }}
+                                    disabled={!canUpdateSystemConfig || !canReadDepartments}
+                                    hint={!canReadDepartments ? departmentReadHint : undefined}
+                                />
+
+                            </Grid>
+                            <Grid
+                                size={{
+                                    xs: 12,
+                                    lg: 4,
+                                }}
+                            >
+                                <DepartmentSelectField
+                                    label="Text für die Datenschutzerklärung"
+                                    value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId)}
+                                    onChange={(department) => {
+                                        handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.privacyDepartmentId, department?.id ?? null);
+                                    }}
+                                    disabled={!canUpdateSystemConfig || !canReadDepartments}
+                                    hint={!canReadDepartments ? departmentReadHint : undefined}
+                                />
+                            </Grid>
+                            <Grid
+                                size={{
+                                    xs: 12,
+                                    lg: 4,
+                                }}
+                            >
+                                <DepartmentSelectField
+                                    label="Text für die Erklärung der Barrierefreiheit"
+                                    value={getConfiguredDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId)}
+                                    onChange={(department) => {
+                                        handleChangeListingPageDepartment(SystemConfigKeys.provider.listingPage.accessibilityDepartmentId, department?.id ?? null);
+                                    }}
+                                    disabled={!canUpdateSystemConfig || !canReadDepartments}
+                                    hint={!canReadDepartments ? departmentReadHint : undefined}
+                                />
+                            </Grid>
+                        </Grid>
+                        <Typography
+                            variant="caption"
+                            color={'text.secondary'}
+                        >
+                            Rechtstexte werden auf Ebene der Organisationseinheiten hinterlegt und verwaltet. Sie können hier
+                            die
+                            Organisationseinheiten auswählen, deren Texte Sie verwenden und anzeigen möchten.
+                        </Typography>
+                        <CheckboxFieldComponent
+                            label="Öffentliche Auflistung der veröffentlichten Formulare (in Form einer Index-Seite) vollständig deaktivieren"
+                            value={(editedConfig[SystemConfigKeys.provider.listingPage.disableGoverListingPage] ?? config[SystemConfigKeys.provider.listingPage.disableGoverListingPage]) == 'true'}
+                            onChange={(checked) => {
                                 setEditedConfig({
                                     ...editedConfig,
-                                    [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
+                                    [SystemConfigKeys.provider.listingPage.disableGoverListingPage]: checked ? 'true' : '',
                                 });
                             }}
+                            hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
                             disabled={!canUpdateSystemConfig}
-                            startIcon={ModuleIcons.providerLinks}
                         />
-                    </Box>
+                        <Typography
+                            variant="subtitle1"
+                            sx={{
+                                mt: 4,
+                            }}
+                        >
+                            Verweis auf Formular-Index aus Formularen heraus
+                        </Typography>
+                        <Typography
+                            sx={{
+                                maxWidth: 900,
+                                mb: 1.6,
+                            }}
+                        >
+                            Am Ende eines jeden Formulars wird Ihre Index-Seite mit dem Text „Weitere Formulare“ verlinkt.
+                            Diese Verlinkung dient der Barrierefreiheit
+                            (gemäß <abbr title={'Web Content Accessibility Guidelines'}>WCAG</abbr> 2.1)
+                            und der Zugänglichkeit Ihrer Formulare. Sie können diesen Link deaktivieren oder gegen einen eigenen
+                            Link ersetzen
+                            (wenn Sie zum Beispiel alle Formulare auf Ihrer eigenen Webseite auflisten).
+                        </Typography>
+                        {
+                            (editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) != 'true' &&
+                            <Box>
+                                <TextFieldComponent
+                                    label="Link zu externer Formular-Auflistung"
+                                    placeholder="https://bad-musterstadt.de/formulare"
+                                    hint="Der Link wird (soweit angegeben) anstelle des regulären Links mit dem Text „Weitere Formulare“ am Ende eines jeden Formulars angezeigt."
+                                    value={editedConfig[SystemConfigKeys.provider.listingPage.customListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.customListingPageLink]}
+                                    pattern={{
+                                        regex: '^(https?://)([\\da-z.-]+)\\.([a-z.]{2,6})([/\\w .-]*)*/?$',
+                                        message: 'Bitte geben Sie eine gültige URL ein (z.B. https://bad-musterstadt.de/formulare).',
+                                    }}
+                                    onChange={(val) => {
+                                        setEditedConfig({
+                                            ...editedConfig,
+                                            [SystemConfigKeys.provider.listingPage.customListingPageLink]: val ?? '',
+                                        });
+                                    }}
+                                    disabled={!canUpdateSystemConfig}
+                                    startIcon={ModuleIcons.providerLinks}
+                                />
+                            </Box>
+                        }
+                        <CheckboxFieldComponent
+                            label="Verlinkung von Formularen zur Formular-Index-Seite vollständig deaktivieren"
+                            value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
+                            onChange={(checked) => {
+                                setEditedConfig({
+                                    ...editedConfig,
+                                    [SystemConfigKeys.provider.listingPage.disableListingPageLink]: checked ? 'true' : 'false',
+                                });
+                            }}
+                            hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
+                            disabled={!canUpdateSystemConfig}
+                        />
+                    </>
                 }
-                <CheckboxFieldComponent
-                    label="Verlinkung von Formularen zur Formular-Index-Seite vollständig deaktivieren"
-                    value={(editedConfig[SystemConfigKeys.provider.listingPage.disableListingPageLink] ?? config[SystemConfigKeys.provider.listingPage.disableListingPageLink]) == 'true'}
-                    onChange={(checked) => {
-                        setEditedConfig({
-                            ...editedConfig,
-                            [SystemConfigKeys.provider.listingPage.disableListingPageLink]: checked ? 'true' : 'false',
-                        });
-                    }}
-                    hint="Bitte nehmen Sie zur Kenntnis, dass dies die Barrierefreiheit und Zugänglichkeit Ihrer Formulare beeinträchtigen kann."
-                    disabled={!canUpdateSystemConfig}
-                />
                 <Box
                     sx={{
                         mt: 4,

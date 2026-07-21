@@ -1,5 +1,15 @@
-import React, {useEffect, useState} from 'react';
-import {Box, Button, CircularProgress, Typography} from '@mui/material';
+import React, {useEffect, useMemo, useState} from 'react';
+import {
+    Box,
+    Button,
+    CircularProgress,
+    Table,
+    TableBody,
+    TableCell,
+    TableContainer,
+    TableRow,
+    Typography,
+} from '@mui/material';
 import {format} from 'date-fns';
 import {type HealthData, type HealthDataComponents, type Status} from '../../../../../models/dtos/health-data';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
@@ -9,15 +19,18 @@ import {AppInfo} from '../../../../../app-info';
 import {StatusTable} from '../../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../../components/status-table/status-table-props';
 import {DebugInformationDialog} from '../../../../../dialogs/debug-information-dialog/debug-information-dialog';
-
 import TagIcon from '@aivot/mui-material-symbols-400-n25-outlined/Tag';
 import EventIcon from '@aivot/mui-material-symbols-400-n25-outlined/Event';
 import HelpOutlineIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
-import {downloadTextFile} from '../../../../../utils/download-utils';
 import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
+import Extension from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
+import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
+import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
+import {humanizeNumber} from '../../../../../utils/humanization-utils';
+import {ProviderTypeStyles} from '../../../../../modules/process/data/provider-type-styles';
 
 function isObjectRecord(value: unknown): value is Record<string, unknown> {
     return value != null && typeof value === 'object';
@@ -61,24 +74,27 @@ export function SystemInformation(): React.ReactElement {
 
     const getStatusIcon = (key: keyof HealthDataComponents): React.ReactNode => {
         if (health == null) {
-            return <CircularProgress size={24} />;
+            return <CircularProgress size={24}/>;
         }
 
         const status = getStatus(key);
 
         switch (status) {
             case 'UP':
-                return <CheckCircleOutlineOutlinedIcon color="success" />;
+                return <CheckCircleOutlineOutlinedIcon color="success"/>;
             case 'DOWN':
-                return <ErrorOutlineOutlinedIcon color="error" />;
+                return <ErrorOutlineOutlinedIcon color="error"/>;
             default:
-                return <HelpOutlineIcon color="warning" />;
+                return <HelpOutlineIcon color="warning"/>;
         }
     };
 
     const getStatusLabel = (key: keyof HealthDataComponents): React.ReactNode => {
         if (health == null) {
-            return <Typography fontStyle={'italic'} color={'text.secondary'}>Status wird geladen…</Typography>;
+            return <Typography
+                fontStyle={'italic'}
+                color={'text.secondary'}
+            >Status wird geladen…</Typography>;
         }
 
         const status = getStatus(key);
@@ -156,18 +172,89 @@ export function SystemInformation(): React.ReactElement {
         '5.x (DEV)';
     const compileDate = hasBuildDate ? parsedBuildDate : new Date();
 
-    const systemInformationItems: StatusTablePropsItem[] = [
-        {
-            label: 'Version',
-            icon: <TagIcon />,
-            children: versionLabel,
-        },
-        {
-            label: 'Compile-Datum',
-            icon: <EventIcon />,
-            children: format(compileDate, 'dd.MM.yyyy'),
-        },
-    ];
+    const systemInformationItems: StatusTablePropsItem[] = useMemo(() => {
+        const res: StatusTablePropsItem[] = [
+            {
+                label: 'Version',
+                icon: <TagIcon/>,
+                children: versionLabel,
+            },
+            {
+                label: 'Compile-Datum',
+                icon: <EventIcon/>,
+                children: format(compileDate, 'dd.MM.yyyy'),
+            },
+            {
+                label: 'Aktivierte Module',
+                icon: <Extension/>,
+                children: AppConfig.moduleFlags.length === 0
+                    ? <i>Keine aktiven Module</i>
+                    : AppConfig
+                        .moduleFlags
+                        .map((f) => ModuleFlagLabels[f])
+                        .join(', '),
+            },
+        ];
+
+        if (!AppConfig.moduleFlags.includes(ModuleFlag.Process)) {
+            res.push({
+                alignTop: true,
+                label: 'Limitierung der Prozesselemente',
+                children: (
+                    <TableContainer>
+                        <Table size="small">
+                            <TableBody>
+                                {
+                                    Object
+                                        .keys(AppConfig.processNodeLimits)
+                                        .map((nodeType) => {
+                                                const styles = ProviderTypeStyles[nodeType as ProcessNodeType];
+                                                const limit = AppConfig.processNodeLimits[nodeType];
+                                                return (
+                                                    <TableRow>
+                                                        <TableCell
+                                                            sx={{
+                                                                p: 0,
+                                                            }}
+                                                        >
+                                                            <styles.Icon/>
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                p: 0,
+                                                                pl: 2,
+                                                            }}
+                                                        >
+                                                            {styles.label}
+                                                        </TableCell>
+                                                        <TableCell
+                                                            sx={{
+                                                                p: 0,
+                                                                pl: 2,
+                                                            }}
+                                                        >
+                                                            {
+                                                                limit == 0 ?
+                                                                    'nicht zur Prozessmodellierung freigegeben'
+                                                                    : limit < 0
+                                                                        ? 'beliebig viele pro Prozessversion erlaubt'
+                                                                        : `max. ${humanizeNumber(limit, {1: 'eins'})} pro Prozessversion`
+                                                            }
+                                                        </TableCell>
+                                                    </TableRow>
+                                                );
+                                            },
+                                        )
+                                }
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+                ),
+            });
+        }
+
+        return res;
+    }, [versionLabel, compileDate]);
 
     const notImplemented = useNotImplemented();
 
@@ -200,11 +287,11 @@ export function SystemInformation(): React.ReactElement {
                 labelVariant="subtitle1"
                 labelIcon={
                     health == null ?
-                        <CircularProgress size="1em" /> :
+                        <CircularProgress size="1em"/> :
                         (
                             health === 'error' || health.status !== 'UP' ?
-                                <ErrorOutlineOutlinedIcon color="error" /> :
-                                <CheckCircleOutlineOutlinedIcon color="success" />
+                                <ErrorOutlineOutlinedIcon color="error"/> :
+                                <CheckCircleOutlineOutlinedIcon color="success"/>
                         )
                 }
                 description="Der Systemstatus gibt Auskunft über die Verfügbarkeit und Funktion der einzelnen System-Komponenten. Sollte eine Komponente nicht verfügbar sein, kann dies zu Problemen bei der Nutzung der Software führen."
@@ -240,12 +327,13 @@ export function SystemInformation(): React.ReactElement {
                     sx={{maxWidth: 900}}
                 >
                     Im Debug-Dialog finden Sie System-, Browser-, Health-, Plugin- und Benutzerinformationen.
-                    Die Informationen können eingesehen, kopiert oder als Datei heruntergeladen werden und helfen dem technischen Support bei der Analyse.
+                    Die Informationen können eingesehen, kopiert oder als Datei heruntergeladen werden und helfen dem
+                    technischen Support bei der Analyse.
                 </Typography>
                 <Button
                     variant="outlined"
                     sx={{mt: 2.5}}
-                    startIcon={<BugReport />}
+                    startIcon={<BugReport/>}
                     onClick={() => {
                         setDebugInformationDialogOpen(true);
                     }}
@@ -276,13 +364,14 @@ export function SystemInformation(): React.ReactElement {
                     sx={{maxWidth: 900}}
                 >
                     Hier können Sie einen Auszug der letzten 100 HTTP-Requests und HTTP-Responses herunterladen.
-                    Diese Informationen können hilfreich sein, um z.B. Probleme bei der Anbindung an Drittsysteme zu analysieren.
+                    Diese Informationen können hilfreich sein, um z.B. Probleme bei der Anbindung an Drittsysteme zu
+                    analysieren.
                 </Typography>
 
                 <Button
                     variant="outlined"
                     sx={{mt: 2.5}}
-                    startIcon={<FileDownloadOutlinedIcon />}
+                    startIcon={<FileDownloadOutlinedIcon/>}
                     onClick={() => {
                         notImplemented();
                         /*void new SystemApiService()

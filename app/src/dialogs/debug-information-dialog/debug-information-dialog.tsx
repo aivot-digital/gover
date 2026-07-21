@@ -230,6 +230,8 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             `- registryHostname: ${AppConfig.registryHostname}`,
             `- applicationTimeZone: ${AppConfig.applicationTimeZone}`,
             `- sentryDsnConfigured: ${toDebugBooleanString(AppConfig.sentryDsn.length > 0)}`,
+            `- moduleFlags: ${AppConfig.moduleFlags.join(', ')}`,
+            `- processNodeLimits: ${JSON.stringify(AppConfig.processNodeLimits)}`,
             `- page: ${window.location.origin}${window.location.pathname}`,
             '',
             '## health',

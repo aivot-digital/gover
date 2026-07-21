@@ -69,6 +69,8 @@ import {Permission} from '../../../data/permissions/permission';
 import {hasAnyDepartmentPermission, hasSystemPermission} from '../../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
 import {AssetsApiService} from '../../../modules/assets/assets-api-service';
+import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -91,6 +93,7 @@ export interface DrawerItem {
     disabled?: boolean;
     requiredSystemPermission?: Permission | string;
     isVisible?: (permissions: PermissionSet | undefined) => boolean;
+    requiredModuleFlag?: ModuleFlag;
 }
 
 const drawerModuleIcon = (name: keyof typeof ModuleIcons): Pick<DrawerItem, 'icon' | 'activeIcon'> => ({
@@ -136,6 +139,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 ...drawerModuleIcon('forms'),
                 label: 'Formulare',
                 to: '/forms',
+                requiredModuleFlag: ModuleFlag.Form,
             },
             {
                 ...drawerModuleIcon('dataObjects'),
@@ -404,6 +408,10 @@ export function ShellDrawer() {
             return items
                 .filter((item) => {
                     if (item.isVisible != null && !item.isVisible(permissions)) {
+                        return false;
+                    }
+
+                    if (item.requiredModuleFlag != null && !hasModuleFlag(item.requiredModuleFlag)) {
                         return false;
                     }
 
