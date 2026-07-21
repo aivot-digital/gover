@@ -3,18 +3,21 @@ package de.aivot.gover.backend.search.entities;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.IdClass;
 import jakarta.persistence.Table;
 
 import java.util.List;
 
 @Entity
 @Table(name = "v_search_items")
+@IdClass(SearchItemEntityId.class)
 public class SearchItemEntity {
     @Id
     private String id;
 
     private String label;
 
+    @Id
     private String originTable;
 
     private String originTableSubset;
@@ -23,6 +26,7 @@ public class SearchItemEntity {
     @Column(name = "search_text")
     private String searchText;
 
+    @Id
     private String userId;
 
     private List<String> permissions;
