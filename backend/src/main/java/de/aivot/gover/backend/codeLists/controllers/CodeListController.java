@@ -76,7 +76,7 @@ public class CodeListController {
             @Nonnull @ParameterObject @Valid CodeListFilter filter
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
         return service
                 .list(pageable, filter);
@@ -92,7 +92,7 @@ public class CodeListController {
             @Nonnull @Valid @RequestBody CodeListEntity create
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_CREATE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_CREATE);
 
         var execUser = userService
                 .fromJWT(jwt)
@@ -131,7 +131,7 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
         return service
                 .retrieve(codeListId)
@@ -149,7 +149,7 @@ public class CodeListController {
             @Nonnull @Valid @RequestBody CodeListEntity update
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         var execUser = userService
                 .fromJWT(jwt)
@@ -189,7 +189,7 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_DELETE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_DELETE);
 
         var execUser = userService
                 .fromJWT(jwt)
@@ -219,7 +219,7 @@ public class CodeListController {
             @Nonnull @PathVariable Integer codeListId
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_EXPORT);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_EXPORT);
 
         var execUser = userService
                 .fromJWT(jwt)
@@ -268,7 +268,7 @@ public class CodeListController {
             @Nonnull @RequestPart("file") MultipartFile file
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         try {
             return service.importCSV(codeListId, file.getInputStream());
@@ -284,7 +284,7 @@ public class CodeListController {
             @Nonnull @RequestParam(defaultValue = "true") Boolean keepOutdated
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         var cl = service
                 .retrieve(codeListId)
@@ -305,7 +305,7 @@ public class CodeListController {
             @Nonnull @ParameterObject @PageableDefault Pageable pageable
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
         return service.listItems(codeListId, pageable);
     }
@@ -317,7 +317,7 @@ public class CodeListController {
             @Nonnull @Valid @RequestBody CodeListItemEntity item
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         return service.createItem(codeListId, item);
     }
@@ -329,7 +329,7 @@ public class CodeListController {
             @Nonnull @PathVariable Long itemId
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
         return service.getItem(codeListId, itemId);
     }
@@ -342,7 +342,7 @@ public class CodeListController {
             @Nonnull @Valid @RequestBody CodeListItemEntity item
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         return service.updateItem(codeListId, itemId, item);
     }
@@ -354,7 +354,7 @@ public class CodeListController {
             @Nonnull @PathVariable Long itemId
     ) throws ResponseException {
         permissionService
-                .testSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
+                .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         service.deleteItem(codeListId, itemId);
     }

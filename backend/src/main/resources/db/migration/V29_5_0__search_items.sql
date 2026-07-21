@@ -189,6 +189,20 @@ FROM themes
 
 UNION ALL
 
+-- Code Lists
+SELECT text 'code_lists'               AS origin_table,
+    null                        AS origin_table_subset,
+       name                        AS label,
+       id::varchar                 AS id,
+    to_tsvector('german', name) AS searchable_element,
+       name                        AS search_text,
+       usp.user_id                 AS user_id,
+       usp.permissions             AS permissions
+FROM code_lists
+         CROSS JOIN v_user_system_permission AS usp
+
+UNION ALL
+
 -- Domain Roles
 SELECT text 'domain_roles'         AS origin_table,
        null                        AS origin_table_subset,

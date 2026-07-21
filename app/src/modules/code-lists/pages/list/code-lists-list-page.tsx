@@ -1,32 +1,40 @@
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {useNavigate} from 'react-router-dom';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import FormatListBulleted from '@aivot/mui-material-symbols-400-n25-outlined/FormatListBulleted';
 import {Typography} from '@mui/material';
-import {GridColDef} from '@mui/x-data-grid';
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
-import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useAccessGuard} from '../../../../hooks/use-admin-guard';
+import {GenericListColDef, GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import {CodeListsApiService} from '../../code-lists-api-service';
 import {CodeList} from '../../models/code-list';
 import {CodeListSourceTypeLabels} from '../../enums/code-list-source-type';
 import {CodeListStatusChip} from '../../components/code-list-status-chip';
+import {Permission} from '../../../../data/permissions/permission';
+
+const codeListsListPermissionCheck: GenericListPagePermissionConfig<CodeList> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.CODE_LIST_READ,
+    create: Permission.CODE_LIST_CREATE,
+    update: Permission.CODE_LIST_UPDATE,
+};
 
 export function CodeListsListPage() {
     const navigate = useNavigate();
-    const hasAccess = useAccessGuard({
-        onlyGlobalAdmin: true,
-        messageType: 'snackbar',
-    });
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<CodeList>) => ({
         icon: ModuleIcons.codeLists,
         title: 'Codelisten',
         actions: [
@@ -35,7 +43,8 @@ export function CodeListsListPage() {
                 icon: <Add />,
                 to: '/code-lists/new',
                 variant: 'contained' as const,
-                disabled: !hasAccess,
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -59,7 +68,7 @@ export function CodeListsListPage() {
                 </>
             ),
         },
-    }), [hasAccess]);
+    }), []);
 
     const fetchCodeLists = useCallback((options: GenericListPropsFetchOptions<CodeList>) => {
         return new CodeListsApiService()
@@ -76,15 +85,15 @@ export function CodeListsListPage() {
 
     const columnIcon = useCallback(() => ModuleIcons.codeLists, []);
 
-    const columnDefinitions = useMemo<Array<GridColDef<CodeList>>>(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<CodeList>): Array<GenericListColDef<CodeList>> => [
         {
             field: 'name',
             headerName: 'Name',
             flex: 1,
-            renderCell: (params) => (
+            renderCell: (params: any) => (
                 <CellLink
                     to={`/code-lists/${params.row.id}`}
-                    title={hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen'}
+                    title={permissions.canUpdate(params.row) ? 'Codeliste bearbeiten' : 'Codeliste ansehen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -94,7 +103,7 @@ export function CodeListsListPage() {
             field: 'sourceType',
             headerName: 'Quelle',
             flex: 1,
-            valueGetter: (_: any, row) => CodeListSourceTypeLabels[row.sourceType],
+            valueGetter: (_: any, row: CodeList) => CodeListSourceTypeLabels[row.sourceType],
         },
         {
             field: 'description',
@@ -105,7 +114,7 @@ export function CodeListsListPage() {
             field: 'status',
             headerName: 'Status',
             width: 280,
-            renderCell: (params) => (
+            renderCell: (params: any) => (
                 <CellContentWrapper>
                     <CodeListStatusChip
                         status={params.row.status}
@@ -116,22 +125,37 @@ export function CodeListsListPage() {
                 </CellContentWrapper>
             ),
         },
-    ], [hasAccess]);
+    ], []);
 
     const getRowIdentifier = useCallback((row: CodeList) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: CodeList) => [
-        {
-            icon: hasAccess ? <Edit /> : <Visibility />,
-            to: `/code-lists/${item.id}`,
-            tooltip: hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen',
-        },
-        {
-            icon: <FormatListBulleted />,
-            to: `/code-lists/${item.id}/items`,
-            tooltip: 'Einträge anzeigen',
-        },
-    ], [hasAccess]);
+    const rowActions = useCallback((item: CodeList, permissions: GenericListPagePermissionState<CodeList>) => {
+        const canUpdateCodeList = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateCodeList ? <Edit /> : <Visibility />,
+                to: `/code-lists/${item.id}`,
+                tooltip: canUpdateCodeList ? 'Codeliste bearbeiten' : 'Codeliste ansehen',
+            },
+            {
+                icon: <FormatListBulleted />,
+                to: `/code-lists/${item.id}/items`,
+                tooltip: 'Einträge anzeigen',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<CodeList>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Codelisten vorhanden"
+            description="Codelisten stellen wiederverwendbare Werte für Auswahlfelder und Prozesse bereit."
+            addText="Neue Codeliste anlegen"
+            onAdd={() => navigate('/code-lists/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -141,20 +165,14 @@ export function CodeListsListPage() {
         >
             <GenericListPage<CodeList>
                 header={header}
+                permissionCheck={codeListsListPermissionCheck}
                 searchLabel="Codeliste suchen"
                 searchPlaceholder="Name der Codeliste eingeben..."
                 fetch={fetchCodeLists}
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Codelisten angelegt"
-                        description="Codelisten stellen wiederverwendbare Werte für Auswahlfelder und Prozesse bereit."
-                        addText={hasAccess ? 'Neue Codeliste anlegen' : undefined}
-                        onAdd={hasAccess ? () => navigate('/code-lists/new') : undefined}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Codelisten gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

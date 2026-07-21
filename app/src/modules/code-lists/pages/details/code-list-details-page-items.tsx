@@ -22,6 +22,10 @@ import {CodeListItem} from '../../models/code-list-item';
 import {CodeListSourceType} from '../../enums/code-list-source-type';
 import {CodeListItemDialog} from '../../dialogs/code-list-item-dialog';
 import {downloadBlobFile} from '../../../../utils/download-utils';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 function selectCsvFile(): Promise<File | null> {
     return new Promise((resolve) => {
@@ -55,10 +59,19 @@ export function CodeListDetailsPageItems() {
     const [showDialog, setShowDialog] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [isCsvBusy, setIsCsvBusy] = useState(false);
+    const canExportCodeList = useHasSystemPermission(Permission.CODE_LIST_EXPORT);
 
     const isManual = codeList?.sourceType === CodeListSourceType.Manual;
     const canManageItems = isEditable && isManual;
     const isSavedCodeList = codeList != null && codeList.id !== 0;
+    const updateDisabledTooltip = !isEditable
+        ? formatMissingPermissionTooltip(Permission.CODE_LIST_UPDATE)
+        : undefined;
+    const exportDisabledTooltip = !canExportCodeList
+        ? formatMissingPermissionTooltip(Permission.CODE_LIST_EXPORT)
+        : undefined;
+    const addItemDisabledTooltip = updateDisabledTooltip ??
+        ((codeList?.columns.length ?? 0) === 0 ? 'Für diese Codeliste sind noch keine Spalten definiert.' : undefined);
 
     const fetchItems = useCallback((options: GenericListPropsFetchOptions<CodeListItem>) => {
         if (codeList == null) {
@@ -112,10 +125,14 @@ export function CodeListDetailsPageItems() {
 
     const getRowIdentifier = useCallback((row: CodeListItem) => row.id.toString(), []);
 
-    const handleOpenCreateDialog = () => {
+    const handleOpenCreateDialog = useCallback(() => {
+        if (!canManageItems) {
+            return;
+        }
+
         setDialogItem(null);
         setShowDialog(true);
-    };
+    }, [canManageItems]);
 
     const handleSaveItem = (columns: string[]) => {
         if (codeList == null || !canManageItems) {
@@ -143,7 +160,7 @@ export function CodeListDetailsPageItems() {
             });
     };
 
-    const handleDeleteItem = (item: CodeListItem) => {
+    const handleDeleteItem = useCallback((item: CodeListItem) => {
         if (codeList == null || !canManageItems) {
             return;
         }
@@ -172,10 +189,10 @@ export function CodeListDetailsPageItems() {
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Der Eintrag konnte nicht gelöscht werden.'));
             });
-    };
+    }, [canManageItems, codeList, dispatch, showConfirm]);
 
     const handleExportCsv = useCallback(() => {
-        if (codeList == null || codeList.id === 0) {
+        if (codeList == null || codeList.id === 0 || !canExportCodeList) {
             return;
         }
 
@@ -193,7 +210,7 @@ export function CodeListDetailsPageItems() {
             .finally(() => {
                 setIsCsvBusy(false);
             });
-    }, [codeList, dispatch]);
+    }, [canExportCodeList, codeList, dispatch]);
 
     const handleImportCsv = useCallback(async () => {
         if (codeList == null || codeList.id === 0 || !canManageItems) {
@@ -236,7 +253,7 @@ export function CodeListDetailsPageItems() {
     }, [canManageItems, codeList, dispatch, setItem, showConfirm]);
 
     const rowActions = useCallback((item: CodeListItem) => {
-        if (!canManageItems) {
+        if (!isManual) {
             return [];
         }
 
@@ -244,18 +261,26 @@ export function CodeListDetailsPageItems() {
             {
                 icon: <Edit/>,
                 onClick: () => {
+                    if (!canManageItems) {
+                        return;
+                    }
+
                     setDialogItem(item);
                     setShowDialog(true);
                 },
                 tooltip: 'Eintrag bearbeiten',
+                disabled: !canManageItems,
+                disabledTooltip: updateDisabledTooltip,
             },
             {
                 icon: <Delete/>,
                 onClick: () => handleDeleteItem(item),
                 tooltip: 'Eintrag löschen',
+                disabled: !canManageItems,
+                disabledTooltip: updateDisabledTooltip,
             },
         ];
-    }, [canManageItems]);
+    }, [canManageItems, handleDeleteItem, isManual, updateDisabledTooltip]);
 
     const preSearchElements = useMemo(() => {
         if (!isSavedCodeList) {
@@ -275,7 +300,7 @@ export function CodeListDetailsPageItems() {
                 }}
             >
                 {
-                    canManageItems &&
+                    isManual &&
                     <Box
                         sx={{
                             display: 'flex',
@@ -283,14 +308,19 @@ export function CodeListDetailsPageItems() {
                             flexWrap: 'wrap',
                         }}
                     >
-                        <Button
-                            variant="contained"
-                            startIcon={<Add/>}
-                            onClick={handleOpenCreateDialog}
-                            disabled={(codeList?.columns.length ?? 0) === 0}
+                        <DisabledTooltip
+                            disabled={!canManageItems || (codeList?.columns.length ?? 0) === 0}
+                            title={addItemDisabledTooltip}
                         >
-                            Eintrag hinzufügen
-                        </Button>
+                            <Button
+                                variant="contained"
+                                startIcon={<Add/>}
+                                onClick={handleOpenCreateDialog}
+                                disabled={!canManageItems || (codeList?.columns.length ?? 0) === 0}
+                            >
+                                Eintrag hinzufügen
+                            </Button>
+                        </DisabledTooltip>
                     </Box>
                 }
 
@@ -302,29 +332,52 @@ export function CodeListDetailsPageItems() {
                         ml: 'auto',
                     }}
                 >
-                    <Button
-                        variant="outlined"
-                        startIcon={<FileDownload/>}
-                        onClick={handleExportCsv}
-                        disabled={isCsvBusy}
+                    <DisabledTooltip
+                        disabled={!canExportCodeList}
+                        title={exportDisabledTooltip}
                     >
-                        CSV exportieren
-                    </Button>
-                    {
-                        canManageItems &&
                         <Button
                             variant="outlined"
-                            startIcon={<CloudUpload/>}
-                            onClick={handleImportCsv}
-                            disabled={isCsvBusy}
+                            startIcon={<FileDownload/>}
+                            onClick={handleExportCsv}
+                            disabled={isCsvBusy || !canExportCodeList}
                         >
-                            CSV importieren
+                            CSV exportieren
                         </Button>
+                    </DisabledTooltip>
+                    {
+                        isManual &&
+                        <DisabledTooltip
+                            disabled={!canManageItems}
+                            title={updateDisabledTooltip}
+                        >
+                            <Button
+                                variant="outlined"
+                                startIcon={<CloudUpload/>}
+                                onClick={handleImportCsv}
+                                disabled={isCsvBusy || !canManageItems}
+                            >
+                                CSV importieren
+                            </Button>
+                        </DisabledTooltip>
                     }
                 </Box>
             </Box>,
         ];
-    }, [canManageItems, codeList?.columns.length, handleExportCsv, handleImportCsv, isCsvBusy, isSavedCodeList]);
+    }, [
+        addItemDisabledTooltip,
+        canExportCodeList,
+        canManageItems,
+        codeList?.columns.length,
+        exportDisabledTooltip,
+        handleExportCsv,
+        handleImportCsv,
+        handleOpenCreateDialog,
+        isCsvBusy,
+        isManual,
+        isSavedCodeList,
+        updateDisabledTooltip,
+    ]);
 
     if (codeList == null) {
         return null;
@@ -367,16 +420,18 @@ export function CodeListDetailsPageItems() {
                 columnDefinitions={columnDefinitions}
                 fetch={fetchItems}
                 getRowIdentifier={getRowIdentifier}
-                rowActionsCount={canManageItems ? 2 : 0}
-                rowActions={canManageItems ? rowActions : undefined}
+                rowActionsCount={isManual ? 2 : 0}
+                rowActions={isManual ? rowActions : undefined}
                 defaultSortField="id"
                 rowMenuItems={[]}
                 noDataPlaceholder={
                     <EmptyDataListPlaceholder
                         title="Keine Einträge vorhanden"
                         description={isManual ? 'Fügen Sie die ersten Werte für diese Codeliste hinzu.' : 'Bei der nächsten Synchronisierung werden Einträge aus der Quelle geladen.'}
-                        addText={canManageItems ? 'Eintrag hinzufügen' : undefined}
-                        onAdd={canManageItems ? handleOpenCreateDialog : undefined}
+                        addText={isManual ? 'Eintrag hinzufügen' : undefined}
+                        onAdd={isManual ? handleOpenCreateDialog : undefined}
+                        addDisabled={!canManageItems || (codeList?.columns.length ?? 0) === 0}
+                        addDisabledTooltip={addItemDisabledTooltip}
                     />
                 }
                 loadingPlaceholder="Lade Einträge..."

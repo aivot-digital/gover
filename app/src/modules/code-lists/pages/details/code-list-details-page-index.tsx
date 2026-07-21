@@ -31,6 +31,10 @@ import {AlertComponent} from '../../../../components/alert/alert-component';
 import {ExpandableCodeBlock} from '../../../../components/expandable-code-block/expandable-code-block';
 import {withAsyncWrapper} from '../../../../utils/with-async-wrapper';
 import {StatusTable} from '../../../../components/status-table/status-table';
+import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {Permission} from '../../../../data/permissions/permission';
+import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 const SourceTypeOptions = Object.values(CodeListSourceType).map((value) => ({
     value,
@@ -192,6 +196,7 @@ export function CodeListDetailsPageIndex() {
     const {
         item,
         setItem,
+        isNewItem,
         isBusy,
         setIsBusy,
         isEditable,
@@ -215,6 +220,7 @@ export function CodeListDetailsPageIndex() {
     const [isFetchingMetadata, setIsFetchingMetadata] = useState(false);
     const metadataFetchIdRef = useRef(0);
     const lastMetadataRequestKeyRef = useRef<string | null>(null);
+    const canDeleteCodeList = useHasSystemPermission(Permission.CODE_LIST_DELETE);
 
     const columnOptions = useMemo(() => (codeList?.columns ?? []).map((column, index) => ({
         value: index.toString(),
@@ -331,6 +337,15 @@ export function CodeListDetailsPageIndex() {
         return <GenericDetailsSkeleton/>;
     }
 
+    const editPermission = isNewItem ? Permission.CODE_LIST_CREATE : Permission.CODE_LIST_UPDATE;
+    const saveDisabledByPermission = !isEditable;
+    const saveDisabledTooltip = saveDisabledByPermission
+        ? formatMissingPermissionTooltip(editPermission)
+        : undefined;
+    const deleteDisabledByPermission = !canDeleteCodeList;
+    const deleteDisabledTooltip = deleteDisabledByPermission
+        ? formatMissingPermissionTooltip(Permission.CODE_LIST_DELETE)
+        : undefined;
     const isExistingSyncableCodeList = codeList.id !== 0 && isCodeListSyncable(codeList.sourceType);
     const statusTableItems = [
         {
@@ -387,6 +402,10 @@ export function CodeListDetailsPageIndex() {
     };
 
     const handleSave = () => {
+        if (!isEditable) {
+            return;
+        }
+
         if (!validate()) {
             dispatch(showErrorSnackbar('Bitte überprüfen Sie Ihre Eingaben.'));
             return;
@@ -432,7 +451,7 @@ export function CodeListDetailsPageIndex() {
     const handleDelete = () => {
         setShowConfirmDelete(false);
 
-        if (codeList.id === 0) {
+        if (codeList.id === 0 || !canDeleteCodeList) {
             return;
         }
 
@@ -454,15 +473,6 @@ export function CodeListDetailsPageIndex() {
 
     return (
         <Box>
-            {!isEditable && (
-                <Alert
-                    severity="warning"
-                    sx={{mb: 3}}
-                >
-                    Diese Codeliste kann nur von Administrator:innen bearbeitet werden. Sie haben Lesezugriff.
-                </Alert>
-            )}
-
             {
                 isCodeListSyncable(codeList.sourceType) &&
                 codeList.status == CodeListStatus.SyncFailed &&
@@ -618,26 +628,31 @@ export function CodeListDetailsPageIndex() {
                                 </Box>
 
                                 <Box>
-                                    <Button
-                                        variant="outlined"
-                                        onClick={handleFetchXRepositoryMetadata}
-                                        disabled={
-                                            isBusy ||
-                                            !isEditable ||
-                                            isFetchingMetadata ||
-                                            !isValidMetadataSourceRef(CodeListSourceType.XRepository, codeList.sourceRef ?? '')
-                                        }
-                                        startIcon={
-                                            isFetchingMetadata
-                                                ? <CircularProgress size={18} color="inherit"/>
-                                                : <Download/>
-                                        }
-                                        sx={{
-                                            mt: {xs: 0, md: 3},
-                                        }}
+                                    <DisabledTooltip
+                                        disabled={saveDisabledByPermission}
+                                        title={saveDisabledTooltip}
                                     >
-                                        Metadaten abrufen
-                                    </Button>
+                                        <Button
+                                            variant="outlined"
+                                            onClick={handleFetchXRepositoryMetadata}
+                                            disabled={
+                                                isBusy ||
+                                                !isEditable ||
+                                                isFetchingMetadata ||
+                                                !isValidMetadataSourceRef(CodeListSourceType.XRepository, codeList.sourceRef ?? '')
+                                            }
+                                            startIcon={
+                                                isFetchingMetadata
+                                                    ? <CircularProgress size={18} color="inherit"/>
+                                                    : <Download/>
+                                            }
+                                            sx={{
+                                                mt: {xs: 0, md: 3},
+                                            }}
+                                        >
+                                            Metadaten abrufen
+                                        </Button>
+                                    </DisabledTooltip>
                                 </Box>
                             </Stack>
                         }
@@ -693,34 +708,49 @@ export function CodeListDetailsPageIndex() {
                     gap: 2,
                 }}
             >
-                <Button
-                    onClick={handleSave}
-                    disabled={isBusy || hasNotChanged || !isEditable}
-                    variant="contained"
-                    color="primary"
-                    startIcon={<Save/>}
+                <DisabledTooltip
+                    disabled={saveDisabledByPermission}
+                    title={saveDisabledTooltip}
                 >
-                    Speichern
-                </Button>
-                <Button
-                    onClick={reset}
-                    disabled={isBusy || hasNotChanged || !isEditable}
-                    color="error"
+                    <Button
+                        onClick={handleSave}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        variant="contained"
+                        color="primary"
+                        startIcon={<Save/>}
+                    >
+                        Speichern
+                    </Button>
+                </DisabledTooltip>
+                <DisabledTooltip
+                    disabled={saveDisabledByPermission}
+                    title={saveDisabledTooltip}
                 >
-                    Zurücksetzen
-                </Button>
+                    <Button
+                        onClick={reset}
+                        disabled={isBusy || hasNotChanged || !isEditable}
+                        color="error"
+                    >
+                        Zurücksetzen
+                    </Button>
+                </DisabledTooltip>
                 {
                     codeList.id !== 0 &&
-                    <Button
-                        variant="outlined"
-                        onClick={() => setShowConfirmDelete(true)}
-                        disabled={isBusy || !isEditable}
-                        color="error"
-                        startIcon={<Delete/>}
-                        sx={{marginLeft: 'auto'}}
+                    <DisabledTooltip
+                        disabled={deleteDisabledByPermission}
+                        title={deleteDisabledTooltip}
+                        wrapperSx={{marginLeft: 'auto'}}
                     >
-                        Löschen
-                    </Button>
+                        <Button
+                            variant="outlined"
+                            onClick={() => setShowConfirmDelete(true)}
+                            disabled={isBusy || !canDeleteCodeList}
+                            color="error"
+                            startIcon={<Delete/>}
+                        >
+                            Löschen
+                        </Button>
+                    </DisabledTooltip>
                 }
             </Box>
 

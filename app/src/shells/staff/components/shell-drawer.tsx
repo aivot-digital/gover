@@ -35,7 +35,6 @@ import {ModuleIcons, ModuleIconsFilled} from '../data/module-icons';
 import {Actions} from '../../../components/actions/actions';
 import {useHotkeys} from 'react-hotkeys-hook';
 import {formatShortcut} from '../../../utils/format-shortcut';
-
 import LeftPanelClose from '@aivot/mui-material-symbols-400-n25-outlined/LeftPanelClose';
 import LeftPanelOpen from '@aivot/mui-material-symbols-400-n25-outlined/LeftPanelOpen';
 import SearchFilled from '@aivot/mui-material-symbols-400-n25-outlined/SearchFilled';
@@ -241,6 +240,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 icon: ModuleIcons.codeLists,
                 label: 'Codelisten',
                 to: '/code-lists',
+                requiredSystemPermission: Permission.CODE_LIST_READ,
             },
             {
                 ...drawerModuleIcon('settings'),
