@@ -2,7 +2,10 @@ package de.aivot.gover.backend.payment.permissions;
 
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class PaymentProviderPermissionProvider implements PermissionProvider {
@@ -24,5 +27,14 @@ public class PaymentProviderPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PAYMENT_PROVIDER_UPDATE, "Zahlungsanbieter bearbeiten", "Erlaubt das Bearbeiten von Zahlungsanbietern."),
                 PermissionEntry.of(PAYMENT_PROVIDER_DELETE, "Zahlungsanbieter löschen", "Erlaubt das Löschen von Zahlungsanbietern."),
         };
+    }
+
+    @Nonnull
+    @Override
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "payment_providers",
+                PAYMENT_PROVIDER_READ
+        ));
     }
 }

@@ -2,7 +2,10 @@ package de.aivot.gover.backend.userRoles.permissions;
 
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class SystemRolePermissionProvider implements PermissionProvider {
@@ -24,5 +27,14 @@ public class SystemRolePermissionProvider implements PermissionProvider {
                 PermissionEntry.of(SYSTEM_ROLE_UPDATE, "Systemrolle bearbeiten", "Erlaubt das Bearbeiten von Systemrollen."),
                 PermissionEntry.of(SYSTEM_ROLE_DELETE, "Systemrolle löschen", "Erlaubt das Löschen von Systemrollen."),
         };
+    }
+
+    @Nonnull
+    @Override
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "system_roles",
+                SYSTEM_ROLE_READ
+        ));
     }
 }

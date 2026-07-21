@@ -1,8 +1,12 @@
 package de.aivot.gover.backend.permissions.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 public interface PermissionProvider {
@@ -38,5 +42,27 @@ public interface PermissionProvider {
     @JsonProperty("systemRoleAssignmentHint")
     default String getSystemRoleAssignmentHint() {
         return null;
+    }
+
+    @Nonnull
+    @JsonIgnore
+    default Optional<SearchPermission> getSearchPermission() {
+        return Optional.empty();
+    }
+
+    @Nonnull
+    @JsonIgnore
+    default List<SearchPermission> getSearchPermissions() {
+        return getSearchPermission()
+                .map(searchPermission -> List.of(searchPermission))
+                .orElseGet(() -> List.of());
+    }
+
+    record SearchPermission(
+            @Nonnull
+            String originTable,
+            @Nonnull
+            String searchPermission
+    ) {
     }
 }

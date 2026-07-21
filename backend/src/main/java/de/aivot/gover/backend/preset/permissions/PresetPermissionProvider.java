@@ -2,7 +2,10 @@ package de.aivot.gover.backend.preset.permissions;
 
 import de.aivot.gover.backend.permissions.models.PermissionEntry;
 import de.aivot.gover.backend.permissions.models.PermissionProvider;
+import jakarta.annotation.Nonnull;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 
 @Component
 public class PresetPermissionProvider implements PermissionProvider {
@@ -28,5 +31,14 @@ public class PresetPermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PRESET_PUBLISH_LOCAL, "Vorlage lokal veröffentlichen", "Erlaubt das lokale Veröffentlichen von Vorlagen."),
                 PermissionEntry.of(PRESET_PUBLISH_STORE, "Vorlage im Store veröffentlichen", "Erlaubt das Veröffentlichen von Vorlagen im Store."),
         };
+    }
+
+    @Nonnull
+    @Override
+    public Optional<SearchPermission> getSearchPermission() {
+        return Optional.of(new PermissionProvider.SearchPermission(
+                "presets",
+                PRESET_READ
+        ));
     }
 }
