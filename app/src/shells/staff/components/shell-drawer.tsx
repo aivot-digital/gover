@@ -63,7 +63,11 @@ import ForwardToInboxFilled from '@aivot/mui-material-symbols-400-n25-outlined/F
 import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 import {Permission} from '../../../data/permissions/permission';
-import {hasAnyDepartmentPermission, hasSystemPermission} from '../../../modules/permissions/utils/permission-utils';
+import {
+    hasAnyDepartmentPermission,
+    hasAnyTeamPermission,
+    hasSystemPermission,
+} from '../../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
 import {AssetsApiService} from '../../../modules/assets/assets-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
@@ -181,11 +185,13 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         ...drawerModuleIcon('departments'),
                         label: 'Organisationseinheiten',
                         to: '/departments',
+                        isVisible: (permissions) => hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ),
                     },
                     {
                         ...drawerModuleIcon('teams'),
                         label: 'Teams',
                         to: '/teams',
+                        isVisible: (permissions) => hasAnyTeamPermission(permissions, Permission.TEAM_READ),
                     },
                     {
                         ...drawerModuleIcon('users'),
