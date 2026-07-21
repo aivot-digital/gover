@@ -56,6 +56,7 @@ import {ProcessInstanceAttachmentSetSelectElement} from '../models/elements/form
 import {ProcessIdentityIdInputElement} from '../models/elements/form/input/process-identity-id-input-element';
 import {getDefaultElementWeight} from './element-widths';
 import {HtmlTemplateInputElement} from '../models/elements/form/input/html-template-input-element';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 
 function makeBase<T extends ElementType>(t: T, id: string): BaseElement<T> {
     return {
@@ -203,6 +204,8 @@ const elementConstructors: {
     [ElementType.MultiCheckbox]: (id) => ({
         ...makeInputBase(ElementType.MultiCheckbox, id),
         label: 'Mehrfachauswahl',
+        optionsSource: OptionsSourceType.Manual,
+        codeListId: undefined,
         options: [
             {
                 value: 'option_1',
@@ -244,6 +247,8 @@ const elementConstructors: {
     [ElementType.Radio]: (id) => ({
         ...makeInputBase(ElementType.Radio, id),
         label: 'Einzelauswahl (Optionsfelder)',
+        optionsSource: OptionsSourceType.Manual,
+        codeListId: undefined,
         options: [
             {
                 value: 'option_1',
@@ -263,6 +268,8 @@ const elementConstructors: {
     [ElementType.Select]: (id) => ({
         ...makeInputBase(ElementType.Select, id),
         label: 'Einzelauswahl (Auswahlmenü)',
+        optionsSource: OptionsSourceType.Manual,
+        codeListId: undefined,
         options: [
             {
                 value: 'option_1',
@@ -411,6 +418,8 @@ const elementConstructors: {
         label: 'Tag-Liste (Schlagwörter)',
         placeholder: 'Eintrag hinzufügen',
         suggestions: undefined,
+        optionsSource: OptionsSourceType.Manual,
+        codeListId: undefined,
         minItems: undefined,
         maxItems: undefined,
         allowDuplicates: false,

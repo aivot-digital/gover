@@ -304,7 +304,7 @@ class CitizenProcessInstanceTaskViewControllerTest {
         private final AuthoredElementValues normalizedInputs;
 
         private TestElementDerivationService(AuthoredElementValues normalizedInputs) {
-            super(null, null, null);
+            super(null, null, null, null);
             this.normalizedInputs = normalizedInputs;
         }
 

@@ -3,7 +3,7 @@ import {AuthoredElementValues} from '../../../models/element-data';
 import {Box} from '@mui/material';
 import React, {useMemo, useState} from 'react';
 import {Actions} from '../../actions/actions';
-import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import UploadFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/UploadFile';
 import {format} from 'date-fns';
 import {downloadObjectFile, uploadObjectFile} from '../../../utils/download-utils';

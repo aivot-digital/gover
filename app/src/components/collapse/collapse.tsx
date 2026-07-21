@@ -1,8 +1,8 @@
 import {CollapseProps} from './collapse-props';
 import {Box, Collapse as MuiCollapse, Typography} from '@mui/material';
 import {IconButton} from '../icon-button/icon-button';
-import ExpandLessOutlined from '@aivot/mui-material-symbols-400-n25-outlined/ExpandLess';
-import ExpandMoreOutlined from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandLessOutlined from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowUp';
+import ExpandMoreOutlined from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import React, {PropsWithChildren, useReducer} from 'react';
 
 export function Collapse(props: PropsWithChildren<CollapseProps>) {

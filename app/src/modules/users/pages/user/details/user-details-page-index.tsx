@@ -3,7 +3,7 @@ import React, {useContext, useEffect, useMemo, useState} from 'react';
 import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
 import SaveOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import LockResetOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/LockReset';
-import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {useLocation, useNavigate} from 'react-router-dom';
 import {

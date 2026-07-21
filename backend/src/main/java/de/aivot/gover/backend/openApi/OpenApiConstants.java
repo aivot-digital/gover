@@ -14,6 +14,9 @@ public class OpenApiConstants {
                 "They require clients to solve a proof-of-work challenge before performing certain actions. " +
                 "This endpoint is required for certain, unauthenticated api actions.";
 
+        public static final String CodeListName = "Code List";
+        public static final String CodeListDescription = "Code lists contain values for usage in Gover.";
+
         public static final String SystemConfigsName = "System Configs";
         public static final String SystemConfigDescription = "System configurations are key-value pairs that define various settings and parameters of the application. " +
                 "These configurations can be used to customize the behavior of the system and should be used if you need to provide configuration values to citizens publicly.";

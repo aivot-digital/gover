@@ -50,7 +50,10 @@ public class ServerConfiguration implements WebMvcConfigurer {
     @Bean
     public SimpleMessageConverter converter() {
         SimpleMessageConverter converter = new SimpleMessageConverter();
-        converter.setAllowedListPatterns(List.of("de.aivot.gover.backend.process.workers.*"));
+        converter.setAllowedListPatterns(List.of(
+                "de.aivot.gover.backend.process.workers.*",
+                "de.aivot.gover.backend.codeLists.services.*"
+        ));
         return converter;
     }
 

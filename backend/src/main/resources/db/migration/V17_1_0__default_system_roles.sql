@@ -8,6 +8,12 @@ values (1,
             'asset.update',
             'asset.delete',
 
+            'code_list.create',
+            'code_list.read',
+            'code_list.update',
+            'code_list.delete',
+            'code_list.export',
+
             'object_schema.create',
             'object_schema.read',
             'object_schema.update',
@@ -142,6 +148,11 @@ values (1,
             'asset.update',
             'asset.delete',
 
+            'code_list.create',
+            'code_list.read',
+            'code_list.update',
+            'code_list.delete',
+
             'object_schema.create',
             'object_schema.read',
             'object_schema.update',
@@ -248,6 +259,8 @@ values (1,
             'asset.create',
             'asset.read',
             'asset.update',
+
+            'code_list.read',
 
             'object_schema.read',
 
