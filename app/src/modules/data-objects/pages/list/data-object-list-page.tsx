@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import {Typography} from '@mui/material';
@@ -12,14 +16,20 @@ import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData'
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import React, {useCallback, useMemo} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 
-export function DataObjectListPage() {
-    useRequireSystemPermission(Permission.OBJECT_ITEM_READ);
-    useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
-    const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
+const dataObjectListPermissionCheck: GenericListPagePermissionConfig<DataObjectSchema> = {
+    scope: {
+        type: 'system',
+    },
+    listAccess: [
+        Permission.OBJECT_ITEM_READ,
+        Permission.OBJECT_SCHEMA_READ,
+    ],
+    update: Permission.OBJECT_SCHEMA_UPDATE,
+};
 
+export function DataObjectListPage() {
     const header = useMemo(() => ({
         icon: <DataObject />,
         title: 'Datenobjekte',
@@ -90,18 +100,22 @@ export function DataObjectListPage() {
 
     const getRowIdentifier = useCallback((row: DataObjectSchema) => row.key.toString(), []);
 
-    const rowActions = useCallback((item: DataObjectSchema) => [
-        {
-            icon: <DataObject />,
-            to: `/data-objects/${item.key}`,
-            tooltip: 'Datenobjekte zu diesem Modell anzeigen',
-        },
-        {
-            icon: canUpdateDataObjectSchema ? <EditOutlined /> : <Visibility />,
-            to: `/data-models/${item.key}`,
-            tooltip: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
-        },
-    ], [canUpdateDataObjectSchema]);
+    const rowActions = useCallback((item: DataObjectSchema, permissions: GenericListPagePermissionState<DataObjectSchema>) => {
+        const canUpdateDataObjectSchema = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: <DataObject />,
+                to: `/data-objects/${item.key}`,
+                tooltip: 'Datenobjekte zu diesem Modell anzeigen',
+            },
+            {
+                icon: canUpdateDataObjectSchema ? <EditOutlined /> : <Visibility />,
+                to: `/data-models/${item.key}`,
+                tooltip: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+            },
+        ];
+    }, []);
 
     return (
         <>
@@ -112,6 +126,7 @@ export function DataObjectListPage() {
             >
                 <GenericListPage<DataObjectSchema>
                     header={header}
+                    permissionCheck={dataObjectListPermissionCheck}
                     searchLabel="Datenmodell suchen"
                     searchPlaceholder="Name des Datenmodells eingeben…"
                     fetch={fetchSchemas}

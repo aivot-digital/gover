@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
@@ -16,17 +20,21 @@ import {CellContentWrapper} from '../../../../components/cell-content-wrapper/ce
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
-import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 
 const apiService = new PaymentProvidersApiService();
 
+const paymentProvidersListPermissionCheck: GenericListPagePermissionConfig<PaymentProviderResponseDTO> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.PAYMENT_PROVIDER_READ,
+    create: Permission.PAYMENT_PROVIDER_CREATE,
+    update: Permission.PAYMENT_PROVIDER_UPDATE,
+};
+
 export function PaymentProvidersListPage() {
     const navigate = useNavigate();
-    useRequireSystemPermission(Permission.PAYMENT_PROVIDER_READ);
-    const canCreatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_CREATE);
-    const canUpdatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
 
     const [definitions, setDefinitions] = useState<PaymentProviderDefinitionResponseDTO[]>([]);
 
@@ -37,7 +45,7 @@ export function PaymentProvidersListPage() {
             .catch(console.error);
     }, []);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<PaymentProviderResponseDTO>) => ({
         icon: ModuleIcons.payment,
         title: 'Zahlungsdienstleister',
         actions: [
@@ -46,8 +54,8 @@ export function PaymentProvidersListPage() {
                 icon: <AddOutlinedIcon/>,
                 to: '/payment-providers/new',
                 variant: 'contained' as const,
-                disabled: !canCreatePaymentProvider,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_CREATE),
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -74,14 +82,14 @@ export function PaymentProvidersListPage() {
                 </>
             ),
         },
-    }), [canCreatePaymentProvider]);
+    }), []);
 
     const fetchPaymentProviders = useCallback((options: GenericListPropsFetchOptions<PaymentProviderResponseDTO>) => {
         return new PaymentProvidersApiService()
             .list(options.page, options.size, options.sort, options.order, {name: options.search});
     }, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<PaymentProviderResponseDTO>) => [
         {
             field: 'icon',
             headerName: '',
@@ -97,7 +105,7 @@ export function PaymentProvidersListPage() {
             renderCell: (params: any) => (
                 <CellLink
                     to={`/payment-providers/${params.id}`}
-                    title={canUpdatePaymentProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
+                    title={permissions.canUpdate(params.row) ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen'}
                 >
                     {String(params.value)}
                 </CellLink>
@@ -149,24 +157,39 @@ export function PaymentProvidersListPage() {
                 </>
             ),
         },
-    ], [definitions, canUpdatePaymentProvider]);
+    ], [definitions]);
 
     const getRowIdentifier = useCallback((row: PaymentProviderResponseDTO) => row.key, []);
 
-    const rowActions = useCallback((item: PaymentProviderResponseDTO) => [
-        {
-            icon: canUpdatePaymentProvider ? <EditOutlined/> : <Visibility/>,
-            to: `/payment-providers/${item.key}`,
-            tooltip: canUpdatePaymentProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
-        },
-        {
-            icon: <ScienceOutlinedIcon/>,
-            to: `/payment-providers/${item.key}/test`,
-            tooltip: 'Konfiguration testen',
-            disabled: !canUpdatePaymentProvider,
-            disabledTooltip: formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_UPDATE),
-        },
-    ], [canUpdatePaymentProvider]);
+    const rowActions = useCallback((item: PaymentProviderResponseDTO, permissions: GenericListPagePermissionState<PaymentProviderResponseDTO>) => {
+        const canUpdatePaymentProvider = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdatePaymentProvider ? <EditOutlined/> : <Visibility/>,
+                to: `/payment-providers/${item.key}`,
+                tooltip: canUpdatePaymentProvider ? 'Konfiguration bearbeiten' : 'Konfiguration anzeigen',
+            },
+            {
+                icon: <ScienceOutlinedIcon/>,
+                to: `/payment-providers/${item.key}/test`,
+                tooltip: 'Konfiguration testen',
+                disabled: !canUpdatePaymentProvider,
+                disabledTooltip: permissions.getMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_UPDATE),
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<PaymentProviderResponseDTO>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Zahlungsdienstleister vorhanden"
+            description="Zahlungsdienstleister binden Bezahlverfahren ein, damit Gebühren in Formularen und Vorgängen abgewickelt werden können."
+            addText="Neuen Zahlungsdienstleister anlegen"
+            onAdd={() => navigate('/payment-providers/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <>
@@ -177,21 +200,13 @@ export function PaymentProvidersListPage() {
             >
                 <GenericListPage<PaymentProviderResponseDTO>
                     header={header}
+                    permissionCheck={paymentProvidersListPermissionCheck}
                     searchLabel="Zahlungsdienstleister suchen"
                     searchPlaceholder="Name der Konfiguration eingeben…"
                     fetch={fetchPaymentProviders}
                     columnDefinitions={columnDefinitions}
                     getRowIdentifier={getRowIdentifier}
-                    noDataPlaceholder={
-                        <EmptyDataListPlaceholder
-                            title="Noch keine Zahlungsdienstleister angelegt"
-                            description="Zahlungsdienstleister binden Bezahlverfahren ein, damit Gebühren in Formularen und Vorgängen abgewickelt werden können."
-                            addText="Neuen Zahlungsdienstleister anlegen"
-                            onAdd={() => navigate('/payment-providers/new')}
-                            addDisabled={!canCreatePaymentProvider}
-                            addDisabledTooltip={formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_CREATE)}
-                        />
-                    }
+                    noDataPlaceholder={noDataPlaceholder}
                     noSearchResultsPlaceholder="Keine Zahlungsdienstleister gefunden"
                     rowActionsCount={2}
                     rowActions={rowActions}

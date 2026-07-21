@@ -2,7 +2,10 @@ import React, {type ReactNode, useCallback, useEffect, useMemo, useState} from '
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {Box, Chip, Tooltip, Typography} from '@mui/material';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import {AuditLogEntity} from '../../models/audit-log-entity';
 import {AuditLogFilter, AuditLogFilterOptions, AuditLogsApiService} from '../../audit-logs-api-service';
@@ -14,8 +17,6 @@ import {getTriggerTypeColor, getTriggerTypeIcon, getTriggerTypeLabel} from '../.
 import {getActorTypeColor, getActorTypeIcon, getActorTypeLabel} from '../../data/actor-type';
 import {AuditLogDetailsDialogContent} from './audit-log-details-dialog-content';
 import {ChipInputFieldComponent} from '../../../../components/chip-input-field/chip-input-field-component';
-import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
-
 
 const actorFilters = [
     {label: 'Alle', value: 'all'},
@@ -23,6 +24,13 @@ const actorFilters = [
     {label: 'System', value: 'System'},
     {label: 'Process', value: 'Process'},
 ];
+
+const auditLogsListPermissionCheck: GenericListPagePermissionConfig<AuditLogEntity> = {
+    scope: {
+        type: 'system',
+    },
+    read: AUDIT_LOG_READ_PERMISSION,
+};
 
 function parseDate(value: string): Date | undefined {
     if (value.trim().length === 0) {
@@ -83,7 +91,6 @@ function trimValue(value: string | undefined, maxLength: number = 28): string {
 }
 
 export function AuditLogsListPage(): ReactNode {
-    useRequireSystemPermission(AUDIT_LOG_READ_PERMISSION);
     const confirm = useConfirm();
 
     const [filterOptions, setFilterOptions] = useState<AuditLogFilterOptions>({
@@ -348,6 +355,7 @@ export function AuditLogsListPage(): ReactNode {
                 defaultFilter="all"
                 filters={actorFilters}
                 header={header}
+                permissionCheck={auditLogsListPermissionCheck}
                 preSearchElements={preSearchElements}
                 fetch={fetchAuditLogs}
                 columnIcon={ModuleIcons.audit}

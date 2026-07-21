@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../../components/page-wrapper/page-wrapper';
@@ -20,10 +24,9 @@ import {SystemRolesApiService} from '../../../../system/services/system-roles-ap
 import {useAppDispatch} from '../../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar} from '../../../../../slices/snackbar-slice';
 import {GenericListPropsFetchOptions} from '../../../../../components/generic-list/generic-list-props';
-import {useHasSystemPermission, useRequireSystemPermission} from '../../../../permissions/hooks/use-permissions';
+import {useHasSystemPermission} from '../../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../../data/permissions/permission';
 import {isApiError} from '../../../../../models/api-error';
-import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 
 const Filters = [
     {
@@ -40,13 +43,19 @@ const Filters = [
     },
 ];
 
+const usersListPermissionCheck: GenericListPagePermissionConfig<User> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.USER_READ,
+    create: Permission.USER_CREATE,
+    update: Permission.USER_UPDATE,
+};
+
 export function UserListPage() {
     const navigate = useNavigate();
     const dispatch = useAppDispatch();
-    useRequireSystemPermission(Permission.USER_READ);
     const systemRolesApiService = useMemo(() => new SystemRolesApiService(), []);
-    const canCreateUser = useHasSystemPermission(Permission.USER_CREATE);
-    const canUpdateUser = useHasSystemPermission(Permission.USER_UPDATE);
     const canReadSystemRoles = useHasSystemPermission(Permission.SYSTEM_ROLE_READ);
     const [systemRoleNamesById, setSystemRoleNamesById] = useState<Record<number, string>>({});
     const [isSystemRolesLoading, setIsSystemRolesLoading] = useState(true);
@@ -193,7 +202,7 @@ export function UserListPage() {
         },
     ], [canReadSystemRoles, isSystemRolesLoading, systemRoleNamesById, systemRolesAccessDenied]);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<User>) => ({
         icon: <PeopleOutlined/>,
         title: 'Mitarbeiter:innen',
         actions: [
@@ -202,8 +211,8 @@ export function UserListPage() {
                 icon: <Add/>,
                 to: "/users/new",
                 variant: 'contained' as const,
-                disabled: !canCreateUser,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.USER_CREATE),
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -226,7 +235,7 @@ export function UserListPage() {
                 </>
             ),
         },
-    }), [canCreateUser]);
+    }), []);
 
     const fetchUsers = useCallback((options: GenericListPropsFetchOptions<User>) => {
         const filters: Partial<UserFilter> = {
@@ -262,20 +271,35 @@ export function UserListPage() {
 
     const getRowIdentifier = useCallback((row: User) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: User) => [
-        {
-            icon: canUpdateUser ? <EditOutlined/> : <Visibility/>,
-            to: `/users/${item.id}`,
-            tooltip: canUpdateUser ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
-        },
-        {
-            icon: <MailOutlined/>,
-            href: `mailto:${item.email}`,
-            tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
-            disabled: item.deletedInIdp,
-            disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
-        },
-    ], [canUpdateUser]);
+    const rowActions = useCallback((item: User, permissions: GenericListPagePermissionState<User>) => {
+        const canUpdateUser = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateUser ? <EditOutlined/> : <Visibility/>,
+                to: `/users/${item.id}`,
+                tooltip: canUpdateUser ? 'Mitarbeiter:in bearbeiten' : 'Mitarbeiter:in anzeigen',
+            },
+            {
+                icon: <MailOutlined/>,
+                href: `mailto:${item.email}`,
+                tooltip: 'E-Mail an Mitarbeiter:in verfassen (im Standard-Mailprogramm, wenn verfügbar)',
+                disabled: item.deletedInIdp,
+                disabledTooltip: 'Für im Identity Provider gelöschte Mitarbeiter:innen können keine E-Mails mehr verfasst werden.',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<User>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Mitarbeiter:innen vorhanden"
+            description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Gover verwalten oder Aufgaben in Vorgängen bearbeiten."
+            addText="Mitarbeiter:in anlegen"
+            onAdd={() => navigate('/users/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -287,22 +311,14 @@ export function UserListPage() {
                 filters={Filters}
                 defaultFilter="active"
                 header={header}
+                permissionCheck={usersListPermissionCheck}
                 searchLabel="Mitarbeiter:in suchen"
                 searchPlaceholder="Name der Mitarbeiter:in eingeben…"
                 fetch={fetchUsers}
                 columnIcon={columnIcon}
                 columnDefinitions={columns}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Mitarbeiter:innen angelegt"
-                        description="Mitarbeiter:innen sind Benutzerkonten für Personen, die Gover verwalten oder Aufgaben in Vorgängen bearbeiten."
-                        addText="Mitarbeiter:in anlegen"
-                        onAdd={() => navigate('/users/new')}
-                        addDisabled={!canCreateUser}
-                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.USER_CREATE)}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Mitarbeiter:innen gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
@@ -34,19 +38,29 @@ import {
 import {DomainAndUserSelectItem} from '../../../../models/elements/form/input/domain-user-select-field-element';
 import {AssignmentContextValue} from '../../../../models/elements/form/input/assignment-context-field-element';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useHasSystemPermission, useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
+import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
-import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
+
+const dataObjectItemListPermissionCheck: GenericListPagePermissionConfig<DataObjectItem> = {
+    scope: {
+        type: 'system',
+    },
+    listAccess: [
+        Permission.OBJECT_ITEM_READ,
+        Permission.OBJECT_SCHEMA_READ,
+    ],
+    read: Permission.OBJECT_ITEM_READ,
+    create: Permission.OBJECT_ITEM_CREATE,
+    update: Permission.OBJECT_ITEM_UPDATE,
+};
 
 export function DataObjectItemListPage() {
     const navigate = useNavigate();
     const api = useApi();
     const schemaKey = useParams().schemaKey;
+    // The schema is fetched before GenericListPage renders, so these read guards must stay here.
     useRequireSystemPermission(Permission.OBJECT_ITEM_READ);
     useRequireSystemPermission(Permission.OBJECT_SCHEMA_READ);
-    const canCreateDataObjectItem = useHasSystemPermission(Permission.OBJECT_ITEM_CREATE);
-    const canUpdateDataObjectItem = useHasSystemPermission(Permission.OBJECT_ITEM_UPDATE);
-    const canUpdateDataObjectSchema = useHasSystemPermission(Permission.OBJECT_SCHEMA_UPDATE);
 
     const [dataObjectSchema, setDataObjectSchema] = useState<DataObjectSchema>();
 
@@ -65,7 +79,7 @@ export function DataObjectItemListPage() {
             });
     }, [schemaKey]);
 
-    const columns: GridColDef[] = useMemo(() => {
+    const columns = useCallback((permissions: GenericListPagePermissionState<DataObjectItem>): GridColDef[] => {
         if (dataObjectSchema == null) {
             return [];
         }
@@ -86,7 +100,7 @@ export function DataObjectItemListPage() {
                 renderCell: (params) => (
                     <CellLink
                         to={`/data-objects/${dataObjectSchema.key}/${params.id}`}
-                        title={canUpdateDataObjectItem ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen'}
+                        title={permissions.canUpdate(params.row) ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen'}
                     >
                         {String(params.value)}
                     </CellLink>
@@ -94,52 +108,56 @@ export function DataObjectItemListPage() {
             },
             ...dataObjectSchemaExtractDisplayFields(dataObjectSchema),
         ];
-    }, [dataObjectSchema, canUpdateDataObjectItem]);
+    }, [dataObjectSchema]);
 
     const dataObjectSchemaKey = dataObjectSchema?.key ?? '';
     const dataObjectSchemaName = dataObjectSchema?.name ?? '';
 
-    const header = useMemo(() => ({
-        icon: <DataObject />,
-        title: `Datenobjekte: ${dataObjectSchemaName}`,
-        actions: [
-            {
-                icon: <FolderData />,
-                to: `/data-models/${dataObjectSchemaKey}`,
-                variant: 'text' as const,
-                label: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+    const header = useCallback((permissions: GenericListPagePermissionState<DataObjectItem>) => {
+        const canUpdateDataObjectSchema = permissions.hasPermission(Permission.OBJECT_SCHEMA_UPDATE);
+
+        return ({
+            icon: <DataObject />,
+            title: `Datenobjekte: ${dataObjectSchemaName}`,
+            actions: [
+                {
+                    icon: <FolderData />,
+                    to: `/data-models/${dataObjectSchemaKey}`,
+                    variant: 'text' as const,
+                    label: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+                },
+                {
+                    label: 'Neues Datenobjekt',
+                    icon: <AddOutlinedIcon />,
+                    to: `/data-objects/${dataObjectSchemaKey}/new`,
+                    variant: 'contained' as const,
+                    disabled: !permissions.canCreate,
+                    disabledTooltip: permissions.createDisabledTooltip,
+                },
+            ],
+            helpDialog: {
+                title: 'Hilfe zu Datenobjekten',
+                tooltip: 'Hilfe anzeigen',
+                content: (
+                    <>
+                        <Typography>
+                            Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells. Es enthält die tatsächlichen Werte zu den im Datenmodell definierten Feldern und bildet damit die „laufenden“ Fachinformationen im System ab.
+                            Datenobjekte fließen durch Prozesse, Komponenten und Schnittstellen. Ihre Struktur, Datentypen und Prüfregeln ergeben sich immer aus dem verknüpften Datenmodell.
+                        </Typography>
+                        <Typography sx={{mt: 2}}>
+                            Typischerweise enthält ein Datenobjekt Werte für Text, Zahlen, Datums- oder Wahrheitsfelder sowie gegebenenfalls verschachtelte Strukturen. Neben den Nutzdaten können Metadaten wie Erstell- und
+                            Änderungszeitpunkte, Quelle oder Status sowie Referenzen auf andere Objekte vorhanden sein. Beim Anlegen werden Standardwerte aus dem Datenmodell übernommen; Validierungen stellen sicher, dass nur
+                            erlaubte, vollständige und konsistente Inhalte gespeichert werden. Änderungen an der Struktur erfolgen nicht am Datenobjekt selbst, sondern am zugrunde liegenden Datenmodell, das dann die Prüfung neuer
+                            oder geänderter Objekte steuert.
+                        </Typography>
+                        <Typography sx={{mt: 2}}>
+                            Ein einfaches Beispiel: Das Datenmodell „Bauvorhaben“ definiert Felder und Regeln, und das Datenobjekt „Erweiterungsbau Grundschule #2025-123“ füllt diese Felder mit konkreten Angaben.
+                        </Typography>
+                    </>
+                ),
             },
-            {
-                label: 'Neues Datenobjekt',
-                icon: <AddOutlinedIcon />,
-                to: `/data-objects/${dataObjectSchemaKey}/new`,
-                variant: 'contained' as const,
-                disabled: !canCreateDataObjectItem,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.OBJECT_ITEM_CREATE),
-            },
-        ],
-        helpDialog: {
-            title: 'Hilfe zu Datenobjekten',
-            tooltip: 'Hilfe anzeigen',
-            content: (
-                <>
-                    <Typography>
-                        Ein Datenobjekt ist eine konkrete Instanz eines Datenmodells. Es enthält die tatsächlichen Werte zu den im Datenmodell definierten Feldern und bildet damit die „laufenden“ Fachinformationen im System ab.
-                        Datenobjekte fließen durch Prozesse, Komponenten und Schnittstellen. Ihre Struktur, Datentypen und Prüfregeln ergeben sich immer aus dem verknüpften Datenmodell.
-                    </Typography>
-                    <Typography sx={{mt: 2}}>
-                        Typischerweise enthält ein Datenobjekt Werte für Text, Zahlen, Datums- oder Wahrheitsfelder sowie gegebenenfalls verschachtelte Strukturen. Neben den Nutzdaten können Metadaten wie Erstell- und
-                        Änderungszeitpunkte, Quelle oder Status sowie Referenzen auf andere Objekte vorhanden sein. Beim Anlegen werden Standardwerte aus dem Datenmodell übernommen; Validierungen stellen sicher, dass nur
-                        erlaubte, vollständige und konsistente Inhalte gespeichert werden. Änderungen an der Struktur erfolgen nicht am Datenobjekt selbst, sondern am zugrunde liegenden Datenmodell, das dann die Prüfung neuer
-                        oder geänderter Objekte steuert.
-                    </Typography>
-                    <Typography sx={{mt: 2}}>
-                        Ein einfaches Beispiel: Das Datenmodell „Bauvorhaben“ definiert Felder und Regeln, und das Datenobjekt „Erweiterungsbau Grundschule #2025-123“ füllt diese Felder mit konkreten Angaben.
-                    </Typography>
-                </>
-            ),
-        },
-    }), [dataObjectSchemaKey, dataObjectSchemaName, canCreateDataObjectItem, canUpdateDataObjectSchema]);
+        });
+    }, [dataObjectSchemaKey, dataObjectSchemaName]);
 
     const fetchDataObjectItems = useCallback((options: GenericListPropsFetchOptions<DataObjectItem>) => {
         return new DataObjectItemsApiService(options.api, dataObjectSchemaKey)
@@ -156,18 +174,34 @@ export function DataObjectItemListPage() {
 
     const getRowIdentifier = useCallback((row: DataObjectItem) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: DataObjectItem) => [
-        {
-            icon: canUpdateDataObjectItem ? <EditOutlined /> : <Visibility />,
-            to: `/data-objects/${item.schemaKey}/${item.id}`,
-            tooltip: canUpdateDataObjectItem ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen',
-        },
-        {
-            icon: ModuleIcons.dataModels,
-            to: `/data-models/${item.schemaKey}`,
-            tooltip: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
-        },
-    ], [canUpdateDataObjectItem, canUpdateDataObjectSchema]);
+    const rowActions = useCallback((item: DataObjectItem, permissions: GenericListPagePermissionState<DataObjectItem>) => {
+        const canUpdateDataObjectItem = permissions.canUpdate(item);
+        const canUpdateDataObjectSchema = permissions.hasPermission(Permission.OBJECT_SCHEMA_UPDATE);
+
+        return [
+            {
+                icon: canUpdateDataObjectItem ? <EditOutlined /> : <Visibility />,
+                to: `/data-objects/${item.schemaKey}/${item.id}`,
+                tooltip: canUpdateDataObjectItem ? 'Datenobjekt bearbeiten' : 'Datenobjekt anzeigen',
+            },
+            {
+                icon: ModuleIcons.dataModels,
+                to: `/data-models/${item.schemaKey}`,
+                tooltip: canUpdateDataObjectSchema ? 'Datenmodell bearbeiten' : 'Datenmodell anzeigen',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<DataObjectItem>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Datenobjekte vorhanden"
+            description="Datenobjekte sind einzelne Datensätze eines Datenmodells, die zentral gepflegt und wiederverwendet werden können."
+            addText="Neues Datenobjekt anlegen"
+            onAdd={() => navigate(`/data-objects/${dataObjectSchemaKey}/new`)}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [dataObjectSchemaKey, navigate]);
 
     if (dataObjectSchema == null) {
         return (
@@ -183,21 +217,13 @@ export function DataObjectItemListPage() {
         >
             <GenericListPage<DataObjectItem>
                 header={header}
+                permissionCheck={dataObjectItemListPermissionCheck}
                 searchLabel="Datenobjekt suchen"
                 searchPlaceholder="ID des Datenobjekts eingeben…"
                 fetch={fetchDataObjectItems}
                 columnDefinitions={columns}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Noch keine Datenobjekte angelegt"
-                        description="Datenobjekte sind einzelne Datensätze eines Datenmodells, die zentral gepflegt und wiederverwendet werden können."
-                        addText="Neues Datenobjekt anlegen"
-                        onAdd={() => navigate(`/data-objects/${dataObjectSchemaKey}/new`)}
-                        addDisabled={!canCreateDataObjectItem}
-                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.OBJECT_ITEM_CREATE)}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Datenobjekte gefunden"
                 rowActionsCount={2}
                 rowActions={rowActions}

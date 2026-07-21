@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
@@ -16,12 +20,18 @@ import {selectSystemConfigValue} from '../../../../slices/system-config-slice';
 import {SystemConfigKeys} from '../../../../data/system-config-keys';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {hasSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
+
+const themeListPermissionCheck: GenericListPagePermissionConfig<Theme> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.THEME_READ,
+    create: Permission.THEME_CREATE,
+    update: Permission.THEME_UPDATE,
+};
 
 const activeThemeChip = (
     <Chip
@@ -38,13 +48,9 @@ const activeThemeChip = (
 
 export function ThemeListPage() {
     const navigate = useNavigate();
-    useRequireSystemPermission(Permission.THEME_READ);
     const appThemeId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.system.theme));
-    const permissions = useAppSelector(selectPermissions);
-    const canCreateTheme = hasSystemPermission(permissions, Permission.THEME_CREATE);
-    const canUpdateThemes = hasSystemPermission(permissions, Permission.THEME_UPDATE);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<Theme>) => ({
         icon: <PaletteOutlinedIcon />,
         title: 'Erscheinungsbilder',
         actions: [
@@ -53,8 +59,8 @@ export function ThemeListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/themes/new',
                 variant: 'contained' as const,
-                disabled: !canCreateTheme,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.THEME_CREATE),
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -72,7 +78,7 @@ export function ThemeListPage() {
                 </>
             ),
         },
-    }), [canCreateTheme]);
+    }), []);
 
     const fetchThemes = useCallback((options: GenericListPropsFetchOptions<Theme>) => {
         return new ThemesApiService(options.api)
@@ -87,7 +93,7 @@ export function ThemeListPage() {
             );
     }, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<Theme>) => [
         {
             field: 'icon',
             headerName: '',
@@ -111,7 +117,7 @@ export function ThemeListPage() {
                 return (
                     <CellLink
                         to={`/themes/${params.id}`}
-                        title={canUpdateThemes ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
+                        title={permissions.canUpdate(params.row) ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen'}
                     >
                         {content}
                     </CellLink>
@@ -167,22 +173,37 @@ export function ThemeListPage() {
                 );
             },
         },
-    ], [appThemeId, canUpdateThemes]);
+    ], [appThemeId]);
 
     const getRowIdentifier = useCallback((row: Theme) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: Theme) => [
-        {
-            icon: canUpdateThemes ? <EditOutlined /> : <Visibility/>,
-            to: `/themes/${item.id}`,
-            tooltip: canUpdateThemes ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
-        },
-        {
-            icon: <DescriptionOutlined />,
-            to: `/themes/${item.id}/forms`,
-            tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
-        },
-    ], [canUpdateThemes]);
+    const rowActions = useCallback((item: Theme, permissions: GenericListPagePermissionState<Theme>) => {
+        const canUpdateTheme = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateTheme ? <EditOutlined /> : <Visibility/>,
+                to: `/themes/${item.id}`,
+                tooltip: canUpdateTheme ? 'Erscheinungsbild bearbeiten' : 'Erscheinungsbild ansehen',
+            },
+            {
+                icon: <DescriptionOutlined />,
+                to: `/themes/${item.id}/forms`,
+                tooltip: 'Formulare mit diesem Erscheinungsbild ansehen',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<Theme>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Erscheinungsbilder vorhanden"
+            description="Es wurden noch keine Erscheinungsbilder angelegt."
+            addText="Neues Erscheinungsbild anlegen"
+            onAdd={() => navigate('/themes/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -192,21 +213,13 @@ export function ThemeListPage() {
         >
             <GenericListPage<Theme>
                 header={header}
+                permissionCheck={themeListPermissionCheck}
                 searchLabel="Erscheinungsbild suchen"
                 searchPlaceholder="Name des Erscheinungsbildes eingeben…"
                 fetch={fetchThemes}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Keine Erscheinungsbilder vorhanden"
-                        description="Es wurden noch keine Erscheinungsbilder angelegt."
-                        addText="Neues Erscheinungsbild anlegen"
-                        onAdd={() => navigate('/themes/new')}
-                        addDisabled={!canCreateTheme}
-                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.THEME_CREATE)}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Erscheinungsbilder gefunden, die zu Ihrer Suche passen"
                 rowActionsCount={2}
                 rowActions={rowActions}

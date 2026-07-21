@@ -1,11 +1,15 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
 import AddOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {Typography} from '@mui/material';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {CellLink} from '../../../../components/cell-link/cell-link';
 import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
@@ -19,20 +23,22 @@ import {
     isDefaultUserSystemRole,
 } from '../../components/default-user-system-role-badge';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {hasSystemPermission, formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
-import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
+
+const systemRolesListPermissionCheck: GenericListPagePermissionConfig<SystemRoleEntity> = {
+    scope: {
+        type: 'system',
+    },
+    read: Permission.SYSTEM_ROLE_READ,
+    create: Permission.SYSTEM_ROLE_CREATE,
+    update: Permission.SYSTEM_ROLE_UPDATE,
+};
 
 export function SystemRolesListPage() {
     const navigate = useNavigate();
-    useRequireSystemPermission(Permission.SYSTEM_ROLE_READ);
     const defaultSystemRoleId = useAppSelector(selectSystemConfigValue(SystemConfigKeys.users.defaultSystemRole));
-    const permissions = useAppSelector(selectPermissions);
-    const canCreateSystemRole = hasSystemPermission(permissions, Permission.SYSTEM_ROLE_CREATE);
-    const canUpdateSystemRoles = hasSystemPermission(permissions, Permission.SYSTEM_ROLE_UPDATE);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<SystemRoleEntity>) => ({
         icon: ModuleIcons.roles,
         title: 'Systemrollen',
         actions: [
@@ -41,8 +47,8 @@ export function SystemRolesListPage() {
                 icon: <AddOutlinedIcon/>,
                 to: '/system-roles/new',
                 variant: 'contained' as const,
-                disabled: !canCreateSystemRole,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_CREATE),
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -69,7 +75,7 @@ export function SystemRolesListPage() {
                 </>
             ),
         },
-    }), [canCreateSystemRole]);
+    }), []);
 
     const fetchSystemRoles = useCallback((options: GenericListPropsFetchOptions<SystemRoleEntity>) => {
         return new SystemRolesApiService()
@@ -86,7 +92,7 @@ export function SystemRolesListPage() {
 
     const columnIcon = useCallback(() => ModuleIcons.roles, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<SystemRoleEntity>) => [
         {
             field: 'name',
             headerName: 'Name',
@@ -98,7 +104,7 @@ export function SystemRolesListPage() {
                 return (
                     <CellLink
                         to={`/system-roles/${params.id}`}
-                        title={canUpdateSystemRoles ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
+                        title={permissions.canUpdate(params.row) ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen'}
                     >
                         {String(params.value)}
                         {badge}
@@ -111,17 +117,32 @@ export function SystemRolesListPage() {
             headerName: 'Beschreibung',
             flex: 2,
         },
-    ], [canUpdateSystemRoles, defaultSystemRoleId]);
+    ], [defaultSystemRoleId]);
 
     const getRowIdentifier = useCallback((row: SystemRoleEntity) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: SystemRoleEntity) => [
-        {
-            icon: canUpdateSystemRoles ? <EditOutlined/> : <Visibility/>,
-            to: `/system-roles/${item.id}`,
-            tooltip: canUpdateSystemRoles ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen',
-        },
-    ], [canUpdateSystemRoles]);
+    const rowActions = useCallback((item: SystemRoleEntity, permissions: GenericListPagePermissionState<SystemRoleEntity>) => {
+        const canUpdateSystemRole = permissions.canUpdate(item);
+
+        return [
+            {
+                icon: canUpdateSystemRole ? <EditOutlined/> : <Visibility/>,
+                to: `/system-roles/${item.id}`,
+                tooltip: canUpdateSystemRole ? 'Systemrolle bearbeiten' : 'Systemrolle anzeigen',
+            },
+        ];
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<SystemRoleEntity>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Systemrollen vorhanden"
+            description="Es wurden noch keine Systemrollen angelegt."
+            addText="Neue Systemrolle anlegen"
+            onAdd={() => navigate('/system-roles/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -131,22 +152,14 @@ export function SystemRolesListPage() {
         >
             <GenericListPage<SystemRoleEntity>
                 header={header}
+                permissionCheck={systemRolesListPermissionCheck}
                 searchLabel="Systemrolle suchen"
                 searchPlaceholder="Name der Systemrolle eingeben…"
                 fetch={fetchSystemRoles}
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Keine Systemrollen vorhanden"
-                        description="Es wurden noch keine Systemrollen angelegt."
-                        addText="Neue Systemrolle anlegen"
-                        onAdd={() => navigate('/system-roles/new')}
-                        addDisabled={!canCreateSystemRole}
-                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.SYSTEM_ROLE_CREATE)}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Systemrollen gefunden, die zu Ihrer Suche passen"
                 rowActionsCount={1}
                 rowActions={rowActions}

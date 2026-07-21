@@ -1,4 +1,8 @@
-import {GenericListPage} from '../../../../components/generic-list-page/generic-list-page';
+import {
+    GenericListPage,
+    type GenericListPagePermissionConfig,
+    type GenericListPagePermissionState,
+} from '../../../../components/generic-list-page/generic-list-page';
 import {useNavigate} from 'react-router-dom';
 import {EmptyDataListPlaceholder} from '../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {PageWrapper} from '../../../../components/page-wrapper/page-wrapper';
@@ -11,24 +15,31 @@ import Visibility from '@aivot/mui-material-symbols-400-n25-outlined/Visibility'
 import {TeamsApiService} from '../../services/teams-api-service';
 import {ModuleIcons} from "../../../../shells/staff/data/module-icons";
 import {TeamEntity} from "../../entities/team-entity";
-import React, {useCallback, useMemo} from 'react';
+import React, {useCallback} from 'react';
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
-import {useAppSelector} from '../../../../hooks/use-app-selector';
-import {selectPermissions} from '../../../../slices/user-slice';
 import {Permission} from '../../../../data/permissions/permission';
-import {
-    hasSystemPermission,
-    hasTeamPermission,
-    formatMissingPermissionTooltip,
-} from '../../../permissions/utils/permission-utils';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
+
+const teamsListPermissionCheck: GenericListPagePermissionConfig<TeamEntity> = {
+    scope: {
+        type: 'team',
+        getResourceId: (item) => item.id,
+    },
+    listAccess: {
+        permission: Permission.TEAM_READ,
+        scope: {
+            type: 'anyTeam',
+        },
+    },
+    read: Permission.TEAM_READ,
+    create: Permission.TEAM_CREATE,
+    update: Permission.TEAM_UPDATE,
+};
 
 export function TeamsListPage() {
     const navigate = useNavigate();
-    const permissions = useAppSelector(selectPermissions);
-    const canCreateTeam = hasSystemPermission(permissions, Permission.TEAM_CREATE);
 
-    const header = useMemo(() => ({
+    const header = useCallback((permissions: GenericListPagePermissionState<TeamEntity>) => ({
         icon: ModuleIcons.teams,
         title: 'Teams',
         actions: [
@@ -37,8 +48,8 @@ export function TeamsListPage() {
                 icon: <AddOutlinedIcon />,
                 to: '/teams/new',
                 variant: 'contained' as const,
-                disabled: !canCreateTeam,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_CREATE),
+                disabled: !permissions.canCreate,
+                disabledTooltip: permissions.createDisabledTooltip,
             },
         ],
         helpDialog: {
@@ -58,7 +69,7 @@ export function TeamsListPage() {
                 </>
             ),
         },
-    }), [canCreateTeam]);
+    }), []);
 
     const fetchTeams = useCallback((options: GenericListPropsFetchOptions<TeamEntity>) => {
         return new TeamsApiService()
@@ -75,18 +86,18 @@ export function TeamsListPage() {
 
     const columnIcon = useCallback(() => ModuleIcons.teams, []);
 
-    const columnDefinitions = useMemo(() => [
+    const columnDefinitions = useCallback((permissions: GenericListPagePermissionState<TeamEntity>) => [
         {
             field: 'name',
             headerName: 'Name',
             flex: 1,
             renderCell: (params: any) => {
-                const canReadTeam = hasTeamPermission(permissions, params.row.id, Permission.TEAM_READ);
-                const canUpdateTeam = hasTeamPermission(permissions, params.row.id, Permission.TEAM_UPDATE);
+                const canReadTeam = permissions.canRead(params.row);
+                const canUpdateTeam = permissions.canUpdate(params.row);
 
                 if (!canReadTeam) {
                     return (
-                        <CellContentWrapper title={formatMissingPermissionTooltip(Permission.TEAM_READ)}>
+                        <CellContentWrapper title={permissions.getMissingPermissionTooltip(Permission.TEAM_READ)}>
                             {String(params.value)}
                         </CellContentWrapper>
                     );
@@ -102,14 +113,14 @@ export function TeamsListPage() {
                 );
             },
         },
-    ], [permissions]);
+    ], []);
 
     const getRowIdentifier = useCallback((row: TeamEntity) => row.id.toString(), []);
 
-    const rowActions = useCallback((item: TeamEntity) => {
-        const canReadTeam = hasTeamPermission(permissions, item.id, Permission.TEAM_READ);
-        const canUpdateTeam = hasTeamPermission(permissions, item.id, Permission.TEAM_UPDATE);
-        const canReadMemberships = hasTeamPermission(permissions, item.id, Permission.TEAM_MEMBERSHIP_READ);
+    const rowActions = useCallback((item: TeamEntity, permissions: GenericListPagePermissionState<TeamEntity>) => {
+        const canReadTeam = permissions.canRead(item);
+        const canUpdateTeam = permissions.canUpdate(item);
+        const canReadMemberships = permissions.hasPermission(Permission.TEAM_MEMBERSHIP_READ, item);
 
         return [
             {
@@ -117,17 +128,28 @@ export function TeamsListPage() {
                 to: `/teams/${item.id}`,
                 tooltip: canUpdateTeam ? 'Team bearbeiten' : 'Team ansehen',
                 disabled: !canReadTeam,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_READ),
+                disabledTooltip: permissions.getMissingPermissionTooltip(Permission.TEAM_READ),
             },
             {
                 icon: <GroupOutlined />,
                 to: `/teams/${item.id}/members`,
                 tooltip: 'Teammitglieder ansehen',
                 disabled: !canReadMemberships,
-                disabledTooltip: formatMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_READ),
+                disabledTooltip: permissions.getMissingPermissionTooltip(Permission.TEAM_MEMBERSHIP_READ),
             },
         ];
-    }, [permissions]);
+    }, []);
+
+    const noDataPlaceholder = useCallback((permissions: GenericListPagePermissionState<TeamEntity>) => (
+        <EmptyDataListPlaceholder
+            title="Keine Teams im Zugriff"
+            description="Es wurden keine Teams gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Teams angelegt oder Ihnen fehlen die erforderlichen Leseberechtigungen."
+            addText="Neues Team anlegen"
+            onAdd={() => navigate('/teams/new')}
+            addDisabled={!permissions.canCreate}
+            addDisabledTooltip={permissions.createDisabledTooltip}
+        />
+    ), [navigate]);
 
     return (
         <PageWrapper
@@ -137,22 +159,14 @@ export function TeamsListPage() {
         >
             <GenericListPage<TeamEntity>
                 header={header}
+                permissionCheck={teamsListPermissionCheck}
                 searchLabel="Team suchen"
                 searchPlaceholder="Name des Teams eingeben…"
                 fetch={fetchTeams}
                 columnIcon={columnIcon}
                 columnDefinitions={columnDefinitions}
                 getRowIdentifier={getRowIdentifier}
-                noDataPlaceholder={
-                    <EmptyDataListPlaceholder
-                        title="Keine Teams im Zugriff"
-                        description="Es wurden keine Teams gefunden, auf die Sie Zugriff haben. Möglicherweise wurden noch keine Teams angelegt oder Ihnen fehlen die erforderlichen Leseberechtigungen."
-                        addText="Neues Team anlegen"
-                        onAdd={() => navigate('/teams/new')}
-                        addDisabled={!canCreateTeam}
-                        addDisabledTooltip={formatMissingPermissionTooltip(Permission.TEAM_CREATE)}
-                    />
-                }
+                noDataPlaceholder={noDataPlaceholder}
                 noSearchResultsPlaceholder="Keine Teams gefunden, die zu Ihrer Suche oder Ihren Berechtigungen passen"
                 rowActionsCount={2}
                 rowActions={rowActions}
