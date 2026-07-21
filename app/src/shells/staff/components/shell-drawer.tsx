@@ -62,9 +62,6 @@ import SupervisedUserCircleFilled from '@aivot/mui-material-symbols-400-n25-outl
 import ForwardToInboxFilled from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInboxFilled';
 import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
-import {
-    subscribeProcessAssignedTaskCountRefreshEvent,
-} from '../../../modules/process/utils/process-assigned-task-count-events';
 import {Permission} from '../../../data/permissions/permission';
 import {hasAnyDepartmentPermission, hasSystemPermission} from '../../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../../modules/permissions/models/permission-set';
