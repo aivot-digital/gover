@@ -22,7 +22,8 @@ import {DebugInformationDialog} from '../../../../../dialogs/debug-information-d
 import TagIcon from '@aivot/mui-material-symbols-400-n25-outlined/Tag';
 import EventIcon from '@aivot/mui-material-symbols-400-n25-outlined/Event';
 import HelpOutlineIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
-import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
+import {downloadTextFile} from '../../../../../utils/download-utils';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';

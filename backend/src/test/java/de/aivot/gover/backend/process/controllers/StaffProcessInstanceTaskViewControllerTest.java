@@ -593,7 +593,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private DerivedRuntimeElementData result = new DerivedRuntimeElementData(new EffectiveElementValues(), new ComputedElementStates());
 
         private TestElementDerivationService() {
-            super(null, null, null);
+            super(null, null, null, null);
         }
 
         @Override

@@ -1,5 +1,6 @@
 package de.aivot.gover.backend.elements.models.elements.form.input;
 
+import de.aivot.gover.backend.elements.enums.OptionsSourceType;
 import de.aivot.gover.backend.elements.models.elements.BaseInputElement;
 import de.aivot.gover.backend.elements.models.elements.PrintableElement;
 import de.aivot.gover.backend.enums.ConditionOperator;
@@ -18,6 +19,12 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
 
     @Nullable
     private List<String> suggestions;
+
+    @Nullable
+    private OptionsSourceType optionsSource;
+
+    @Nullable
+    private Integer codeListId;
 
     @Nullable
     private Integer minItems;
@@ -126,6 +133,8 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
         ChipInputElement that = (ChipInputElement) o;
         return Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(suggestions, that.suggestions)
+                && optionsSource == that.optionsSource
+                && Objects.equals(codeListId, that.codeListId)
                 && Objects.equals(minItems, that.minItems)
                 && Objects.equals(maxItems, that.maxItems)
                 && Objects.equals(allowDuplicates, that.allowDuplicates);
@@ -136,6 +145,8 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(placeholder);
         result = 31 * result + Objects.hashCode(suggestions);
+        result = 31 * result + Objects.hashCode(optionsSource);
+        result = 31 * result + Objects.hashCode(codeListId);
         result = 31 * result + Objects.hashCode(minItems);
         result = 31 * result + Objects.hashCode(maxItems);
         result = 31 * result + Objects.hashCode(allowDuplicates);
@@ -159,6 +170,26 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
 
     public ChipInputElement setSuggestions(@Nullable List<String> suggestions) {
         this.suggestions = suggestions;
+        return this;
+    }
+
+    @Nullable
+    public OptionsSourceType getOptionsSource() {
+        return optionsSource;
+    }
+
+    public ChipInputElement setOptionsSource(@Nullable OptionsSourceType optionsSource) {
+        this.optionsSource = optionsSource;
+        return this;
+    }
+
+    @Nullable
+    public Integer getCodeListId() {
+        return codeListId;
+    }
+
+    public ChipInputElement setCodeListId(@Nullable Integer codeListId) {
+        this.codeListId = codeListId;
         return this;
     }
 

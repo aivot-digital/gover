@@ -19,7 +19,7 @@ import QrCode2OutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Qr
 import ImportExportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/SwapVert';
 import CloudUploadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/CloudUpload';
 import ContentPasteOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentPaste';
-import ExpandMoreOutlined from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandMoreOutlined from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 import {getStepIcon} from '../../data/step-icons';
 import {AlertComponent} from '../../components/alert/alert-component';

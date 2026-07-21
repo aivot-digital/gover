@@ -12,6 +12,19 @@ import {generateComponentPath, generateComponentTitle} from '../utils/generate-c
 import {useElementTreeContext} from '../components/element-tree-2/element-tree-context';
 import {SelectFieldComponentOption} from '../components/select-field-2/select-field-component';
 import Grid from '@mui/material/Grid';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
+import {CodeListSelectField} from '../modules/code-lists/components/code-list-select-field';
+
+const optionsSourceOptions = [
+    {
+        label: 'Manuelle Eingabe',
+        value: OptionsSourceType.Manual,
+    },
+    {
+        label: 'System-Codeliste',
+        value: OptionsSourceType.CodeList,
+    },
+];
 
 export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
     const {
@@ -25,6 +38,9 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
     const {
         allElements,
     } = useElementTreeContext();
+
+    const optionsSource = element.optionsSource ?? OptionsSourceType.Manual;
+    const usesManualOptions = optionsSource === OptionsSourceType.Manual;
 
     const options = useMemo(() => {
         return (element.options ?? [])
@@ -56,14 +72,39 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
             }));
     }, [element.id, allElements]);
 
-    const hasDependency = !hasSummaryLayoutParent && element.dependsOnSelectFieldId != null;
+    const hasDependency = usesManualOptions && !hasSummaryLayoutParent && element.dependsOnSelectFieldId != null;
 
     return (
         <Grid
             container
             columnSpacing={4}
         >
+            <Grid
+                size={{
+                    xs: 12,
+                    lg: 6,
+                }}
+            >
+                <SelectFieldComponent
+                    label="Optionen definieren über"
+                    value={optionsSource}
+                    onChange={(value) => {
+                        const nextSource = (value as OptionsSourceType | null) ?? OptionsSourceType.Manual;
+
+                        onPatch({
+                            optionsSource: nextSource,
+                            codeListId: nextSource === OptionsSourceType.CodeList ? element.codeListId : undefined,
+                            dependsOnSelectFieldId: nextSource === OptionsSourceType.CodeList ? undefined : element.dependsOnSelectFieldId,
+                        });
+                    }}
+                    options={optionsSourceOptions}
+                    disabled={!editable}
+                    required
+                />
+            </Grid>
+
             {
+                usesManualOptions &&
                 !hasSummaryLayoutParent &&
                 <Grid
                     size={{
@@ -86,31 +127,56 @@ export function SelectFieldEditor(props: BaseEditorProps<SelectFieldElement>) {
                     />
                 </Grid>
             }
-            <Grid
-                size={{
-                    xs: 12,
-                }}
-            >
-                <OptionListInput
-                    label="Optionen"
-                    addLabel="Option hinzufügen"
-                    hint={hasDependency
-                        ? 'Die antragstellende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'
-                        : 'Die antragstellende Person kann genau eine dieser Optionen auswählen.'}
-                    noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
-                    value={options}
-                    onChange={(options) => {
-                        onPatch({
-                            options,
-                        });
+
+            {
+                !usesManualOptions &&
+                <Grid
+                    size={{
+                        xs: 12,
+                        lg: 6,
                     }}
-                    allowEmpty={false}
-                    disabled={!editable}
-                    variant="outlined"
-                    showGroupField={hasDependency}
-                    groupLabel="Gruppenwert"
-                />
-            </Grid>
+                >
+                    <CodeListSelectField
+                        value={element.codeListId}
+                        onChange={(codeListId) => {
+                            onPatch({
+                                codeListId,
+                            });
+                        }}
+                        disabled={!editable}
+                        required
+                    />
+                </Grid>
+            }
+
+            {
+                usesManualOptions &&
+                <Grid
+                    size={{
+                        xs: 12,
+                    }}
+                >
+                    <OptionListInput
+                        label="Optionen"
+                        addLabel="Option hinzufügen"
+                        hint={hasDependency
+                            ? 'Die antragstellende Person kann genau eine dieser Optionen auswählen. Der Gruppenwert verknüpft eine Option mit dem Wert des abhängigen Auswahlfelds; leere Gruppen bleiben weiterhin immer sichtbar.'
+                            : 'Die antragstellende Person kann genau eine dieser Optionen auswählen.'}
+                        noItemsHint="Bitte fügen Sie mindestens eine Option hinzu."
+                        value={options}
+                        onChange={(options) => {
+                            onPatch({
+                                options,
+                            });
+                        }}
+                        allowEmpty={false}
+                        disabled={!editable}
+                        variant="outlined"
+                        showGroupField={hasDependency}
+                        groupLabel="Gruppenwert"
+                    />
+                </Grid>
+            }
 
             {
                 scope !== 'data_modelling' &&

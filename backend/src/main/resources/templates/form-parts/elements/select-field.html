@@ -13,19 +13,19 @@
             <!--/* Iteriere über alle Optionen des Select-Elements */-->
             <th:block
                     th:each="option : ${element.options}"
-                    th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, value=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
+                    th:with="label=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.label}, optionValue=${option != null && option.class != null && option.class.name == 'java.lang.String' ? option : option.value}"
             >
                 <!--/* Erzeuge ein Listenelement für jede Option, falls der Wert gewählt wurde oder es sich um das ausfüllbare Formular handelt */-->
-                <li th:if="${base.isBlankPrint() || (hasValue && value.equals(value))}">
+                <li th:if="${base.isBlankPrint() || (hasValue && value.equals(optionValue))}">
                     <!--/* Checked-Icon */-->
                     <div
-                            th:if="${base.isNotBlankPrint() && hasValue && value.equals(value)}"
+                            th:if="${base.isNotBlankPrint() && hasValue && value.equals(optionValue)}"
                             class="checked"
                     ></div>
 
                     <!--/* Unchecked-Icon */-->
                     <div
-                            th:unless="${base.isNotBlankPrint() && hasValue && value.equals(value)}"
+                            th:unless="${base.isNotBlankPrint() && hasValue && value.equals(optionValue)}"
                             class="unchecked"
                     ></div>
 

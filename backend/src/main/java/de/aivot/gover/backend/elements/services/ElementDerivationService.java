@@ -52,6 +52,7 @@ public class ElementDerivationService {
     private final JavascriptEngineFactoryService javascriptEngineFactoryService;
     private final NoCodeEvaluationService noCodeEvaluationService;
     private final ElementDataTransformService elementDataTransformService;
+    private final CodeListElementOptionsService codeListElementOptionsService;
 
     @Nonnull
     public DerivedRuntimeElementData derive(@Nonnull BaseElement element, @Nonnull AuthoredElementValues authoredElementValues) {
@@ -74,10 +75,12 @@ public class ElementDerivationService {
     public ElementDerivationService(
             JavascriptEngineFactoryService javascriptEngineFactoryService,
             NoCodeEvaluationService noCodeEvaluationService,
-            ElementDataTransformService elementDataTransformService) {
+            ElementDataTransformService elementDataTransformService,
+            CodeListElementOptionsService codeListElementOptionsService) {
         this.javascriptEngineFactoryService = javascriptEngineFactoryService;
         this.noCodeEvaluationService = noCodeEvaluationService;
         this.elementDataTransformService = elementDataTransformService;
+        this.codeListElementOptionsService = codeListElementOptionsService;
     }
 
     @Nonnull
@@ -182,6 +185,11 @@ public class ElementDerivationService {
             var actualElement = overrideElement != null
                     ? overrideElement
                     : currentElement;
+            actualElement = codeListElementOptionsService.resolve(actualElement);
+            if (actualElement != currentElement) {
+                elementState.setOverride(actualElement);
+            }
+
             var childOptions = options.copyForUseInChild(currentElement.getId());
             // Check if it's a SummaryLayout and prevent the error derivation for all children because they cannot be changed by the user and potential errors cannot be fixed.
             if (actualElement instanceof SummaryLayoutElement) {

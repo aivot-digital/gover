@@ -11,7 +11,7 @@ import {
     Typography,
 } from '@mui/material';
 import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
-import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {KnownProviderIcons} from '../data/known-provider-icons';

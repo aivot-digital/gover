@@ -13,6 +13,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.DomainAndUserS
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
@@ -556,7 +557,8 @@ class DataChangeActionNodeV1Test {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
-                new ElementDataTransformService()
+                new ElementDataTransformService(),
+                new CodeListElementOptionsService(null, null)
         );
     }
 

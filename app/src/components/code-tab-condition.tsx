@@ -12,6 +12,7 @@ import CachedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Cac
 import {isStringArray} from '../utils/is-string-array';
 import {ElementWithParents, generateElementNameWithParent} from '../utils/flatten-elements';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 
 interface CodeTabConditionProps {
     allElements: ElementWithParents[];
@@ -41,7 +42,9 @@ export function CodeTabCondition({
             case ElementType.Radio:
             case ElementType.Select:
             case ElementType.MultiCheckbox:
-                availableValueOptions = [...(referencedElement.element.options ?? [])];
+                if ((referencedElement.element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual) {
+                    availableValueOptions = [...(referencedElement.element.options ?? [])];
+                }
                 break;
             case ElementType.ChipInput:
                 availableValueOptions = [...(referencedElement.element.suggestions ?? [])];

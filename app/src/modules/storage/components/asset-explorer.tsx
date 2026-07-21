@@ -33,7 +33,7 @@ import DownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/D
 import HomeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Home';
 import ArrowUpwardOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowUpward';
 import ChevronRightOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ChevronRight';
-import ExpandMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import CloseOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Close';
 import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';

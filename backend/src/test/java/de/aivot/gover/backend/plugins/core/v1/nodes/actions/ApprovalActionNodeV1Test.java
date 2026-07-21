@@ -10,6 +10,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.AssignmentCont
 import de.aivot.gover.backend.elements.models.elements.form.input.DomainAndUserSelectInputElementValue;
 import de.aivot.gover.backend.elements.models.elements.form.input.RichTextInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.gover.backend.elements.services.CodeListElementOptionsService;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
 import de.aivot.gover.backend.nocode.services.NoCodeEvaluationService;
@@ -251,7 +252,8 @@ class ApprovalActionNodeV1Test {
         return new ElementDerivationService(
                 new JavascriptEngineFactoryService(List.of()),
                 new NoCodeEvaluationService(List.of()),
-                new ElementDataTransformService()
+                new ElementDataTransformService(),
+                new CodeListElementOptionsService(null, null)
         );
     }
 

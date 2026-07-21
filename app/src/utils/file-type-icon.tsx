@@ -11,6 +11,7 @@ import StorageOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/St
 import LockOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
 import Folder from '@aivot/mui-material-symbols-400-n25-outlined/Folder';
 import {type SvgIconProps} from '@mui/material';
+import Csv from '@aivot/mui-material-symbols-400-n25-outlined/Csv';
 
 /**
  * Returns the appropriate icon for a given content type.
@@ -30,6 +31,7 @@ export function getFileTypeIcon(contentType: string, props?: SvgIconProps) {
         'application/vnd.ms-powerpoint': DescriptionOutlinedIcon,
         'application/vnd.openxmlformats-officedocument.presentationml.presentation': DescriptionOutlinedIcon,
         'text/plain': TextSnippetOutlinedIcon,
+        'text/csv': Csv,
 
         // Images
         'image/jpeg': ImageOutlinedIcon,

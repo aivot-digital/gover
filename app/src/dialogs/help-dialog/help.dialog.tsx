@@ -2,7 +2,7 @@ import {Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, Gr
 import React, {useEffect, useLayoutEffect, useRef, useState} from 'react';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HelpDialogProps} from './help-dialog-props';
-import ExpandMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandMoreOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import {Accordion, AccordionDetails, AccordionGroup, AccordionSummary} from '../../components/accordion/accordion';
 import {PublicDepartmentResponseDTO} from '../../modules/departments/entities/v-department-shadowed-entity';
 import {DepartmentApiService} from '../../modules/departments/services/department-api-service';

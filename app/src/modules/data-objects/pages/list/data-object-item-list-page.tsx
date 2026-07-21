@@ -40,6 +40,7 @@ import {AssignmentContextValue} from '../../../../models/elements/form/input/ass
 import {GenericListPropsFetchOptions} from '../../../../components/generic-list/generic-list-props';
 import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
+import {OptionsSourceType} from '../../../../models/elements/form/input/options-source-type';
 
 const dataObjectItemListPermissionCheck: GenericListPagePermissionConfig<DataObjectItem> = {
     scope: {
@@ -261,9 +262,12 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
 
                     switch (element.type) {
                         case ElementType.MultiCheckbox:
-                            return value
-                                .map((val: string) => element.options?.find((opt) => opt.value === val)?.label)
-                                .join(', ');
+                            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual) {
+                                return value
+                                    .map((val: string) => element.options?.find((opt) => opt.value === val)?.label ?? val)
+                                    .join(', ');
+                            }
+                            return value.join(', ');
                         case ElementType.ChipInput:
                             return value
                                 .map((val: string) => val)
@@ -341,6 +345,10 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                             );
                         case ElementType.Radio:
                         case ElementType.Select: {
+                            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.CodeList) {
+                                return value;
+                            }
+
                             const matchedOption = element.options
                                 ?.find((opt) => typeof opt === 'string' ? opt === value : opt.value === value);
 
