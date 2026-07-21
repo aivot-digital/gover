@@ -119,7 +119,7 @@ class AssetControllerTest {
 
         assetController.deleteFolder(jwt, 42, request);
 
-        verify(permissionService).hasSystemPermission("user-1", AssetPermissionProvider.ASSET_DELETE);
+        verify(permissionService).requireSystemPermission("user-1", AssetPermissionProvider.ASSET_DELETE);
         verify(storageService).deleteFolder(42, "/images/");
         verifyNoInteractions(assetRepository);
         verify(auditLogService).create(org.mockito.ArgumentMatchers.any());
@@ -367,7 +367,7 @@ class AssetControllerTest {
         var result = assetController.listFolderContent(jwt, 42, request, java.util.List.of("image", "application/pdf"), true);
 
         assertEquals(expectedItems, result);
-        verify(permissionService).hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+        verify(permissionService).requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
         verify(storageIndexItemWithAssetRepository).listAllInFolder(
                 42,
                 "/images/",
@@ -479,7 +479,7 @@ class AssetControllerTest {
         var result = assetController.search(jwt, 42, PageRequest.of(0, 20), "readme", contentTypes, false);
 
         assertEquals(expectedPage, result);
-        verify(permissionService).hasSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
+        verify(permissionService).requireSystemPermission(jwt, AssetPermissionProvider.ASSET_READ);
         verify(storageIndexItemWithAssetService).searchIndexItems(42, "readme", contentTypes, false, PageRequest.of(0, 20));
     }
 }
