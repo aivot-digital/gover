@@ -48,6 +48,7 @@ import {
 } from '../../../../permissions/utils/permission-utils';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 import {type PermissionSet} from '../../../../permissions/models/permission-set';
+import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 
 const deletedUserMembershipTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
 
@@ -408,6 +409,7 @@ export function UserDetailsPageTeamMemberships() {
                     searchKeys: ['name'],
                     primaryTextKey: 'name',
                     getId: o => String(o.id),
+                    getIcon: () => ModuleIcons.teams,
                 }]}
             />
 
