@@ -47,8 +47,6 @@ import {type ProcessInstanceAttachmentSetEntity} from '../../../../entities/proc
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
 import CropFree from '@aivot/mui-material-symbols-400-n25-outlined/CropFree';
-import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
-import LockOpen from '@aivot/mui-material-symbols-400-n25-outlined/LockOpen';
 import ViewRealSize from '@aivot/mui-material-symbols-400-n25-outlined/ViewRealSize';
 import {getLatestTaskForEdge} from './utils/runtime-task-utils';
 import {ProcessNodeType} from '../../../../services/process-node-provider-api-service';
@@ -180,15 +178,11 @@ interface ProcessFlowEditorViewportControlsProps {
         padding: number;
         duration: number;
     };
-    isViewportLocked: boolean;
-    onToggleViewportLock: () => void;
 }
 
 function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportControlsProps): ReactNode {
     const {
         fitViewOptions,
-        isViewportLocked,
-        onToggleViewportLock,
     } = props;
 
     const {
@@ -253,19 +247,6 @@ function ProcessFlowEditorViewportControls(props: ProcessFlowEditorViewportContr
                 tooltip="Zoom auf Originalgröße (100 %)"
             >
                 <ViewRealSize sx={{fontSize: 18}}/>
-            </ProcessFlowEditorControlButton>
-
-            <ProcessFlowEditorControlButton
-                className="process-flow-editor-control-button"
-                onClick={onToggleViewportLock}
-                ariaLabel={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-                tooltip={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-            >
-                {
-                    isViewportLocked ?
-                        <Lock sx={{fontSize: 18}}/> :
-                        <LockOpen sx={{fontSize: 18}}/>
-                }
             </ProcessFlowEditorControlButton>
         </Controls>
     );
@@ -480,7 +461,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
     // Keep the canvas hidden until the first viewport transform has been applied so the graph
     // never flashes in at the default top-left origin before we center it on the start lane.
     const [isInitialViewportReady, setIsInitialViewportReady] = useState<boolean>(processFlow.nodes.length === 0);
-    const [isViewportLocked, setIsViewportLocked] = useState<boolean>(false);
     const [canvasTriggerLaneHeaderPosition, setCanvasTriggerLaneHeaderPosition] = useState<CanvasTriggerLaneHeaderPosition | null>(null);
     const [layoutError, setLayoutError] = useState<ProcessFlowEditorLayoutError | null>(null);
     const [providerDetailsDialogProvider, setProviderDetailsDialogProvider] = useState<ProcessNodeProvider | null>(null);
@@ -561,9 +541,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
         showNodeProblemsForNodes,
         onSelectNode,
     ]);
-    const handleToggleViewportLock = useCallback(() => {
-        setIsViewportLocked((current) => !current);
-    }, []);
     const resetInitialViewportState = useCallback((isReady: boolean) => {
         hasResolvedInitialViewportRef.current = false;
         setPendingInitialViewport(false);
@@ -799,11 +776,11 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     edgeTypes={EdgeTypes}
                     minZoom={FLOW_MIN_ZOOM}
                     maxZoom={FLOW_MAX_ZOOM}
-                    panOnDrag={!isViewportLocked}
-                    zoomOnScroll={!isViewportLocked}
-                    zoomOnPinch={!isViewportLocked}
-                    zoomOnDoubleClick={!isViewportLocked}
-                    preventScrolling={!isViewportLocked}
+                    panOnDrag={true}
+                    zoomOnScroll={true}
+                    zoomOnPinch={true}
+                    zoomOnDoubleClick={true}
+                    preventScrolling={true}
                     proOptions={{
                         hideAttribution: true,
                     }}
@@ -893,8 +870,6 @@ export function ProcessFlowEditor(props: ProcessFlowEditorProps): ReactNode {
                     />
                     <ProcessFlowEditorViewportControls
                         fitViewOptions={fitViewOptions}
-                        isViewportLocked={isViewportLocked}
-                        onToggleViewportLock={handleToggleViewportLock}
                     />
                     <MiniMap
                         className="process-flow-editor-minimap"

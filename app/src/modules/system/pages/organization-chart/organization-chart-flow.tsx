@@ -35,12 +35,10 @@ import {alpha} from '@mui/material/styles';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import Remove from '@aivot/mui-material-symbols-400-n25-outlined/Remove';
 import CropFree from '@aivot/mui-material-symbols-400-n25-outlined/CropFree';
-import Lock from '@aivot/mui-material-symbols-400-n25-outlined/Lock';
-import LockOpen from '@aivot/mui-material-symbols-400-n25-outlined/LockOpen';
 import Groups from '@aivot/mui-material-symbols-400-n25-outlined/Groups';
 import ViewRealSize from '@aivot/mui-material-symbols-400-n25-outlined/ViewRealSize';
 import OpenInNew from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import {memo, type CSSProperties, type ReactNode, useCallback, useEffect, useState} from 'react';
+import {memo, type CSSProperties, type ReactNode, useEffect, useState} from 'react';
 import {Link as RouterLink} from 'react-router-dom';
 import {StringAvatar} from '../../../../components/avatar/string-avatar';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
@@ -314,7 +312,6 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         groups: [],
     });
     const [isLayoutReady, setIsLayoutReady] = useState(false);
-    const [isViewportLocked, setIsViewportLocked] = useState(false);
 
     useEffect(() => {
         let isActive = true;
@@ -362,10 +359,6 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
         };
     }, [fitView, isLayoutReady, layout.nodes.length, view]);
 
-    const handleToggleViewportLock = useCallback(() => {
-        setIsViewportLocked((current) => !current);
-    }, []);
-
     return (
         <ReactFlow
             className="organization-chart-flow"
@@ -389,11 +382,11 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
             edgesReconnectable={false}
             minZoom={FLOW_MIN_ZOOM}
             maxZoom={FLOW_MAX_ZOOM}
-            panOnDrag={!isViewportLocked}
-            zoomOnScroll={!isViewportLocked}
-            zoomOnPinch={!isViewportLocked}
-            zoomOnDoubleClick={!isViewportLocked}
-            preventScrolling={!isViewportLocked}
+            panOnDrag={true}
+            zoomOnScroll={true}
+            zoomOnPinch={true}
+            zoomOnDoubleClick={true}
+            preventScrolling={true}
             proOptions={{
                 hideAttribution: true,
             }}
@@ -404,22 +397,12 @@ function OrganizationChartFlowCanvas(props: OrganizationChartFlowCanvasProps): R
             <OrganizationChartTreeGroups
                 groups={layout.groups}
             />
-            <OrganizationChartFlowViewportControls
-                isViewportLocked={isViewportLocked}
-                onToggleViewportLock={handleToggleViewportLock}
-            />
+            <OrganizationChartFlowViewportControls />
         </ReactFlow>
     );
 }
 
-function OrganizationChartFlowViewportControls(props: {
-    isViewportLocked: boolean;
-    onToggleViewportLock: () => void;
-}): ReactNode {
-    const {
-        isViewportLocked,
-        onToggleViewportLock,
-    } = props;
+function OrganizationChartFlowViewportControls(): ReactNode {
     const {
         fitView,
         zoomIn,
@@ -478,18 +461,6 @@ function OrganizationChartFlowViewportControls(props: {
                 tooltip="Zoom auf Originalgröße (100 %)"
             >
                 <ViewRealSize sx={{fontSize: 18}} />
-            </OrganizationChartFlowControlButton>
-
-            <OrganizationChartFlowControlButton
-                onClick={onToggleViewportLock}
-                ariaLabel={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-                tooltip={isViewportLocked ? 'Viewport entsperren' : 'Viewport sperren'}
-            >
-                {
-                    isViewportLocked ?
-                        <Lock sx={{fontSize: 18}} /> :
-                        <LockOpen sx={{fontSize: 18}} />
-                }
             </OrganizationChartFlowControlButton>
         </Controls>
     );
