@@ -596,8 +596,12 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                 sx={{
                     border: (theme) => `1px solid ${theme.palette.divider}`,
                     borderRadius: 1,
+                    maxHeight: {
+                        xs: 420,
+                        sm: 'calc(100vh - 360px)',
+                    },
                     maxWidth: '100%',
-                    overflowX: 'auto',
+                    overflow: 'auto',
                 }}
             >
                 <Table
@@ -619,8 +623,9 @@ export function ProcessSettingsDialogAccessControlMatrix<AccessControl extends P
                             <TableCell
                                 sx={{
                                     position: 'sticky',
+                                    top: 0,
                                     left: 0,
-                                    zIndex: 3,
+                                    zIndex: 4,
                                     bgcolor: 'background.paper',
                                     minWidth: DOMAIN_COLUMN_WIDTH,
                                     width: DOMAIN_COLUMN_WIDTH,
