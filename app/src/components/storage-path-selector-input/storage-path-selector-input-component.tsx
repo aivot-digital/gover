@@ -23,7 +23,11 @@ import {type SyntheticEvent, useEffect, useMemo, useRef, useState} from 'react';
 import {
     type StoragePathSelectorInputElementValue,
 } from '../../models/elements/form/input/storage-path-selector-input-element';
-import {StorageProviderType, StorageProviderTypeLabels, StorageProviderTypes} from '../../modules/storage/enums/storage-provider-type';
+import {
+    StorageProviderType,
+    StorageProviderTypeLabels,
+    StorageProviderTypes,
+} from '../../modules/storage/enums/storage-provider-type';
 import {StorageProvidersApiService} from '../../modules/storage/storage-providers-api-service';
 import {type StorageProviderEntity} from '../../modules/storage/entities/storage-provider-entity';
 import {StorageExplorer} from '../../modules/storage/components/storage-explorer';
@@ -81,9 +85,9 @@ function normalizeTypedPath(path: string | null | undefined): string | null {
 
 function containsTemplateTag(path: string | null | undefined): boolean {
     return path?.includes('{{') === true ||
-           path?.includes('{%') === true ||
-           path?.includes('{!') === true ||
-           path?.includes('{#') === true;
+        path?.includes('{%') === true ||
+        path?.includes('{!') === true ||
+        path?.includes('{#') === true;
 }
 
 function normalizeAllowedTypes(types: StorageProviderType[] | null | undefined): StorageProviderType[] {
@@ -246,7 +250,11 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                 container
                 spacing={1.5}
             >
-                <Grid size={{xs: 12, md: 5}}>
+                <Grid
+                    size={{
+                        xs: 12,
+                    }}
+                >
                     <Autocomplete
                         options={providers}
                         loading={isLoadingProviders}
@@ -314,7 +322,11 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                     />
                 </Grid>
 
-                <Grid size={{xs: 12, md: 7}}>
+                <Grid
+                    size={{
+                        xs: 12,
+                    }}
+                >
                     <TextField
                         label={label}
                         required={required}
@@ -409,6 +421,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                             initialPath={explorerPath}
                             onFolderSelect={handleFolderSelect}
                             folderSelectLabel="Diesen Ordner auswählen"
+                            disableFileDialog={true}
                             showTopNavigationBar={true}
                             minGridHeight={480}
                         />

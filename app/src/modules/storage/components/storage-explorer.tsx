@@ -57,6 +57,7 @@ interface StorageExplorerProps {
     onFolderSelect?: (path: string) => void;
     folderSelectLabel?: string;
     onFileSelect?: (item: StorageIndexItem) => void;
+    disableFileDialog?: boolean;
     allowFileDownload?: boolean;
     showContainerBorder?: boolean;
     showTopNavigationBar?: boolean;
@@ -228,6 +229,7 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         onFolderSelect,
         folderSelectLabel,
         onFileSelect,
+        disableFileDialog = false,
         allowFileDownload = false,
         showContainerBorder = false,
         showTopNavigationBar = false,
@@ -730,6 +732,15 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
         '& .MuiDataGrid-row': {
             cursor: 'pointer',
         },
+        '& .storage-explorer-row--file-dialog-disabled': {
+            cursor: 'default',
+        },
+        '& .storage-explorer-row--file-dialog-disabled .MuiDataGrid-cell': {
+            opacity: 0.55,
+        },
+        '& .storage-explorer-row--file-dialog-disabled .MuiChip-root': {
+            opacity: 1,
+        },
         '& .MuiDataGrid-row:last-of-type .MuiDataGrid-cell': {
             borderBottom: '1px solid',
             borderBottomColor: 'divider',
@@ -1043,6 +1054,13 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                     },
                                 },
                             }}
+                            getRowClassName={(params) => {
+                                if (!isDirectory(params.row) && disableFileDialog) {
+                                    return 'storage-explorer-row--file-dialog-disabled';
+                                }
+
+                                return '';
+                            }}
                             onRowClick={(params) => {
                                 const item = params.row;
 
@@ -1051,6 +1069,10 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                     const pathFromRoot = normalizeDirectoryPath(item.pathFromRoot);
                                     setExpandedPaths((prev) => (prev.includes(pathFromRoot) ? prev : [...prev, pathFromRoot]));
                                     loadTreeChildren(item.pathFromRoot);
+                                    return;
+                                }
+
+                                if (disableFileDialog) {
                                     return;
                                 }
 
