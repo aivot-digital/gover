@@ -98,6 +98,7 @@ import {
 } from '../../components/process-instance-attachment-set-list';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
 import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
+import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -506,6 +507,7 @@ export function ProcessDetailsPage(): ReactNode {
     const notImplemented = useNotImplemented();
     const refreshPermissionSet = useRefreshPermissionSet();
     const deleteProcess = useDeleteProcess();
+    const revokeProcessVersion = useRevokeProcessVersion();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
@@ -1763,6 +1765,35 @@ export function ProcessDetailsPage(): ReactNode {
         });
     }, [deleteProcess, navigate, processFlow]);
 
+    const handleRevokeCurrentProcessVersion = useCallback(async (): Promise<void> => {
+        if (processFlow == null) {
+            return;
+        }
+
+        const revokedVersion = await revokeProcessVersion(processFlow.definition, processFlow.version);
+
+        if (revokedVersion == null) {
+            return;
+        }
+
+        setProcessFlow((current) => {
+            if (current == null) {
+                return current;
+            }
+
+            return {
+                ...current,
+                definition: {
+                    ...current.definition,
+                    publishedVersion: null,
+                },
+                version: current.version.processVersion === revokedVersion.processVersion
+                    ? revokedVersion
+                    : current.version,
+            };
+        });
+    }, [processFlow, revokeProcessVersion]);
+
     const handleMenuEvent = (event: ProcessDetailsPageMoreMenuEvent): void => {
         switch (event) {
             case 'export':
@@ -2070,8 +2101,9 @@ export function ProcessDetailsPage(): ReactNode {
             dispatch(clearLoadingMessage());
         }
     }, [confirm, dispatch, flowNodeProviderCache, processFlow]);
+    const isInTestMode = currentTestClaim != null;
+
     const headerActions = useMemo<Action[]>(() => {
-        const isInTestMode = currentTestClaim != null;
         const testClaimInstanceActions: Action[] = activeTestClaimId == null ? [] : [
             {
                 tooltip: 'Test-Vorgänge anzeigen',
@@ -2178,28 +2210,7 @@ export function ProcessDetailsPage(): ReactNode {
                 disabledTooltip: 'Vor dem Zurückziehen muss der laufende Test beendet werden.',
                 icon: null,
                 onClick: () => {
-                    if (processFlow == null) {
-                        return;
-                    }
-                    new ProcessDefinitionVersionApiService()
-                        .revoke({
-                            processDefinitionId: processFlow.definition.id,
-                            processDefinitionVersion: processFlow.version.processVersion,
-                        })
-                        .then((updatedVersion) => {
-                            setProcessFlow({
-                                ...processFlow,
-                                version: updatedVersion,
-                                definition: {
-                                    ...processFlow.definition,
-                                    publishedVersion: null,
-                                },
-                            });
-                            dispatch(showSuccessSnackbar('Die Prozessversion wurde zurückgezogen.'));
-                        })
-                        .catch((err) => {
-                            dispatch(showApiErrorSnackbar(err, 'Die Prozessversion konnte nicht zurückgezogen werden.'));
-                        });
+                    void handleRevokeCurrentProcessVersion();
                 },
                 variant: 'contained',
                 disabled: processFlow == null || isInTestMode,
@@ -2219,8 +2230,10 @@ export function ProcessDetailsPage(): ReactNode {
         handleOpenAttachmentSetsDialog,
         processInstanceAttachmentSetItems.length,
         runtimeData,
+        isInTestMode,
         notImplemented,
         handleDeleteProcess,
+        handleRevokeCurrentProcessVersion,
     ]);
     const currentTestClaimOwnerName = useMemo(() => {
         if (currentTestClaim == null) {
@@ -2818,6 +2831,7 @@ export function ProcessDetailsPage(): ReactNode {
                 open={showVersionsDialog}
                 process={processFlow.definition}
                 currentOpenVersion={processFlow.version.processVersion}
+                currentTestClaim={currentTestClaim}
                 onClose={() => {
                     setShowVersionsDialog(false);
                 }}
@@ -2828,6 +2842,13 @@ export function ProcessDetailsPage(): ReactNode {
                     if (version == processVersion) {
                         navigate('/processes');
                     }
+                }}
+                onShouldReload={(process, currentVersion) => {
+                    setProcessFlow((current) => current == null ? current : {
+                        ...current,
+                        definition: process,
+                        version: currentVersion ?? current.version,
+                    });
                 }}
             />
 

@@ -432,6 +432,9 @@ export function ProcessListPage() {
                             listControlRef.current.refresh();
                         }
                     }}
+                    onShouldReload={() => {
+                        listControlRef.current?.refresh();
+                    }}
                 />
             }
 
