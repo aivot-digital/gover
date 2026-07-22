@@ -96,6 +96,7 @@ import {
     buildProcessInstanceAttachmentSetItems,
     ProcessInstanceAttachmentSetList,
 } from '../../components/process-instance-attachment-set-list';
+import {useDeleteProcess} from '../../hooks/use-delete-process';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -500,6 +501,7 @@ export function ProcessDetailsPage(): ReactNode {
     const user = useAppSelector(selectUser);
     const notImplemented = useNotImplemented();
     const refreshPermissionSet = useRefreshPermissionSet();
+    const deleteProcess = useDeleteProcess();
 
     const [processFlow, setProcessFlow] = useState<ProcessFlow | null>(null);
     const [isLoadingProcessFlow, setIsLoadingProcessFlow] = useState(true);
@@ -1746,52 +1748,15 @@ export function ProcessDetailsPage(): ReactNode {
             return;
         }
 
-        const processToDelete = processFlow.definition;
-        confirm({
-            title: 'Prozess löschen',
-            children: (
-                <Typography>
-                    Möchten Sie den Prozess wirklich löschen?
-                    Alle zugehörigen Versionen, Modellierungen und Vorgänge werden dabei entfernt.
-                    Dieser Vorgang kann nicht rückgängig gemacht werden.
-                </Typography>
-            ),
-            confirmationText: processToDelete.internalTitle,
-            inputLabel: 'Interner Titel zur Bestätigung',
-            inputPlaceholder: processToDelete.internalTitle,
-            confirmButtonText: 'Prozess endgültig löschen',
-            isDestructive: true,
-        })
-            .then((confirmed) => {
-                if (!confirmed) {
-                    return;
-                }
-
-                dispatch(setLoadingMessage({
-                    message: 'Lösche Prozess',
-                    blocking: false,
-                    estimatedTime: 1200,
-                }));
-
-                return new ProcessDefinitionApiService()
-                    .destroy(processToDelete.id)
-                    .then(() => {
-                        dispatch(showSuccessSnackbar('Der Prozess wurde erfolgreich gelöscht.'));
-                        navigate('/processes', {
-                            replace: true,
-                        });
-                    })
-                    .catch((error) => {
-                        dispatch(showApiErrorSnackbar(error, 'Der Prozess konnte nicht gelöscht werden.'));
-                    })
-                    .finally(() => {
-                        dispatch(clearLoadingMessage());
-                    });
-            })
-            .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Der Löschdialog konnte nicht geöffnet werden.'));
-            });
-    }, [confirm, dispatch, navigate, processFlow]);
+        void deleteProcess(processFlow.definition, {
+            onDeleted: () => {
+                setShowSettingsDialog(false);
+                navigate('/processes', {
+                    replace: true,
+                });
+            },
+        });
+    }, [deleteProcess, navigate, processFlow]);
 
     const handleMenuEvent = (event: ProcessDetailsPageMoreMenuEvent): void => {
         switch (event) {
@@ -1803,9 +1768,6 @@ export function ProcessDetailsPage(): ReactNode {
                 break;
             case 'instances':
                 navigate(`/process-instances?processId=${processFlow?.definition.id}&processVersion=${processFlow?.version.processVersion}`);
-                break;
-            case 'delete':
-                handleDeleteProcess();
                 break;
             default:
                 notImplemented();
@@ -2815,6 +2777,7 @@ export function ProcessDetailsPage(): ReactNode {
                         version,
                     });
                 }}
+                onDeleteProcess={handleDeleteProcess}
             />
 
             <ProcessVersionsDialog

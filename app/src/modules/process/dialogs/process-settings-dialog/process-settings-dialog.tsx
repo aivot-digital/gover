@@ -23,6 +23,7 @@ interface ProcessSettingsDialogProps {
     version: ProcessVersionEntity;
     onProcessChange: (process: ProcessEntity) => void;
     onVersionChange: (version: ProcessVersionEntity) => void;
+    onDeleteProcess: () => void;
 }
 
 export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
@@ -35,6 +36,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
         version,
         onProcessChange,
         onVersionChange,
+        onDeleteProcess,
     } = props;
 
     const [currentTab, setCurrentTab] = useState(0);
@@ -170,6 +172,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                             process={renderProcess}
                             departments={departments}
                             onProcessChange={renderOnProcessChange}
+                            onDeleteProcess={onDeleteProcess}
                             onUnsavedChangesChange={setHasUnsavedGeneralChanges}
                             onSavingChange={setIsSavingGeneralSettings}
                             onValidationErrorChange={setHasGeneralValidationError}

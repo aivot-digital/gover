@@ -1,6 +1,7 @@
 import React from 'react';
-import {ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
+import {Divider, ListItemIcon, ListItemText, Menu, MenuItem} from '@mui/material';
 import MoveItem from '@aivot/mui-material-symbols-400-n25-outlined/MoveItem';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {ProcessEntity} from '../entities/process-entity';
 
 interface ProcessListRowMenuProps {
@@ -8,6 +9,7 @@ interface ProcessListRowMenuProps {
     onClose: () => void;
     process: ProcessEntity;
     onMoveProcessToDepartment: (process: ProcessEntity) => void;
+    onDeleteProcess: (process: ProcessEntity) => void;
 }
 
 export function ProcessListRowMenu(props: ProcessListRowMenuProps) {
@@ -16,6 +18,7 @@ export function ProcessListRowMenu(props: ProcessListRowMenuProps) {
         onClose,
         process,
         onMoveProcessToDepartment,
+        onDeleteProcess,
     } = props;
 
     return (
@@ -35,6 +38,26 @@ export function ProcessListRowMenu(props: ProcessListRowMenuProps) {
                 </ListItemIcon>
                 <ListItemText>
                     Prozess an Organisationseinheit übertragen
+                </ListItemText>
+            </MenuItem>
+
+            <Divider/>
+
+            <MenuItem
+                onClick={() => {
+                    onClose();
+                    onDeleteProcess(process);
+                }}
+            >
+                <ListItemIcon sx={{color: 'error.main'}}>
+                    <Delete/>
+                </ListItemIcon>
+                <ListItemText
+                    primaryTypographyProps={{
+                        color: 'error.main',
+                    }}
+                >
+                    Prozess löschen
                 </ListItemText>
             </MenuItem>
         </Menu>

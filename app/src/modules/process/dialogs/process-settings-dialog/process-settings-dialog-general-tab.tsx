@@ -2,6 +2,7 @@ import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo,
 import {Box, Button, CircularProgress, InputAdornment, Stack} from '@mui/material';
 import History from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import MoveGroup from '@aivot/mui-material-symbols-400-n25-outlined/MoveGroup';
+import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessDefinitionApiService} from '../../services/process-definition-api-service';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
@@ -14,12 +15,14 @@ import {VDepartmentShadowedEntity} from '../../../departments/entities/v-departm
 import {MoveProcessToDepartmentDialog} from '../move-process-to-department-dialog';
 import {DepartmentSelectField} from '../../../departments/components/department-select-field';
 import {TextFieldComponent} from '../../../../components/text-field/text-field-component';
+import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
 
 interface ProcessSettingsDialogGeneralTabProps {
     open: boolean;
     process: ProcessEntity;
     departments: VDepartmentShadowedEntity[];
     onProcessChange: (process: ProcessEntity) => void;
+    onDeleteProcess: () => void;
     onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
     onSavingChange?: (isSaving: boolean) => void;
     onValidationErrorChange?: (hasValidationError: boolean) => void;
@@ -37,6 +40,7 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
         process,
         departments,
         onProcessChange,
+        onDeleteProcess,
         onUnsavedChangesChange,
         onSavingChange,
         onValidationErrorChange,
@@ -377,6 +381,34 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
                         Prozess übertragen
                     </Button>
                 </Box>
+
+                <ElementEditorSectionHeader
+                    title="Prozess löschen"
+                    variant="h6"
+                    disableMarginBottom
+                >
+                    Das Löschen entfernt den gesamten Prozess inklusive aller Versionen, Modellierungen und Vorgänge. Diese Aktion kann nicht rückgängig gemacht werden.
+                </ElementEditorSectionHeader>
+
+                <DisabledTooltip
+                    disabled={hasUnsavedChanges || isSaving}
+                    title={hasUnsavedChanges ? 'Speichern Sie zuerst die allgemeinen Einstellungen.' : undefined}
+                    wrapperSx={{
+                        alignSelf: 'flex-start',
+                    }}
+                >
+                    <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<Delete/>}
+                        disabled={hasUnsavedChanges || isSaving}
+                        onClick={onDeleteProcess}
+                    >
+                        Prozess löschen
+                    </Button>
+                </DisabledTooltip>
+
+                <Box sx={{my: 3}}/>
             </Stack>
 
             <ProcessSettingsDialogSlugHistoryDialog

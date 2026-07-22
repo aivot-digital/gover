@@ -32,6 +32,7 @@ import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
 import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {MoveProcessToDepartmentDialog} from '../../dialogs/move-process-to-department-dialog';
 import {ProcessListRowMenu} from '../../components/process-list-row-menu';
+import {useDeleteProcess} from '../../hooks/use-delete-process';
 
 const availableFilter = [
     {
@@ -187,6 +188,7 @@ export function ProcessListPage() {
     const dispatch = useAppDispatch();
     const memberships = useAppSelector(selectMemberships);
     const listControlRef = useRef<ListControlRef>(null);
+    const deleteProcess = useDeleteProcess();
 
     const [showAddDialog, setShowAddDialog] = useState(false);
     const [showVersionsDialogForProcess, setShowVersionsDialogForProcess] = useState<ProcessEntity | null>(null);
@@ -224,6 +226,14 @@ export function ProcessListPage() {
                 dispatch(clearLoadingMessage());
             });
     }, [dispatch]);
+
+    const handleDeleteProcess = useCallback((process: ProcessEntity) => {
+        void deleteProcess(process, {
+            onDeleted: () => {
+                listControlRef.current?.refresh();
+            },
+        });
+    }, [deleteProcess]);
 
     const header: GenericPageHeaderProps = useMemo(() => ({
         icon: <Route/>,
@@ -434,6 +444,7 @@ export function ProcessListPage() {
                         setRowMenu(undefined);
                     }}
                     onMoveProcessToDepartment={setProcessToMove}
+                    onDeleteProcess={handleDeleteProcess}
                 />
             }
 
