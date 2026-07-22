@@ -66,8 +66,8 @@ export function UserDetailsPage() {
                         label: 'Allgemeine Informationen',
                     },
                     {
-                        path: '/users/:id/departments-and-roles',
-                        label: 'Organisationseinheiten und Rollen',
+                        path: '/users/:id/department-memberships',
+                        label: 'Mitgliedschaften in Organisationseinheiten',
                         onlyExisting: true,
                         requiredPermission: {
                             permission: Permission.DEPARTMENT_MEMBERSHIP_READ,
@@ -77,8 +77,8 @@ export function UserDetailsPage() {
                         },
                     },
                     {
-                        path: '/users/:id/teams-and-roles',
-                        label: 'Teams und Rollen',
+                        path: '/users/:id/team-memberships',
+                        label: 'Mitgliedschaften in Teams',
                         onlyExisting: true,
                         requiredPermission: {
                             permission: Permission.TEAM_MEMBERSHIP_READ,
