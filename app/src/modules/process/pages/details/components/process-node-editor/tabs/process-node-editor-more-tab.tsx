@@ -5,13 +5,18 @@ import {
     RichTextInputComponent
 } from "../../../../../../../components/rich-text-input-component/rich-text-input-component";
 import Typography from "@mui/material/Typography";
+import {ProcessNodeType} from '../../../../../services/process-node-provider-api-service';
 
 export function ProcessNodeEditorMoreTab() {
     const {
         node,
+        provider,
         setNode,
         isEditable,
     } = useProcessNodeEditorContext();
+
+    // TODO: Narrow this to manual and semi-automated actions once providers expose execution-mode metadata.
+    const showTimeLimit = provider.type === ProcessNodeType.Action;
 
     return (
         <Box
@@ -28,24 +33,29 @@ export function ProcessNodeEditorMoreTab() {
                 Konfigurieren Sie zusätzliche Eigenschaften dieses Prozesselementes.
             </Typography>
 
-            <NumberFieldComponent
-                label="Maximale Laufzeit"
-                hint="Maximale Laufzeit dieses Elementes in Tagen. Nach Ablauf der Zeit wird das Element automatisch als „Abgelaufen“ markiert. Nach 70% Ablauf der Zeit wird eine Benachrichtigung an den Verantwortlichen gesendet."
-                suffix="Tage"
-                decimalPlaces={0}
-                value={node.timeLimitDays ?? undefined}
-                onChange={(val) => {
-                    setNode({
-                        ...node,
-                        timeLimitDays: val ?? null,
-                    }, false);
-                }}
-                disabled={!isEditable}
-            />
+            {
+                showTimeLimit &&
+                <NumberFieldComponent
+                    label="Frist (Maximale Laufzeit)"
+                    hint="Definiert die Fälligkeit einer Aufgabe in Tagen ab deren Erstellung. Die Frist kann für Auswertungen, Hinweise oder spätere Ablaufsteuerung genutzt werden."
+                    suffix="Tage"
+                    decimalPlaces={0}
+                    minValue={1}
+                    maxValue={3652}
+                    value={node.timeLimitDays ?? undefined}
+                    onChange={(val) => {
+                        setNode({
+                            ...node,
+                            timeLimitDays: val ?? null,
+                        }, false);
+                    }}
+                    disabled={!isEditable}
+                />
+            }
 
             <RichTextInputComponent
                 label="Fachliche Anforderungen"
-                hint="Beschreiben Sie die fachlichen Anforderungen oder Voraussetzungen für die Ausführung dieses Elemente."
+                hint="Beschreiben Sie die fachliche Logik oder Vorgaben, die mit diesem Prozesselement umgesetzt werden."
                 value={node.requirements}
                 onChange={(val) => {
                     setNode({
@@ -54,14 +64,14 @@ export function ProcessNodeEditorMoreTab() {
                     }, false);
                 }}
                 sx={{
-                    mt: 2,
+                    mt: showTimeLimit ? 2 : 0,
                 }}
                 disabled={!isEditable}
             />
 
             <RichTextInputComponent
                 label="Notizen"
-                hint="Fügen Sie zusätzliche Notizen oder Kommentare zu diesem Elemente hinzu."
+                hint="Erfassen Sie interne Hinweise zur Modellierung dieses Elements. Notizen erscheinen zusätzlich in der zentralen Notizübersicht."
                 value={node.notes}
                 onChange={(val) => {
                     setNode({
