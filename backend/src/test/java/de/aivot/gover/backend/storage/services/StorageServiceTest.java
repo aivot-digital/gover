@@ -1,6 +1,8 @@
 package de.aivot.gover.backend.storage.services;
 
 import de.aivot.gover.backend.TestData;
+import de.aivot.gover.backend.asset.entities.AssetEntity;
+import de.aivot.gover.backend.asset.repositories.AssetRepository;
 import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.storage.entities.StorageIndexItemEntity;
@@ -52,6 +54,9 @@ class StorageServiceTest {
     private StorageIndexItemRepository storageIndexItemRepository;
 
     @Mock
+    private AssetRepository assetRepository;
+
+    @Mock
     private KnownExtensionsService knownExtensionsService;
 
     @Mock
@@ -87,6 +92,7 @@ class StorageServiceTest {
                 storageProviderConfigurationService,
                 storageProviderDefinition,
                 storageIndexItemRepository,
+                assetRepository,
                 avService
         );
     }
@@ -113,6 +119,8 @@ class StorageServiceTest {
                 eq(StorageItemMetadata.empty())
         )).thenReturn(storedDocument);
         when(knownExtensionsService.determineMimeType("file name+.txt")).thenReturn(Optional.of("text/plain"));
+        when(assetRepository.findByStorageProviderIdAndStoragePathFromRoot(1, "/folder/file name+.txt"))
+                .thenReturn(Optional.empty());
 
         storageService.storeDocument(
                 1,
@@ -128,6 +136,48 @@ class StorageServiceTest {
                 any(InputStream.class),
                 eq(StorageItemMetadata.empty())
         );
+    }
+
+    @Test
+    void storeDocument_CreatesPrivateAssetForAssetProvider() throws Exception {
+        var provider = createWritableProvider();
+        var config = new Object();
+        var storedDocument = new StorageDocument(
+                "/folder/new.pdf",
+                "new.pdf",
+                4L,
+                StorageItemMetadata.empty()
+        );
+
+        when(storageProviderRepository.findById(1)).thenReturn(Optional.of(provider));
+        when(storageProviderDefinitionService.retrieveProviderDefinition("test", 1)).thenReturn(Optional.of(storageProviderDefinition));
+        when(storageProviderConfigurationService.mapToConfig(provider, storageProviderDefinition)).thenReturn(config);
+        when(storageProviderDefinition.getSupportsMetadataAttributes()).thenReturn(false);
+        when(storageProviderDefinition.storeDocument(
+                eq(config),
+                eq("/folder/new.pdf"),
+                any(InputStream.class),
+                eq(StorageItemMetadata.empty())
+        )).thenReturn(storedDocument);
+        when(knownExtensionsService.determineMimeType("new.pdf")).thenReturn(Optional.of("application/pdf"));
+        when(assetRepository.findByStorageProviderIdAndStoragePathFromRoot(1, "/folder/new.pdf"))
+                .thenReturn(Optional.empty());
+
+        storageService.storeDocument(
+                1,
+                "/folder/new.pdf",
+                new ByteArrayInputStream("data".getBytes()),
+                StorageItemMetadata.empty()
+        );
+
+        var assetCaptor = ArgumentCaptor.forClass(AssetEntity.class);
+        verify(assetRepository).save(assetCaptor.capture());
+
+        var savedAsset = assetCaptor.getValue();
+        assertEquals(1, savedAsset.getStorageProviderId());
+        assertEquals("/folder/new.pdf", savedAsset.getStoragePathFromRoot());
+        assertEquals(true, savedAsset.getPrivate());
+        assertNull(savedAsset.getUploaderId());
     }
 
     @Test

@@ -473,8 +473,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 false,
                 true,
                 "Optionaler Anlagensatz übersprungen",
-                "Anlagensatz %s enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.",
-                StringUtils.quote(attachmentSetName)
+                "Anlagensatz '%s' enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.",
+                attachmentSetName
         );
     }
 
