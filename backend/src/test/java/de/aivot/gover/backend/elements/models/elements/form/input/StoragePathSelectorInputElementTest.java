@@ -75,7 +75,9 @@ class StoragePathSelectorInputElementTest {
     void shouldRoundTripThroughBaseElementSerialization() throws Exception {
         var element = new StoragePathSelectorInputElement()
                 .setPlaceholder("Ordner auswählen")
-                .setAllowedStorageProviderTypes(List.of(StorageProviderType.External, StorageProviderType.Assets));
+                .setStorageProviderSelectHint("Speicheranbieter auswählen")
+                .setAllowedStorageProviderTypes(List.of(StorageProviderType.External, StorageProviderType.Assets))
+                .setAllowReadOnlyStorageProviders(true);
 
         var serialized = ObjectMapperFactory
                 .getInstance()
@@ -87,6 +89,8 @@ class StoragePathSelectorInputElementTest {
 
         var selector = assertInstanceOf(StoragePathSelectorInputElement.class, deserialized);
         assertEquals("Ordner auswählen", selector.getPlaceholder());
+        assertEquals("Speicheranbieter auswählen", selector.getStorageProviderSelectHint());
         assertEquals(List.of(StorageProviderType.External, StorageProviderType.Assets), selector.getAllowedStorageProviderTypes());
+        assertTrue(selector.getAllowReadOnlyStorageProviders());
     }
 }

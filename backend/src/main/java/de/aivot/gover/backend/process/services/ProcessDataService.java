@@ -156,6 +156,10 @@ public class ProcessDataService {
             var attachmentData = attachmentsBySetId
                     .getOrDefault(attachmentSet.getId(), List.of())
                     .stream()
+                    .sorted((a, b) -> {
+                        var positionComparison = a.getPosition().compareTo(b.getPosition());
+                        return positionComparison == 0 ? a.getKey().compareTo(b.getKey()) : positionComparison;
+                    })
                     .map(this::getAttachmentData)
                     .toList();
 

@@ -45,7 +45,7 @@ public class FileUploadMultipartInputService {
                                                @Nonnull Long processInstanceId,
                                                @Nullable Long processInstanceTaskId,
                                                @Nullable String uploadedByUserId) throws ResponseException {
-        return normalizeInputs(layout, inputs, files, fileUris, processInstanceId, processInstanceTaskId, uploadedByUserId, new LinkedHashMap<>());
+        return normalizeInputs(layout, inputs, files, fileUris, processInstanceId, processInstanceTaskId, uploadedByUserId, new LinkedHashMap<>(), new LinkedHashMap<>());
     }
 
     @Nonnull
@@ -56,7 +56,8 @@ public class FileUploadMultipartInputService {
                                                 @Nonnull Long processInstanceId,
                                                 @Nullable Long processInstanceTaskId,
                                                 @Nullable String uploadedByUserId,
-                                                @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey) throws ResponseException {
+                                                @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
+                                                @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey) throws ResponseException {
         avService.testMultipartFiles(files);
 
         var remainingFiles = new LinkedList<MultipartFile>();
@@ -79,7 +80,8 @@ public class FileUploadMultipartInputService {
                 uploadedByUserId,
                 createdAttachments,
                 createdFileItems,
-                attachmentSetsByDataKey
+                attachmentSetsByDataKey,
+                nextAttachmentPositionsByDataKey
         );
 
         if (!remainingFiles.isEmpty()) {
@@ -102,7 +104,8 @@ public class FileUploadMultipartInputService {
                                   @Nullable String uploadedByUserId,
                                   @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
                                   @Nonnull List<FileUploadInputElementItem> createdFileItems,
-                                  @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey) throws ResponseException {
+                                  @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
+                                  @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey) throws ResponseException {
         if (element instanceof FileUploadInputElement fileUploadElement) {
             if (!values.containsKey(fileUploadElement.getId())) {
                 return;
@@ -120,7 +123,8 @@ public class FileUploadMultipartInputService {
                             uploadedByUserId,
                             createdAttachments,
                             createdFileItems,
-                            attachmentSetsByDataKey
+                            attachmentSetsByDataKey,
+                            nextAttachmentPositionsByDataKey
                     )
             );
             return;
@@ -151,7 +155,8 @@ public class FileUploadMultipartInputService {
                             uploadedByUserId,
                             createdAttachments,
                             createdFileItems,
-                            attachmentSetsByDataKey
+                            attachmentSetsByDataKey,
+                            nextAttachmentPositionsByDataKey
                     );
                 }
                 normalizedRows.add(rowValues);
@@ -173,7 +178,8 @@ public class FileUploadMultipartInputService {
                         uploadedByUserId,
                         createdAttachments,
                         createdFileItems,
-                        attachmentSetsByDataKey
+                        attachmentSetsByDataKey,
+                        nextAttachmentPositionsByDataKey
                 );
             }
         }
@@ -189,12 +195,14 @@ public class FileUploadMultipartInputService {
                                             @Nullable String uploadedByUserId,
                                             @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
                                             @Nonnull List<FileUploadInputElementItem> createdFileItems,
-                                            @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey) throws ResponseException {
+                                            @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
+                                            @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey) throws ResponseException {
         var items = FileUploadInputElement._formatValue(rawValue);
         if (items == null) {
             return rawValue;
         }
 
+        var attachmentSetDataKey = resolveAttachmentSetDataKey(element);
         var normalizedItems = new ArrayList<Map<String, Object>>(items.size());
         var usedFileNames = new LinkedHashSet<String>();
         var configuredSubmittedFileName = StringUtils.toNullableTrimmedString(element.getSubmittedFileName());
@@ -207,6 +215,9 @@ public class FileUploadMultipartInputService {
 
         for (var itemIndex = 0; itemIndex < items.size(); itemIndex++) {
             var item = items.get(itemIndex);
+            var itemPosition = nextAttachmentPositionsByDataKey.getOrDefault(attachmentSetDataKey, 1);
+            nextAttachmentPositionsByDataKey.put(attachmentSetDataKey, itemPosition + 1);
+
             if (!requiresUpload(item)) {
                 normalizedItems.add(createFileUploadItemMap(
                         item.getName(),
@@ -232,10 +243,10 @@ public class FileUploadMultipartInputService {
             }
 
             var attachment = ProcessInstanceAttachmentEntity
-                    .of(finalFileName, itemIndex + 1, processInstanceId, processInstanceTaskId, fileBytes)
+                    .of(finalFileName, itemPosition, processInstanceId, processInstanceTaskId, fileBytes)
                     .setUploadedByUserId(uploadedByUserId);
 
-            var attachmentSet = resolveAttachmentSet(element, processInstanceId, processInstanceTaskId, attachmentSetsByDataKey);
+            var attachmentSet = resolveAttachmentSet(element, attachmentSetDataKey, processInstanceId, processInstanceTaskId, attachmentSetsByDataKey);
             attachment.setAttachmentSetId(attachmentSet.getId());
 
             var createdAttachment = processInstanceAttachmentService.create(attachment);
@@ -252,10 +263,10 @@ public class FileUploadMultipartInputService {
 
     @Nonnull
     private ProcessInstanceAttachmentSetEntity resolveAttachmentSet(@Nonnull FileUploadInputElement element,
+                                                                    @Nonnull String dataKey,
                                                                     @Nonnull Long processInstanceId,
                                                                     @Nullable Long processInstanceTaskId,
                                                                     @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey) throws ResponseException {
-        var dataKey = resolveAttachmentSetDataKey(element);
         var attachmentSet = attachmentSetsByDataKey.get(dataKey);
         if (attachmentSet != null) {
             return attachmentSet;

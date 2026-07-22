@@ -122,7 +122,7 @@ class ProcessDataServiceTest {
         when(nodeRepository.findById(11)).thenReturn(Optional.of(initialNode));
 
         var attachmentRepository = mock(ProcessInstanceAttachmentRepository.class);
-        when(attachmentRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(firstAttachment, secondAttachment, thirdAttachment));
+        when(attachmentRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(secondAttachment, thirdAttachment, firstAttachment));
 
         var attachmentSetRepository = mock(ProcessInstanceAttachmentSetRepository.class);
         when(attachmentSetRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(attachmentSet, taskAttachmentSet));
@@ -149,10 +149,16 @@ class ProcessDataServiceTest {
         assertEquals(3, attachments.size());
         assertEquals("first.pdf", attachments.get(0).get("filename"));
         assertEquals("/attachments/second.pdf", attachments.get(1).get("storagePathFromRoot"));
+        assertEquals("third.pdf", attachments.get(2).get("filename"));
 
         @SuppressWarnings("unchecked")
         var sets = (List<Map<String, Object>>) documentsSet.get("sets");
         assertEquals(2, sets.size());
         assertEquals(99L, sets.get(1).get("processInstanceTaskId"));
+
+        @SuppressWarnings("unchecked")
+        var firstSetAttachments = (List<Map<String, Object>>) sets.getFirst().get("attachments");
+        assertEquals("first.pdf", firstSetAttachments.get(0).get("filename"));
+        assertEquals("second.pdf", firstSetAttachments.get(1).get("filename"));
     }
 }

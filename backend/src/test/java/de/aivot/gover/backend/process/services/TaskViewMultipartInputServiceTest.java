@@ -4,6 +4,7 @@ import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -165,6 +166,8 @@ class FileUploadMultipartInputServiceTest {
         assertEquals("evidence-2.pdf", documents.get(1).get("name"));
         assertEquals("evidence.pdf", attachmentService.createdAttachments().get(0).getFileName());
         assertEquals("evidence-2.pdf", attachmentService.createdAttachments().get(1).getFileName());
+        assertEquals(1, attachmentService.createdAttachments().get(0).getPosition());
+        assertEquals(2, attachmentService.createdAttachments().get(1).getPosition());
         assertEquals(1, attachmentSetService.createdSets().size());
         assertEquals(attachmentSetService.createdSets().getFirst().getId(), attachmentService.createdAttachments().get(0).getAttachmentSetId());
         assertEquals(attachmentSetService.createdSets().getFirst().getId(), attachmentService.createdAttachments().get(1).getAttachmentSetId());
@@ -258,6 +261,62 @@ class FileUploadMultipartInputServiceTest {
         assertEquals(destinationSet.getId(), attachmentService.createdAttachments().get(0).getAttachmentSetId());
         assertEquals(destinationSet.getId(), attachmentService.createdAttachments().get(1).getAttachmentSetId());
         assertEquals(fallbackSet.getId(), attachmentService.createdAttachments().get(2).getAttachmentSetId());
+        assertEquals(1, attachmentService.createdAttachments().get(0).getPosition());
+        assertEquals(2, attachmentService.createdAttachments().get(1).getPosition());
+        assertEquals(1, attachmentService.createdAttachments().get(2).getPosition());
+    }
+
+    @Test
+    void normalizeInputs_ContinuesAttachmentPositionsAcrossReplicatingContainerRows() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(
+                attachmentService,
+                attachmentSetService,
+                new TestAVService()
+        );
+
+        var upload = createUpload("documents", null);
+        upload.setDestinationKey("case.documents");
+
+        var repeating = new ReplicatingContainerLayoutElement();
+        repeating.setId("rows");
+        repeating.setChildren(List.of(upload));
+
+        var layout = new GroupLayoutElement();
+        layout.setId("root");
+        layout.setChildren(List.of(repeating));
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("rows", List.of(
+                Map.of("documents", List.of(createFileItem("first.pdf", "blob:first", 1))),
+                Map.of("documents", List.of(createFileItem("second.pdf", "blob:second", 1))),
+                Map.of("documents", List.of(createFileItem("third.pdf", "blob:third", 1)))
+        ));
+
+        service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "first.pdf", "application/pdf", "1".getBytes(StandardCharsets.UTF_8)),
+                        new MockMultipartFile("files", "second.pdf", "application/pdf", "2".getBytes(StandardCharsets.UTF_8)),
+                        new MockMultipartFile("files", "third.pdf", "application/pdf", "3".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:first", "blob:second", "blob:third"),
+                42L,
+                null,
+                null
+        );
+
+        assertEquals(1, attachmentSetService.createdSets().size());
+        var attachmentSetId = attachmentSetService.createdSets().getFirst().getId();
+        assertEquals(attachmentSetId, attachmentService.createdAttachments().get(0).getAttachmentSetId());
+        assertEquals(attachmentSetId, attachmentService.createdAttachments().get(1).getAttachmentSetId());
+        assertEquals(attachmentSetId, attachmentService.createdAttachments().get(2).getAttachmentSetId());
+        assertEquals(List.of(1, 2, 3), attachmentService.createdAttachments()
+                .stream()
+                .map(ProcessInstanceAttachmentEntity::getPosition)
+                .toList());
     }
 
     private static GroupLayoutElement createLayout(String elementId, String submittedFileName) {

@@ -202,7 +202,7 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
     @Nonnull
     public List<ProcessInstanceAttachmentEntity> findAllByAttachmentSetId(@Nonnull Integer attachmentSetId) {
         return processInstanceAttachmentRepository
-                .findAllByAttachmentSetId(attachmentSetId);
+                .findAllByAttachmentSetIdOrderByPositionAscKeyAsc(attachmentSetId);
     }
 
     @Override
