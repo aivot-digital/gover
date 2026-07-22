@@ -16,6 +16,7 @@ import {deepEquals} from '../../../../utils/equality-utils';
 import {ProcessDefinitionVersionApiService} from '../../services/process-definition-version-api-service';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
+import {RichTextInputComponent} from '../../../../components/rich-text-input-component/rich-text-input-component';
 
 interface ProcessSettingsDialogVersionTabProps {
     open: boolean;
@@ -43,6 +44,8 @@ const caseNumberTypeOptions = [
         value: CASE_NUMBER_TYPE_TEMPLATE,
     },
 ];
+
+const PROCESS_VERSION_NOTES_MAX_LENGTH = 2048;
 
 export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogVersionTabHandle, ProcessSettingsDialogVersionTabProps>(function ProcessSettingsDialogVersionTab(props, ref) {
     const dispatch = useAppDispatch();
@@ -94,20 +97,30 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
         return validateCaseNumberTemplate(draft.caseNumberTemplate);
     }, [caseNumberType, draft.caseNumberTemplate]);
 
-    const hasValidationError = publicTitleError != null || caseNumberTemplateError != null;
+    const notesError = useMemo(() => {
+        if ((draft.notes?.length ?? 0) > PROCESS_VERSION_NOTES_MAX_LENGTH) {
+            return `Die Notizen dürfen maximal ${PROCESS_VERSION_NOTES_MAX_LENGTH} Zeichen lang sein.`;
+        }
+
+        return undefined;
+    }, [draft.notes]);
+
+    const hasValidationError = publicTitleError != null || caseNumberTemplateError != null || notesError != null;
 
     const hasUnsavedChanges = useMemo(() => {
         return !deepEquals(
             {
                 publicTitle: version.publicTitle,
                 caseNumberTemplate: version.caseNumberTemplate,
+                notes: version.notes,
             },
             {
                 publicTitle: draft.publicTitle,
                 caseNumberTemplate: draft.caseNumberTemplate,
+                notes: draft.notes,
             },
         );
-    }, [draft.caseNumberTemplate, draft.publicTitle, version.caseNumberTemplate, version.publicTitle]);
+    }, [draft.caseNumberTemplate, draft.notes, draft.publicTitle, version.caseNumberTemplate, version.notes, version.publicTitle]);
 
     useEffect(() => {
         onUnsavedChangesChange?.(hasUnsavedChanges);
@@ -148,6 +161,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             ...version,
             publicTitle: draft.publicTitle.trim(),
             caseNumberTemplate: caseNumberType === CASE_NUMBER_TYPE_TEMPLATE ? draft.caseNumberTemplate?.trim() ?? '' : null,
+            notes: draft.notes?.trim() === '' ? null : draft.notes?.trim() ?? null,
         };
 
         setIsSaving(true);
@@ -168,7 +182,7 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             .finally(() => {
                 setIsSaving(false);
             });
-    }, [caseNumberType, dispatch, draft.caseNumberTemplate, draft.publicTitle, hasUnsavedChanges, hasValidationError, isEditable, isSaving, onVersionChange, version]);
+    }, [caseNumberType, dispatch, draft.caseNumberTemplate, draft.notes, draft.publicTitle, hasUnsavedChanges, hasValidationError, isEditable, isSaving, onVersionChange, version]);
 
     const handleReset = useCallback(() => {
         setDraft(version);
@@ -212,6 +226,20 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
                 minCharacters={3}
                 maxCharacters={96}
                 hint="Diese Bezeichnung wird öffentlich im Kontext der Prozessversion verwendet. Formulare können z. B. darauf zurückfallen, wenn das Formular-Prozesselement keine eigene öffentliche Bezeichnung hat."
+            />
+
+            <RichTextInputComponent
+                label="Notizen zu dieser Prozessversion"
+                value={draft.notes}
+                onChange={(val) => {
+                    setDraft({
+                        ...draft,
+                        notes: val,
+                    });
+                }}
+                disabled={!isEditable || isSaving}
+                error={notesError}
+                hint="Halten Sie übergreifende Hinweise zur aktuell geöffneten Prozessversion fest, z. B. offene Punkte, Annahmen oder spätere Ergänzungen der Prozesskonfiguration."
             />
 
             <ElementEditorSectionHeader

@@ -635,6 +635,7 @@ public class ProcessController {
                         ProcessVersionStatus.Drafted,
                         originalProcessVersion.getPublicTitle(),
                         originalProcessVersion.getCaseNumberTemplate(),
+                        originalProcessVersion.getNotes(),
                         Instant.now(),
                         Instant.now(),
                         null,
