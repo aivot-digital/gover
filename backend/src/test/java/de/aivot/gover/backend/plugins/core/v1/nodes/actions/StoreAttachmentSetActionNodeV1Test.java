@@ -261,7 +261,7 @@ class StoreAttachmentSetActionNodeV1Test {
         assertEquals(ProcessNodeExecutionLogLevel.Info, event.getLevel());
         assertEquals(false, event.getTechnical());
         assertEquals(true, event.getAudit());
-        assertEquals("Anlagensatz 'Dokumente' enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
+        assertEquals("Anlagensatz „Dokumente“ enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
     }
 
     @Test
@@ -282,7 +282,7 @@ class StoreAttachmentSetActionNodeV1Test {
         assertTrue(storedDocuments.isEmpty());
 
         var event = captureSingleEvent(eventRepository);
-        assertEquals("Anlagensatz 'documents' enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
+        assertEquals("Anlagensatz „documents“ enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
     }
 
     @Test
