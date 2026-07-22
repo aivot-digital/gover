@@ -28,6 +28,7 @@ interface ProcessSettingsDialogVersionTabProps {
 
 export interface ProcessSettingsDialogVersionTabHandle {
     save: () => void;
+    reset: () => void;
 }
 
 const caseNumberTypeOptions = [
@@ -169,9 +170,14 @@ export const ProcessSettingsDialogVersionTab = forwardRef<ProcessSettingsDialogV
             });
     }, [caseNumberType, dispatch, draft.caseNumberTemplate, draft.publicTitle, hasUnsavedChanges, hasValidationError, isEditable, isSaving, onVersionChange, version]);
 
+    const handleReset = useCallback(() => {
+        setDraft(version);
+    }, [version]);
+
     useImperativeHandle(ref, () => ({
         save: handleSave,
-    }), [handleSave]);
+        reset: handleReset,
+    }), [handleReset, handleSave]);
 
     return (
         <Stack spacing={3}>

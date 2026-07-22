@@ -1,37 +1,23 @@
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {ProcessEntity} from '../../entities/process-entity';
-import React, {ReactNode, useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState} from 'react';
 import {PermissionEntry} from '../../../permissions/models/permission-provider';
 import {PermissionApiService} from '../../../permissions/permission-api-service';
 import {showApiErrorSnackbar, showSuccessSnackbar} from '../../../../slices/snackbar-slice';
-import {
-    Autocomplete,
-    Box,
-    Stack,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    TextField,
-    Typography,
-} from '@mui/material';
-import {getDepartmentPath, getDepartmentTypeIcons} from '../../../departments/utils/department-utils';
-import {CheckboxFieldComponent} from '../../../../components/checkbox-field/checkbox-field-component';
+import {Typography} from '@mui/material';
+import {getDepartmentPath} from '../../../departments/utils/department-utils';
 import {TeamEntity} from '../../../teams/entities/team-entity';
-import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
-import {Actions} from '../../../../components/actions/actions';
 import {useConfirm} from '../../../../providers/confirm-provider';
-import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
-import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
-import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {ProcessInstanceAccessControlPresetEntity} from '../../entities/process-instance-access-control-preset-entity';
 import {ProcessInstanceAccessControlPresetApiService} from '../../services/process-instance-access-control-preset-api-service';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
 import {deepEquals} from '../../../../utils/equality-utils';
 import {ElementEditorSectionHeader} from '../../../../components/element-editor-section-header/element-editor-section-header';
+import {
+    ProcessSettingsDialogAccessControlMatrix,
+    type ProcessSettingsAccessControlAddDomainOption,
+} from './process-settings-dialog-access-control-matrix';
 
 interface ProcessSettingsDialogTabProps {
     open: boolean;
@@ -40,24 +26,16 @@ interface ProcessSettingsDialogTabProps {
     departments: VDepartmentShadowedEntity[];
     teams: TeamEntity[];
     onUnsavedChangesChange?: (hasUnsavedChanges: boolean) => void;
+    onSavingChange?: (isSaving: boolean) => void;
+}
+
+export interface ProcessSettingsDialogProcessInstanceAccessPresetTabHandle {
+    save: () => void;
+    reset: () => void;
 }
 
 interface ProcessInstanceAccessControlPresetDraft extends ProcessInstanceAccessControlPresetEntity {
     clientId: string;
-}
-
-interface ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam extends ProcessInstanceAccessControlPresetDraft {
-    department?: VDepartmentShadowedEntity;
-    team?: TeamEntity;
-}
-
-interface AddDomainOption {
-    label: string;
-    value: number;
-    subLabel?: string;
-    disabled?: boolean;
-    icon: ReactNode;
-    type: 'department' | 'team';
 }
 
 const relevantPermissions: string[] = [
@@ -97,7 +75,7 @@ function getAccessPresetDomainKey(accessPreset: Pick<ProcessInstanceAccessContro
     return 'unknown';
 }
 
-export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: ProcessSettingsDialogTabProps) {
+export const ProcessSettingsDialogProcessInstanceAccessPresetTab = forwardRef<ProcessSettingsDialogProcessInstanceAccessPresetTabHandle, ProcessSettingsDialogTabProps>(function ProcessSettingsDialogProcessInstanceAccessPresetTab(props, ref) {
     const dispatch = useAppDispatch();
     const confirm = useConfirm();
 
@@ -108,21 +86,20 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         departments,
         teams,
         onUnsavedChangesChange,
+        onSavingChange,
     } = props;
 
     const {
-        id: processesId,
+        id: processId,
     } = process;
 
-
     const {
-        processVersion: processVersion,
+        processVersion,
     } = version;
 
     const [permissions, setPermissions] = useState<PermissionEntry[]>([]);
     const [persistedAccessPresets, setPersistedAccessPresets] = useState<ProcessInstanceAccessControlPresetEntity[]>([]);
     const [draftAccessPresets, setDraftAccessPresets] = useState<ProcessInstanceAccessControlPresetDraft[]>([]);
-    const [targetDomainOption, setTargetDomainOption] = useState<AddDomainOption | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const nextClientIdRef = useRef(0);
 
@@ -171,19 +148,18 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
     const loadAccessPresets = useCallback(() => {
         new ProcessInstanceAccessControlPresetApiService()
             .listAll({
-                targetProcessId: processesId,
+                targetProcessId: processId,
                 targetProcessVersion: processVersion,
             })
             .then(({content}) => {
                 nextClientIdRef.current = 0;
                 setPersistedAccessPresets(content);
                 setDraftAccessPresets(content.map(createDraftAccessPreset));
-                setTargetDomainOption(null);
             })
             .catch((err) => {
                 dispatch(showApiErrorSnackbar(err, 'Fehler beim Laden der Berechtigungen für neue Vorgänge'));
             });
-    }, [createDraftAccessPreset, dispatch, processVersion, processesId]);
+    }, [createDraftAccessPreset, dispatch, processId, processVersion]);
 
     useEffect(() => {
         if (!open) {
@@ -214,45 +190,18 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         };
     }, [onUnsavedChangesChange]);
 
-    const resolvedAccessControl: ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam[] = useMemo(() => {
-        return draftAccessPresets
-            .map((accessPreset) => {
-                return {
-                    ...accessPreset,
-                    department: accessPreset.sourceDepartmentId != null ? departments.find((d) => d.id === accessPreset.sourceDepartmentId) : undefined,
-                    team: accessPreset.sourceTeamId != null ? teams.find((d) => d.id === accessPreset.sourceTeamId) : undefined,
-                };
-            });
-    }, [departments, draftAccessPresets, teams]);
+    useEffect(() => {
+        onSavingChange?.(isSaving);
+    }, [isSaving, onSavingChange]);
 
-    const owningDepartment = useMemo(() => {
-        return departments.find((d) => d.id === process.departmentId)!;
-    }, [departments, process.departmentId]);
+    useEffect(() => {
+        return () => {
+            onSavingChange?.(false);
+        };
+    }, [onSavingChange]);
 
-    const addDomainOptions: AddDomainOption[] = useMemo(() => {
-        const assignedDomainKeys = new Set(draftAccessPresets.map((accessPreset) => getAccessPresetDomainKey(accessPreset)));
-
-        return [
-            ...departments.map((department) => ({
-                label: department.name,
-                value: department.id,
-                subLabel: getDepartmentPath(department),
-                icon: getDepartmentTypeIcons(department.depth),
-                type: 'department',
-                disabled: department.id === process.departmentId || assignedDomainKeys.has(`department-${department.id}`),
-            } as AddDomainOption)),
-            ...teams.map((team) => ({
-                label: team.name,
-                value: team.id,
-                icon: ModuleIcons.teams,
-                type: 'team',
-                disabled: assignedDomainKeys.has(`team-${team.id}`),
-            } as AddDomainOption)),
-        ];
-    }, [departments, draftAccessPresets, process.departmentId, teams]);
-
-    const handleAddAccessPreset = () => {
-        if (targetDomainOption == null || isSaving) {
+    const handleAddAccessPreset = (targetDomainOption: ProcessSettingsAccessControlAddDomainOption) => {
+        if (isSaving) {
             return;
         }
 
@@ -263,51 +212,28 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
                 clientId: createNewClientId(),
                 sourceDepartmentId: targetDomainOption.type === 'department' ? targetDomainOption.value : null,
                 sourceTeamId: targetDomainOption.type === 'team' ? targetDomainOption.value : null,
-                targetProcessId: processesId,
+                targetProcessId: processId,
                 targetProcessVersion: processVersion,
                 permissions: [],
             },
         ]);
-
-        setTargetDomainOption(null);
     };
 
-    const togglePermissionForAccessPreset = (accessPreset: ProcessInstanceAccessControlPresetDraft, permission: string) => {
-        if (isSaving) {
-            return;
+    const getAccessLabel = (accessPreset: ProcessInstanceAccessControlPresetDraft) => {
+        if (accessPreset.sourceTeamId != null) {
+            return teams.find((team) => team.id === accessPreset.sourceTeamId)?.name ?? `Team #${accessPreset.sourceTeamId}`;
         }
 
-        const updatedPermissions = [
-            ...accessPreset.permissions,
-        ];
-        if (updatedPermissions.includes(permission)) {
-            const index = updatedPermissions.indexOf(permission);
-            updatedPermissions.splice(index, 1);
-        } else {
-            updatedPermissions.push(permission);
-        }
+        if (accessPreset.sourceDepartmentId != null) {
+            const department = departments.find((entry) => entry.id === accessPreset.sourceDepartmentId);
 
-        const updatedAccessPreset = {
-            ...accessPreset,
-            permissions: updatedPermissions,
-        };
-
-        setDraftAccessPresets((prev) => prev.map((a) => a.clientId === updatedAccessPreset.clientId ? updatedAccessPreset : a));
-    };
-
-    const getAccessLabel = (accessPreset: ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam) => {
-        if (accessPreset.team != null) {
-            return accessPreset.team.name;
-        }
-
-        if (accessPreset.department != null) {
-            return getDepartmentPath(accessPreset.department);
+            return department != null ? getDepartmentPath(department) : `Organisationseinheit #${accessPreset.sourceDepartmentId}`;
         }
 
         return 'diese Domäne';
     };
 
-    const handleDeleteAccessPreset = async (accessPreset: ProcessInstanceAccessControlPresetDraftWithDepartmentOrTeam) => {
+    const handleDeleteAccessPreset = async (accessPreset: ProcessInstanceAccessControlPresetDraft) => {
         if (accessPreset.sourceDepartmentId === process.departmentId || isSaving) {
             return;
         }
@@ -329,7 +255,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         setDraftAccessPresets((prev) => prev.filter((a) => a.clientId !== accessPreset.clientId));
     };
 
-    const handleSave = async () => {
+    const handleSave = useCallback(async () => {
         if (!hasUnsavedChanges || isSaving) {
             return;
         }
@@ -338,6 +264,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         let nextPersistedAccessPresets = [...persistedAccessPresets];
         let nextDraftAccessPresets = [...draftAccessPresets];
 
+        // Advance these snapshots after each request so partial failures keep already-saved changes in sync.
         setIsSaving(true);
 
         try {
@@ -348,6 +275,7 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
             );
             const deletedAccessPresets = nextPersistedAccessPresets.filter((accessPreset) => !draftAccessPresetsById.has(accessPreset.id));
 
+            // Delete first so removing and re-adding the same domain in one save does not violate uniqueness.
             for (const accessPreset of deletedAccessPresets) {
                 await apiService.destroy(accessPreset.id);
                 nextPersistedAccessPresets = nextPersistedAccessPresets.filter((currentAccessPreset) => currentAccessPreset.id !== accessPreset.id);
@@ -401,232 +329,44 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         } finally {
             setIsSaving(false);
         }
-    };
+    }, [dispatch, draftAccessPresets, hasUnsavedChanges, isSaving, persistedAccessPresets, toAccessPresetEntity]);
+
+    const handleReset = useCallback(() => {
+        setDraftAccessPresets(persistedAccessPresets.map(createDraftAccessPreset));
+    }, [createDraftAccessPreset, persistedAccessPresets]);
+
+    useImperativeHandle(ref, () => ({
+        save: () => {
+            void handleSave();
+        },
+        reset: handleReset,
+    }), [handleReset, handleSave]);
 
     return (
         <>
             <ElementEditorSectionHeader
-                title="Berechtigungen für neue Vorgänge"
+                title="Standardrechte für neue Vorgänge"
                 variant="h5"
                 disableMarginTop
-                maxWidth={560}
+                maxWidth={700}
             >
-                Legen Sie fest, welche Organisationseinheiten und Teams bei neu erstellten Vorgängen standardmäßig Zugriff erhalten.
+                Definieren Sie, welche Organisationseinheiten und Teams bei der Anlage eines neuen Vorgangs einmalig als Berechtigungen übernommen werden.
+                Ab diesem Zeitpunkt verfügt der Vorgang über eigene Berechtigungen, die unabhängig von diesen Standardeinstellungen verwaltet werden.
             </ElementEditorSectionHeader>
 
-            <TableContainer>
-                <Table size="small">
-                    <TableHead>
-                        <TableRow>
-                            <TableCell
-                                sx={{
-                                    fontSize: '90%',
-                                }}
-                            >
-                                Organisationseinheit / Team
-                            </TableCell>
-                            {
-                                permissions
-                                    .map((permission) => (
-                                        <TableCell
-                                            key={permission.permission}
-                                            sx={{
-                                                fontSize: '90%',
-                                            }}
-                                        >
-                                            {permission.label}
-                                        </TableCell>
-                                    ))
-                            }
-                            <TableCell width={1}/>
-                        </TableRow>
-                    </TableHead>
-                    <TableBody>
-                        <TableRow>
-                            <TableCell>
-                                {getDepartmentPath(owningDepartment)} <br/>
-                                <em>(Verwaltende Organisationseinheit)</em>
-                            </TableCell>
-                            {
-                                permissions
-                                    .map((permission) => (
-                                        <TableCell
-                                            key={permission.permission}
-                                        >
-                                            <CheckboxFieldComponent
-                                                label=""
-                                                value={true}
-                                                onChange={() => {
-                                                }}
-                                                variant="switch"
-                                                disabled={true}
-                                            />
-                                        </TableCell>
-                                    ))
-                            }
-                            <TableCell/>
-                        </TableRow>
-                        {
-                            resolvedAccessControl
-                                .map((accessPreset) => (
-                                    <TableRow key={accessPreset.clientId}>
-                                        <TableCell>
-                                            {
-                                                accessPreset.team != null &&
-                                                accessPreset.team.name
-                                            }
-                                            {
-                                                accessPreset.department != null &&
-                                                getDepartmentPath(accessPreset.department)
-                                            }
-                                        </TableCell>
-                                        {
-                                            permissions
-                                                .map((permission) => (
-                                                    <TableCell
-                                                        key={permission.permission}
-                                                    >
-                                                        <CheckboxFieldComponent
-                                                            label=""
-                                                            value={accessPreset.permissions.includes(permission.permission)}
-                                                            busy={isSaving}
-                                                            onChange={() => {
-                                                                togglePermissionForAccessPreset(accessPreset, permission.permission);
-                                                            }}
-                                                            variant="switch"
-                                                        />
-                                                    </TableCell>
-                                                ))
-                                        }
-                                        <TableCell align="right">
-                                            <Actions
-                                                isBusy={isSaving}
-                                                actions={[
-                                                    {
-                                                        icon: <Delete/>,
-                                                        tooltip: 'Berechtigung entfernen',
-                                                        disabled: accessPreset.sourceDepartmentId === process.departmentId,
-                                                        disabledTooltip: 'Die verwaltende Organisationseinheit kann nicht entfernt werden',
-                                                        ariaLabel: 'Berechtigung entfernen',
-                                                        onClick: () => {
-                                                            void handleDeleteAccessPreset(accessPreset);
-                                                        },
-                                                    },
-                                                ]}
-                                                color="error"
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ))
-                        }
-                    </TableBody>
-                </Table>
-            </TableContainer>
-
-            <Stack
-                direction="row"
-                alignItems="center"
-                spacing={2}
-                sx={{
-                    mt: 2,
+            <ProcessSettingsDialogAccessControlMatrix
+                permissions={permissions}
+                accessControls={draftAccessPresets}
+                owningDepartmentId={process.departmentId}
+                departments={departments}
+                teams={teams}
+                isBusy={isSaving}
+                onAccessControlsChange={setDraftAccessPresets}
+                onAddAccessControl={handleAddAccessPreset}
+                onDeleteAccessControl={(accessPreset) => {
+                    void handleDeleteAccessPreset(accessPreset);
                 }}
-            >
-                <Autocomplete<AddDomainOption, false, false, false>
-                    options={addDomainOptions}
-                    value={targetDomainOption}
-                    onChange={(_, value) => {
-                        setTargetDomainOption(value);
-                    }}
-                    fullWidth={true}
-                    disabled={isSaving}
-                    getOptionLabel={(option) => option.label}
-                    isOptionEqualToValue={(option, value) => option.type === value.type && option.value === value.value}
-                    getOptionDisabled={(option) => option.disabled ?? false}
-                    noOptionsText="Keine gültigen Ziel-Domäne verfügbar"
-                    renderOption={(props, option) => (
-                        <Box
-                            component="li"
-                            {...props}
-                            sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                py: 0.5,
-                                minHeight: 40,
-                            }}
-                        >
-                            {
-                                option.icon != null &&
-                                <Box
-                                    sx={{
-                                        mr: 1,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                    }}
-                                >
-                                    {option.icon}
-                                </Box>
-                            }
-                            <Box
-                                sx={{
-                                    minWidth: 0,
-                                    display: 'flex',
-                                    flexDirection: 'column',
-                                    gap: 0.125,
-                                    flex: 1,
-                                }}
-                            >
-                                <Typography
-                                    variant="body2"
-                                    sx={{
-                                        lineHeight: 1.2,
-                                    }}
-                                >
-                                    {option.label}
-                                </Typography>
-                                {
-                                    option.subLabel != null &&
-                                    <Typography
-                                        variant="caption"
-                                        color="textSecondary"
-                                        sx={{
-                                            lineHeight: 1.2,
-                                        }}
-                                    >
-                                        {option.subLabel}
-                                    </Typography>
-                                }
-                            </Box>
-                        </Box>
-                    )}
-                    renderInput={(params) => (
-                        <TextField
-                            {...params}
-                            label="Neue, berechtigte Domäne"
-                            placeholder="Domäne suchen…"
-                        />
-                    )}
-                />
-
-                <Actions
-                    isBusy={isSaving}
-                    actions={[
-                        {
-                            label: 'Hinzufügen',
-                            onClick: handleAddAccessPreset,
-                            icon: <Add/>,
-                            disabled: targetDomainOption == null,
-                        },
-                        {
-                            label: 'Speichern',
-                            onClick: () => {
-                                void handleSave();
-                            },
-                            icon: <Save/>,
-                            disabled: !hasUnsavedChanges,
-                        },
-                    ]}
-                />
-            </Stack>
+            />
         </>
     );
-}
+});

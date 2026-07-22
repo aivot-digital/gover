@@ -30,6 +30,7 @@ interface ProcessSettingsDialogGeneralTabProps {
 
 export interface ProcessSettingsDialogGeneralTabHandle {
     save: () => void;
+    reset: () => void;
 }
 
 export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogGeneralTabHandle, ProcessSettingsDialogGeneralTabProps>(function ProcessSettingsDialogGeneralTab(props, ref) {
@@ -193,9 +194,16 @@ export const ProcessSettingsDialogGeneralTab = forwardRef<ProcessSettingsDialogG
             });
     }, [dispatch, draft.internalTitle, draft.slug, hasUnsavedChanges, internalTitleError, isCheckingSlugAvailability, isSaving, onProcessChange, process, slugError]);
 
+    const handleReset = useCallback(() => {
+        setDraft(process);
+        setSlugAvailabilityError(undefined);
+        setIsCheckingSlugAvailability(false);
+    }, [process]);
+
     useImperativeHandle(ref, () => ({
         save: handleSave,
-    }), [handleSave]);
+        reset: handleReset,
+    }), [handleReset, handleSave]);
 
     return (
         <>

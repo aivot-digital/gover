@@ -1,20 +1,24 @@
 import {ProcessEntity} from '../../entities/process-entity';
 import {ProcessVersionEntity} from '../../entities/process-version-entity';
-import {Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs} from '@mui/material';
+import {Box, Button, Dialog, DialogActions, DialogContent, Tab, Tabs, Typography} from '@mui/material';
 import {DialogTitleWithClose} from '../../../../components/dialog-title-with-close/dialog-title-with-close';
 import {useEffect, useRef, useState} from 'react';
 import {VDepartmentShadowedApiService} from '../../../departments/services/v-department-shadowed-api-service';
 import {VDepartmentShadowedEntity} from '../../../departments/entities/v-department-shadowed-entity';
 import {useAppDispatch} from '../../../../hooks/use-app-dispatch';
-import {showApiErrorSnackbar, showWarningSnackbar} from '../../../../slices/snackbar-slice';
-import {ProcessSettingsDialogProcessAccessTab} from './process-settings-dialog-process-access-tab';
+import {showApiErrorSnackbar} from '../../../../slices/snackbar-slice';
+import {ProcessSettingsDialogProcessAccessTab, type ProcessSettingsDialogProcessAccessTabHandle} from './process-settings-dialog-process-access-tab';
 import {TeamEntity} from '../../../teams/entities/team-entity';
 import {TeamsApiService} from '../../../teams/services/teams-api-service';
-import {ProcessSettingsDialogProcessInstanceAccessPresetTab} from './process-settings-dialog-process-instance-access-preset-tab';
+import {
+    ProcessSettingsDialogProcessInstanceAccessPresetTab,
+    type ProcessSettingsDialogProcessInstanceAccessPresetTabHandle,
+} from './process-settings-dialog-process-instance-access-preset-tab';
 import {ProcessSettingsDialogGeneralTab, type ProcessSettingsDialogGeneralTabHandle} from './process-settings-dialog-general-tab';
 import Save from '@aivot/mui-material-symbols-400-n25-outlined/Save';
 import {useRetainedDialogValue} from '../../../../hooks/use-retained-dialog-value';
 import {ProcessSettingsDialogVersionTab, type ProcessSettingsDialogVersionTabHandle} from './process-settings-dialog-version-tab';
+import {useConfirm} from '../../../../providers/confirm-provider';
 
 interface ProcessSettingsDialogProps {
     open: boolean;
@@ -28,6 +32,7 @@ interface ProcessSettingsDialogProps {
 
 export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     const dispatch = useAppDispatch();
+    const confirm = useConfirm();
 
     const {
         open,
@@ -47,13 +52,128 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     const [isSavingVersionSettings, setIsSavingVersionSettings] = useState(false);
     const [hasVersionValidationError, setHasVersionValidationError] = useState(false);
     const [hasUnsavedProcessAccessChanges, setHasUnsavedProcessAccessChanges] = useState(false);
+    const [isSavingProcessAccess, setIsSavingProcessAccess] = useState(false);
     const [hasUnsavedProcessInstanceAccessPresetChanges, setHasUnsavedProcessInstanceAccessPresetChanges] = useState(false);
+    const [isSavingProcessInstanceAccessPreset, setIsSavingProcessInstanceAccessPreset] = useState(false);
     const generalTabRef = useRef<ProcessSettingsDialogGeneralTabHandle | null>(null);
     const versionTabRef = useRef<ProcessSettingsDialogVersionTabHandle | null>(null);
+    const processAccessTabRef = useRef<ProcessSettingsDialogProcessAccessTabHandle | null>(null);
+    const processInstanceAccessPresetTabRef = useRef<ProcessSettingsDialogProcessInstanceAccessPresetTabHandle | null>(null);
     const renderProcess = useRetainedDialogValue(open, process);
     const renderVersion = useRetainedDialogValue(open, version);
     const renderOnProcessChange = useRetainedDialogValue(open, onProcessChange);
     const renderOnVersionChange = useRetainedDialogValue(open, onVersionChange);
+    const isSavingSettings = isSavingGeneralSettings || isSavingVersionSettings || isSavingProcessAccess || isSavingProcessInstanceAccessPreset;
+
+    const getUnsavedChangesTabLabel = (tab: number): string | undefined => {
+        if (tab === 0 && hasUnsavedGeneralChanges) {
+            return 'Allgemeine Einstellungen';
+        }
+
+        if (tab === 1 && hasUnsavedVersionChanges) {
+            return 'Versionsspezifische Einstellungen';
+        }
+
+        if (tab === 2 && hasUnsavedProcessAccessChanges) {
+            return 'Prozessberechtigungen';
+        }
+
+        if (tab === 3 && hasUnsavedProcessInstanceAccessPresetChanges) {
+            return 'Standardrechte für neue Vorgänge';
+        }
+
+        return undefined;
+    };
+    const hasCurrentTabUnsavedChanges = getUnsavedChangesTabLabel(currentTab) != null;
+
+    const clearUnsavedChangesForTab = (tab: number): void => {
+        if (tab === 0) {
+            setHasUnsavedGeneralChanges(false);
+        }
+
+        if (tab === 1) {
+            setHasUnsavedVersionChanges(false);
+        }
+
+        if (tab === 2) {
+            setHasUnsavedProcessAccessChanges(false);
+        }
+
+        if (tab === 3) {
+            setHasUnsavedProcessInstanceAccessPresetChanges(false);
+        }
+    };
+
+    const confirmDiscardUnsavedChanges = async (actionText: string): Promise<boolean> => {
+        const unsavedChangesTabLabel = getUnsavedChangesTabLabel(currentTab);
+
+        if (unsavedChangesTabLabel == null) {
+            return true;
+        }
+
+        return await confirm({
+            title: 'Ungespeicherte Änderungen',
+            confirmButtonText: 'Änderungen verwerfen',
+            children: (
+                <Typography>
+                    Im Tab <strong>{unsavedChangesTabLabel}</strong> gibt es ungespeicherte Änderungen.
+                    Möchten Sie diese Änderungen verwerfen und {actionText}?
+                </Typography>
+            ),
+        });
+    };
+
+    const handleTabChange = async (newValue: number): Promise<void> => {
+        if (newValue === currentTab || isSavingSettings) {
+            return;
+        }
+
+        const shouldContinue = await confirmDiscardUnsavedChanges('zum ausgewählten Tab wechseln');
+        if (!shouldContinue) {
+            return;
+        }
+
+        clearUnsavedChangesForTab(currentTab);
+        setCurrentTab(newValue);
+    };
+
+    const handleClose = async (): Promise<void> => {
+        if (isSavingSettings) {
+            return;
+        }
+
+        const shouldClose = await confirmDiscardUnsavedChanges('den Dialog schließen');
+        if (!shouldClose) {
+            return;
+        }
+
+        clearUnsavedChangesForTab(currentTab);
+        onClose();
+    };
+
+    const handleResetCurrentTab = (): void => {
+        if (!hasCurrentTabUnsavedChanges || isSavingSettings) {
+            return;
+        }
+
+        if (currentTab === 0) {
+            generalTabRef.current?.reset();
+        }
+
+        if (currentTab === 1) {
+            versionTabRef.current?.reset();
+        }
+
+        if (currentTab === 2) {
+            processAccessTabRef.current?.reset();
+        }
+
+        if (currentTab === 3) {
+            processInstanceAccessPresetTabRef.current?.reset();
+        }
+
+        clearUnsavedChangesForTab(currentTab);
+    };
 
     useEffect(() => {
         if (open) {
@@ -65,7 +185,9 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
             setIsSavingVersionSettings(false);
             setHasVersionValidationError(false);
             setHasUnsavedProcessAccessChanges(false);
+            setIsSavingProcessAccess(false);
             setHasUnsavedProcessInstanceAccessPresetChanges(false);
+            setIsSavingProcessInstanceAccessPreset(false);
         }
     }, [open]);
 
@@ -77,7 +199,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                 setDepartments(content);
             })
             .catch((error) => {
-                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der List der Organisationseinheiten'));
+                dispatch(showApiErrorSnackbar(error, 'Fehler beim Laden der Liste der Organisationseinheiten'));
             });
     }, []);
 
@@ -96,11 +218,26 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={handleClose}
             maxWidth="lg"
             fullWidth={true}
+            sx={{
+                '& .MuiDialog-container': {
+                    alignItems: 'flex-start',
+                },
+                '& .MuiDialog-paper': {
+                    mt: {
+                        xs: 2,
+                        sm: 6,
+                    },
+                    mb: {
+                        xs: 2,
+                        sm: 4,
+                    },
+                },
+            }}
         >
-            <DialogTitleWithClose onClose={onClose}>
+            <DialogTitleWithClose onClose={handleClose}>
                 Einstellungen für diesen Prozess
             </DialogTitleWithClose>
 
@@ -116,24 +253,7 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     }}
                     value={currentTab}
                     onChange={(_, newValue) => {
-                        if (currentTab === 0 && newValue !== currentTab && hasUnsavedGeneralChanges) {
-                            dispatch(showWarningSnackbar('Bitte speichern Sie zuerst die Änderungen in den allgemeinen Einstellungen.'));
-                            return;
-                        }
-                        if (currentTab === 1 && newValue !== currentTab && hasUnsavedVersionChanges) {
-                            dispatch(showWarningSnackbar('Bitte speichern Sie zuerst die Änderungen in den versionsspezifischen Einstellungen.'));
-                            return;
-                        }
-                        if (currentTab === 2 && newValue !== currentTab && hasUnsavedProcessAccessChanges) {
-                            dispatch(showWarningSnackbar('Bitte speichern Sie zuerst die Änderungen in den Prozessberechtigungen.'));
-                            return;
-                        }
-                        if (currentTab === 3 && newValue !== currentTab && hasUnsavedProcessInstanceAccessPresetChanges) {
-                            dispatch(showWarningSnackbar('Bitte speichern Sie zuerst die Änderungen in den Berechtigungen für neue Vorgänge.'));
-                            return;
-                        }
-
-                        setCurrentTab(newValue);
+                        void handleTabChange(newValue);
                     }}
                 >
                     <Tab
@@ -146,11 +266,11 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     />
                     <Tab
                         value={2}
-                        label="Berechtigungen des Prozesses"
+                        label="Prozessberechtigungen"
                     />
                     <Tab
                         value={3}
-                        label="Berechtigungen für neue Vorgänge"
+                        label="Standardrechte für neue Vorgänge"
                     />
                     <Tab
                         value={4}
@@ -193,22 +313,26 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                     {
                         currentTab === 2 &&
                         <ProcessSettingsDialogProcessAccessTab
+                            ref={processAccessTabRef}
                             open={open}
                             process={renderProcess}
                             departments={departments}
                             teams={teams}
                             onUnsavedChangesChange={setHasUnsavedProcessAccessChanges}
+                            onSavingChange={setIsSavingProcessAccess}
                         />
                     }
                     {
                         currentTab === 3 &&
                         <ProcessSettingsDialogProcessInstanceAccessPresetTab
+                            ref={processInstanceAccessPresetTabRef}
                             open={open}
                             process={renderProcess}
                             version={renderVersion}
                             departments={departments}
                             teams={teams}
                             onUnsavedChangesChange={setHasUnsavedProcessInstanceAccessPresetChanges}
+                            onSavingChange={setIsSavingProcessInstanceAccessPreset}
                         />
                     }
                 </Box>
@@ -240,10 +364,46 @@ export function ProcessSettingsDialog(props: ProcessSettingsDialogProps) {
                         Speichern
                     </Button>
                 }
+                {
+                    currentTab === 2 &&
+                    <Button
+                        variant="contained"
+                        startIcon={<Save/>}
+                        disabled={!hasUnsavedProcessAccessChanges || isSavingProcessAccess}
+                        onClick={() => {
+                            processAccessTabRef.current?.save();
+                        }}
+                    >
+                        Speichern
+                    </Button>
+                }
+                {
+                    currentTab === 3 &&
+                    <Button
+                        variant="contained"
+                        startIcon={<Save/>}
+                        disabled={!hasUnsavedProcessInstanceAccessPresetChanges || isSavingProcessInstanceAccessPreset}
+                        onClick={() => {
+                            processInstanceAccessPresetTabRef.current?.save();
+                        }}
+                    >
+                        Speichern
+                    </Button>
+                }
+                {
+                    currentTab <= 3 &&
+                    <Button
+                        color="error"
+                        disabled={!hasCurrentTabUnsavedChanges || isSavingSettings}
+                        onClick={handleResetCurrentTab}
+                    >
+                        Zurücksetzen
+                    </Button>
+                }
                 <Box sx={{flexGrow: 1}}/>
                 <Button
-                    onClick={onClose}
-                    disabled={isSavingGeneralSettings || isSavingVersionSettings}
+                    onClick={handleClose}
+                    disabled={isSavingSettings}
                 >
                     Schließen
                 </Button>
