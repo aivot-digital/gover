@@ -494,10 +494,7 @@ class ManualActionNodeV1Test {
 
     private static AssignmentContextInputElementValue assignmentContext() {
         return new AssignmentContextInputElementValue()
-                .setDomainAndUserSelection(List.of(new DomainAndUserSelectInputElementValue("user", "user-1")))
-                .setPreferPreviousTaskAssignee(false)
-                .setPreferUninvolvedUser(false)
-                .setPreferProcessInstanceAssignee(false);
+                .setDomainAndUserSelection(List.of(new DomainAndUserSelectInputElementValue("user", "user-1")));
     }
 
     private static ElementDerivationService derivationService() {
@@ -623,6 +620,8 @@ class ManualActionNodeV1Test {
         public Optional<String> resolveAssignee(Integer processId,
                                                 Integer processVersion,
                                                 Long processInstanceId,
+                                                Integer currentProcessNodeId,
+                                                Long currentProcessInstanceTaskId,
                                                 Integer previousProcessNodeId,
                                                 String processInstanceAssignedUserId,
                                                 AssignmentContextInputElementValue assignmentContext,

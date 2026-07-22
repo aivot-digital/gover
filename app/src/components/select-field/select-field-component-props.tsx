@@ -15,6 +15,7 @@ export interface SelectFieldComponentProps {
     onChange: (val: string | null) => void;
     options: SelectFieldComponentOption[];
     emptyStatePlaceholder?: string;
+    includeEmptyOption?: boolean;
     sx?: SxProps<Theme>;
     startIcon?: React.ReactNode;
     endAction?: EndAction | Array<EndAction>;

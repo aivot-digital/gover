@@ -41,6 +41,10 @@ import {GenericListPropsFetchOptions} from '../../../../components/generic-list/
 import {useRequireSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {Permission} from '../../../../data/permissions/permission';
 import {OptionsSourceType} from '../../../../models/elements/form/input/options-source-type';
+import {
+    getAssignmentContextGeneralAssigneePreferenceLabel,
+    getAssignmentContextRepeatExecutionAssigneePreferenceLabel,
+} from '../../../../utils/assignment-context-preference-options';
 
 const dataObjectItemListPermissionCheck: GenericListPagePermissionConfig<DataObjectItem> = {
     scope: {
@@ -331,11 +335,9 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                                 .map((val) => formatDomainAndUserSelectValue(val));
 
                             const preferenceLabels = [
-                                assignmentContextValue.preferPreviousTaskAssignee === true ? 'Vorherige Bearbeiter:in bevorzugen' : null,
-                                assignmentContextValue.preferUninvolvedUser === true ? 'Unbeteiligte Mitarbeiter:in bevorzugen' : null,
-                                assignmentContextValue.preferProcessInstanceAssignee === true ? 'Vorgangszuweisung bevorzugen' : null,
-                            ]
-                                .filter((entry): entry is string => entry != null);
+                                getAssignmentContextGeneralAssigneePreferenceLabel(assignmentContextValue.generalAssigneePreference),
+                                getAssignmentContextRepeatExecutionAssigneePreferenceLabel(assignmentContextValue.repeatExecutionAssigneePreference),
+                            ].filter((entry): entry is string => entry != null);
 
                             return [...selectedLabels, ...preferenceLabels].join(', ');
                         case ElementType.Time:

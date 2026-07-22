@@ -20,21 +20,27 @@ class AssignmentContextAssigneeResolverServiceTest {
     private static final Integer PROCESS_ID = 42;
     private static final Integer PROCESS_VERSION = 3;
     private static final Long PROCESS_INSTANCE_ID = 99L;
+    private static final Integer CURRENT_NODE_ID = 88;
+    private static final Long CURRENT_TASK_ID = 123L;
     private static final Integer PREVIOUS_NODE_ID = 77;
     private static final String REQUIRED_PERMISSION = "process_instance.edit_task";
 
     private List<Object[]> accessRows;
     private ProcessInstanceTaskEntity previousTask;
+    private ProcessInstanceTaskEntity previousIterationTask;
     private List<ProcessInstanceTaskEntity> processInstanceTasks;
     private List<ProcessInstanceTaskEntity> activeTasks;
+    private Long capturedExcludedTaskId;
     private AssignmentContextAssigneeResolverService service;
 
     @BeforeEach
     void setUp() {
         accessRows = List.of();
         previousTask = null;
+        previousIterationTask = null;
         processInstanceTasks = List.of();
         activeTasks = List.of();
+        capturedExcludedTaskId = null;
 
         service = new AssignmentContextAssigneeResolverService(
                 createPotentialAccessRepository(),
@@ -59,6 +65,8 @@ class AssignmentContextAssigneeResolverServiceTest {
                 PROCESS_ID,
                 PROCESS_VERSION,
                 PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
                 null,
                 null,
                 assignmentContext(List.of(orgUnit("10"), team("20"))),
@@ -85,10 +93,12 @@ class AssignmentContextAssigneeResolverServiceTest {
                 PROCESS_ID,
                 PROCESS_VERSION,
                 PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
                 PREVIOUS_NODE_ID,
                 null,
                 assignmentContext(List.of(orgUnit("10")))
-                        .setPreferPreviousTaskAssignee(true),
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE),
                 List.of(REQUIRED_PERMISSION)
         );
 
@@ -107,10 +117,12 @@ class AssignmentContextAssigneeResolverServiceTest {
                 PROCESS_ID,
                 PROCESS_VERSION,
                 PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
                 null,
                 "user-2",
                 assignmentContext(List.of(orgUnit("10")))
-                        .setPreferProcessInstanceAssignee(true),
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PROCESS_INSTANCE_ASSIGNEE),
                 List.of(REQUIRED_PERMISSION)
         );
 
@@ -134,10 +146,179 @@ class AssignmentContextAssigneeResolverServiceTest {
                 PROCESS_ID,
                 PROCESS_VERSION,
                 PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
                 null,
                 null,
                 assignmentContext(List.of(orgUnit("10")))
-                        .setPreferUninvolvedUser(true),
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_UNINVOLVED_USER),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
+    void resolveAssignee_PrefersPreviousIterationAssigneeWhenConfigured() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        previousIterationTask = task("user-1");
+        activeTasks = List.of(
+                activeTask("user-1"),
+                activeTask("user-1"),
+                activeTask("user-2")
+        );
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID,
+                null,
+                assignmentContext(List.of(orgUnit("10")))
+                        .setRepeatExecutionAssigneePreference(AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_PREVIOUS_ITERATION_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-1"), result);
+        assertEquals(CURRENT_TASK_ID, capturedExcludedTaskId);
+    }
+
+    @Test
+    void resolveAssignee_IgnoresPreviousIterationAssigneeOutsideCandidates() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        previousIterationTask = task("user-3");
+        activeTasks = List.of(activeTask("user-1"));
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID,
+                null,
+                assignmentContext(List.of(orgUnit("10")))
+                        .setRepeatExecutionAssigneePreference(AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_PREVIOUS_ITERATION_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
+    void resolveAssignee_PrefersDifferentPreviousIterationAssigneeWhenConfigured() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-3", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        previousIterationTask = task("user-1");
+        activeTasks = List.of(
+                activeTask("user-2"),
+                activeTask("user-3"),
+                activeTask("user-3")
+        );
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID,
+                null,
+                assignmentContext(List.of(orgUnit("10")))
+                        .setRepeatExecutionAssigneePreference(AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_DIFFERENT_FROM_PREVIOUS_ITERATION_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+        assertEquals(CURRENT_TASK_ID, capturedExcludedTaskId);
+    }
+
+    @Test
+    void resolveAssignee_FallsBackWhenDifferentPreviousIterationAssigneeIsOnlyCandidate() {
+        accessRows = List.<Object[]>of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        previousIterationTask = task("user-1");
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID,
+                null,
+                assignmentContext(List.of(orgUnit("10")))
+                        .setRepeatExecutionAssigneePreference(AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_DIFFERENT_FROM_PREVIOUS_ITERATION_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-1"), result);
+    }
+
+    @Test
+    void resolveAssignee_AppliesGeneralPreferenceAfterDifferentPreviousIterationAssignee() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-3", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        previousIterationTask = task("user-1");
+        previousTask = task("user-2");
+        activeTasks = List.of(
+                activeTask("user-2"),
+                activeTask("user-2"),
+                activeTask("user-3")
+        );
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID,
+                null,
+                assignmentContext(List.of(orgUnit("10")))
+                        .setRepeatExecutionAssigneePreference(AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_DIFFERENT_FROM_PREVIOUS_ITERATION_ASSIGNEE)
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
+    void resolveAssignee_PrefersPreviousIterationBeforePreviousProcessStep() {
+        accessRows = List.of(
+                userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),
+                userRow("user-2", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+        previousTask = task("user-1");
+        previousIterationTask = task("user-2");
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                PREVIOUS_NODE_ID,
+                null,
+                assignmentContext(List.of(orgUnit("10")))
+                        .setRepeatExecutionAssigneePreference(AssignmentContextInputElementValue.REPEAT_EXECUTION_ASSIGNEE_PREFERENCE_PREVIOUS_ITERATION_ASSIGNEE)
+                        .setGeneralAssigneePreference(AssignmentContextInputElementValue.GENERAL_ASSIGNEE_PREFERENCE_PREVIOUS_PROCESS_STEP_ASSIGNEE),
                 List.of(REQUIRED_PERMISSION)
         );
 
@@ -146,10 +327,7 @@ class AssignmentContextAssigneeResolverServiceTest {
 
     private static AssignmentContextInputElementValue assignmentContext(List<DomainAndUserSelectInputElementValue> selection) {
         return new AssignmentContextInputElementValue()
-                .setDomainAndUserSelection(selection)
-                .setPreferPreviousTaskAssignee(false)
-                .setPreferUninvolvedUser(false)
-                .setPreferProcessInstanceAssignee(false);
+                .setDomainAndUserSelection(selection);
     }
 
     private static DomainAndUserSelectInputElementValue orgUnit(String id) {
@@ -203,6 +381,10 @@ class AssignmentContextAssigneeResolverServiceTest {
     private ProcessInstanceTaskRepository createProcessInstanceTaskRepository() {
         return proxy(ProcessInstanceTaskRepository.class, (methodName, args) -> switch (methodName) {
             case "findFirstByProcessInstanceIdAndProcessNodeIdOrderByStartedDesc" -> Optional.ofNullable(previousTask);
+            case "findFirstByProcessInstanceIdAndProcessNodeIdAndIdNotOrderByStartedDesc" -> {
+                capturedExcludedTaskId = (Long) args[2];
+                yield Optional.ofNullable(previousIterationTask);
+            }
             case "findAllByProcessInstanceId" -> processInstanceTasks;
             case "findAllByAssignedUserIdInAndStatusIn" -> activeTasks;
             default -> unsupported(methodName);

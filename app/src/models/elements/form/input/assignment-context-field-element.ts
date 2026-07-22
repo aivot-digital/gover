@@ -8,10 +8,20 @@ import {
 
 export interface AssignmentContextValue {
     domainAndUserSelection: DomainAndUserSelectItem[] | null | undefined;
-    preferPreviousTaskAssignee: boolean | null | undefined;
-    preferUninvolvedUser: boolean | null | undefined;
-    preferProcessInstanceAssignee: boolean | null | undefined;
+    generalAssigneePreference: GeneralAssigneePreference | null | undefined;
+    repeatExecutionAssigneePreference: RepeatExecutionAssigneePreference | null | undefined;
 }
+
+export type GeneralAssigneePreference =
+    | 'none'
+    | 'previousProcessStepAssignee'
+    | 'uninvolvedUser'
+    | 'processInstanceAssignee';
+
+export type RepeatExecutionAssigneePreference =
+    | 'none'
+    | 'previousIterationAssignee'
+    | 'differentFromPreviousIterationAssignee';
 
 export interface AssignmentContextFieldElement extends BaseInputElement<ElementType.AssignmentContext> {
     headline: string | null | undefined;
