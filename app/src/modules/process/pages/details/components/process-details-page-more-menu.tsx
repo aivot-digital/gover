@@ -8,7 +8,7 @@ import {ModuleIcons} from '../../../../../shells/staff/data/module-icons';
 import {ProcessActionMenu, type ProcessActionMenuItem} from './process-action-menu';
 import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
 
-export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances';
+export type ProcessDetailsPageMoreMenuEvent = 'export' | 'test' | 'instances' | 'notes';
 
 interface ProcessDetailsPageMoreMenuProps {
     anchorEl: null | HTMLElement;
@@ -70,6 +70,7 @@ const entries: Array<{
     {
         icon: <Comment/>,
         label: 'Übersicht der Notizen anzeigen',
+        event: 'notes',
     },
     'separator',
     {

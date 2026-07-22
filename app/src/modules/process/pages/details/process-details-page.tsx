@@ -97,6 +97,7 @@ import {
     ProcessInstanceAttachmentSetList,
 } from '../../components/process-instance-attachment-set-list';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
+import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
 
 export const SHOW_ERRORS_ROUTER_STATE = 'show-errors-on-load';
 
@@ -487,8 +488,11 @@ function getNodeProviderFromList(
     )) ?? null;
 }
 
-export function getProcessNodeEditURL(processId: number, processVersion: number, nodeId: number, searchParams?: URLSearchParams) {
-    return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}?${searchParams != null ? searchParams.toString() : ''}`;
+export function getProcessNodeEditURL(processId: number, processVersion: number, nodeId: number, searchParams?: URLSearchParams, tab?: string) {
+    const query = searchParams != null && searchParams.toString().length > 0 ? `?${searchParams.toString()}` : '';
+    const tabPath = tab == null ? '' : `/tabs/${tab}`;
+
+    return `/processes/${processId}/versions/${processVersion}/nodes/${nodeId}${tabPath}${query}`;
 }
 
 export function ProcessDetailsPage(): ReactNode {
@@ -544,6 +548,7 @@ export function ProcessDetailsPage(): ReactNode {
     const [showMenuAtEl, setShowMenuAtEl] = useState<HTMLElement | null>(null);
     const [showProcessInstanceEventsDialog, setShowProcessInstanceEventsDialog] = useState(false);
     const [showProcessTestClaimInstancesDialog, setShowProcessTestClaimInstancesDialog] = useState(false);
+    const [showProcessNotesOverviewDialog, setShowProcessNotesOverviewDialog] = useState(false);
     const showProcessDetailsPageSkeleton = useDelayedVisibility(
         isLoadingProcessFlow && processFlow == null,
         PROCESS_DETAILS_PAGE_SKELETON_DELAY,
@@ -1769,11 +1774,30 @@ export function ProcessDetailsPage(): ReactNode {
             case 'instances':
                 navigate(`/process-instances?processId=${processFlow?.definition.id}&processVersion=${processFlow?.version.processVersion}`);
                 break;
+            case 'notes':
+                setShowProcessNotesOverviewDialog(true);
+                break;
             default:
                 notImplemented();
                 break;
         }
     };
+
+    const handleSelectNodeFromNotesOverview = useCallback((node: ProcessNodeEntity): void => {
+        if (processFlow == null) {
+            return;
+        }
+
+        setShowProcessNotesOverviewDialog(false);
+        handleExpandEditorPane();
+        navigate(getProcessNodeEditURL(
+            processFlow.definition.id,
+            processFlow.version.processVersion,
+            node.id,
+            searchParams,
+            'more',
+        ));
+    }, [handleExpandEditorPane, navigate, processFlow, searchParams]);
 
     const handleOpenAddTriggerDialog = useCallback(() => {
         setShowAddTriggerDialog(true);
@@ -2734,6 +2758,16 @@ export function ProcessDetailsPage(): ReactNode {
                     setShowMenuAtEl(null);
                 }}
                 onMenuEvent={handleMenuEvent}
+            />
+
+            <ProcessNotesOverviewDialog
+                open={showProcessNotesOverviewDialog}
+                nodes={processFlow.nodes}
+                providerCache={flowNodeProviderCache}
+                onClose={() => {
+                    setShowProcessNotesOverviewDialog(false);
+                }}
+                onSelectNode={handleSelectNodeFromNotesOverview}
             />
 
             {
