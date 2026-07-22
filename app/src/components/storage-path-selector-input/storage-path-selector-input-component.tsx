@@ -37,12 +37,14 @@ interface StoragePathSelectorInputComponentProps {
     value?: StoragePathSelectorInputElementValue | null;
     onChange: (value: StoragePathSelectorInputElementValue | null) => void;
     allowedStorageProviderTypes?: StorageProviderType[] | null;
+    storageProviderSelectHint?: string | null;
     placeholder?: string | null;
     hint?: string;
     error?: string;
     disabled?: boolean;
     required?: boolean;
     readOnly?: boolean;
+    allowReadOnlyStorageProviders?: boolean;
 }
 
 interface StorageProviderOption {
@@ -50,6 +52,7 @@ interface StorageProviderOption {
     name: string;
     description?: string | null;
     type?: StorageProviderType | null;
+    readOnlyStorage?: boolean;
 }
 
 const ROOT_PATH = '/';
@@ -100,6 +103,7 @@ function toOption(provider: StorageProviderEntity): StorageProviderOption {
         name: provider.name,
         description: provider.description,
         type: provider.type,
+        readOnlyStorage: provider.readOnlyStorage,
     };
 }
 
@@ -109,12 +113,14 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
         value,
         onChange,
         allowedStorageProviderTypes,
+        storageProviderSelectHint,
         placeholder,
         hint,
         error,
         disabled,
         required,
         readOnly,
+        allowReadOnlyStorageProviders = false,
     } = props;
 
     const allowedTypes = useMemo(() => normalizeAllowedTypes(allowedStorageProviderTypes), [allowedStorageProviderTypes]);
@@ -191,9 +197,12 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
         ? ROOT_PATH
         : normalizeDirectoryPath(selectedPath) ?? ROOT_PATH;
     const isReadonlyOrDisabled = disabled === true || readOnly === true;
-    const canBrowse = !isReadonlyOrDisabled && value?.storageProviderId != null;
+    const selectedProviderIsReadOnlyDisabled = !allowReadOnlyStorageProviders && selectedProvider?.readOnlyStorage === true;
+    const canBrowse = !isReadonlyOrDisabled && !selectedProviderIsReadOnlyDisabled && value?.storageProviderId != null;
     const helperText = error ?? loadError ?? (
-        value?.storageProviderId != null && normalizeTypedPath(selectedPath) == null
+        selectedProviderIsReadOnlyDisabled
+            ? 'Dieser Speicheranbieter ist nur lesend und kann hier nicht ausgewählt werden.'
+            : value?.storageProviderId != null && normalizeTypedPath(selectedPath) == null
             ? 'Wählen Sie einen Ordner im Speicheranbieter aus.'
             : hint
     );
@@ -201,6 +210,10 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
     const handleProviderChange = (_: SyntheticEvent, provider: StorageProviderOption | null): void => {
         if (provider == null) {
             onChange(null);
+            return;
+        }
+
+        if (!allowReadOnlyStorageProviders && provider.readOnlyStorage === true) {
             return;
         }
 
@@ -263,6 +276,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                         value={selectedProvider}
                         isOptionEqualToValue={(option, selectedOption) => option.id === selectedOption.id}
                         getOptionLabel={(option) => option.name}
+                        getOptionDisabled={(option) => !allowReadOnlyStorageProviders && option.readOnlyStorage === true}
                         noOptionsText={allowedTypes.length === 0 ? 'Keine Speicheranbieter-Typen zugelassen' : 'Keine Speicheranbieter verfügbar'}
                         onChange={handleProviderChange}
                         renderOption={(optionProps, option, state) => (
@@ -301,7 +315,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                                 required={required}
                                 error={error != null}
                                 placeholder="Speicheranbieter auswählen"
-                                helperText={loadError}
+                                helperText={loadError ?? storageProviderSelectHint}
                                 InputProps={{
                                     ...params.InputProps,
                                     endAdornment: (
@@ -338,7 +352,7 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
                         placeholder={placeholder ?? 'Ordner auswählen'}
                         error={error != null}
                         helperText={helperText}
-                        disabled={disabled || value?.storageProviderId == null}
+                        disabled={disabled || selectedProviderIsReadOnlyDisabled || value?.storageProviderId == null}
                         fullWidth={true}
                         InputProps={{
                             readOnly: readOnly,

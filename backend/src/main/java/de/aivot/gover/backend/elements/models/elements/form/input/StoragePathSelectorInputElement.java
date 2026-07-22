@@ -20,7 +20,13 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
     private String placeholder;
 
     @Nullable
+    private String storageProviderSelectHint;
+
+    @Nullable
     private List<StorageProviderType> allowedStorageProviderTypes;
+
+    @Nullable
+    private Boolean allowReadOnlyStorageProviders;
 
     public StoragePathSelectorInputElement() {
         super(ElementType.StoragePathSelector);
@@ -90,12 +96,14 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
 
         StoragePathSelectorInputElement that = (StoragePathSelectorInputElement) o;
         return Objects.equals(placeholder, that.placeholder)
-                && Objects.equals(allowedStorageProviderTypes, that.allowedStorageProviderTypes);
+                && Objects.equals(storageProviderSelectHint, that.storageProviderSelectHint)
+                && Objects.equals(allowedStorageProviderTypes, that.allowedStorageProviderTypes)
+                && Objects.equals(allowReadOnlyStorageProviders, that.allowReadOnlyStorageProviders);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), placeholder, allowedStorageProviderTypes);
+        return Objects.hash(super.hashCode(), placeholder, storageProviderSelectHint, allowedStorageProviderTypes, allowReadOnlyStorageProviders);
     }
 
     @Nullable
@@ -109,12 +117,32 @@ public class StoragePathSelectorInputElement extends BaseInputElement<StoragePat
     }
 
     @Nullable
+    public String getStorageProviderSelectHint() {
+        return storageProviderSelectHint;
+    }
+
+    public StoragePathSelectorInputElement setStorageProviderSelectHint(@Nullable String storageProviderSelectHint) {
+        this.storageProviderSelectHint = storageProviderSelectHint;
+        return this;
+    }
+
+    @Nullable
     public List<StorageProviderType> getAllowedStorageProviderTypes() {
         return allowedStorageProviderTypes;
     }
 
     public StoragePathSelectorInputElement setAllowedStorageProviderTypes(@Nullable List<StorageProviderType> allowedStorageProviderTypes) {
         this.allowedStorageProviderTypes = allowedStorageProviderTypes;
+        return this;
+    }
+
+    @Nullable
+    public Boolean getAllowReadOnlyStorageProviders() {
+        return allowReadOnlyStorageProviders;
+    }
+
+    public StoragePathSelectorInputElement setAllowReadOnlyStorageProviders(@Nullable Boolean allowReadOnlyStorageProviders) {
+        this.allowReadOnlyStorageProviders = allowReadOnlyStorageProviders;
         return this;
     }
 }

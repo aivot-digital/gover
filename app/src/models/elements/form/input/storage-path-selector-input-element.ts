@@ -5,7 +5,9 @@ import {type AnyElement} from '../../any-element';
 
 export interface StoragePathSelectorInputElement extends BaseInputElement<ElementType.StoragePathSelector> {
     placeholder: string | null | undefined;
+    storageProviderSelectHint: string | null | undefined;
     allowedStorageProviderTypes: StorageProviderType[] | null | undefined;
+    allowReadOnlyStorageProviders: boolean | null | undefined;
 }
 
 export interface StoragePathSelectorInputElementValue {

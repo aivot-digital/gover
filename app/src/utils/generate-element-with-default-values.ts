@@ -517,7 +517,9 @@ const elementConstructors: {
         ...makeInputBase(ElementType.StoragePathSelector, id),
         label: 'Speicherpfad',
         placeholder: 'Ordner auswählen',
+        storageProviderSelectHint: undefined,
         allowedStorageProviderTypes: undefined,
+        allowReadOnlyStorageProviders: false,
     }),
     [ElementType.ProcessAttachmentDisplay]: (id) => ({
         ...makeFormBase(ElementType.ProcessAttachmentDisplay, id),

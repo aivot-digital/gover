@@ -35,6 +35,8 @@ export function StoragePathSelectorInputView(
             value={value}
             onChange={setValue}
             allowedStorageProviderTypes={element.allowedStorageProviderTypes}
+            allowReadOnlyStorageProviders={element.allowReadOnlyStorageProviders === true}
+            storageProviderSelectHint={element.storageProviderSelectHint}
             placeholder={element.placeholder}
             hint={element.hint ?? undefined}
             error={errors != null ? errors.join(' ') : undefined}

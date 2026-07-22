@@ -3,6 +3,7 @@ import {type BaseEditorProps} from './base-editor';
 import {type StoragePathSelectorInputElement} from '../models/elements/form/input/storage-path-selector-input-element';
 import {TextFieldComponent} from '../components/text-field/text-field-component';
 import {MultiCheckboxComponent} from '../components/multi-checkbox-field/multi-checkbox-component';
+import {CheckboxFieldComponent} from '../components/checkbox-field/checkbox-field-component';
 import {
     StorageProviderType,
     StorageProviderTypeLabels,
@@ -40,6 +41,34 @@ export function StoragePathSelectorInputFieldEditor(props: BaseEditorProps<Stora
                         });
                     }}
                     hint="Der Platzhalter wird angezeigt, solange noch kein Pfad ausgewählt wurde."
+                    disabled={!editable}
+                />
+            </Grid>
+
+            <Grid size={{xs: 12, lg: 6}}>
+                <TextFieldComponent
+                    label="Hinweis Speicheranbieter-Auswahl"
+                    value={element.storageProviderSelectHint}
+                    onChange={(value) => {
+                        onPatch({
+                            storageProviderSelectHint: value,
+                        });
+                    }}
+                    hint="Dieser Hinweis wird unter der Auswahl des Speicheranbieters angezeigt."
+                    disabled={!editable}
+                />
+            </Grid>
+
+            <Grid size={{xs: 12}}>
+                <CheckboxFieldComponent
+                    label="Read-only Speicheranbieter auswählbar"
+                    value={element.allowReadOnlyStorageProviders === true}
+                    onChange={(value) => {
+                        onPatch({
+                            allowReadOnlyStorageProviders: value,
+                        });
+                    }}
+                    hint="Wenn aktiviert, können auch nur lesende Speicheranbieter ausgewählt werden."
                     disabled={!editable}
                 />
             </Grid>
