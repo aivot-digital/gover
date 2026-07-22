@@ -1,5 +1,7 @@
 package de.aivot.gover.backend.models.config;
 
+import de.aivot.gover.backend.core.enums.ModuleFlags;
+import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -7,9 +9,7 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Configuration
@@ -30,6 +30,10 @@ public class GoverConfig {
     private List<String> bootstrapAdminMail;
     private String registryHostname;
     private String timezone;
+
+    private Map<ProcessNodeType, Integer> processNodeLimits;
+    private List<ModuleFlags> moduleFlags;
+
 
     public String getDefaultLogoUrl() {
         return createUrl("/assets/default-logo.png");
@@ -178,6 +182,59 @@ public class GoverConfig {
 
     public ZoneId getZoneId() {
         return ZoneId.of(timezone);
+    }
+
+    public boolean hasModuleFlag(ModuleFlags flag) {
+        return moduleFlags != null && moduleFlags.contains(flag);
+    }
+
+    public boolean isFormModuleEnabled() {
+        return hasModuleFlag(ModuleFlags.FORM);
+    }
+
+    public boolean isProcessModuleEnabled() {
+        return hasModuleFlag(ModuleFlags.PROCESS);
+    }
+
+    /**
+     * Missing limits are treated as unlimited so adding a new process node type or running with older
+     * configuration does not silently turn into a zero-capacity system.
+     */
+    public int getProcessNodeLimit(ProcessNodeType type) {
+        if (processNodeLimits == null) {
+            return -1;
+        }
+
+        var limit = processNodeLimits.get(type);
+        return limit != null ? limit : -1;
+    }
+
+    public boolean isProcessNodeTypeUnlimited(ProcessNodeType type) {
+        return isProcessModuleEnabled() || getProcessNodeLimit(type) < 0;
+    }
+
+    public List<ModuleFlags> getModuleFlags() {
+        if (moduleFlags == null) {
+            return new LinkedList<>();
+        }
+        return moduleFlags;
+    }
+
+    public GoverConfig setModuleFlags(List<ModuleFlags> moduleFlags) {
+        this.moduleFlags = moduleFlags;
+        return this;
+    }
+
+    public Map<ProcessNodeType, Integer> getProcessNodeLimits() {
+        if (processNodeLimits == null) {
+            return new HashMap<>();
+        }
+        return processNodeLimits;
+    }
+
+    public GoverConfig setProcessNodeLimits(Map<ProcessNodeType, Integer> processNodeLimits) {
+        this.processNodeLimits = processNodeLimits;
+        return this;
     }
 
     // endregion

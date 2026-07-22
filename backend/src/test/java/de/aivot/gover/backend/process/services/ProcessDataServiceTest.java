@@ -5,6 +5,7 @@ import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceAttachmentRepository;
@@ -127,15 +128,18 @@ class ProcessDataServiceTest {
         var attachmentSetRepository = mock(ProcessInstanceAttachmentSetRepository.class);
         when(attachmentSetRepository.findAllByProcessInstanceId(42L)).thenReturn(List.of(attachmentSet, taskAttachmentSet));
 
+        var currentTask = new ProcessInstanceTaskEntity().setId(99L);
+
         var data = new ProcessDataService(
                 taskRepository,
                 nodeRepository,
                 attachmentRepository,
                 attachmentSetRepository
-        ).foldProcessInstanceData(instance, null);
+        ).foldProcessInstanceData(instance, null, currentTask);
 
         var metadata = data.getProcessMetadata();
         assertFalse(metadata.containsKey("attachments"));
+        assertEquals(99L, metadata.get("currentTaskId"));
 
         @SuppressWarnings("unchecked")
         var attachmentSets = (Map<String, Object>) metadata.get("attachmentSets");

@@ -11,7 +11,7 @@ import {
     Typography,
 } from '@mui/material';
 import Assignment from '@aivot/mui-material-symbols-400-n25-outlined/Assignment';
-import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandMore from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {SearchInput} from '../../../components/search-input/search-input';
 import {KnownProviderIcons} from '../data/known-provider-icons';
@@ -45,6 +45,11 @@ const DEFAULT_EXPANDED_GROUPS: Record<ProcessNodeType, boolean> = {
     [ProcessNodeType.Termination]: true,
 };
 
+export interface ProcessNodeTypeLimit {
+    current: number;
+    limit: number;
+}
+
 interface SelectNodeProviderDialogProps {
     open: boolean;
     nodeProviders: ProcessNodeProvider[];
@@ -55,6 +60,8 @@ interface SelectNodeProviderDialogProps {
     primaryActionLabel?: string;
     primaryActionIcon?: ReactNode;
     titleActions?: Action[];
+    emptyFilteredMessage?: ReactNode;
+    nodeTypeLimits?: Partial<Record<ProcessNodeType, ProcessNodeTypeLimit>>;
 }
 
 function getProviderId(provider: ProcessNodeProvider): string {
@@ -103,6 +110,8 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
         primaryActionLabel = 'Hinzufügen',
         primaryActionIcon = <Add sx={{fontSize: 18}}/>,
         titleActions,
+        emptyFilteredMessage = 'Für diese Aktion stehen aktuell keine kompatiblen Prozesselemente zur Verfügung.',
+        nodeTypeLimits,
     } = props;
 
     const [currentTab, setCurrentTab] = useState(0);
@@ -115,6 +124,8 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
     const renderPrimaryActionLabel = useRetainedDialogValue(open, primaryActionLabel);
     const renderPrimaryActionIcon = useRetainedDialogValue(open, primaryActionIcon);
     const renderTitleActions = useRetainedDialogValue(open, titleActions);
+    const renderEmptyFilteredMessage = useRetainedDialogValue(open, emptyFilteredMessage);
+    const renderNodeTypeLimits = useRetainedDialogValue(open, nodeTypeLimits);
 
     const filteredNodeProviders = useMemo(() => (
         getFilteredNodeProviders(renderNodeProviders, renderFilter)
@@ -219,7 +230,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                     filteredNodeProviders.length === 0 &&
                     <Box sx={{mt: 2, px: 2}}>
                         <Alert severity="info">
-                            Für diese Aktion stehen aktuell keine kompatiblen Prozesselemente zur Verfügung.
+                            {renderEmptyFilteredMessage}
                         </Alert>
                     </Box>
                 }
@@ -239,6 +250,7 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                         const typeStyle = ProviderTypeStyles[type];
                         const isExpanded = search.trim().length > 0 ? true : expandedGroups[type];
                         const shouldShowExpandIcon = search.trim().length === 0;
+                        const nodeTypeLimit = renderNodeTypeLimits?.[type];
 
                         return (
                             <Accordion
@@ -312,6 +324,18 @@ export function SelectNodeProviderDialog(props: SelectNodeProviderDialogProps): 
                                                 color: typeStyle.textColor,
                                             }}
                                         />
+                                        {
+                                            nodeTypeLimit != null &&
+                                            <Chip
+                                                size="small"
+                                                variant="outlined"
+                                                label={`${nodeTypeLimit.current}/${nodeTypeLimit.limit}`}
+                                                sx={{
+                                                    borderColor: typeStyle.bgColor,
+                                                    color: typeStyle.textColor,
+                                                }}
+                                            />
+                                        }
                                     </Box>
                                 </AccordionSummary>
                                 <AccordionDetails sx={{p: 0}}>

@@ -5,7 +5,7 @@ import {IdentityProviderDetailsDTO} from '../../models/identity-provider-details
 import {IdentityProviderType} from '../../enums/identity-provider-type';
 import LinkOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Link';
 import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
-import SettingsSuggestOutlined from '@aivot/mui-material-symbols-400-n25-outlined/SettingsSuggest';
+import SettingsApplicationsOutlined from '@aivot/mui-material-symbols-400-n25-outlined/SettingsApplications';
 import {SamlMetadataDialog} from '../../../../dialogs/saml-metadata-dialog/saml-metadata-dialog';
 
 interface SetupInfoBlockProps {
@@ -123,7 +123,7 @@ function SetupInfoBlock({ title, description, links }: SetupInfoBlockProps) {
                         variant="contained"
                         color="primary"
                         onClick={handleFetchMetadata}
-                        startIcon={<SettingsSuggestOutlined />}
+                        startIcon={<SettingsApplicationsOutlined />}
                     >
                         Metadaten für Einrichtung auslesen
                     </Button>

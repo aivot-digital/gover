@@ -34,4 +34,6 @@ declare var AppConfig: {
         realm: string;
         clientId: string;
     },
+    moduleFlags: Array<'FORM' | 'PROCESS' | 'PORTAL'>,
+    processNodeLimits: Record<string, number>;
 };

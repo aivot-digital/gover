@@ -2,6 +2,7 @@ package de.aivot.gover.backend.elements.models.elements.form.input;
 
 import de.aivot.gover.backend.elements.models.elements.BaseInputElement;
 import de.aivot.gover.backend.elements.models.elements.PrintableElement;
+import de.aivot.gover.backend.elements.enums.OptionsSourceType;
 import de.aivot.gover.backend.enums.ConditionOperator;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.exceptions.ValidationException;
@@ -21,6 +22,12 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
 
     @Nullable
     private List<SelectInputElementOption> options;
+
+    @Nullable
+    private OptionsSourceType optionsSource;
+
+    @Nullable
+    private Integer codeListId;
 
     @Nullable
     private String dependsOnSelectFieldId;
@@ -153,6 +160,8 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
         return Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(autocomplete, that.autocomplete)
                 && Objects.equals(options, that.options)
+                && optionsSource == that.optionsSource
+                && Objects.equals(codeListId, that.codeListId)
                 && Objects.equals(dependsOnSelectFieldId, that.dependsOnSelectFieldId);
     }
 
@@ -162,6 +171,8 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
         result = 31 * result + Objects.hashCode(placeholder);
         result = 31 * result + Objects.hashCode(autocomplete);
         result = 31 * result + Objects.hashCode(options);
+        result = 31 * result + Objects.hashCode(optionsSource);
+        result = 31 * result + Objects.hashCode(codeListId);
         result = 31 * result + Objects.hashCode(dependsOnSelectFieldId);
         return result;
     }
@@ -197,6 +208,26 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
 
     public SelectInputElement setOptions(@Nullable List<SelectInputElementOption> options) {
         this.options = options;
+        return this;
+    }
+
+    @Nullable
+    public OptionsSourceType getOptionsSource() {
+        return optionsSource;
+    }
+
+    public SelectInputElement setOptionsSource(@Nullable OptionsSourceType optionsSource) {
+        this.optionsSource = optionsSource;
+        return this;
+    }
+
+    @Nullable
+    public Integer getCodeListId() {
+        return codeListId;
+    }
+
+    public SelectInputElement setCodeListId(@Nullable Integer codeListId) {
+        this.codeListId = codeListId;
         return this;
     }
 

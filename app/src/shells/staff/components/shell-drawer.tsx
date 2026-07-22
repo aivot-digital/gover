@@ -11,14 +11,14 @@ import {Actions} from '../../../components/actions/actions';
 import {useHotkeys} from 'react-hotkeys-hook';
 import {formatShortcut} from '../../../utils/format-shortcut';
 
-import KeyboardTabRtl from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardTabRtl';
+import LeftPanelClose from '@aivot/mui-material-symbols-400-n25-outlined/LeftPanelClose';
+import LeftPanelOpen from '@aivot/mui-material-symbols-400-n25-outlined/LeftPanelOpen';
 import SearchFilled from '@aivot/mui-material-symbols-400-n25-outlined/SearchFilled';
 import ChevronForward from '@aivot/mui-material-symbols-400-n25-outlined/ChevronForward';
 import KeyboardArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import Notifications from '@aivot/mui-material-symbols-400-n25-outlined/Notifications';
 import ForwardToInbox from '@aivot/mui-material-symbols-400-n25-outlined/ForwardToInbox';
 import PageInfo from '@aivot/mui-material-symbols-400-n25-outlined/PageInfo';
-import Start from '@aivot/mui-material-symbols-400-n25-outlined/Start';
 import ShellDrawerLogo from './shell-drawer-logo';
 import ShellDrawerUserIcon from './shell-drawer-user-icon';
 import SimpleBar from 'simplebar-react';
@@ -41,6 +41,7 @@ import {selectPermissions, selectUser} from '../../../slices/user-slice';
 import {AUDIT_LOG_READ_PERMISSION} from '../../../modules/audit/constants/audit-permissions';
 import {ProcessInstanceTaskApiService} from '../../../modules/process/services/process-instance-task-api-service';
 import {subscribeProcessAssignedTaskCountRefreshEvent} from '../../../modules/process/utils/process-assigned-task-count-events';
+import {hasModuleFlag, ModuleFlag} from '../../../utils/module-flags';
 
 export const COLLAPSED_DRAWER_WIDTH_REM = '4.25rem';
 export const EXPANDED_DRAWER_WIDTH_REM = '16.25rem';
@@ -62,6 +63,7 @@ export interface DrawerItem {
     chipContent?: ReactNode;
     disabled?: boolean;
     requiredSystemPermission?: string;
+    requiredModuleFlag?: ModuleFlag;
 }
 
 const drawerModuleIcon = (name: keyof typeof ModuleIcons): Pick<DrawerItem, 'icon' | 'activeIcon'> => ({
@@ -107,6 +109,7 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 ...drawerModuleIcon('forms'),
                 label: 'Formulare',
                 to: '/forms',
+                requiredModuleFlag: ModuleFlag.Form,
             },
             {
                 ...drawerModuleIcon('dataObjects'),
@@ -160,6 +163,11 @@ const BaseDrawerGroups: DrawerGroup[] = [
                 ...drawerModuleIcon('dataModels'),
                 label: 'Datenmodelle',
                 to: '/data-models',
+            },
+            {
+                icon: ModuleIcons.codeLists,
+                label: 'Codelisten',
+                to: '/code-lists',
             },
             {
                 ...drawerModuleIcon('settings'),
@@ -282,6 +290,10 @@ export function ShellDrawer() {
         const filterByPermission = (items: DrawerItem[]): DrawerItem[] => {
             return items
                 .filter((item) => {
+                    if (item.requiredModuleFlag != null && !hasModuleFlag(item.requiredModuleFlag)) {
+                        return false;
+                    }
+
                     if (item.requiredSystemPermission == null) {
                         return true;
                     }
@@ -592,8 +604,8 @@ export function ShellDrawer() {
                                 direction={minimizeDrawer ? 'column' : 'row'}
                                 actions={[
                                     {
-                                        tooltip: minimizeDrawer ? 'Maximieren' : 'Minimieren',
-                                        icon: minimizeDrawer ? <Start /> : <KeyboardTabRtl />,
+                                        tooltip: minimizeDrawer ? 'Seitenleiste maximieren' : 'Seitenleiste minimieren',
+                                        icon: minimizeDrawer ? <LeftPanelOpen /> : <LeftPanelClose />,
                                         onClick: handleToggleDrawer,
                                     },
                                 ]}

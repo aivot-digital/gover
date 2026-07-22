@@ -21,6 +21,7 @@ import ArrowUpward from '@aivot/mui-material-symbols-400-n25-outlined/ArrowUpwar
 import Settings from '@aivot/mui-material-symbols-400-n25-outlined/Settings';
 import {useElementEditorNavigation} from '../../../hooks/use-element-editor-navigation';
 import {ConfigLayoutElement} from '../../../models/elements/form/layout/config-layout-element';
+import {OptionsSourceType} from '../../../models/elements/form/input/options-source-type';
 
 export function NodeConfigMaker() {
     const {
@@ -208,7 +209,11 @@ function createPOJO(layout: AnyElementWithChildren, indent: number = 0): string 
             } else if (isAnyInputElement(child)) {
                 const lines: string[] = [];
 
-                if ((child.type === ElementType.Select || child.type === ElementType.Radio || child.type === ElementType.MultiCheckbox) && child.options != null) {
+                if (
+                    (child.type === ElementType.Select || child.type === ElementType.Radio || child.type === ElementType.MultiCheckbox) &&
+                    (child.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.Manual &&
+                    child.options != null
+                ) {
                     lines.push(
                         ...child
                             .options

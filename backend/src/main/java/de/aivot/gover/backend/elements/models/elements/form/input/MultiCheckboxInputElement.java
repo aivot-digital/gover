@@ -2,6 +2,7 @@ package de.aivot.gover.backend.elements.models.elements.form.input;
 
 import de.aivot.gover.backend.elements.models.elements.BaseInputElement;
 import de.aivot.gover.backend.elements.models.elements.PrintableElement;
+import de.aivot.gover.backend.elements.enums.OptionsSourceType;
 import de.aivot.gover.backend.enums.ConditionOperator;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.exceptions.RequiredValidationException;
@@ -17,6 +18,12 @@ import java.util.Objects;
 public class MultiCheckboxInputElement extends BaseInputElement<List<String>> implements PrintableElement<List<String>> {
     @Nullable
     private List<MultiCheckboxInputElementOption> options;
+
+    @Nullable
+    private OptionsSourceType optionsSource;
+
+    @Nullable
+    private Integer codeListId;
 
     @Nullable
     private Integer minimumRequiredOptions;
@@ -55,8 +62,24 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
         return value.stream()
                 .filter(Objects::nonNull)
+                .map(this::toOptionLabel)
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("Keine Auswahl getroffen");
+    }
+
+    @Nonnull
+    private String toOptionLabel(@Nonnull String value) {
+        if (options == null) {
+            return value;
+        }
+
+        for (var option : options) {
+            if (Objects.equals(option.getValue(), value) && StringUtils.isNotNullOrEmpty(option.getLabel())) {
+                return option.getLabel();
+            }
+        }
+
+        return value;
     }
 
     private void testValuesInOptions(@Nonnull List<String> values) throws ValidationException {
@@ -143,13 +166,19 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         if (!super.equals(o)) return false;
 
         MultiCheckboxInputElement that = (MultiCheckboxInputElement) o;
-        return Objects.equals(options, that.options) && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions) && Objects.equals(displayInline, that.displayInline);
+        return Objects.equals(options, that.options)
+                && optionsSource == that.optionsSource
+                && Objects.equals(codeListId, that.codeListId)
+                && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions)
+                && Objects.equals(displayInline, that.displayInline);
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(options);
+        result = 31 * result + Objects.hashCode(optionsSource);
+        result = 31 * result + Objects.hashCode(codeListId);
         result = 31 * result + Objects.hashCode(minimumRequiredOptions);
         result = 31 * result + Objects.hashCode(displayInline);
         return result;
@@ -166,6 +195,26 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
 
     public MultiCheckboxInputElement setOptions(@Nullable List<MultiCheckboxInputElementOption> options) {
         this.options = options;
+        return this;
+    }
+
+    @Nullable
+    public OptionsSourceType getOptionsSource() {
+        return optionsSource;
+    }
+
+    public MultiCheckboxInputElement setOptionsSource(@Nullable OptionsSourceType optionsSource) {
+        this.optionsSource = optionsSource;
+        return this;
+    }
+
+    @Nullable
+    public Integer getCodeListId() {
+        return codeListId;
+    }
+
+    public MultiCheckboxInputElement setCodeListId(@Nullable Integer codeListId) {
+        this.codeListId = codeListId;
         return this;
     }
 

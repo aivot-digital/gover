@@ -5,6 +5,10 @@ import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElement;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
+import de.aivot.gover.backend.core.enums.ModuleFlags;
+import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.models.config.GoverConfig;
+import de.aivot.gover.backend.plugins.form.FormPlugin;
 import de.aivot.gover.backend.process.entities.ProcessEdgeEntity;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
@@ -39,6 +43,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -52,6 +58,7 @@ class ProcessNodeServiceTest {
     private ProcessRepository processRepository;
     private ProcessVersionRepository processVersionRepository;
     private ElementDerivationService elementDerivationService;
+    private GoverConfig goverConfig;
 
     private ProcessNodeService service;
 
@@ -62,25 +69,36 @@ class ProcessNodeServiceTest {
         processRepository = mock(ProcessRepository.class);
         processVersionRepository = mock(ProcessVersionRepository.class);
         elementDerivationService = mock(ElementDerivationService.class);
-        var userService = mock(UserService.class);
+        goverConfig = new GoverConfig();
 
         var definitionService = new ProcessNodeDefinitionService(List.of(new HintingTestNodeDefinition()));
 
-        service = new ProcessNodeService(
-                processNodeRepository,
+        service = createService(
                 definitionService,
-                elementDerivationService,
-                userService,
-                processRepository,
-                processVersionRepository,
-                processEdgeRepository
+                goverConfig
         );
 
         when(processRepository.findById(PROCESS_ID)).thenReturn(Optional.of(createProcess()));
         when(processVersionRepository.findById(ProcessVersionEntityId.of(PROCESS_ID, PROCESS_VERSION)))
                 .thenReturn(Optional.of(createProcessVersion()));
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of());
         when(elementDerivationService.derive(any()))
                 .thenReturn(new DerivedRuntimeElementData());
+    }
+
+    private ProcessNodeService createService(ProcessNodeDefinitionService definitionService,
+                                             GoverConfig config) {
+        return new ProcessNodeService(
+                processNodeRepository,
+                definitionService,
+                elementDerivationService,
+                mock(UserService.class),
+                processRepository,
+                processVersionRepository,
+                processEdgeRepository,
+                config
+        );
     }
 
     @Test
@@ -218,6 +236,52 @@ class ProcessNodeServiceTest {
         );
     }
 
+    @Test
+    void create_ShouldRejectWhenNodeTypeLimitIsReached() {
+        goverConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 1));
+        when(processNodeRepository.findAllByProcessIdAndProcessVersion(PROCESS_ID, PROCESS_VERSION))
+                .thenReturn(List.of(createNode(1, "existing")));
+
+        var exception = assertThrows(ResponseException.class, () -> service.create(createNode(2, "new")));
+
+        assertTrue(exception.getMessage().contains("maximal 1"));
+    }
+
+    @Test
+    void create_ShouldAllowNegativeNodeTypeLimit() throws Exception {
+        goverConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, -1));
+        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create(createNode(2, "new"));
+
+        assertEquals("new", result.getDataKey());
+    }
+
+    @Test
+    void create_ShouldAllowLimitedNodeTypeWhenProcessFlagIsSet() throws Exception {
+        goverConfig.setModuleFlags(List.of(ModuleFlags.PROCESS));
+        goverConfig.setProcessNodeLimits(Map.of(ProcessNodeType.Action, 0));
+        when(processNodeRepository.save(any(ProcessNodeEntity.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        var result = service.create(createNode(2, "new"));
+
+        assertEquals("new", result.getDataKey());
+    }
+
+    @Test
+    void validateNewProcessNodeBatch_ShouldRejectDisabledFormPluginNodes() {
+        var formService = createService(
+                new ProcessNodeDefinitionService(List.of(new FormTestNodeDefinition())),
+                new GoverConfig()
+        );
+
+        var exception = assertThrows(ResponseException.class, () -> formService.validateNewProcessNodeBatch(List.of(createFormNode())));
+
+        assertTrue(exception.getMessage().contains("Formularerweiterung"));
+    }
+
     private ProcessEntity createProcess() {
         return new ProcessEntity()
                 .setId(PROCESS_ID)
@@ -247,6 +311,20 @@ class ProcessNodeServiceTest {
                 .setName("Node " + id)
                 .setDataKey(dataKey)
                 .setProcessNodeDefinitionKey("test.process.hint-node")
+                .setProcessNodeDefinitionVersion(1)
+                .setConfiguration(new AuthoredElementValues())
+                .setOutputMappings(new HashMap<>())
+                .setSavedWithErrors(false);
+    }
+
+    private ProcessNodeEntity createFormNode() {
+        return new ProcessNodeEntity()
+                .setId(1)
+                .setProcessId(PROCESS_ID)
+                .setProcessVersion(PROCESS_VERSION)
+                .setName("Form node")
+                .setDataKey("form")
+                .setProcessNodeDefinitionKey("de.aivot.form.form-trigger")
                 .setProcessNodeDefinitionVersion(1)
                 .setConfiguration(new AuthoredElementValues())
                 .setOutputMappings(new HashMap<>())
@@ -410,6 +488,64 @@ class ProcessNodeServiceTest {
         public Map<String, List<String>> validateConfiguration(@Nonnull ProcessNodeEntity processNodeEntity,
                                                                @Nonnull TestNodeConfig configuration) {
             return Map.of(FIELD_ID, List.of("First error.", "Second error."));
+        }
+
+        @Override
+        public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<TestNodeConfig> context) {
+            return new ProcessNodeExecutionResultTaskCompleted();
+        }
+
+        @Nonnull
+        @Override
+        public Class<TestNodeConfig> getNodeConfigurationClass() {
+            return TestNodeConfig.class;
+        }
+
+        public static class TestNodeConfig {
+        }
+    }
+
+    private static final class FormTestNodeDefinition implements ProcessNodeDefinition<FormTestNodeDefinition.TestNodeConfig> {
+        @Nonnull
+        @Override
+        public String getParentPluginKey() {
+            return FormPlugin.PLUGIN_KEY;
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentKey() {
+            return "form-trigger";
+        }
+
+        @Nonnull
+        @Override
+        public String getComponentVersion() {
+            return "1.0.0";
+        }
+
+        @Nonnull
+        @Override
+        public String getName() {
+            return "Form trigger";
+        }
+
+        @Nonnull
+        @Override
+        public String getDescription() {
+            return "Test form trigger.";
+        }
+
+        @Nonnull
+        @Override
+        public ProcessNodeType getType() {
+            return ProcessNodeType.Trigger;
+        }
+
+        @Nonnull
+        @Override
+        public List<ProcessNodePort> getPorts() {
+            return List.of();
         }
 
         @Override

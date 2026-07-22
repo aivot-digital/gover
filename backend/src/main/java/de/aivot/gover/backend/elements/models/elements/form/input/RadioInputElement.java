@@ -2,6 +2,7 @@ package de.aivot.gover.backend.elements.models.elements.form.input;
 
 import de.aivot.gover.backend.elements.models.elements.BaseInputElement;
 import de.aivot.gover.backend.elements.models.elements.PrintableElement;
+import de.aivot.gover.backend.elements.enums.OptionsSourceType;
 import de.aivot.gover.backend.enums.ConditionOperator;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.exceptions.ValidationException;
@@ -15,6 +16,12 @@ import java.util.Objects;
 public class RadioInputElement extends BaseInputElement<String> implements PrintableElement<String> {
     @Nullable
     private List<RadioInputElementOption> options;
+
+    @Nullable
+    private OptionsSourceType optionsSource;
+
+    @Nullable
+    private Integer codeListId;
 
     @Nullable
     private Boolean displayInline;
@@ -42,6 +49,15 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
         if (value == null || value.isEmpty()) {
             return "Keine Auswahl getroffen";
         }
+
+        if (options != null) {
+            for (var option : options) {
+                if (Objects.equals(option.getValue(), value) && StringUtils.isNotNullOrEmpty(option.getLabel())) {
+                    return option.getLabel();
+                }
+            }
+        }
+
         return value;
     }
 
@@ -116,6 +132,8 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
 
         RadioInputElement that = (RadioInputElement) o;
         return Objects.equals(options, that.options)
+                && optionsSource == that.optionsSource
+                && Objects.equals(codeListId, that.codeListId)
                 && Objects.equals(displayInline, that.displayInline)
                 && Objects.equals(toggleButtons, that.toggleButtons);
     }
@@ -124,6 +142,8 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
     public int hashCode() {
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(options);
+        result = 31 * result + Objects.hashCode(optionsSource);
+        result = 31 * result + Objects.hashCode(codeListId);
         result = 31 * result + Objects.hashCode(displayInline);
         result = 31 * result + Objects.hashCode(toggleButtons);
         return result;
@@ -140,6 +160,26 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
 
     public RadioInputElement setOptions(@Nullable List<RadioInputElementOption> options) {
         this.options = options;
+        return this;
+    }
+
+    @Nullable
+    public OptionsSourceType getOptionsSource() {
+        return optionsSource;
+    }
+
+    public RadioInputElement setOptionsSource(@Nullable OptionsSourceType optionsSource) {
+        this.optionsSource = optionsSource;
+        return this;
+    }
+
+    @Nullable
+    public Integer getCodeListId() {
+        return codeListId;
+    }
+
+    public RadioInputElement setCodeListId(@Nullable Integer codeListId) {
+        this.codeListId = codeListId;
         return this;
     }
 

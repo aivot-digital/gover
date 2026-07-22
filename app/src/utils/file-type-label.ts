@@ -13,6 +13,7 @@ const typeMap: Record<string, string> = {
     'text/plain': 'Textdatei (.txt)',
     'text/rtf': 'RTF-Dokument',
     'text/markdown': 'Markdown-Datei',
+    'text/csv': 'CSV-Datei',
 
     // Images
     'image/jpeg': 'JPEG-Bild',

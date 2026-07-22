@@ -14,7 +14,7 @@ import {
     Typography,
 } from '@mui/material';
 import React from 'react';
-import ExpandMoreIcon from '@aivot/mui-material-symbols-400-n25-outlined/ExpandMore';
+import ExpandMoreIcon from '@aivot/mui-material-symbols-400-n25-outlined/KeyboardArrowDown';
 import ContentCopy from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
 import {CopyToClipboardButton} from '../../../components/copy-to-clipboard-button/copy-to-clipboard-button';
 

@@ -6,6 +6,7 @@ import {ElementWithParents, flattenElementsWithParents} from './flatten-elements
 import {getElementNameForType} from '../data/element-type/element-names';
 import {isAnyInputElement} from '../models/elements/form/input/any-input-element';
 import {isReplicatingContainerLayout} from '../models/elements/form/layout/replicating-container-layout';
+import {OptionsSourceType} from '../models/elements/form/input/options-source-type';
 
 export function createLowCodeContextType(rootElement: AnyElement) {
     const relevantElements = flattenElementsWithParents(rootElement, [], false);
@@ -114,6 +115,9 @@ function elementToValueType(element: AnyElement): string {
             return '{latitude: number | null | undefined; longitude: number | null | undefined; address: string | null | undefined}';
         case ElementType.Radio:
         case ElementType.Select:
+            if ((element.optionsSource ?? OptionsSourceType.Manual) === OptionsSourceType.CodeList) {
+                return 'string';
+            }
             return element.options
                 ?.map((option) => `'${typeof option === 'string' ? option : option.value}'`)
                 .join(' | ') ?? 'string';

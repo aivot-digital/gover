@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {Box, Button, Dialog, DialogActions, DialogContent, Stack, Typography} from '@mui/material';
 import ContentCopyOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ContentCopy';
-import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FileDownload';
+import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {format} from 'date-fns';
 import {DialogTitleWithClose} from '../../components/dialog-title-with-close/dialog-title-with-close';
 import {type HealthData, type HealthDataComponents} from '../../models/dtos/health-data';
@@ -230,6 +230,8 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             `- registryHostname: ${AppConfig.registryHostname}`,
             `- applicationTimeZone: ${AppConfig.applicationTimeZone}`,
             `- sentryDsnConfigured: ${toDebugBooleanString(AppConfig.sentryDsn.length > 0)}`,
+            `- moduleFlags: ${AppConfig.moduleFlags.join(', ')}`,
+            `- processNodeLimits: ${JSON.stringify(AppConfig.processNodeLimits)}`,
             `- page: ${window.location.origin}${window.location.pathname}`,
             '',
             '## health',
