@@ -14,6 +14,7 @@ public class ProcessInstancePermissionProvider implements PermissionProvider {
     public static final String PROCESS_INSTANCE_UPDATE = "process_instance.update";
     public static final String PROCESS_INSTANCE_DELETE = "process_instance.delete";
     public static final String PROCESS_INSTANCE_PAUSE_RESUME = "process_instance.pause_resume";
+    public static final String PROCESS_INSTANCE_EDIT_DATA = "process_instance.edit_data";
     public static final String PROCESS_INSTANCE_REASSIGN = "process_instance.reassign";
     public static final String PROCESS_INSTANCE_COMMUNICATION_INTERNAL = "process_instance.communication.internal";
     public static final String PROCESS_INSTANCE_COMMUNICATION_EXTERNAL = "process_instance.communication.external";
@@ -33,6 +34,7 @@ public class ProcessInstancePermissionProvider implements PermissionProvider {
                 PermissionEntry.of(PROCESS_INSTANCE_UPDATE, "Vorgang bearbeiten", "Erlaubt das Bearbeiten von Vorgängen."),
                 PermissionEntry.of(PROCESS_INSTANCE_DELETE, "Vorgang löschen", "Erlaubt das Löschen von Vorgängen."),
                 PermissionEntry.of(PROCESS_INSTANCE_PAUSE_RESUME, "Vorgang pausieren/fortsetzen", "Erlaubt das Pausieren und Fortsetzen von Vorgängen."),
+                PermissionEntry.of(PROCESS_INSTANCE_EDIT_DATA, "Vorgangsdaten bearbeiten", "Erlaubt das manuelle Bearbeiten von Daten innerhalb eines Vorgangs."),
                 PermissionEntry.of(PROCESS_INSTANCE_REASSIGN, "Vorgang neu zuweisen", "Erlaubt das Zuweisen eines Vorgangs an andere Benutzer:innen."),
                 PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_INTERNAL, "Interne Kommunikation", "Erlaubt die interne Kommunikation innerhalb eines Vorgangs."),
                 PermissionEntry.of(PROCESS_INSTANCE_COMMUNICATION_EXTERNAL, "Externe Kommunikation", "Erlaubt die externe Kommunikation aus einem Vorgang heraus."),

@@ -155,10 +155,10 @@ export function ProcessSettingsDialogProcessInstanceAccessPresetTab(props: Proce
         new PermissionApiService()
             .listPermissions()
             .then((permissionProviders) => {
-                const processPermissions = permissionProviders
-                    .find((p) => p.contextLabel === 'Prozesse');
-                if (processPermissions) {
-                    setPermissions(processPermissions.permissions.filter(p => relevantPermissions.includes(p.permission)));
+                const processInstancePermissions = permissionProviders
+                    .find((p) => p.contextLabel === 'Vorgänge');
+                if (processInstancePermissions) {
+                    setPermissions(processInstancePermissions.permissions.filter(p => relevantPermissions.includes(p.permission)));
                 } else {
                     setPermissions([]);
                 }

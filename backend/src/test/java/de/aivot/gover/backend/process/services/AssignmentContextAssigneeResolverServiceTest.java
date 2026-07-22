@@ -77,6 +77,28 @@ class AssignmentContextAssigneeResolverServiceTest {
     }
 
     @Test
+    void resolveAssignee_IgnoresCandidateWithoutRequiredProcessAccess() {
+        accessRows = List.of(
+                userRow("user-1", null, 20, true, List.of(REQUIRED_PERMISSION), List.of()),
+                userRow("user-2", null, 20, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION))
+        );
+
+        var result = service.resolveAssignee(
+                PROCESS_ID,
+                PROCESS_VERSION,
+                PROCESS_INSTANCE_ID,
+                CURRENT_NODE_ID,
+                CURRENT_TASK_ID,
+                null,
+                null,
+                assignmentContext(List.of(team("20"))),
+                List.of(REQUIRED_PERMISSION)
+        );
+
+        assertEquals(Optional.of("user-2"), result);
+    }
+
+    @Test
     void resolveAssignee_PrefersPreviousTaskAssigneeWhenConfigured() {
         accessRows = List.of(
                 userRow("user-1", 10, null, true, List.of(REQUIRED_PERMISSION), List.of(REQUIRED_PERMISSION)),

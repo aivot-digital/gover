@@ -27,6 +27,8 @@ public class ProcessPermissionProvider implements PermissionProvider {
     @Deprecated
     public static final String PROCESS_INSTANCE_DELETE = ProcessInstancePermissionProvider.PROCESS_INSTANCE_DELETE;
     @Deprecated
+    public static final String PROCESS_INSTANCE_EDIT_DATA = ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_DATA;
+    @Deprecated
     public static final String PROCESS_INSTANCE_EDIT_TASK = ProcessInstancePermissionProvider.PROCESS_INSTANCE_EDIT_TASK;
 
 

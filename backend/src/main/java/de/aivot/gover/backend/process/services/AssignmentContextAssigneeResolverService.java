@@ -70,7 +70,7 @@ public class AssignmentContextAssigneeResolverService {
                 .filter(PotentialAccessRow::isUserRow)
                 .filter(row -> Boolean.TRUE.equals(row.userIsEnabled()))
                 .filter(row -> Boolean.TRUE.equals(row.userIsDirectMember()))
-                .filter(row -> hasRequiredPermissions(row.userDirectPermissions(), normalizedRequiredPermissions))
+                .filter(row -> hasRequiredPermissions(row.permissions(), normalizedRequiredPermissions))
                 .toList();
 
         if (eligibleUserRows.isEmpty()) {
