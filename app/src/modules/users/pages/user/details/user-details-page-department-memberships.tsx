@@ -1,4 +1,4 @@
-import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useContext, useMemo, useRef, useState} from 'react';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -25,9 +25,7 @@ import {
 import {Button} from "@mui/material";
 import Add from '@aivot/mui-material-symbols-400-n25-outlined/Add';
 import {VDepartmentShadowedEntity} from "../../../../departments/entities/v-department-shadowed-entity";
-import {SearchBaseDialog} from "../../../../../dialogs/search-base-dialog/search-base-dialog";
-import {getDepartmentPath, getDepartmentTypeIcons} from "../../../../departments/utils/department-utils";
-import {VDepartmentShadowedApiService} from "../../../../departments/services/v-department-shadowed-api-service";
+import {SelectDepartmentDialog} from '../../../../departments/dialogs/select-department-dialog';
 import {useAppDispatch} from "../../../../../hooks/use-app-dispatch";
 import {showApiErrorSnackbar, showErrorSnackbar} from "../../../../../slices/snackbar-slice";
 import {UserRolesAssignmentDialog} from "../../../../user-roles/components/user-roles-assignment-dialog";
@@ -66,7 +64,6 @@ export function UserDetailsPageDepartmentMemberships() {
         item: user,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
 
-    const [availableDepartments, setAvailableDepartments] = useState<VDepartmentShadowedEntity[]>();
     const [showSelectNewDepartmentDialog, setShowSelectNewDepartmentDialog] = useState(false);
     const [showSelectRolesDialogForDepartment, setShowSelectRolesDialogForDepartment] = useState<VDepartmentShadowedEntity | null>(null);
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
@@ -101,40 +98,6 @@ export function UserDetailsPageDepartmentMemberships() {
                 'Die Berechtigungen konnten nach der Änderung der Organisationseinheitsmitgliedschaft nicht aktualisiert werden.',
             )));
     };
-
-    useEffect(() => {
-        if (!canOpenSelectNewDepartmentDialog) {
-            setAvailableDepartments(undefined);
-            return undefined;
-        }
-
-        let isActive = true;
-
-        new VDepartmentShadowedApiService()
-            .listAll({
-                includeAncestors: true,
-            })
-            .then(({content}) => {
-                if (!isActive) {
-                    return;
-                }
-
-                setAvailableDepartments(content.filter((department) => hasDepartmentPermission(
-                    permissions,
-                    department.id,
-                    Permission.DEPARTMENT_MEMBERSHIP_CREATE,
-                )));
-            })
-            .catch((err) => {
-                if (isActive) {
-                    dispatch(showApiErrorSnackbar(err, 'Beim Laden der verfügbaren Organisationseinheiten ist ein Fehler aufgetreten.'));
-                }
-            });
-
-        return () => {
-            isActive = false;
-        };
-    }, [canOpenSelectNewDepartmentDialog, dispatch, permissions]);
 
     const preSearchElements = useMemo(() => {
         return [
@@ -396,28 +359,22 @@ export function UserDetailsPageDepartmentMemberships() {
                 />
             </Box>
 
-            <SearchBaseDialog
+            <SelectDepartmentDialog
                 open={showSelectNewDepartmentDialog}
                 onClose={() => {
                     setShowSelectNewDepartmentDialog(false);
                 }}
                 title="Organisationseinheit auswählen"
-                tabs={[{
-                    title: 'Alle',
-                    options: availableDepartments ?? [],
-                    onSelect: (dep) => {
-                        setShowSelectRolesDialogForDepartment(dep);
-                        setShowSelectNewDepartmentDialog(false);
-                    },
-                    searchPlaceholder: 'Organisationseinheit suchen',
-                    searchKeys: ['name'],
-                    primaryTextKey: 'name',
-                    secondaryTextKey: (option) => getDepartmentPath(option),
-                    getId: o => String(o.id),
-                    getIcon: (option) => {
-                        return getDepartmentTypeIcons(option.depth);
-                    },
-                }]}
+                isDepartmentSelectable={(department) => hasDepartmentPermission(
+                    permissions,
+                    department.id,
+                    Permission.DEPARTMENT_MEMBERSHIP_CREATE,
+                )}
+                getDepartmentDisabledTooltip={() => formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)}
+                onSelect={(department) => {
+                    setShowSelectRolesDialogForDepartment(department);
+                    setShowSelectNewDepartmentDialog(false);
+                }}
             />
 
             <UserRolesAssignmentDialog
