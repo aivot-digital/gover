@@ -766,22 +766,25 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
             sx={sx}
         >
             {showTopNavigationBar && (
-                <Stack
-                    direction="row"
-                    spacing={0.5}
-                    alignItems="center"
-                    sx={{
-                        px: 1,
-                        py: 0.5,
-                        border: '1px solid',
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                    }}
-                >
-                    <Tooltip
-                        title="Zum Wurzelordner"
-                        arrow={true}
+                <Stack direction="row">
+                    <Stack
+                        direction="row"
+                        spacing={0.5}
+                        alignItems="center"
+                        sx={{
+                            px: 1,
+                            py: 0.5,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            flex: 1,
+                            mr: 2,
+                        }}
                     >
+                        <Tooltip
+                            title="Zum Wurzelordner"
+                            arrow={true}
+                        >
                         <span>
                             <IconButton
                                 size="small"
@@ -793,12 +796,12 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 <HomeOutlinedIcon fontSize="small"/>
                             </IconButton>
                         </span>
-                    </Tooltip>
+                        </Tooltip>
 
-                    <Tooltip
-                        title="Eine Ebene nach oben"
-                        arrow={true}
-                    >
+                        <Tooltip
+                            title="Eine Ebene nach oben"
+                            arrow={true}
+                        >
                         <span>
                             <IconButton
                                 size="small"
@@ -810,79 +813,99 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                                 <ArrowUpwardOutlinedIcon fontSize="small"/>
                             </IconButton>
                         </span>
-                    </Tooltip>
+                        </Tooltip>
 
-                    <Divider
-                        orientation="vertical"
-                        flexItem={true}
-                        sx={{mx: 0.5}}
-                    />
+                        <Divider
+                            orientation="vertical"
+                            flexItem={true}
+                            sx={{mx: 0.5}}
+                        />
 
-                    <Breadcrumbs
-                        separator="›"
-                        aria-label="Ordnerpfad"
-                        maxItems={6}
-                        itemsBeforeCollapse={2}
-                        itemsAfterCollapse={2}
-                        sx={{
-                            flexWrap: 'nowrap',
-                            overflow: 'hidden',
-                            '& .MuiBreadcrumbs-ol': {
+                        <Breadcrumbs
+                            separator="›"
+                            aria-label="Ordnerpfad"
+                            maxItems={6}
+                            itemsBeforeCollapse={2}
+                            itemsAfterCollapse={2}
+                            sx={{
                                 flexWrap: 'nowrap',
                                 overflow: 'hidden',
-                            },
-                        }}
-                    >
-                        <Button
-                            size="small"
-                            onClick={() => {
-                                navigateToFolder(ROOT_PATH);
+                                '& .MuiBreadcrumbs-ol': {
+                                    flexWrap: 'nowrap',
+                                    overflow: 'hidden',
+                                },
                             }}
-                            sx={{minWidth: 'auto', px: 0.75}}
                         >
-                            {provider.name}
-                        </Button>
+                            <Button
+                                size="small"
+                                onClick={() => {
+                                    navigateToFolder(ROOT_PATH);
+                                }}
+                                sx={{minWidth: 'auto', px: 0.75}}
+                            >
+                                {provider.name}
+                            </Button>
 
-                        {breadcrumbParts.map((part, index) => {
-                            const fullPath = normalizeDirectoryPath(`/${breadcrumbParts.slice(0, index + 1).join('/')}`);
+                            {breadcrumbParts.map((part, index) => {
+                                const fullPath = normalizeDirectoryPath(`/${breadcrumbParts.slice(0, index + 1).join('/')}`);
 
-                            return (
-                                <Button
-                                    key={fullPath}
-                                    size="small"
-                                    onClick={() => {
-                                        navigateToFolder(fullPath);
-                                    }}
-                                    sx={{
-                                        minWidth: 'auto',
-                                        px: 0.75,
-                                        maxWidth: 220,
-                                        overflow: 'hidden',
-                                    }}
-                                    title={part}
-                                >
-                                    <Typography
-                                        variant="body2"
-                                        noWrap={true}
-                                        sx={{
-                                            width: '100%',
-                                            maxWidth: '100%',
-                                            overflow: 'hidden',
-                                            textOverflow: 'ellipsis',
-                                            whiteSpace: 'nowrap',
+                                return (
+                                    <Button
+                                        key={fullPath}
+                                        size="small"
+                                        onClick={() => {
+                                            navigateToFolder(fullPath);
                                         }}
+                                        sx={{
+                                            minWidth: 'auto',
+                                            px: 0.75,
+                                            maxWidth: 220,
+                                            overflow: 'hidden',
+                                        }}
+                                        title={part}
                                     >
-                                        {part}
-                                    </Typography>
-                                </Button>
-                            );
-                        })}
-                    </Breadcrumbs>
+                                        <Typography
+                                            variant="body2"
+                                            noWrap={true}
+                                            sx={{
+                                                width: '100%',
+                                                maxWidth: '100%',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis',
+                                                whiteSpace: 'nowrap',
+                                            }}
+                                        >
+                                            {part}
+                                        </Typography>
+                                    </Button>
+                                );
+                            })}
+                        </Breadcrumbs>
+                    </Stack>
+
+                    {onFolderSelect != null && (
+                        <Button
+                            variant="contained"
+                            size="small"
+                            startIcon={<FolderOutlinedIcon/>}
+                            onClick={() => {
+                                onFolderSelect(currentPath);
+                            }}
+                            disabled={isLoading}
+                            sx={{
+                                ml: 'auto',
+                            }}
+                        >
+                            {folderSelectLabel ?? 'Ordner auswählen'}
+                        </Button>
+                    )}
                 </Stack>
             )}
 
-            <Grid container
-                  sx={{alignItems: 'flex-start'}}>
+            <Grid
+                container
+                sx={{alignItems: 'flex-start'}}
+            >
                 <Grid
                     size={{xs: 12, md: 3}}
                     sx={{
@@ -1021,18 +1044,6 @@ export function StorageExplorer(props: StorageExplorerProps): ReactNode {
                             >
                                 {folderCount} Ordner, {fileCount} Dateien
                             </Typography>
-                            {onFolderSelect != null && (
-                                <Button
-                                    variant="contained"
-                                    startIcon={<FolderOutlinedIcon/>}
-                                    onClick={() => {
-                                        onFolderSelect(currentPath);
-                                    }}
-                                    disabled={isLoading}
-                                >
-                                    {folderSelectLabel ?? 'Ordner auswählen'}
-                                </Button>
-                            )}
                         </Stack>
 
                         <DataGrid

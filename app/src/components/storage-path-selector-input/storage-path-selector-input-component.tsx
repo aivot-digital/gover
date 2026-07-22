@@ -147,10 +147,15 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
 
         const api = new StorageProvidersApiService();
         const request = allowedTypes.length === StorageProviderTypes.length
-            ? api.listAll()
+            ? api.listAll({
+                readOnlyStorage: allowReadOnlyStorageProviders ? undefined : false,
+            })
                 .then((page) => page.content.filter((provider) => allowedTypes.includes(provider.type)))
             : Promise
-                .all(allowedTypes.map((type) => api.listAll({type})))
+                .all(allowedTypes.map((type) => api.listAll({
+                    type,
+                    readOnlyStorage: allowReadOnlyStorageProviders ? undefined : false,
+                })))
                 .then((pages) => pages.flatMap((page) => page.content));
 
         request
