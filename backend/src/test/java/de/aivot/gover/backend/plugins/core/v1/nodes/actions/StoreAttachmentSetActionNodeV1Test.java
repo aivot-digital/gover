@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.plugins.core.v1.nodes.actions;
 
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.elements.form.input.CheckboxInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.ProcessInstanceAttachmentSetSelectElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.StoragePathSelectorInputElementValue;
@@ -8,11 +9,13 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TextInputEleme
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.gover.backend.identity.models.IdentityDataMap;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceEventEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
+import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
 import de.aivot.gover.backend.process.models.ProcessExecutionData;
@@ -33,6 +36,7 @@ import de.aivot.gover.backend.storage.services.StorageService;
 import de.aivot.gover.backend.utils.StringUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -55,6 +59,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class StoreAttachmentSetActionNodeV1Test {
@@ -131,6 +137,11 @@ class StoreAttachmentSetActionNodeV1Test {
                 .orElseThrow();
         assertEquals(List.of(StorageProviderType.Assets, StorageProviderType.External), storagePathField.getAllowedStorageProviderTypes());
         assertEquals("Wählen Sie den beschreibbaren Speicheranbieter aus, in dem der Anlagensatz gespeichert wird.", storagePathField.getStorageProviderSelectHint());
+
+        var ignoreEmptyAttachmentSetField = layout
+                .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, CheckboxInputElement.class)
+                .orElseThrow();
+        assertEquals("Optionalen Anlagensatz ignorieren, falls keine Dateien vorhanden sind", ignoreEmptyAttachmentSetField.getLabel());
 
         var fileNameField = layout
                 .findChild(StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig.FILE_NAME_FIELD_ID, TextInputElement.class)
@@ -213,6 +224,68 @@ class StoreAttachmentSetActionNodeV1Test {
     }
 
     @Test
+    void init_FailsWhenSelectedAttachmentSetIsMissing() {
+        when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, "documents"))
+                .thenReturn(List.of());
+
+        assertThrows(
+                ProcessNodeExecutionExceptionMissingValue.class,
+                () -> node.init(context(configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/"))))
+        );
+    }
+
+    @Test
+    void init_SkipsOptionalAttachmentSetWhenEmptyAndLogs() throws Exception {
+        var eventRepository = mock(ProcessInstanceHistoryEventRepository.class);
+        when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, "documents"))
+                .thenReturn(List.of(new ProcessInstanceAttachmentSetEntity()
+                        .setId(321)
+                        .setDataKey("documents")
+                        .setName("Dokumente")));
+        when(processInstanceAttachmentService.findAllByAttachmentSetId(321))
+                .thenReturn(List.of());
+
+        var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context(
+                configuration(optionalAttachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/")),
+                eventRepository
+        )));
+
+        assertEquals(0, result.getNodeData().get("count"));
+        assertEquals(List.of(), result.getNodeData().get("storagePathsFromRoot"));
+        assertEquals(List.of(), result.getNodeData().get("fileNames"));
+        assertEquals(List.of(), result.getNodeData().get("results"));
+        assertTrue(storedDocuments.isEmpty());
+        verify(storageService, never()).storeDocument(any(Integer.class), anyString(), any(InputStream.class), any(StorageItemMetadata.class));
+
+        var event = captureSingleEvent(eventRepository);
+        assertEquals(ProcessNodeExecutionLogLevel.Info, event.getLevel());
+        assertEquals(false, event.getTechnical());
+        assertEquals(true, event.getAudit());
+        assertEquals("Anlagensatz 'Dokumente' enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
+    }
+
+    @Test
+    void init_SkipsOptionalAttachmentSetWhenMissingAndLogs() throws Exception {
+        var eventRepository = mock(ProcessInstanceHistoryEventRepository.class);
+        when(processInstanceAttachmentSetService.findAllByProcessInstanceIdAndDataKey(PROCESS_INSTANCE_ID, "documents"))
+                .thenReturn(List.of());
+
+        var result = assertInstanceOf(ProcessNodeExecutionResultTaskCompleted.class, node.init(context(
+                configuration(optionalAttachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{caseId}}/")),
+                eventRepository
+        )));
+
+        assertEquals(0, result.getNodeData().get("count"));
+        assertEquals(List.of(), result.getNodeData().get("storagePathsFromRoot"));
+        assertEquals(List.of(), result.getNodeData().get("fileNames"));
+        assertEquals(List.of(), result.getNodeData().get("results"));
+        assertTrue(storedDocuments.isEmpty());
+
+        var event = captureSingleEvent(eventRepository);
+        assertEquals("Anlagensatz 'documents' enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.", event.getMessage());
+    }
+
+    @Test
     void validateConfiguration_ValidatesTemplateSyntaxInStoragePath() {
         var configuration = configuration(attachmentSetConfig("documents", TARGET_STORAGE_PROVIDER_ID, "/case/{{"));
 
@@ -287,6 +360,14 @@ class StoreAttachmentSetActionNodeV1Test {
         return attachmentSetConfig(attachmentSetDataKey, storageProviderId, targetPath, false, null);
     }
 
+    private static StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig optionalAttachmentSetConfig(String attachmentSetDataKey,
+                                                                                                        Integer storageProviderId,
+                                                                                                        String targetPath) {
+        var config = attachmentSetConfig(attachmentSetDataKey, storageProviderId, targetPath);
+        config.ignoreEmptyAttachmentSet = true;
+        return config;
+    }
+
     private static StoreAttachmentSetActionNodeV1.AttachmentSetStorageConfig attachmentSetConfig(String attachmentSetDataKey,
                                                                                                 Integer storageProviderId,
                                                                                                 String targetPath,
@@ -305,8 +386,15 @@ class StoreAttachmentSetActionNodeV1Test {
     private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
             StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration
     ) {
+        return context(configuration, mock(ProcessInstanceHistoryEventRepository.class));
+    }
+
+    private static ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig> context(
+            StoreAttachmentSetActionNodeV1.StoreAttachmentSetActionNodeConfig configuration,
+            ProcessInstanceHistoryEventRepository eventRepository
+    ) {
         return new ProcessNodeExecutionInitContext<>(
-                logger(),
+                logger(eventRepository),
                 processNode(),
                 processInstance(),
                 task(),
@@ -364,14 +452,20 @@ class StoreAttachmentSetActionNodeV1Test {
                 .setProcessData(Map.of());
     }
 
-    private static ProcessNodeExecutionLogger logger() {
+    private static ProcessNodeExecutionLogger logger(ProcessInstanceHistoryEventRepository eventRepository) {
         return new ProcessNodeExecutionLogger(
                 PROCESS_INSTANCE_ID,
                 TASK_ID,
                 null,
                 null,
-                mock(ProcessInstanceHistoryEventRepository.class)
+                eventRepository
         );
+    }
+
+    private static ProcessInstanceEventEntity captureSingleEvent(ProcessInstanceHistoryEventRepository eventRepository) {
+        var eventCaptor = ArgumentCaptor.forClass(ProcessInstanceEventEntity.class);
+        verify(eventRepository).save(eventCaptor.capture());
+        return eventCaptor.getValue();
     }
 
     private static StorageProviderEntity storageProvider(Integer id,

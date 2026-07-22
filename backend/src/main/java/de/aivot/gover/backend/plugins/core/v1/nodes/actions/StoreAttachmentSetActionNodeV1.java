@@ -22,6 +22,8 @@ import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
 import de.aivot.gover.backend.plugins.core.v1.operators.common.NoCodeEqualsOperator;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
+import de.aivot.gover.backend.process.enums.ProcessNodeExecutionLogLevel;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionException;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
@@ -283,13 +285,22 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
         for (var rowIndex = 0; rowIndex < attachmentSetConfigs.size(); rowIndex++) {
             var attachmentSetConfig = attachmentSetConfigs.get(rowIndex);
-            var storageProviderId = resolveRequiredStorageProviderId(attachmentSetConfig.storagePath);
-            ensureWritableStorageProvider(storageProviderId);
-
             var attachmentSetDataKey = resolveSingleAttachmentSetDataKey(attachmentSetConfig.attachmentSetDataKeys);
             if (attachmentSetDataKey == null) {
                 throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Es muss genau ein Anlagensatz ausgewählt werden.".formatted(rowIndex + 1));
             }
+
+            var attachments = resolveProcessAttachmentsBySetDataKey(
+                    context,
+                    attachmentSetDataKey,
+                    Boolean.TRUE.equals(attachmentSetConfig.ignoreEmptyAttachmentSet)
+            );
+            if (attachments.isEmpty()) {
+                continue;
+            }
+
+            var storageProviderId = resolveRequiredStorageProviderId(attachmentSetConfig.storagePath);
+            ensureWritableStorageProvider(storageProviderId);
 
             var renderedTargetFolderPath = interpolateTargetPath(context, resolveConfiguredPath(attachmentSetConfig.storagePath), rowIndex + 1);
             var normalizedTargetFolderPath = normalizeFolderPath(renderedTargetFolderPath);
@@ -297,7 +308,6 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 throw new ProcessNodeExecutionExceptionMissingValue("Eintrag %d: Der Zielpfad wurde nicht angegeben oder leer interpoliert.".formatted(rowIndex + 1));
             }
 
-            var attachments = resolveProcessAttachmentsBySetDataKey(context, attachmentSetDataKey);
             var setStoragePaths = new ArrayList<String>();
             var setFileNames = new ArrayList<String>();
             var usedCustomFileNames = new LinkedHashSet<String>();
@@ -397,7 +407,8 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
     @Nonnull
     private List<ProcessInstanceAttachmentEntity> resolveProcessAttachmentsBySetDataKey(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
-                                                                                        @Nonnull String attachmentSetDataKey) throws ProcessNodeExecutionException {
+                                                                                        @Nonnull String attachmentSetDataKey,
+                                                                                        boolean ignoreEmptyAttachmentSet) throws ProcessNodeExecutionException {
         var attachmentSets = processInstanceAttachmentSetService
                 .findAllByProcessInstanceIdAndDataKey(context.getThisProcessInstance().getId(), attachmentSetDataKey)
                 .stream()
@@ -405,6 +416,11 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
                 .toList();
 
         if (attachmentSets.isEmpty()) {
+            if (ignoreEmptyAttachmentSet) {
+                logSkippedOptionalAttachmentSet(context, attachmentSetDataKey);
+                return List.of();
+            }
+
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Der Anlagensatz mit dem Datenschlüssel %s wurde in der Prozess-Instanz %d nicht gefunden.",
                     StringUtils.quote(attachmentSetDataKey),
@@ -424,6 +440,11 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         }
 
         if (attachments.isEmpty()) {
+            if (ignoreEmptyAttachmentSet) {
+                logSkippedOptionalAttachmentSet(context, resolveAttachmentSetLogName(attachmentSets, attachmentSetDataKey));
+                return List.of();
+            }
+
             throw new ProcessNodeExecutionExceptionMissingValue(
                     "Der Anlagensatz mit dem Datenschlüssel %s enthält keine Anhänge.",
                     StringUtils.quote(attachmentSetDataKey)
@@ -431,6 +452,30 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
         }
 
         return attachments;
+    }
+
+    @Nonnull
+    private static String resolveAttachmentSetLogName(@Nonnull List<ProcessInstanceAttachmentSetEntity> attachmentSets,
+                                                      @Nonnull String fallback) {
+        return attachmentSets
+                .stream()
+                .map(ProcessInstanceAttachmentSetEntity::getName)
+                .map(StringUtils::toNullableTrimmedString)
+                .filter(Objects::nonNull)
+                .findFirst()
+                .orElse(fallback);
+    }
+
+    private static void logSkippedOptionalAttachmentSet(@Nonnull ProcessNodeExecutionInitContext<StoreAttachmentSetActionNodeConfig> context,
+                                                        @Nonnull String attachmentSetName) {
+        context.getLogger().logf(
+                ProcessNodeExecutionLogLevel.Info,
+                false,
+                true,
+                "Optionaler Anlagensatz übersprungen",
+                "Anlagensatz %s enthielt keine Dateien. Speichervorgang für diesen Anlagensatz übersprungen.",
+                StringUtils.quote(attachmentSetName)
+        );
     }
 
     @Nonnull
@@ -648,6 +693,7 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
     public static class AttachmentSetStorageConfig {
         public static final String ATTACHMENT_SET_DATA_KEYS_FIELD_ID = "attachment_set_data_keys";
         public static final String STORAGE_PATH_FIELD_ID = "storage_path";
+        public static final String IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID = "ignore_empty_attachment_set";
         public static final String CUSTOMIZE_FILE_NAME_FIELD_ID = "customize_file_name";
         public static final String FILE_NAME_FIELD_ID = "file_name";
 
@@ -663,13 +709,23 @@ public class StoreAttachmentSetActionNodeV1 implements ProcessNodeDefinition<Sto
 
         @InputElementPOJOBinding(id = STORAGE_PATH_FIELD_ID, type = ElementType.StoragePathSelector, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Zielpfad"),
-                @ElementPOJOBindingProperty(key = "storageProviderSelectHint", strValue = "Speicheranbieter, bei welchem der Anlagensatz gespeichert wird."),
+                @ElementPOJOBindingProperty(key = "storageProviderSelectHint", strValue = "Wählen Sie den beschreibbaren Speicheranbieter aus, in dem der Anlagensatz gespeichert wird."),
                 @ElementPOJOBindingProperty(key = "hint", strValue = "Der Pfad unter welchem der Anlagensatz gespeichert wird. Verwenden Sie \"#\" zur Angabe der aktuellen Dateinummerierung im Pfad. Diese Eingabe unterstützt \"Smarte Platzhalter\"."),
                 @ElementPOJOBindingProperty(key = "required", boolValue = true),
                 @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0),
                 @ElementPOJOBindingProperty(key = "allowReadOnlyStorageProviders", falseValue = true)
         })
         public StoragePathSelectorInputElementValue storagePath;
+
+        /**
+         * If true, missing attachment sets and attachment sets without files are logged and skipped instead of failing execution.
+         */
+        @InputElementPOJOBinding(id = IGNORE_EMPTY_ATTACHMENT_SET_FIELD_ID, type = ElementType.Checkbox, properties = {
+                @ElementPOJOBindingProperty(key = "label", strValue = "Optionalen Anlagensatz ignorieren, falls keine Dateien vorhanden sind"),
+                @ElementPOJOBindingProperty(key = "weight", doubleValue = 12.0)
+        })
+        @Nullable
+        public Boolean ignoreEmptyAttachmentSet;
 
         @InputElementPOJOBinding(id = CUSTOMIZE_FILE_NAME_FIELD_ID, type = ElementType.Checkbox, properties = {
                 @ElementPOJOBindingProperty(key = "label", strValue = "Dateinamen anpassen"),
