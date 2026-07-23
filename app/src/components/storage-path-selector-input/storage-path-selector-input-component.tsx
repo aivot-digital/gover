@@ -207,8 +207,6 @@ export function StoragePathSelectorInputComponent(props: StoragePathSelectorInpu
     const helperText = error ?? loadError ?? (
         selectedProviderIsReadOnlyDisabled
             ? 'Dieser Speicheranbieter ist nur lesend und kann hier nicht ausgewählt werden.'
-            : value?.storageProviderId != null && normalizeTypedPath(selectedPath) == null
-            ? 'Wählen Sie einen Ordner im Speicheranbieter aus.'
             : hint
     );
 
