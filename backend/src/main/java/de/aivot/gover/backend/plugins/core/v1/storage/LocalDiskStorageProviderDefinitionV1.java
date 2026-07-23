@@ -759,8 +759,9 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
         // 1. Replace all non-alphanumeric/dot/hyphen characters with an underscore
         // This removes spaces, slashes, and special characters like : * ? " < > |
-        var sanitized = filename
-                .replaceAll("[^a-zA-Z0-9( .)_-]", "_");
+        var sanitized = StringUtils.replaceSpecialGermanCharacters(
+                filename.replaceAll("[^a-zA-Z0-9( .)_-]", "_")
+        );
 
         // 2. Prevent hidden files (starting with a dot) or empty names
         if (sanitized.startsWith(".") || sanitized.isEmpty()) {
@@ -784,13 +785,13 @@ public class LocalDiskStorageProviderDefinitionV1 implements StorageProviderDefi
 
     @Nonnull
     private static <T extends StorageItem> T withFileAttributes(@Nonnull T item,
-                                                               @Nonnull Path path) throws StorageException {
+                                                                @Nonnull Path path) throws StorageException {
         return withFileAttributes(item, readFileAttributes(path));
     }
 
     @Nonnull
     private static <T extends StorageItem> T withFileAttributes(@Nonnull T item,
-                                                               @Nonnull BasicFileAttributes attributes) {
+                                                                @Nonnull BasicFileAttributes attributes) {
         item
                 .setCreated(attributes.creationTime().toInstant())
                 .setUpdated(attributes.lastModifiedTime().toInstant());
