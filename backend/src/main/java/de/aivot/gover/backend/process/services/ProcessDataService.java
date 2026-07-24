@@ -123,6 +123,7 @@ public class ProcessDataService {
 
         Map<String, Object> instanceData = new HashMap<>();
 
+        instanceData.put("processInstanceId", instance.getId());
         instanceData.put("accessKey", instance.getAccessKey());
         instanceData.put("caseNumber", instance.getCaseNumber());
         instanceData.put("started", instance.getStarted());

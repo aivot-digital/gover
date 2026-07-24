@@ -139,6 +139,7 @@ class ProcessDataServiceTest {
 
         var metadata = data.getProcessMetadata();
         assertFalse(metadata.containsKey("attachments"));
+        assertEquals(42L, metadata.get("processInstanceId"));
         assertEquals(99L, metadata.get("currentTaskId"));
 
         @SuppressWarnings("unchecked")
