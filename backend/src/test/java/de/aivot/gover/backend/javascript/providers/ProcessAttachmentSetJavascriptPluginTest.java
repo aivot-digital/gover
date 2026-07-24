@@ -82,19 +82,19 @@ class ProcessAttachmentSetJavascriptPluginTest {
         assertEquals(PROCESS_INSTANCE_TASK_ID, attachmentSet.getProcessInstanceTaskId());
         assertEquals(List.of(
                 "create(dataKey: string, name: string, processInstanceId: number, processInstanceTaskId: number): number;",
-                "addAttachment(attachmentSetId: number, fileName: string, base64Content: string): { key: string; filename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };",
-                "addAttachmentFromString(attachmentSetId: number, fileName: string, content: string): { key: string; filename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };"
+                "addAttachmentBase64(attachmentSetId: number, fileName: string, base64Content: string): { key: string; filename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };",
+                "addAttachmentString(attachmentSetId: number, fileName: string, content: string): { key: string; filename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };"
         ), List.of(provider.getMethodTypeDefinitions()));
     }
 
     @Test
-    void addAttachment_DecodesBase64AndUsesNextPosition() throws Exception {
+    void addAttachmentBase64_DecodesBase64AndUsesNextPosition() throws Exception {
         var attachmentKey = UUID.fromString("3891538b-9058-4c3f-bb5b-0e318c77c70f");
         arrangeAttachmentCreation(attachmentKey);
 
         try (var jsService = new JavascriptEngine(provider)) {
             var result = jsService.evaluateCode(new JavascriptCode().setCode("""
-                    const attachment = _attachments_v1.addAttachment(321, 'report.txt', 'SGVsbG8=');
+                    const attachment = _attachments_v1.addAttachmentBase64(321, 'report.txt', 'SGVsbG8=');
                     [
                         attachment.key,
                         attachment.filename,
@@ -130,13 +130,13 @@ class ProcessAttachmentSetJavascriptPluginTest {
     }
 
     @Test
-    void addAttachmentFromString_UsesUtf8ContentAndNextPosition() throws Exception {
+    void addAttachmentString_UsesUtf8ContentAndNextPosition() throws Exception {
         var attachmentKey = UUID.fromString("71bc1d08-1e4e-4a74-93c3-e8c2ec3212bf");
         arrangeAttachmentCreation(attachmentKey);
 
         try (var jsService = new JavascriptEngine(provider)) {
             var result = jsService.evaluateCode(new JavascriptCode().setCode("""
-                    const attachment = _attachments_v1.addAttachmentFromString(321, 'report.txt', ' Gr\\u00fc\\u00dfe ');
+                    const attachment = _attachments_v1.addAttachmentString(321, 'report.txt', ' Gr\\u00fc\\u00dfe ');
                     [
                         attachment.key,
                         attachment.filename,
