@@ -7,6 +7,7 @@ import de.aivot.gover.backend.openApi.OpenApiConstants;
 import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.storage.models.StorageProviderDefinition;
 import de.aivot.gover.backend.storage.permissions.StoragePermissionProvider;
+import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,13 +45,12 @@ public class StorageProviderDefinitionController {
     @Operation(
             summary = "List Storage Provider Definitions",
             description = "Retrieve a list of all available storage provider definitions. " +
-                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“."
+                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“ or „" + StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "“."
     )
     public List<StorageProviderDefinitionDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
-        permissionService
-                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+        requireDefinitionAccess(jwt);
 
         return storageProviderDefinitions
                 .stream()
@@ -62,15 +62,14 @@ public class StorageProviderDefinitionController {
     @Operation(
             summary = "Retrieve Storage Provider Definition",
             description = "Retrieve a specific storage provider definition by its key and version. " +
-                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“."
+                    "This requires the permission „" + StoragePermissionProvider.STORAGE_PROVIDER_READ + "“ or „" + StoragePermissionProvider.STORAGE_PROVIDER_CREATE + "“."
     )
     public StorageProviderDefinitionDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String key,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
-        permissionService
-                .requireSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ);
+        requireDefinitionAccess(jwt);
 
         return storageProviderDefinitions
                 .stream()
@@ -78,6 +77,21 @@ public class StorageProviderDefinitionController {
                 .findFirst()
                 .map(StorageProviderDefinitionDTO::from)
                 .orElseThrow(ResponseException::notFound);
+    }
+
+    private void requireDefinitionAccess(@Nullable Jwt jwt) throws ResponseException {
+        // Definition metadata is needed both for reading existing providers and for configuring a new one.
+        // Do not require storage_provider.read here, otherwise create-only users cannot open the create form.
+        if (
+                !permissionService.hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_READ) &&
+                        !permissionService.hasSystemPermission(jwt, StoragePermissionProvider.STORAGE_PROVIDER_CREATE)
+        ) {
+            throw ResponseException.forbidden(
+                    "Sie benötigen die Berechtigung %s oder %s auf Systemebene.",
+                    StringUtils.quote(StoragePermissionProvider.STORAGE_PROVIDER_READ),
+                    StringUtils.quote(StoragePermissionProvider.STORAGE_PROVIDER_CREATE)
+            );
+        }
     }
 
     public record StorageProviderDefinitionDTO(

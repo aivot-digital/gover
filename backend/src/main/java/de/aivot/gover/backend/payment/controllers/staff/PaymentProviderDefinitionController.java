@@ -6,6 +6,7 @@ import de.aivot.gover.backend.payment.dtos.PaymentProviderDefinitionResponseDTO;
 import de.aivot.gover.backend.payment.models.PaymentProviderDefinition;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
 import de.aivot.gover.backend.permissions.services.PermissionService;
+import de.aivot.gover.backend.utils.StringUtils;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -44,13 +45,12 @@ public class PaymentProviderDefinitionController {
     @Operation(
             summary = "List Payment Provider Definitions",
             description = "Retrieve a list of all available payment provider definitions. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
+                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“ or „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "“."
     )
     public List<PaymentProviderDefinitionResponseDTO> list(
             @Nullable @AuthenticationPrincipal Jwt jwt
     ) throws ResponseException {
-        permissionService
-                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+        requireDefinitionAccess(jwt);
 
         return paymentProviderDefinitions
                 .stream()
@@ -68,14 +68,13 @@ public class PaymentProviderDefinitionController {
     @Operation(
             summary = "Retrieve Payment Provider Definition",
             description = "Retrieve a specific payment provider definition by its unique key. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
+                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“ or „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "“."
     )
     public PaymentProviderDefinitionResponseDTO retrieveLatest(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String key
     ) throws ResponseException {
-        permissionService
-                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+        requireDefinitionAccess(jwt);
 
         var definition = paymentProviderDefinitions
                 .stream()
@@ -91,15 +90,14 @@ public class PaymentProviderDefinitionController {
     @Operation(
             summary = "Retrieve Payment Provider Definition",
             description = "Retrieve a specific payment provider definition by its unique key and version. " +
-                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“."
+                    "This requires the permission „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ + "“ or „" + PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE + "“."
     )
     public PaymentProviderDefinitionResponseDTO retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
             @Nonnull @PathVariable String key,
             @Nonnull @PathVariable Integer version
     ) throws ResponseException {
-        permissionService
-                .requireSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ);
+        requireDefinitionAccess(jwt);
 
         var definition = paymentProviderDefinitions
                 .stream()
@@ -109,5 +107,20 @@ public class PaymentProviderDefinitionController {
 
         return PaymentProviderDefinitionResponseDTO
                 .from(definition);
+    }
+
+    private void requireDefinitionAccess(@Nullable Jwt jwt) throws ResponseException {
+        // Definition metadata is needed both for reading existing providers and for configuring a new one.
+        // Do not require payment_provider.read here, otherwise create-only users cannot open the create form.
+        if (
+                !permissionService.hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ) &&
+                        !permissionService.hasSystemPermission(jwt, PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE)
+        ) {
+            throw ResponseException.forbidden(
+                    "Sie benötigen die Berechtigung %s oder %s auf Systemebene.",
+                    StringUtils.quote(PaymentProviderPermissionProvider.PAYMENT_PROVIDER_READ),
+                    StringUtils.quote(PaymentProviderPermissionProvider.PAYMENT_PROVIDER_CREATE)
+            );
+        }
     }
 }

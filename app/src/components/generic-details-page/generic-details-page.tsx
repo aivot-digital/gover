@@ -98,20 +98,30 @@ function ensureConfiguredAccess<ItemType>(
     permissionSet: PermissionSet | undefined,
     permissionConfig: GenericDetailsPagePermissionConfig<ItemType> | undefined,
 ): void {
-    if (item == null || permissionConfig == null) {
+    if (permissionConfig == null) {
         return;
     }
 
-    const permission = isNewItem ? permissionConfig.create : permissionConfig.read;
+    if (isNewItem) {
+        // New-resource pages must fail on the create permission before any fetchAdditionalData call can
+        // surface a broader read permission error from lookup data needed by the form.
+        const permission = permissionConfig.create;
+        if (permission != null && !hasSystemPermission(permissionSet, permission)) {
+            throw createPermissionDeniedError(permission);
+        }
+        return;
+    }
+
+    if (item == null) {
+        return;
+    }
+
+    const permission = permissionConfig.read;
     if (permission == null) {
         return;
     }
 
-    const hasPermission = isNewItem
-        ? hasSystemPermission(permissionSet, permission)
-        : hasScopedPermission(permissionSet, item, permissionConfig.scope, permission);
-
-    if (!hasPermission) {
+    if (!hasScopedPermission(permissionSet, item, permissionConfig.scope, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
