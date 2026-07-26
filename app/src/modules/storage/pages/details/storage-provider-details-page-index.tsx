@@ -121,6 +121,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const navigate = useNavigate();
     const {registerSyncPreparationHandler} = useStorageProviderDetailsPageSyncContext();
     const canDeleteStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_DELETE);
+    const canRefreshDefinitions = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
@@ -361,6 +362,10 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     };
 
     const handleRefreshDefinitions = async () => {
+        if (!canRefreshDefinitions) {
+            return;
+        }
+
         setIsBusy(true);
         try {
             const updatedDefinitions = await new StorageProvidersApiService().listDefinitions();
@@ -384,6 +389,9 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         : editedStorageProvider.systemProvider
             ? 'Systemanbieter können nicht bearbeitet werden.'
             : undefined;
+    const refreshDefinitionsTooltip = canRefreshDefinitions
+        ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
+        : formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE);
     const defaultStorageDeleteDisabled = isDefaultAttachmentStorage || isDefaultAssetStorage;
     const deleteDisabledTooltip = !canDeleteStorageProvider
         ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_DELETE)
@@ -813,16 +821,18 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                     </Button>
                 </DisabledTooltip>
 
-                <Tooltip title="Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.">
-                    <Button
-                        onClick={handleRefreshDefinitions}
-                        disabled={isBusy}
-                    >
-                        Auswahllisten neu laden <HelpIconOutlined
-                        fontSize="small"
-                        sx={{ml: 1}}
-                    />
-                    </Button>
+                <Tooltip title={refreshDefinitionsTooltip}>
+                    <Box component="span">
+                        <Button
+                            onClick={handleRefreshDefinitions}
+                            disabled={isBusy || !canRefreshDefinitions}
+                        >
+                            Auswahllisten neu laden <HelpIconOutlined
+                            fontSize="small"
+                            sx={{ml: 1}}
+                        />
+                        </Button>
+                    </Box>
                 </Tooltip>
 
                 {

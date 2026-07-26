@@ -78,6 +78,7 @@ export function PaymentProviderDetailsPageIndex() {
     const navigate = useNavigate();
     const showConfirm = useConfirm();
     const canDeletePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_DELETE);
+    const canRefreshDefinitions = useHasSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
 
     const [derivedRuntimeConfigData, setDerivedRuntimeConfigData] = useState<DerivedRuntimeElementData | null>(null);
     const [paymentProviderSchema, setPaymentProviderSchema] = useState<PaymentProviderYupSchemaType>(BasePaymentProviderYupSchema);
@@ -137,6 +138,9 @@ export function PaymentProviderDetailsPageIndex() {
     const deleteDisabledTooltip = !canDeletePaymentProvider
         ? formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_DELETE)
         : undefined;
+    const refreshDefinitionsTooltip = canRefreshDefinitions
+        ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
+        : formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_UPDATE);
 
     useEffect(() => {
         if (selectedPaymentProviderDefinition?.configLayout == null) {
@@ -192,6 +196,10 @@ export function PaymentProviderDetailsPageIndex() {
     }
 
     const handleRefreshDefinitions = () => {
+        if (!canRefreshDefinitions) {
+            return;
+        }
+
         setIsBusy(true);
 
         new PaymentProvidersApiService()
@@ -523,16 +531,18 @@ export function PaymentProviderDetailsPageIndex() {
                     </Button>
                 </DisabledTooltip>
 
-                <Tooltip title={'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'}>
-                    <Button
-                        onClick={handleRefreshDefinitions}
-                        disabled={isBusy}
-                    >
-                        Auswahllisten neu laden <HelpIconOutlined
-                        fontSize="small"
-                        sx={{ml: 1}}
-                    />
-                    </Button>
+                <Tooltip title={refreshDefinitionsTooltip}>
+                    <Box component="span">
+                        <Button
+                            onClick={handleRefreshDefinitions}
+                            disabled={isBusy || !canRefreshDefinitions}
+                        >
+                            Auswahllisten neu laden <HelpIconOutlined
+                            fontSize="small"
+                            sx={{ml: 1}}
+                        />
+                        </Button>
+                    </Box>
                 </Tooltip>
 
                 {
