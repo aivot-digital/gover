@@ -467,7 +467,7 @@ export function ElementTreeEditorContentTabProperties<T extends AnyElement>() {
                                 id: id ?? '',
                             });
                         }}
-                        disabled={!allowElementIdEditing && displayContext != ElementDisplayContext.DataObjectSchema}
+                        disabled={!editable || (!allowElementIdEditing && displayContext != ElementDisplayContext.DataObjectSchema)}
                         endAction={{
                             icon: <ContentPasteIcon/>,
                             onClick: async () => {
