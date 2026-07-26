@@ -876,16 +876,16 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
                         mt: 2,
                     }}
                 >
-                    <p>
+                    <Typography sx={{mb: 2}}>
                         Wenn der Speicheranbieter bereits für die Ablage von Dateien genutzt wurde, können diese Dateien
                         nach dem Löschen des Speicheranbieters nicht mehr erreicht werden. Bitte stellen Sie sicher,
                         dass
                         Sie alle Dateien migriert oder gelöscht haben, bevor Sie fortfahren.
-                    </p>
-                    <p>
-                        Bitte beachten Sie außerdem: Die Ordner und Dokument des Speicheranbieters
+                    </Typography>
+                    <Typography>
+                        Bitte beachten Sie außerdem: Die Ordner und Dokumente des Speicheranbieters
                         werden <strong>nicht</strong> gelöscht.
-                    </p>
+                    </Typography>
                 </AlertComponent>
             </ConfirmDialog>
 
