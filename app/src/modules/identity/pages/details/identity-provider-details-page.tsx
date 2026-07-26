@@ -109,6 +109,7 @@ export function IdentityProviderDetailsPage() {
                                 path: '/identity-providers/:key/test',
                                 label: 'Testen',
                                 isDisabled: (item: IdentityProviderDetailsDTO | undefined) => item?.key === '',
+                                requiredPermission: Permission.IDENTITY_PROVIDER_UPDATE,
                             },
                         ];
 

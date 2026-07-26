@@ -20,7 +20,7 @@ export function StorageProviderDetailsPageTest() {
     const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
     const [isTesting, setIsTesting] = useState(false);
     const [writable, setWritable] = useState(false);
-    const canTestWritable = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
+    const canTestStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     useEffect(() => {
         setTestResult(null);
@@ -28,7 +28,7 @@ export function StorageProviderDetailsPageTest() {
 
     const handleTest = async () => {
         if (!storageProvider) return;
-        if (writable && !canTestWritable) return;
+        if (!canTestStorageProvider) return;
 
         setIsTesting(true);
         setTestResult(null);
@@ -64,11 +64,11 @@ export function StorageProviderDetailsPageTest() {
                 label="Beschreibbarkeit testen (optional)"
                 value={writable}
                 onChange={setWritable}
-                disabled={!!storageProvider?.readOnlyStorage || !canTestWritable}
+                disabled={!!storageProvider?.readOnlyStorage || !canTestStorageProvider}
                 hint={
                     storageProvider?.readOnlyStorage
                         ? 'Diese Option ist deaktiviert, da der Speicheranbieter als read-only (nur lesend) konfiguriert ist.'
-                        : !canTestWritable
+                        : !canTestStorageProvider
                             ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE)
                             : undefined
                 }
@@ -82,13 +82,13 @@ export function StorageProviderDetailsPageTest() {
             >
                 <DisabledTooltip
                     title={formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE)}
-                    disabled={writable && !canTestWritable}
+                    disabled={!canTestStorageProvider}
                 >
                     <Button
                         onClick={handleTest}
                         variant="contained"
                         startIcon={<ScienceOutlinedIcon />}
-                        disabled={storageProvider == null || isTesting || (writable && !canTestWritable)}
+                        disabled={storageProvider == null || isTesting || !canTestStorageProvider}
                     >
                         Speicheranbieter testen
                     </Button>
