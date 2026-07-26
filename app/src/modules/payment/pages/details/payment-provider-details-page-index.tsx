@@ -603,7 +603,7 @@ export function PaymentProviderDetailsPageIndex() {
                         mt: 2,
                     }}
                 >
-                    <strong>Hinweis:</strong>
+                    <strong>Hinweis:</strong>{' '}
                     Sofern noch ausstehende Transaktionen bestehen, werden diese ebenfalls gelöscht.
                     Eine Liste mit ausstehenden Transaktionen können Sie im
                     Reiter <strong>Transaktionen</strong> einsehen.
