@@ -34,6 +34,7 @@ import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
+import {Page} from '../../../../../models/dtos/page';
 
 const deletedUserDeputyTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
 
@@ -100,6 +101,7 @@ export function UserDetailsPageDeputies() {
     const {
         item: user,
     } = useContext(GenericDetailsPageContext) as GenericDetailsPageContextType<User, undefined>;
+    const userId = user?.id;
 
     const canManageDeputies = user != null && !user.deletedInIdp;
     const addDeputyDisabled = !canManageDeputies || !canCreateDeputy || !canReadUsers;
@@ -160,19 +162,31 @@ export function UserDetailsPageDeputies() {
         ];
     }, [addDeputyDisabled, addDeputyDisabledTooltip]);
 
+    const fetchDeputies = useCallback((options: GenericListPropsFetchOptions<VUserDeputyWithDetailsEntity>): Promise<Page<VUserDeputyWithDetailsEntity>> => {
+        if (userId == null) {
+            return Promise.resolve({
+                content: [],
+                page: {
+                    size: 0,
+                    number: 0,
+                    totalElements: 0,
+                    totalPages: 0,
+                },
+            });
+        }
+
+        return new VUserDeputyWithDetailsApiService()
+            .listAllOrdered(options.sort, options.order, {
+                originalUserId: userId,
+                deputyUserFullName: options.search,
+            });
+    }, [userId]);
+
     if (user == null) {
         return (
             <GenericDetailsSkeleton/>
         );
     }
-
-    const fetchDeputies = useCallback((options: GenericListPropsFetchOptions<VUserDeputyWithDetailsEntity>) => {
-        return new VUserDeputyWithDetailsApiService()
-            .listAllOrdered(options.sort, options.order, {
-                originalUserId: user.id,
-                deputyUserFullName: options.search,
-            });
-    }, [user.id]);
 
     const handleAddDeputy = () => {
         if (!canManageDeputies || !canCreateDeputy || !canReadUsers || deputyToAdd == null) {
