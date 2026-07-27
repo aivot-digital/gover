@@ -60,7 +60,8 @@ services:
     command: web
     network_mode: "service:gover_api"
     depends_on:
-      - gover_api
+      gover_api:
+        condition: service_healthy
     environment:
       GOVER_HOSTNAME: http://localhost:9595
 
@@ -193,6 +194,13 @@ services:
   caddy:
     image: docker.io/caddy:2-alpine
     restart: unless-stopped
+    depends_on:
+      gover_api:
+        condition: service_healthy
+        restart: true
+      gover_app:
+        condition: service_healthy
+        restart: true
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:Z
     ports:

@@ -61,7 +61,8 @@ services:
     restart: unless-stopped
     command: web
     depends_on:
-      - gover_api
+      gover_api:
+        condition: service_healthy
     environment:
       GOVER_HOSTNAME: ${GOVER_HOSTNAME}
     networks:
@@ -184,6 +185,13 @@ services:
   caddy:
     image: docker.io/caddy:2-alpine
     restart: unless-stopped
+    depends_on:
+      gover_api:
+        condition: service_healthy
+        restart: true
+      gover_app:
+        condition: service_healthy
+        restart: true
     environment:
       GOVER_HOSTNAME: ${GOVER_HOSTNAME}
     volumes:
