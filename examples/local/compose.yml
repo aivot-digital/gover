@@ -62,6 +62,10 @@ services:
     depends_on:
       gover_api:
         condition: service_healthy
+        restart: true
+      gotenberg:
+        condition: service_started
+        restart: true
     environment:
       GOVER_HOSTNAME: http://localhost:9595
 
@@ -160,6 +164,10 @@ services:
     image: docker.io/gotenberg/gotenberg:8
     restart: unless-stopped
     network_mode: "service:gover_api"
+    depends_on:
+      gover_api:
+        condition: service_started
+        restart: true
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
