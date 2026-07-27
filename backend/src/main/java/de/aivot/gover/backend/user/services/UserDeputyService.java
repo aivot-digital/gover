@@ -66,7 +66,13 @@ public class UserDeputyService implements EntityService<UserDeputyEntity, Intege
     public UserDeputyEntity performUpdate(@Nonnull Integer id,
                                           @Nonnull UserDeputyEntity entity,
                                           @Nonnull UserDeputyEntity existingEntity) throws ResponseException {
-        // No fields to update
+        // Updating a deputy relation only changes its validity period. Changing either user
+        // would create a different relation.
+        existingEntity
+                .setFromTimestamp(entity.getFromTimestamp())
+                .setUntilTimestamp(entity.getUntilTimestamp());
+
+        validateDateRange(existingEntity);
         return repository.save(existingEntity);
     }
 
