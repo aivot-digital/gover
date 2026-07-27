@@ -3,13 +3,13 @@ package de.aivot.gover.backend.plugins.ai.properties;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
 /**
  * Configuration properties shared by the AI plugin nodes.
  */
-@Configuration
+@Component
 @ConfigurationProperties(prefix = "gover.ai")
 @Validated
 public class AiPluginProperties {

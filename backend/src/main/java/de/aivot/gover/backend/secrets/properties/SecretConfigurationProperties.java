@@ -1,15 +1,13 @@
 package de.aivot.gover.backend.secrets.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 /**
- * This class represents the configuration properties for secret management.
- * The properties are loaded from the application configuration file.
- * The key property is used for encryption and decryption of secrets.
- * The key should be a secure and random string of characters.
+ * This class represents the configuration properties for secret management. The properties are loaded from the application configuration file. The key property is used for
+ * encryption and decryption of secrets. The key should be a secure and random string of characters.
  */
-@Configuration
+@Component
 @ConfigurationProperties(prefix = "secrets")
 public class SecretConfigurationProperties {
     private String key;
