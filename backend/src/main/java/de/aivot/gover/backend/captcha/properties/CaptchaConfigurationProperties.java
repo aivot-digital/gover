@@ -1,7 +1,7 @@
 package de.aivot.gover.backend.captcha.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 /**
  * This class represents the configuration properties for the captcha integration.
@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
  * The key property is used for encryption and decryption of secrets.
  * The key should be a secure and random string of characters.
  */
-@Configuration
+@Component
 @ConfigurationProperties(prefix = "captcha")
 public class CaptchaConfigurationProperties {
     private String key;
