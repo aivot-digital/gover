@@ -174,20 +174,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     @Transactional
     public CodeListEntity importCSV(@Nonnull Integer codeListId,
                                     @Nonnull InputStream inputStream) throws ResponseException {
-        return importCSV(codeListId, inputStream, true);
-    }
-
-    @Nonnull
-    @Transactional
-    public CodeListEntity importCSV(@Nonnull Integer codeListId,
-                                    @Nonnull InputStream inputStream,
-                                    @Nonnull Boolean onlyManual) throws ResponseException {
-        CodeListEntity codeList;
-        if (onlyManual) {
-            codeList = requireManualCodeList(codeListId);
-        } else {
-            codeList = requireCodeList(codeListId);
-        }
+        var codeList = requireManualCodeList(codeListId);
 
         List<CodeListItemEntity> importedItems;
         try (var csv = CsvReader.builder()
