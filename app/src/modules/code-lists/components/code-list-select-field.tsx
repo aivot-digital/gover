@@ -23,25 +23,21 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
     } = props;
     const [codeLists, setCodeLists] = useState<CodeList[]>([]);
     const [loading, setLoading] = useState(false);
-    const [loaded, setLoaded] = useState(false);
 
     useEffect(() => {
         let active = true;
         setLoading(true);
-        setLoaded(false);
 
         new CodeListsApiService()
             .listAllOrdered('name', 'ASC')
             .then((page) => {
                 if (active) {
                     setCodeLists(page.content);
-                    setLoaded(true);
                 }
             })
             .catch(() => {
                 if (active) {
                     setCodeLists([]);
-                    setLoaded(false);
                 }
             })
             .finally(() => {
@@ -54,19 +50,6 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
             active = false;
         };
     }, []);
-
-    useEffect(() => {
-        if (!loaded || disabled === true || value == null) {
-            return;
-        }
-
-        if (codeLists.some((codeList) => codeList.key === value)) {
-            return;
-        }
-
-        // Remove stale references so deleted codelists behave like a missing codelist selection.
-        onChange(undefined);
-    }, [codeLists, disabled, loaded, onChange, value]);
 
     const options = useMemo(() => {
         return codeLists.map((codeList) => ({
