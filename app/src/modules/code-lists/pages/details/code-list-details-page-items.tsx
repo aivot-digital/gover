@@ -58,7 +58,7 @@ export function CodeListDetailsPageItems() {
 
     const isManual = codeList?.sourceType === CodeListSourceType.Manual;
     const canManageItems = isEditable && isManual;
-    const isSavedCodeList = codeList != null && codeList.id !== 0;
+    const isSavedCodeList = codeList != null && codeList.key.length > 0;
 
     const fetchItems = useCallback((options: GenericListPropsFetchOptions<CodeListItem>) => {
         if (codeList == null) {
@@ -75,7 +75,7 @@ export function CodeListDetailsPageItems() {
 
         return new CodeListsApiService()
             .listItems(
-                codeList.id,
+                codeList.key,
                 options.page,
                 options.size,
                 options.sort,
@@ -125,8 +125,8 @@ export function CodeListDetailsPageItems() {
         setIsSaving(true);
 
         const request = dialogItem == null
-            ? new CodeListsApiService().createItem(codeList.id, columns)
-            : new CodeListsApiService().updateItem(codeList.id, dialogItem.id, columns);
+            ? new CodeListsApiService().createItem(codeList.key, columns)
+            : new CodeListsApiService().updateItem(codeList.key, dialogItem.id, columns);
 
         request
             .then(() => {
@@ -163,7 +163,7 @@ export function CodeListDetailsPageItems() {
                 }
 
                 return new CodeListsApiService()
-                    .deleteItem(codeList.id, item.id)
+                    .deleteItem(codeList.key, item.id)
                     .then(() => {
                         listControlRef.current?.refresh();
                         dispatch(showSuccessSnackbar('Eintrag wurde gelöscht.'));
@@ -175,16 +175,16 @@ export function CodeListDetailsPageItems() {
     };
 
     const handleExportCsv = useCallback(() => {
-        if (codeList == null || codeList.id === 0) {
+        if (codeList == null || codeList.key.length === 0) {
             return;
         }
 
         setIsCsvBusy(true);
 
         new CodeListsApiService()
-            .exportCsv(codeList.id)
+            .exportCsv(codeList.key)
             .then((blob) => {
-                downloadBlobFile(`code-list-${codeList.id}.csv`, blob);
+                downloadBlobFile(`code-list-${codeList.key}.csv`, blob);
                 dispatch(showSuccessSnackbar('CSV-Export wurde gestartet.'));
             })
             .catch((err) => {
@@ -196,7 +196,7 @@ export function CodeListDetailsPageItems() {
     }, [codeList, dispatch]);
 
     const handleImportCsv = useCallback(async () => {
-        if (codeList == null || codeList.id === 0 || !canManageItems) {
+        if (codeList == null || codeList.key.length === 0 || !canManageItems) {
             return;
         }
 
@@ -221,7 +221,7 @@ export function CodeListDetailsPageItems() {
         setIsCsvBusy(true);
 
         new CodeListsApiService()
-            .importCsv(codeList.id, file)
+            .importCsv(codeList.key, file)
             .then((updatedCodeList) => {
                 setItem(updatedCodeList);
                 listControlRef.current?.refresh();

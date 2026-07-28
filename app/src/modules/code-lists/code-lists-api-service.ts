@@ -10,15 +10,20 @@ export interface CodeListFilter {
     name: string;
 }
 
-export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, CodeList, CodeList, number, CodeListFilter> {
+export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, CodeList, CodeList, string, CodeListFilter> {
     private static readonly utilsPath = '/api/code-list-utils/';
 
     constructor() {
         super('/api/code-lists/');
     }
 
+    public buildPath(key: string): string {
+        return `${this.path}${encodeURIComponent(key)}/`;
+    }
+
     public initialize(): CodeList {
         return {
+            key: '',
             id: 0,
             sourceType: CodeListSourceType.Manual,
             sourceRef: '',
@@ -35,32 +40,32 @@ export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, 
         };
     }
 
-    public async triggerUpdate(id: number, keepOutdated: boolean = true): Promise<{ status: string }> {
-        return await this.get<{ status: string }>(`${this.buildPath(id)}update/`, {
+    public async triggerUpdate(codeListKey: string, keepOutdated: boolean = true): Promise<{ status: string }> {
+        return await this.get<{ status: string }>(`${this.buildPath(codeListKey)}update/`, {
             query: {
                 keepOutdated,
             },
         });
     }
 
-    public async exportCsv(codeListId: number): Promise<Blob> {
-        return await this.getBlob(`${this.buildPath(codeListId)}export.csv`);
+    public async exportCsv(codeListKey: string): Promise<Blob> {
+        return await this.getBlob(`${this.buildPath(codeListKey)}export.csv`);
     }
 
-    public async importCsv(codeListId: number, file: File): Promise<CodeList> {
+    public async importCsv(codeListKey: string, file: File): Promise<CodeList> {
         const formData = new FormData();
         formData.append('file', file);
-        return await this.postFormData<CodeList>(`${this.buildPath(codeListId)}import.csv`, formData);
+        return await this.postFormData<CodeList>(`${this.buildPath(codeListKey)}import.csv`, formData);
     }
 
     public async listItems(
-        codeListId: number,
+        codeListKey: string,
         page: number,
         limit: number,
         sort?: keyof CodeListItem,
         order?: SortOrder,
     ): Promise<Page<CodeListItem>> {
-        return await this.get<Page<CodeListItem>>(`${this.buildPath(codeListId)}items/`, {
+        return await this.get<Page<CodeListItem>>(`${this.buildPath(codeListKey)}items/`, {
             query: {
                 page,
                 size: limit,
@@ -69,24 +74,22 @@ export class CodeListsApiService extends BaseCrudApiService<CodeList, CodeList, 
         });
     }
 
-    public async createItem(codeListId: number, columns: string[]): Promise<CodeListItem> {
-        return await this.post<Partial<CodeListItem>, CodeListItem>(`${this.buildPath(codeListId)}items/`, {
+    public async createItem(codeListKey: string, columns: string[]): Promise<CodeListItem> {
+        return await this.post<Partial<CodeListItem>, CodeListItem>(`${this.buildPath(codeListKey)}items/`, {
             id: 0,
-            codeListId,
             columns,
         });
     }
 
-    public async updateItem(codeListId: number, itemId: number, columns: string[]): Promise<CodeListItem> {
-        return await this.put<Partial<CodeListItem>, CodeListItem>(`${this.buildPath(codeListId)}items/${itemId}/`, {
+    public async updateItem(codeListKey: string, itemId: number, columns: string[]): Promise<CodeListItem> {
+        return await this.put<Partial<CodeListItem>, CodeListItem>(`${this.buildPath(codeListKey)}items/${itemId}/`, {
             id: itemId,
-            codeListId,
             columns,
         });
     }
 
-    public async deleteItem(codeListId: number, itemId: number): Promise<void> {
-        return await this.delete(`${this.buildPath(codeListId)}items/${itemId}/`);
+    public async deleteItem(codeListKey: string, itemId: number): Promise<void> {
+        return await this.delete(`${this.buildPath(codeListKey)}items/${itemId}/`);
     }
 
     public async getAssetColumns(assetKey: string): Promise<string[]> {

@@ -42,7 +42,7 @@ public class CodeListElementOptionsService {
     private SelectInputElement resolveSelect(@Nonnull SelectInputElement element) throws ResponseException {
         var copy = copy(element, SelectInputElement.class);
         copy
-                .setOptions(listAsSelect(requireConfiguredCodeListId(element.getCodeListId())))
+                .setOptions(listAsSelectItems(requireConfiguredCodeListId(element.getCodeListKey())))
                 .setDependsOnSelectFieldId(null);
         return copy;
     }
@@ -50,27 +50,31 @@ public class CodeListElementOptionsService {
     @Nonnull
     private ChipInputElement resolveChipInput(@Nonnull ChipInputElement element) throws ResponseException {
         var copy = copy(element, ChipInputElement.class);
-        copy.setSuggestions(listAsChipInputSuggestions(requireConfiguredCodeListId(element.getCodeListId())));
+        copy.setSuggestions(listAsChipInputSuggestionsItems(requireConfiguredCodeListId(element.getCodeListKey())));
         return copy;
     }
 
     @Nonnull
     private RadioInputElement resolveRadio(@Nonnull RadioInputElement element) throws ResponseException {
         var copy = copy(element, RadioInputElement.class);
-        copy.setOptions(listAsRadio(requireConfiguredCodeListId(element.getCodeListId())));
+        copy.setOptions(listAsRadioItems(requireConfiguredCodeListId(element.getCodeListKey())));
         return copy;
     }
 
     @Nonnull
     private MultiCheckboxInputElement resolveMultiCheckbox(@Nonnull MultiCheckboxInputElement element) throws ResponseException {
         var copy = copy(element, MultiCheckboxInputElement.class);
-        copy.setOptions(listAsMultiCheckbox(requireConfiguredCodeListId(element.getCodeListId())));
+        copy.setOptions(listAsMultiCheckboxItems(requireConfiguredCodeListId(element.getCodeListKey())));
         return copy;
     }
 
     @Nonnull
-    public List<SelectInputElementOption> listAsSelect(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
+    public List<SelectInputElementOption> listAsSelect(@Nonnull String codeListKey) throws ResponseException {
+        return listAsSelectItems(requireCodeListId(codeListKey));
+    }
+
+    @Nonnull
+    private List<SelectInputElementOption> listAsSelectItems(@Nonnull Integer codeListId) {
         return vCodeListItemRepository
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
@@ -79,8 +83,12 @@ public class CodeListElementOptionsService {
     }
 
     @Nonnull
-    public List<RadioInputElementOption> listAsRadio(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
+    public List<RadioInputElementOption> listAsRadio(@Nonnull String codeListKey) throws ResponseException {
+        return listAsRadioItems(requireCodeListId(codeListKey));
+    }
+
+    @Nonnull
+    private List<RadioInputElementOption> listAsRadioItems(@Nonnull Integer codeListId) {
         return vCodeListItemRepository
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
@@ -89,8 +97,12 @@ public class CodeListElementOptionsService {
     }
 
     @Nonnull
-    public List<MultiCheckboxInputElementOption> listAsMultiCheckbox(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
+    public List<MultiCheckboxInputElementOption> listAsMultiCheckbox(@Nonnull String codeListKey) throws ResponseException {
+        return listAsMultiCheckboxItems(requireCodeListId(codeListKey));
+    }
+
+    @Nonnull
+    private List<MultiCheckboxInputElementOption> listAsMultiCheckboxItems(@Nonnull Integer codeListId) {
         return vCodeListItemRepository
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
@@ -101,8 +113,12 @@ public class CodeListElementOptionsService {
     }
 
     @Nonnull
-    public List<String> listAsChipInputSuggestions(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
+    public List<String> listAsChipInputSuggestions(@Nonnull String codeListKey) throws ResponseException {
+        return listAsChipInputSuggestionsItems(requireCodeListId(codeListKey));
+    }
+
+    @Nonnull
+    private List<String> listAsChipInputSuggestionsItems(@Nonnull Integer codeListId) {
         return vCodeListItemRepository
                 .findAllByCodeListIdOrderByIdAsc(codeListId)
                 .stream()
@@ -115,27 +131,37 @@ public class CodeListElementOptionsService {
     }
 
     @Nonnull
-    private CodeListEntity requireCodeList(@Nonnull Integer codeListId) throws ResponseException {
+    private CodeListEntity requireCodeList(@Nonnull String codeListKey) throws ResponseException {
         return codeListRepository
-                .findById(codeListId)
+                .findById(codeListKey)
                 .orElseThrow(ResponseException::notFound);
     }
 
     @Nonnull
-    private Integer requireCodeListId(Integer codeListId) throws ResponseException {
-        if (codeListId == null || codeListId <= 0) {
-            throw ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE);
-        }
-        return codeListId;
+    private Integer requireCodeListId(@Nonnull String codeListKey) throws ResponseException {
+        return requireInternalId(requireCodeList(codeListKey));
     }
 
     @Nonnull
-    private Integer requireConfiguredCodeListId(Integer codeListId) throws ResponseException {
-        var checkedCodeListId = requireCodeListId(codeListId);
-        if (!codeListRepository.existsById(checkedCodeListId)) {
+    private Integer requireConfiguredCodeListId(String codeListKey) throws ResponseException {
+        if (codeListKey == null || codeListKey.isBlank()) {
             throw ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE);
         }
-        return checkedCodeListId;
+
+        var codeList = codeListRepository
+                .findById(codeListKey)
+                .orElseThrow(() -> ResponseException.badRequest(MISSING_CODE_LIST_SELECTION_MESSAGE));
+
+        return requireInternalId(codeList);
+    }
+
+    @Nonnull
+    private Integer requireInternalId(@Nonnull CodeListEntity codeList) throws ResponseException {
+        var codeListId = codeList.getId();
+        if (codeListId == null) {
+            throw ResponseException.internalServerError("Die interne ID der Codeliste fehlt.");
+        }
+        return codeListId;
     }
 
     @Nonnull

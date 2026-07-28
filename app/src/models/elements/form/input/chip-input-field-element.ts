@@ -6,7 +6,7 @@ export interface ChipInputFieldElement extends BaseInputElement<ElementType.Chip
     placeholder: string | null | undefined;
     suggestions: string[] | null | undefined;
     optionsSource: OptionsSourceType | null | undefined;
-    codeListId: number | null | undefined;
+    codeListKey: string | null | undefined;
     minItems: number | null | undefined;
     maxItems: number | null | undefined;
     allowDuplicates: boolean | null | undefined;
