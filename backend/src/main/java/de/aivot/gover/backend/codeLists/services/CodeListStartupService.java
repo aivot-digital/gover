@@ -53,15 +53,11 @@ public class CodeListStartupService implements ApplicationListener<ApplicationRe
         }
 
         for (var codeList : codeLists) {
-            var codeListRefParts = codeList
+            var sourceRefPluginKey = codeList
                     .getSourceRef()
-                    .split("\\.");
+                    .replaceAll("\\.[^.]*$", "");
 
-            var pluginKey = String.join(".", Arrays
-                    .asList(codeListRefParts)
-                    .subList(0, codeListRefParts.length - 1));
-
-            if (existingPluginKeys.contains(pluginKey)) {
+            if (existingPluginKeys.contains(sourceRefPluginKey)) {
                 continue;
             }
 
