@@ -10,6 +10,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TextInputEleme
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
@@ -21,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class DestinationKeyPayloadServiceTest {
     private final ElementDataTransformService service = new ElementDataTransformService();
@@ -421,19 +423,16 @@ class DestinationKeyPayloadServiceTest {
 
         var effectiveValues = service.buildEffectiveValues(createRoot(people), payload);
 
-        assertEquals(
-                List.of(
-                        Map.of(
-                                "rowFirstName", "Ada",
-                                "rowStreet", "Main Street 1"
-                        ),
-                        Map.of(
-                                "rowFirstName", "Grace",
-                                "rowStreet", "Side Alley 2"
-                        )
-                ),
-                effectiveValues.get("people")
-        );
+        var rows = assertInstanceOf(List.class, effectiveValues.get("people"));
+        assertEquals(2, rows.size());
+        assertReplicatingRowValues(rows.get(0), Map.of(
+                "rowFirstName", "Ada",
+                "rowStreet", "Main Street 1"
+        ));
+        assertReplicatingRowValues(rows.get(1), Map.of(
+                "rowFirstName", "Grace",
+                "rowStreet", "Side Alley 2"
+        ));
     }
 
     @Test
@@ -465,19 +464,21 @@ class DestinationKeyPayloadServiceTest {
 
         var effectiveValues = service.buildEffectiveValues(createRoot(people), payload);
 
-        assertEquals(
-                List.of(
-                        Map.of(
-                                "rowFirstName", "Ada",
-                                "rowTag", "founder"
-                        ),
-                        Map.of(
-                                "rowFirstName", "Grace",
-                                "rowTag", "admiral"
-                        )
-                ),
-                effectiveValues.get("people")
-        );
+        var rows = assertInstanceOf(List.class, effectiveValues.get("people"));
+        assertEquals(2, rows.size());
+        assertReplicatingRowValues(rows.get(0), Map.of(
+                "rowFirstName", "Ada",
+                "rowTag", "founder"
+        ));
+        assertReplicatingRowValues(rows.get(1), Map.of(
+                "rowFirstName", "Grace",
+                "rowTag", "admiral"
+        ));
+    }
+
+    private static void assertReplicatingRowValues(Object row, Map<?, ?> expectedValues) {
+        var rowValue = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, row);
+        assertEquals(expectedValues, rowValue.getValues());
     }
 
     private static FormLayoutElement createRoot(BaseFormElement child) {

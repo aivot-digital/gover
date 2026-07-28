@@ -17,6 +17,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TextInputEleme
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
@@ -33,7 +34,6 @@ import org.junit.jupiter.api.Test;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -339,7 +339,7 @@ class ElementDerivationServiceTest {
 
         var authoredValues = new AuthoredElementValues();
         authoredValues.put("parent", "group_b");
-        authoredValues.put("rows", List.of(rowValues));
+        authoredValues.put("rows", List.of(new ReplicatingContainerLayoutElementValue().setId("row-1").setValues(rowValues)));
 
         var result = derive(
                 createRoot(List.of(parent, rows)),
@@ -348,10 +348,11 @@ class ElementDerivationServiceTest {
         );
 
         var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
-        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+        var firstRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
 
         assertEquals("group_b", result.getEffectiveValues().get("parent"));
-        assertNull(firstRow.get("child"));
+        assertEquals("row-1", firstRow.getId());
+        assertNull(firstRow.getValues().get("child"));
         assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("child").getError());
     }
 
@@ -376,7 +377,7 @@ class ElementDerivationServiceTest {
         rowValues.put("row_child", "option_a");
 
         var authoredValues = new AuthoredElementValues();
-        authoredValues.put("rows", List.of(rowValues));
+        authoredValues.put("rows", List.of(new ReplicatingContainerLayoutElementValue().setValues(rowValues)));
 
         var result = derive(
                 createRoot(List.of(rows)),
@@ -385,10 +386,10 @@ class ElementDerivationServiceTest {
         );
 
         var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
-        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+        var firstRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
 
-        assertEquals("group_b", firstRow.get("row_parent"));
-        assertNull(firstRow.get("row_child"));
+        assertEquals("group_b", firstRow.getValues().get("row_parent"));
+        assertNull(firstRow.getValues().get("row_child"));
         assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("row_child").getError());
     }
 
@@ -412,7 +413,7 @@ class ElementDerivationServiceTest {
 
         var authoredValues = new AuthoredElementValues();
         authoredValues.put("row_parent", "group_a");
-        authoredValues.put("rows", List.of(rowValues));
+        authoredValues.put("rows", List.of(new ReplicatingContainerLayoutElementValue().setValues(rowValues)));
 
         var result = derive(
                 createRoot(List.of(rows)),
@@ -421,10 +422,10 @@ class ElementDerivationServiceTest {
         );
 
         var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
-        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+        var firstRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
 
-        assertNull(firstRow.get("row_parent"));
-        assertNull(firstRow.get("row_child"));
+        assertNull(firstRow.getValues().get("row_parent"));
+        assertNull(firstRow.getValues().get("row_child"));
     }
 
     @Test
@@ -445,7 +446,7 @@ class ElementDerivationServiceTest {
         rowValues.put("hidden_child", "hidden value");
 
         var authoredValues = new AuthoredElementValues();
-        authoredValues.put("rows", List.of(rowValues));
+        authoredValues.put("rows", List.of(new ReplicatingContainerLayoutElementValue().setValues(rowValues)));
 
         var result = derive(
                 createRoot(List.of(rows)),
@@ -454,10 +455,10 @@ class ElementDerivationServiceTest {
         );
 
         var effectiveRows = assertInstanceOf(List.class, result.getEffectiveValues().get("rows"));
-        var firstRow = assertInstanceOf(Map.class, effectiveRows.get(0));
+        var firstRow = assertInstanceOf(ReplicatingContainerLayoutElementValue.class, effectiveRows.get(0));
 
-        assertEquals("visible value", firstRow.get("visible_child"));
-        assertFalse(firstRow.containsKey("hidden_child"));
+        assertEquals("visible value", firstRow.getValues().get("visible_child"));
+        assertFalse(firstRow.getValues().containsKey("hidden_child"));
         assertFalse(result.getElementStates().get("rows").getSubStates().get(0).get("hidden_child").getVisible());
     }
 

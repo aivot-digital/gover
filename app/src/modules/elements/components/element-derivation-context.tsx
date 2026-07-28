@@ -19,7 +19,7 @@ import {useAppDispatch} from '../../../hooks/use-app-dispatch';
 import {ElementsApiService} from '../elements-api-service';
 import {showErrorSnackbar} from '../../../slices/snackbar-slice';
 import {isApiError} from '../../../models/api-error';
-import {walkAuthoredElementValues} from '../../../utils/element-data-utils';
+import {normalizeReplicatingContainerValues, walkAuthoredElementValues} from '../../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../../../components/view-dispatcher/view-dispatcher.component';
 import {
     ViewDispatcherContextProvider,
@@ -204,15 +204,16 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     }, [element, disableValidation, disableVisibilities, renderMode]);
 
     const handleAuthoredElementValuesChange = async (newData: AuthoredElementValues, triggeringElementIds: string[]) => {
-        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, newData, derivedData);
+        const normalizedNewData = normalizeReplicatingContainerValues(element, newData);
+        const patchedDerivedData = patchDerivedDataWithAuthoredValues(element, normalizedNewData, derivedData);
         setInternalDerivedData(patchedDerivedData);
         onDerivedDataChange?.(patchedDerivedData);
-        onAuthoredElementValuesChange(newData);
+        onAuthoredElementValuesChange(normalizedNewData);
 
         const changedElementIds = getChangedAuthoredElementIds(
             element,
             authoredElementValues,
-            newData,
+            normalizedNewData,
         );
 
         if (changedElementIds.length > 0) {
@@ -246,7 +247,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         ]);
 
         // Change-driven derivation updates dependent visibility/values without surfacing validation errors.
-        await deriveWithMinimumVisibleDuration(newData);
+        await deriveWithMinimumVisibleDuration(normalizedNewData);
         setDerivationTriggerIdQueue((current) => {
             const updated = [...current];
             for (const id of relevantIds) {
@@ -260,15 +261,17 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
     };
 
     const derive = async (authoredElementValues: AuthoredElementValues, skipErrorsForElements: string[] = ['ALL'], abort?: AbortSignal) => {
+        const normalizedAuthoredElementValues = normalizeReplicatingContainerValues(element, authoredElementValues);
+
         try {
             if (onDerivationStarted != null) {
-                onDerivationStarted(authoredElementValues);
+                onDerivationStarted(normalizedAuthoredElementValues);
             }
 
-            let derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(authoredElementValues, skipErrorsForElements) : new ElementsApiService()
+            let derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(normalizedAuthoredElementValues, skipErrorsForElements) : new ElementsApiService()
                 .derive({
                     element: element,
-                    authoredElementValues: authoredElementValues,
+                    authoredElementValues: normalizedAuthoredElementValues,
                     derivationOptions: {
                         skipErrorsForElementIds: disableValidation && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : skipErrorsForElements,
                         skipVisibilitiesForElementIds: disableVisibilities && renderMode === ViewDispatcherMode.Editor ? ['ALL'] : [],
@@ -353,12 +356,14 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                         return deriveWithMinimumVisibleDuration(authoredValues, skipErrorsForElements);
                     }}
                     onEvent={(data, event) => {
-                        return deriveWithMinimumVisibleDuration(data)
+                        const normalizedData = normalizeReplicatingContainerValues(element, data);
+
+                        return deriveWithMinimumVisibleDuration(normalizedData)
                             .then((derived) => {
                                 setInternalDerivedData(derived);
                                 if (!hasAnyErrorRecursively(derived.elementStates)) {
                                     if (onEvent != null) {
-                                        onEvent(data, event);
+                                        onEvent(normalizedData, event);
                                     }
                                 }
                             });

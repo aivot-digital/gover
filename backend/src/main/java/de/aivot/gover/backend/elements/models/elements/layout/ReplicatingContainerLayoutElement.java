@@ -16,7 +16,7 @@ import jakarta.annotation.Nullable;
 import java.math.BigDecimal;
 import java.util.*;
 
-public class ReplicatingContainerLayoutElement extends BaseInputElement<List<AuthoredElementValues>> implements LayoutElement<BaseFormElement> {
+public class ReplicatingContainerLayoutElement extends BaseInputElement<List<ReplicatingContainerLayoutElementValue>> implements LayoutElement<BaseFormElement> {
     @Nullable
     private Integer minimumRequiredSets;
 
@@ -40,7 +40,11 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Aut
     }
 
     @Override
-    public List<AuthoredElementValues> formatValue(@Nullable Object value) {
+    public List<ReplicatingContainerLayoutElementValue> formatValue(@Nullable Object value) {
+        return _formatValue(value);
+    }
+
+    public static List<ReplicatingContainerLayoutElementValue> _formatValue(@Nullable Object value) {
         if (value == null) {
             return null;
         }
@@ -48,20 +52,40 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Aut
         ObjectMapper om = ObjectMapperFactory.
                 getInstance();
 
-        List<AuthoredElementValues> res = new LinkedList<>();
+        List<ReplicatingContainerLayoutElementValue> res = new LinkedList<>();
 
         if (value instanceof Collection<?> cValue) {
             for (Object itemObj : cValue) {
-                var conv = om.convertValue(itemObj, AuthoredElementValues.class);
-                res.add(conv);
+                res.add(formatItemValue(om, itemObj));
             }
         }
 
         return res.isEmpty() ? null : res;
     }
 
+    private static ReplicatingContainerLayoutElementValue formatItemValue(@Nonnull ObjectMapper om, @Nullable Object itemObj) {
+        if (itemObj == null) {
+            return new ReplicatingContainerLayoutElementValue();
+        }
+
+        if (itemObj instanceof ReplicatingContainerLayoutElementValue itemValue) {
+            return itemValue;
+        }
+
+        if (itemObj instanceof Map<?, ?> itemMap && !isRowWrapperMap(itemMap)) {
+            var values = om.convertValue(itemMap, AuthoredElementValues.class);
+            return new ReplicatingContainerLayoutElementValue().setValues(values);
+        }
+
+        return om.convertValue(itemObj, ReplicatingContainerLayoutElementValue.class);
+    }
+
+    private static boolean isRowWrapperMap(@Nonnull Map<?, ?> itemMap) {
+        return itemMap.containsKey("values") || (itemMap.size() == 1 && itemMap.containsKey("id"));
+    }
+
     @Override
-    public void performValidation(List<AuthoredElementValues> value) throws ValidationException {
+    public void performValidation(List<ReplicatingContainerLayoutElementValue> value) throws ValidationException {
         if (value == null) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -87,7 +111,7 @@ public class ReplicatingContainerLayoutElement extends BaseInputElement<List<Aut
     @Nonnull
     @Override
     public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
-        Collection<AuthoredElementValues> listVal = formatValue(referencedValue);
+        Collection<ReplicatingContainerLayoutElementValue> listVal = formatValue(referencedValue);
         int listValInt = listVal != null ? listVal.size() : 0;
 
         var comparedValueInt = switch (comparedValue) {

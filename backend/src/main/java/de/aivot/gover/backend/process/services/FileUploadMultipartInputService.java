@@ -7,6 +7,7 @@ import de.aivot.gover.backend.elements.models.elements.LayoutElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElementItem;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -137,13 +138,18 @@ public class FileUploadMultipartInputService {
             }
 
             var normalizedRows = new ArrayList<>(rawRows.size());
-            for (var rawRow : rawRows) {
-                if (!(rawRow instanceof Map<?, ?> rawRowMap)) {
+            for (var rowIndex = 0; rowIndex < rawRows.size(); rowIndex++) {
+                var rawRow = rawRows.get(rowIndex);
+                var rowValue = resolveReplicatingContainerRowValue(rawRow);
+                if (rowValue == null) {
                     normalizedRows.add(rawRow);
                     continue;
                 }
 
-                var rowValues = toAuthoredElementValues(rawRowMap);
+                var rowValues = rowValue.getValues() != null ? rowValue.getValues() : new AuthoredElementValues();
+                var childStructuredListIndices = new ArrayList<Integer>(structuredListIndices.size() + 1);
+                childStructuredListIndices.addAll(structuredListIndices);
+                childStructuredListIndices.add(rowIndex + 1);
                 for (var child : replicatingContainer.getChildren()) {
                     normalizeElement(
                             child,
@@ -159,7 +165,7 @@ public class FileUploadMultipartInputService {
                             nextAttachmentPositionsByDataKey
                     );
                 }
-                normalizedRows.add(rowValues);
+                normalizedRows.add(rowValue.setValues(rowValues));
             }
 
             values.put(replicatingContainer.getId(), normalizedRows);
@@ -572,15 +578,14 @@ public class FileUploadMultipartInputService {
         );
     }
 
-    @Nonnull
-    private AuthoredElementValues toAuthoredElementValues(@Nonnull Map<?, ?> rawMap) {
-        var authoredValues = new AuthoredElementValues();
-        for (var entry : rawMap.entrySet()) {
-            if (entry.getKey() instanceof String key) {
-                authoredValues.put(key, entry.getValue());
-            }
+    @Nullable
+    private ReplicatingContainerLayoutElementValue resolveReplicatingContainerRowValue(@Nullable Object rawRow) {
+        if (!(rawRow instanceof ReplicatingContainerLayoutElementValue) && !(rawRow instanceof Map<?, ?>)) {
+            return null;
         }
-        return authoredValues;
+
+        var rows = ReplicatingContainerLayoutElement._formatValue(List.of(rawRow));
+        return rows != null && !rows.isEmpty() ? rows.getFirst() : null;
     }
 
     public record NormalizationResult(

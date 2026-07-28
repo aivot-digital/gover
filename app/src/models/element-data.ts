@@ -7,6 +7,13 @@ export type AuthoredElementValues = Partial<Record<string, any>>;
 
 export type EffectiveElementValues = Partial<Record<string, any>>;
 
+export interface ReplicatingContainerElementValue {
+    id?: string | null;
+    values?: AuthoredElementValues | null;
+}
+
+export type ReplicatingContainerElementValues = ReplicatingContainerElementValue[];
+
 export enum ComputedElementValueSource {
     Authored = 'Authored',
     Derived = 'Derived',
@@ -44,6 +51,31 @@ export function createDerivedRuntimeElementData(data?: Partial<DerivedRuntimeEle
 
 export function isAuthoredElementValues(obj: any): obj is AuthoredElementValues {
     return obj != null && typeof obj === 'object' && !Array.isArray(obj);
+}
+
+export function isReplicatingContainerElementValue(obj: any): obj is ReplicatingContainerElementValue {
+    if (!isAuthoredElementValues(obj)) {
+        return false;
+    }
+
+    const keys = Object.keys(obj);
+    return keys.length > 0 &&
+        keys.every((key) => key === 'id' || key === 'values') &&
+        (obj.values == null || isAuthoredElementValues(obj.values));
+}
+
+export function resolveReplicatingContainerElementValues(row: any): AuthoredElementValues | null {
+    if (isReplicatingContainerElementValue(row)) {
+        return row.values ?? {};
+    }
+
+    return isAuthoredElementValues(row) ? row : null;
+}
+
+export function updateReplicatingContainerElementValues(row: any, values: AuthoredElementValues): ReplicatingContainerElementValue {
+    return isReplicatingContainerElementValue(row) ?
+        {...row, values} :
+        {values};
 }
 
 export function isEffectiveValues(obj: any): obj is EffectiveElementValues {

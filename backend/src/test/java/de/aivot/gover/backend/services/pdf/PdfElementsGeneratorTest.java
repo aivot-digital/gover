@@ -3,6 +3,8 @@ package de.aivot.gover.backend.services.pdf;
 import de.aivot.gover.backend.elements.models.ComputedElementState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
+import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.BaseFormElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElementOption;
@@ -11,6 +13,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TableInputElem
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.enums.TableColumnDataType;
 import de.aivot.gover.backend.services.pdf.PdfElementsGenerator;
@@ -155,6 +158,32 @@ class PdfElementsGeneratorTest {
         var selectElement = assertInstanceOf(SelectInputElement.class, firstPlaceholderRow.children().getFirst().element());
 
         assertEquals("Berlin", selectElement.getOptions().getFirst().getLabel());
+    }
+
+    @Test
+    void rendersReplicatingContainerRowsFromValueObjects() {
+        var child = new TextInputElement();
+        child.setId("name");
+        child.setLabel("Name");
+        var replicatingContainer = new ReplicatingContainerLayoutElement()
+                .setChildren(List.of(child));
+        replicatingContainer.setId("people");
+        var root = createRoot(replicatingContainer);
+
+        var rowValues = new AuthoredElementValues();
+        rowValues.put("name", "Ada");
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.put("people", List.of(
+                new ReplicatingContainerLayoutElementValue().setValues(rowValues)
+        ));
+
+        var step = PdfElementsGenerator
+                .generatePdfElements(root, new DerivedRuntimeElementData().setEffectiveValues(effectiveValues), true, false)
+                .getFirst();
+        var peopleElement = step.children().getFirst();
+        var firstRow = peopleElement.children().getFirst();
+
+        assertEquals("Ada", firstRow.children().getFirst().value());
     }
 
     private FormLayoutElement createRoot(BaseFormElement... children) {

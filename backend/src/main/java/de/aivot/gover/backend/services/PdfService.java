@@ -16,6 +16,7 @@ import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.LayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
@@ -276,10 +277,11 @@ public class PdfService {
     private void collectBlankPrintableElementValues(BaseElement element, AuthoredElementValues values) {
         if (element instanceof ReplicatingContainerLayoutElement replicatingContainer) {
             if (replicatingContainer.getId() != null) {
-                var rows = new ArrayList<AuthoredElementValues>();
+                var rows = new ArrayList<ReplicatingContainerLayoutElementValue>();
                 var rowCount = PdfElementsGenerator.getBlankPrintPlaceholderCount(replicatingContainer);
                 for (var i = 0; i < rowCount; i++) {
-                    rows.add(createBlankPrintableElementValues(replicatingContainer.getChildren()));
+                    rows.add(new ReplicatingContainerLayoutElementValue()
+                            .setValues(createBlankPrintableElementValues(replicatingContainer.getChildren())));
                 }
                 values.put(replicatingContainer.getId(), rows);
             }

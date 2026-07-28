@@ -150,7 +150,7 @@ function elementToValueType(element: AnyElement): string {
         case ElementType.Table:
             return `{${element.fields?.map((field) => `${field.key}: string | number | null | undefined`).join('; ')}}[]`;
         case ElementType.ReplicatingContainer:
-            return 'Record<string, unknown>[]';
+            return '{id: string | null | undefined; values: Record<string, unknown> | null | undefined}[]';
         default:
             return 'never';
     }

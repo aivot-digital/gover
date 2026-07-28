@@ -5,6 +5,7 @@ import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
@@ -210,6 +211,218 @@ class FileUploadMultipartInputServiceTest {
     }
 
     @Test
+    void normalizeInputs_TreatsHashAsLiteralForSingleUploadOutsideReplicatingContainer() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(
+                attachmentService,
+                attachmentSetService,
+                new TestAVService()
+        );
+        var layout = createLayout("documents", "# evidence");
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("documents", List.of(Map.of(
+                "name", "report.pdf",
+                "uri", "blob:report",
+                "size", 3
+        )));
+
+        var normalized = service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "report.pdf", "application/pdf", "pdf".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:report"),
+                42L,
+                9L,
+                "staff-user"
+        ).inputs();
+
+        @SuppressWarnings("unchecked")
+        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        assertEquals("# evidence.pdf", documents.getFirst().get("name"));
+        assertEquals("# evidence.pdf", attachmentService.createdAttachments().getFirst().getFileName());
+    }
+
+    @Test
+    void normalizeInputs_ReplacesHashWithIndexForMultiUpload() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(
+                attachmentService,
+                attachmentSetService,
+                new TestAVService()
+        );
+        var layout = createLayout("documents", "# evidence");
+        var uploadElement = (FileUploadInputElement) layout.getChildren().getFirst();
+        uploadElement.setIsMultifile(true);
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("documents", List.of(
+                createFileItem("report.pdf", "blob:report", 3),
+                createFileItem("invoice.pdf", "blob:invoice", 7)
+        ));
+
+        var normalized = service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "report.pdf", "application/pdf", "pdf".getBytes(StandardCharsets.UTF_8)),
+                        new MockMultipartFile("files", "invoice.pdf", "application/pdf", "invoice".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:report", "blob:invoice"),
+                42L,
+                9L,
+                "staff-user"
+        ).inputs();
+
+        @SuppressWarnings("unchecked")
+        var documents = (List<Map<String, Object>>) normalized.get("documents");
+        assertEquals("1 evidence.pdf", documents.get(0).get("name"));
+        assertEquals("2 evidence.pdf", documents.get(1).get("name"));
+        assertEquals("1 evidence.pdf", attachmentService.createdAttachments().get(0).getFileName());
+        assertEquals("2 evidence.pdf", attachmentService.createdAttachments().get(1).getFileName());
+    }
+
+    @Test
+    void normalizeInputs_UsesStructuredListIndicesForSingleUploads() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(
+                attachmentService,
+                attachmentSetService,
+                new TestAVService()
+        );
+        var upload = createUpload("birthCertificate", "Geburtsurkunde");
+        var dogs = new ReplicatingContainerLayoutElement();
+        dogs.setId("dogs");
+        dogs.setChildren(List.of(upload));
+        var persons = new ReplicatingContainerLayoutElement();
+        persons.setId("persons");
+        persons.setChildren(List.of(dogs));
+        var layout = new GroupLayoutElement();
+        layout.setId("root");
+        layout.setChildren(List.of(persons));
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("persons", List.of(
+                createReplicatingRow(Map.of("dogs", List.of(createReplicatingRow(Map.of()), createReplicatingRow(Map.of())))),
+                createReplicatingRow(Map.of("dogs", List.of(createReplicatingRow(Map.of())))),
+                createReplicatingRow(Map.of("dogs", List.of(
+                        createReplicatingRow(Map.of()),
+                        createReplicatingRow(Map.of("birthCertificate", List.of(createFileItem("birth.pdf", "blob:birth", 1))))
+                )))
+        ));
+
+        var normalized = service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "birth.pdf", "application/pdf", "1".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:birth"),
+                42L,
+                null,
+                null
+        ).inputs();
+
+        @SuppressWarnings("unchecked")
+        var personsValue = (List<?>) normalized.get("persons");
+        @SuppressWarnings("unchecked")
+        var dogsValue = (List<?>) getReplicatingRowValues(personsValue.get(2)).get("dogs");
+        @SuppressWarnings("unchecked")
+        var files = (List<Map<String, Object>>) getReplicatingRowValues(dogsValue.get(1)).get("birthCertificate");
+        assertEquals("Geburtsurkunde-3-2.pdf", files.getFirst().get("name"));
+        assertEquals("Geburtsurkunde-3-2.pdf", attachmentService.createdAttachments().getFirst().getFileName());
+    }
+
+    @Test
+    void normalizeInputs_UsesStructuredAndFileIndicesForMultiUploads() throws Exception {
+        var attachmentService = new TestProcessInstanceAttachmentService();
+        var attachmentSetService = new TestProcessInstanceAttachmentSetService();
+        var service = new FileUploadMultipartInputService(
+                attachmentService,
+                attachmentSetService,
+                new TestAVService()
+        );
+        var upload = createUpload("xray", "Röntgenbild");
+        upload.setIsMultifile(true);
+        var dogs = new ReplicatingContainerLayoutElement();
+        dogs.setId("dogs");
+        dogs.setChildren(List.of(upload));
+        var persons = new ReplicatingContainerLayoutElement();
+        persons.setId("persons");
+        persons.setChildren(List.of(dogs));
+        var layout = new GroupLayoutElement();
+        layout.setId("root");
+        layout.setChildren(List.of(persons));
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("persons", List.of(
+                createReplicatingRow(Map.of("dogs", List.of(
+                        createReplicatingRow(Map.of()),
+                        createReplicatingRow(Map.of()),
+                        createReplicatingRow(Map.of("xray", List.of(
+                                createFileItem("first.pdf", "blob:first", 1),
+                                createFileItem("second.pdf", "blob:second", 1)
+                        )))
+                )))
+        ));
+
+        var normalized = service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "first.pdf", "application/pdf", "1".getBytes(StandardCharsets.UTF_8)),
+                        new MockMultipartFile("files", "second.pdf", "application/pdf", "2".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:first", "blob:second"),
+                42L,
+                null,
+                null
+        ).inputs();
+
+        @SuppressWarnings("unchecked")
+        var personsValue = (List<?>) normalized.get("persons");
+        @SuppressWarnings("unchecked")
+        var dogsValue = (List<?>) getReplicatingRowValues(personsValue.getFirst()).get("dogs");
+        @SuppressWarnings("unchecked")
+        var files = (List<Map<String, Object>>) getReplicatingRowValues(dogsValue.get(2)).get("xray");
+        assertEquals("Röntgenbild-1-3-1.pdf", files.get(0).get("name"));
+        assertEquals("Röntgenbild-1-3-2.pdf", files.get(1).get("name"));
+        assertEquals("Röntgenbild-1-3-2.pdf", attachmentService.createdAttachments().get(1).getFileName());
+    }
+
+    @Test
+    void normalizeInputs_RejectsUploadWithoutConfiguredSubmittedFileName() {
+        var service = new FileUploadMultipartInputService(
+                new TestProcessInstanceAttachmentService(),
+                new TestProcessInstanceAttachmentSetService(),
+                new TestAVService()
+        );
+        var layout = createLayout("documents", null);
+
+        var inputs = new AuthoredElementValues();
+        inputs.put("documents", List.of(createFileItem("report.pdf", "blob:report", 3)));
+
+        var exception = assertThrows(ResponseException.class, () -> service.normalizeInputs(
+                layout,
+                inputs,
+                new MultipartFile[]{
+                        new MockMultipartFile("files", "report.pdf", "application/pdf", "pdf".getBytes(StandardCharsets.UTF_8))
+                },
+                List.of("blob:report"),
+                42L,
+                9L,
+                "staff-user"
+        ));
+
+        assertTrue(exception.getMessage().contains("Dateiname bei Einreichung"));
+    }
+
+    @Test
     void normalizeInputs_GroupsUploadsByDestinationKeyOrElementId() throws Exception {
         var attachmentService = new TestProcessInstanceAttachmentService();
         var attachmentSetService = new TestProcessInstanceAttachmentSetService();
@@ -289,9 +502,9 @@ class FileUploadMultipartInputServiceTest {
 
         var inputs = new AuthoredElementValues();
         inputs.put("rows", List.of(
-                Map.of("documents", List.of(createFileItem("first.pdf", "blob:first", 1))),
-                Map.of("documents", List.of(createFileItem("second.pdf", "blob:second", 1))),
-                Map.of("documents", List.of(createFileItem("third.pdf", "blob:third", 1)))
+                createReplicatingRow(Map.of("documents", List.of(createFileItem("first.pdf", "blob:first", 1)))),
+                createReplicatingRow(Map.of("documents", List.of(createFileItem("second.pdf", "blob:second", 1)))),
+                createReplicatingRow(Map.of("documents", List.of(createFileItem("third.pdf", "blob:third", 1))))
         ));
 
         service.normalizeInputs(
@@ -342,6 +555,20 @@ class FileUploadMultipartInputServiceTest {
                 "uri", uri,
                 "size", size
         );
+    }
+
+    private static ReplicatingContainerLayoutElementValue createReplicatingRow(Map<?, ?> values) {
+        var authoredValues = new AuthoredElementValues();
+        for (var entry : values.entrySet()) {
+            if (entry.getKey() instanceof String key) {
+                authoredValues.put(key, entry.getValue());
+            }
+        }
+        return new ReplicatingContainerLayoutElementValue().setValues(authoredValues);
+    }
+
+    private static AuthoredElementValues getReplicatingRowValues(Object row) {
+        return assertInstanceOf(ReplicatingContainerLayoutElementValue.class, row).getValues();
     }
 
     private static final class TestProcessInstanceAttachmentService extends ProcessInstanceAttachmentService {

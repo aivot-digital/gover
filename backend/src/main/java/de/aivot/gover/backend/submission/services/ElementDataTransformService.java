@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.submission.services;
 
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
+import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.ComputedElementState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
@@ -8,6 +9,7 @@ import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.BaseInputElement;
 import de.aivot.gover.backend.elements.models.elements.LayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -250,28 +252,29 @@ public class ElementDataTransformService {
         var mappedItems = new LinkedList<Object>();
         for (var itemIndex = 0; itemIndex < rawItems.size(); itemIndex++) {
             var rawItem = rawItems.get(itemIndex);
-            if (rawItem instanceof Map<?, ?> rawItemMap) {
-                var itemEffectiveValues = toStringObjectMap(rawItemMap);
-                var itemReplicationIndices = appendReplicationIndex(replicationIndices, itemIndex);
-                var itemElementStates = resolveReplicatingContainerItemStates(replicatingContainerState, itemIndex);
-
-                if (StringUtils.isNullOrEmpty(replicatingContainer.getDestinationKey())) {
-                    for (var child : replicatingContainer.getChildren()) {
-                        mergeDestinationKeyPayload(child, itemEffectiveValues, payload, itemReplicationIndices, itemElementStates);
-                    }
-
-                    continue;
-                }
-
-                var itemPayload = resolveExistingReplicatingContainerItemPayload(existingItems, itemIndex);
-                for (var child : replicatingContainer.getChildren()) {
-                    mergeDestinationKeyPayload(child, itemEffectiveValues, itemPayload, itemReplicationIndices, itemElementStates);
-                }
-
-                mappedItems.add(itemPayload);
-            } else {
+            var itemEffectiveValues = resolveReplicatingContainerItemValues(rawItem);
+            if (itemEffectiveValues == null) {
                 mappedItems.add(rawItem);
+                continue;
             }
+
+            var itemReplicationIndices = appendReplicationIndex(replicationIndices, itemIndex);
+            var itemElementStates = resolveReplicatingContainerItemStates(replicatingContainerState, itemIndex);
+
+            if (StringUtils.isNullOrEmpty(replicatingContainer.getDestinationKey())) {
+                for (var child : replicatingContainer.getChildren()) {
+                    mergeDestinationKeyPayload(child, itemEffectiveValues, payload, itemReplicationIndices, itemElementStates);
+                }
+
+                continue;
+            }
+
+            var itemPayload = resolveExistingReplicatingContainerItemPayload(existingItems, itemIndex);
+            for (var child : replicatingContainer.getChildren()) {
+                mergeDestinationKeyPayload(child, itemEffectiveValues, itemPayload, itemReplicationIndices, itemElementStates);
+            }
+
+            mappedItems.add(itemPayload);
         }
 
         writePayloadValue(payload, replicatingContainer.getDestinationKey(), mappedItems, replicationIndices);
@@ -363,7 +366,7 @@ public class ElementDataTransformService {
                         mergeEffectiveValues(child, itemPayload, itemEffectiveValues, itemReplicationIndices);
                     }
 
-                    mappedItems.add(itemEffectiveValues);
+                    mappedItems.add(createReplicatingContainerItemValue(itemEffectiveValues));
                 } else {
                     mappedItems.add(rawItem);
                 }
@@ -387,10 +390,31 @@ public class ElementDataTransformService {
                 mergeEffectiveValues(child, payload, itemEffectiveValues, itemReplicationIndices);
             }
 
-            mappedItems.add(itemEffectiveValues);
+            mappedItems.add(createReplicatingContainerItemValue(itemEffectiveValues));
         }
 
         effectiveValues.put(replicatingContainer.getId(), mappedItems);
+    }
+
+    @Nullable
+    private Map<String, Object> resolveReplicatingContainerItemValues(@Nullable Object rawItem) {
+        if (!(rawItem instanceof ReplicatingContainerLayoutElementValue) && !(rawItem instanceof Map<?, ?>)) {
+            return null;
+        }
+
+        var itemValues = ReplicatingContainerLayoutElement._formatValue(List.of(rawItem));
+        if (itemValues == null || itemValues.isEmpty()) {
+            return null;
+        }
+
+        var rowValues = itemValues.getFirst().getValues();
+        return rowValues == null ? Map.of() : rowValues;
+    }
+
+    @Nonnull
+    private ReplicatingContainerLayoutElementValue createReplicatingContainerItemValue(@Nonnull EffectiveElementValues itemEffectiveValues) {
+        AuthoredElementValues values = itemEffectiveValues.toAuthoredElementValues();
+        return new ReplicatingContainerLayoutElementValue().setValues(values);
     }
 
     /**

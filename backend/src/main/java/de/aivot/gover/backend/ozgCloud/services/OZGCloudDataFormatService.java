@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.ozgCloud.services;
 
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.ComputedElementState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
@@ -12,11 +11,13 @@ import de.aivot.gover.backend.elements.models.elements.form.input.*;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.enums.TableColumnDataType;
 import de.aivot.gover.backend.ozgCloud.models.OZGCloudFormDataItem;
 import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
 import java.time.format.DateTimeFormatter;
 import java.util.Collection;
@@ -840,45 +841,33 @@ public class OZGCloudDataFormatService {
         }
 
         private int getReplicatingRowCount(@Nonnull ReplicatingContainerLayoutElement element) {
-            var authoredRows = ObjectMapperFactory.Utils.convertToList(
-                    authoredElementValues.get(element.getId()),
-                    AuthoredElementValues.class
-            );
-            var effectiveRows = ObjectMapperFactory.Utils.convertToList(
-                    runtimeElementData.getEffectiveValues().get(element.getId()),
-                    EffectiveElementValues.class
-            );
+            var authoredRows = ReplicatingContainerLayoutElement._formatValue(authoredElementValues.get(element.getId()));
+            var effectiveRows = ReplicatingContainerLayoutElement._formatValue(runtimeElementData.getEffectiveValues().get(element.getId()));
             var subStates = runtimeElementData
                     .getElementStates()
                     .getOrDefault(element.getId(), ComputedElementState.create())
                     .getSubStates();
 
+            var authoredRowCount = authoredRows != null ? authoredRows.size() : 0;
+            var effectiveRowCount = effectiveRows != null ? effectiveRows.size() : 0;
             var subStateCount = subStates != null ? subStates.size() : 0;
-            return Math.max(authoredRows.size(), Math.max(effectiveRows.size(), subStateCount));
+            return Math.max(authoredRowCount, Math.max(effectiveRowCount, subStateCount));
         }
 
         private FormattingContext createRowContext(@Nonnull ReplicatingContainerLayoutElement element, int index) {
-            var authoredRows = ObjectMapperFactory.Utils.convertToList(
-                    authoredElementValues.get(element.getId()),
-                    AuthoredElementValues.class
-            );
-            var effectiveRows = ObjectMapperFactory.Utils.convertToList(
-                    runtimeElementData.getEffectiveValues().get(element.getId()),
-                    EffectiveElementValues.class
-            );
+            var authoredRows = ReplicatingContainerLayoutElement._formatValue(authoredElementValues.get(element.getId()));
+            var effectiveRows = ReplicatingContainerLayoutElement._formatValue(runtimeElementData.getEffectiveValues().get(element.getId()));
             var subStates = runtimeElementData
                     .getElementStates()
                     .getOrDefault(element.getId(), ComputedElementState.create())
                     .getSubStates();
 
-            var rowAuthoredValues = index < authoredRows.size()
-                    ? authoredRows.get(index)
+            var rowAuthoredValues = authoredRows != null && index < authoredRows.size()
+                    ? getRowValues(authoredRows.get(index))
                     : new AuthoredElementValues();
-            var rowEffectiveValues = index < effectiveRows.size()
-                    ? effectiveRows.get(index)
-                    : ObjectMapperFactory
-                    .getInstance()
-                    .convertValue(rowAuthoredValues, EffectiveElementValues.class);
+            var rowEffectiveValues = effectiveRows != null && index < effectiveRows.size()
+                    ? toEffectiveElementValues(getRowValues(effectiveRows.get(index)))
+                    : toEffectiveElementValues(rowAuthoredValues);
             var rowElementStates = subStates != null && index < subStates.size()
                     ? subStates.get(index)
                     : new ComputedElementStates();
@@ -887,6 +876,18 @@ public class OZGCloudDataFormatService {
                     rowAuthoredValues,
                     new DerivedRuntimeElementData(rowEffectiveValues, rowElementStates)
             );
+        }
+
+        @Nonnull
+        private AuthoredElementValues getRowValues(@Nullable ReplicatingContainerLayoutElementValue row) {
+            return row != null && row.getValues() != null ? row.getValues() : new AuthoredElementValues();
+        }
+
+        @Nonnull
+        private EffectiveElementValues toEffectiveElementValues(@Nonnull AuthoredElementValues values) {
+            var effectiveValues = new EffectiveElementValues();
+            effectiveValues.putAll(values);
+            return effectiveValues;
         }
     }
 

@@ -2,7 +2,6 @@ package de.aivot.gover.backend.elements.services;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.enums.EffectiveValueSource;
 import de.aivot.gover.backend.elements.exceptions.DerivationException;
 import de.aivot.gover.backend.elements.models.*;
@@ -12,6 +11,7 @@ import de.aivot.gover.backend.elements.models.elements.InputElement;
 import de.aivot.gover.backend.elements.models.elements.LayoutElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.SelectInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.layout.SummaryLayoutElement;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.gover.backend.exceptions.ValidationException;
@@ -272,10 +272,7 @@ public class ElementDerivationService {
                     // Iterate through the list of all child data sets.
                     for (var itemIndex = 0; itemIndex < effectiveChildDataSetList.size(); itemIndex++) {
                         var rawEffectiveChildDataSet = effectiveChildDataSetList.get(itemIndex);
-                        if (rawEffectiveChildDataSet instanceof Map<?, ?> effectiveChildDataSet) {
-                            @SuppressWarnings("unchecked")
-                            var mutableEffectiveChildDataSet = (Map<String, Object>) effectiveChildDataSet;
-
+                        if (rawEffectiveChildDataSet instanceof ReplicatingContainerLayoutElementValue effectiveChildDataSet) {
                             // Create a new container for the computed element states of the current child data set.
                             // Add this to the list of computed element states of the replicating list container.
                             var childItemElementStates = new ComputedElementStates();
@@ -283,8 +280,9 @@ public class ElementDerivationService {
                                     .getSubStates()
                                     .add(childItemElementStates);
 
-                            var om = ObjectMapperFactory.getInstance();
-                            var childAuthoredElementValues = om.convertValue(mutableEffectiveChildDataSet, AuthoredElementValues.class);
+                            var childAuthoredElementValues = effectiveChildDataSet.getValues() == null
+                                    ? new AuthoredElementValues()
+                                    : effectiveChildDataSet.getValues();
                             // Row-local effective values must be rebuilt from visible descendants only.
                             var childEffectiveElementValues = new EffectiveElementValues();
 
@@ -306,8 +304,7 @@ public class ElementDerivationService {
                                 );
                             }
 
-                            mutableEffectiveChildDataSet.clear();
-                            mutableEffectiveChildDataSet.putAll(childEffectiveElementValues);
+                            effectiveChildDataSet.setValues(childEffectiveElementValues.toAuthoredElementValues());
                         }
                     }
                 }

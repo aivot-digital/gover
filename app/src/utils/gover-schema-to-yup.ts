@@ -18,6 +18,7 @@ import {
     ComputedElementStates,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
+    resolveReplicatingContainerElementValues,
 } from '../models/element-data';
 import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
 import {DateRangeFieldElement} from '../models/elements/form/input/date-range-field-element';
@@ -288,9 +289,16 @@ function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: Com
         .object()
         .shape(childShape);
 
+    const rowSchema = yup
+        .object()
+        .shape({
+            id: yup.string().nullable(),
+            values: childSchema,
+        });
+
     let elementShema: any = yup
         .array()
-        .of(childSchema);
+        .of(rowSchema);
 
     if (elem.required) {
         elementShema = elementShema.required(`${elem.label || 'Dieses Feld'} ist ein Pflichtfeld.`);
@@ -681,7 +689,7 @@ export function mapFormManagerErrorsToComputedErrors(
 
         for (const parent of parents) {
             if (typeof parent === 'number') {
-                path += `[${parent}]`;
+                path += `[${parent}].values`;
             } else if (isAnyInputElement(parent)) {
                 path += `.${parent.id}`;
             }
@@ -745,7 +753,8 @@ export function mapFormManagerErrorsToComputedErrors(
                 const childValues = currentAuthoredElementValues[element.id];
                 const rowErrors = Array.isArray(childValues) ?
                     childValues.map((childValue, index) => {
-                        if (childValue == null || typeof childValue !== 'object') {
+                        const rowValues = resolveReplicatingContainerElementValues(childValue);
+                        if (rowValues == null) {
                             return {};
                         }
 
@@ -753,7 +762,7 @@ export function mapFormManagerErrorsToComputedErrors(
                         for (const child of element.children ?? []) {
                             childComputedErrors = {
                                 ...childComputedErrors,
-                                ...mapErrors(child, childValue as AuthoredElementValues, [...parents, element, index]),
+                                ...mapErrors(child, rowValues, [...parents, element, index]),
                             };
                         }
 

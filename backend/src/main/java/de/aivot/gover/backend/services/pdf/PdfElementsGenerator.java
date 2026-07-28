@@ -1,6 +1,5 @@
 package de.aivot.gover.backend.services.pdf;
 
-import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.ComputedElementState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
@@ -11,6 +10,7 @@ import de.aivot.gover.backend.elements.models.elements.form.input.TableInputElem
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElementValue;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.IntroductionStepElement;
 import jakarta.annotation.Nonnull;
@@ -58,6 +58,25 @@ public class PdfElementsGenerator {
             amountOfPlaceholderDatasets = replicatingContainerLayout.getMinimumRequiredSets();
         }
         return amountOfPlaceholderDatasets;
+    }
+
+    @Nullable
+    private static EffectiveElementValues resolveReplicatingContainerRowValues(@Nullable Object row) {
+        if (!(row instanceof ReplicatingContainerLayoutElementValue) && !(row instanceof Map<?, ?>)) {
+            return null;
+        }
+
+        var rows = ReplicatingContainerLayoutElement._formatValue(List.of(row));
+        if (rows == null || rows.isEmpty()) {
+            return null;
+        }
+
+        var authoredValues = rows.getFirst().getValues();
+        var effectiveValues = new EffectiveElementValues();
+        if (authoredValues != null) {
+            effectiveValues.putAll(authoredValues);
+        }
+        return effectiveValues;
     }
 
     @Nullable
@@ -162,19 +181,18 @@ public class PdfElementsGenerator {
                     final DerivedRuntimeElementData childElementData;
                     if (val instanceof DerivedRuntimeElementData derivedRuntimeElementData) {
                         childElementData = derivedRuntimeElementData;
-                    } else if (val instanceof Map<?, ?> childValueMap) {
-                        var childEffectiveValues = ObjectMapperFactory
-                                .getInstance()
-                                .convertValue(childValueMap, EffectiveElementValues.class);
+                    } else {
+                        var childEffectiveValues = resolveReplicatingContainerRowValues(val);
+                        if (childEffectiveValues == null) {
+                            index++;
+                            continue;
+                        }
                         var childStates = elementState != null &&
                                 elementState.getSubStates() != null &&
                                 index < elementState.getSubStates().size()
                                 ? elementState.getSubStates().get(index)
                                 : new ComputedElementStates();
                         childElementData = new DerivedRuntimeElementData(childEffectiveValues, childStates);
-                    } else {
-                        index++;
-                        continue;
                     }
 
                     var children = replicatingContainerLayout
