@@ -22,11 +22,8 @@ import {DebugInformationDialog} from '../../../../../dialogs/debug-information-d
 import TagIcon from '@aivot/mui-material-symbols-400-n25-outlined/Tag';
 import EventIcon from '@aivot/mui-material-symbols-400-n25-outlined/Event';
 import HelpOutlineIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
-import {downloadTextFile} from '../../../../../utils/download-utils';
-import FileDownloadOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Download';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
-import {useNotImplemented} from '../../../../../hooks/use-not-implemented';
 import Extension from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
 import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
 import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
@@ -257,8 +254,6 @@ export function SystemInformation(): React.ReactElement {
         return res;
     }, [versionLabel, compileDate]);
 
-    const notImplemented = useNotImplemented();
-
     return (
         <>
             <StatusTable
@@ -349,50 +344,6 @@ export function SystemInformation(): React.ReactElement {
                     setDebugInformationDialogOpen(false);
                 }}
             />
-            <Box
-                sx={{
-                    mt: 4,
-                }}
-            >
-
-                <Typography
-                    variant="subtitle1"
-                    component="h2"
-                >
-                    HTTP-Austausch
-                </Typography>
-                <Typography
-                    sx={{maxWidth: 900}}
-                >
-                    Hier können Sie einen Auszug der letzten 100 HTTP-Requests und HTTP-Responses herunterladen.
-                    Diese Informationen können hilfreich sein, um z.B. Probleme bei der Anbindung an Drittsysteme zu
-                    analysieren.
-                </Typography>
-
-                <Button
-                    variant="outlined"
-                    sx={{mt: 2.5}}
-                    startIcon={<FileDownloadOutlinedIcon/>}
-                    onClick={() => {
-                        notImplemented();
-                        /*void new SystemApiService()
-                            .getHttpExchanges()
-                            .then((exchanges) => {
-                                const lines: string[] = ['uri,method,timestamp,status,timing'];
-                                for (const exchange of exchanges.exchanges) {
-                                    lines.push(`"${exchange.request.uri}","${exchange.request.method}","${exchange.timestamp}",${exchange.response.status},"${exchange.timeTaken}"`);
-                                }
-
-                                downloadTextFile('http-austausch.csv', lines.join('\n'), 'text/csv');
-                            })
-                            .catch((err) => {
-                                console.error(err);
-                            });*/
-                    }}
-                >
-                    HTTP-Austausch herunterladen (CSV)
-                </Button>
-            </Box>
         </>
     );
 }

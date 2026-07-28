@@ -256,7 +256,6 @@ const BaseDrawerGroups: DrawerGroup[] = [
                         ...drawerIcon(<ReadinessScore/>, <ReadinessScoreFilled/>),
                         label: 'Systeminformationen',
                         to: '/settings/status',
-                        requiredSystemPermission: Permission.SYSTEM_CONFIG_READ,
                     },
                     {
                         ...drawerModuleIcon('audit'),
