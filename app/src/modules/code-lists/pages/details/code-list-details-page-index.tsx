@@ -534,8 +534,7 @@ export function CodeListDetailsPageIndex() {
                         required
                         maxCharacters={255}
                         error={errors.key}
-                        disabled={isBusy || !isEditable}
-                        readonly={isExistingItem === true}
+                        disabled={isBusy || !isEditable || isExistingItem === true}
                     />
                 </Grid>
 
@@ -561,9 +560,8 @@ export function CodeListDetailsPageIndex() {
                             value="Plugin"
                             onChange={() => {
                             }}
-                            readonly={true}
                             error={errors.sourceType}
-                            disabled={isBusy || !isEditable}
+                            disabled={true}
                         />
                     }
 
