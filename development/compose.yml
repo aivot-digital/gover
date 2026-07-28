@@ -110,10 +110,11 @@ services:
       KC_FEATURES: "transient-users,update-email,hostname:v2"
 
   keycloak-setup:
-    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.20
+    image: ghcr.io/aivot-digital/keycloak-egov-plugins-setup:0.0.22
     depends_on:
       - keycloak
     environment:
+      ENVIRONMENT: development
       KEYCLOAK_URL: "http://keycloak:8080"
       HOSTNAME: "http://localhost:9595"
       KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME: "admin"

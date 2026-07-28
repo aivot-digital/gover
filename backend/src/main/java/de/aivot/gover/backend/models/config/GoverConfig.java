@@ -3,7 +3,7 @@ package de.aivot.gover.backend.models.config;
 import de.aivot.gover.backend.core.enums.ModuleFlags;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -12,7 +12,7 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@Configuration
+@Component
 @ConfigurationProperties(prefix = "gover")
 public class GoverConfig {
     private String fromMail;
@@ -197,8 +197,7 @@ public class GoverConfig {
     }
 
     /**
-     * Missing limits are treated as unlimited so adding a new process node type or running with older
-     * configuration does not silently turn into a zero-capacity system.
+     * Missing limits are treated as unlimited so adding a new process node type or running with older configuration does not silently turn into a zero-capacity system.
      */
     public int getProcessNodeLimit(ProcessNodeType type) {
         if (processNodeLimits == null) {
