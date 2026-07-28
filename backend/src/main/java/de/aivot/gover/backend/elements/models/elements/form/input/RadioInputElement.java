@@ -21,7 +21,7 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
     private OptionsSourceType optionsSource;
 
     @Nullable
-    private Integer codeListId;
+    private String codeListKey;
 
     @Nullable
     private Boolean displayInline;
@@ -133,7 +133,7 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
         RadioInputElement that = (RadioInputElement) o;
         return Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
-                && Objects.equals(codeListId, that.codeListId)
+                && Objects.equals(codeListKey, that.codeListKey)
                 && Objects.equals(displayInline, that.displayInline)
                 && Objects.equals(toggleButtons, that.toggleButtons);
     }
@@ -143,7 +143,7 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(options);
         result = 31 * result + Objects.hashCode(optionsSource);
-        result = 31 * result + Objects.hashCode(codeListId);
+        result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(displayInline);
         result = 31 * result + Objects.hashCode(toggleButtons);
         return result;
@@ -174,12 +174,12 @@ public class RadioInputElement extends BaseInputElement<String> implements Print
     }
 
     @Nullable
-    public Integer getCodeListId() {
-        return codeListId;
+    public String getCodeListKey() {
+        return codeListKey;
     }
 
-    public RadioInputElement setCodeListId(@Nullable Integer codeListId) {
-        this.codeListId = codeListId;
+    public RadioInputElement setCodeListKey(@Nullable String codeListKey) {
+        this.codeListKey = codeListKey;
         return this;
     }
 

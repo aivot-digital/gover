@@ -1,6 +1,7 @@
 create table code_lists
 (
-    id                 serial primary key,
+    key                varchar(255) primary key,
+    id                 serial      not null unique,
     -- The type of the source of this code list
     --   0: Manually Created
     --   1: Automatic Created by Plugin

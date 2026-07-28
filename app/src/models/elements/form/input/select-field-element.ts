@@ -14,5 +14,5 @@ export interface SelectFieldElement extends BaseInputElement<ElementType.Select>
     dependsOnSelectFieldId: string | null | undefined;
     options: Array<SelectFieldElementOption | string> | null | undefined;
     optionsSource: OptionsSourceType | null | undefined;
-    codeListId: number | null | undefined;
+    codeListKey: string | null | undefined;
 }

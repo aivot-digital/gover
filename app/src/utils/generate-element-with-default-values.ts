@@ -207,7 +207,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.MultiCheckbox, id),
         label: 'Mehrfachauswahl',
         optionsSource: OptionsSourceType.Manual,
-        codeListId: undefined,
+        codeListKey: undefined,
         options: [
             {
                 value: 'option_1',
@@ -250,7 +250,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.Radio, id),
         label: 'Einzelauswahl (Optionsfelder)',
         optionsSource: OptionsSourceType.Manual,
-        codeListId: undefined,
+        codeListKey: undefined,
         options: [
             {
                 value: 'option_1',
@@ -271,7 +271,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.Select, id),
         label: 'Einzelauswahl (Auswahlmenü)',
         optionsSource: OptionsSourceType.Manual,
-        codeListId: undefined,
+        codeListKey: undefined,
         options: [
             {
                 value: 'option_1',
@@ -421,7 +421,7 @@ const elementConstructors: {
         placeholder: 'Eintrag hinzufügen',
         suggestions: undefined,
         optionsSource: OptionsSourceType.Manual,
-        codeListId: undefined,
+        codeListKey: undefined,
         minItems: undefined,
         maxItems: undefined,
         allowDuplicates: false,

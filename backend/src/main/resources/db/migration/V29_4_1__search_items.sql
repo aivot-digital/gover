@@ -205,7 +205,7 @@ UNION ALL
 SELECT text 'code_lists'           AS origin_table,
        null                        AS origin_table_subset,
        name                        AS label,
-       id::varchar                 AS id,
+       key                         AS id,
        to_tsvector('german', name) AS searchable_element,
        name                        AS search_text
 FROM code_lists;
