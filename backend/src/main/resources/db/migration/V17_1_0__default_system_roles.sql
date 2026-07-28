@@ -86,10 +86,7 @@ values (1,
             'user.update',
             'user.delete',
 
-            'plugin.create',
             'plugin.read',
-            'plugin.update',
-            'plugin.delete',
 
             'deputy.create',
             'deputy.read',
@@ -225,10 +222,7 @@ values (1,
             'user.update',
             'user.delete',
 
-            'plugin.create',
             'plugin.read',
-            'plugin.update',
-            'plugin.delete',
 
             'deputy.create',
             'deputy.read',
