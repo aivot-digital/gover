@@ -28,7 +28,7 @@ import java.util.Objects;
 
 @Component
 public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvider {
-    private static final String ATTACHMENT_TYPE_DEFINITION = "{ key: string; filename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; }";
+    private static final String ATTACHMENT_TYPE_DEFINITION = "{ key: string; filename: string; originalFilename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; }";
 
     private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
     private final ProcessInstanceAttachmentService processInstanceAttachmentService;
@@ -253,6 +253,7 @@ public class ProcessAttachmentSetJavascriptV1 implements JavascriptFunctionProvi
         var data = new LinkedHashMap<String, Object>();
         data.put("key", attachment.getKey().toString());
         data.put("filename", attachment.getFileName());
+        data.put("originalFilename", attachment.getOriginalFileName());
         data.put("position", attachment.getPosition());
         data.put("attachmentSetId", attachment.getAttachmentSetId());
         data.put("processInstanceId", attachment.getProcessInstanceId());

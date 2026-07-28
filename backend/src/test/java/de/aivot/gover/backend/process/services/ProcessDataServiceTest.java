@@ -81,6 +81,7 @@ class ProcessDataServiceTest {
         var firstAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "first.pdf",
+                "uploaded-first.pdf",
                 1,
                 1,
                 42L,
@@ -93,6 +94,7 @@ class ProcessDataServiceTest {
         var thirdAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "third.pdf",
+                "uploaded-third.pdf",
                 3,
                 2,
                 42L,
@@ -105,6 +107,7 @@ class ProcessDataServiceTest {
         var secondAttachment = new ProcessInstanceAttachmentEntity(
                 UUID.randomUUID(),
                 "second.pdf",
+                "uploaded-second.pdf",
                 2,
                 1,
                 42L,
@@ -153,8 +156,10 @@ class ProcessDataServiceTest {
         var attachments = (List<Map<String, Object>>) documentsSet.get("attachments");
         assertEquals(3, attachments.size());
         assertEquals("first.pdf", attachments.get(0).get("filename"));
+        assertEquals("uploaded-first.pdf", attachments.get(0).get("originalFilename"));
         assertEquals("/attachments/second.pdf", attachments.get(1).get("storagePathFromRoot"));
         assertEquals("third.pdf", attachments.get(2).get("filename"));
+        assertEquals("uploaded-third.pdf", attachments.get(2).get("originalFilename"));
 
         @SuppressWarnings("unchecked")
         var sets = (List<Map<String, Object>>) documentsSet.get("sets");
@@ -164,6 +169,7 @@ class ProcessDataServiceTest {
         @SuppressWarnings("unchecked")
         var firstSetAttachments = (List<Map<String, Object>>) sets.getFirst().get("attachments");
         assertEquals("first.pdf", firstSetAttachments.get(0).get("filename"));
+        assertEquals("uploaded-first.pdf", firstSetAttachments.get(0).get("originalFilename"));
         assertEquals("second.pdf", firstSetAttachments.get(1).get("filename"));
     }
 }

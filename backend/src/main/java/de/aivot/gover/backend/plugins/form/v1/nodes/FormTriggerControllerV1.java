@@ -589,6 +589,7 @@ public class FormTriggerControllerV1 {
             initialPayload.put(FormTriggerNodeV1.DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
                     "key", a.getKey(),
                     "fileName", a.getFileName(),
+                    "originalFileName", a.getOriginalFileName(),
                     "storageProviderId", a.getStorageProviderId(),
                     "storagePathFromRoot", a.getStoragePathFromRoot()
             )).toList());

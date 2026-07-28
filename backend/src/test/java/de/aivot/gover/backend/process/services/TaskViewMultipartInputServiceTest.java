@@ -31,7 +31,7 @@ class FileUploadMultipartInputServiceTest {
                 attachmentSetService,
                 new TestAVService()
         );
-        var layout = createLayout("documents", null);
+        var layout = createLayout("documents", "report");
 
         var inputs = new AuthoredElementValues();
         inputs.put("documents", List.of(
@@ -81,6 +81,7 @@ class FileUploadMultipartInputServiceTest {
         assertEquals(42L, createdAttachment.getProcessInstanceId());
         assertEquals(9L, createdAttachment.getProcessInstanceTaskId());
         assertEquals("staff-user", createdAttachment.getUploadedByUserId());
+        assertEquals("report.pdf", createdAttachment.getOriginalFileName());
         assertEquals(1, normalizationResult.createdFileItems().size());
         assertEquals("report.pdf", normalizationResult.createdFileItems().getFirst().getName());
         assertEquals(3, normalizationResult.createdFileItems().getFirst().getSize());
@@ -101,7 +102,7 @@ class FileUploadMultipartInputServiceTest {
                 new TestProcessInstanceAttachmentSetService(),
                 new TestAVService()
         );
-        var layout = createLayout("documents", null);
+        var layout = createLayout("documents", "report");
 
         var inputs = new AuthoredElementValues();
         inputs.put("documents", List.of(Map.of(
@@ -124,7 +125,7 @@ class FileUploadMultipartInputServiceTest {
     }
 
     @Test
-    void normalizeInputs_UsesConfiguredSubmittedFileNameAndSuffixesMultipleUploads() throws Exception {
+    void normalizeInputs_UsesConfiguredSubmittedFileNameAndIndexesAllMultipleUploads() throws Exception {
         var attachmentService = new TestProcessInstanceAttachmentService();
         var attachmentSetService = new TestProcessInstanceAttachmentSetService();
         var service = new FileUploadMultipartInputService(
@@ -133,6 +134,8 @@ class FileUploadMultipartInputServiceTest {
                 new TestAVService()
         );
         var layout = createLayout("documents", "evidence");
+        var uploadElement = (FileUploadInputElement) layout.getChildren().getFirst();
+        uploadElement.setIsMultifile(true);
 
         var inputs = new AuthoredElementValues();
         inputs.put("documents", List.of(
@@ -163,10 +166,12 @@ class FileUploadMultipartInputServiceTest {
 
         @SuppressWarnings("unchecked")
         var documents = (List<Map<String, Object>>) normalized.get("documents");
-        assertEquals("evidence.pdf", documents.get(0).get("name"));
+        assertEquals("evidence-1.pdf", documents.get(0).get("name"));
         assertEquals("evidence-2.pdf", documents.get(1).get("name"));
-        assertEquals("evidence.pdf", attachmentService.createdAttachments().get(0).getFileName());
+        assertEquals("evidence-1.pdf", attachmentService.createdAttachments().get(0).getFileName());
         assertEquals("evidence-2.pdf", attachmentService.createdAttachments().get(1).getFileName());
+        assertEquals("report.pdf", attachmentService.createdAttachments().get(0).getOriginalFileName());
+        assertEquals("invoice.pdf", attachmentService.createdAttachments().get(1).getOriginalFileName());
         assertEquals(1, attachmentService.createdAttachments().get(0).getPosition());
         assertEquals(2, attachmentService.createdAttachments().get(1).getPosition());
         assertEquals(1, attachmentSetService.createdSets().size());
@@ -432,14 +437,14 @@ class FileUploadMultipartInputServiceTest {
                 new TestAVService()
         );
 
-        var firstUpload = createUpload("firstDocuments", null);
+        var firstUpload = createUpload("firstDocuments", "first");
         firstUpload.setDestinationKey("case.documents");
         firstUpload.setLabel("Case documents");
 
-        var secondUpload = createUpload("secondDocuments", null);
+        var secondUpload = createUpload("secondDocuments", "second");
         secondUpload.setDestinationKey("case.documents");
 
-        var fallbackUpload = createUpload("fallback.documents", null);
+        var fallbackUpload = createUpload("fallback.documents", "fallback");
 
         var layout = new GroupLayoutElement();
         layout.setId("root");
@@ -489,7 +494,7 @@ class FileUploadMultipartInputServiceTest {
                 new TestAVService()
         );
 
-        var upload = createUpload("documents", null);
+        var upload = createUpload("documents", "document");
         upload.setDestinationKey("case.documents");
 
         var repeating = new ReplicatingContainerLayoutElement();

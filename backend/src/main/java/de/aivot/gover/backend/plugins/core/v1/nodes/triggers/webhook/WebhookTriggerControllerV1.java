@@ -314,6 +314,7 @@ public class WebhookTriggerControllerV1 {
             initialPayload.put(WebhookTriggerNodeV1.INITIAL_DATA_KEY_ATTACHMENTS, attachments.stream().map((a) -> Map.<String, Object>of(
                     "key", a.getKey(),
                     "filename", a.getFileName(),
+                    "originalFilename", a.getOriginalFileName(),
                     "storageProviderId", a.getStorageProviderId(),
                     "storagePathFromRoot", a.getStoragePathFromRoot()
             )).toList());

@@ -33,6 +33,7 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -102,20 +103,34 @@ public class ProcessInstanceAttachmentController {
 
         // ...permission check logic (similar to other controllers)...
 
-        // Save attachment entity (actual file storage logic should be implemented in service)
+        var originalFileName = StringUtils.toNullableTrimmedString(file.getOriginalFilename());
+        if (originalFileName == null) {
+            originalFileName = "Unbenannte Datei.dat";
+        }
+
+        byte[] fileBytes;
+        try {
+            fileBytes = file.getBytes();
+        } catch (IOException e) {
+            throw ResponseException.internalServerError(e, "Fehler beim Lesen der hochgeladenen Datei.");
+        }
+
         var attachment = new ProcessInstanceAttachmentEntity()
                 .setKey(UUID.randomUUID())
+                .setFileName(originalFileName)
+                .setOriginalFileName(originalFileName)
                 .setPosition(1)
                 .setProcessInstanceId(processInstanceId)
                 .setProcessInstanceTaskId(processInstanceTaskId)
-                .setUploadedByUserId(execUser.getId());
-
-        // TODO: Store the file bytes somewhere, e.g. in a storage service
+                .setUploadedByUserId(execUser.getId())
+                .setFileBytes(fileBytes);
 
         processInstanceAttachmentService.create(attachment);
 
         auditService.create().withUser(execUser).withAuditAction(AuditAction.Create, ProcessInstanceAttachmentEntity.class, attachment.getKey(), "key", Map.of(
                 "key", attachment.getKey(),
+                "fileName", attachment.getFileName(),
+                "originalFileName", attachment.getOriginalFileName(),
                 "processInstanceId", attachment.getProcessInstanceId(),
                 "processInstanceTaskId", attachment.getProcessInstanceTaskId()
         )).withMessage(

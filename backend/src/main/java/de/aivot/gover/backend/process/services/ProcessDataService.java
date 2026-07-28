@@ -204,6 +204,7 @@ public class ProcessDataService {
     private Map<String, Object> getAttachmentData(@Nonnull ProcessInstanceAttachmentEntity attachment) {
         return Map.of(
                 "filename", attachment.getFileName(),
+                "originalFilename", attachment.getOriginalFileName(),
                 "storageProviderId", attachment.getStorageProviderId(),
                 "storagePathFromRoot", attachment.getStoragePathFromRoot()
         );

@@ -82,7 +82,8 @@ public class FileUploadMultipartInputService {
                 createdAttachments,
                 createdFileItems,
                 attachmentSetsByDataKey,
-                nextAttachmentPositionsByDataKey
+                nextAttachmentPositionsByDataKey,
+                List.of()
         );
 
         if (!remainingFiles.isEmpty()) {
@@ -106,7 +107,8 @@ public class FileUploadMultipartInputService {
                                   @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
                                   @Nonnull List<FileUploadInputElementItem> createdFileItems,
                                   @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
-                                  @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey) throws ResponseException {
+                                  @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey,
+                                  @Nonnull List<Integer> structuredListIndices) throws ResponseException {
         if (element instanceof FileUploadInputElement fileUploadElement) {
             if (!values.containsKey(fileUploadElement.getId())) {
                 return;
@@ -125,7 +127,8 @@ public class FileUploadMultipartInputService {
                             createdAttachments,
                             createdFileItems,
                             attachmentSetsByDataKey,
-                            nextAttachmentPositionsByDataKey
+                            nextAttachmentPositionsByDataKey,
+                            structuredListIndices
                     )
             );
             return;
@@ -162,7 +165,8 @@ public class FileUploadMultipartInputService {
                             createdAttachments,
                             createdFileItems,
                             attachmentSetsByDataKey,
-                            nextAttachmentPositionsByDataKey
+                            nextAttachmentPositionsByDataKey,
+                            childStructuredListIndices
                     );
                 }
                 normalizedRows.add(rowValue.setValues(rowValues));
@@ -185,7 +189,8 @@ public class FileUploadMultipartInputService {
                         createdAttachments,
                         createdFileItems,
                         attachmentSetsByDataKey,
-                        nextAttachmentPositionsByDataKey
+                        nextAttachmentPositionsByDataKey,
+                        structuredListIndices
                 );
             }
         }
@@ -202,7 +207,8 @@ public class FileUploadMultipartInputService {
                                             @Nonnull List<ProcessInstanceAttachmentEntity> createdAttachments,
                                             @Nonnull List<FileUploadInputElementItem> createdFileItems,
                                             @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
-                                            @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey) throws ResponseException {
+                                            @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey,
+                                            @Nonnull List<Integer> structuredListIndices) throws ResponseException {
         var items = FileUploadInputElement._formatValue(rawValue);
         if (items == null) {
             return rawValue;
@@ -210,14 +216,7 @@ public class FileUploadMultipartInputService {
 
         var attachmentSetDataKey = resolveAttachmentSetDataKey(element);
         var normalizedItems = new ArrayList<Map<String, Object>>(items.size());
-        var usedFileNames = new LinkedHashSet<String>();
         var configuredSubmittedFileName = StringUtils.toNullableTrimmedString(element.getSubmittedFileName());
-
-        for (var item : items) {
-            if (!requiresUpload(item) && StringUtils.isNotNullOrEmpty(item.getName())) {
-                usedFileNames.add(item.getName());
-            }
-        }
 
         for (var itemIndex = 0; itemIndex < items.size(); itemIndex++) {
             var item = items.get(itemIndex);
@@ -237,9 +236,19 @@ public class FileUploadMultipartInputService {
             var originalFileName = resolveOriginalFileName(item, multipartFile);
             validateFileMatchesInput(item, multipartFile, originalFileName);
 
-            var finalFileName = configuredSubmittedFileName == null
-                    ? originalFileName
-                    : resolveConfiguredSubmittedFileName(element, configuredSubmittedFileName, originalFileName, usedFileNames);
+            if (configuredSubmittedFileName == null) {
+                throw ResponseException.badRequest(
+                        "Für das Upload-Feld „%s“ muss ein Dateiname bei Einreichung konfiguriert sein.",
+                        describeElement(element)
+                );
+            }
+
+            var finalFileName = resolveConfiguredSubmittedFileName(
+                    element,
+                    configuredSubmittedFileName,
+                    originalFileName,
+                    resolveFileNameIndices(structuredListIndices, element, itemIndex)
+            );
 
             byte[] fileBytes;
             try {
@@ -249,7 +258,7 @@ public class FileUploadMultipartInputService {
             }
 
             var attachment = ProcessInstanceAttachmentEntity
-                    .of(finalFileName, itemPosition, processInstanceId, processInstanceTaskId, fileBytes)
+                    .of(finalFileName, originalFileName, itemPosition, processInstanceId, processInstanceTaskId, fileBytes)
                     .setUploadedByUserId(uploadedByUserId);
 
             var attachmentSet = resolveAttachmentSet(element, attachmentSetDataKey, processInstanceId, processInstanceTaskId, attachmentSetsByDataKey);
@@ -257,7 +266,6 @@ public class FileUploadMultipartInputService {
 
             var createdAttachment = processInstanceAttachmentService.create(attachment);
             createdAttachments.add(createdAttachment);
-            usedFileNames.add(finalFileName);
 
             var fileItem = buildAttachmentItem(createdAttachment, multipartFile.getSize());
             createdFileItems.add(fileItem);
@@ -387,16 +395,45 @@ public class FileUploadMultipartInputService {
     private String resolveConfiguredSubmittedFileName(@Nonnull FileUploadInputElement element,
                                                       @Nonnull String configuredSubmittedFileName,
                                                       @Nonnull String originalFileName,
-                                                      @Nonnull Set<String> usedFileNames) throws ResponseException {
-        var configuredBaseFileName = removeExtensionFromConfiguredSubmittedFileName(configuredSubmittedFileName);
+                                                      @Nonnull List<Integer> fileNameIndices) throws ResponseException {
+        var configuredBaseFileName = applyFileNameIndices(
+                removeExtensionFromConfiguredSubmittedFileName(configuredSubmittedFileName),
+                fileNameIndices
+        );
         var resolvedFileName = StringUtils
                 .extractExtensionFromFileName(originalFileName)
                 .map(extension -> configuredBaseFileName + "." + extension)
                 .orElse(configuredBaseFileName);
 
-        resolvedFileName = ensureUniqueFileName(resolvedFileName, usedFileNames);
         validateResolvedConfiguredFileName(element, resolvedFileName);
         return resolvedFileName;
+    }
+
+    @Nonnull
+    private List<Integer> resolveFileNameIndices(@Nonnull List<Integer> structuredListIndices,
+                                                 @Nonnull FileUploadInputElement element,
+                                                 int itemIndex) {
+        if (!Boolean.TRUE.equals(element.getIsMultifile())) {
+            return structuredListIndices;
+        }
+
+        var fileNameIndices = new ArrayList<Integer>(structuredListIndices.size() + 1);
+        fileNameIndices.addAll(structuredListIndices);
+        fileNameIndices.add(itemIndex + 1);
+        return fileNameIndices;
+    }
+
+    @Nonnull
+    private String applyFileNameIndices(@Nonnull String configuredBaseFileName,
+                                        @Nonnull List<Integer> fileNameIndices) {
+        if (fileNameIndices.isEmpty()) {
+            return configuredBaseFileName;
+        }
+
+        var index = String.join("-", fileNameIndices.stream().map(String::valueOf).toList());
+        return configuredBaseFileName.contains("#")
+                ? configuredBaseFileName.replace("#", index)
+                : configuredBaseFileName + "-" + index;
     }
 
     @Nonnull
@@ -446,35 +483,6 @@ public class FileUploadMultipartInputService {
                     describeElement(element)
             );
         }
-    }
-
-    @Nonnull
-    private String ensureUniqueFileName(@Nonnull String requestedFileName,
-                                        @Nonnull Set<String> usedFileNames) {
-        if (!usedFileNames.contains(requestedFileName)) {
-            return requestedFileName;
-        }
-
-        for (var suffix = 2; ; suffix++) {
-            var candidate = appendNumericSuffix(requestedFileName, suffix);
-            if (!usedFileNames.contains(candidate)) {
-                return candidate;
-            }
-        }
-    }
-
-    @Nonnull
-    private String appendNumericSuffix(@Nonnull String fileName,
-                                       int suffix) {
-        var lastDotIndex = fileName.lastIndexOf('.');
-        if (lastDotIndex <= 0) {
-            return fileName + "-" + suffix;
-        }
-
-        return fileName.substring(0, lastDotIndex) +
-               "-" +
-               suffix +
-               fileName.substring(lastDotIndex);
     }
 
     @Nonnull

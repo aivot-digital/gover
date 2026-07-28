@@ -5,6 +5,7 @@ import de.aivot.gover.backend.elements.enums.ElementDisplayContext;
 import de.aivot.gover.backend.elements.exceptions.ElementDataConversionException;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.elements.form.content.RichTextContentElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElementPattern;
 import de.aivot.gover.backend.elements.models.elements.form.input.UiDefinitionInputElement;
@@ -12,6 +13,7 @@ import de.aivot.gover.backend.elements.models.elements.layout.ConfigLayoutElemen
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
+import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.plugin.models.PluginComponent;
@@ -301,8 +303,19 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         if (formLayout.getAccessibilityDepartmentId() == null) {
             errors.add("Die Barrierefreiheitserklärung muss eingerichtet sein.");
         }
+        ElementStreamUtils.applyAction(formLayout, element -> {
+            if (element instanceof FileUploadInputElement uploadElement && StringUtils.isNullOrEmpty(uploadElement.getSubmittedFileName())) {
+                errors.add("Für das Upload-Feld %s muss ein Dateiname bei Einreichung hinterlegt sein.".formatted(StringUtils.quote(describeUploadElement(uploadElement))));
+            }
+        });
 
         return errors;
+    }
+
+    @Nonnull
+    private String describeUploadElement(@Nonnull FileUploadInputElement uploadElement) {
+        var label = StringUtils.toNullableTrimmedString(uploadElement.getLabel());
+        return label == null ? Objects.toString(uploadElement.getId(), "Unbenanntes Upload-Feld") : label;
     }
 
     @Nonnull

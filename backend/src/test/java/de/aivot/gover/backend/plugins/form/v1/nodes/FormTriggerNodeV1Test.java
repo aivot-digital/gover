@@ -1,8 +1,10 @@
 package de.aivot.gover.backend.plugins.form.v1.nodes;
 
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.elements.form.input.FileUploadInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
+import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.models.config.GoverConfig;
 import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerConfigV1;
 import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
@@ -103,6 +105,31 @@ class FormTriggerNodeV1Test {
         assertTrue(layoutError.contains("Das Impressum muss eingerichtet sein."));
         assertTrue(layoutError.contains("Die Datenschutzerklärung muss eingerichtet sein."));
         assertTrue(layoutError.contains("Die Barrierefreiheitserklärung muss eingerichtet sein."));
+    }
+
+    @Test
+    void validateConfiguration_ShouldRequireSubmittedFileNameForFileUploads() throws Exception {
+        when(processNodeRepository.exists(anySpecification())).thenReturn(false);
+
+        var upload = new FileUploadInputElement();
+        upload.setId("document");
+        upload.setLabel("Nachweis");
+        var step = new GenericStepElement();
+        step.setId("step");
+        step.setChildren(List.of(upload));
+        var layout = validFormLayout();
+        layout.setChildren(List.of(step));
+
+        var errors = node.validateConfiguration(
+                processNode(),
+                configuration("antrag-online", layout)
+        );
+
+        assertNotNull(errors);
+        assertEquals(
+                List.of("Für das Upload-Feld „Nachweis“ muss ein Dateiname bei Einreichung hinterlegt sein."),
+                errors.get(FormTriggerConfigV1.FORM_LAYOUT)
+        );
     }
 
     @Test

@@ -67,6 +67,9 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
     public ProcessInstanceAttachmentEntity create(@Nonnull ProcessInstanceAttachmentEntity entity) throws ResponseException {
         // Set the key to a new random UUID, to ensure that the client cannot specify the key and that it is always unique.
         entity.setKey(UUID.randomUUID());
+        if (StringUtils.isNullOrEmpty(entity.getOriginalFileName())) {
+            entity.setOriginalFileName(entity.getFileName());
+        }
 
         // region Store the attachment in the default storage provider
 
@@ -138,6 +141,7 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
         var details = new LinkedHashMap<String, Object>();
         details.put("attachmentKey", attachment.getKey());
         details.put("fileName", attachment.getFileName());
+        details.put("originalFileName", attachment.getOriginalFileName());
         details.put("position", attachment.getPosition());
         details.put("attachmentSetId", attachment.getAttachmentSetId());
         details.put("processInstanceId", attachment.getProcessInstanceId());

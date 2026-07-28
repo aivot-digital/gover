@@ -23,6 +23,8 @@ create table process_instance_attachments
 
     -- The name of the attachment, e.g. the filename
     file_name                varchar(255) not null,
+    -- The original file name under which the attachment was uploaded or generated
+    original_file_name       varchar(255) not null,
 
     -- The attachment set this attachment belongs to
     attachment_set_id        integer      not null references process_instance_attachment_sets (id) on delete restrict,

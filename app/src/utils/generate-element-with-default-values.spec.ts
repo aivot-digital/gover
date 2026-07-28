@@ -20,9 +20,9 @@ describe('generateElementWithDefaultValues', () => {
         expect(element.hint).toBeUndefined();
     });
 
-    it('should initialize file upload elements without a submitted file name override', () => {
+    it('should initialize file upload elements with a submitted file name', () => {
         const element = generateElementWithDefaultValues(ElementType.FileUpload) as FileUploadElement;
 
-        expect(element.submittedFileName).toBeUndefined();
+        expect(element.submittedFileName).toBe('Anlage');
     });
 });
