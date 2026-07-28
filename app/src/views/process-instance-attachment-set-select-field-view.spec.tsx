@@ -1,3 +1,4 @@
+import {describe, expect, it, vi, type Mock} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {ProcessInstanceAttachmentSetSelectFieldView} from './process-instance-attachment-set-select-field-view';
@@ -25,7 +26,7 @@ describe('ProcessInstanceAttachmentSetSelectFieldView', () => {
     });
 
     it('should persist selected attachment set data keys', async () => {
-        const setValue = jest.fn();
+        const setValue = vi.fn();
 
         renderWithEditorMetadata(
             <ProcessInstanceAttachmentSetSelectFieldView
@@ -99,7 +100,7 @@ function renderWithEditorMetadata(children: React.ReactElement, metadata: Proces
                 layout: {} as any,
                 testClaim: null,
                 node: createNode(10, 'E-Mail'),
-                setNode: jest.fn(),
+                setNode: vi.fn(),
                 isEditable: true,
                 problems: null,
                 incomingMetadata: metadata,
@@ -114,7 +115,7 @@ function createBaseProps(
     options?: {
         element?: Partial<ProcessInstanceAttachmentSetSelectElement>;
         value?: string[] | null;
-        setValue?: jest.Mock;
+        setValue?: Mock;
     },
 ): BaseViewProps<ProcessInstanceAttachmentSetSelectElement, string[]> {
     const {
@@ -149,17 +150,17 @@ function createBaseProps(
         isBusy: false,
         isDeriving: false,
         value,
-        setValue: setValue ?? jest.fn(),
-        onBlur: jest.fn(),
+        setValue: setValue ?? vi.fn(),
+        onBlur: vi.fn(),
         errors: undefined,
         errorDetails: undefined,
         authoredElementValues: {},
-        onAuthoredElementValuesChange: jest.fn(),
-        onElementBlur: jest.fn(),
+        onAuthoredElementValuesChange: vi.fn(),
+        onElementBlur: vi.fn(),
         derivedData: createDerivedRuntimeElementData(),
-        onDerive: jest.fn(),
-        onEvent: jest.fn(),
-        onResetErrors: jest.fn(),
+        onDerive: vi.fn(),
+        onEvent: vi.fn(),
+        onResetErrors: vi.fn(),
         suppressErrors: false,
         derivationTriggerIdQueue: [],
     };

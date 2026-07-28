@@ -1,3 +1,4 @@
+import {describe, expect, it, vi} from 'vitest';
 import React from 'react';
 import {fireEvent, render, screen, waitFor} from '@testing-library/react';
 import {ElementType} from '../../../data/element-type/element-type';
@@ -10,11 +11,11 @@ import {
 } from '../../../models/element-data';
 import {ElementDerivationContext} from './element-derivation-context';
 
-jest.mock('../../../hooks/use-app-dispatch', () => ({
-    useAppDispatch: () => jest.fn(),
+vi.mock('../../../hooks/use-app-dispatch', () => ({
+    useAppDispatch: () => vi.fn(),
 }));
 
-jest.mock('../../../components/view-dispatcher/view-dispatcher.component', () => ({
+vi.mock('../../../components/view-dispatcher/view-dispatcher.component', () => ({
     ViewDispatcherComponent: (props: any) => (
         <button
             type="button"
@@ -27,8 +28,8 @@ jest.mock('../../../components/view-dispatcher/view-dispatcher.component', () =>
 
 describe('ElementDerivationContext', () => {
     it('should not persist external computed errors when authored values change', async () => {
-        const onAuthoredElementValuesChange = jest.fn();
-        const onDerivedDataChange = jest.fn();
+        const onAuthoredElementValuesChange = vi.fn();
+        const onDerivedDataChange = vi.fn();
         const computedErrors: ComputedElementErrors = {
             field: {
                 error: 'Der Verantwortliche Personenkreis ist ein Pflichtfeld.',

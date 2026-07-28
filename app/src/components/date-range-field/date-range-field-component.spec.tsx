@@ -1,7 +1,8 @@
+import {describe, expect, it, vi} from 'vitest';
 import {fireEvent, render, screen} from '@testing-library/react';
 import {DateRangeFieldComponent} from './date-range-field-component';
 
-jest.mock('../date-field/date-field-component', () => ({
+vi.mock('../date-field/date-field-component', () => ({
     DateFieldComponent: (props: { label: string; onChange: (value: string | null) => void }) => (
         <button
             type="button"
@@ -14,7 +15,7 @@ jest.mock('../date-field/date-field-component', () => ({
 
 describe('DateRangeFieldComponent', () => {
     it('should merge rapid side changes against the current in-flight range', () => {
-        const onChange = jest.fn();
+        const onChange = vi.fn();
 
         render(
             <DateRangeFieldComponent
@@ -27,8 +28,8 @@ describe('DateRangeFieldComponent', () => {
             />,
         );
 
-        fireEvent.click(screen.getByRole('button', {name: 'Zeitraum (Von)'}));
-        fireEvent.click(screen.getByRole('button', {name: 'Zeitraum (Bis)'}));
+        fireEvent.click(screen.getByText('Zeitraum (Von)'));
+        fireEvent.click(screen.getByText('Zeitraum (Bis)'));
 
         expect(onChange).toHaveBeenNthCalledWith(1, {
             start: null,
