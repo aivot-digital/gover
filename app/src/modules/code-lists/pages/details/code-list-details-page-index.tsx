@@ -68,6 +68,7 @@ const CodeListSchema = yup.object({
         .required('Der Name ist ein Pflichtfeld.'),
     description: yup.string()
         .trim()
+        .nullable()
         .max(500, 'Die Beschreibung darf maximal 500 Zeichen lang sein.'),
     sourceType: yup.string()
         .required('Die Quelle ist ein Pflichtfeld.'),
