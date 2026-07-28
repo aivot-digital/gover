@@ -23,7 +23,7 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
     private OptionsSourceType optionsSource;
 
     @Nullable
-    private Integer codeListId;
+    private String codeListKey;
 
     @Nullable
     private Integer minimumRequiredOptions;
@@ -168,7 +168,7 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         MultiCheckboxInputElement that = (MultiCheckboxInputElement) o;
         return Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
-                && Objects.equals(codeListId, that.codeListId)
+                && Objects.equals(codeListKey, that.codeListKey)
                 && Objects.equals(minimumRequiredOptions, that.minimumRequiredOptions)
                 && Objects.equals(displayInline, that.displayInline);
     }
@@ -178,7 +178,7 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
         int result = super.hashCode();
         result = 31 * result + Objects.hashCode(options);
         result = 31 * result + Objects.hashCode(optionsSource);
-        result = 31 * result + Objects.hashCode(codeListId);
+        result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(minimumRequiredOptions);
         result = 31 * result + Objects.hashCode(displayInline);
         return result;
@@ -209,12 +209,12 @@ public class MultiCheckboxInputElement extends BaseInputElement<List<String>> im
     }
 
     @Nullable
-    public Integer getCodeListId() {
-        return codeListId;
+    public String getCodeListKey() {
+        return codeListKey;
     }
 
-    public MultiCheckboxInputElement setCodeListId(@Nullable Integer codeListId) {
-        this.codeListId = codeListId;
+    public MultiCheckboxInputElement setCodeListKey(@Nullable String codeListKey) {
+        this.codeListKey = codeListKey;
         return this;
     }
 

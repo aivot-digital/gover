@@ -12,7 +12,7 @@ export const codeListsRoutes: RouteObject[] = [
         element: <CodeListsListPage />,
     },
     {
-        path: '/code-lists/:id',
+        path: '/code-lists/:key',
         element: <CodeListDetailsPage />,
         handle: duplicatePageWarningRouteHandle,
         children: [

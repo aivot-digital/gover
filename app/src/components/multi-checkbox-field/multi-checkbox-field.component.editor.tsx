@@ -49,7 +49,7 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
 
                             props.onPatch({
                                 optionsSource: nextSource,
-                                codeListId: nextSource === OptionsSourceType.CodeList ? props.element.codeListId : undefined,
+                                codeListKey: nextSource === OptionsSourceType.CodeList ? props.element.codeListKey : undefined,
                             });
                         }}
                         options={optionsSourceOptions}
@@ -62,10 +62,10 @@ export function MultiCheckboxFieldComponentEditor(props: BaseEditorProps<MultiCh
                     !usesManualOptions &&
                     <Grid size={{xs: 12, lg: 6}}>
                         <CodeListSelectField
-                            value={props.element.codeListId}
-                            onChange={(codeListId) => {
+                            value={props.element.codeListKey}
+                            onChange={(codeListKey) => {
                                 props.onPatch({
-                                    codeListId,
+                                    codeListKey,
                                 });
                             }}
                             disabled={!props.editable}

@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/public/code-lists/{codeListId}/")
+@RequestMapping("/api/public/code-lists/{codeListKey}/")
 @Tag(
         name = OpenApiConstants.Tags.CodeListName,
         description = OpenApiConstants.Tags.CodeListDescription
@@ -32,22 +32,22 @@ public class PublicCodeListController {
 
     @GetMapping("select/")
     public List<SelectInputElementOption> listAsSelect(
-            @Nonnull @PathVariable Integer codeListId
+            @Nonnull @PathVariable String codeListKey
     ) throws ResponseException {
-        return codeListElementOptionsService.listAsSelect(codeListId);
+        return codeListElementOptionsService.listAsSelect(codeListKey);
     }
 
     @GetMapping("radio/")
     public List<RadioInputElementOption> listAsRadio(
-            @Nonnull @PathVariable Integer codeListId
+            @Nonnull @PathVariable String codeListKey
     ) throws ResponseException {
-        return codeListElementOptionsService.listAsRadio(codeListId);
+        return codeListElementOptionsService.listAsRadio(codeListKey);
     }
 
     @GetMapping("multi-checkbox/")
     public List<MultiCheckboxInputElementOption> listAsMultiCheckbox(
-            @Nonnull @PathVariable Integer codeListId
+            @Nonnull @PathVariable String codeListKey
     ) throws ResponseException {
-        return codeListElementOptionsService.listAsMultiCheckbox(codeListId);
+        return codeListElementOptionsService.listAsMultiCheckbox(codeListKey);
     }
 }

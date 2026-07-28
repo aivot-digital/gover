@@ -83,12 +83,17 @@ export function CodeListsListPage() {
             flex: 1,
             renderCell: (params) => (
                 <CellLink
-                    to={`/code-lists/${params.row.id}`}
+                    to={`/code-lists/${encodeURIComponent(params.row.key)}`}
                     title={hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen'}
                 >
                     {String(params.value)}
                 </CellLink>
             ),
+        },
+        {
+            field: 'key',
+            headerName: 'Schlüssel',
+            flex: 1,
         },
         {
             field: 'sourceType',
@@ -118,17 +123,17 @@ export function CodeListsListPage() {
         },
     ], [hasAccess]);
 
-    const getRowIdentifier = useCallback((row: CodeList) => row.id.toString(), []);
+    const getRowIdentifier = useCallback((row: CodeList) => row.key, []);
 
     const rowActions = useCallback((item: CodeList) => [
         {
             icon: hasAccess ? <Edit /> : <Visibility />,
-            to: `/code-lists/${item.id}`,
+            to: `/code-lists/${encodeURIComponent(item.key)}`,
             tooltip: hasAccess ? 'Codeliste bearbeiten' : 'Codeliste ansehen',
         },
         {
             icon: <FormatListBulleted />,
-            to: `/code-lists/${item.id}/items`,
+            to: `/code-lists/${encodeURIComponent(item.key)}/items`,
             tooltip: 'Einträge anzeigen',
         },
     ], [hasAccess]);

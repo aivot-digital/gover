@@ -37,7 +37,7 @@ import java.time.Instant;
 import java.util.*;
 
 @Service
-public class CodeListService implements EntityService<CodeListEntity, Integer> {
+public class CodeListService implements EntityService<CodeListEntity, String> {
     private final CodeListRepository codeListRepository;
     private final CodeListItemRepository codeListItemRepository;
     private final VCodeListItemRepository vCodeListItemRepository;
@@ -84,7 +84,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
 
     @Nonnull
     @Override
-    public CodeListEntity performUpdate(@Nonnull Integer key,
+    public CodeListEntity performUpdate(@Nonnull String key,
                                         @Nonnull CodeListEntity entity,
                                         @Nonnull CodeListEntity existingEntity) throws ResponseException {
         existingEntity.setSourceType(entity.getSourceType());
@@ -103,7 +103,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
 
     @Nonnull
     @Override
-    public Optional<CodeListEntity> retrieve(@Nonnull Integer key) {
+    public Optional<CodeListEntity> retrieve(@Nonnull String key) {
         return codeListRepository.findById(key);
     }
 
@@ -114,7 +114,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     }
 
     @Override
-    public boolean exists(@Nonnull Integer key) {
+    public boolean exists(@Nonnull String key) {
         return codeListRepository.existsById(key);
     }
 
@@ -123,9 +123,9 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         return codeListRepository.exists(specification);
     }
 
-    public void syncCodeList(Integer codeListId, boolean keepOutdated) {
+    public void syncCodeList(String codeListKey, boolean keepOutdated) {
         var codeList = codeListRepository
-                .findById(codeListId)
+                .findById(codeListKey)
                 .orElse(null);
 
         if (codeList == null) {
@@ -153,8 +153,9 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     }
 
     @Nonnull
-    public byte[] exportCSV(@Nonnull Integer codeListId) throws ResponseException {
-        var codeList = requireCodeList(codeListId);
+    public byte[] exportCSV(@Nonnull String codeListKey) throws ResponseException {
+        var codeList = requireCodeList(codeListKey);
+        var codeListId = requireInternalId(codeList);
         var items = vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
         var outputStream = new ByteArrayOutputStream();
 
@@ -172,9 +173,9 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
 
     @Nonnull
     @Transactional
-    public CodeListEntity importCSV(@Nonnull Integer codeListId,
+    public CodeListEntity importCSV(@Nonnull String codeListKey,
                                     @Nonnull InputStream inputStream) throws ResponseException {
-        var codeList = requireManualCodeList(codeListId);
+        var codeList = requireManualCodeList(codeListKey);
 
         List<CodeListItemEntity> importedItems;
         try (var csv = CsvReader.builder()
@@ -219,53 +220,56 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     }
 
     @Nonnull
-    public Page<VCodeListItemEntity> listItems(@Nonnull Integer codeListId, @Nonnull Pageable pageable) throws ResponseException {
-        requireCodeList(codeListId);
+    public Page<VCodeListItemEntity> listItems(@Nonnull String codeListKey, @Nonnull Pageable pageable) throws ResponseException {
+        var codeListId = requireInternalId(requireCodeList(codeListKey));
         return vCodeListItemRepository.findAllByCodeListId(codeListId, pageable);
     }
 
     @Nonnull
-    public List<VCodeListItemEntity> listAllItems(@Nonnull Integer codeListId) throws ResponseException {
-        requireCodeList(codeListId);
+    public List<VCodeListItemEntity> listAllItems(@Nonnull String codeListKey) throws ResponseException {
+        var codeListId = requireInternalId(requireCodeList(codeListKey));
         return vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(codeListId);
     }
 
     @Nonnull
-    public VCodeListItemEntity createItem(@Nonnull Integer codeListId, @Nonnull CodeListItemEntity item) throws ResponseException {
-        var codeList = requireManualCodeList(codeListId);
+    public VCodeListItemEntity createItem(@Nonnull String codeListKey, @Nonnull CodeListItemEntity item) throws ResponseException {
+        var codeList = requireManualCodeList(codeListKey);
+        var codeListId = requireInternalId(codeList);
         item
                 .setId(null)
                 .setCodeListId(codeListId)
                 .setColumns(normalizeItemColumns(codeList, item.getColumns()));
 
         var saved = codeListItemRepository.save(item);
-        return getItem(codeListId, saved.getId());
+        return getItem(codeListKey, saved.getId());
     }
 
     @Nonnull
-    public VCodeListItemEntity getItem(@Nonnull Integer codeListId, @Nonnull Long itemId) throws ResponseException {
-        requireCodeList(codeListId);
+    public VCodeListItemEntity getItem(@Nonnull String codeListKey, @Nonnull Long itemId) throws ResponseException {
+        var codeListId = requireInternalId(requireCodeList(codeListKey));
         return vCodeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
     }
 
     @Nonnull
-    public VCodeListItemEntity updateItem(@Nonnull Integer codeListId,
+    public VCodeListItemEntity updateItem(@Nonnull String codeListKey,
                                           @Nonnull Long itemId,
                                           @Nonnull CodeListItemEntity item) throws ResponseException {
-        var codeList = requireManualCodeList(codeListId);
+        var codeList = requireManualCodeList(codeListKey);
+        var codeListId = requireInternalId(codeList);
         var existingItem = codeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
 
         existingItem.setColumns(normalizeItemColumns(codeList, item.getColumns()));
         codeListItemRepository.save(existingItem);
-        return getItem(codeListId, itemId);
+        return getItem(codeListKey, itemId);
     }
 
-    public void deleteItem(@Nonnull Integer codeListId, @Nonnull Long itemId) throws ResponseException {
-        requireManualCodeList(codeListId);
+    public void deleteItem(@Nonnull String codeListKey, @Nonnull Long itemId) throws ResponseException {
+        var codeList = requireManualCodeList(codeListKey);
+        var codeListId = requireInternalId(codeList);
         var existingItem = codeListItemRepository
                 .findByIdAndCodeListId(itemId, codeListId)
                 .orElseThrow(ResponseException::notFound);
@@ -331,17 +335,19 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     }
 
     private void replaceItems(@Nonnull CodeListEntity codeListEntity,
-                              @Nonnull List<CodeListItemEntity> importedItems) {
-        codeListItemRepository.deleteAllByCodeListId(codeListEntity.getId());
+                              @Nonnull List<CodeListItemEntity> importedItems) throws ResponseException {
+        var codeListId = requireInternalId(codeListEntity);
+        codeListItemRepository.deleteAllByCodeListId(codeListId);
         codeListItemRepository.saveAll(importedItems);
     }
 
     private void upsertItems(@Nonnull CodeListEntity codeListEntity,
-                             @Nonnull List<CodeListItemEntity> importedItems) {
+                             @Nonnull List<CodeListItemEntity> importedItems) throws ResponseException {
+        var codeListId = requireInternalId(codeListEntity);
         var valueColumnIndex = codeListEntity.getValueColumnIndex();
         var existingByValue = new HashMap<String, CodeListItemEntity>();
 
-        for (var existingItem : codeListItemRepository.findAllByCodeListId(codeListEntity.getId())) {
+        for (var existingItem : codeListItemRepository.findAllByCodeListId(codeListId)) {
             existingByValue.putIfAbsent(getColumnValue(existingItem, valueColumnIndex), existingItem);
         }
 
@@ -398,6 +404,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
             return List.of();
         }
 
+        var codeListId = requireInternalId(codeListEntity);
         var items = new ArrayList<CodeListItemEntity>();
         for (var row : xRepositoryCodeList.getCodeList().getRow()) {
             var valuesByColumnRef = new HashMap<String, String>();
@@ -413,7 +420,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
                     .toList();
 
             items.add(new CodeListItemEntity()
-                    .setCodeListId(codeListEntity.getId())
+                    .setCodeListId(codeListId)
                     .setColumns(columns));
         }
 
@@ -439,6 +446,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         normalizeColumnIndexes(codeListEntity);
         validateCodeListColumns(codeListEntity);
 
+        var codeListId = requireInternalId(codeListEntity);
         var items = new ArrayList<CodeListItemEntity>();
         while (iterator.hasNext()) {
             var columns = new ArrayList<>(iterator.next().getFields());
@@ -446,7 +454,7 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
                 throw ResponseException.badRequest("Die CSV-Datei enthält Zeilen mit unterschiedlicher Spaltenanzahl.");
             }
             items.add(new CodeListItemEntity()
-                    .setCodeListId(codeListEntity.getId())
+                    .setCodeListId(codeListId)
                     .setColumns(columns));
         }
         return items;
@@ -524,6 +532,9 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     }
 
     private void normalizeCodeList(@Nonnull CodeListEntity codeListEntity) throws ResponseException {
+        if (codeListEntity.getKey() != null) {
+            codeListEntity.setKey(codeListEntity.getKey().trim());
+        }
         if (codeListEntity.getSourceType() == null) {
             codeListEntity.setSourceType(CodeListSourceType.Manual);
         }
@@ -544,6 +555,22 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
         }
         if (codeListEntity.getStatus() == null) {
             codeListEntity.setStatus(isSyncable(codeListEntity) ? CodeListStatus.SyncPending : CodeListStatus.Synced);
+        }
+
+        if (codeListEntity.getKey() == null || codeListEntity.getKey().isBlank()) {
+            throw ResponseException.badRequest("Der Schlüssel der Codeliste darf nicht leer sein.");
+        }
+
+        if (codeListEntity.getKey().length() > 255) {
+            throw ResponseException.badRequest("Der Schlüssel der Codeliste darf maximal 255 Zeichen lang sein.");
+        }
+
+        if ("new".equals(codeListEntity.getKey())) {
+            throw ResponseException.badRequest("Der Schlüssel \"new\" ist für die Anlage neuer Codelisten reserviert.");
+        }
+
+        if (codeListEntity.getKey().contains("/")) {
+            throw ResponseException.badRequest("Der Schlüssel der Codeliste darf keinen Schrägstrich enthalten.");
         }
 
         if (codeListEntity.getName() == null || codeListEntity.getName().isBlank()) {
@@ -590,19 +617,28 @@ public class CodeListService implements EntityService<CodeListEntity, Integer> {
     }
 
     @Nonnull
-    private CodeListEntity requireCodeList(@Nonnull Integer codeListId) throws ResponseException {
+    private CodeListEntity requireCodeList(@Nonnull String codeListKey) throws ResponseException {
         return codeListRepository
-                .findById(codeListId)
+                .findById(codeListKey)
                 .orElseThrow(ResponseException::notFound);
     }
 
     @Nonnull
-    private CodeListEntity requireManualCodeList(@Nonnull Integer codeListId) throws ResponseException {
-        var codeList = requireCodeList(codeListId);
+    private CodeListEntity requireManualCodeList(@Nonnull String codeListKey) throws ResponseException {
+        var codeList = requireCodeList(codeListKey);
         if (codeList.getSourceType() != CodeListSourceType.Manual) {
             throw ResponseException.methodNotAllowed("Nur manuelle Codelisten können direkt bearbeitet werden.");
         }
         return codeList;
+    }
+
+    @Nonnull
+    private Integer requireInternalId(@Nonnull CodeListEntity codeList) throws ResponseException {
+        var codeListId = codeList.getId();
+        if (codeListId == null) {
+            throw ResponseException.internalServerError("Die interne ID der Codeliste fehlt.");
+        }
+        return codeListId;
     }
 
     private boolean isSyncable(@Nonnull CodeListEntity codeListEntity) {

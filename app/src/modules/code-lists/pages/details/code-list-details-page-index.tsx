@@ -55,6 +55,12 @@ type MetadataFetchResult = {
 };
 
 const CodeListSchema = yup.object({
+    key: yup.string()
+        .trim()
+        .notOneOf(['new'], 'Der Schlüssel „new“ ist für die Anlage neuer Codelisten reserviert.')
+        .matches(/^[^/]+$/, 'Der Schlüssel darf keinen Schrägstrich enthalten.')
+        .max(255, 'Der Schlüssel darf maximal 255 Zeichen lang sein.')
+        .required('Der Schlüssel ist ein Pflichtfeld.'),
     name: yup.string()
         .trim()
         .min(3, 'Der Name muss mindestens 3 Zeichen lang sein.')
@@ -99,6 +105,7 @@ function sanitizeCodeList(codeList: CodeList): CodeList {
 
     return {
         ...codeList,
+        key: codeList.key.trim(),
         sourceRef: codeList.sourceType === CodeListSourceType.Manual ? '' : (codeList.sourceRef ?? ''),
         description: codeList.description ?? '',
         columns,
@@ -192,6 +199,8 @@ export function CodeListDetailsPageIndex() {
     const {
         item,
         setItem,
+        isNewItem,
+        isExistingItem,
         isBusy,
         setIsBusy,
         isEditable,
@@ -331,7 +340,7 @@ export function CodeListDetailsPageIndex() {
         return <GenericDetailsSkeleton/>;
     }
 
-    const isExistingSyncableCodeList = codeList.id !== 0 && isCodeListSyncable(codeList.sourceType);
+    const isExistingSyncableCodeList = isExistingItem === true && isCodeListSyncable(codeList.sourceType);
     const statusTableItems = [
         {
             label: 'Letzte Synchronisierung',
@@ -395,7 +404,7 @@ export function CodeListDetailsPageIndex() {
         setIsBusy(true);
         const payload = sanitizeCodeList(codeList);
 
-        if (payload.id === 0) {
+        if (isNewItem === true) {
             apiService
                 .create(payload)
                 .then((created) => {
@@ -403,7 +412,7 @@ export function CodeListDetailsPageIndex() {
                     reset();
                     dispatch(showSuccessSnackbar('Neue Codeliste erfolgreich angelegt.'));
                     setTimeout(() => {
-                        navigate(`/code-lists/${created.id}`, {replace: true});
+                        navigate(`/code-lists/${encodeURIComponent(created.key)}`, {replace: true});
                     }, 0);
                 })
                 .catch((err) => {
@@ -414,7 +423,7 @@ export function CodeListDetailsPageIndex() {
                 });
         } else {
             apiService
-                .update(payload.id, payload)
+                .update(payload.key, payload)
                 .then((updated) => {
                     setItem(updated);
                     reset();
@@ -432,13 +441,13 @@ export function CodeListDetailsPageIndex() {
     const handleDelete = () => {
         setShowConfirmDelete(false);
 
-        if (codeList.id === 0) {
+        if (isNewItem === true) {
             return;
         }
 
         setIsBusy(true);
         apiService
-            .destroy(codeList.id)
+            .destroy(codeList.key)
             .then(() => {
                 reset();
                 navigate('/code-lists', {replace: true});
@@ -515,6 +524,20 @@ export function CodeListDetailsPageIndex() {
                 columnSpacing={4}
                 rowSpacing={2}
             >
+                <Grid size={{xs: 12, lg: 6}}>
+                    <TextFieldComponent
+                        label="Schlüssel"
+                        value={codeList.key}
+                        onChange={handleInputChange('key')}
+                        onBlur={handleInputBlur('key')}
+                        required
+                        maxCharacters={255}
+                        error={errors.key}
+                        disabled={isBusy || !isEditable}
+                        readonly={isExistingItem === true}
+                    />
+                </Grid>
+
                 <Grid size={{xs: 12, lg: 6}}>
                     <TextFieldComponent
                         label="Name"
@@ -710,7 +733,7 @@ export function CodeListDetailsPageIndex() {
                     Zurücksetzen
                 </Button>
                 {
-                    codeList.id !== 0 &&
+                    isExistingItem === true &&
                     <Button
                         variant="outlined"
                         onClick={() => setShowConfirmDelete(true)}

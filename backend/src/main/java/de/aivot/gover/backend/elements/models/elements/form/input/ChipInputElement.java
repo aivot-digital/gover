@@ -24,7 +24,7 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
     private OptionsSourceType optionsSource;
 
     @Nullable
-    private Integer codeListId;
+    private String codeListKey;
 
     @Nullable
     private Integer minItems;
@@ -134,7 +134,7 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
         return Objects.equals(placeholder, that.placeholder)
                 && Objects.equals(suggestions, that.suggestions)
                 && optionsSource == that.optionsSource
-                && Objects.equals(codeListId, that.codeListId)
+                && Objects.equals(codeListKey, that.codeListKey)
                 && Objects.equals(minItems, that.minItems)
                 && Objects.equals(maxItems, that.maxItems)
                 && Objects.equals(allowDuplicates, that.allowDuplicates);
@@ -146,7 +146,7 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
         result = 31 * result + Objects.hashCode(placeholder);
         result = 31 * result + Objects.hashCode(suggestions);
         result = 31 * result + Objects.hashCode(optionsSource);
-        result = 31 * result + Objects.hashCode(codeListId);
+        result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(minItems);
         result = 31 * result + Objects.hashCode(maxItems);
         result = 31 * result + Objects.hashCode(allowDuplicates);
@@ -184,12 +184,12 @@ public class ChipInputElement extends BaseInputElement<List<String>> implements 
     }
 
     @Nullable
-    public Integer getCodeListId() {
-        return codeListId;
+    public String getCodeListKey() {
+        return codeListKey;
     }
 
-    public ChipInputElement setCodeListId(@Nullable Integer codeListId) {
-        this.codeListId = codeListId;
+    public ChipInputElement setCodeListKey(@Nullable String codeListKey) {
+        this.codeListKey = codeListKey;
         return this;
     }
 

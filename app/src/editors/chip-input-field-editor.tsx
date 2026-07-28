@@ -157,7 +157,7 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
 
                         onPatch({
                             optionsSource: nextSource,
-                            codeListId: nextSource === OptionsSourceType.CodeList ? element.codeListId : undefined,
+                            codeListKey: nextSource === OptionsSourceType.CodeList ? element.codeListKey : undefined,
                         });
                     }}
                     options={optionsSourceOptions}
@@ -175,11 +175,11 @@ export function ChipInputFieldEditor(props: BaseEditorProps<ChipInputFieldElemen
                     }}
                 >
                     <CodeListSelectField
-                        value={element.codeListId}
+                        value={element.codeListKey}
                         hint="Aus der Codeliste werden die Beschriftungen als Vorschläge übernommen. Die technischen Werte werden für Chip-Eingaben nicht verwendet."
-                        onChange={(codeListId) => {
+                        onChange={(codeListKey) => {
                             onPatch({
-                                codeListId,
+                                codeListKey,
                             });
                         }}
                         disabled={!editable}
