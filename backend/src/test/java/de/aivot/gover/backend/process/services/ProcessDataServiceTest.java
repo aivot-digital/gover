@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -82,6 +83,7 @@ class ProcessDataServiceTest {
                 UUID.randomUUID(),
                 "first.pdf",
                 "uploaded-first.pdf",
+                "person-1",
                 1,
                 1,
                 42L,
@@ -95,6 +97,7 @@ class ProcessDataServiceTest {
                 UUID.randomUUID(),
                 "third.pdf",
                 "uploaded-third.pdf",
+                "person-2",
                 3,
                 2,
                 42L,
@@ -108,6 +111,7 @@ class ProcessDataServiceTest {
                 UUID.randomUUID(),
                 "second.pdf",
                 "uploaded-second.pdf",
+                null,
                 2,
                 1,
                 42L,
@@ -157,9 +161,12 @@ class ProcessDataServiceTest {
         assertEquals(3, attachments.size());
         assertEquals("first.pdf", attachments.get(0).get("filename"));
         assertEquals("uploaded-first.pdf", attachments.get(0).get("originalFilename"));
+        assertEquals("person-1", attachments.get(0).get("group"));
+        assertNull(attachments.get(1).get("group"));
         assertEquals("/attachments/second.pdf", attachments.get(1).get("storagePathFromRoot"));
         assertEquals("third.pdf", attachments.get(2).get("filename"));
         assertEquals("uploaded-third.pdf", attachments.get(2).get("originalFilename"));
+        assertEquals("person-2", attachments.get(2).get("group"));
 
         @SuppressWarnings("unchecked")
         var sets = (List<Map<String, Object>>) documentsSet.get("sets");
@@ -170,6 +177,7 @@ class ProcessDataServiceTest {
         var firstSetAttachments = (List<Map<String, Object>>) sets.getFirst().get("attachments");
         assertEquals("first.pdf", firstSetAttachments.get(0).get("filename"));
         assertEquals("uploaded-first.pdf", firstSetAttachments.get(0).get("originalFilename"));
+        assertEquals("person-1", firstSetAttachments.get(0).get("group"));
         assertEquals("second.pdf", firstSetAttachments.get(1).get("filename"));
     }
 }

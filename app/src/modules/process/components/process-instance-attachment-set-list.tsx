@@ -1,5 +1,5 @@
 import React, {type ReactNode} from 'react';
-import {Box, IconButton, Tooltip, Typography} from '@mui/material';
+import {Box, IconButton, Paper, Tooltip, Typography} from '@mui/material';
 import type {SxProps, Theme} from '@mui/material';
 import Description from '@aivot/mui-material-symbols-400-n25-outlined/Description';
 import Download from '@aivot/mui-material-symbols-400-n25-outlined/Download';
@@ -162,17 +162,107 @@ function AttachmentSetItem(props: AttachmentSetItemProps): React.JSX.Element {
                         >
                             Keine Anhänge
                         </Typography> :
-                        props.item.attachments.map((attachment) => (
+                        <AttachmentItems
+                            attachments={props.item.attachments}
+                            onDownload={props.onDownload}
+                        />
+                }
+            </Box>
+        </Box>
+    );
+}
+
+interface AttachmentItemsProps {
+    attachments: ProcessInstanceAttachmentEntity[];
+    onDownload?: (attachment: ProcessInstanceAttachmentEntity) => void;
+}
+
+function AttachmentItems(props: AttachmentItemsProps): React.JSX.Element {
+    const attachmentsByGroup = new Map<string, ProcessInstanceAttachmentEntity[]>();
+    for (const attachment of props.attachments) {
+        const group = normalizeAttachmentGroup(attachment.group);
+        if (group == null) {
+            continue;
+        }
+
+        const groupAttachments = attachmentsByGroup.get(group) ?? [];
+        groupAttachments.push(attachment);
+        attachmentsByGroup.set(group, groupAttachments);
+    }
+
+    if (attachmentsByGroup.size === 0) {
+        return (
+            <>
+                {
+                    props.attachments.map((attachment) => (
+                        <AttachmentItem
+                            key={attachment.key}
+                            attachment={attachment}
+                            onDownload={props.onDownload}
+                        />
+                    ))
+                }
+            </>
+        );
+    }
+
+    const renderedGroups = new Set<string>();
+
+    return (
+        <>
+            {
+                props.attachments.map((attachment) => {
+                    const group = normalizeAttachmentGroup(attachment.group);
+
+                    if (group == null) {
+                        return (
                             <AttachmentItem
                                 key={attachment.key}
                                 attachment={attachment}
                                 onDownload={props.onDownload}
                             />
-                        ))
-                }
-            </Box>
-        </Box>
+                        );
+                    }
+
+                    if (renderedGroups.has(group)) {
+                        return null;
+                    }
+
+                    renderedGroups.add(group);
+
+                    return (
+                        <Paper
+                            key={`group:${group}`}
+                            aria-label="Anlagengruppe"
+                            role="group"
+                            variant="outlined"
+                            sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 0.75,
+                                p: 1,
+                            }}
+                        >
+                            {
+                                attachmentsByGroup.get(group)?.map((groupedAttachment) => (
+                                    <AttachmentItem
+                                        key={groupedAttachment.key}
+                                        attachment={groupedAttachment}
+                                        onDownload={props.onDownload}
+                                    />
+                                ))
+                            }
+                        </Paper>
+                    );
+                })
+            }
+        </>
     );
+}
+
+function normalizeAttachmentGroup(group: string | null | undefined): string | null {
+    const normalizedGroup = group?.trim();
+    return normalizedGroup == null || normalizedGroup.length === 0 ? null : normalizedGroup;
 }
 
 interface AttachmentItemProps {

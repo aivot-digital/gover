@@ -67,7 +67,7 @@ class ProcessInstanceAttachmentServiceTest {
         );
 
         var attachment = ProcessInstanceAttachmentEntity
-                .of("file.pdf", "uploaded-file.pdf", 1, 42L, 9L, "data".getBytes(StandardCharsets.UTF_8))
+                .of("file.pdf", "uploaded-file.pdf", "person-1/dog-2", 1, 42L, 9L, "data".getBytes(StandardCharsets.UTF_8))
                 .setAttachmentSetId(3)
                 .setUploadedByUserId("00000000-0000-0000-0000-000000000002");
 
@@ -88,6 +88,7 @@ class ProcessInstanceAttachmentServiceTest {
         assertEquals(savedAttachment.getKey(), event.getDetails().get("attachmentKey"));
         assertEquals("file.pdf", event.getDetails().get("fileName"));
         assertEquals("uploaded-file.pdf", event.getDetails().get("originalFileName"));
+        assertEquals("person-1/dog-2", event.getDetails().get("group"));
         assertEquals(1, event.getDetails().get("position"));
         assertEquals(3, event.getDetails().get("attachmentSetId"));
     }

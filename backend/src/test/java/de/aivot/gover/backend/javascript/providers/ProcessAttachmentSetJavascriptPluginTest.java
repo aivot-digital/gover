@@ -27,6 +27,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -82,8 +83,8 @@ class ProcessAttachmentSetJavascriptPluginTest {
         assertEquals(PROCESS_INSTANCE_TASK_ID, attachmentSet.getProcessInstanceTaskId());
         assertEquals(List.of(
                 "create(dataKey: string, name: string, processInstanceId: number, processInstanceTaskId: number): number;",
-                "addAttachmentBase64(attachmentSetId: number, fileName: string, base64Content: string): { key: string; filename: string; originalFilename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };",
-                "addAttachmentString(attachmentSetId: number, fileName: string, content: string): { key: string; filename: string; originalFilename: string; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };"
+                "addAttachmentBase64(attachmentSetId: number, fileName: string, base64Content: string): { key: string; filename: string; originalFilename: string; group: string | null; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };",
+                "addAttachmentString(attachmentSetId: number, fileName: string, content: string): { key: string; filename: string; originalFilename: string; group: string | null; position: number; attachmentSetId: number; processInstanceId: number; processInstanceTaskId: number | null; storageProviderId: number; storagePathFromRoot: string; };"
         ), List.of(provider.getMethodTypeDefinitions()));
     }
 
@@ -99,6 +100,7 @@ class ProcessAttachmentSetJavascriptPluginTest {
                         attachment.key,
                         attachment.filename,
                         attachment.originalFilename,
+                        attachment.group,
                         attachment.position,
                         attachment.attachmentSetId,
                         attachment.processInstanceId,
@@ -112,12 +114,13 @@ class ProcessAttachmentSetJavascriptPluginTest {
             assertEquals(attachmentKey.toString(), values.get(0));
             assertEquals("report.txt", values.get(1));
             assertEquals("report.txt", values.get(2));
-            assertEquals(4, ((Number) values.get(3)).intValue());
-            assertEquals(321, ((Number) values.get(4)).intValue());
-            assertEquals(42, ((Number) values.get(5)).intValue());
-            assertEquals(9, ((Number) values.get(6)).intValue());
-            assertEquals(5, ((Number) values.get(7)).intValue());
-            assertEquals("/proc/attachments/file.txt", values.get(8));
+            assertNull(values.get(3));
+            assertEquals(4, ((Number) values.get(4)).intValue());
+            assertEquals(321, ((Number) values.get(5)).intValue());
+            assertEquals(42, ((Number) values.get(6)).intValue());
+            assertEquals(9, ((Number) values.get(7)).intValue());
+            assertEquals(5, ((Number) values.get(8)).intValue());
+            assertEquals("/proc/attachments/file.txt", values.get(9));
         }
 
         var attachmentCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentEntity.class);
@@ -125,6 +128,7 @@ class ProcessAttachmentSetJavascriptPluginTest {
         var attachment = attachmentCaptor.getValue();
         assertEquals("report.txt", attachment.getFileName());
         assertEquals("report.txt", attachment.getOriginalFileName());
+        assertNull(attachment.getGroup());
         assertEquals(4, attachment.getPosition());
         assertEquals(321, attachment.getAttachmentSetId());
         assertEquals(PROCESS_INSTANCE_ID, attachment.getProcessInstanceId());
@@ -144,6 +148,7 @@ class ProcessAttachmentSetJavascriptPluginTest {
                         attachment.key,
                         attachment.filename,
                         attachment.originalFilename,
+                        attachment.group,
                         attachment.position
                     ];
                     """));
@@ -152,7 +157,8 @@ class ProcessAttachmentSetJavascriptPluginTest {
             assertEquals(attachmentKey.toString(), values.get(0));
             assertEquals("report.txt", values.get(1));
             assertEquals("report.txt", values.get(2));
-            assertEquals(4, ((Number) values.get(3)).intValue());
+            assertNull(values.get(3));
+            assertEquals(4, ((Number) values.get(4)).intValue());
         }
 
         var attachmentCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentEntity.class);
@@ -160,6 +166,7 @@ class ProcessAttachmentSetJavascriptPluginTest {
         var attachment = attachmentCaptor.getValue();
         assertEquals("report.txt", attachment.getFileName());
         assertEquals("report.txt", attachment.getOriginalFileName());
+        assertNull(attachment.getGroup());
         assertEquals(4, attachment.getPosition());
         assertArrayEquals(" Gr\u00fc\u00dfe ".getBytes(StandardCharsets.UTF_8), attachment.getFileBytes());
     }

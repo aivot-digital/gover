@@ -31,6 +31,10 @@ public class ProcessInstanceAttachmentEntity {
     @Size(max = 255, message = "Der ursprüngliche Dateiname darf maximal 255 Zeichen lang sein.")
     private String originalFileName;
 
+    @Nullable
+    @Column(name = "\"group\"")
+    private String group;
+
     @Nonnull
     @NotNull(message = "Die Position der Anlage darf nicht null sein.")
     @Min(value = 1, message = "Die Position der Anlage muss größer oder gleich 1 sein.")
@@ -76,6 +80,7 @@ public class ProcessInstanceAttachmentEntity {
     public ProcessInstanceAttachmentEntity(@Nonnull UUID key,
                                            @Nonnull String fileName,
                                            @Nonnull String originalFileName,
+                                           @Nullable String group,
                                            @Nonnull Integer position,
                                            @Nonnull Integer attachmentSetId,
                                            @Nonnull Long processInstanceId,
@@ -87,6 +92,7 @@ public class ProcessInstanceAttachmentEntity {
         this.key = key;
         this.fileName = fileName;
         this.originalFileName = originalFileName;
+        this.group = group;
         this.position = position;
         this.attachmentSetId = attachmentSetId;
         this.processInstanceId = processInstanceId;
@@ -104,7 +110,7 @@ public class ProcessInstanceAttachmentEntity {
             @Nullable Long processInstanceTaskId,
             @Nonnull byte[] fileBytes
     ) {
-        return of(fileName, fileName, position, processInstanceId, processInstanceTaskId, fileBytes);
+        return of(fileName, fileName, null, position, processInstanceId, processInstanceTaskId, fileBytes);
     }
 
     public static ProcessInstanceAttachmentEntity of(
@@ -115,10 +121,23 @@ public class ProcessInstanceAttachmentEntity {
             @Nullable Long processInstanceTaskId,
             @Nonnull byte[] fileBytes
     ) {
+        return of(fileName, originalFileName, null, position, processInstanceId, processInstanceTaskId, fileBytes);
+    }
+
+    public static ProcessInstanceAttachmentEntity of(
+            @Nonnull String fileName,
+            @Nonnull String originalFileName,
+            @Nullable String group,
+            @Nonnull Integer position,
+            @Nonnull Long processInstanceId,
+            @Nullable Long processInstanceTaskId,
+            @Nonnull byte[] fileBytes
+    ) {
         return new ProcessInstanceAttachmentEntity(
                 null,
                 fileName,
                 originalFileName,
+                group,
                 position,
                 null,
                 processInstanceId,
@@ -161,6 +180,16 @@ public class ProcessInstanceAttachmentEntity {
 
     public ProcessInstanceAttachmentEntity setOriginalFileName(@Nonnull String originalFileName) {
         this.originalFileName = originalFileName;
+        return this;
+    }
+
+    @Nullable
+    public String getGroup() {
+        return group;
+    }
+
+    public ProcessInstanceAttachmentEntity setGroup(@Nullable String group) {
+        this.group = group;
         return this;
     }
 

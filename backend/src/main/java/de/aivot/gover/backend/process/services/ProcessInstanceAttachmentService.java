@@ -142,6 +142,7 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
         details.put("attachmentKey", attachment.getKey());
         details.put("fileName", attachment.getFileName());
         details.put("originalFileName", attachment.getOriginalFileName());
+        details.put("group", attachment.getGroup());
         details.put("position", attachment.getPosition());
         details.put("attachmentSetId", attachment.getAttachmentSetId());
         details.put("processInstanceId", attachment.getProcessInstanceId());
@@ -227,6 +228,7 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
         existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
         existingEntity.setProcessInstanceTaskId(entity.getProcessInstanceTaskId());
         existingEntity.setAttachmentSetId(entity.getAttachmentSetId());
+        existingEntity.setGroup(entity.getGroup());
         existingEntity.setUploadedByUserId(entity.getUploadedByUserId());
         return processInstanceAttachmentRepository.save(existingEntity);
     }

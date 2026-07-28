@@ -202,12 +202,13 @@ public class ProcessDataService {
 
     @Nonnull
     private Map<String, Object> getAttachmentData(@Nonnull ProcessInstanceAttachmentEntity attachment) {
-        return Map.of(
-                "filename", attachment.getFileName(),
-                "originalFilename", attachment.getOriginalFileName(),
-                "storageProviderId", attachment.getStorageProviderId(),
-                "storagePathFromRoot", attachment.getStoragePathFromRoot()
-        );
+        var attachmentData = new LinkedHashMap<String, Object>();
+        attachmentData.put("filename", attachment.getFileName());
+        attachmentData.put("originalFilename", attachment.getOriginalFileName());
+        attachmentData.put("group", attachment.getGroup());
+        attachmentData.put("storageProviderId", attachment.getStorageProviderId());
+        attachmentData.put("storagePathFromRoot", attachment.getStoragePathFromRoot());
+        return attachmentData;
     }
 
     @Nonnull

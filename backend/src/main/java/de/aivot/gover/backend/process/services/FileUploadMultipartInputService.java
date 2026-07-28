@@ -83,7 +83,8 @@ public class FileUploadMultipartInputService {
                 createdFileItems,
                 attachmentSetsByDataKey,
                 nextAttachmentPositionsByDataKey,
-                List.of()
+                null,
+                false
         );
 
         if (!remainingFiles.isEmpty()) {
@@ -108,7 +109,8 @@ public class FileUploadMultipartInputService {
                                   @Nonnull List<FileUploadInputElementItem> createdFileItems,
                                   @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
                                   @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey,
-                                  @Nonnull List<Integer> structuredListIndices) throws ResponseException {
+                                  @Nullable String attachmentGroup,
+                                  boolean hasMissingAttachmentGroupPart) throws ResponseException {
         if (element instanceof FileUploadInputElement fileUploadElement) {
             if (!values.containsKey(fileUploadElement.getId())) {
                 return;
@@ -128,7 +130,8 @@ public class FileUploadMultipartInputService {
                             createdFileItems,
                             attachmentSetsByDataKey,
                             nextAttachmentPositionsByDataKey,
-                            structuredListIndices
+                            attachmentGroup,
+                            hasMissingAttachmentGroupPart
                     )
             );
             return;
@@ -150,9 +153,9 @@ public class FileUploadMultipartInputService {
                 }
 
                 var rowValues = rowValue.getValues() != null ? rowValue.getValues() : new AuthoredElementValues();
-                var childStructuredListIndices = new ArrayList<Integer>(structuredListIndices.size() + 1);
-                childStructuredListIndices.addAll(structuredListIndices);
-                childStructuredListIndices.add(rowIndex + 1);
+                var rowId = StringUtils.toNullableTrimmedString(rowValue.getId());
+                var childAttachmentGroup = appendAttachmentGroup(attachmentGroup, rowId);
+                var childHasMissingAttachmentGroupPart = hasMissingAttachmentGroupPart || rowId == null;
                 for (var child : replicatingContainer.getChildren()) {
                     normalizeElement(
                             child,
@@ -166,7 +169,8 @@ public class FileUploadMultipartInputService {
                             createdFileItems,
                             attachmentSetsByDataKey,
                             nextAttachmentPositionsByDataKey,
-                            childStructuredListIndices
+                            childAttachmentGroup,
+                            childHasMissingAttachmentGroupPart
                     );
                 }
                 normalizedRows.add(rowValue.setValues(rowValues));
@@ -190,7 +194,8 @@ public class FileUploadMultipartInputService {
                         createdFileItems,
                         attachmentSetsByDataKey,
                         nextAttachmentPositionsByDataKey,
-                        structuredListIndices
+                        attachmentGroup,
+                        hasMissingAttachmentGroupPart
                 );
             }
         }
@@ -208,7 +213,8 @@ public class FileUploadMultipartInputService {
                                             @Nonnull List<FileUploadInputElementItem> createdFileItems,
                                             @Nonnull Map<String, ProcessInstanceAttachmentSetEntity> attachmentSetsByDataKey,
                                             @Nonnull Map<String, Integer> nextAttachmentPositionsByDataKey,
-                                            @Nonnull List<Integer> structuredListIndices) throws ResponseException {
+                                            @Nullable String attachmentGroup,
+                                            boolean hasMissingAttachmentGroupPart) throws ResponseException {
         var items = FileUploadInputElement._formatValue(rawValue);
         if (items == null) {
             return rawValue;
@@ -232,6 +238,13 @@ public class FileUploadMultipartInputService {
                 continue;
             }
 
+            if (hasMissingAttachmentGroupPart) {
+                throw ResponseException.badRequest(
+                        "Für das Upload-Feld „%s“ fehlt eine ID des Listeneintrags.",
+                        describeElement(element)
+                );
+            }
+
             var multipartFile = resolveMultipartFile(item, remainingFiles, filesByUri);
             var originalFileName = resolveOriginalFileName(item, multipartFile);
             validateFileMatchesInput(item, multipartFile, originalFileName);
@@ -247,7 +260,7 @@ public class FileUploadMultipartInputService {
                     element,
                     configuredSubmittedFileName,
                     originalFileName,
-                    resolveFileNameIndices(structuredListIndices, element, itemIndex)
+                    resolveFileNameIndices(element, itemIndex)
             );
 
             byte[] fileBytes;
@@ -258,7 +271,7 @@ public class FileUploadMultipartInputService {
             }
 
             var attachment = ProcessInstanceAttachmentEntity
-                    .of(finalFileName, originalFileName, itemPosition, processInstanceId, processInstanceTaskId, fileBytes)
+                    .of(finalFileName, originalFileName, attachmentGroup, itemPosition, processInstanceId, processInstanceTaskId, fileBytes)
                     .setUploadedByUserId(uploadedByUserId);
 
             var attachmentSet = resolveAttachmentSet(element, attachmentSetDataKey, processInstanceId, processInstanceTaskId, attachmentSetsByDataKey);
@@ -409,18 +422,24 @@ public class FileUploadMultipartInputService {
         return resolvedFileName;
     }
 
-    @Nonnull
-    private List<Integer> resolveFileNameIndices(@Nonnull List<Integer> structuredListIndices,
-                                                 @Nonnull FileUploadInputElement element,
-                                                 int itemIndex) {
-        if (!Boolean.TRUE.equals(element.getIsMultifile())) {
-            return structuredListIndices;
+    @Nullable
+    private String appendAttachmentGroup(@Nullable String attachmentGroup,
+                                         @Nullable String itemId) {
+        if (itemId == null) {
+            return attachmentGroup;
         }
 
-        var fileNameIndices = new ArrayList<Integer>(structuredListIndices.size() + 1);
-        fileNameIndices.addAll(structuredListIndices);
-        fileNameIndices.add(itemIndex + 1);
-        return fileNameIndices;
+        return attachmentGroup == null ? itemId : attachmentGroup + "/" + itemId;
+    }
+
+    @Nonnull
+    private List<Integer> resolveFileNameIndices(@Nonnull FileUploadInputElement element,
+                                                 int itemIndex) {
+        if (!Boolean.TRUE.equals(element.getIsMultifile())) {
+            return List.of();
+        }
+
+        return List.of(itemIndex + 1);
     }
 
     @Nonnull
