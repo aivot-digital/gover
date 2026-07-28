@@ -61,7 +61,12 @@ services:
     restart: unless-stopped
     command: web
     depends_on:
-      - gover_api
+      gover_api:
+        condition: service_healthy
+        restart: true
+      gotenberg:
+        condition: service_started
+        restart: true
     environment:
       GOVER_HOSTNAME: ${GOVER_HOSTNAME}
     networks:
@@ -163,6 +168,10 @@ services:
   gotenberg:
     image: docker.io/gotenberg/gotenberg:8
     restart: unless-stopped
+    depends_on:
+      gover_api:
+        condition: service_started
+        restart: true
     environment:
       CHROMIUM_DENY_PRIVATE_IPS: "true"
       CHROMIUM_DENY_PUBLIC_IPS: "true"
@@ -184,6 +193,13 @@ services:
   caddy:
     image: docker.io/caddy:2-alpine
     restart: unless-stopped
+    depends_on:
+      gover_api:
+        condition: service_healthy
+        restart: true
+      gover_app:
+        condition: service_healthy
+        restart: true
     environment:
       GOVER_HOSTNAME: ${GOVER_HOSTNAME}
     volumes:
