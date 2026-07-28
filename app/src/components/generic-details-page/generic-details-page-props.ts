@@ -58,6 +58,7 @@ export interface GenericDetailsPageProps<ItemType, ID, AdditionalData> {
     onAdditionalDataChange?: (item: AdditionalData | null) => void;
     controlRef?: RefObject<GenericDetailsPageControlRef | null>;
     entityType?: ServerEntityType;
+    getSearchItemId?: (item: ItemType, id: ID) => string | undefined;
     permissionCheck?: GenericDetailsPagePermissionConfig<ItemType>;
     isEditable?: (item: ItemType | undefined) => boolean;
     hasAccess?: (item: ItemType | undefined) => void;

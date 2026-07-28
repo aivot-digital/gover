@@ -125,6 +125,7 @@ export function DataObjectItemDetailsPage() {
                     to: `/data-objects/${dataObjectSchema.key}/items`,
                 }}
                 entityType={ServerEntityType.DataObjectItems}
+                getSearchItemId={(item) => `${item.schemaKey},${item.id}`}
             />
         </PageWrapper>
     );

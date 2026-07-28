@@ -10,6 +10,7 @@ import PersonOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Person'
 import {resolveUserName} from '../../../utils/resolve-user-name';
 import {useParams} from 'react-router-dom';
 import {Permission} from '../../../../../data/permissions/permission';
+import {ServerEntityType} from '../../../../../shells/staff/data/server-entity-type';
 
 export function UserDetailsPage() {
     const params = useParams();
@@ -114,6 +115,7 @@ export function UserDetailsPage() {
                     label: 'Liste der Mitarbeiter:innen',
                     to: '/users',
                 }}
+                entityType={ServerEntityType.Users}
             />
         </PageWrapper>
     );
