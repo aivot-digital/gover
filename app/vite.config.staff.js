@@ -7,12 +7,7 @@ export default defineConfig(() => {
     return {
         base: '/staff',
         plugins: [
-            react({
-                jsxImportSource: '@emotion/react',
-                babel: {
-                    plugins: ['@emotion/babel-plugin'],
-                },
-            }),
+            react(),
             svgr(),
             checker({
                 typescript: true,

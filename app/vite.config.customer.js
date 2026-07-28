@@ -6,12 +6,7 @@ import checker from 'vite-plugin-checker';
 export default defineConfig(() => {
     return {
         plugins: [
-            react({
-                jsxImportSource: '@emotion/react',
-                babel: {
-                    plugins: ['@emotion/babel-plugin'],
-                },
-            }),
+            react(),
             svgr(),
             checker({
                 typescript: true,

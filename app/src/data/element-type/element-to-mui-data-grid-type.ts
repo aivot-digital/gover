@@ -1,8 +1,8 @@
 import {ElementType} from './element-type';
-import {GridColType} from '@mui/x-data-grid/models/colDef/gridColType';
+import {type GridColDef} from '@mui/x-data-grid';
 
 
-export const ElementToMuiDataGridType: Record<ElementType, GridColType | null> = {
+export const ElementToMuiDataGridType: Record<ElementType, GridColDef['type'] | null> = {
     [ElementType.Alert]: null,
     [ElementType.Checkbox]: 'boolean',
     [ElementType.Image]: null,
