@@ -23,7 +23,7 @@ import {
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {resolveReplicatingContainerItemDerivedData} from '../../utils/element-data-utils';
 import {ViewDispatcherComponent} from '../view-dispatcher/view-dispatcher.component';
-import {generateId} from '../../utils/id-utils';
+import {generateId, generateUUIDv7} from '../../utils/id-utils';
 
 export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContainerLayout, ReplicatingContainerElementValues>) {
     const [confirmDelete, setConfirmDelete] = useState<() => void>();
@@ -69,7 +69,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
         const updatedValue: ReplicatingContainerElementValues = [
             ...(value ?? []),
             {
-                id: generateId(),
+                id: generateUUIDv7(),
                 values: {},
             },
         ];

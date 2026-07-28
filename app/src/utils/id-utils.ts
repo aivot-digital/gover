@@ -1,6 +1,7 @@
 import {type AnyElement} from '../models/elements/any-element';
 import {ElementType} from '../data/element-type/element-type';
 import ShortUniqueId from 'short-unique-id';
+import {v7 as uuidv7} from 'uuid';
 
 const uid = new ShortUniqueId();
 
@@ -101,4 +102,8 @@ function generateElementId(prefix: string): string {
 
 export function generateId(length: number = 10) {
     return uid.rnd(length);
+}
+
+export function generateUUIDv7() {
+    return uuidv7();
 }
