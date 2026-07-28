@@ -1,4 +1,4 @@
-import React, {useContext, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {EmptyDataListPlaceholder} from '../../../../../components/empty-data-list-placeholder/empty-data-list-placeholder';
 import {type GridColDef} from '@mui/x-data-grid';
 import EditOutlined from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -51,6 +51,9 @@ import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabl
 import {type PermissionSet} from '../../../../permissions/models/permission-set';
 
 const deletedUserMembershipTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Mitgliedschaften und Rollen nicht mehr geändert werden.';
+const membershipIdsLoadingTooltip = 'Lade bestehende Mitgliedschaften…';
+const membershipIdsLoadErrorTooltip = 'Die bestehenden Mitgliedschaften konnten nicht geladen werden.';
+type MembershipIdsLoadState = 'loading' | 'loaded' | 'error';
 
 export function UserDetailsPageDepartmentMemberships() {
     const dispatch = useAppDispatch();
@@ -67,15 +70,19 @@ export function UserDetailsPageDepartmentMemberships() {
     const [showSelectNewDepartmentDialog, setShowSelectNewDepartmentDialog] = useState(false);
     const [showSelectRolesDialogForDepartment, setShowSelectRolesDialogForDepartment] = useState<VDepartmentShadowedEntity | null>(null);
     const [showSelectRolesDialogForMembership, setShowSelectRolesDialogForMembership] = useState<VDepartmentMembershipWithDetailsEntity | null>(null);
+    const [assignedDepartmentIds, setAssignedDepartmentIds] = useState<Set<number>>(new Set());
+    const [assignedDepartmentIdsLoadState, setAssignedDepartmentIdsLoadState] = useState<MembershipIdsLoadState>('loading');
 
     const canManageMemberships = user != null && !user.deletedInIdp;
     const canReadDomainRoles = hasSystemPermission(permissions, Permission.DOMAIN_ROLE_READ);
     const canReadAnyDepartment = hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_READ);
     const canCreateAnyDepartmentMembership = hasAnyDepartmentPermission(permissions, Permission.DEPARTMENT_MEMBERSHIP_CREATE);
-    const canOpenSelectNewDepartmentDialog = canManageMemberships &&
+    const canOpenSelectNewDepartmentDialogBase = canManageMemberships &&
         canReadAnyDepartment &&
         canCreateAnyDepartmentMembership &&
         canReadDomainRoles;
+    const canOpenSelectNewDepartmentDialog = canOpenSelectNewDepartmentDialogBase &&
+        assignedDepartmentIdsLoadState === 'loaded';
 
     const newMembershipDisabledTooltip = !canManageMemberships
         ? deletedUserMembershipTooltip
@@ -85,9 +92,44 @@ export function UserDetailsPageDepartmentMemberships() {
                 ? formatMissingPermissionTooltip(Permission.DEPARTMENT_READ)
                 : !canReadDomainRoles
                     ? formatMissingPermissionTooltip(Permission.DOMAIN_ROLE_READ)
-                    : '';
+                    : assignedDepartmentIdsLoadState === 'error'
+                        ? membershipIdsLoadErrorTooltip
+                        : assignedDepartmentIdsLoadState !== 'loaded'
+                            ? membershipIdsLoadingTooltip
+                            : '';
 
     const columns = useMemo(() => buildColumns(permissions, canReadDomainRoles), [canReadDomainRoles, permissions]);
+
+    const refreshAssignedDepartmentIds = useCallback(() => {
+        const userId = user?.id;
+
+        if (!canOpenSelectNewDepartmentDialogBase || userId == null) {
+            setAssignedDepartmentIds(new Set());
+            setAssignedDepartmentIdsLoadState('loaded');
+            return;
+        }
+
+        setAssignedDepartmentIdsLoadState('loading');
+
+        new VDepartmentMembershipWithDetailsService()
+            .listAll({userId})
+            .then(({content}) => {
+                setAssignedDepartmentIds(new Set(content.map((membership) => membership.departmentId)));
+                setAssignedDepartmentIdsLoadState('loaded');
+            })
+            .catch((err) => {
+                console.error(err);
+                dispatch(showApiErrorSnackbar(
+                    err,
+                    'Die bestehenden Organisationseinheitsmitgliedschaften konnten nicht geladen werden.',
+                ));
+                setAssignedDepartmentIdsLoadState('error');
+            });
+    }, [canOpenSelectNewDepartmentDialogBase, dispatch, user?.id]);
+
+    useEffect(() => {
+        refreshAssignedDepartmentIds();
+    }, [refreshAssignedDepartmentIds]);
 
     const refreshPermissionsAfterMembershipChange = () => {
         // Effective permissions may include grants inherited through deputy assignments.
@@ -128,6 +170,7 @@ export function UserDetailsPageDepartmentMemberships() {
         if (
             !canManageMemberships ||
             !canReadDomainRoles ||
+            assignedDepartmentIds.has(department.id) ||
             !hasDepartmentPermission(permissions, department.id, Permission.DEPARTMENT_MEMBERSHIP_CREATE)
         ) {
             return;
@@ -146,8 +189,8 @@ export function UserDetailsPageDepartmentMemberships() {
                 roleIds: roleIdsToAdd,
             })
             .then(() => {
-                // Refresh list
                 listControlRef.current?.refresh();
+                refreshAssignedDepartmentIds();
                 refreshPermissionsAfterMembershipChange();
             })
             .catch((error) => {
@@ -251,6 +294,7 @@ export function UserDetailsPageDepartmentMemberships() {
                     .destroy(membership.membershipId)
                     .then(() => {
                         listControlRef.current?.refresh();
+                        refreshAssignedDepartmentIds();
                         refreshPermissionsAfterMembershipChange();
                     })
                     .catch((error) => {
@@ -365,13 +409,24 @@ export function UserDetailsPageDepartmentMemberships() {
                     setShowSelectNewDepartmentDialog(false);
                 }}
                 title="Organisationseinheit auswählen"
-                isDepartmentSelectable={(department) => hasDepartmentPermission(
-                    permissions,
-                    department.id,
-                    Permission.DEPARTMENT_MEMBERSHIP_CREATE,
+                isDepartmentSelectable={(department) => (
+                    !assignedDepartmentIds.has(department.id) &&
+                    hasDepartmentPermission(
+                        permissions,
+                        department.id,
+                        Permission.DEPARTMENT_MEMBERSHIP_CREATE,
+                    )
                 )}
-                getDepartmentDisabledTooltip={() => formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)}
+                getDepartmentDisabledTooltip={(department) => (
+                    assignedDepartmentIds.has(department.id) ?
+                        'Bereits Mitglied' :
+                        formatMissingPermissionTooltip(Permission.DEPARTMENT_MEMBERSHIP_CREATE)
+                )}
                 onSelect={(department) => {
+                    if (assignedDepartmentIds.has(department.id)) {
+                        return;
+                    }
+
                     setShowSelectRolesDialogForDepartment(department);
                     setShowSelectNewDepartmentDialog(false);
                 }}
