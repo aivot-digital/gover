@@ -8,6 +8,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
     "start:staff": "VITE_APP_MODE=staff vite --config vite.config.staff.js",
     "start:customer": "VITE_APP_MODE=customer vite --config vite.config.customer.js",
     "prebuild:staff": "npm run generate:permissions",
