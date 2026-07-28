@@ -13,6 +13,7 @@ import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
 import de.aivot.gover.backend.storage.services.StorageService;
+import de.aivot.gover.backend.utils.StringUtils;
 import de.aivot.gover.backend.xrepository.models.XRepositoryCodeList;
 import de.aivot.gover.backend.xrepository.services.XRepositoryCodeListService;
 import de.siegmar.fastcsv.reader.CsvParseException;
@@ -66,7 +67,14 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     @Nonnull
     @Override
     public CodeListEntity create(@Nonnull CodeListEntity entity) throws ResponseException {
+        if (codeListRepository.existsById(entity.getKey())) {
+            throw ResponseException
+                    .conflict("Eine Codeliste mit dem Schlüssel %s existiert bereits.", StringUtils.quote(entity.getKey()));
+        }
+
         entity.setId(null);
+        entity.setCreated(Instant.now());
+        entity.setUpdated(Instant.now());
         normalizeCodeList(entity);
         return codeListRepository.save(entity);
     }
