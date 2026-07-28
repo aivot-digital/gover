@@ -42,7 +42,7 @@ export function createSearchItemLink(searchItem: SearchItemResponseDto): string 
         case 'secrets':
             return '/secrets/' + id;
         case 'code_lists':
-            return '/code-lists/' + id;
+            return '/code-lists/' + encodeURIComponent(id);
         case 'teams':
             return '/teams/' + id;
         case 'users':

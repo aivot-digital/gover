@@ -206,14 +206,15 @@ FROM themes
 UNION ALL
 
 -- Code Lists
-SELECT text 'code_lists'             AS origin_table,
-        null                         AS origin_table_subset,
-        name                         AS label,
-        key                          AS id,
-        to_tsvector('german', name)  AS searchable_element,
-        name                         AS search_text,
-        usp.user_id                  AS user_id,
-        usp.permissions              AS permissions
+SELECT text 'code_lists'                               AS origin_table,
+        null                                           AS origin_table_subset,
+        name                                           AS label,
+        key                                            AS id,
+        to_tsvector('german', name) ||
+        to_tsvector('german', key)                     AS searchable_element,
+        trim(name || ' ' || key)                       AS search_text,
+        usp.user_id                                    AS user_id,
+        usp.permissions                                AS permissions
 FROM code_lists
          CROSS JOIN v_user_system_permission AS usp
 
