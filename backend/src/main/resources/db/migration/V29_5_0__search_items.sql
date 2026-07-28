@@ -74,6 +74,22 @@ FROM teams
 
 UNION ALL
 
+-- Users
+SELECT text 'users'                                                              AS origin_table,
+       null                                                                      AS origin_table_subset,
+       coalesce(nullif(full_name, ''), email, id)                                AS label,
+       id::varchar                                                               AS id,
+       to_tsvector('german', coalesce(full_name, '')) ||
+       to_tsvector('german', coalesce(email, ''))                                AS searchable_element,
+       trim(coalesce(full_name, '') || ' ' || coalesce(email, ''))               AS search_text,
+       usp.user_id                                                               AS user_id,
+       usp.permissions                                                           AS permissions
+FROM users
+         CROSS JOIN v_user_system_permission AS usp
+WHERE deleted_in_idp = false
+
+UNION ALL
+
 -- Process Nodes
 SELECT text 'process_nodes'                                         AS origin_table,
        process_node_definition_key::varchar                         AS origin_table_subset,
