@@ -24,7 +24,7 @@ import EventIcon from '@aivot/mui-material-symbols-400-n25-outlined/Event';
 import HelpOutlineIcon from '@aivot/mui-material-symbols-400-n25-outlined/Help';
 import {SystemApiService} from '../../../../../modules/system/system-api-service';
 import BugReport from '@aivot/mui-material-symbols-400-n25-outlined/BugReport';
-import Extension from '@aivot/mui-material-symbols-400-n25-outlined/Extension';
+import Category from '@aivot/mui-material-symbols-400-n25-outlined/Category';
 import {ModuleFlag, ModuleFlagLabels} from '../../../../../utils/module-flags';
 import {ProcessNodeType} from '../../../../../modules/process/services/process-node-provider-api-service';
 import {humanizeNumber} from '../../../../../utils/humanization-utils';
@@ -184,7 +184,7 @@ export function SystemInformation(): React.ReactElement {
             },
             {
                 label: 'Aktivierte Module',
-                icon: <Extension/>,
+                icon: <Category/>,
                 children: AppConfig.moduleFlags.length === 0
                     ? <i>Keine aktiven Module</i>
                     : AppConfig
