@@ -67,15 +67,15 @@ public class CodeListService implements EntityService<CodeListEntity, String> {
     @Nonnull
     @Override
     public CodeListEntity create(@Nonnull CodeListEntity entity) throws ResponseException {
-        if (codeListRepository.existsById(entity.getKey())) {
-            throw ResponseException
-                    .conflict("Eine Codeliste mit dem Schlüssel %s existiert bereits.", StringUtils.quote(entity.getKey()));
-        }
-
         entity.setId(null);
         entity.setCreated(Instant.now());
         entity.setUpdated(Instant.now());
         normalizeCodeList(entity);
+
+        if (codeListRepository.existsById(entity.getKey())) {
+            throw ResponseException
+                    .conflict("Eine Codeliste mit dem Schlüssel %s existiert bereits.", StringUtils.quote(entity.getKey()));
+        }
         return codeListRepository.save(entity);
     }
 
