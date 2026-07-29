@@ -121,7 +121,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     const navigate = useNavigate();
     const {registerSyncPreparationHandler} = useStorageProviderDetailsPageSyncContext();
     const canDeleteStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_DELETE);
-    const canRefreshDefinitions = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
+    const canCreateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_CREATE);
+    const canUpdateStorageProvider = useHasSystemPermission(Permission.STORAGE_PROVIDER_UPDATE);
 
     const [storageProviderSchema, setStorageProviderSchema] = useState<any>(_StorageProviderSchema);
     const [derivedElementData, setDerivedElementData] = useState<DerivedRuntimeElementData | null>(null);
@@ -138,6 +139,8 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
         isEditable,
         isExistingItem,
     } = useGenericDetailsPageContext<StorageProviderEntity, StorageProviderAdditionalData>();
+    const refreshDefinitionsPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
+    const canRefreshDefinitions = isExistingItem === true ? canUpdateStorageProvider : canCreateStorageProvider;
 
     // Extract the id of the storage provider for later usage.
     const {
@@ -383,7 +386,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
     };
 
     const inputsDisabled = editedStorageProvider.systemProvider || isBusy || !isEditable;
-    const editPermission = isExistingItem ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
+    const editPermission = isExistingItem === true ? Permission.STORAGE_PROVIDER_UPDATE : Permission.STORAGE_PROVIDER_CREATE;
     const editDisabledTooltip = !isEditable
         ? formatMissingPermissionTooltip(editPermission)
         : editedStorageProvider.systemProvider
@@ -391,7 +394,7 @@ export function StorageProviderDetailsPageIndex(): ReactNode {
             : undefined;
     const refreshDefinitionsTooltip = canRefreshDefinitions
         ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
-        : formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_UPDATE);
+        : formatMissingPermissionTooltip(refreshDefinitionsPermission);
     const defaultStorageDeleteDisabled = isDefaultAttachmentStorage || isDefaultAssetStorage;
     const deleteDisabledTooltip = !canDeleteStorageProvider
         ? formatMissingPermissionTooltip(Permission.STORAGE_PROVIDER_DELETE)

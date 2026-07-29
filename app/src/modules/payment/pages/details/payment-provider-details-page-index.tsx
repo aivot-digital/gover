@@ -78,7 +78,8 @@ export function PaymentProviderDetailsPageIndex() {
     const navigate = useNavigate();
     const showConfirm = useConfirm();
     const canDeletePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_DELETE);
-    const canRefreshDefinitions = useHasSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
+    const canCreatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_CREATE);
+    const canUpdatePaymentProvider = useHasSystemPermission(Permission.PAYMENT_PROVIDER_UPDATE);
 
     const [derivedRuntimeConfigData, setDerivedRuntimeConfigData] = useState<DerivedRuntimeElementData | null>(null);
     const [paymentProviderSchema, setPaymentProviderSchema] = useState<PaymentProviderYupSchemaType>(BasePaymentProviderYupSchema);
@@ -131,7 +132,9 @@ export function PaymentProviderDetailsPageIndex() {
     const [showConfirmDialog, setShowConfirmDialog] = useState(false);
     const [showConstraintDialog, setShowConstraintDialog] = useState(false);
     const [relatedEntities, setRelatedEntities] = useState<ConstraintLinkProps[] | null>(null);
-    const editPermission = isNewPaymentProvider ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
+    const editPermission = isNewPaymentProvider === true ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
+    const refreshDefinitionsPermission = isNewPaymentProvider === true ? Permission.PAYMENT_PROVIDER_CREATE : Permission.PAYMENT_PROVIDER_UPDATE;
+    const canRefreshDefinitions = isNewPaymentProvider === true ? canCreatePaymentProvider : canUpdatePaymentProvider;
     const editDisabledTooltip = !isEditable
         ? formatMissingPermissionTooltip(editPermission)
         : undefined;
@@ -140,7 +143,7 @@ export function PaymentProviderDetailsPageIndex() {
         : undefined;
     const refreshDefinitionsTooltip = canRefreshDefinitions
         ? 'Aktualisieren Sie die Auswahllisten für z.B. Zertifikatsdateien und Geheimnisse, falls Sie diese nicht vorab hinterlegt haben.'
-        : formatMissingPermissionTooltip(Permission.PAYMENT_PROVIDER_UPDATE);
+        : formatMissingPermissionTooltip(refreshDefinitionsPermission);
 
     useEffect(() => {
         if (selectedPaymentProviderDefinition?.configLayout == null) {
