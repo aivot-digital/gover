@@ -12,6 +12,7 @@ import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.entities.*;
 import de.aivot.gover.backend.process.enums.ProcessVersionStatus;
 import de.aivot.gover.backend.process.filters.ProcessFilter;
+import de.aivot.gover.backend.process.filters.ProcessInstanceAccessControlPresetFilter;
 import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.gover.backend.process.repositories.ProcessVersionRepository;
 import de.aivot.gover.backend.process.services.*;
@@ -57,6 +58,7 @@ public class ProcessController {
     private final ProcessVersionService processDefinitionVersionService;
     private final ProcessNodeService processDefinitionNodeService;
     private final ProcessEdgeService processDefinitionEdgeService;
+    private final ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService;
     private final ProcessNodeDefinitionService processNodeProviderService;
     private final ObjectMapper objectMapper;
 
@@ -71,7 +73,9 @@ public class ProcessController {
                              ProcessVersionService processDefinitionVersionService,
                              ProcessNodeService processDefinitionNodeService,
                              ProcessEdgeService processDefinitionEdgeService,
-                             ProcessNodeDefinitionService processNodeProviderService, ObjectMapper objectMapper) {
+                             ProcessInstanceAccessControlPresetService processInstanceAccessControlPresetService,
+                             ProcessNodeDefinitionService processNodeProviderService,
+                             ObjectMapper objectMapper) {
         this.auditService = auditService.createScopedAuditService(ProcessController.class, "Prozesse");
 
         this.userService = userService;
@@ -83,6 +87,7 @@ public class ProcessController {
         this.processDefinitionVersionService = processDefinitionVersionService;
         this.processDefinitionNodeService = processDefinitionNodeService;
         this.processDefinitionEdgeService = processDefinitionEdgeService;
+        this.processInstanceAccessControlPresetService = processInstanceAccessControlPresetService;
         this.processNodeProviderService = processNodeProviderService;
         this.objectMapper = objectMapper;
     }
@@ -642,6 +647,12 @@ public class ProcessController {
                         null
                 ));
 
+        copyProcessInstanceAccessControlPresets(
+                process.getId(),
+                originalProcessVersion.getProcessVersion(),
+                createdProcessVersion.getProcessVersion()
+        );
+
         var nodesIdMap = new HashMap<Integer, Integer>();
         for (var originalNode : originalNodes) {
             var createdNode = processDefinitionNodeService
@@ -679,6 +690,31 @@ public class ProcessController {
         }
 
         return createdProcessVersion;
+    }
+
+    private void copyProcessInstanceAccessControlPresets(
+            @Nonnull Integer processId,
+            @Nonnull Integer sourceProcessVersion,
+            @Nonnull Integer targetProcessVersion
+    ) throws ResponseException {
+        var filter = ProcessInstanceAccessControlPresetFilter
+                .create()
+                .setTargetProcessId(processId)
+                .setTargetProcessVersion(sourceProcessVersion);
+
+        var originalPresets = processInstanceAccessControlPresetService
+                .performList(Pageable.unpaged(), filter.build(), filter)
+                .getContent();
+
+        for (var originalPreset : originalPresets) {
+            processInstanceAccessControlPresetService
+                    .create(new ProcessInstanceAccessControlPresetEntity()
+                            .setSourceTeamId(originalPreset.getSourceTeamId())
+                            .setSourceDepartmentId(originalPreset.getSourceDepartmentId())
+                            .setTargetProcessId(processId)
+                            .setTargetProcessVersion(targetProcessVersion)
+                            .setPermissions(new LinkedList<>(originalPreset.getPermissions())));
+        }
     }
 
     @GetMapping("{id}/export/latest/")
