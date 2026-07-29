@@ -18,6 +18,8 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
     private static final Pattern PROCESS_DATA_KEY_PATTERN = Pattern.compile(PROCESS_DATA_KEY_REGEX);
 
     private Boolean disableWildCards;
+    @Nullable
+    private String scopeProcessDataKeyInputElementId;
 
     public ProcessDataKeyInputElement() {
         super(ElementType.ProcessDataKeyInput);
@@ -81,6 +83,16 @@ public class ProcessDataKeyInputElement extends BaseInputElement<String> impleme
 
     public ProcessDataKeyInputElement setDisableWildCards(Boolean disableWildCards) {
         this.disableWildCards = disableWildCards;
+        return this;
+    }
+
+    @Nullable
+    public String getScopeProcessDataKeyInputElementId() {
+        return scopeProcessDataKeyInputElementId;
+    }
+
+    public ProcessDataKeyInputElement setScopeProcessDataKeyInputElementId(@Nullable String scopeProcessDataKeyInputElementId) {
+        this.scopeProcessDataKeyInputElementId = scopeProcessDataKeyInputElementId;
         return this;
     }
 }

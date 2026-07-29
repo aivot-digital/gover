@@ -501,6 +501,7 @@ const elementConstructors: {
         ...makeInputBase(ElementType.ProcessDataKeyInput, id),
         label: 'Prozessdaten-Schlüssel',
         disableWildCards: false,
+        scopeProcessDataKeyInputElementId: undefined,
     }),
     [ElementType.ProcessInstanceAttachmentSetSelect]: (id) => ({
         ...makeInputBase(ElementType.ProcessInstanceAttachmentSetSelect, id),
