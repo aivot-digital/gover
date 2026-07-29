@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class ElementStreamUtils {
     public static void applyAction(BaseElement element, Consumer<BaseElement> action) {
@@ -59,5 +60,38 @@ public class ElementStreamUtils {
                 applyAction(child, states, action);
             }
         }
+    }
+
+    public static BaseElement mapAction(BaseElement element, Function<BaseElement, BaseElement> action) {
+        var mapped = action.apply(element);
+
+        if (mapped != element) {
+            return mapped;
+        }
+
+        if (mapped instanceof LayoutElement<?> mappedLayoutElement && element instanceof LayoutElement<?> originalLayoutElement) {
+            mapLayoutChildren(mappedLayoutElement, originalLayoutElement, action);
+        }
+
+        return mapped;
+    }
+
+    private static <T extends BaseElement, S extends BaseElement> void mapLayoutChildren(LayoutElement<S> layoutElement,
+                                                                                         LayoutElement<T> originalLayoutElement,
+                                                                                         Function<BaseElement, BaseElement> action) {
+        List<S> mappedChildren = new LinkedList<>();
+        for (T child : originalLayoutElement.getChildren()) {
+            BaseElement mappedChild = mapAction(child, action);
+
+            S castedMappedChild;
+            try {
+                castedMappedChild = (S) mappedChild;
+            } catch (ClassCastException e) {
+                throw new IllegalArgumentException("Mapped child is not of the expected type: " + mappedChild.getClass().getName(), e);
+            }
+
+            mappedChildren.add(castedMappedChild);
+        }
+        layoutElement.setChildren(mappedChildren);
     }
 }
