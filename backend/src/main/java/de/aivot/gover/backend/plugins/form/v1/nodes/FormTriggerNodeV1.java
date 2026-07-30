@@ -16,13 +16,20 @@ import de.aivot.gover.backend.elements.utils.ElementPOJOMapper;
 import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
 import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
+import de.aivot.gover.backend.pdf.enums.FormPdfScope;
 import de.aivot.gover.backend.plugin.models.PluginComponent;
 import de.aivot.gover.backend.plugins.form.FormPlugin;
 import de.aivot.gover.backend.plugins.form.v1.services.FormLayoutCleanerService;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
+import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentSetEntity;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.enums.ProcessNodeType;
 import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionException;
+import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidConfiguration;
+import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionInvalidDataType;
+import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionMissingValue;
+import de.aivot.gover.backend.process.exceptions.ProcessNodeExecutionExceptionUnknown;
 import de.aivot.gover.backend.process.filters.ProcessNodeFilter;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinition;
 import de.aivot.gover.backend.process.models.ProcessNodeDefinitionMetadata;
@@ -34,12 +41,18 @@ import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitio
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionTestingLayoutContext;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.process.repositories.ProcessNodeRepository;
+import de.aivot.gover.backend.process.services.FileUploadMultipartInputService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentService;
+import de.aivot.gover.backend.process.services.ProcessInstanceAttachmentSetService;
 import de.aivot.gover.backend.process.services.PublicUrlService;
+import de.aivot.gover.backend.services.PdfService;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.*;
 
 @Component
@@ -47,19 +60,30 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";
     private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
+    private static final String CUSTOMER_SUMMARY_FILE_NAME = "kundenzusammenfassung.pdf";
 
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
     public static final String DATA_KEY_ATTACHMENTS = "attachments";
     public static final String DATA_KEY_STARTED = "started";
+    public static final String DATA_KEY_CUSTOMER_SUMMARY_FILES = "customerSummaryFiles";
 
     private final PublicUrlService publicUrlService;
     private final ProcessNodeRepository processNodeRepository;
+    private final PdfService pdfService;
+    private final ProcessInstanceAttachmentService processInstanceAttachmentService;
+    private final ProcessInstanceAttachmentSetService processInstanceAttachmentSetService;
 
     public FormTriggerNodeV1(PublicUrlService publicUrlService,
-                             ProcessNodeRepository processNodeRepository) {
+                             ProcessNodeRepository processNodeRepository,
+                             PdfService pdfService,
+                             ProcessInstanceAttachmentService processInstanceAttachmentService,
+                             ProcessInstanceAttachmentSetService processInstanceAttachmentSetService) {
         this.publicUrlService = publicUrlService;
         this.processNodeRepository = processNodeRepository;
+        this.pdfService = pdfService;
+        this.processInstanceAttachmentService = processInstanceAttachmentService;
+        this.processInstanceAttachmentSetService = processInstanceAttachmentSetService;
     }
 
     @Nonnull
@@ -133,6 +157,11 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                         DATA_KEY_STARTED,
                         "Eingangszeitstempel",
                         "Der Zeitstempel des Dateneingangs an den Auslöser"
+                ),
+                new ProcessNodeOutput(
+                        DATA_KEY_CUSTOMER_SUMMARY_FILES,
+                        "PDF-Zusammenfassung",
+                        "Die erzeugte PDF-Zusammenfassung der eingereichten Formulardaten im Format des Datei-Upload-Feldes."
                 )
         );
     }
@@ -160,6 +189,14 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
                 );
             }
         }
+
+        pdm.addForwardedAttachmentSet(
+                processNodeEntity.getDataKey(),
+                "PDF-Zusammenfassung",
+                "Zusammenfassung der eingereichten Formulardaten.",
+                false,
+                processNodeEntity
+        );
 
         return pdm;
     }
@@ -338,9 +375,22 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
     @Override
     public ProcessNodeExecutionResult init(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context) throws ProcessNodeExecutionException {
+        var configuration = context.getConfigurationOfExecutingNode();
+        if (configuration.formLayout == null) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die Konfiguration des Formulareingangs enthält kein Formular."
+            );
+        }
+
         var processInstanceInitialPayload = context
                 .getThisProcessInstance()
                 .getInitialPayload();
+
+        var nodeData = new LinkedHashMap<>(processInstanceInitialPayload);
+        nodeData.put(
+                DATA_KEY_CUSTOMER_SUMMARY_FILES,
+                createCustomerSummaryFiles(context, configuration, processInstanceInitialPayload)
+        );
 
         var nodeInitialPayloadRaw = processInstanceInitialPayload
                 .get(DATA_KEY_PAYLOAD);
@@ -354,8 +404,86 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
 
         return new ProcessNodeExecutionResultTaskCompleted()
                 .setViaPort(PORT_NAME)
-                .setNodeData(processInstanceInitialPayload)
+                .setNodeData(nodeData)
                 .setProcessData(nodeInitialPayload);
+    }
+
+    @Nonnull
+    private List<?> createCustomerSummaryFiles(@Nonnull ProcessNodeExecutionInitContext<FormTriggerConfigV1> context,
+                                               @Nonnull FormTriggerConfigV1 configuration,
+                                               @Nonnull Map<String, Object> initialPayload) throws ProcessNodeExecutionException {
+        var submission = readSubmission(initialPayload);
+
+        byte[] pdfBytes;
+        try {
+            pdfBytes = pdfService.generateCustomerSummary(
+                    configuration.formLayout,
+                    submission,
+                    FormPdfScope.Citizen
+            );
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Die PDF-Erstellung der Formularzusammenfassung wurde unterbrochen."
+            );
+        } catch (IOException | URISyntaxException | ResponseException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Fehler beim Erzeugen der Formularzusammenfassung: %s",
+                    e.getMessage()
+            );
+        }
+
+        ProcessInstanceAttachmentEntity attachment;
+        try {
+            var attachmentSet = processInstanceAttachmentSetService.create(
+                    new ProcessInstanceAttachmentSetEntity()
+                            .setName(CUSTOMER_SUMMARY_FILE_NAME)
+                            .setDataKey(context.getThisNode().getDataKey())
+                            .setProcessInstanceId(context.getThisProcessInstance().getId())
+                            .setProcessInstanceTaskId(context.getThisTask().getId())
+            );
+
+            attachment = processInstanceAttachmentService.create(
+                    ProcessInstanceAttachmentEntity.of(
+                            CUSTOMER_SUMMARY_FILE_NAME,
+                            1,
+                            context.getThisProcessInstance().getId(),
+                            context.getThisTask().getId(),
+                            pdfBytes
+                    ).setAttachmentSetId(attachmentSet.getId())
+            );
+
+            return List.of(FileUploadMultipartInputService.buildAttachmentItem(attachment, pdfBytes.length));
+        } catch (ResponseException e) {
+            throw new ProcessNodeExecutionExceptionUnknown(
+                    e,
+                    "Fehler beim Speichern der Formularzusammenfassung als Prozess-Anhang: %s",
+                    e.getMessage()
+            );
+        }
+    }
+
+    @Nonnull
+    private AuthoredElementValues readSubmission(@Nonnull Map<String, Object> initialPayload) throws ProcessNodeExecutionException {
+        var rawSubmission = initialPayload.get(DATA_KEY_UNMAPPED);
+        if (rawSubmission == null) {
+            throw new ProcessNodeExecutionExceptionMissingValue(
+                    "Die Formular-Rohdaten für die PDF-Zusammenfassung fehlen."
+            );
+        }
+
+        try {
+            return ObjectMapperFactory
+                    .getNullPreservingInstance()
+                    .convertValue(rawSubmission, AuthoredElementValues.class);
+        } catch (IllegalArgumentException e) {
+            throw new ProcessNodeExecutionExceptionInvalidDataType(
+                    e,
+                    "Die Formular-Rohdaten konnten nicht für die PDF-Zusammenfassung verarbeitet werden."
+            );
+        }
     }
 
     @Nonnull
