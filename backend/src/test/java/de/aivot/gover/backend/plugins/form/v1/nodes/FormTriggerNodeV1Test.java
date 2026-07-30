@@ -260,10 +260,14 @@ class FormTriggerNodeV1Test {
     void init_ShouldGenerateCustomerSummaryAndKeepMappedPayloadAsProcessData() throws Exception {
         var pdfBytes = "pdf-bytes".getBytes(StandardCharsets.UTF_8);
         var formLayout = validFormLayout();
+        var configuration = configuration("antrag-online", formLayout);
         when(pdfService.generateCustomerSummary(
                 same(formLayout),
                 any(AuthoredElementValues.class),
-                eq(FormPdfScope.Citizen)
+                eq(FormPdfScope.Citizen),
+                any(ProcessInstanceEntity.class),
+                same(configuration),
+                any(ProcessNodeEntity.class)
         )).thenReturn(pdfBytes);
         when(processInstanceAttachmentSetService.create(any(ProcessInstanceAttachmentSetEntity.class)))
                 .thenAnswer(invocation -> invocation
@@ -274,7 +278,7 @@ class FormTriggerNodeV1Test {
                         .getArgument(0, ProcessInstanceAttachmentEntity.class)
                         .setKey(UUID.randomUUID())
                         .setStorageProviderId(7)
-                        .setStoragePathFromRoot("attachments/kundenzusammenfassung.pdf"));
+                        .setStoragePathFromRoot("attachments/Formularausdruck.pdf"));
 
         var started = Instant.now();
         var mappedPayload = Map.<String, Object>of("person", Map.of("name", "Ada"));
@@ -287,7 +291,7 @@ class FormTriggerNodeV1Test {
 
         var result = assertInstanceOf(
                 ProcessNodeExecutionResultTaskCompleted.class,
-                node.init(context(configuration("antrag-online", formLayout), initialPayload))
+                node.init(context(configuration, initialPayload))
         );
 
         assertEquals(mappedPayload, result.getProcessData());
@@ -295,30 +299,38 @@ class FormTriggerNodeV1Test {
         assertEquals(started, result.getNodeData().get(FormTriggerNodeV1.DATA_KEY_STARTED));
 
         var submissionCaptor = ArgumentCaptor.forClass(AuthoredElementValues.class);
+        var processInstanceCaptor = ArgumentCaptor.forClass(ProcessInstanceEntity.class);
+        var processNodeCaptor = ArgumentCaptor.forClass(ProcessNodeEntity.class);
         verify(pdfService).generateCustomerSummary(
                 same(formLayout),
                 submissionCaptor.capture(),
-                eq(FormPdfScope.Citizen)
+                eq(FormPdfScope.Citizen),
+                processInstanceCaptor.capture(),
+                same(configuration),
+                processNodeCaptor.capture()
         );
         assertEquals("Ada", submissionCaptor.getValue().get("nameField"));
+        assertEquals(PROCESS_INSTANCE_ID, processInstanceCaptor.getValue().getId());
+        assertEquals(PROCESS_ID, processInstanceCaptor.getValue().getProcessId());
+        assertEquals("formNode", processNodeCaptor.getValue().getDataKey());
 
         var attachmentSetCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentSetEntity.class);
         verify(processInstanceAttachmentSetService).create(attachmentSetCaptor.capture());
-        assertEquals("kundenzusammenfassung.pdf", attachmentSetCaptor.getValue().getName());
+        assertEquals("Formularausdruck.pdf", attachmentSetCaptor.getValue().getName());
         assertEquals("formNode", attachmentSetCaptor.getValue().getDataKey());
         assertEquals(PROCESS_INSTANCE_ID, attachmentSetCaptor.getValue().getProcessInstanceId());
         assertEquals(TASK_ID, attachmentSetCaptor.getValue().getProcessInstanceTaskId());
 
         var attachmentCaptor = ArgumentCaptor.forClass(ProcessInstanceAttachmentEntity.class);
         verify(processInstanceAttachmentService).create(attachmentCaptor.capture());
-        assertEquals("kundenzusammenfassung.pdf", attachmentCaptor.getValue().getFileName());
+        assertEquals("Formularausdruck.pdf", attachmentCaptor.getValue().getFileName());
         assertEquals(321, attachmentCaptor.getValue().getAttachmentSetId());
         Assertions.assertArrayEquals(pdfBytes, attachmentCaptor.getValue().getFileBytes());
 
         @SuppressWarnings("unchecked")
         var files = (List<FileUploadInputElementItem>) result.getNodeData().get(FormTriggerNodeV1.DATA_KEY_CUSTOMER_SUMMARY_FILES);
         assertEquals(1, files.size());
-        assertEquals("kundenzusammenfassung.pdf", files.getFirst().getName());
+        assertEquals("Formularausdruck.pdf", files.getFirst().getName());
         assertEquals(pdfBytes.length, files.getFirst().getSize());
         assertTrue(files.getFirst().getUri().startsWith(FileUploadMultipartInputService.PROCESS_INSTANCE_ATTACHMENT_URI_PREFIX));
     }
