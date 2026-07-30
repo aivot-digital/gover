@@ -60,7 +60,7 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
     public static final String NODE_KEY = "form";
     private static final String PORT_NAME = "input";
     private static final String COPY_VALUE_TEMPLATE_PATH_SEGMENT = "__copy_value__";
-    private static final String CUSTOMER_SUMMARY_FILE_NAME = "kundenzusammenfassung.pdf";
+    private static final String CUSTOMER_SUMMARY_FILE_NAME = "Formularausdruck.pdf";
 
     public static final String DATA_KEY_PAYLOAD = "payload";
     public static final String DATA_KEY_UNMAPPED = "unmapped";
@@ -419,7 +419,10 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
             pdfBytes = pdfService.generateCustomerSummary(
                     configuration.formLayout,
                     submission,
-                    FormPdfScope.Citizen
+                    FormPdfScope.Citizen,
+                    context.getThisProcessInstance(),
+                    context.getConfigurationOfExecutingNode(),
+                    context.getThisNode()
             );
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
