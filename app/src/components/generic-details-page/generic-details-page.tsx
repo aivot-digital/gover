@@ -14,8 +14,6 @@ import {ApiError, isApiError} from '../../models/api-error';
 import NotFoundIllustration from './resource-not-found-illustration.svg?react';
 import ArrowBackOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/ArrowBack';
 import FormatListBulletedOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/FormatListBulleted';
-import {useAppDispatch} from '../../hooks/use-app-dispatch';
-import {addEntityHistoryItem} from '../../slices/entity-history-slice';
 import {DisabledTooltip} from '../disabled-tooltip/disabled-tooltip';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {selectPermissions} from '../../slices/user-slice';
@@ -28,6 +26,7 @@ import {
     resolvePermissionRequirement,
 } from '../../modules/permissions/utils/permission-utils';
 import {type PermissionSet} from '../../modules/permissions/models/permission-set';
+import {SearchItemService} from '../../modules/search/search-item-service';
 
 export const DEFAULT_ID_PARAM = 'id';
 export const NEW_ID_INDICATOR = 'new';
@@ -98,20 +97,30 @@ function ensureConfiguredAccess<ItemType>(
     permissionSet: PermissionSet | undefined,
     permissionConfig: GenericDetailsPagePermissionConfig<ItemType> | undefined,
 ): void {
-    if (item == null || permissionConfig == null) {
+    if (permissionConfig == null) {
         return;
     }
 
-    const permission = isNewItem ? permissionConfig.create : permissionConfig.read;
+    if (isNewItem) {
+        // New-resource pages must fail on the create permission before any fetchAdditionalData call can
+        // surface a broader read permission error from lookup data needed by the form.
+        const permission = permissionConfig.create;
+        if (permission != null && !hasSystemPermission(permissionSet, permission)) {
+            throw createPermissionDeniedError(permission);
+        }
+        return;
+    }
+
+    if (item == null) {
+        return;
+    }
+
+    const permission = permissionConfig.read;
     if (permission == null) {
         return;
     }
 
-    const hasPermission = isNewItem
-        ? hasSystemPermission(permissionSet, permission)
-        : hasScopedPermission(permissionSet, item, permissionConfig.scope, permission);
-
-    if (!hasPermission) {
+    if (!hasScopedPermission(permissionSet, item, permissionConfig.scope, permission)) {
         throw createPermissionDeniedError(permission);
     }
 }
@@ -153,7 +162,6 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     const location = useLocation();
     const [notFound, setNotFound] = useState(false);
     const [loadError, setLoadError] = useState<ApiError>();
-    const dispatch = useAppDispatch();
     const permissionSet = useAppSelector(selectPermissions);
 
     const ID_PARAM = props.idParam ?? DEFAULT_ID_PARAM;
@@ -301,18 +309,26 @@ export function GenericDetailsPage<ItemType, ID, AdditionalData>(props: GenericD
     }, [props.getHeaderTitle, item, isNewItem, notFound, resolvedHeader]);
 
     useEffect(() => {
-        if (isNewItem) {
+        if (isNewItem || notFound || item == null) {
             return;
         }
         if (entityType == null) {
             return;
         }
-        dispatch(addEntityHistoryItem({
-            link: location.pathname,
-            title: headerTitle,
-            type: entityType,
-        }));
-    }, [id, entityType, item, headerTitle]);
+
+        const searchItemId = propsRef.current.getSearchItemId?.(item, id) ?? String(id);
+        if (searchItemId.length === 0) {
+            return;
+        }
+
+        new SearchItemService()
+            .recordRecentSearchItem({
+                id: searchItemId,
+                originTable: entityType,
+            })
+            .catch(() => {
+            });
+    }, [id, entityType, item, notFound]);
 
     if (loadError != null) {
         throw loadError;

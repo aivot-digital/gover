@@ -24,6 +24,7 @@ export class VUserDeputyWithDetailsApiService extends BaseCrudApiService<
 
     public initialize(): VUserDeputyWithDetailsEntity {
         return {
+            deputyUserId: "",
             deputyUserDeletedInIdp: false,
             deputyUserEmail: "",
             deputyUserEnabled: false,
@@ -34,6 +35,7 @@ export class VUserDeputyWithDetailsApiService extends BaseCrudApiService<
             deputyUserVerified: false,
             fromTimestamp: new Date().toISOString(),
             id: 0,
+            originalUserId: "",
             originalUserDeletedInIdp: false,
             originalUserEmail: "",
             originalUserEnabled: false,

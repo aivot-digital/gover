@@ -1,10 +1,10 @@
 package de.aivot.gover.backend.models.config;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
-@Configuration
-@ConfigurationProperties("gotenberg")
+@Component
+@ConfigurationProperties(prefix = "gotenberg")
 public class GotenbergConfig {
     private String host;
     private String port;

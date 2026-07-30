@@ -34,13 +34,13 @@ class CodeListJavascriptPluginTest {
     @Test
     void getItems() {
         try (var jsService = new JavascriptEngine(new CodeListJavascriptV1(codeListService))) {
-            when(codeListService.retrieve(7))
+            when(codeListService.retrieve("test"))
                     .thenReturn(Optional.of(codeList()));
-            when(codeListService.listAllItems(7))
+            when(codeListService.listAllItems("test"))
                     .thenReturn(List.of(item(123L, List.of("11000000", "Berlin"))));
 
             var result = jsService.evaluateCode(new JavascriptCode().setCode("""
-                    const items = _code_lists_v1.getItems(7);
+                    const items = _code_lists_v1.getItems('test');
                     [
                         items[0].ags,
                         items[0].name,
@@ -68,11 +68,11 @@ class CodeListJavascriptPluginTest {
     @Test
     void getOptions() {
         try (var jsService = new JavascriptEngine(new CodeListJavascriptV1(codeListService))) {
-            when(codeListService.listAllItems(7))
+            when(codeListService.listAllItems("test"))
                     .thenReturn(List.of(item(123L, List.of("11000000", "Berlin"))));
 
             var result = jsService.evaluateCode(new JavascriptCode().setCode("""
-                    const options = _code_lists_v1.getOptions(7);
+                    const options = _code_lists_v1.getOptions('test');
                     [options[0].value, options[0].label];
                     """));
             var values = assertInstanceOf(List.class, result.asObject());
@@ -85,7 +85,7 @@ class CodeListJavascriptPluginTest {
     }
 
     @Test
-    void returnsEmptyListsForNullCodeListId() {
+    void returnsEmptyListsForNullCodeListKey() {
         try (var jsService = new JavascriptEngine(new CodeListJavascriptV1(codeListService))) {
             var itemsResult = jsService.evaluateCode(new JavascriptCode().setCode("_code_lists_v1.getItems(null);"));
             var optionsResult = jsService.evaluateCode(new JavascriptCode().setCode("_code_lists_v1.getOptions(null);"));
@@ -100,13 +100,13 @@ class CodeListJavascriptPluginTest {
     @Test
     void returnsEmptyListsForMissingCodeList() {
         try (var jsService = new JavascriptEngine(new CodeListJavascriptV1(codeListService))) {
-            when(codeListService.retrieve(7))
+            when(codeListService.retrieve("test"))
                     .thenReturn(Optional.empty());
-            when(codeListService.listAllItems(7))
+            when(codeListService.listAllItems("test"))
                     .thenThrow(ResponseException.notFound());
 
-            var itemsResult = jsService.evaluateCode(new JavascriptCode().setCode("_code_lists_v1.getItems(7);"));
-            var optionsResult = jsService.evaluateCode(new JavascriptCode().setCode("_code_lists_v1.getOptions(7);"));
+            var itemsResult = jsService.evaluateCode(new JavascriptCode().setCode("_code_lists_v1.getItems('test');"));
+            var optionsResult = jsService.evaluateCode(new JavascriptCode().setCode("_code_lists_v1.getOptions('test');"));
 
             assertEquals(List.of(), itemsResult.asObject());
             assertEquals(List.of(), optionsResult.asObject());
@@ -117,6 +117,7 @@ class CodeListJavascriptPluginTest {
 
     private static CodeListEntity codeList() {
         return new CodeListEntity()
+                .setKey("test")
                 .setId(7)
                 .setColumns(List.of("ags", "name"));
     }

@@ -406,6 +406,7 @@ export function AssetDetailsPage() {
                     to: parentRoute,
                 }}
                 entityType={ServerEntityType.Assets}
+                getSearchItemId={(item) => `${item.storageProviderId},${item.storagePathFromRoot}`}
                 isEditable={() => canUpdateAsset}
             />
 

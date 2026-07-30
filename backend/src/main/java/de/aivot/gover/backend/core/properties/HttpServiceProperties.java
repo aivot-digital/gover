@@ -1,9 +1,9 @@
 package de.aivot.gover.backend.core.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
-@Configuration
+@Component
 @ConfigurationProperties(prefix = "gover.http")
 public class HttpServiceProperties {
     private long connectionTimeoutSeconds;

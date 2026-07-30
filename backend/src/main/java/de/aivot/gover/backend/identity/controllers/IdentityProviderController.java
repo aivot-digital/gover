@@ -10,6 +10,7 @@ import de.aivot.gover.backend.identity.dtos.IdentityProviderRequestDTO;
 import de.aivot.gover.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.gover.backend.identity.filters.IdentityProviderFilter;
 import de.aivot.gover.backend.identity.permissions.IdentityProviderPermissionProvider;
+import de.aivot.gover.backend.identity.services.IdentityService;
 import de.aivot.gover.backend.identity.services.IdentityProviderService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.openApi.OpenApiConfiguration;
@@ -22,6 +23,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
@@ -31,6 +33,7 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -47,18 +50,21 @@ public class IdentityProviderController {
     private final ScopedAuditService auditService;
 
     private final IdentityProviderService identityProviderService;
+    private final IdentityService identityService;
     private final UserService userService;
     private final PermissionService permissionService;
 
     @Autowired
     public IdentityProviderController(AuditService auditService,
                                       IdentityProviderService identityProviderService,
+                                      IdentityService identityService,
                                       UserService userService,
                                       PermissionService permissionService) {
         this.auditService = auditService
                 .createScopedAuditService(IdentityProviderController.class, "Identitätsanbieter");
 
         this.identityProviderService = identityProviderService;
+        this.identityService = identityService;
         this.userService = userService;
         this.permissionService = permissionService;
     }
@@ -203,6 +209,33 @@ public class IdentityProviderController {
                 .from(updatedEntity);
     }
 
+    @PostMapping("{key}/test/start/")
+    @Operation(
+            summary = "Start Identity Provider Test",
+            description = "Creates the authorization redirect URL for testing an identity provider. " +
+                    "This requires the permission „" + IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE + "“."
+    )
+    public IdentityProviderTestStartResponseDTO startTest(
+            @Nullable @AuthenticationPrincipal Jwt jwt,
+            @Nonnull @PathVariable UUID key,
+            @Nonnull @Valid @RequestBody IdentityProviderTestStartRequestDTO requestDTO
+    ) throws ResponseException {
+        permissionService
+                .requireSystemPermission(jwt, IdentityProviderPermissionProvider.IDENTITY_PROVIDER_UPDATE);
+
+        var redirectUrl = identityService
+                .createRedirectURL(
+                        null,
+                        key,
+                        key.toString(),
+                        requestDTO.origin(),
+                        List.of(),
+                        0
+                );
+
+        return new IdentityProviderTestStartResponseDTO(redirectUrl.toString());
+    }
+
     @DeleteMapping("{key}/")
     @Operation(
             summary = "Delete Identity Provider",
@@ -245,5 +278,15 @@ public class IdentityProviderController {
                 StringUtils.quote(String.valueOf(deletedEntity.getKey())),
                 StringUtils.quote(user.getFullName())
         ).log();
+    }
+
+    public record IdentityProviderTestStartRequestDTO(
+            @NotBlank String origin
+    ) {
+    }
+
+    public record IdentityProviderTestStartResponseDTO(
+            @Nonnull String redirectUrl
+    ) {
     }
 }

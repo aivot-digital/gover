@@ -78,7 +78,6 @@ import {getMinDisplayableAreaWidth} from '../../../../utils/display-area-utils';
 import {ProcessNodeProblems} from '../../entities/process-node-problems';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectUser} from '../../../../slices/user-slice';
-import {addEntityHistoryItem} from '../../../../slices/entity-history-slice';
 import {ServerEntityType} from '../../../../shells/staff/data/server-entity-type';
 import {generateId} from '../../../../utils/id-utils';
 import {
@@ -96,6 +95,7 @@ import {
     buildProcessInstanceAttachmentSetItems,
     ProcessInstanceAttachmentSetList,
 } from '../../components/process-instance-attachment-set-list';
+import {SearchItemService} from '../../../search/search-item-service';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
 import {ProcessNotesOverviewDialog} from './components/process-notes-overview-dialog';
 import {useRevokeProcessVersion} from '../../hooks/use-revoke-process-version';
@@ -927,11 +927,13 @@ export function ProcessDetailsPage(): ReactNode {
                     edges: edges.content,
                 });
 
-                dispatch(addEntityHistoryItem({
-                    link: `/processes/${processId}/versions/${processVersion}`,
-                    title: `${definition.internalTitle} (Version ${processVersion})`,
-                    type: ServerEntityType.Processes,
-                }));
+                new SearchItemService()
+                    .recordRecentSearchItem({
+                        id: `${processId},${processVersion}`,
+                        originTable: ServerEntityType.Processes,
+                    })
+                    .catch(() => {
+                    });
             })
             .catch((error) => {
                 if (cancelled) {

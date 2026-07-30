@@ -27,6 +27,7 @@ import java.util.UUID;
 public class IdentityController {
     public static final String IDENTITY_COOKIE_NAME = IdentityCookieUtils.IDENTITY_COOKIE_NAME;
     public static final String IDENTITY_COOKIE_PATH = IdentityCookieUtils.IDENTITY_COOKIE_PATH;
+    private static final int STAFF_TEST_RELATED_PROCESS_NODE_ID = 0;
 
     private final IdentityService identityService;
 
@@ -50,6 +51,11 @@ public class IdentityController {
             @Nonnull HttpServletRequest request,
             @Nonnull HttpServletResponse response
     ) throws ResponseException, IOException {
+        if (isLegacyStaffTestStart(providerKey, identityId, relatedProcessNodeId)) {
+            // Staff test flows must be started through the permission-guarded staff endpoint.
+            throw ResponseException.forbidden("Der Test des Nutzerkontenanbieters darf nur über den geschützten Staff-Endpunkt gestartet werden.");
+        }
+
         var redirectUrl = identityService
                 .createRedirectURL(
                         preexistingIdentitySessionId,
@@ -62,6 +68,15 @@ public class IdentityController {
 
         response
                 .sendRedirect(redirectUrl.toString());
+    }
+
+    private static boolean isLegacyStaffTestStart(
+            @Nonnull UUID providerKey,
+            @Nonnull String identityId,
+            @Nonnull Integer relatedProcessNodeId
+    ) {
+        return relatedProcessNodeId == STAFF_TEST_RELATED_PROCESS_NODE_ID &&
+                providerKey.toString().equalsIgnoreCase(identityId);
     }
 
     @GetMapping("{providerKey}/callback/{identitySessionId}/{identityCacheEntityId}/")

@@ -5,6 +5,9 @@ import de.aivot.gover.backend.codeLists.enums.CodeListStatus;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import org.hibernate.annotations.Generated;
 
 import java.time.Instant;
 import java.util.List;
@@ -13,12 +16,15 @@ import java.util.Objects;
 @Entity
 @Table(name = "code_lists")
 public class CodeListEntity {
-    private static final String ID_SEQUENCE_NAME = "code_lists_id_seq";
-
     @Id
     @Nonnull
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = ID_SEQUENCE_NAME)
-    @SequenceGenerator(name = ID_SEQUENCE_NAME, allocationSize = 1)
+    @Column(length = 255)
+    @NotBlank(message = "Der Schlüssel der Codeliste darf nicht leer sein.")
+    @Size(max = 255, message = "Der Schlüssel der Codeliste darf maximal 255 Zeichen lang sein.")
+    private String key;
+    @Nullable
+    @Generated
+    @Column(nullable = false, unique = true, insertable = false, updatable = false)
     private Integer id;
     @Nonnull
     private CodeListSourceType sourceType;
@@ -54,6 +60,9 @@ public class CodeListEntity {
         if (sourceRef == null) {
             sourceRef = "";
         }
+        if (key != null) {
+            key = key.trim();
+        }
         if (columns == null) {
             columns = List.of();
         }
@@ -80,7 +89,7 @@ public class CodeListEntity {
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
         CodeListEntity that = (CodeListEntity) o;
-        return Objects.equals(id, that.id) && sourceType == that.sourceType && Objects.equals(sourceRef, that.sourceRef) &&
+        return Objects.equals(key, that.key) && Objects.equals(id, that.id) && sourceType == that.sourceType && Objects.equals(sourceRef, that.sourceRef) &&
                 Objects.equals(name, that.name) && Objects.equals(description, that.description) && Objects.equals(columns, that.columns) &&
                 Objects.equals(valueColumnIndex, that.valueColumnIndex) && Objects.equals(labelColumnIndex, that.labelColumnIndex) && status == that.status &&
                 Objects.equals(statusMessage, that.statusMessage) && Objects.equals(lastSync, that.lastSync) && Objects.equals(created, that.created) &&
@@ -89,15 +98,25 @@ public class CodeListEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, lastSync, created, updated);
+        return Objects.hash(key, id, sourceType, sourceRef, name, description, columns, valueColumnIndex, labelColumnIndex, status, statusMessage, lastSync, created, updated);
     }
 
     @Nonnull
+    public String getKey() {
+        return key;
+    }
+
+    public CodeListEntity setKey(@Nonnull String key) {
+        this.key = key;
+        return this;
+    }
+
+    @Nullable
     public Integer getId() {
         return id;
     }
 
-    public CodeListEntity setId(@Nonnull Integer id) {
+    public CodeListEntity setId(@Nullable Integer id) {
         this.id = id;
         return this;
     }

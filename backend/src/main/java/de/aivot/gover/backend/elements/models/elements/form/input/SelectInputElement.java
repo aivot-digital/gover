@@ -27,7 +27,7 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
     private OptionsSourceType optionsSource;
 
     @Nullable
-    private Integer codeListId;
+    private String codeListKey;
 
     @Nullable
     private String dependsOnSelectFieldId;
@@ -161,7 +161,7 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
                 && Objects.equals(autocomplete, that.autocomplete)
                 && Objects.equals(options, that.options)
                 && optionsSource == that.optionsSource
-                && Objects.equals(codeListId, that.codeListId)
+                && Objects.equals(codeListKey, that.codeListKey)
                 && Objects.equals(dependsOnSelectFieldId, that.dependsOnSelectFieldId);
     }
 
@@ -172,7 +172,7 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
         result = 31 * result + Objects.hashCode(autocomplete);
         result = 31 * result + Objects.hashCode(options);
         result = 31 * result + Objects.hashCode(optionsSource);
-        result = 31 * result + Objects.hashCode(codeListId);
+        result = 31 * result + Objects.hashCode(codeListKey);
         result = 31 * result + Objects.hashCode(dependsOnSelectFieldId);
         return result;
     }
@@ -222,12 +222,12 @@ public class SelectInputElement extends BaseInputElement<String> implements Prin
     }
 
     @Nullable
-    public Integer getCodeListId() {
-        return codeListId;
+    public String getCodeListKey() {
+        return codeListKey;
     }
 
-    public SelectInputElement setCodeListId(@Nullable Integer codeListId) {
-        this.codeListId = codeListId;
+    public SelectInputElement setCodeListKey(@Nullable String codeListKey) {
+        this.codeListKey = codeListKey;
         return this;
     }
 

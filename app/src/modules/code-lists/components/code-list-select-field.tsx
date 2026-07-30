@@ -6,8 +6,8 @@ import {CodeList} from '../models/code-list';
 interface CodeListSelectFieldProps {
     label?: string;
     hint?: string;
-    value: number | null | undefined;
-    onChange: (value: number | undefined) => void;
+    value: string | null | undefined;
+    onChange: (value: string | undefined) => void;
     disabled?: boolean;
     required?: boolean;
 }
@@ -60,7 +60,7 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
             return;
         }
 
-        if (codeLists.some((codeList) => codeList.id === value)) {
+        if (codeLists.some((codeList) => codeList.key === value)) {
             return;
         }
 
@@ -71,8 +71,8 @@ export function CodeListSelectField(props: CodeListSelectFieldProps) {
     const options = useMemo(() => {
         return codeLists.map((codeList) => ({
             label: codeList.name,
-            subLabel: codeList.description,
-            value: codeList.id,
+            subLabel: codeList.description || codeList.key,
+            value: codeList.key,
         }));
     }, [codeLists]);
 

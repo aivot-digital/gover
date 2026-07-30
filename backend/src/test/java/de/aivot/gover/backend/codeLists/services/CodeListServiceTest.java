@@ -42,6 +42,7 @@ class CodeListServiceTest {
         var storageService = mock(StorageService.class);
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
         var codeList = new CodeListEntity()
+                .setKey("test")
                 .setId(0)
                 .setSourceType(CodeListSourceType.Manual)
                 .setSourceRef("")
@@ -57,6 +58,38 @@ class CodeListServiceTest {
         var created = service.create(codeList);
 
         assertNull(created.getId());
+    }
+
+    @Test
+    void createRejectsReservedKey() {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var assetService = mock(AssetService.class);
+        var storageService = mock(StorageService.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
+        var codeList = createManualCodeList().setKey("new");
+
+        assertThrows(ResponseException.class, () -> service.create(codeList));
+
+        verify(codeListRepository, never()).save(any());
+    }
+
+    @Test
+    void createRejectsKeyWithSlash() {
+        var codeListRepository = mock(CodeListRepository.class);
+        var codeListItemRepository = mock(CodeListItemRepository.class);
+        var vCodeListItemRepository = mock(VCodeListItemRepository.class);
+        var xRepositoryCodeListService = mock(XRepositoryCodeListService.class);
+        var assetService = mock(AssetService.class);
+        var storageService = mock(StorageService.class);
+        var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
+        var codeList = createManualCodeList().setKey("a/b");
+
+        assertThrows(ResponseException.class, () -> service.create(codeList));
+
+        verify(codeListRepository, never()).save(any());
     }
 
     @Test
@@ -137,13 +170,13 @@ class CodeListServiceTest {
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
         var codeList = createCodeList();
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
         when(xRepositoryCodeListService.getCodeList("urn:test")).thenReturn(createXRepositoryCodeList(
                 row(value("code", "001"), value("name", "Berlin")),
                 row(value("code", "002"), value("name", "Hamburg"))
         ));
 
-        service.syncCodeList(7, false);
+        service.syncCodeList("test", false);
 
         verify(codeListItemRepository).deleteAllByCodeListId(7);
 
@@ -171,13 +204,13 @@ class CodeListServiceTest {
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
         var codeList = createCodeList();
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
         when(xRepositoryCodeListService.getCodeList("urn:test")).thenReturn(createXRepositoryCodeList(
                 row(value("code", "001"), value("name", "Berlin")),
                 row(value("code", "001"), value("name", "Berlin duplicate"))
         ));
 
-        service.syncCodeList(7, false);
+        service.syncCodeList("test", false);
 
         verify(codeListItemRepository, never()).saveAll(any());
         assertEquals(CodeListStatus.SyncFailed, codeList.getStatus());
@@ -201,7 +234,7 @@ class CodeListServiceTest {
                 .setStorageProviderId(3)
                 .setStoragePathFromRoot("/code-lists/test.csv");
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
         when(assetService.retrieve(assetKey)).thenReturn(Optional.of(asset));
         when(storageService.getDocumentContent(3, "/code-lists/test.csv"))
                 .thenReturn(new ByteArrayInputStream("""
@@ -210,7 +243,7 @@ class CodeListServiceTest {
                         002,Hamburg
                         """.getBytes(StandardCharsets.UTF_8)));
 
-        service.syncCodeList(7, false);
+        service.syncCodeList("test", false);
 
         verify(codeListItemRepository).deleteAllByCodeListId(7);
 
@@ -244,7 +277,7 @@ class CodeListServiceTest {
                 .setStorageProviderId(3)
                 .setStoragePathFromRoot("/code-lists/test.csv");
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
         when(assetService.retrieve(assetKey)).thenReturn(Optional.of(asset));
         when(storageService.getDocumentContent(3, "/code-lists/test.csv"))
                 .thenReturn(new ByteArrayInputStream("""
@@ -252,7 +285,7 @@ class CodeListServiceTest {
                         001,x,Berlin
                         """.getBytes(StandardCharsets.UTF_8)));
 
-        service.syncCodeList(7, false);
+        service.syncCodeList("test", false);
 
         assertEquals(CodeListStatus.Synced, codeList.getStatus());
         assertEquals(List.of("code", "COL1", "name"), codeList.getColumns());
@@ -269,7 +302,7 @@ class CodeListServiceTest {
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
         var codeList = createManualCodeList();
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
         when(vCodeListItemRepository.findAllByCodeListIdOrderByIdAsc(7)).thenReturn(List.of(
                 new VCodeListItemEntity()
                         .setId(1L)
@@ -285,7 +318,7 @@ class CodeListServiceTest {
                         .setLabel("Ham\"burg")
         ));
 
-        var csv = new String(service.exportCSV(7), StandardCharsets.UTF_8);
+        var csv = new String(service.exportCSV("test"), StandardCharsets.UTF_8);
 
         assertEquals("code,name\r\n001,Berlin\r\n\"00,2\",\"Ham\"\"burg\"\r\n", csv);
     }
@@ -304,11 +337,11 @@ class CodeListServiceTest {
                 .setValueColumnIndex(0)
                 .setLabelColumnIndex(0);
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
         when(codeListRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         var imported = service.importCSV(
-                7,
+                "test",
                 new ByteArrayInputStream("""
                         code,name
                         001,Berlin
@@ -343,10 +376,10 @@ class CodeListServiceTest {
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
         var codeList = createManualCodeList();
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
 
         assertThrows(ResponseException.class, () -> service.importCSV(
-                7,
+                "test",
                 new ByteArrayInputStream("""
                         code,name
                         001,Berlin
@@ -369,10 +402,10 @@ class CodeListServiceTest {
         var service = new CodeListService(codeListRepository, codeListItemRepository, vCodeListItemRepository, xRepositoryCodeListService, assetService, storageService);
         var codeList = createCodeList();
 
-        when(codeListRepository.findById(7)).thenReturn(Optional.of(codeList));
+        when(codeListRepository.findById("test")).thenReturn(Optional.of(codeList));
 
         assertThrows(ResponseException.class, () -> service.importCSV(
-                7,
+                "test",
                 new ByteArrayInputStream("""
                         code,name
                         001,Berlin
@@ -385,6 +418,7 @@ class CodeListServiceTest {
 
     private static CodeListEntity createManualCodeList() {
         return new CodeListEntity()
+                .setKey("test")
                 .setId(7)
                 .setSourceType(CodeListSourceType.Manual)
                 .setSourceRef("")
@@ -398,6 +432,7 @@ class CodeListServiceTest {
 
     private static CodeListEntity createCodeList() {
         return new CodeListEntity()
+                .setKey("test")
                 .setId(7)
                 .setSourceType(CodeListSourceType.XRepository)
                 .setSourceRef("urn:test")
@@ -411,6 +446,7 @@ class CodeListServiceTest {
 
     private static CodeListEntity createAssetCodeList(UUID assetKey) {
         return new CodeListEntity()
+                .setKey("test")
                 .setId(7)
                 .setSourceType(CodeListSourceType.Asset)
                 .setSourceRef(assetKey.toString())

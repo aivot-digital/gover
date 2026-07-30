@@ -106,46 +106,47 @@ public class CodeListController {
                 .withAuditAction(
                         AuditAction.Create,
                         CodeListEntity.class,
-                        created.getId(),
-                        "id"
+                        created.getKey(),
+                        "key"
                 )
                 .withMessage(
-                        "Eine neue Codeliste wurde von der Mitarbeiter:in %s erstellt.",
+                        "Eine neue Codeliste mit dem Schlüssel %s wurde von der Mitarbeiter:in %s erstellt.",
+                        StringUtils.quote(created.getKey()),
                         StringUtils.quote(execUser.getFullName())
                 )
                 .log();
 
         codeListWorker
-                .triggerCodeListUpdate(created.getId(), false);
+                .triggerCodeListUpdate(created.getKey(), false);
 
         return created;
     }
 
-    @GetMapping("{codeListId}/")
+    @GetMapping("{codeListKey}/")
     @Operation(
             summary = "Retrieve Code List",
-            description = "Retrieve a specific code list by its ID."
+            description = "Retrieve a specific code list by its key."
     )
     public CodeListEntity retrieve(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId
+            @Nonnull @PathVariable String codeListKey
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
         return service
-                .retrieve(codeListId)
+                .retrieve(codeListKey)
                 .orElseThrow(ResponseException::notFound);
     }
 
-    @PutMapping("{codeListId}/")
+    @PutMapping("{codeListKey}/")
     @Operation(
             summary = "Update Code List",
             description = "Update an existing code list."
     )
     public CodeListEntity update(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @Valid @RequestBody CodeListEntity update
     ) throws ResponseException {
         permissionService
@@ -156,37 +157,37 @@ public class CodeListController {
                 .orElseThrow(ResponseException::unauthorized);
 
         var updated = service
-                .update(codeListId, update);
+                .update(codeListKey, update);
 
         auditService.create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Update,
                         CodeListEntity.class,
-                        updated.getId(),
-                        "id"
+                        updated.getKey(),
+                        "key"
                 )
                 .withMessage(
-                        "Die Codeliste mit der ID %d wurde von der Mitarbeiter:in %s aktualisiert.",
-                        updated.getId(),
+                        "Die Codeliste mit dem Schlüssel %s wurde von der Mitarbeiter:in %s aktualisiert.",
+                        StringUtils.quote(updated.getKey()),
                         StringUtils.quote(execUser.getFullName())
                 )
                 .log(); // TODO: Add Diff
 
         codeListWorker
-                .triggerCodeListUpdate(updated.getId(), true);
+                .triggerCodeListUpdate(updated.getKey(), true);
 
         return updated;
     }
 
-    @DeleteMapping("{codeListId}/")
+    @DeleteMapping("{codeListKey}/")
     @Operation(
             summary = "Delete Code List",
-            description = "Delete a specific code list by its ID."
+            description = "Delete a specific code list by its key."
     )
     public void destroy(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId
+            @Nonnull @PathVariable String codeListKey
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_DELETE);
@@ -195,28 +196,28 @@ public class CodeListController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var deleted = service.delete(codeListId);
+        var deleted = service.delete(codeListKey);
 
         auditService.create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Delete,
                         CodeListEntity.class,
-                        deleted.getId(),
-                        "id"
+                        deleted.getKey(),
+                        "key"
                 )
                 .withMessage(
-                        "Die Codeliste mit der ID %d wurde von der Mitarbeiter:in %s gelöscht.",
-                        deleted.getId(),
+                        "Die Codeliste mit dem Schlüssel %s wurde von der Mitarbeiter:in %s gelöscht.",
+                        StringUtils.quote(deleted.getKey()),
                         StringUtils.quote(execUser.getFullName())
                 )
                 .log();
     }
 
-    @GetMapping("{codeListId}/export.csv")
+    @GetMapping("{codeListKey}/export.csv")
     public ResponseEntity<Resource> exportCSV(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId
+            @Nonnull @PathVariable String codeListKey
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_EXPORT);
@@ -225,19 +226,19 @@ public class CodeListController {
                 .fromJWT(jwt)
                 .orElseThrow(ResponseException::unauthorized);
 
-        var bytes = service.exportCSV(codeListId);
+        var bytes = service.exportCSV(codeListKey);
 
         auditService.create()
                 .withUser(execUser)
                 .withAuditAction(
                         AuditAction.Export,
                         CodeListEntity.class,
-                        codeListId,
-                        "id"
+                        codeListKey,
+                        "key"
                 )
                 .withMessage(
-                        "Die Codeliste mit der ID %d wurde von der Mitarbeiter:in %s exportiert.",
-                        codeListId,
+                        "Die Codeliste mit dem Schlüssel %s wurde von der Mitarbeiter:in %s exportiert.",
+                        StringUtils.quote(codeListKey),
                         StringUtils.quote(execUser.getFullName())
                 )
                 .log();
@@ -250,7 +251,7 @@ public class CodeListController {
                         HttpHeaders.CONTENT_DISPOSITION,
                         ContentDisposition
                                 .attachment()
-                                .filename("code-list-%d.csv".formatted(codeListId), StandardCharsets.UTF_8)
+                                .filename("code-list-%s.csv".formatted(codeListKey), StandardCharsets.UTF_8)
                                 .build()
                                 .toString()
                 )
@@ -258,104 +259,104 @@ public class CodeListController {
     }
 
     @PostMapping(
-            value = "{codeListId}/import.csv",
+            value = "{codeListKey}/import.csv",
             consumes = MediaType.MULTIPART_FORM_DATA_VALUE,
             produces = MediaType.APPLICATION_JSON_VALUE
     )
     public CodeListEntity importCSV(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @RequestPart("file") MultipartFile file
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         try {
-            return service.importCSV(codeListId, file.getInputStream());
+            return service.importCSV(codeListKey, file.getInputStream());
         } catch (IOException e) {
             throw ResponseException.badRequest("Die CSV-Datei konnte nicht gelesen werden: " + e.getMessage(), e);
         }
     }
 
-    @GetMapping("{codeListId}/update/")
+    @GetMapping("{codeListKey}/update/")
     public Object updateItems(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @RequestParam(defaultValue = "true") Boolean keepOutdated
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
         var cl = service
-                .retrieve(codeListId)
+                .retrieve(codeListKey)
                 .orElseThrow(ResponseException::notFound);
 
         codeListWorker
-                .triggerCodeListUpdate(cl.getId(), keepOutdated);
+                .triggerCodeListUpdate(cl.getKey(), keepOutdated);
 
         return Map.of(
                 "status", "ok"
         );
     }
 
-    @GetMapping("{codeListId}/items/")
+    @GetMapping("{codeListKey}/items/")
     public Page<VCodeListItemEntity> listItems(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @ParameterObject @PageableDefault Pageable pageable
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
-        return service.listItems(codeListId, pageable);
+        return service.listItems(codeListKey, pageable);
     }
 
-    @PostMapping("{codeListId}/items/")
+    @PostMapping("{codeListKey}/items/")
     public VCodeListItemEntity createItem(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @Valid @RequestBody CodeListItemEntity item
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
-        return service.createItem(codeListId, item);
+        return service.createItem(codeListKey, item);
     }
 
-    @GetMapping("{codeListId}/items/{itemId}/")
+    @GetMapping("{codeListKey}/items/{itemId}/")
     public VCodeListItemEntity getItem(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @PathVariable Long itemId
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_READ);
 
-        return service.getItem(codeListId, itemId);
+        return service.getItem(codeListKey, itemId);
     }
 
-    @PutMapping("{codeListId}/items/{itemId}/")
+    @PutMapping("{codeListKey}/items/{itemId}/")
     public VCodeListItemEntity updateItem(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @PathVariable Long itemId,
             @Nonnull @Valid @RequestBody CodeListItemEntity item
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
-        return service.updateItem(codeListId, itemId, item);
+        return service.updateItem(codeListKey, itemId, item);
     }
 
-    @DeleteMapping("{codeListId}/items/{itemId}/")
+    @DeleteMapping("{codeListKey}/items/{itemId}/")
     public void deleteItem(
             @Nullable @AuthenticationPrincipal Jwt jwt,
-            @Nonnull @PathVariable Integer codeListId,
+            @Nonnull @PathVariable String codeListKey,
             @Nonnull @PathVariable Long itemId
     ) throws ResponseException {
         permissionService
                 .requireSystemPermission(jwt, CodeListPermissionProvider.CODE_LIST_UPDATE);
 
-        service.deleteItem(codeListId, itemId);
+        service.deleteItem(codeListKey, itemId);
     }
 }

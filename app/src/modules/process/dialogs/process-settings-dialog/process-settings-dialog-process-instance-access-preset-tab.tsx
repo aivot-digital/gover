@@ -44,7 +44,6 @@ const relevantPermissions: string[] = [
     'process_instance.update',
     'process_instance.delete',
     'process_instance.pause_resume',
-    'process_instance.edit_data',
     'process_instance.reassign',
     'process_instance.communication.internal',
     'process_instance.communication.external',

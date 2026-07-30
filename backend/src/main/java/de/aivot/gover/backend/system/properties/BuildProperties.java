@@ -1,9 +1,9 @@
 package de.aivot.gover.backend.system.properties;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
-@Configuration
+@Component(value = "customBuildProperties")
 @ConfigurationProperties(prefix = "build")
 public class BuildProperties {
     private String buildVersion;

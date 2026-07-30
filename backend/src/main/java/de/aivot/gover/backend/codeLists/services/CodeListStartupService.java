@@ -61,7 +61,7 @@ public class CodeListStartupService implements ApplicationListener<ApplicationRe
                     .setSourceRef("");
 
             try {
-                codeListService.update(codeList.getId(), codeList);
+                codeListService.update(codeList.getKey(), codeList);
             } catch (ResponseException e) {
                 throw new RuntimeException(e);
             }

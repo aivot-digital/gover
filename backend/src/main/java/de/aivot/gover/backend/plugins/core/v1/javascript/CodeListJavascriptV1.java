@@ -65,19 +65,19 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     @Override
     public String[] getMethodTypeDefinitions() {
         return new String[]{
-                "getItems(codeListId: number | null): Array<Record<string, any>>;",
-                "getOptions(codeListId: number | null): Array<{value: string; label: string}>;"
+                "getItems(codeListKey: string | null): Array<Record<string, any>>;",
+                "getOptions(codeListKey: string | null): Array<{value: string; label: string}>;"
         };
     }
 
     @HostAccess.Export
-    public ProxyArray getItems(@Nullable Integer codeListId) {
-        if (codeListId == null) {
+    public ProxyArray getItems(@Nullable String codeListKey) {
+        if (codeListKey == null || codeListKey.isBlank()) {
             return ProxyArray.fromArray();
         }
 
         var codeList = codeListService
-                .retrieve(codeListId)
+                .retrieve(codeListKey)
                 .orElse(null);
         if (codeList == null) {
             return ProxyArray.fromArray();
@@ -85,7 +85,7 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
 
         List<VCodeListItemEntity> items;
         try {
-            items = codeListService.listAllItems(codeListId);
+            items = codeListService.listAllItems(codeListKey);
         } catch (ResponseException e) {
             return ProxyArray.fromArray();
         }
@@ -99,14 +99,14 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
     }
 
     @HostAccess.Export
-    public ProxyArray getOptions(@Nullable Integer codeListId) {
-        if (codeListId == null) {
+    public ProxyArray getOptions(@Nullable String codeListKey) {
+        if (codeListKey == null || codeListKey.isBlank()) {
             return ProxyArray.fromArray();
         }
 
         List<VCodeListItemEntity> items;
         try {
-            items = codeListService.listAllItems(codeListId);
+            items = codeListService.listAllItems(codeListKey);
         } catch (ResponseException e) {
             return ProxyArray.fromArray();
         }

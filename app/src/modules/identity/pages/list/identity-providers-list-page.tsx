@@ -197,6 +197,8 @@ export function IdentityProvidersListPage() {
                 icon: <ScienceOutlinedIcon />,
                 to: `/identity-providers/${item.key}/test`,
                 tooltip: 'Konfiguration testen',
+                disabled: !canUpdateIdentityProvider,
+                disabledTooltip: permissions.getMissingPermissionTooltip(Permission.IDENTITY_PROVIDER_UPDATE),
             },
         ];
     }, []);

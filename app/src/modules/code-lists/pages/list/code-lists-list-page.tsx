@@ -92,12 +92,17 @@ export function CodeListsListPage() {
             flex: 1,
             renderCell: (params: any) => (
                 <CellLink
-                    to={`/code-lists/${params.row.id}`}
+                    to={`/code-lists/${encodeURIComponent(params.row.key)}`}
                     title={permissions.canUpdate(params.row) ? 'Codeliste bearbeiten' : 'Codeliste ansehen'}
                 >
                     {String(params.value)}
                 </CellLink>
             ),
+        },
+        {
+            field: 'key',
+            headerName: 'Schlüssel',
+            flex: 1,
         },
         {
             field: 'sourceType',
@@ -127,7 +132,7 @@ export function CodeListsListPage() {
         },
     ], []);
 
-    const getRowIdentifier = useCallback((row: CodeList) => row.id.toString(), []);
+    const getRowIdentifier = useCallback((row: CodeList) => row.key, []);
 
     const rowActions = useCallback((item: CodeList, permissions: GenericListPagePermissionState<CodeList>) => {
         const canUpdateCodeList = permissions.canUpdate(item);
@@ -135,12 +140,12 @@ export function CodeListsListPage() {
         return [
             {
                 icon: canUpdateCodeList ? <Edit /> : <Visibility />,
-                to: `/code-lists/${item.id}`,
+                to: `/code-lists/${encodeURIComponent(item.key)}`,
                 tooltip: canUpdateCodeList ? 'Codeliste bearbeiten' : 'Codeliste ansehen',
             },
             {
                 icon: <FormatListBulleted />,
-                to: `/code-lists/${item.id}/items`,
+                to: `/code-lists/${encodeURIComponent(item.key)}/items`,
                 tooltip: 'Einträge anzeigen',
             },
         ];

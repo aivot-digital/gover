@@ -24,13 +24,13 @@ export function CodeListDetailsPage(): ReactNode {
     const [isSyncing, setIsSyncing] = useState(false);
 
     const handleSync = async (codeList: CodeList | undefined, keepOutdated: boolean): Promise<void> => {
-        if (codeList == null || codeList.id === 0 || !isCodeListSyncable(codeList.sourceType) || isSyncing || !canUpdateCodeLists) {
+        if (codeList == null || codeList.key.length === 0 || !isCodeListSyncable(codeList.sourceType) || isSyncing || !canUpdateCodeLists) {
             return;
         }
 
         setIsSyncing(true);
         try {
-            await new CodeListsApiService().triggerUpdate(codeList.id, keepOutdated);
+            await new CodeListsApiService().triggerUpdate(codeList.key, keepOutdated);
             dispatch(showSuccessSnackbar('Die Synchronisierung wurde gestartet.'));
             detailsPageControlRef.current?.refresh();
         } catch (err) {
@@ -46,11 +46,11 @@ export function CodeListDetailsPage(): ReactNode {
             fullWidth
             background
         >
-            <GenericDetailsPage<CodeList, number, void>
+            <GenericDetailsPage<CodeList, string, void>
                 header={(item) => ({
                     icon: ModuleIcons.codeLists,
                     title: 'Codeliste bearbeiten',
-                    badge: item != null && item.id !== 0
+                    badge: item != null && item.key.length > 0
                         ? (
                             <CodeListStatusChip
                                 status={item.status}
@@ -60,7 +60,7 @@ export function CodeListDetailsPage(): ReactNode {
                             />
                         )
                         : undefined,
-                    actions: item != null && item.id !== 0 && isCodeListSyncable(item.sourceType) ? [
+                    actions: item != null && item.key.length > 0 && isCodeListSyncable(item.sourceType) ? [
                         {
                             tooltip: 'Codeliste synchronisieren (veraltete Einträge behalten)',
                             icon: <Sync />,
@@ -108,17 +108,17 @@ export function CodeListDetailsPage(): ReactNode {
                 })}
                 tabs={[
                     {
-                        path: '/code-lists/:id',
+                        path: '/code-lists/:key',
                         label: 'Allgemeine Angaben',
                     },
                     {
-                        path: '/code-lists/:id/items',
+                        path: '/code-lists/:key/items',
                         label: 'Einträge',
-                        isDisabled: (item) => item?.id === 0,
+                        isDisabled: (item) => item?.key.length === 0,
                     },
                 ]}
                 initializeItem={() => new CodeListsApiService().initialize()}
-                fetchData={(_, id: number) => new CodeListsApiService().retrieve(id)}
+                fetchData={(_, key: string) => new CodeListsApiService().retrieve(key)}
                 permissionCheck={{
                     scope: {
                         type: 'system',
@@ -127,7 +127,7 @@ export function CodeListDetailsPage(): ReactNode {
                     read: Permission.CODE_LIST_READ,
                     update: Permission.CODE_LIST_UPDATE,
                 }}
-                getTabTitle={(item) => item.id === 0 ? 'Neue Codeliste' : item.name}
+                getTabTitle={(item) => item.key.length === 0 ? 'Neue Codeliste' : item.name}
                 getHeaderTitle={(item, isNewItem, notFound) => {
                     if (notFound ?? false) return 'Codeliste nicht gefunden';
                     if (isNewItem ?? false) return 'Neue Codeliste anlegen';
@@ -139,6 +139,7 @@ export function CodeListDetailsPage(): ReactNode {
                 }}
                 entityType={ServerEntityType.CodeLists}
                 controlRef={detailsPageControlRef}
+                idParam="key"
             />
         </PageWrapper>
     );
