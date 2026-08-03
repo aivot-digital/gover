@@ -22,6 +22,8 @@ public class ApplicationTimeZoneConfiguration {
         // Keep the JVM default timezone aligned with the configured business timezone so
         // legacy code paths and third-party libraries that rely on systemDefault() stay consistent.
         ApplicationTimeZone.configure(zoneId);
+        // Setting user.timezone alone does not reliably invalidate the JDK's cached default.
+        // TimeZone.setDefault is therefore the effective runtime update.
         TimeZone.setDefault(TimeZone.getTimeZone(zoneId));
         System.setProperty("user.timezone", zoneId.getId());
     }
