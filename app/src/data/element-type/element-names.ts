@@ -51,6 +51,7 @@ const ElementNames: Record<ElementType, string> = {
     [ElementType.ProcessIdentityIdInput]: 'Prozessidentitäten',
     [ElementType.HtmlTemplateInput]: 'HTML-Vorlage',
     [ElementType.ProcessAttachmentDisplay]: 'Anhang zum Vorgang',
+    [ElementType.PaymentConfigElement]: 'Zahlungskonfiguration',
 };
 
 export function getElementName(element: AnyElement): string {

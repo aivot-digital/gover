@@ -50,4 +50,5 @@ export const ElementIsInput: Record<ElementType, boolean> = {
     [ElementType.ProcessIdentityIdInput]: true,
     [ElementType.HtmlTemplateInput]: true,
     [ElementType.ProcessAttachmentDisplay]: false,
+    [ElementType.PaymentConfigElement]: true,
 };

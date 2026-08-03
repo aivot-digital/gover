@@ -61,6 +61,7 @@ export function generateComponentTitle(component: AnyElement | null | undefined,
         case ElementType.UiDefinitionInput:
         case ElementType.HtmlTemplateInput:
         case ElementType.IdentityConfigElement:
+        case ElementType.PaymentConfigElement:
         case ElementType.RichTextInput:
         case ElementType.ReplicatingContainer:
             return stringOrDefault(component.label, defaultElementDescriptor);

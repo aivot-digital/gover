@@ -259,7 +259,11 @@ export function cleanAuthoredElementValues(rootElement: AnyElement, authoredElem
     delete cleanedElementValues[IdentityCustomerInputKey];
 
     return mapAuthoredElementValues(rootElement, cleanedElementValues, (element, value) => {
-        if (element.type === ElementType.FileUpload || element.type === ElementType.IdentityConfigElement) {
+        if (
+            element.type === ElementType.FileUpload ||
+            element.type === ElementType.IdentityConfigElement ||
+            element.type === ElementType.PaymentConfigElement
+        ) {
             return undefined;
         }
 

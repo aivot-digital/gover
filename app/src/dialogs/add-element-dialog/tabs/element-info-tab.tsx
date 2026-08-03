@@ -1283,6 +1283,14 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Typography>
         </Box>
     ),
+    [ElementType.PaymentConfigElement]: (
+        <Box>
+            <Typography>
+                Das Element „Zahlungskonfiguration“ legt den Zahlungsdienstleister, den
+                Verwendungszweck und die Zahlungsposten eines Formulars fest.
+            </Typography>
+        </Box>
+    ),
     [ElementType.TabLayout]: null,
     [ElementType.SummaryLayout]: (
         <Box>

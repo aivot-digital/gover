@@ -134,6 +134,7 @@ export const editors: ElementTypesMap<EditorSet | null> = {
         default: UiDefinitionInputFieldEditor,
     },
     [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: {
         default: ChipInputFieldEditor,

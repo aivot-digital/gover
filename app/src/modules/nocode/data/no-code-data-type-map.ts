@@ -33,6 +33,7 @@ export const NoCodeDataTypeMap: Record<ElementType, NoCodeDataType> = {
     [ElementType.RichTextInput]: NoCodeDataType.String,
     [ElementType.UiDefinitionInput]: NoCodeDataType.Runtime,
     [ElementType.IdentityConfigElement]: NoCodeDataType.Runtime,
+    [ElementType.PaymentConfigElement]: NoCodeDataType.Runtime,
     [ElementType.TabLayout]: NoCodeDataType.Runtime,
     [ElementType.ChipInput]: NoCodeDataType.List,
     [ElementType.DateTime]: NoCodeDataType.Date,

@@ -31,6 +31,7 @@ import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject'
 import CodeOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Code';
 import FunctionsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Functions';
 import AttachFileOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AttachFile';
+import PaymentsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Payments';
 
 import {type AnyElement} from '../../models/elements/any-element';
 import {type SvgIconComponent} from '../../types/svg-icon-component';
@@ -88,6 +89,7 @@ const ElementIcons: Record<ElementType, SvgIconComponent> = {
     [ElementType.ProcessIdentityIdInput]: LocalOfferOutlinedIcon,
     [ElementType.HtmlTemplateInput]: DescriptionOutlinedIcon,
     [ElementType.ProcessAttachmentDisplay]: AttachFileOutlinedIcon,
+    [ElementType.PaymentConfigElement]: PaymentsOutlinedIcon,
 };
 
 export function getElementIcon(element: AnyElement): SvgIconComponent {

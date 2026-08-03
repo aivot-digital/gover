@@ -190,6 +190,7 @@ export const ConditionOperatorHint: Record<ElementType, Partial<Record<Condition
     [ElementType.RichTextInput]: null,
     [ElementType.UiDefinitionInput]: null,
     [ElementType.IdentityConfigElement]: null,
+    [ElementType.PaymentConfigElement]: null,
     [ElementType.TabLayout]: null,
     [ElementType.ChipInput]: null,
     [ElementType.DomainAndUserSelect]: null,

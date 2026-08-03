@@ -138,6 +138,8 @@ function elementToValueType(element: AnyElement): string {
             return '{assetKey: string | null; slots: Record<string, string | null>}';
         case ElementType.IdentityConfigElement:
             return '{identityProviderKey: string | null | undefined; identityAttributes: Record<string, unknown> | null | undefined}';
+        case ElementType.PaymentConfigElement:
+            return 'Record<string, unknown>';
         case ElementType.FileUpload:
             return '{name: string; uri: string; size: number;}[]';
         case ElementType.IntroductionStep:

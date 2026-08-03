@@ -9,6 +9,7 @@ import type {ProcessNodeEntity} from '../../process/entities/process-node-entity
 import type {ProcessVersionEntity} from '../../process/entities/process-version-entity';
 import type {Theme} from '../../themes/models/theme';
 import type {FormTriggerIdentityDetailsDTO} from '../dtos/form-trigger-identity-details-dto';
+import type {PaymentConfigElementValue} from '../../../models/elements/form/input/payment-config-element';
 
 export interface FormTriggerFilter {
     id: number;
@@ -27,6 +28,7 @@ export interface FormTriggerConfiguration extends AuthoredElementValues {
     formSlug?: string;
     formLayout?: FormLayoutElement;
     identityProviders?: Array<Record<string, unknown>>;
+    payment?: PaymentConfigElementValue;
 }
 
 export interface FormTriggerNodeEntity extends Omit<ProcessNodeEntity, 'configuration'> {

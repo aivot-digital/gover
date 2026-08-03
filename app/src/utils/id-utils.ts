@@ -87,6 +87,7 @@ const prefixMap: Record<ElementType, string> = {
     [ElementType.ProcessIdentityIdInput]: 'pi',
     [ElementType.HtmlTemplateInput]: 'ht',
     [ElementType.ProcessAttachmentDisplay]: 'pa',
+    [ElementType.PaymentConfigElement]: 'pc',
 };
 
 export function generateElementIdForType(type: ElementType): string {
