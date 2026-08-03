@@ -20,7 +20,6 @@ import {setLoadingMessage} from "../../../../../slices/shell-slice";
 import {isApiError} from "../../../../../models/api-error";
 import {VUserDeputyWithDetailsEntity} from "../../../entities/v-user-deputy-with-details-entity";
 import {VUserDeputyWithDetailsApiService} from "../../../services/v-user-deputy-with-details-api-service";
-import {parseISO} from "date-fns/parseISO";
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
 import {useConfirm} from "../../../../../providers/confirm-provider";
 import {UserDeputyApiService} from "../../../services/user-deputy-api-service";
@@ -29,14 +28,18 @@ import {UserDeputyEntity} from "../../../entities/user-deputy-entity";
 import {DialogTitleWithClose} from "../../../../../components/dialog-title-with-close/dialog-title-with-close";
 import {DateFieldComponent} from "../../../../../components/date-field/date-field-component";
 import {DateFieldComponentModelMode} from "../../../../../models/elements/form/input/date-field-element";
-import {formatISODate} from "../../../../../utils/date-utils";
-import {addDays} from "date-fns/addDays";
+import {formatLocalDate} from '../../../../../utils/date-utils';
 import {Permission} from '../../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../../permissions/utils/permission-utils';
 import {useHasSystemPermission, useRefreshPermissionSet} from '../../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../../components/disabled-tooltip/disabled-tooltip';
 import {Page} from '../../../../../models/dtos/page';
 import {useRetainedDialogValue} from '../../../../../hooks/use-retained-dialog-value';
+import {
+    dateValueToDateTime,
+    getCurrentApplicationDate,
+    parseLocalDateIso,
+} from '../../../../../utils/temporal-utils';
 
 const deletedUserDeputyTooltip = 'Für im Identity Provider gelöschte Mitarbeiter:innen können Stellvertretungen nicht mehr geändert werden.';
 
@@ -47,22 +50,22 @@ const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
         flex: 1,
     },
     {
-        field: 'fromTimestamp',
+        field: 'fromDate',
         headerName: 'Ab',
         flex: 1,
         renderCell: (params) => (
             <span>
-                {formatISODate(params.row.fromTimestamp)}
+                {formatLocalDate(params.row.fromDate)}
             </span>
         ),
     },
     {
-        field: 'untilTimestamp',
+        field: 'untilDate',
         headerName: 'Bis',
         flex: 1,
-        renderCell: (params) => params.row.untilTimestamp != null ? (
+        renderCell: (params) => params.row.untilDate != null ? (
             <span>
-                {formatISODate(params.row.untilTimestamp)}
+                {formatLocalDate(params.row.untilDate)}
             </span>
         ) : (
             <em>Unbegrenzt</em>
@@ -77,13 +80,13 @@ const columns: Array<GridColDef<VUserDeputyWithDetailsEntity>> = [
 ];
 
 function getDeputyPeriodLabel(item: VUserDeputyWithDetailsEntity): string {
-    const fromLabel = formatISODate(item.fromTimestamp);
+    const fromLabel = formatLocalDate(item.fromDate);
 
-    if (item.untilTimestamp == null) {
+    if (item.untilDate == null) {
         return `ab ${fromLabel}, unbegrenzt`;
     }
 
-    return `${fromLabel} bis ${formatISODate(item.untilTimestamp)}`;
+    return `${fromLabel} bis ${formatLocalDate(item.untilDate)}`;
 }
 
 export function UserDetailsPageDeputies() {
@@ -133,23 +136,23 @@ export function UserDetailsPageDeputies() {
     const isEditingDeputy = renderDeputyDraft != null && renderDeputyDraft.id !== 0;
 
     const deputyDateRangeError = useMemo(() => {
-        if (renderDeputyDraft?.untilTimestamp == null) {
+        if (renderDeputyDraft?.untilDate == null) {
             return undefined;
         }
 
-        const fromTimestamp = parseISO(renderDeputyDraft.fromTimestamp);
-        const untilTimestamp = parseISO(renderDeputyDraft.untilTimestamp);
+        const fromDate = dateValueToDateTime(renderDeputyDraft.fromDate, 'day');
+        const untilDate = dateValueToDateTime(renderDeputyDraft.untilDate, 'day');
 
-        if (Number.isNaN(fromTimestamp.getTime()) || Number.isNaN(untilTimestamp.getTime())) {
+        if (fromDate == null || untilDate == null) {
             return undefined;
         }
 
-        if (untilTimestamp.getTime() <= fromTimestamp.getTime()) {
-            return 'Das Ende der Vertretung muss nach dem Start der Vertretung liegen.';
+        if (untilDate.toMillis() < fromDate.toMillis()) {
+            return 'Das Ende der Vertretung darf nicht vor dem Start der Vertretung liegen.';
         }
 
         return undefined;
-    }, [renderDeputyDraft?.fromTimestamp, renderDeputyDraft?.untilTimestamp]);
+    }, [renderDeputyDraft?.fromDate, renderDeputyDraft?.untilDate]);
 
     const saveDeputyDisabled = renderDeputyDraft == null ||
         deputyDateRangeError != null ||
@@ -341,7 +344,7 @@ export function UserDetailsPageDeputies() {
                     getRowIdentifier={(item) => item.id.toString()}
                     searchLabel="Stellvertreter:in suchen"
                     searchPlaceholder="Name der Stellvertreter:in eingeben…"
-                    defaultSortField="untilTimestamp"
+                    defaultSortField="untilDate"
                     rowMenuItems={[]}
                     noDataPlaceholder={
                         <EmptyDataListPlaceholder
@@ -374,8 +377,8 @@ export function UserDetailsPageDeputies() {
                                         id: item.id,
                                         originalUserId: item.originalUserId,
                                         deputyUserId: item.deputyUserId,
-                                        fromTimestamp: item.fromTimestamp ?? new Date().toISOString(),
-                                        untilTimestamp: item.untilTimestamp,
+                                        fromDate: item.fromDate ?? getCurrentApplicationDate(),
+                                        untilDate: item.untilDate,
                                     });
                                     setDeputyDraftDetails(item);
                                 },
@@ -405,8 +408,8 @@ export function UserDetailsPageDeputies() {
                         id: 0,
                         deputyUserId: deputy.id,
                         originalUserId: user.id,
-                        fromTimestamp: new Date().toISOString(),
-                        untilTimestamp: null,
+                        fromDate: getCurrentApplicationDate(),
+                        untilDate: null,
                     });
                     setDeputyDraftDetails(null);
                     setShowSelectUserDialog(false);
@@ -444,14 +447,16 @@ export function UserDetailsPageDeputies() {
                     <DateFieldComponent
                         label="Start der Vertretung"
                         mode={DateFieldComponentModelMode.Day}
-                        value={renderDeputyDraft?.fromTimestamp}
+                        value={renderDeputyDraft?.fromDate}
                         onChange={(val) => {
                             if (deputyDraft == null) {
                                 return;
                             }
                             setDeputyDraft({
                                 ...deputyDraft,
-                                fromTimestamp: val != null ? val : new Date().toISOString(),
+                                fromDate: val != null
+                                    ? parseLocalDateIso(val)
+                                    : getCurrentApplicationDate(),
                             });
                         }}
                         required={true}
@@ -460,8 +465,8 @@ export function UserDetailsPageDeputies() {
                     <DateFieldComponent
                         label="Ende der Vertretung"
                         mode={DateFieldComponentModelMode.Day}
-                        value={renderDeputyDraft?.untilTimestamp ?? undefined}
-                        minDate={renderDeputyDraft?.fromTimestamp != null ? addDays(parseISO(renderDeputyDraft.fromTimestamp), 1) : undefined}
+                        value={renderDeputyDraft?.untilDate ?? undefined}
+                        minDate={renderDeputyDraft?.fromDate}
                         error={deputyDateRangeError}
                         onChange={(val) => {
                             if (deputyDraft == null) {
@@ -469,7 +474,7 @@ export function UserDetailsPageDeputies() {
                             }
                             setDeputyDraft({
                                 ...deputyDraft,
-                                untilTimestamp: val != null ? val : null,
+                                untilDate: val != null ? parseLocalDateIso(val) : null,
                             });
                         }}
                     />
