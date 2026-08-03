@@ -5,7 +5,6 @@ import ExtensionOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/
 import HistoryOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/History';
 import WarningAmberOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Warning';
 import WidgetsOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Widgets';
-import {format} from 'date-fns';
 import {
     type PluginComponentType,
     PluginComponentTypeDisplayNames,
@@ -24,6 +23,7 @@ import {
     useGenericDetailsPageContext,
 } from '../../../../../components/generic-details-page/generic-details-page-context';
 import {isApiError} from '../../../../../models/api-error';
+import {formatInstantInApplicationTimeZone} from '../../../../../utils/temporal-utils';
 
 export interface ExtensionsDetailsPageItem {
     plugins: PluginDTO[];
@@ -88,12 +88,7 @@ function formatBuildDate(value: string): string {
         return 'Nicht hinterlegt';
     }
 
-    const parsedDate = new Date(value);
-    if (Number.isNaN(parsedDate.getTime())) {
-        return value;
-    }
-
-    return format(parsedDate, 'dd.MM.yyyy');
+    return formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy') ?? value;
 }
 
 function MetadataItem(props: { label: string; children: ReactNode }) {

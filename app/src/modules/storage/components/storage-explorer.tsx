@@ -47,6 +47,7 @@ import {getFileTypeIcon} from '../../../utils/file-type-icon';
 import {type StorageProviderEntity} from '../entities/storage-provider-entity';
 import {humanizeFileSize} from '../../../utils/humanization-utils';
 import {Page} from '../../../models/dtos/page';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 interface StorageExplorerProps {
     providerId: number;
@@ -92,19 +93,8 @@ function formatDateTime(dateString: string): string {
         return 'Unbekannt';
     }
 
-    const normalized = dateString.replace(/(\.\d{3})\d+/, '$1');
-    const date = new Date(normalized);
-
-    if (Number.isNaN(date.getTime())) {
-        return dateString;
-    }
-
-    const formatted = new Intl.DateTimeFormat('de-DE', {
-        dateStyle: 'medium',
-        timeStyle: 'short',
-    }).format(date);
-
-    return `${formatted} Uhr`;
+    const formatted = formatInstantInApplicationTimeZone(dateString, 'dd.MM.yyyy, HH:mm');
+    return formatted != null ? `${formatted} Uhr` : 'Unbekannt';
 }
 
 function getFolderPath(pathFromRoot: string): string {

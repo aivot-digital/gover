@@ -26,6 +26,7 @@ import {DialogTitleWithClose} from '../../../../components/dialog-title-with-clo
 import {useRetainedDialogValue} from '../../../../hooks/use-retained-dialog-value';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectUser} from '../../../../slices/user-slice';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 interface ProcessInstanceTaskEntityWithInstance extends ProcessInstanceTaskEntity {
     instance: ProcessInstanceEntity;
@@ -144,15 +145,8 @@ export function ProcessAssignedTaskListPage() {
             flex: 1,
             renderCell: (params: any) => {
                 if (!params.row.started) return '—';
-                const date = new Date(params.row.started);
-                return new Intl.DateTimeFormat('de-DE', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                }).format(date).replace(',', ' –') + ' Uhr';
+                const formatted = formatInstantInApplicationTimeZone(params.row.started, 'dd.MM.yyyy – HH:mm');
+                return formatted != null ? `${formatted} Uhr` : '—';
             },
         },
     ], []);

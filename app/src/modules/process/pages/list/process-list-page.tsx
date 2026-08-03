@@ -9,7 +9,6 @@ import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectMemberships} from '../../../../slices/user-slice';
 import {CellContentWrapper} from '../../../../components/cell-content-wrapper/cell-content-wrapper';
 import Typography from '@mui/material/Typography';
-import {format} from 'date-fns/format';
 import {GridColDef} from '@mui/x-data-grid';
 import {Link} from 'react-router-dom';
 import HomeStorage from '@aivot/mui-material-symbols-400-n25-outlined/HomeStorage';
@@ -33,6 +32,7 @@ import {ProcessVersionsDialog} from '../../dialogs/process-versions-dialog';
 import {MoveProcessToDepartmentDialog} from '../../dialogs/move-process-to-department-dialog';
 import {ProcessListRowMenu} from '../../components/process-list-row-menu';
 import {useDeleteProcess} from '../../hooks/use-delete-process';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 const availableFilter = [
     {
@@ -147,25 +147,28 @@ const columns: GridColDef<ProcessListEntry>[] = [
         field: 'updated',
         headerName: 'Zuletzt bearbeitet',
         flex: 1,
-        renderCell: (params) => (
-            <Box
-                sx={{
-                    py: 2,
-                    display: 'flex',
-                    flexDirection: 'column',
-                }}
-            >
-                <Typography sx={{fontSize: '0.875rem'}}>
-                    {format(params.row.updated, 'dd.MM.yyyy — HH:mm')} Uhr
-                </Typography>
-                <Typography
-                    color="textSecondary"
-                    sx={{fontSize: '0.875rem'}}
+        renderCell: (params) => {
+            const formatted = formatInstantInApplicationTimeZone(params.row.updated, 'dd.MM.yyyy — HH:mm');
+            return (
+                <Box
+                    sx={{
+                        py: 2,
+                        display: 'flex',
+                        flexDirection: 'column',
+                    }}
                 >
-                    {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
-                </Typography>
-            </Box>
-        ),
+                    <Typography sx={{fontSize: '0.875rem'}}>
+                        {formatted != null ? `${formatted} Uhr` : '—'}
+                    </Typography>
+                    <Typography
+                        color="textSecondary"
+                        sx={{fontSize: '0.875rem'}}
+                    >
+                        {params.row.lastEditorName ?? 'Unbekannte Nutzer:in'}
+                    </Typography>
+                </Box>
+            );
+        },
     },
     {
         field: 'publishedVersion',

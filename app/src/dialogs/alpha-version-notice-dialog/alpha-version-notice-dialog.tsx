@@ -13,12 +13,12 @@ import {
 } from '@mui/material';
 import ReportOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Report';
 import {alpha} from '@mui/material/styles';
-import {format} from 'date-fns/format';
 import {AppInfo} from '../../app-info';
 import {StorageKey} from '../../data/storage-key';
 import {StorageScope, StorageService} from '../../services/storage-service';
 import {addDays} from 'date-fns/addDays'
 import {isBefore} from 'date-fns/isBefore'
+import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 
 const alphaVersionRiskHints = [
     'Funktionen können unvollständig sein, sich ändern oder noch nicht wie erwartet funktionieren.',
@@ -63,16 +63,16 @@ export function AlphaVersionNoticeDialog(): React.ReactElement {
     ] = useState(false);
 
     const buildInfo = useMemo(() => {
-        const parsedBuildDate = new Date(AppInfo.date);
         const hasBuildVersion = AppInfo.version !== '@buildVersion';
         const hasBuildNumber = AppInfo.number !== '@buildNumber';
-        const hasBuildDate = AppInfo.date !== '@buildTimestamp' && !Number.isNaN(parsedBuildDate.getTime());
+        const formattedBuildDate = formatInstantInApplicationTimeZone(AppInfo.date, 'dd.MM.yyyy');
+        const hasBuildDate = AppInfo.date !== '@buildTimestamp' && formattedBuildDate != null;
 
         return {
             versionLabel: hasBuildVersion ? AppInfo.version : '5.x (DEV)',
             buildLabel: hasBuildNumber ? AppInfo.number : 'Entwicklungsbuild',
             buildDateLabel: hasBuildDate ?
-                `${format(parsedBuildDate, 'dd.MM.yyyy')}` :
+                formattedBuildDate :
                 'Nicht im Build hinterlegt',
         };
     }, []);

@@ -1,5 +1,6 @@
 import React, {type ReactNode} from 'react';
 import {Box, Divider, Typography} from '@mui/material';
+import {DateTime} from 'luxon';
 import PersonOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Person';
 import {getElementNameForType} from '../../../data/element-type/element-names';
 import {type ElementTypesMap} from '../../../data/element-type/element-types-map';
@@ -56,6 +57,109 @@ import {NumberSummary} from '../../../summaries/number-summary';
 import {
     ProcessAttachmentDisplayComponent,
 } from '../../../components/process-attachment-display/process-attachment-display-component';
+import {
+    dateTimeToDateValueIso,
+    dateValueToDateTime,
+    getApplicationTimeZone,
+    getCurrentApplicationDate,
+} from '../../../utils/temporal-utils';
+
+function DateExamples() {
+    const currentDate = getCurrentApplicationDate();
+
+    return (
+        <>
+            <Box sx={{mt: 2}}>
+                <DateFieldComponent
+                    label="Datumsfeld"
+                    mode={DateFieldComponentModelMode.Day}
+                    value={currentDate}
+                    onChange={() => {
+                    }}
+                    hint="Der Hinweis für das Datumsfeld"
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <DateFieldComponent
+                    label="Datumsfeld"
+                    mode={DateFieldComponentModelMode.Month}
+                    value={currentDate.slice(0, 7)}
+                    onChange={() => {
+                    }}
+                    error="Der Fehler für das Datumsfeld"
+                />
+            </Box>
+
+            <Box sx={{mt: 2}}>
+                <DateFieldComponent
+                    label="Datumsfeld"
+                    mode={DateFieldComponentModelMode.Year}
+                    value={currentDate.slice(0, 4)}
+                    onChange={() => {
+                    }}
+                />
+            </Box>
+        </>
+    );
+}
+
+function DateRangeExample() {
+    const currentDate = getCurrentApplicationDate();
+    const currentDateTime = dateValueToDateTime(currentDate, 'day');
+    const endDate = currentDateTime != null
+        ? dateTimeToDateValueIso(currentDateTime.plus({days: 2}), 'day') ?? currentDate
+        : currentDate;
+
+    return (
+        <DateRangeFieldComponent
+            label="Datumsspanne"
+            value={{
+                start: currentDate,
+                end: endDate,
+            }}
+            onChange={() => {
+            }}
+            hint="Bitte geben Sie den Zeitraum an."
+        />
+    );
+}
+
+function getCurrentExampleInstant(hoursFromNow = 0): string {
+    return DateTime
+        .now()
+        .plus({hours: hoursFromNow})
+        .setZone(getApplicationTimeZone())
+        .startOf('minute')
+        .toFormat("yyyy-MM-dd'T'HH:mm:ssZZ");
+}
+
+function DateTimeExample() {
+    return (
+        <DateTimeFieldComponent
+            label="Datum und Uhrzeit"
+            value={getCurrentExampleInstant()}
+            onChange={() => {
+            }}
+            hint="Bitte wählen Sie Datum und Uhrzeit."
+        />
+    );
+}
+
+function DateTimeRangeExample() {
+    const start = getCurrentExampleInstant();
+    const end = getCurrentExampleInstant(2);
+
+    return (
+        <DateTimeRangeFieldComponent
+            label="Datum- und Zeitspanne"
+            value={{start, end}}
+            onChange={() => {
+            }}
+            hint="Bitte geben Sie den Zeitraum an."
+        />
+    );
+}
 
 const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
     [ElementType.Alert]: (
@@ -232,37 +336,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 Beispiele
             </Divider>
 
-            <Box sx={{mt: 2}}>
-                <DateFieldComponent
-                    label="Datumsfeld"
-                    mode={DateFieldComponentModelMode.Day}
-                    value={new Date().toISOString()}
-                    onChange={() => {
-                    }}
-                    hint="Der Hinweis für das Datumsfeld"
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <DateFieldComponent
-                    label="Datumsfeld"
-                    mode={DateFieldComponentModelMode.Month}
-                    value={new Date().toISOString()}
-                    onChange={() => {
-                    }}
-                    error="Der Fehler für das Datumsfeld"
-                />
-            </Box>
-
-            <Box sx={{mt: 2}}>
-                <DateFieldComponent
-                    label="Datumsfeld"
-                    mode={DateFieldComponentModelMode.Year}
-                    value={new Date().toISOString()}
-                    onChange={() => {
-                    }}
-                />
-            </Box>
+            <DateExamples/>
         </Box>
     ),
     [ElementType.Headline]: (
@@ -801,13 +875,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <Box sx={{mt: 2}}>
-                <DateTimeFieldComponent
-                    label="Datum und Uhrzeit"
-                    value={new Date().toISOString()}
-                    onChange={() => {
-                    }}
-                    hint="Bitte wählen Sie Datum und Uhrzeit."
-                />
+                <DateTimeExample/>
             </Box>
         </Box>
     ),
@@ -822,16 +890,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <Box sx={{mt: 2}}>
-                <DateRangeFieldComponent
-                    label="Datumsspanne"
-                    value={{
-                        start: new Date().toISOString(),
-                        end: new Date().toISOString(),
-                    }}
-                    onChange={() => {
-                    }}
-                    hint="Bitte geben Sie den Zeitraum an."
-                />
+                <DateRangeExample/>
             </Box>
         </Box>
     ),
@@ -849,8 +908,8 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
                 <TimeRangeFieldComponent
                     label="Zeitspanne"
                     value={{
-                        start: new Date().toISOString(),
-                        end: new Date().toISOString(),
+                        start: '09:00',
+                        end: '17:00',
                     }}
                     onChange={() => {
                     }}
@@ -870,16 +929,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             </Divider>
 
             <Box sx={{mt: 2}}>
-                <DateTimeRangeFieldComponent
-                    label="Datum- und Zeitspanne"
-                    value={{
-                        start: new Date().toISOString(),
-                        end: new Date().toISOString(),
-                    }}
-                    onChange={() => {
-                    }}
-                    hint="Bitte geben Sie den Zeitraum an."
-                />
+                <DateTimeRangeExample/>
             </Box>
         </Box>
     ),
@@ -1126,7 +1176,7 @@ const elementDescriptions: ElementTypesMap<React.ReactNode | null> = {
             <Box sx={{mt: 2}}>
                 <TimeFieldComponent
                     label="Uhrzeit"
-                    value={new Date().toISOString()}
+                    value="09:30"
                     onChange={() => {
                     }}
                     hint="Bitte geben Sie eine Uhrzeit an."

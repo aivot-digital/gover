@@ -10,7 +10,7 @@ import ScienceOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Sc
 import EditOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
 import AssignmentIndOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AssignmentInd';
 import OpenInNewIcon from '@aivot/mui-material-symbols-400-n25-outlined/OpenInNew';
-import {format, formatDistanceToNowStrict, parseISO} from 'date-fns';
+import {formatDistanceToNowStrict} from 'date-fns';
 import {de} from 'date-fns/locale';
 import {StatusTable} from '../../../../components/status-table/status-table';
 import {type StatusTablePropsItem} from '../../../../components/status-table/status-table-props';
@@ -27,20 +27,26 @@ import Inbox from '@aivot/mui-material-symbols-400-n25-outlined/Inbox';
 import MoveToInbox from '@aivot/mui-material-symbols-400-n25-outlined/MoveToInbox';
 import Acute from '@aivot/mui-material-symbols-400-n25-outlined/Acute';
 import Task from '@aivot/mui-material-symbols-400-n25-outlined/Task';
+import {
+    formatInstantInApplicationTimeZone,
+    instantToEpochMillis,
+} from '../../../../utils/temporal-utils';
 
 function formatDateTimeWithRelative(value?: string | null, fallback = 'Nicht hinterlegt'): ReactNode {
     if (value == null || value.trim().length === 0) {
         return fallback;
     }
 
-    const parsed = parseISO(value);
-    if (Number.isNaN(parsed.getTime())) {
+    const epochMillis = instantToEpochMillis(value);
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy – HH:mm');
+    if (epochMillis == null || formatted == null) {
         return fallback;
     }
+    const parsed = new Date(epochMillis);
 
     return (
         <Box component="span">
-            {format(parsed, 'dd.MM.yyyy – HH:mm', {locale: de})} Uhr{' '}
+            {formatted} Uhr{' '}
             <Box
                 component="span"
                 sx={{

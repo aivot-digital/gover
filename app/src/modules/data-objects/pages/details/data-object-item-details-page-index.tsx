@@ -24,7 +24,6 @@ import {ConfirmDialogV2} from '../../../../dialogs/confirm-dialog/confirm-dialog
 import {useConfirmDialog} from '../../../../hooks/use-confirm-dialog';
 import {applyYupErrorsToElementData, goverSchemaToYup} from '../../../../utils/gover-schema-to-yup';
 import Grid from '@mui/material/Grid';
-import {format as formatDateTime} from 'date-fns/format';
 import {isApiError} from '../../../../models/api-error';
 import {ElementDerivationContext} from '../../../elements/components/element-derivation-context';
 import Delete from '@aivot/mui-material-symbols-400-n25-outlined/Delete';
@@ -33,6 +32,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {formatMissingPermissionTooltip} from '../../../permissions/utils/permission-utils';
 import {useHasSystemPermission} from '../../../permissions/hooks/use-permissions';
 import {DisabledTooltip} from '../../../../components/disabled-tooltip/disabled-tooltip';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 export function DataObjectItemDetailsPageIndex() {
     const dispatch = useAppDispatch();
@@ -298,7 +298,7 @@ export function DataObjectItemDetailsPageIndex() {
                     >
                         <TextFieldComponent
                             label="Erstellt am"
-                            value={formatDateTime(currentDataObjectItem.created, 'dd.MM.yyyy HH:mm:ss') + ' Uhr'}
+                            value={formatMetadataTimestamp(currentDataObjectItem.created)}
                             onChange={() => {
                             }}
                             disabled={true}
@@ -313,7 +313,7 @@ export function DataObjectItemDetailsPageIndex() {
                     >
                         <TextFieldComponent
                             label="Geändert am"
-                            value={formatDateTime(currentDataObjectItem.updated, 'dd.MM.yyyy HH:mm:ss') + ' Uhr'}
+                            value={formatMetadataTimestamp(currentDataObjectItem.updated)}
                             onChange={() => {
                             }}
                             disabled={true}
@@ -382,4 +382,9 @@ export function DataObjectItemDetailsPageIndex() {
             />
         </Box>
     );
+}
+
+function formatMetadataTimestamp(value: string): string {
+    const formatted = formatInstantInApplicationTimeZone(value, 'dd.MM.yyyy HH:mm:ss');
+    return formatted != null ? `${formatted} Uhr` : 'Unbekannt';
 }

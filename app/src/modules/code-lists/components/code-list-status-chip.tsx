@@ -5,10 +5,14 @@ import SyncProblem from '@aivot/mui-material-symbols-400-n25-outlined/SyncProble
 import SyncArrowDown from '@aivot/mui-material-symbols-400-n25-outlined/SyncArrowDown';
 import Autoplay from '@aivot/mui-material-symbols-400-n25-outlined/Autoplay';
 import CheckCircle from '@aivot/mui-material-symbols-400-n25-outlined/CheckCircle';
-import {format, formatDistanceToNowStrict} from 'date-fns';
+import {formatDistanceToNowStrict} from 'date-fns';
 import {de} from 'date-fns/locale';
 import {SvgIconComponent} from '../../../types/svg-icon-component';
 import {CodeListSourceType, CodeListSourceTypeLabels, isCodeListSyncable} from '../enums/code-list-source-type';
+import {
+    formatInstantInApplicationTimeZone,
+    instantToEpochMillis,
+} from '../../../utils/temporal-utils';
 
 interface CodeListStatusChipProps {
     status: CodeListStatus;
@@ -24,13 +28,6 @@ const iconMap: Record<CodeListStatus, SvgIconComponent> = {
     [CodeListStatus.SyncFailed]: SyncProblem,
 };
 
-function parseIsoLocal(value: string): Date | null {
-    // JS Date supports milliseconds only; trim potential microseconds (e.g. .718476 -> .718).
-    const normalized = value.replace(/(\.\d{3})\d+/, '$1');
-    const date = new Date(normalized);
-    return Number.isNaN(date.getTime()) ? null : date;
-}
-
 export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
     const {
         status,
@@ -44,7 +41,8 @@ export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
 
     const lastSyncDate = useMemo(() => {
         if (!lastSync) return null;
-        return parseIsoLocal(lastSync);
+        const epochMillis = instantToEpochMillis(lastSync);
+        return epochMillis != null ? new Date(epochMillis) : null;
     }, [lastSync]);
 
     const [minuteTick, setMinuteTick] = useState(0);
@@ -83,9 +81,8 @@ export function CodeListStatusChip(props: CodeListStatusChipProps): ReactNode {
     }, [isSyncable, lastSyncDate, minuteTick, sourceType, status]);
 
     const formattedLastSync = useMemo(() => {
-        if (!lastSyncDate) return undefined;
-        return format(lastSyncDate, 'dd.MM.yyyy – HH:mm:ss', {locale: de});
-    }, [lastSyncDate]);
+        return formatInstantInApplicationTimeZone(lastSync, 'dd.MM.yyyy – HH:mm:ss') ?? undefined;
+    }, [lastSync]);
 
     const title = useMemo(() => {
         if (!isSyncable) {

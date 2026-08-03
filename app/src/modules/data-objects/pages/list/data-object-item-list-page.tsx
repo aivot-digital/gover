@@ -24,8 +24,6 @@ import {DataObjectItem} from '../../models/data-object-item';
 import {flattenElements} from '../../../../utils/flatten-elements';
 import {generateComponentTitle} from '../../../../utils/generate-component-title';
 import {ElementType} from '../../../../data/element-type/element-type';
-import {format} from 'date-fns/format';
-import {parseISO} from 'date-fns/parseISO';
 import FolderData from '@aivot/mui-material-symbols-400-n25-outlined/FolderData';
 import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject';
 import {ModuleIcons} from '../../../../shells/staff/data/module-icons';
@@ -45,6 +43,12 @@ import {
     getAssignmentContextGeneralAssigneePreferenceLabel,
     getAssignmentContextRepeatExecutionAssigneePreferenceLabel,
 } from '../../../../utils/assignment-context-preference-options';
+import {DateFieldComponentModelMode} from '../../../../models/elements/form/input/date-field-element';
+import {
+    dateValueToDateTime,
+    formatInstantInApplicationTimeZone,
+    localTimeIsoToDateTime,
+} from '../../../../utils/temporal-utils';
 
 const dataObjectItemListPermissionCheck: GenericListPagePermissionConfig<DataObjectItem> = {
     scope: {
@@ -277,31 +281,40 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
                                 .map((val: string) => val)
                                 .join(', ');
                         case ElementType.Date:
-                            return format(parseISO(value), 'dd.MM.yyyy');
+                            return formatDateValue(
+                                value,
+                                element.mode ?? DateFieldComponentModelMode.Day,
+                            );
                         case ElementType.DateTime:
-                            return format(
-                                parseISO(value),
+                            return formatInstantInApplicationTimeZone(
+                                value,
                                 (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
                                     ? 'dd.MM.yyyy HH:mm:ss'
                                     : 'dd.MM.yyyy HH:mm',
-                            );
+                            ) ?? 'Keine Angabe';
                         case ElementType.DateRange:
-                            return `${formatRangeValue(value?.start, 'dd.MM.yyyy')} bis ${formatRangeValue(value?.end, 'dd.MM.yyyy')}`;
-                        case ElementType.TimeRange:
-                            return `${formatRangeValue(
+                            return `${formatDateValue(
                                 value?.start,
-                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
-                            )} bis ${formatRangeValue(
+                                element.mode ?? DateFieldComponentModelMode.Day,
+                            )} bis ${formatDateValue(
                                 value?.end,
-                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
+                                element.mode ?? DateFieldComponentModelMode.Day,
+                            )}`;
+                        case ElementType.TimeRange:
+                            return `${formatTimeValue(
+                                value?.start,
+                                element.mode ?? TimeFieldComponentModelMode.Minute,
+                            )} bis ${formatTimeValue(
+                                value?.end,
+                                element.mode ?? TimeFieldComponentModelMode.Minute,
                             )}`;
                         case ElementType.DateTimeRange:
-                            return `${formatRangeValue(
+                            return `${formatInstantRangeValue(
                                 value?.start,
                                 (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
                                     ? 'dd.MM.yyyy HH:mm:ss'
                                     : 'dd.MM.yyyy HH:mm',
-                            )} bis ${formatRangeValue(
+                            )} bis ${formatInstantRangeValue(
                                 value?.end,
                                 (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second
                                     ? 'dd.MM.yyyy HH:mm:ss'
@@ -341,9 +354,9 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
 
                             return [...selectedLabels, ...preferenceLabels].join(', ');
                         case ElementType.Time:
-                            return format(
-                                parseISO(value),
-                                (element.mode ?? TimeFieldComponentModelMode.Minute) === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
+                            return formatTimeValue(
+                                value,
+                                element.mode ?? TimeFieldComponentModelMode.Minute,
                             );
                         case ElementType.Radio:
                         case ElementType.Select: {
@@ -371,10 +384,44 @@ function dataObjectSchemaExtractDisplayFields(dataObjectSchema: DataObjectSchema
     return cols;
 }
 
-function formatRangeValue(value: string | undefined, formatStr: string): string {
+function formatDateValue(
+    value: string | undefined,
+    mode: DateFieldComponentModelMode = DateFieldComponentModelMode.Day,
+): string {
     if (value == null || value.length === 0) {
         return 'Keine Angabe';
     }
 
-    return format(parseISO(value), formatStr);
+    const date = dateValueToDateTime(value, mode);
+    if (date == null) {
+        return 'Keine Angabe';
+    }
+
+    const format = mode === DateFieldComponentModelMode.Day
+        ? 'dd.MM.yyyy'
+        : mode === DateFieldComponentModelMode.Month
+            ? 'MM.yyyy'
+            : 'yyyy';
+    return date.toFormat(format);
+}
+
+function formatTimeValue(
+    value: string | undefined,
+    mode: TimeFieldComponentModelMode,
+): string {
+    if (value == null || value.length === 0) {
+        return 'Keine Angabe';
+    }
+
+    return localTimeIsoToDateTime(value)?.toFormat(
+        mode === TimeFieldComponentModelMode.Second ? 'HH:mm:ss' : 'HH:mm',
+    ) ?? 'Keine Angabe';
+}
+
+function formatInstantRangeValue(value: string | undefined, format: string): string {
+    if (value == null || value.length === 0) {
+        return 'Keine Angabe';
+    }
+
+    return formatInstantInApplicationTimeZone(value, format) ?? 'Keine Angabe';
 }

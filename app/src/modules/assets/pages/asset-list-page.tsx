@@ -28,6 +28,7 @@ import {usePrompt} from '../../../providers/prompt-provider';
 import {isStringNullOrEmpty} from '../../../utils/string-utils';
 import {VStorageIndexItemWithAssetEntity} from '../../storage/entities/storage-index-item-entity';
 import {Permission} from '../../../data/permissions/permission';
+import {formatInstantInApplicationTimeZone} from '../../../utils/temporal-utils';
 
 const assetListPermissionCheck: GenericListPagePermissionConfig<VStorageIndexItemWithAssetEntity> = {
     scope: {
@@ -354,15 +355,8 @@ export function AssetListPage() {
             flex: 1,
             renderCell: (params: any) => {
                 if (!params.row.created) return '—';
-                const date = new Date(params.row.created);
-                return new Intl.DateTimeFormat('de-DE', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                }).format(date).replace(',', ' –') + ' Uhr';
+                const formatted = formatInstantInApplicationTimeZone(params.row.created, 'dd.MM.yyyy – HH:mm');
+                return formatted != null ? `${formatted} Uhr` : '—';
             },
         },
     ], [parsedStorageProviderId, storageProviderReadOnly]);

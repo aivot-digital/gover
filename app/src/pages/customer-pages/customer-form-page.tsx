@@ -16,7 +16,6 @@ import {
     useTheme,
 } from '@mui/material';
 import {alpha} from '@mui/material/styles';
-import {format} from 'date-fns';
 import {showDialog} from '../../slices/app-slice';
 import {useAppSelector} from '../../hooks/use-app-selector';
 import {useAppDispatch} from '../../hooks/use-app-dispatch';
@@ -68,6 +67,8 @@ import RestorePageIcon from '@aivot/mui-material-symbols-400-n25-outlined/Restor
 import InfoOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Info';
 import AccountCircleOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/AccountCircle';
 import ErrorOutlineOutlinedIcon from '@aivot/mui-material-symbols-400-n25-outlined/Error';
+import {InstantIso} from '../../utils/temporal-types';
+import {formatInstantInApplicationTimeZone} from '../../utils/temporal-utils';
 
 interface RetrieveResponse {
     layoutElement: FormLayoutElement;
@@ -506,7 +507,7 @@ export function CustomerFormPage() {
 interface AuthPlaceholderProps {
     relatedProcessNodeId: number;
     identitySlots: RetrieveResponse['identitySlots'];
-    customerInputDraftDate: Date | null;
+    customerInputDraftDate: InstantIso | null;
     onDismiss: () => void;
 }
 
@@ -816,7 +817,7 @@ function AuthPlaceholder(props: AuthPlaceholderProps) {
     );
 }
 
-function CustomerInputDraftTeaser(props: { date: Date }) {
+function CustomerInputDraftTeaser(props: { date: InstantIso }) {
     const {
         date,
     } = props;
@@ -893,7 +894,10 @@ function CustomerInputDraftTeaser(props: { date: Date }) {
                         pt: 2,
                     }}
                 >
-                    Zuletzt bearbeitet: {format(date, 'dd.MM.yyyy')}, {format(date, 'HH:mm')} Uhr
+                    Zuletzt bearbeitet: {formatInstantInApplicationTimeZone(
+                        date,
+                        'dd.MM.yyyy, HH:mm',
+                    )} Uhr
                 </Typography>
             </Box>
         </Paper>

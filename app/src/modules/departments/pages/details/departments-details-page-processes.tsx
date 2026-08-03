@@ -1,5 +1,4 @@
 import React, {useContext} from 'react';
-import {format} from 'date-fns/format';
 import {Box, Typography} from '@mui/material';
 import {GridColDef} from '@mui/x-data-grid';
 import Edit from '@aivot/mui-material-symbols-400-n25-outlined/Edit';
@@ -16,6 +15,7 @@ import {Permission} from '../../../../data/permissions/permission';
 import {useAppSelector} from '../../../../hooks/use-app-selector';
 import {selectPermissions} from '../../../../slices/user-slice';
 import {requireDepartmentPermission} from '../../../permissions/utils/permission-utils';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 const filters = [
     {
@@ -62,11 +62,13 @@ const columns: GridColDef<ProcessEntity>[] = [
         field: 'updated',
         headerName: 'Zuletzt bearbeitet',
         flex: 1,
-        renderCell: (params) => (
-            <>
-                {format(params.row.updated, 'dd.MM.yyyy - HH:mm')} Uhr
-            </>
-        ),
+        renderCell: (params) => {
+            const formatted = formatInstantInApplicationTimeZone(
+                params.row.updated,
+                'dd.MM.yyyy - HH:mm',
+            );
+            return formatted != null ? `${formatted} Uhr` : '—';
+        },
     },
     {
         field: 'publishedVersion',

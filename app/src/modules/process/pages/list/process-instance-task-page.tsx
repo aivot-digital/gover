@@ -24,6 +24,7 @@ import DataObject from '@aivot/mui-material-symbols-400-n25-outlined/DataObject'
 import FactCheck from '@aivot/mui-material-symbols-400-n25-outlined/FactCheck';
 import {ProcessInstanceEventDialog} from '../../dialogs/process-instance-event-dialog';
 import News from '@aivot/mui-material-symbols-400-n25-outlined/News';
+import {formatInstantInApplicationTimeZone} from '../../../../utils/temporal-utils';
 
 interface ProcessInstanceTaskEntityWithNodeAndProvider extends ProcessInstanceTaskEntity {
     node: ProcessNodeEntity;
@@ -160,15 +161,8 @@ export function ProcessInstanceTaskListPage() {
             flex: 1,
             renderCell: (params: any) => {
                 if (!params.row.started) return '—';
-                const date = new Date(params.row.started);
-                return new Intl.DateTimeFormat('de-DE', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                }).format(date).replace(',', ' –') + ' Uhr';
+                const formatted = formatInstantInApplicationTimeZone(params.row.started, 'dd.MM.yyyy – HH:mm');
+                return formatted != null ? `${formatted} Uhr` : '—';
             },
         },
         {
@@ -177,15 +171,8 @@ export function ProcessInstanceTaskListPage() {
             flex: 1,
             renderCell: (params: any) => {
                 if (!params.row.finished) return '—';
-                const date = new Date(params.row.finished);
-                return new Intl.DateTimeFormat('de-DE', {
-                    day: '2-digit',
-                    month: '2-digit',
-                    year: 'numeric',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false,
-                }).format(date).replace(',', ' –') + ' Uhr';
+                const formatted = formatInstantInApplicationTimeZone(params.row.finished, 'dd.MM.yyyy – HH:mm');
+                return formatted != null ? `${formatted} Uhr` : '—';
             },
         },
         {
