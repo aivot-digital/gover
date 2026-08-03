@@ -202,8 +202,14 @@ class NoCodeOperatorTest {
 
     @Test
     void castToDateTime() {
-        ZonedDateTime now = ZonedDateTime.now();
-        assertEquals(now, operator.castToDateTime(now));
+        var utcDateTime = ZonedDateTime.of(
+                LocalDateTime.of(2026, 8, 3, 12, 0),
+                ZoneOffset.UTC
+        );
+        assertEquals(
+                utcDateTime.withZoneSameInstant(TEST_ZONE),
+                operator.castToDateTime(utcDateTime)
+        );
         assertEquals(
                 Instant.parse("2023-01-01T00:00:00Z"),
                 operator.castToDateTime("2023-01-01T00:00:00Z").toInstant()
@@ -217,7 +223,7 @@ class NoCodeOperatorTest {
                 operator.castToNumber(LocalDateTime.of(2026, 3, 29, 2, 30))
         );
         assertDoesNotThrow(() -> operator.castToDateTime("invalid"));
-        assertDoesNotThrow(() -> operator.castToTypeOfReference(now, "invalid"));
+        assertDoesNotThrow(() -> operator.castToTypeOfReference(utcDateTime, "invalid"));
     }
 
     @Test
