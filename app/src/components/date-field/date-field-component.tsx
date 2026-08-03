@@ -1,14 +1,17 @@
-import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
-import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
-import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
-import {de} from 'date-fns/locale/de';
-import {DateFieldComponentProps} from './date-field-component-props';
-import React, {useEffect, useMemo, useRef, useState} from 'react';
-import type {Locale} from 'date-fns';
 import {InputAdornment} from '@mui/material';
+import {DatePicker, LocalizationProvider} from '@mui/x-date-pickers';
+import {DateTime} from 'luxon';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {DateFieldComponentModelMode} from '../../models/elements/form/input/date-field-element';
+import {GoverAdapterLuxon} from '../../utils/gover-adapter-luxon';
+import {
+    CalendarDatePrecision,
+    dateTimeToDateValueIso,
+    dateValueToDateTime,
+} from '../../utils/temporal-utils';
+import {DateValueIso} from '../../utils/temporal-types';
 import {renderIconButton} from '../text-field/text-field-component';
-
-const deLocale = de as unknown as Locale;
+import {DateFieldComponentProps} from './date-field-component-props';
 
 const formatMap = {
     [DateFieldComponentModelMode.Day]: 'dd.MM.yyyy',
@@ -23,19 +26,6 @@ const viewsMap: {
     [DateFieldComponentModelMode.Month]: ['month', 'year'],
     [DateFieldComponentModelMode.Year]: ['year'],
 };
-
-function normalizeDateForMode(date: Date, mode: DateFieldComponentModelMode): Date {
-    const normalized = new Date(date);
-
-    if (mode === DateFieldComponentModelMode.Year) {
-        normalized.setMonth(0, 1);
-    } else if (mode === DateFieldComponentModelMode.Month) {
-        normalized.setDate(1);
-    }
-
-    normalized.setHours(0, 0, 0, 0);
-    return normalized;
-}
 
 export function DateFieldComponent({
                                        label,
@@ -55,24 +45,21 @@ export function DateFieldComponent({
                                        sx,
                                        bufferInputUntilBlur,
                                        debounce,
-                                       muiPassTroughProps,
                                        startIcon,
                                        endAction,
                                    }: DateFieldComponentProps) {
-    const dateValue = value != null ? new Date(value) : null;
-    const [localValue, setLocalValue] = useState<Date | null>(dateValue);
+    const precision = mode as CalendarDatePrecision;
+    const dateValue = value != null ? dateValueToDateTime(value, precision) : null;
+    const [localValue, setLocalValue] = useState<DateTime | null>(dateValue);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    // MUI fires picker changes for both popover selection and direct field edits.
-    // We track keyboard-driven edits separately so clearing the text field also
-    // propagates an explicit clear to the parent instead of only mutating local picker state.
+    // MUI uses the same change callback for direct text edits and popover selection.
+    // Text edits follow debounce/blur settings; popover selections are committed on accept.
     const lastInputWasTypingRef = useRef(false);
-    const lastPickerValueRef = useRef<Date | null>(dateValue);
 
     useEffect(() => {
-        const parsed = value ? new Date(value) : null;
+        const parsed = value != null ? dateValueToDateTime(value, precision) : null;
         setLocalValue(parsed);
-        lastPickerValueRef.current = parsed;
-    }, [value]);
+    }, [precision, value]);
 
     useEffect(() => {
         return () => {
@@ -83,47 +70,35 @@ export function DateFieldComponent({
     }, []);
 
     const computedLabel = useMemo(() => {
-        let computedLabel = label;
-        if (required) {
-            if (computedLabel) {
-                computedLabel += ' *';
-            } else {
-                computedLabel = '*';
-            }
+        if (!required) {
+            return label;
         }
-        return computedLabel;
-    }, [label, mode, required]);
 
-    const format = useMemo(() => formatMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
-    const views = useMemo(() => viewsMap[mode ?? DateFieldComponentModelMode.Day], [mode]);
-    const opensTo = useMemo(() => mode ?? 'day', [mode]);
-    const helper = useMemo(() => hideHelperText ? undefined : error != null ? error : hint, [error, hideHelperText, hint]);
+        return label ? `${label} *` : '*';
+    }, [label, required]);
 
-    const triggerChange = (date: Date | null) => {
+    const format = formatMap[mode];
+    const views = viewsMap[mode];
+    const helper = hideHelperText ? undefined : error ?? hint;
+
+    const triggerChange = (date: DateTime | null) => {
         if (date === null) {
             onChange(null);
             onBlur?.(null);
             return;
         }
 
-        if (date instanceof Date && !isNaN(date.getTime())) {
-            const iso = normalizeDateForMode(date, mode ?? DateFieldComponentModelMode.Day).toISOString();
-            onChange(iso);
-            onBlur?.(iso);
+        const dateIso = dateTimeToDateValueIso(date, precision);
+        if (dateIso !== null) {
+            onChange(dateIso);
+            onBlur?.(dateIso);
         }
     };
 
-    const handleChange = (newDate: Date | null) => {
+    const handleChange = (newDate: DateTime | null) => {
         setLocalValue(newDate);
-        lastPickerValueRef.current = newDate;
 
-        // Popover interactions are committed on close. Text input changes must be
-        // forwarded immediately (or via blur/debounce) so manual clearing is persisted.
-        if (!lastInputWasTypingRef.current) {
-            return;
-        }
-
-        if (bufferInputUntilBlur) {
+        if (!lastInputWasTypingRef.current || bufferInputUntilBlur) {
             return;
         }
 
@@ -139,8 +114,10 @@ export function DateFieldComponent({
         }
     };
 
-    const handleAccept = (acceptedDate: Date | null) => {
-        //triggerChange(acceptedDate);
+    const handlePickerChange = (newDate: unknown) => {
+        if (newDate === null || DateTime.isDateTime(newDate)) {
+            handleChange(newDate);
+        }
     };
 
     const handleBlur = () => {
@@ -149,14 +126,23 @@ export function DateFieldComponent({
         }
     };
 
-    const handleClose = () => {
-        if (lastInputWasTypingRef.current) return;
+    const handleAccept = (acceptedDate: unknown) => {
+        if (lastInputWasTypingRef.current) {
+            return;
+        }
 
-        const currentIso = value ?? null;
-        const pickedIso = lastPickerValueRef.current?.toISOString() ?? null;
+        const pickedDate = acceptedDate === null || DateTime.isDateTime(acceptedDate)
+            ? acceptedDate
+            : null;
+        const currentIso = value != null
+            ? dateTimeToDateValueIso(dateValueToDateTime(value, precision) ?? DateTime.invalid('invalid'), precision)
+            : null;
+        const pickedIso = pickedDate != null
+            ? dateTimeToDateValueIso(pickedDate, precision)
+            : null;
 
         if (currentIso !== pickedIso) {
-            triggerChange(lastPickerValueRef.current);
+            triggerChange(pickedDate);
         }
     };
 
@@ -176,7 +162,7 @@ export function DateFieldComponent({
 
     const slotProps = {
         textField: {
-            variant: 'outlined',
+            variant: 'outlined' as const,
             error: error != null,
             helperText: helper,
             autoComplete: autocomplete,
@@ -198,38 +184,33 @@ export function DateFieldComponent({
                             : renderIconButton(endAction)}
                     </InputAdornment>
                 ),
-            }
+            },
         },
         actionBar: {
-            actions: ['accept', 'cancel', 'clear'],
+            actions: ['accept', 'cancel', 'clear'] as Array<'accept' | 'cancel' | 'clear'>,
         },
     };
 
     return (
         <LocalizationProvider
-            dateAdapter={AdapterDateFns}
-            adapterLocale={deLocale}
+            dateAdapter={GoverAdapterLuxon}
+            adapterLocale="de"
         >
             <DatePicker
                 label={computedLabel}
-
-                minDate={minDate}
-                maxDate={maxDate}
-
+                // Calendar dates are zone-free. UTC is only a stable MUI carrier that
+                // prevents the browser timezone from moving the selected calendar day.
+                timezone="UTC"
+                minDate={minDate != null ? dateValueToDateTime(minDate, 'day') ?? undefined : undefined}
+                maxDate={maxDate != null ? dateValueToDateTime(maxDate, 'day') ?? undefined : undefined}
                 views={views}
-                openTo={opensTo}
-                // @ts-ignore
+                openTo={mode}
                 format={format}
                 value={localValue}
-
                 onOpen={handleOpen}
-                onChange={handleChange}
+                onChange={handlePickerChange}
                 onAccept={handleAccept}
-                onClose={handleClose}
-
                 disabled={disabled}
-
-                // @ts-ignore
                 slotProps={slotProps}
                 sx={{
                     ...sx,

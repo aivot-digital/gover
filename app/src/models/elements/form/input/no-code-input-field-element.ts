@@ -13,6 +13,7 @@ export enum NoCodeInputFieldReturnType {
     BOOLEAN = 'BOOLEAN',
     DATE = 'DATE',
     DATETIME = 'DATETIME',
+    TIME = 'TIME',
 }
 
 export interface NoCodeInputFieldElementItem {

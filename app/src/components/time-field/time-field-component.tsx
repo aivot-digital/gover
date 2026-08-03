@@ -1,18 +1,23 @@
+import {InputAdornment, SxProps, Theme} from '@mui/material';
 import {LocalizationProvider, TimePicker} from '@mui/x-date-pickers';
-import {AdapterDateFns} from '@mui/x-date-pickers/AdapterDateFns';
-import {de} from 'date-fns/locale/de';
-import React, {useEffect, useRef, useState} from 'react';
-import {SxProps, Theme} from '@mui/material';
-import type {Locale} from 'date-fns';
+import {DateTime} from 'luxon';
+import React, {ReactNode, useEffect, useRef, useState} from 'react';
 import {TimeFieldComponentModelMode} from '../../models/elements/form/input/time-field-element';
-
-const deLocale = de as unknown as Locale;
+import {GoverAdapterLuxon} from '../../utils/gover-adapter-luxon';
+import {
+    dateTimeToLocalTimeIso,
+    localTimeIsoToDateTime,
+    TemporalPrecision,
+} from '../../utils/temporal-utils';
+import {LocalTimeIso} from '../../utils/temporal-types';
+import {EndAction} from '../text-field/text-field-component-props';
+import {renderIconButton} from '../text-field/text-field-component';
 
 interface TimeFieldComponentProps {
     label: string;
     value?: string | null;
-    onChange: (value: string | null) => void;
-    onBlur?: (val: string | null) => void;
+    onChange: (value: LocalTimeIso | null) => void;
+    onBlur?: (val: LocalTimeIso | null) => void;
     autocomplete?: string;
     hint?: string;
     hideHelperText?: boolean;
@@ -24,35 +29,23 @@ interface TimeFieldComponentProps {
     bufferInputUntilBlur?: boolean;
     debounce?: number;
     mode?: TimeFieldComponentModelMode;
-}
-
-function normalizeTimeForMode(date: Date, mode: TimeFieldComponentModelMode): Date {
-    const normalized = new Date(date);
-
-    if (mode === TimeFieldComponentModelMode.Second) {
-        normalized.setMilliseconds(0);
-    } else {
-        normalized.setSeconds(0, 0);
-    }
-
-    return normalized;
+    endAction?: EndAction | EndAction[];
+    startIcon?: ReactNode;
 }
 
 export function TimeFieldComponent(props: TimeFieldComponentProps) {
     const mode = props.mode ?? TimeFieldComponentModelMode.Minute;
-    const dateValue = props.value ? new Date(props.value) : null;
-    const [localValue, setLocalValue] = useState<Date | null>(dateValue);
+    const precision = mode as TemporalPrecision;
+    const dateValue = props.value != null ? localTimeIsoToDateTime(props.value) : null;
+    const [localValue, setLocalValue] = useState<DateTime | null>(dateValue);
     const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    // MUI fires picker changes for both popover selection and direct field edits.
-    // We track keyboard-driven edits separately so clearing the text field also
-    // propagates an explicit clear to the parent instead of only mutating local picker state.
+    // MUI uses the same change callback for direct text edits and popover selection.
+    // Text edits follow debounce/blur settings; popover selections are committed on accept.
     const lastInputWasTypingRef = useRef(false);
-    const lastPickerValueRef = useRef<Date | null>(dateValue);
 
     useEffect(() => {
-        const parsed = props.value ? new Date(props.value) : null;
+        const parsed = props.value != null ? localTimeIsoToDateTime(props.value) : null;
         setLocalValue(parsed);
-        lastPickerValueRef.current = parsed;
     }, [props.value]);
 
     useEffect(() => {
@@ -63,29 +56,26 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         };
     }, []);
 
-    const triggerChange = (date: Date | null) => {
+    const triggerChange = (date: DateTime | null) => {
         if (date === null) {
             props.onChange(null);
             props.onBlur?.(null);
             return;
         }
 
-        if (date instanceof Date && !isNaN(date.getTime())) {
-            const iso = normalizeTimeForMode(date, mode).toISOString();
-            props.onChange(iso);
-            props.onBlur?.(iso);
+        const timeIso = dateTimeToLocalTimeIso(date, precision);
+        if (timeIso !== null) {
+            props.onChange(timeIso);
+            props.onBlur?.(timeIso);
         }
     };
 
-    const handleChange = (newDate: Date | null) => {
+    const handleChange = (newDate: DateTime | null) => {
         setLocalValue(newDate);
-        lastPickerValueRef.current = newDate;
 
-        // Popover interactions are committed on close. Text input changes must be
-        // forwarded immediately (or via blur/debounce) so manual clearing is persisted.
-        if (!lastInputWasTypingRef.current) return;
-
-        if (props.bufferInputUntilBlur) return;
+        if (!lastInputWasTypingRef.current || props.bufferInputUntilBlur) {
+            return;
+        }
 
         if (props.debounce) {
             if (debounceTimeoutRef.current) {
@@ -99,18 +89,29 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
         }
     };
 
-    const handleAccept = () => {
-        //triggerChange(lastPickerValueRef.current);
+    const handlePickerChange = (newDate: unknown) => {
+        if (newDate === null || DateTime.isDateTime(newDate)) {
+            handleChange(newDate);
+        }
     };
 
-    const handleClose = () => {
-        if (lastInputWasTypingRef.current) return;
+    const handleAccept = (acceptedDate: unknown) => {
+        if (lastInputWasTypingRef.current) {
+            return;
+        }
 
-        const currentIso = props.value ?? null;
-        const pickedIso = lastPickerValueRef.current?.toISOString() ?? null;
+        const pickedDate = acceptedDate === null || DateTime.isDateTime(acceptedDate)
+            ? acceptedDate
+            : null;
+        const currentIso = props.value != null
+            ? dateTimeToLocalTimeIso(localTimeIsoToDateTime(props.value) ?? DateTime.invalid('invalid'), precision)
+            : null;
+        const pickedIso = pickedDate != null
+            ? dateTimeToLocalTimeIso(pickedDate, precision)
+            : null;
 
         if (currentIso !== pickedIso) {
-            triggerChange(lastPickerValueRef.current);
+            triggerChange(pickedDate);
         }
     };
 
@@ -136,17 +137,20 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
 
     return (
         <LocalizationProvider
-            dateAdapter={AdapterDateFns}
-            adapterLocale={deLocale}
+            dateAdapter={GoverAdapterLuxon}
+            adapterLocale="de"
         >
             <TimePicker
+                ampm={false}
+                // Floating times are zone-free. UTC is only a stable MUI carrier that
+                // prevents DST or the browser timezone from changing their clock fields.
+                timezone="UTC"
                 format={mode === TimeFieldComponentModelMode.Second ? "HH:mm:ss 'Uhr'" : "HH:mm 'Uhr'"}
                 views={mode === TimeFieldComponentModelMode.Second ? ['hours', 'minutes', 'seconds'] : ['hours', 'minutes']}
                 label={`${props.label}${props.required ? ' *' : ''}`}
                 value={localValue}
-                onChange={handleChange}
+                onChange={handlePickerChange}
                 onAccept={handleAccept}
-                onClose={handleClose}
                 onOpen={handleOpen}
                 disabled={props.disabled}
                 readOnly={props.busy}
@@ -154,7 +158,7 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                     textField: {
                         variant: 'outlined',
                         error: props.error != null,
-                        helperText: props.hideHelperText ? undefined : props.error != null ? props.error : props.hint,
+                        helperText: props.hideHelperText ? undefined : props.error ?? props.hint,
                         InputLabelProps: {
                             title: props.label,
                         },
@@ -163,6 +167,18 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                         onKeyDown: handleKeyDown,
                         onPaste: handleInputChange,
                         onBlur: handleBlur,
+                        InputProps: {
+                            startAdornment: props.startIcon && (
+                                <InputAdornment position="start">{props.startIcon}</InputAdornment>
+                            ),
+                            endAdornment: props.endAction && (
+                                <InputAdornment position="end">
+                                    {Array.isArray(props.endAction)
+                                        ? props.endAction.map(renderIconButton)
+                                        : renderIconButton(props.endAction)}
+                                </InputAdornment>
+                            ),
+                        },
                     },
                     actionBar: {
                         actions: ['accept', 'cancel', 'clear'],
@@ -170,9 +186,9 @@ export function TimeFieldComponent(props: TimeFieldComponentProps) {
                 }}
                 sx={{
                     ...props.sx,
-                    "& .MuiPickersInputBase-root": {
-                        backgroundColor: (props.busy || props.disabled) ? "#F8F8F8" : undefined,
-                        cursor: (props.busy || props.disabled) ? "not-allowed" : undefined,
+                    '& .MuiPickersInputBase-root': {
+                        backgroundColor: (props.busy || props.disabled) ? '#F8F8F8' : undefined,
+                        cursor: (props.busy || props.disabled) ? 'not-allowed' : undefined,
                     },
                 }}
             />

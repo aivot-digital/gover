@@ -1,9 +1,7 @@
 import {ConditionOperator} from '../data/condition-operator';
 import {BaseEvaluator} from './base-evaluator';
 import {isStringNotNullOrEmpty, isStringNullOrEmpty} from '../utils/string-utils';
-import {isValid, parseISO} from 'date-fns';
-
-const timeRegex = /^\d\d:\d\d$/;
+import {isLocalTimeIso} from '../utils/temporal-utils';
 
 function transformValue(val: any): number | null {
     if (val == null) {
@@ -13,39 +11,24 @@ function transformValue(val: any): number | null {
         return null;
     }
 
-    let h: number | null = null;
-    let m: number | null = null;
-
-    const timeIso = parseISO(val);
-    if (isValid(timeIso)) {
-        h = timeIso.getHours();
-        m = timeIso.getMinutes();
-    } else {
-        if (!val.match(timeRegex)) {
-            return null;
-        }
-        const [hStr, mStr] = val.split(':');
-
-        h = parseInt(hStr);
-        if (isNaN(h)) {
-            return null;
-        }
-
-        m = parseInt(mStr);
-        if (isNaN(m)) {
-            return null;
-        }
+    if (!isLocalTimeIso(val)) {
+        return null;
     }
 
-    return (h % 24) * 60 + (m % 60);
+    const [hour, minute, second = 0] = val.split(':').map(Number);
+    return hour * 3600 + minute * 60 + second;
 }
 
 export const TimeEvaluator: BaseEvaluator<string> = {
     [ConditionOperator.Equals]: (valueA, valueB) => {
-        return transformValue(valueA) === transformValue(valueB);
+        const tValA = transformValue(valueA);
+        const tValB = transformValue(valueB);
+        return tValA != null && tValB != null && tValA === tValB;
     },
     [ConditionOperator.NotEquals]: (valueA, valueB) => {
-        return transformValue(valueA) !== transformValue(valueB);
+        const tValA = transformValue(valueA);
+        const tValB = transformValue(valueB);
+        return tValA != null && tValB != null && tValA !== tValB;
     },
 
     [ConditionOperator.LessThan]: (valueA, valueB) => {
