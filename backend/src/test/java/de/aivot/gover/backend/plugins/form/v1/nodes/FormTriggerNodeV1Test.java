@@ -1,11 +1,10 @@
 package de.aivot.gover.backend.plugins.form.v1.nodes;
 
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.models.config.GoverConfig;
-import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerConfigV1;
-import de.aivot.gover.backend.plugins.form.v1.nodes.FormTriggerNodeV1;
 import de.aivot.gover.backend.process.entities.ProcessEntity;
 import de.aivot.gover.backend.process.entities.ProcessNodeEntity;
 import de.aivot.gover.backend.process.entities.ProcessVersionEntity;
@@ -22,6 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -81,6 +81,19 @@ class FormTriggerNodeV1Test {
 
         assertEquals(true, slugField.getCopyable());
         assertEquals("https://example.test/form/antrag-prozess/{value}/", slugField.getCopyValueTemplate());
+    }
+
+    @Test
+    void getConfigurationLayout_ShouldExposePaymentConfigBelowIdentityConfig() throws Exception {
+        var publicUrlService = new PublicUrlService(goverConfig());
+        var node = new FormTriggerNodeV1(publicUrlService, processNodeRepository);
+
+        var layout = node.getConfigurationLayout(configurationLayoutContext());
+        var children = layout.getChildren();
+
+        assertEquals(FormTriggerConfigV1.IDENTITIES, children.get(2).getId());
+        assertEquals(FormTriggerConfigV1.PAYMENT, children.get(3).getId());
+        assertTrue(layout.findChild(FormTriggerConfigV1.PAYMENT, PaymentConfigElement.class).isPresent());
     }
 
     @Test
@@ -153,6 +166,19 @@ class FormTriggerNodeV1Test {
         assertEquals(2, errors.size());
         assertTrue(errors.containsKey(FormTriggerConfigV1.FORM_SLUG));
         assertTrue(errors.containsKey(FormTriggerConfigV1.FORM_LAYOUT));
+    }
+
+    @Test
+    void cleanConfigurationForExport_ShouldRemoveSystemLocalIdentityAndPaymentConfiguration() {
+        var configuration = new AuthoredElementValues();
+        configuration.put(FormTriggerConfigV1.FORM_LAYOUT, validFormLayout());
+        configuration.put(FormTriggerConfigV1.IDENTITIES, List.of(Map.of("id", "identity")));
+        configuration.put(FormTriggerConfigV1.PAYMENT, Map.of("paymentProviderKey", UUID.randomUUID()));
+
+        var cleaned = node.cleanConfigurationForExport(configuration);
+
+        assertFalse(cleaned.containsKey(FormTriggerConfigV1.IDENTITIES));
+        assertFalse(cleaned.containsKey(FormTriggerConfigV1.PAYMENT));
     }
 
     private static FormTriggerConfigV1 configuration(String formSlug, FormLayoutElement formLayout) {

@@ -4,6 +4,7 @@ import de.aivot.gover.backend.elements.annotations.ElementPOJOBindingProperty;
 import de.aivot.gover.backend.elements.annotations.InputElementPOJOBinding;
 import de.aivot.gover.backend.elements.annotations.LayoutElementPOJOBinding;
 import de.aivot.gover.backend.elements.models.elements.form.input.IdentityConfigElementSlot;
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElementValue;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.enums.ElementType;
 
@@ -35,4 +36,12 @@ public class FormTriggerConfigV1 {
             @ElementPOJOBindingProperty(key = "required", boolValue = false)
     })
     public List<IdentityConfigElementSlot> identities;
+
+    public static final String PAYMENT = "payment";
+    @InputElementPOJOBinding(id = PAYMENT, type = ElementType.PaymentConfig, properties = {
+            @ElementPOJOBindingProperty(key = "label", strValue = "Zahlung"),
+            @ElementPOJOBindingProperty(key = "hint", strValue = ""),
+            @ElementPOJOBindingProperty(key = "required", boolValue = false)
+    })
+    public PaymentConfigElementValue payment;
 }

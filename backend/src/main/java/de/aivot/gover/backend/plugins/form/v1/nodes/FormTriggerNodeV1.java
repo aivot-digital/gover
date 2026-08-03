@@ -319,6 +319,9 @@ public class FormTriggerNodeV1 implements ProcessNodeDefinition<FormTriggerConfi
         // Clean the identities for they are not the same on every system.
         configuration.remove(FormTriggerConfigV1.IDENTITIES);
 
+        // Clean the payment configuration because payment providers are system specific.
+        configuration.remove(FormTriggerConfigV1.PAYMENT);
+
         // Return the cleaned config.
         return configuration;
     }
