@@ -7,6 +7,8 @@ import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.plugins.core.v1.javascript.CodeListJavascriptV1;
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -58,8 +60,14 @@ class CodeListJavascriptPluginTest {
             assertEquals(123, values.get(2));
             assertEquals("11000000", values.get(3));
             assertEquals("Berlin", values.get(4));
-            assertEquals(CREATED.toString(), values.get(5));
-            assertEquals(UPDATED.toString(), values.get(6));
+            assertEquals(
+                    IsoTimestampUtils.toOffsetString(CREATED, ApplicationTimeZone.getZoneId()),
+                    values.get(5)
+            );
+            assertEquals(
+                    IsoTimestampUtils.toOffsetString(UPDATED, ApplicationTimeZone.getZoneId()),
+                    values.get(6)
+            );
         } catch (Exception e) {
             fail(e);
         }

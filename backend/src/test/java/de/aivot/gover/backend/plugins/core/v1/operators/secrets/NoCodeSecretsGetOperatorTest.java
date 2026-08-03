@@ -1,5 +1,6 @@
 package de.aivot.gover.backend.plugins.core.v1.operators.secrets;
 
+import de.aivot.gover.backend.core.services.BusinessTime;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
 import de.aivot.gover.backend.plugins.core.v1.operators.CommonOperatorsV1;
 import de.aivot.gover.backend.secrets.entities.SecretEntity;
@@ -7,6 +8,8 @@ import de.aivot.gover.backend.secrets.services.SecretService;
 import de.aivot.gover.backend.user.repositories.UserRepository;
 import org.junit.jupiter.api.Test;
 
+import java.time.Clock;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
@@ -82,7 +85,11 @@ class NoCodeSecretsGetOperatorTest {
     void shouldBeRegisteredInCommonOperators() {
         var userRepository = mock(UserRepository.class);
         var secretService = mock(SecretService.class);
-        var operators = new CommonOperatorsV1(userRepository, secretService).getOperators();
+        var operators = new CommonOperatorsV1(
+                userRepository,
+                secretService,
+                new BusinessTime(ZoneId.of("Europe/Berlin"), Clock.systemUTC())
+        ).getOperators();
 
         assertTrue(Arrays
                 .stream(operators)

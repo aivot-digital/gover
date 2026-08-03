@@ -397,7 +397,7 @@ class DataChangeActionNodeV1Test {
     @Test
     void onEventFromStaffTaskView_CompleteKeepsEquivalentTemporalValuesStable() throws Exception {
         var processData = Map.<String, Object>of(
-                "date", "2026-05-09T00:00:00+02:00",
+                "date", "2026-05-09",
                 "datetime", "2021-02-07T12:15:00+01:00"
         );
 
@@ -418,7 +418,7 @@ class DataChangeActionNodeV1Test {
                         currentProcessData(processData)
                 ),
                 authored(
-                        "dateField", "2026-05-08T22:00:00.000Z",
+                        "dateField", "2026-05-09",
                         "dateTimeField", "2021-02-07T11:15:00.000Z"
                 ),
                 "complete"
@@ -430,7 +430,7 @@ class DataChangeActionNodeV1Test {
 
         @SuppressWarnings("unchecked")
         var changedData = (Map<String, Object>) completed.getNodeData().get("data");
-        assertEquals("2026-05-09T00:00:00+02:00", changedData.get("date"));
+        assertEquals("2026-05-09", changedData.get("date"));
         assertEquals("2021-02-07T12:15:00+01:00", changedData.get("datetime"));
         assertFalse(completed.getNodeData().containsKey("diff"));
     }

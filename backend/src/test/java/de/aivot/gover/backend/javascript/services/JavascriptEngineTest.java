@@ -4,6 +4,8 @@ import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.javascript.models.JavascriptCode;
 import de.aivot.gover.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import org.graalvm.polyglot.HostAccess;
 import org.junit.jupiter.api.Test;
@@ -77,11 +79,19 @@ class JavascriptEngineTest {
 
     @Test
     void registerGlobalObject_ConvertsInstantToIsoString() {
+        var timestamp = Instant.parse("2026-04-14T08:30:00Z");
+
         try (var service = new JavascriptEngine(List.of())) {
             var res = service
-                    .registerGlobalObject("test", Map.of("timestamp", Instant.parse("2026-04-14T08:30:00Z")))
+                    .registerGlobalObject("test", Map.of("timestamp", timestamp))
                     .evaluateCode(new JavascriptCode().setCode("test.timestamp;"));
-            assertEquals("2026-04-14T08:30:00Z", res.asString());
+            assertEquals(
+                    IsoTimestampUtils.toOffsetString(
+                            timestamp,
+                            ApplicationTimeZone.getZoneId()
+                    ),
+                    res.asString()
+            );
         } catch (Exception e) {
             fail(e);
         }

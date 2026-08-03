@@ -4,10 +4,9 @@ import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.nocode.enums.NoCodeDataType;
 import de.aivot.gover.backend.nocode.exceptions.NoCodeException;
 import de.aivot.gover.backend.nocode.models.*;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nullable;
 
-import java.time.ZonedDateTime;
+import java.time.LocalDate;
 
 public class NoCodeCreateDateOperator extends NoCodeOperator {
     @Override
@@ -41,7 +40,7 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
                 ```
                 
                 **Ergebnis:** \s
-                Das erstellte Datum ist: `2023-08-15T00:00:00Z`.
+                Das erstellte Datum ist: `2023-08-15`.
                 
                 # Wann verwenden Sie den Operator „Erstelle Datum“?
                 Verwenden Sie **„Erstelle Datum“**, wenn Sie:
@@ -95,18 +94,14 @@ public class NoCodeCreateDateOperator extends NoCodeOperator {
 
     @Override
     public NoCodeResult performEvaluation(DerivedRuntimeElementData data, Object... args) throws NoCodeException {
-        int day = castToNumber(args[0]).intValue();
-        int month = castToNumber(args[1]).intValue();
-        int year = castToNumber(args[2]).intValue();
+        int day = requireInteger(args[0], "Der Tag muss eine ganze Zahl sein.");
+        int month = requireInteger(args[1], "Der Monat muss eine ganze Zahl sein.");
+        int year = requireInteger(args[2], "Das Jahr muss eine ganze Zahl sein.");
 
-        final ZonedDateTime date;
+        final LocalDate date;
         try {
-            date = ZonedDateTime.of(
-                    year, month, day,
-                    0, 0, 0, 0,
-                    ApplicationTimeZone.getZoneId()
-            );
-        } catch (Exception e) {
+            date = LocalDate.of(year, month, day);
+        } catch (java.time.DateTimeException exception) {
             throw new NoCodeException("Ungültiges Datum: " + day + "." + month + "." + year);
         }
 

@@ -7,15 +7,15 @@ import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.enums.TimeType;
 import de.aivot.gover.backend.exceptions.RequiredValidationException;
 import de.aivot.gover.backend.exceptions.ValidationException;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.Objects;
 
-public class TimeRangeInputElement extends BaseInputElement<RangeInputElementValue> implements PrintableElement<RangeInputElementValue> {
+public class TimeRangeInputElement extends BaseInputElement<RangeInputElementValue<LocalTime>> implements PrintableElement<RangeInputElementValue<LocalTime>> {
     @Nullable
     private TimeType mode;
 
@@ -25,12 +25,12 @@ public class TimeRangeInputElement extends BaseInputElement<RangeInputElementVal
 
     @Nullable
     @Override
-    public RangeInputElementValue formatValue(@Nullable Object value) {
-        return _formatValue(value);
+    public RangeInputElementValue<LocalTime> formatValue(@Nullable Object value) {
+        return _formatValue(value, mode);
     }
 
     @Override
-    public void performValidation(@Nullable RangeInputElementValue value) throws ValidationException {
+    public void performValidation(@Nullable RangeInputElementValue<LocalTime> value) throws ValidationException {
         if (value == null || value.isEmpty()) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -55,24 +55,27 @@ public class TimeRangeInputElement extends BaseInputElement<RangeInputElementVal
 
     @Nonnull
     @Override
-    public String toDisplayValue(@Nullable RangeInputElementValue value) {
+    public String toDisplayValue(@Nullable RangeInputElementValue<LocalTime> value) {
         if (value == null || value.isEmpty()) {
             return "Keine Angabe";
         }
 
         var formatter = DateTimeFormatter
-                .ofPattern(mode == TimeType.Second ? "HH:mm:ss" : "HH:mm")
-                .withZone(ApplicationTimeZone.getZoneId());
+                .ofPattern(mode == TimeType.Second ? "HH:mm:ss" : "HH:mm");
 
-        var start = value.getStart() == null ? "Keine Angabe" : value.getStart().format(formatter) + " Uhr";
-        var end = value.getEnd() == null ? "Keine Angabe" : value.getEnd().format(formatter) + " Uhr";
+        var start = value.getStart() == null
+                ? "Keine Angabe"
+                : value.getStart().format(formatter) + " Uhr";
+        var end = value.getEnd() == null
+                ? "Keine Angabe"
+                : value.getEnd().format(formatter) + " Uhr";
         return start + " bis " + end;
     }
 
     @Nonnull
     @Override
     public Boolean evaluate(ConditionOperator operator, Object referencedValue, Object comparedValue) {
-        var valA = _formatValue(referencedValue);
+        var valA = _formatValue(referencedValue, mode);
         if (valA == null || valA.isEmpty()) {
             return operator == ConditionOperator.Empty;
         }
@@ -81,7 +84,7 @@ public class TimeRangeInputElement extends BaseInputElement<RangeInputElementVal
             return true;
         }
 
-        var valB = _formatValue(comparedValue);
+        var valB = _formatValue(comparedValue, mode);
         if (valB == null) {
             return false;
         }
@@ -94,17 +97,25 @@ public class TimeRangeInputElement extends BaseInputElement<RangeInputElementVal
     }
 
     @Nullable
-    public static RangeInputElementValue _formatValue(@Nullable Object value) {
+    public static RangeInputElementValue<LocalTime> _formatValue(
+            @Nullable Object value,
+            @Nullable TimeType mode
+    ) {
+        var formatter = new TimeInputElement().setMode(mode);
+
         switch (value) {
             case null:
                 return null;
-            case RangeInputElementValue val:
-                return val.isEmpty() ? null : val;
+            case RangeInputElementValue<?> val:
+                var normalizedRange = new RangeInputElementValue<>(
+                        formatter.formatValue(val.getStart()),
+                        formatter.formatValue(val.getEnd())
+                );
+                return normalizedRange.isEmpty() ? null : normalizedRange;
             case Map<?, ?> map:
-                var formatter = new TimeInputElement();
                 var start = formatter.formatValue(map.get("start"));
                 var end = formatter.formatValue(map.get("end"));
-                var range = new RangeInputElementValue(start, end);
+                var range = new RangeInputElementValue<>(start, end);
                 return range.isEmpty() ? null : range;
             default:
                 return null;

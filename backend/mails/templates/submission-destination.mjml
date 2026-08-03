@@ -22,7 +22,7 @@
                         <br/>
                         Hinterlegte Schnittstelle: <b th:text="${destination.name}">Beispiel-Schnittstelle</b>
                         <br/>
-                        Antragseingang: <b th:text="${#temporals.format(submission.created, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
+                        Antragseingang: <b th:text="${#numberformat.formatInstant(submission.created, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
                     </p>
 
                     <p>

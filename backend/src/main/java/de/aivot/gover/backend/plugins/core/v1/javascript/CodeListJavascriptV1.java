@@ -7,6 +7,8 @@ import de.aivot.gover.backend.javascript.providers.JavascriptFunctionProvider;
 import de.aivot.gover.backend.javascript.services.JavascriptEngine;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.plugins.core.CorePlugin;
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.graalvm.polyglot.HostAccess;
@@ -135,8 +137,8 @@ public class CodeListJavascriptV1 implements JavascriptFunctionProvider {
         data.put("$id", item.getId());
         data.put("$value", item.getValue());
         data.put("$label", item.getLabel());
-        data.put("$created", item.getCreated().toString());
-        data.put("$updated", item.getUpdated().toString());
+        data.put("$created", IsoTimestampUtils.toOffsetString(item.getCreated(), ApplicationTimeZone.getZoneId()));
+        data.put("$updated", IsoTimestampUtils.toOffsetString(item.getUpdated(), ApplicationTimeZone.getZoneId()));
 
         return data;
     }

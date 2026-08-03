@@ -8,17 +8,19 @@ import de.aivot.gover.backend.enums.TimeType;
 import de.aivot.gover.backend.exceptions.RequiredValidationException;
 import de.aivot.gover.backend.exceptions.ValidationException;
 import de.aivot.gover.backend.utils.ApplicationTimeZone;
-import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
+public class TimeInputElement extends BaseInputElement<LocalTime> implements PrintableElement<LocalTime> {
     @Nullable
     private TimeType mode;
 
@@ -27,24 +29,35 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
     }
 
     @Override
-    public ZonedDateTime formatValue(Object value) {
-        if (value instanceof String sValue) {
-            var dateTimeValue = DateInputElement._formatValue(sValue);
-            if (dateTimeValue != null) {
-                return dateTimeValue;
-            }
+    public LocalTime formatValue(Object value) {
+        var localTime = switch (value) {
+            case null -> null;
+            case LocalTime time -> time;
+            case LocalDateTime dateTime -> dateTime.toLocalTime();
+            case Instant instant -> instant.atZone(ApplicationTimeZone.getZoneId()).toLocalTime();
+            case OffsetDateTime dateTime -> dateTime
+                    .toInstant()
+                    .atZone(ApplicationTimeZone.getZoneId())
+                    .toLocalTime();
+            case ZonedDateTime dateTime -> dateTime
+                    .withZoneSameInstant(ApplicationTimeZone.getZoneId())
+                    .toLocalTime();
+            case String string -> parseLocalTime(string);
+            default -> null;
+        };
 
-            var timeValue = parseLocalTime(sValue);
-            if (timeValue != null) {
-                return ZonedDateTime.of(LocalDate.now(ApplicationTimeZone.getZoneId()), timeValue, ApplicationTimeZone.getZoneId());
-            }
+        if (localTime == null) {
+            return null;
         }
 
-        return DateInputElement._formatValue(value);
+        // Minute precision is an input constraint. Normalize hidden seconds here so
+        // a value can never contain data that the field does not expose to the user.
+        localTime = localTime.withNano(0);
+        return mode == TimeType.Second ? localTime : localTime.withSecond(0);
     }
 
     @Override
-    public void performValidation(@Nullable ZonedDateTime value) throws ValidationException {
+    public void performValidation(@Nullable LocalTime value) throws ValidationException {
         if (value == null) {
             if (Boolean.TRUE.equals(getRequired())) {
                 throw new RequiredValidationException(this);
@@ -53,11 +66,11 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
     }
 
     @Nonnull
-    public String toDisplayValue(@Nullable ZonedDateTime value) {
+    public String toDisplayValue(@Nullable LocalTime value) {
         return value == null ? "Keine Angabe" : value
-                                                        .format(DateTimeFormatter
-                                                                .ofPattern(TimeType.Second == mode ? "HH:mm:ss" : "HH:mm")
-                                                                .withZone(ApplicationTimeZone.getZoneId())) + " Uhr";
+                .format(DateTimeFormatter.ofPattern(
+                        TimeType.Second == mode ? "HH:mm:ss" : "HH:mm"
+                )) + " Uhr";
     }
 
     @Nonnull
@@ -76,138 +89,45 @@ public class TimeInputElement extends BaseInputElement<ZonedDateTime> implements
             return true;
         }
 
-        ZonedDateTime dValA = formatValue(referencedValue);
+        var timeA = formatValue(referencedValue);
 
-        if (dValA == null) {
+        if (timeA == null) {
             return false;
         }
 
-        String sValA = dValA.format(
-                DateTimeFormatter
-                        .ofPattern(TimeType.Second == mode ? "HH:mm:ss" : "HH:mm")
-                        .withZone(ApplicationTimeZone.getZoneId())
-        );
-
-        if (!(comparedValue instanceof String)) {
+        if (!(comparedValue instanceof String sValB)) {
             return false;
         }
 
-        String sValB = (String) comparedValue;
-
-        Integer hourA = getHour(sValA);
-        Integer minuteA = getMinute(sValA);
-        Integer secondA = getSecond(sValA);
-
-        Integer hourB = getHour(sValB);
-        Integer minuteB = getMinute(sValB);
-        Integer secondB = getSecond(sValB);
-
-        if (hourA == null || minuteA == null || secondA == null || hourB == null || minuteB == null || secondB == null) {
+        var timeB = formatValue(sValB);
+        if (timeB == null) {
             return false;
         }
-
-        final boolean hourEquals = hourA.equals(hourB);
-        final boolean minuteEquals = minuteA.equals(minuteB);
-        final boolean secondEquals = secondA.equals(secondB);
-        final boolean compareSeconds = TimeType.Second == mode;
-        final boolean equals = compareSeconds ? (hourEquals && minuteEquals && secondEquals) : (hourEquals && minuteEquals);
 
         return switch (operator) {
-            case Equals -> equals;
-            case NotEquals -> !(equals);
-
-            case LessThan -> compareSeconds
-                    ? hourA.compareTo(hourB) < 0 || (hourEquals && minuteA.compareTo(minuteB) < 0) || (hourEquals && minuteEquals && secondA.compareTo(secondB) < 0)
-                    : hourA.compareTo(hourB) < 0 || (hourEquals && minuteA.compareTo(minuteB) < 0);
-            case LessThanOrEqual -> compareSeconds
-                    ? hourA.compareTo(hourB) <= 0 || (hourEquals && minuteA.compareTo(minuteB) <= 0) || (hourEquals && minuteEquals && secondA.compareTo(secondB) <= 0)
-                    : hourA.compareTo(hourB) <= 0 || (hourEquals && minuteA.compareTo(minuteB) <= 0);
-
-            case GreaterThan -> compareSeconds
-                    ? hourA.compareTo(hourB) > 0 || (hourEquals && minuteA.compareTo(minuteB) > 0) || (hourEquals && minuteEquals && secondA.compareTo(secondB) > 0)
-                    : hourA.compareTo(hourB) > 0 || (hourEquals && minuteA.compareTo(minuteB) > 0);
-            case GreaterThanOrEqual -> compareSeconds
-                    ? hourA.compareTo(hourB) >= 0 || (hourEquals && minuteA.compareTo(minuteB) >= 0) || (hourEquals && minuteEquals && secondA.compareTo(secondB) >= 0)
-                    : hourA.compareTo(hourB) >= 0 || (hourEquals && minuteA.compareTo(minuteB) >= 0);
-
+            case Equals -> timeA.equals(timeB);
+            case NotEquals -> !timeA.equals(timeB);
+            case LessThan -> timeA.isBefore(timeB);
+            case LessThanOrEqual -> timeA.compareTo(timeB) <= 0;
+            case GreaterThan -> timeA.isAfter(timeB);
+            case GreaterThanOrEqual -> timeA.compareTo(timeB) >= 0;
             default -> false;
         };
     }
 
-    private static final Pattern hhMmPattern = Pattern.compile("^\\d\\d:\\d\\d$");
-    private static final Pattern hhMmSsPattern = Pattern.compile("^\\d\\d:\\d\\d:\\d\\d$");
-
-    private Integer getHour(String value) {
-        if (hhMmPattern.matcher(value).matches() || hhMmSsPattern.matcher(value).matches()) {
-            String[] parts = value.split(":");
-            return Integer.parseInt(parts[0]);
-        } else {
-            ZonedDateTime d = parseIsoDate(value);
-            if (d != null) {
-                return d.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getHour();
-            }
-            return null;
-        }
-    }
-
-    private Integer getMinute(String value) {
-        if (hhMmPattern.matcher(value).matches() || hhMmSsPattern.matcher(value).matches()) {
-            String[] parts = value.split(":");
-            return Integer.parseInt(parts[1]);
-        } else {
-            ZonedDateTime d = parseIsoDate(value);
-            if (d != null) {
-                return d.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getMinute();
-            }
-            return null;
-        }
-    }
-
-    private Integer getSecond(String value) {
-        if (hhMmPattern.matcher(value).matches()) {
-            return 0;
-        }
-
-        if (hhMmSsPattern.matcher(value).matches()) {
-            String[] parts = value.split(":");
-            return Integer.parseInt(parts[2]);
-        }
-
-        ZonedDateTime d = parseIsoDate(value);
-        if (d != null) {
-            return d.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getSecond();
-        }
-        return null;
-    }
-
-    private ZonedDateTime parseIsoDate(String value) {
-        if (value == null) {
-            return null;
-        }
-
-        try {
-            return IsoTimestampUtils.parseIsoTimestamp(value, ApplicationTimeZone.getZoneId()).atZone(ApplicationTimeZone.getZoneId());
-        } catch (DateTimeParseException ex) {
-            return null;
-        }
-    }
+    private static final Pattern localTimePattern = Pattern.compile("^(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d)?$");
 
     @Nullable
-    private LocalTime parseLocalTime(@Nullable String value) {
+    private static LocalTime parseLocalTime(@Nullable String value) {
         if (value == null) {
             return null;
         }
 
-        try {
-            return LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm:ss"));
-        } catch (DateTimeParseException ignored) {
-        }
-
-        try {
-            return LocalTime.parse(value, DateTimeFormatter.ofPattern("HH:mm"));
-        } catch (DateTimeParseException ignored) {
+        if (!localTimePattern.matcher(value).matches()) {
             return null;
         }
+
+        return LocalTime.parse(value);
     }
 
     @Override

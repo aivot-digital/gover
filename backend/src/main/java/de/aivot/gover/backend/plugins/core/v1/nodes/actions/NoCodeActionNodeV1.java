@@ -32,8 +32,9 @@ import de.aivot.gover.backend.process.models.executionResult.ProcessNodeExecutio
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeDefinitionConfigurationLayoutContext;
 import de.aivot.gover.backend.process.models.processContext.ProcessNodeExecutionInitContext;
 import de.aivot.gover.backend.utils.ApplicationTimeZone;
-import de.aivot.gover.backend.utils.StringUtils;
+import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import de.aivot.gover.backend.utils.MapUtils;
+import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -42,9 +43,13 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.Year;
+import java.time.YearMonth;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
-
-import de.aivot.gover.backend.utils.IsoTimestampUtils;
 
 @Component
 public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNodeV1.NoCodeActionNodeConfiguration> {
@@ -65,7 +70,10 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     private static final String TARGET_TYPE_NUMBER = "number";
     private static final String TARGET_TYPE_BOOLEAN = "boolean";
     private static final String TARGET_TYPE_DATE = "date";
+    private static final String TARGET_TYPE_TIME = "time";
     private static final String TARGET_TYPE_DATETIME = "datetime";
+    private static final DateTimeFormatter LOCAL_TIME_SECONDS_FORMATTER =
+            DateTimeFormatter.ofPattern("HH:mm:ss");
 
     private final NoCodeEvaluationService noCodeEvaluationService;
 
@@ -132,6 +140,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                             SelectInputElementOption.of(TARGET_TYPE_NUMBER, "Zahl"),
                             SelectInputElementOption.of(TARGET_TYPE_BOOLEAN, "Ja/Nein"),
                             SelectInputElementOption.of(TARGET_TYPE_DATE, "Datum"),
+                            SelectInputElementOption.of(TARGET_TYPE_TIME, "Uhrzeit"),
                             SelectInputElementOption.of(TARGET_TYPE_DATETIME, "Datum und Uhrzeit")
                     ));
                 });
@@ -521,6 +530,7 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                         TARGET_TYPE_NUMBER.equals(targetType) ||
                         TARGET_TYPE_BOOLEAN.equals(targetType) ||
                         TARGET_TYPE_DATE.equals(targetType) ||
+                        TARGET_TYPE_TIME.equals(targetType) ||
                         TARGET_TYPE_DATETIME.equals(targetType)
         ) {
             return;
@@ -542,10 +552,11 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
         try {
             return switch (targetType) {
-                case TARGET_TYPE_STRING -> String.valueOf(value);
+                case TARGET_TYPE_STRING -> castToString(value);
                 case TARGET_TYPE_NUMBER -> castToNumber(value);
                 case TARGET_TYPE_BOOLEAN -> castToBoolean(value);
                 case TARGET_TYPE_DATE -> castToDate(value);
+                case TARGET_TYPE_TIME -> castToTime(value);
                 case TARGET_TYPE_DATETIME -> castToDateTime(value);
                 default -> value;
             };
@@ -615,12 +626,100 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
     }
 
     @Nonnull
+    private static String castToString(
+            Object value
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        if (value instanceof Instant instant) {
+            return IsoTimestampUtils.toOffsetString(instant, ApplicationTimeZone.getZoneId());
+        }
+        if (value instanceof OffsetDateTime dateTime) {
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
+        }
+        if (value instanceof ZonedDateTime dateTime) {
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
+        }
+        if (value instanceof LocalDateTime dateTime) {
+            return IsoTimestampUtils.toOffsetString(
+                    resolveLocalDateTime(dateTime),
+                    ApplicationTimeZone.getZoneId()
+            );
+        }
+        if (value instanceof LocalTime time) {
+            return formatLocalTime(time);
+        }
+        return String.valueOf(value);
+    }
+
+    @Nonnull
+    private static String castToTime(Object value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        if (value instanceof LocalTime time) {
+            return formatLocalTime(time);
+        }
+        if (value instanceof LocalDateTime dateTime) {
+            return formatLocalTime(dateTime.toLocalTime());
+        }
+        if (value instanceof Instant instant) {
+            return formatLocalTime(
+                    instant.atZone(ApplicationTimeZone.getZoneId()).toLocalTime()
+            );
+        }
+        if (value instanceof OffsetDateTime dateTime) {
+            return formatLocalTime(
+                    dateTime.toInstant()
+                            .atZone(ApplicationTimeZone.getZoneId())
+                            .toLocalTime()
+            );
+        }
+        if (value instanceof ZonedDateTime dateTime) {
+            return formatLocalTime(
+                    dateTime.toInstant()
+                            .atZone(ApplicationTimeZone.getZoneId())
+                            .toLocalTime()
+            );
+        }
+        if (value instanceof String stringValue) {
+            var trimmed = stringValue.trim();
+            if (trimmed.matches("^\\d{2}:\\d{2}(?::\\d{2})?$")) {
+                try {
+                    return formatLocalTime(LocalTime.parse(trimmed));
+                } catch (Exception ignored) {
+                    // Fall through to the configuration error below.
+                }
+            }
+        }
+
+        throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                "Der Typ %s kann nicht als Uhrzeit umgewandelt werden.",
+                StringUtils.quote(value.getClass().getSimpleName())
+        );
+    }
+
+    @Nonnull
+    private static String formatLocalTime(@Nonnull LocalTime value) {
+        // LocalTime.toString() omits zero seconds. Process data uses the canonical
+        // HH:mm:ss form regardless of the precision of the originating input control.
+        return value.withNano(0).format(LOCAL_TIME_SECONDS_FORMATTER);
+    }
+
+    @Nonnull
     private static String castToDate(Object value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
         if (value instanceof LocalDate date) {
             return date.toString();
         }
+        if (value instanceof YearMonth yearMonth) {
+            return yearMonth.toString();
+        }
+        if (value instanceof Year year) {
+            return year.toString();
+        }
         if (value instanceof Instant instant) {
             return instant.atZone(ApplicationTimeZone.getZoneId()).toLocalDate().toString();
+        }
+        if (value instanceof OffsetDateTime dateTime) {
+            return dateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalDate().toString();
+        }
+        if (value instanceof ZonedDateTime dateTime) {
+            return dateTime.toInstant().atZone(ApplicationTimeZone.getZoneId()).toLocalDate().toString();
         }
         if (value instanceof LocalDateTime dateTime) {
             return dateTime.toLocalDate().toString();
@@ -637,16 +736,24 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 return LocalDate.parse(trimmed).toString();
             } catch (Exception ignored) {
                 try {
-                    return IsoTimestampUtils
-                            .parseIsoTimestamp(trimmed, ApplicationTimeZone.getZoneId())
-                            .atZone(ApplicationTimeZone.getZoneId())
-                            .toLocalDate()
-                            .toString();
-                } catch (Exception ignored2) {
-                    throw new ProcessNodeExecutionExceptionInvalidConfiguration(
-                            "Die Zeichenkette %s kann nicht als Datum umgewandelt werden.",
-                            StringUtils.quote(s)
-                    );
+                    return YearMonth.parse(trimmed).toString();
+                } catch (Exception ignoredMonth) {
+                    try {
+                        return Year.parse(trimmed).toString();
+                    } catch (Exception ignoredYear) {
+                        try {
+                            return IsoTimestampUtils
+                                    .parseIsoInstant(trimmed)
+                                    .atZone(ApplicationTimeZone.getZoneId())
+                                    .toLocalDate()
+                                    .toString();
+                        } catch (Exception ignoredInstant) {
+                            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                                    "Die Zeichenkette %s kann nicht als Datum umgewandelt werden.",
+                                    StringUtils.quote(s)
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -659,16 +766,26 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
 
     @Nonnull
     private static String castToDateTime(Object value) throws ProcessNodeExecutionExceptionInvalidConfiguration {
-        // Normalize runtime datetime outputs to UTC ISO-8601 while interpreting local
-        // date/date-time inputs in the configured business timezone.
         if (value instanceof Instant instant) {
-            return instant.toString();
+            return IsoTimestampUtils.toOffsetString(instant, ApplicationTimeZone.getZoneId());
+        }
+        if (value instanceof OffsetDateTime dateTime) {
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
+        }
+        if (value instanceof ZonedDateTime dateTime) {
+            return IsoTimestampUtils.toOffsetString(dateTime.toInstant(), ApplicationTimeZone.getZoneId());
         }
         if (value instanceof LocalDateTime dateTime) {
-            return dateTime.atZone(ApplicationTimeZone.getZoneId()).toInstant().toString();
+            return IsoTimestampUtils.toOffsetString(
+                    resolveLocalDateTime(dateTime),
+                    ApplicationTimeZone.getZoneId()
+            );
         }
         if (value instanceof LocalDate date) {
-            return date.atStartOfDay(ApplicationTimeZone.getZoneId()).toInstant().toString();
+            return IsoTimestampUtils.toOffsetString(
+                    resolveLocalDateTime(date.atStartOfDay()),
+                    ApplicationTimeZone.getZoneId()
+            );
         }
         if (value instanceof String s) {
             var trimmed = s.trim();
@@ -679,10 +796,16 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
             }
 
             try {
-                return IsoTimestampUtils.parseIsoTimestamp(trimmed, ApplicationTimeZone.getZoneId()).toString();
+                return IsoTimestampUtils.toOffsetString(
+                        IsoTimestampUtils.parseIsoInstant(trimmed),
+                        ApplicationTimeZone.getZoneId()
+                );
             } catch (Exception ignored) {
                 try {
-                    return LocalDate.parse(trimmed).atStartOfDay(ApplicationTimeZone.getZoneId()).toInstant().toString();
+                    return IsoTimestampUtils.toOffsetString(
+                            resolveLocalDateTime(LocalDate.parse(trimmed).atStartOfDay()),
+                            ApplicationTimeZone.getZoneId()
+                    );
                 } catch (Exception ignored2) {
                     throw new ProcessNodeExecutionExceptionInvalidConfiguration(
                             "Die Zeichenkette %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
@@ -696,6 +819,26 @@ public class NoCodeActionNodeV1 implements ProcessNodeDefinition<NoCodeActionNod
                 "Der Typ %s kann nicht als Datum und Uhrzeit umgewandelt werden.",
                 StringUtils.quote(value.getClass().getSimpleName())
         );
+    }
+
+    @Nonnull
+    private static Instant resolveLocalDateTime(
+            @Nonnull LocalDateTime value
+    ) throws ProcessNodeExecutionExceptionInvalidConfiguration {
+        var zoneId = ApplicationTimeZone.getZoneId();
+        var validOffsets = zoneId.getRules().getValidOffsets(value);
+        // LocalDateTime.atZone would silently move a nonexistent DST-gap value
+        // forward. Action output must reject it rather than change user-entered fields.
+        if (validOffsets.isEmpty()) {
+            throw new ProcessNodeExecutionExceptionInvalidConfiguration(
+                    "Die lokale Zeit %s existiert in der Zeitzone der Anwendung (%s) nicht.",
+                    StringUtils.quote(value.toString()),
+                    StringUtils.quote(zoneId.getId())
+            );
+        }
+
+        // ZoneRules lists the earlier offset first during a DST overlap.
+        return value.atOffset(validOffsets.getFirst()).toInstant();
     }
 
     private record VariableDefinition(

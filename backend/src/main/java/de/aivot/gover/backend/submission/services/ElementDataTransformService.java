@@ -408,7 +408,12 @@ public class ElementDataTransformService {
             return;
         }
 
-        writePayloadValue(payload, inputElement.getDestinationKey(), effectiveValues.get(inputElement.getId()), replicationIndices);
+        writePayloadValue(
+                payload,
+                inputElement.getDestinationKey(),
+                effectiveValues.get(inputElement.getId()),
+                replicationIndices
+        );
     }
 
     /**

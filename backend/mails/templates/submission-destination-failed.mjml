@@ -25,7 +25,7 @@
                         <br/>
                         Fehlermeldung: <b th:text="${submission.destinationResult}">Beispiel-Fehlermeldung</b>
                         <br/>
-                        Zeitpunkt des Übertragungsfehlers: <b th:text="${#temporals.format(submission.destinationTimestamp, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
+                        Zeitpunkt des Übertragungsfehlers: <b th:text="${#numberformat.formatInstant(submission.destinationTimestamp, 'dd.MM.yyyy HH:mm')}">29.02.2024 11:54:34</b> Uhr
                     </p>
 
                     <p>

@@ -43,6 +43,7 @@ import de.aivot.gover.backend.process.permissions.ProcessPermissionProvider;
 import de.aivot.gover.backend.process.services.AssignmentContextAssigneeResolverService;
 import de.aivot.gover.backend.process.services.TemplateRenderService;
 import de.aivot.gover.backend.submission.services.ElementDataTransformService;
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import de.aivot.gover.backend.utils.StringUtils;
 import jakarta.annotation.Nonnull;
@@ -393,7 +394,10 @@ public class ApprovalActionNodeV1 implements ProcessNodeDefinition<ApprovalActio
         nodeData.put(OUTPUT_DECISION, decision);
         nodeData.put(OUTPUT_REMARK, remarkText);
         nodeData.put(OUTPUT_PROCESSED_BY_USER_ID, context.getCallingUser().getId());
-        nodeData.put(OUTPUT_PROCESSED_AT, IsoTimestampUtils.nowUtc());
+        nodeData.put(
+                OUTPUT_PROCESSED_AT,
+                IsoTimestampUtils.nowWithOffset(ApplicationTimeZone.getZoneId())
+        );
         nodeData.put(OUTPUT_UNMAPPED, effectiveValues);
 
         var result = new ProcessNodeExecutionResultTaskCompleted()

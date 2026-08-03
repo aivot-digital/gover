@@ -5,16 +5,27 @@ import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.BaseFormElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.DateInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.DateTimeInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.RangeInputElementValue;
 import de.aivot.gover.backend.elements.models.elements.form.input.TableInputElement;
 import de.aivot.gover.backend.elements.models.elements.form.input.TextInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.TimeInputElement;
+import de.aivot.gover.backend.elements.models.elements.form.input.TimeRangeInputElement;
 import de.aivot.gover.backend.elements.models.elements.layout.FormLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.GroupLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContainerLayoutElement;
 import de.aivot.gover.backend.elements.models.elements.steps.BaseStepElement;
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
-import de.aivot.gover.backend.submission.services.ElementDataTransformService;
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.YearMonth;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -24,6 +35,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DestinationKeyPayloadServiceTest {
     private final ElementDataTransformService service = new ElementDataTransformService();
+    private ZoneId originalZoneId;
+
+    @BeforeEach
+    void configureApplicationTimeZone() {
+        originalZoneId = ApplicationTimeZone.getZoneId();
+        ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
+    }
+
+    @AfterEach
+    void restoreApplicationTimeZone() {
+        ApplicationTimeZone.configure(originalZoneId);
+    }
 
     @Test
     void shouldBuildPayloadFromDestinationKeys() {
@@ -57,6 +80,57 @@ class DestinationKeyPayloadServiceTest {
                         "person", Map.of(
                                 "first_name", "Ada",
                                 "address", Map.of("street", "Main Street 1")
+                        )
+                ),
+                payload
+        );
+    }
+
+    @Test
+    void shouldSerializeSemanticTemporalValuesWithoutElementSpecificProjection() {
+        var month = new DateInputElement();
+        month.setId("month");
+        month.setDestinationKey("period.month");
+
+        var time = new TimeInputElement();
+        time.setId("time");
+        time.setDestinationKey("period.time");
+
+        var dateTime = new DateTimeInputElement();
+        dateTime.setId("dateTime");
+        dateTime.setDestinationKey("period.date_time");
+
+        var timeRange = new TimeRangeInputElement();
+        timeRange.setId("timeRange");
+        timeRange.setDestinationKey("period.time_range");
+
+        var group = new GroupLayoutElement();
+        group.setChildren(new LinkedList<>(List.of(month, time, dateTime, timeRange)));
+
+        var effectiveValues = new EffectiveElementValues();
+        effectiveValues.put("month", YearMonth.of(2026, 7));
+        effectiveValues.put("time", LocalTime.of(9, 30));
+        effectiveValues.put("dateTime", Instant.parse("2026-07-29T07:00:00Z"));
+        effectiveValues.put(
+                "timeRange",
+                new RangeInputElementValue<>(
+                        LocalTime.of(9, 30),
+                        LocalTime.of(10, 45, 15)
+                )
+        );
+
+        var payload = service.buildPayload(createRoot(group), effectiveValues);
+
+        assertEquals(
+                Map.of(
+                        "period", Map.of(
+                                "month", "2026-07",
+                                "time", "09:30:00",
+                                "date_time", "2026-07-29T09:00:00+02:00",
+                                "time_range", Map.of(
+                                        "start", "09:30:00",
+                                        "end", "10:45:15"
+                                )
                         )
                 ),
                 payload

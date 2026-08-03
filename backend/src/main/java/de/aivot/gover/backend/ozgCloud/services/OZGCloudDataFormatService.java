@@ -15,20 +15,14 @@ import de.aivot.gover.backend.elements.models.elements.layout.ReplicatingContain
 import de.aivot.gover.backend.elements.models.elements.steps.GenericStepElement;
 import de.aivot.gover.backend.enums.TableColumnDataType;
 import de.aivot.gover.backend.ozgCloud.models.OZGCloudFormDataItem;
-import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import jakarta.annotation.Nonnull;
 
-import java.time.format.DateTimeFormatter;
 import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class OZGCloudDataFormatService {
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter
-            .ofPattern("yyyy-MM-dd")
-            .withZone(ApplicationTimeZone.getZoneId());
-
     @Nonnull
     public List<OZGCloudFormDataItem> buildFormData(
             @Nonnull BaseElement currentElement,
@@ -367,7 +361,7 @@ public class OZGCloudDataFormatService {
         }
 
 
-        var displayValue = date.format(DATE_FORMATTER);
+        var displayValue = date.toString();
 
 
         return new OZGCloudFormDataItem(
@@ -817,7 +811,7 @@ public class OZGCloudDataFormatService {
         return new OZGCloudFormDataItem(
                 timeField.getId(),
                 timeField.getLabel(),
-                timeField.toDisplayValue(DateInputElement._formatValue(edo.getValue())),
+                timeField.toDisplayValue(timeField.formatValue(edo.getValue())),
                 null,
                 null,
                 null,

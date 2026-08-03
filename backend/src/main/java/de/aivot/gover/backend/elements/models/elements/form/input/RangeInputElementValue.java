@@ -4,20 +4,23 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.Nullable;
 
 import java.io.Serializable;
-import java.time.ZonedDateTime;
 import java.util.Objects;
 
-public class RangeInputElementValue implements Serializable {
+/**
+ * Holds range boundaries without imposing one temporal representation on every range field.
+ * The owning input element supplies the concrete boundary type.
+ */
+public class RangeInputElementValue<T> implements Serializable {
     @Nullable
-    private ZonedDateTime start;
+    private T start;
 
     @Nullable
-    private ZonedDateTime end;
+    private T end;
 
     public RangeInputElementValue() {
     }
 
-    public RangeInputElementValue(@Nullable ZonedDateTime start, @Nullable ZonedDateTime end) {
+    public RangeInputElementValue(@Nullable T start, @Nullable T end) {
         this.start = start;
         this.end = end;
     }
@@ -30,7 +33,7 @@ public class RangeInputElementValue implements Serializable {
     @Override
     public boolean equals(Object o) {
         if (o == null || getClass() != o.getClass()) return false;
-        RangeInputElementValue that = (RangeInputElementValue) o;
+        RangeInputElementValue<?> that = (RangeInputElementValue<?>) o;
         return Objects.equals(start, that.start) && Objects.equals(end, that.end);
     }
 
@@ -40,21 +43,21 @@ public class RangeInputElementValue implements Serializable {
     }
 
     @Nullable
-    public ZonedDateTime getStart() {
+    public T getStart() {
         return start;
     }
 
-    public RangeInputElementValue setStart(@Nullable ZonedDateTime start) {
+    public RangeInputElementValue<T> setStart(@Nullable T start) {
         this.start = start;
         return this;
     }
 
     @Nullable
-    public ZonedDateTime getEnd() {
+    public T getEnd() {
         return end;
     }
 
-    public RangeInputElementValue setEnd(@Nullable ZonedDateTime end) {
+    public RangeInputElementValue<T> setEnd(@Nullable T end) {
         this.end = end;
         return this;
     }

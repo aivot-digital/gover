@@ -1,12 +1,14 @@
 package de.aivot.gover.backend.core.javascript;
 
+import de.aivot.gover.backend.core.services.BusinessTime;
 import de.aivot.gover.backend.plugins.core.v1.javascript.DateJavascriptV1;
+import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.*;
-import java.util.TimeZone;
+import java.util.Arrays;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,21 +16,18 @@ class CoreDateJavascriptTest {
     private DateJavascriptV1 provider;
     private static final ZoneId TEST_ZONE = ZoneId.of("Europe/Berlin");
     private ZoneId originalZone;
-
-    @BeforeAll
-    static void beforeAll() {
-        TimeZone.setDefault(TimeZone.getTimeZone(TEST_ZONE));
-    }
+    private static final Instant FIXED_NOW = Instant.parse("2026-07-29T07:15:00Z");
 
     @BeforeEach
     void setUp() {
-        provider = new DateJavascriptV1();
-        originalZone = ZoneId.systemDefault();
+        originalZone = ApplicationTimeZone.getZoneId();
+        ApplicationTimeZone.configure(TEST_ZONE);
+        provider = new DateJavascriptV1(new BusinessTime(TEST_ZONE, Clock.fixed(FIXED_NOW, ZoneOffset.UTC)));
     }
 
     @AfterEach
     void tearDown() {
-        TimeZone.setDefault(TimeZone.getTimeZone(originalZone));
+        ApplicationTimeZone.configure(originalZone);
     }
 
     @Test
@@ -38,9 +37,8 @@ class CoreDateJavascriptTest {
 
     @Test
     void testCreateDateNoArg() {
-        ZonedDateTime now = ZonedDateTime.now(TEST_ZONE).toLocalDate().atStartOfDay(TEST_ZONE);
         ZonedDateTime result = provider.createDate();
-        assertEquals(now.toLocalDate(), result.toLocalDate());
+        assertEquals(LocalDate.of(2026, 7, 29), result.toLocalDate());
         assertEquals(TEST_ZONE, result.getZone());
     }
 
@@ -51,19 +49,22 @@ class CoreDateJavascriptTest {
 
     @Test
     void testCreateDateZonedDateTime() {
-        ZonedDateTime zdt = ZonedDateTime.of(2020, 2, 29, 12, 0, 0, 0, TEST_ZONE);
-        assertEquals(zdt, provider.createDate(zdt));
+        ZonedDateTime utc = ZonedDateTime.of(2020, 2, 29, 11, 0, 0, 0, ZoneOffset.UTC);
+        assertEquals(
+                ZonedDateTime.of(2020, 2, 29, 12, 0, 0, 0, TEST_ZONE),
+                provider.createDate(utc)
+        );
     }
 
     @Test
     void testCreateDateNumber() {
-        long epochSecond = 1609459200L; // 2021-01-01T00:00:00Z
-        ZonedDateTime expected = ZonedDateTime.ofInstant(Instant.ofEpochSecond(epochSecond), TEST_ZONE);
-        assertEquals(expected, provider.createDate(epochSecond));
+        long epochMilli = 1609459200000L; // 2021-01-01T00:00:00Z
+        ZonedDateTime expected = ZonedDateTime.ofInstant(Instant.ofEpochMilli(epochMilli), TEST_ZONE);
+        assertEquals(expected, provider.createDate(epochMilli));
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"2021-01-01", "01.01.2021", "2021-01-01T00:00:00Z"})
+    @ValueSource(strings = {"2021-01-01", "2020-12-31T23:00:00Z"})
     void testCreateDateStringValid(String dateStr) {
         ZonedDateTime result = provider.createDate(dateStr);
         assertNotNull(result);
@@ -73,8 +74,78 @@ class CoreDateJavascriptTest {
     }
 
     @Test
+    void testCreateDateMapsPartialCalendarValuesToTheirFirstDay() {
+        assertEquals(
+                LocalDate.of(2026, 7, 1),
+                provider.createDate("2026-07").toLocalDate()
+        );
+        assertEquals(
+                LocalDate.of(2026, 1, 1),
+                provider.createDate("2026").toLocalDate()
+        );
+    }
+
+    @Test
     void testCreateDateStringInvalid() {
         assertNull(provider.createDate("not-a-date"));
+        assertNull(provider.createDate("01.01.2021"));
+        assertNull(provider.createDate("2021-01-01T00:00:00"));
+    }
+
+    @Test
+    void testNowUsesClockAndApplicationTimeZone() {
+        assertEquals("29.07.2026 09:15 Uhr", provider.now());
+    }
+
+    @Test
+    void testCanonicalCurrentValues() {
+        assertEquals("2026-07-29", provider.todayIso());
+        assertEquals("2026-07-29T09:15:00+02:00", provider.nowIso());
+    }
+
+    @Test
+    void testResolveAndExtractCanonicalValues() {
+        assertEquals(
+                "2026-07-29T09:15:30+02:00",
+                provider.resolveDateTime("2026-07-29", "09:15:30")
+        );
+        assertEquals(
+                // The earlier offset is selected during the DST overlap.
+                "2026-10-25T02:30:00+02:00",
+                provider.resolveDateTime("2026-10-25", "02:30")
+        );
+        assertNull(provider.resolveDateTime("2026-03-29", "02:30"));
+        assertNull(provider.resolveDateTime("2026-07", "09:15"));
+        assertNull(provider.resolveDateTime("2026-07-29", "09:15:30.123"));
+
+        assertEquals(
+                "2026-07-30",
+                provider.toLocalDateIso("2026-07-29T23:15:30+00:00")
+        );
+        assertEquals(
+                "01:15:30",
+                provider.toLocalTimeIso("2026-07-29T23:15:30+00:00")
+        );
+    }
+
+    @Test
+    void testGetApplicationTimeZone() {
+        assertEquals("Europe/Berlin", provider.getApplicationTimeZone());
+        assertTrue(
+                Arrays.asList(provider.getMethodTypeDefinitions())
+                        .contains("getApplicationTimeZone(): string;")
+        );
+        assertTrue(Arrays.asList(provider.getMethodTypeDefinitions()).contains("todayIso(): string;"));
+        assertTrue(Arrays.asList(provider.getMethodTypeDefinitions()).contains("nowIso(): string;"));
+    }
+
+    @Test
+    void testLocalDateTimeDstResolution() {
+        assertNull(provider.createDate(LocalDateTime.of(2026, 3, 29, 2, 30)));
+        assertEquals(
+                ZoneOffset.ofHours(2),
+                provider.createDate(LocalDateTime.of(2026, 10, 25, 2, 30)).getOffset()
+        );
     }
 
     @Test
@@ -128,6 +199,20 @@ class CoreDateJavascriptTest {
     }
 
     @Test
+    void testInstantComparisonsDoNotCollapseValuesToCalendarDays() {
+        var earlier = "2026-07-29T09:00:00+02:00";
+        var later = "2026-07-29T10:00:00+02:00";
+
+        assertTrue(provider.isInstantBefore(earlier, later));
+        assertTrue(provider.isInstantAfter(later, earlier));
+        assertFalse(provider.isInstantBefore(earlier, earlier));
+        assertFalse(provider.isInstantAfter(null, later));
+
+        // The legacy day comparison intentionally ignores the time of day.
+        assertFalse(provider.isBefore(earlier, later));
+    }
+
+    @Test
     void testAddSubtractDaysWeeksMonthsYears() {
         ZonedDateTime base = ZonedDateTime.of(2020, 2, 29, 0, 0, 0, 0, TEST_ZONE); // Leap year
         assertEquals(base.plusDays(1), provider.addDays(base, 1));
@@ -170,7 +255,7 @@ class CoreDateJavascriptTest {
         assertEquals(0, provider.diff(utc, berlin, "days"));
         ZonedDateTime utcLate = ZonedDateTime.of(2021, 3, 28, 23, 0, 0, 0, ZoneId.of("UTC"));
         ZonedDateTime berlinNextDay = ZonedDateTime.of(2021, 3, 29, 1, 0, 0, 0, ZoneId.of("Europe/Berlin"));
-        assertEquals(1, provider.diff(utcLate, berlinNextDay, "days"));
+        assertEquals(0, provider.diff(utcLate, berlinNextDay, "days"));
     }
 
     @Test

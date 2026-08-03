@@ -14,10 +14,9 @@ import jakarta.annotation.Nullable;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Objects;
 
-public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
+public class DateTimeInputElement extends BaseInputElement<Instant> implements PrintableElement<Instant> {
     @Nullable
     private String placeholder;
     @Nullable
@@ -29,12 +28,15 @@ public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implem
 
     @Nullable
     @Override
-    public ZonedDateTime formatValue(@Nullable Object value) {
+    public Instant formatValue(@Nullable Object value) {
+        // Unlike a floating LocalTime, an Instant keeps its full source precision.
+        // The field mode only limits user input and display; truncating here would alter
+        // programmatically supplied absolute timestamps.
         return _formatValue(value);
     }
 
     @Override
-    public void performValidation(@Nullable ZonedDateTime value) throws ValidationException {
+    public void performValidation(@Nullable Instant value) throws ValidationException {
         if (value == null && Boolean.TRUE.equals(getRequired())) {
             throw new RequiredValidationException(this);
         }
@@ -42,17 +44,15 @@ public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implem
 
     @Nonnull
     @Override
-    public String toDisplayValue(@Nullable ZonedDateTime value) {
+    public String toDisplayValue(@Nullable Instant value) {
         if (value == null) {
             return "Keine Angabe";
         }
 
-        return value
-                .format(
-                                DateTimeFormatter
-                                .ofPattern(mode == TimeType.Second ? "dd.MM.yyyy HH:mm:ss" : "dd.MM.yyyy HH:mm")
-                                .withZone(ApplicationTimeZone.getZoneId())
-                ) + " Uhr";
+        return DateTimeFormatter
+                .ofPattern(mode == TimeType.Second ? "dd.MM.yyyy HH:mm:ss" : "dd.MM.yyyy HH:mm")
+                .withZone(ApplicationTimeZone.getZoneId())
+                .format(value) + " Uhr";
     }
 
     @Nonnull
@@ -98,21 +98,20 @@ public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implem
             return false;
         }
 
-        var tsA = dValA.toInstant().toEpochMilli();
-        var tsB = dValB.toInstant().toEpochMilli();
+        var comparison = dValA.compareTo(dValB);
 
         return switch (operator) {
-            case Equals -> tsA == tsB;
-            case NotEquals -> tsA != tsB;
-            case LessThan -> tsA < tsB;
-            case LessThanOrEqual -> tsA <= tsB;
-            case GreaterThan -> tsA > tsB;
-            case GreaterThanOrEqual -> tsA >= tsB;
+            case Equals -> comparison == 0;
+            case NotEquals -> comparison != 0;
+            case LessThan -> comparison < 0;
+            case LessThanOrEqual -> comparison <= 0;
+            case GreaterThan -> comparison > 0;
+            case GreaterThanOrEqual -> comparison >= 0;
             default -> false;
         };
     }
 
-    private boolean evaluateRelative(ConditionOperator operator, ZonedDateTime value, String comparedValue) {
+    private boolean evaluateRelative(ConditionOperator operator, Instant value, String comparedValue) {
         int amount;
         try {
             amount = Integer.parseInt(comparedValue);
@@ -120,64 +119,50 @@ public class DateTimeInputElement extends BaseInputElement<ZonedDateTime> implem
             return false;
         }
 
+        var zonedValue = value.atZone(ApplicationTimeZone.getZoneId());
         var now = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
 
         return switch (operator) {
             case YearsInPast -> {
                 var target = now.minusYears(amount);
-                yield value.isBefore(target) || value.isEqual(target);
+                yield !zonedValue.isAfter(target);
             }
             case MonthsInPast -> {
                 var target = now.minusMonths(amount);
-                yield value.isBefore(target) || value.isEqual(target);
+                yield !zonedValue.isAfter(target);
             }
             case DaysInPast -> {
                 var target = now.minusDays(amount);
-                yield value.isBefore(target) || value.isEqual(target);
+                yield !zonedValue.isAfter(target);
             }
             case YearsInFuture -> {
                 var target = now.plusYears(amount);
-                yield value.isAfter(target) || value.isEqual(target);
+                yield !zonedValue.isBefore(target);
             }
             case MonthsInFuture -> {
                 var target = now.plusMonths(amount);
-                yield value.isAfter(target) || value.isEqual(target);
+                yield !zonedValue.isBefore(target);
             }
             case DaysInFuture -> {
                 var target = now.plusDays(amount);
-                yield value.isAfter(target) || value.isEqual(target);
+                yield !zonedValue.isBefore(target);
             }
             default -> false;
         };
     }
 
     @Nullable
-    public static ZonedDateTime _formatValue(@Nullable Object value) {
+    public static Instant _formatValue(@Nullable Object value) {
         return switch (value) {
             case null -> null;
-            case ZonedDateTime zValue -> zValue;
-            case LocalDate ldValue -> ldValue.atStartOfDay(ApplicationTimeZone.getZoneId());
-            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(ApplicationTimeZone.getZoneId()), lValue, ApplicationTimeZone.getZoneId());
-            case Instant iValue -> iValue.atZone(ApplicationTimeZone.getZoneId());
+            case Instant instant -> instant;
+            case ZonedDateTime zonedDateTime -> zonedDateTime.toInstant();
+            case OffsetDateTime offsetDateTime -> offsetDateTime.toInstant();
             case String sValue -> {
                 try {
-                    // UI datetime pickers submit UTC ISO strings. Convert them into the office
-                    // timezone only where the backend renders or evaluates local business rules.
-                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, ApplicationTimeZone.getZoneId()).atZone(ApplicationTimeZone.getZoneId());
+                    yield IsoTimestampUtils.parseIsoInstant(sValue);
                 } catch (DateTimeException ex) {
-                    try {
-                        yield LocalDateTime.parse(sValue).atZone(ApplicationTimeZone.getZoneId());
-                    } catch (DateTimeException ex1) {
-                        try {
-                            yield LocalDateTime.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss")).atZone(ApplicationTimeZone.getZoneId());
-                        } catch (DateTimeParseException ex2) {
-                            try {
-                                yield LocalDateTime.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")).atZone(ApplicationTimeZone.getZoneId());
-                            } catch (DateTimeParseException ex3) {
-                                yield DateInputElement._formatValue(sValue);
-                            }
-                        }
-                    }
+                    yield null;
                 }
             }
             default -> null;

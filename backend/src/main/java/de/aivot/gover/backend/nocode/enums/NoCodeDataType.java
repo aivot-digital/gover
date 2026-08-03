@@ -10,6 +10,7 @@ public enum NoCodeDataType {
     Number,
     String,
     Date,
+    DateTime,
     Time,
     List,
     Object,

@@ -8,7 +8,6 @@ import de.aivot.gover.backend.enums.ElementType;
 import de.aivot.gover.backend.exceptions.RequiredValidationException;
 import de.aivot.gover.backend.exceptions.ValidationException;
 import de.aivot.gover.backend.utils.ApplicationTimeZone;
-import de.aivot.gover.backend.utils.IsoTimestampUtils;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import org.slf4j.Logger;
@@ -17,10 +16,11 @@ import org.slf4j.LoggerFactory;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.Objects;
 import java.util.regex.Pattern;
 
-public class DateInputElement extends BaseInputElement<ZonedDateTime> implements PrintableElement<ZonedDateTime> {
+public class DateInputElement extends BaseInputElement<TemporalAccessor> implements PrintableElement<TemporalAccessor> {
     private static final Logger logger = LoggerFactory.getLogger(DateInputElement.class);
 
     @Nullable
@@ -38,12 +38,14 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
 
     @Nullable
     @Override
-    public ZonedDateTime formatValue(@Nullable Object value) {
-        return _formatValue(value);
+    public TemporalAccessor formatValue(@Nullable Object value) {
+        // Preserve precision in the runtime type itself. This lets every Jackson boundary
+        // serialize the value correctly without needing the originating element definition.
+        return normalizePrecision(_formatValue(value), mode);
     }
 
     @Override
-    public void performValidation(@Nullable ZonedDateTime value) throws ValidationException {
+    public void performValidation(@Nullable TemporalAccessor value) throws ValidationException {
         if (value == null && Boolean.TRUE.equals(getRequired())) {
             throw new RequiredValidationException(this);
         }
@@ -51,28 +53,17 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
 
     @Nonnull
     @Override
-    public String toDisplayValue(@Nullable ZonedDateTime value) {
-        String displayValue = "Keine Angabe";
-
-        if (value != null) {
-            String displayPattern = "dd.MM.yyyy";
-
-            if (mode != null) {
-                switch (mode) {
-                    case Year -> displayPattern = "yyyy";
-                    case Month -> displayPattern = "MM.yyyy";
-                }
-            }
-
-            displayValue = value
-                            .format(
-                                    DateTimeFormatter
-                                            .ofPattern(displayPattern)
-                                            .withZone(ApplicationTimeZone.getZoneId())
-                            );
+    public String toDisplayValue(@Nullable TemporalAccessor value) {
+        if (value == null) {
+            return "Keine Angabe";
         }
 
-        return displayValue;
+        return switch (value) {
+            case Year year -> year.toString();
+            case YearMonth yearMonth -> yearMonth.format(DateTimeFormatter.ofPattern("MM.yyyy"));
+            case LocalDate localDate -> localDate.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+            default -> "Keine Angabe";
+        };
     }
 
     @Nonnull
@@ -91,7 +82,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
             return true;
         }
 
-        ZonedDateTime dValA = _formatValue(referencedValue);
+        var dValA = toLocalDate(formatValue(referencedValue));
 
         if (dValA == null) {
             logger.warn("Could not parse date from string: " + referencedValue.toString());
@@ -109,7 +100,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
             return false;
         }
 
-        ZonedDateTime today = ZonedDateTime.now(ApplicationTimeZone.getZoneId());
+        var today = LocalDate.now(ApplicationTimeZone.getZoneId());
 
         switch (operator) {
             case YearsInPast -> {
@@ -122,7 +113,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                 }
                 var target = today.minusYears(iValB);
                 logger.info("Comparing YearsInPast " + dValA + " with " + target + " and today: " + today);
-                return dValA.isBefore(target) || isSameDay(dValA, target);
+                return !dValA.isAfter(target);
             }
             case MonthsInPast -> {
                 int iValB;
@@ -134,7 +125,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                 }
                 var target = today.minusMonths(iValB);
                 logger.info("Comparing MonthsInPast " + dValA + " with " + target + " and today: " + today);
-                return dValA.isBefore(target) || isSameDay(dValA, target);
+                return !dValA.isAfter(target);
             }
             case DaysInPast -> {
                 int iValB;
@@ -146,7 +137,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                 }
                 var target = today.minusDays(iValB);
                 logger.info("Comparing DaysInPast " + dValA + " with " + target + " and today: " + today);
-                return dValA.isBefore(target) || isSameDay(dValA, target);
+                return !dValA.isAfter(target);
             }
 
             case YearsInFuture -> {
@@ -157,7 +148,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                     return false;
                 }
                 var target = today.plusYears(iValB);
-                return dValA.isAfter(target) || isSameDay(dValA, target);
+                return !dValA.isBefore(target);
             }
             case MonthsInFuture -> {
                 int iValB;
@@ -167,7 +158,7 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                     return false;
                 }
                 var target = today.plusMonths(iValB);
-                return dValA.isAfter(target) || isSameDay(dValA, target);
+                return !dValA.isBefore(target);
             }
             case DaysInFuture -> {
                 int iValB;
@@ -177,31 +168,12 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
                     return false;
                 }
                 var target = today.plusDays(iValB);
-                return dValA.isAfter(target) || isSameDay(dValA, target);
+                return !dValA.isBefore(target);
             }
 
             default -> {
-                DatePrecision prec = getPrecising(sValB);
-
-                ZonedDateTime dValB;
-                switch (prec) {
-                    case dayAnyMonthAnyYear -> {
-                        dValB = _formatValue(sValB + "01.2000");
-                    }
-                    case month -> {
-                        dValB = _formatValue("01." + sValB);
-                    }
-                    case dayAndMonthAnyYear -> {
-                        dValB = _formatValue(sValB + "2000");
-                    }
-                    case year -> {
-                        dValB = _formatValue("01.01." + sValB);
-                    }
-                    case day,iso -> {
-                        dValB = _formatValue(sValB);
-                    }
-                    default ->  dValB = null;
-                }
+                DatePrecision prec = getPrecision(sValB);
+                var dValB = parseComparisonDateString(sValB, prec);
 
                 if (dValB == null) {
                     return false;
@@ -266,13 +238,16 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
     private static final Pattern monthPattern = Pattern.compile("^\\d{2}\\.\\d{4}$");
     private static final Pattern monthAnyYearPattern = Pattern.compile("^\\d{2}\\.\\d{2}\\.$");
     private static final Pattern yearPattern = Pattern.compile("^\\d{4}$");
+    private static final Pattern isoMonthPattern = Pattern.compile("^\\d{4}-\\d{2}$");
 
-    private DatePrecision getPrecising(String value) {
+    private DatePrecision getPrecision(String value) {
         if (dayPattern.matcher(value).matches()) {
             return DatePrecision.day;
         } else if (dayAnyMonthAnyYearPattern.matcher(value).matches()) {
             return DatePrecision.dayAnyMonthAnyYear;
         } else if (monthPattern.matcher(value).matches()) {
+            return DatePrecision.month;
+        } else if (isoMonthPattern.matcher(value).matches()) {
             return DatePrecision.month;
         } else if (monthAnyYearPattern.matcher(value).matches()) {
             return DatePrecision.dayAndMonthAnyYear;
@@ -296,10 +271,10 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
         private final int monthRes;
         private final int yearRes;
 
-        public DateCompareResult(ZonedDateTime d1, ZonedDateTime d2) {
-            dayRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getDayOfMonth(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getDayOfMonth());
-            monthRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getMonthValue(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getMonthValue());
-            yearRes = Integer.compare(d1.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getYear(), d2.withZoneSameInstant(ApplicationTimeZone.getZoneId()).getYear());
+        public DateCompareResult(LocalDate d1, LocalDate d2) {
+            dayRes = Integer.compare(d1.getDayOfMonth(), d2.getDayOfMonth());
+            monthRes = Integer.compare(d1.getMonthValue(), d2.getMonthValue());
+            yearRes = Integer.compare(d1.getYear(), d2.getYear());
         }
 
         public boolean dayLt() {
@@ -339,68 +314,102 @@ public class DateInputElement extends BaseInputElement<ZonedDateTime> implements
         }
     }
 
-    private boolean isSameDay(ZonedDateTime d1, ZonedDateTime d2) {
-        var d1Local = d1.withZoneSameInstant(ApplicationTimeZone.getZoneId());
-        var d2Local = d2.withZoneSameInstant(ApplicationTimeZone.getZoneId());
-
-        return (
-                d1Local.getYear() == d2Local.getYear() &&
-                d1Local.getMonth() == d2Local.getMonth() &&
-                d1Local.getDayOfMonth() == d2Local.getDayOfMonth()
-        );
+    @Nullable
+    public static TemporalAccessor _formatValue(@Nullable Object value) {
+        return switch (value) {
+            case null -> null;
+            case LocalDate localDate -> localDate;
+            case YearMonth yearMonth -> yearMonth;
+            case Year year -> year;
+            // Java temporal objects may originate from internal computations or legacy
+            // effective values. Interpret their instant in the application timezone,
+            // while external strings remain restricted to zone-free calendar formats.
+            case ZonedDateTime zonedDateTime -> zonedDateTime
+                    .withZoneSameInstant(ApplicationTimeZone.getZoneId())
+                    .toLocalDate();
+            case OffsetDateTime offsetDateTime -> offsetDateTime
+                    .atZoneSameInstant(ApplicationTimeZone.getZoneId())
+                    .toLocalDate();
+            case Instant instant -> instant
+                    .atZone(ApplicationTimeZone.getZoneId())
+                    .toLocalDate();
+            case String sValue -> parseDateString(sValue);
+            default -> null;
+        };
     }
 
     @Nullable
-    public static ZonedDateTime _formatValue(@Nullable Object value) {
+    private static TemporalAccessor parseDateString(@Nonnull String value) {
+        try {
+            return LocalDate.parse(value);
+        } catch (DateTimeParseException ignored) {
+        }
+
+        try {
+            if (isoMonthPattern.matcher(value).matches()) {
+                return YearMonth.parse(value);
+            }
+            if (yearPattern.matcher(value).matches()) {
+                return Year.parse(value);
+            }
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+
+        return null;
+    }
+
+    @Nullable
+    private static LocalDate parseComparisonDateString(
+            @Nonnull String value,
+            @Nonnull DatePrecision precision
+    ) {
+        // Runtime values use canonical ISO formats. German full and partial formats
+        // remain accepted only for authored condition values stored in form definitions.
+        var preparedValue = switch (precision) {
+            case day -> value;
+            case dayAnyMonthAnyYear -> value + "01.2000";
+            case month -> isoMonthPattern.matcher(value).matches() ? null : "01." + value;
+            case dayAndMonthAnyYear -> value + "2000";
+            case year, iso -> null;
+        };
+
+        if (preparedValue == null) {
+            return toLocalDate(parseDateString(value));
+        }
+
+        try {
+            return LocalDate
+                    .parse(preparedValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        } catch (DateTimeParseException ignored) {
+            return null;
+        }
+    }
+
+    @Nullable
+    static TemporalAccessor normalizePrecision(
+            @Nullable TemporalAccessor value,
+            @Nullable DateType mode
+    ) {
+        var localDate = toLocalDate(value);
+        if (localDate == null) {
+            return null;
+        }
+
+        return switch (mode == null ? DateType.Day : mode) {
+            case Day -> localDate;
+            case Month -> YearMonth.from(localDate);
+            case Year -> Year.from(localDate);
+        };
+    }
+
+    @Nullable
+    static LocalDate toLocalDate(@Nullable TemporalAccessor value) {
         return switch (value) {
             case null -> null;
-            case ZonedDateTime zValue -> zValue;
-            case LocalDate ldValue -> ldValue.atStartOfDay(ApplicationTimeZone.getZoneId());
-            case LocalTime lValue -> ZonedDateTime.of(LocalDate.now(ApplicationTimeZone.getZoneId()), lValue, ApplicationTimeZone.getZoneId());
-            case Instant iValue -> iValue.atZone(ApplicationTimeZone.getZoneId());
-            case String sValue -> {
-                try {
-                    // UI date pickers submit UTC ISO strings. Convert them back into the office
-                    // timezone only for display and local rule evaluation.
-                    yield IsoTimestampUtils.parseIsoTimestamp(sValue, ApplicationTimeZone.getZoneId()).atZone(ApplicationTimeZone.getZoneId());
-                } catch (DateTimeException ex) {
-                    try {
-                        var ld = LocalDate.parse(sValue);
-                        yield ld.atStartOfDay(ApplicationTimeZone.getZoneId());
-                    } catch (DateTimeException ex1) {
-                        try {
-                            var ld2 = LocalDate.parse(sValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"));
-                            yield ld2.atStartOfDay(ApplicationTimeZone.getZoneId());
-                        } catch (DateTimeException ex2) {
-                            String preparedValue = null;
-
-                            if (dayPattern.matcher(sValue).matches()) {
-                                preparedValue = sValue;
-                            } else if (dayAnyMonthAnyYearPattern.matcher(sValue).matches()) {
-                                preparedValue = sValue + "01.2000";
-                            } else if (monthPattern.matcher(sValue).matches()) {
-                                preparedValue = "01." + sValue;
-                            } else if (monthAnyYearPattern.matcher(sValue).matches()) {
-                                preparedValue = sValue + "2000";
-                            } else if (yearPattern.matcher(sValue).matches()) {
-                                preparedValue = "01.01." + sValue;
-                            }
-
-                            if (preparedValue != null) {
-                                try {
-                                    yield LocalDate
-                                            .parse(preparedValue, DateTimeFormatter.ofPattern("dd.MM.yyyy"))
-                                            .atStartOfDay(ApplicationTimeZone.getZoneId());
-                                } catch (DateTimeParseException ex3) {
-                                    yield null;
-                                }
-                            } else {
-                                yield null;
-                            }
-                        }
-                    }
-                }
-            }
+            case LocalDate localDate -> localDate;
+            case YearMonth yearMonth -> yearMonth.atDay(1);
+            case Year year -> year.atDay(1);
             default -> null;
         };
     }

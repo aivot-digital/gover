@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Proxy;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -218,8 +219,7 @@ class ApprovalActionNodeV1Test {
         assertEquals("staff-1", completed.getNodeData().get("processedByUserId"));
         var processedAt = completed.getNodeData().get("processedAt");
         assertNotNull(processedAt);
-        assertTrue(processedAt.toString().endsWith("Z"));
-        assertDoesNotThrow(() -> Instant.parse(processedAt.toString()));
+        assertDoesNotThrow(() -> OffsetDateTime.parse(processedAt.toString()));
     }
 
     private static AuthoredElementValues dataModeConfiguration() {

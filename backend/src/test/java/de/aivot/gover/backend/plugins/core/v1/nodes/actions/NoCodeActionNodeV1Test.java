@@ -22,6 +22,7 @@ import de.aivot.gover.backend.process.repositories.ProcessInstanceHistoryEventRe
 import de.aivot.gover.backend.utils.ApplicationTimeZone;
 import de.aivot.gover.backend.elements.models.elements.form.input.NoCodeInputElementItem;
 import jakarta.annotation.Nonnull;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,6 +30,7 @@ import java.lang.reflect.Proxy;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.List;
@@ -48,11 +50,18 @@ class NoCodeActionNodeV1Test {
     private static final Long TASK_ID = 456L;
 
     private NoCodeActionNodeV1 node;
+    private ZoneId originalZone;
 
     @BeforeEach
     void setUp() {
+        originalZone = ApplicationTimeZone.getZoneId();
         ApplicationTimeZone.configure(ZoneId.of("Europe/Berlin"));
         node = new NoCodeActionNodeV1(new NoCodeEvaluationService(List.of()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        ApplicationTimeZone.configure(originalZone);
     }
 
     @Test
@@ -203,7 +212,7 @@ class NoCodeActionNodeV1Test {
                 new NoCodeStaticValue(LocalDate.of(2026, 5, 9))
         ));
 
-        assertEquals("2026-05-08T22:00:00Z", result.getProcessData().get("appointment"));
+        assertEquals("2026-05-09T00:00:00+02:00", result.getProcessData().get("appointment"));
     }
 
     @Test
@@ -214,7 +223,52 @@ class NoCodeActionNodeV1Test {
                 new NoCodeStaticValue(LocalDateTime.of(2026, 5, 9, 8, 30))
         ));
 
-        assertEquals("2026-05-09T06:30:00Z", result.getProcessData().get("appointment"));
+        assertEquals("2026-05-09T08:30:00+02:00", result.getProcessData().get("appointment"));
+    }
+
+    @Test
+    void init_ShouldUseBusinessTimezoneWhenCastingLocalDateTimeToString() throws Exception {
+        var result = init(variable(
+                "appointment",
+                "string",
+                new NoCodeStaticValue(LocalDateTime.of(2026, 5, 9, 8, 30))
+        ));
+
+        assertEquals("2026-05-09T08:30:00+02:00", result.getProcessData().get("appointment"));
+    }
+
+    @Test
+    void init_ShouldKeepTimeValuesZoneFree() throws Exception {
+        var result = init(variable(
+                "openingTime",
+                "time",
+                new NoCodeStaticValue(LocalTime.of(8, 30, 15))
+        ));
+
+        assertEquals("08:30:15", result.getProcessData().get("openingTime"));
+    }
+
+    @Test
+    void init_ShouldCanonicalizeTimeValuesWithZeroSeconds() throws Exception {
+        var result = init(
+                variable("typedTime", "time", new NoCodeStaticValue("08:30")),
+                variable("stringTime", "string", new NoCodeStaticValue(LocalTime.of(8, 30)))
+        );
+
+        assertEquals("08:30:00", result.getProcessData().get("typedTime"));
+        assertEquals("08:30:00", result.getProcessData().get("stringTime"));
+    }
+
+    @Test
+    void init_ShouldRejectNonexistentApplicationLocalDateTime() {
+        assertThrows(
+                ProcessNodeExecutionExceptionInvalidConfiguration.class,
+                () -> init(variable(
+                        "appointment",
+                        "datetime",
+                        new NoCodeStaticValue(LocalDateTime.of(2026, 3, 29, 2, 30))
+                ))
+        );
     }
 
     @Nonnull
