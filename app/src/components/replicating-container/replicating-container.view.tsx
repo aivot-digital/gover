@@ -200,7 +200,7 @@ export function ReplicatingContainerView(props: BaseViewProps<ReplicatingContain
                                             .map((child, childIndex) => (
                                                 <ViewDispatcherComponent
                                                     {...props}
-                                                    key={childIndex}
+                                                    key={child.id}
                                                     element={child}
                                                     isBusy={isBusy}
                                                     authoredElementValues={rowValues}

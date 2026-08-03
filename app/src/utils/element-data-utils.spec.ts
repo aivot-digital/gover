@@ -128,8 +128,11 @@ describe('replicating container row values', () => {
                 rows: {
                     subStates: [
                         {
-                            rowField: {
-                                error: 'Row error',
+                            id: 'row-1',
+                            states: {
+                                rowField: {
+                                    error: 'Row error',
+                                },
                             },
                         },
                     ],
@@ -145,6 +148,49 @@ describe('replicating container row values', () => {
                 rowField: {
                     error: 'Row error',
                 },
+            },
+        });
+    });
+
+    it('should resolve row state by row id before index', () => {
+        const derivedData = createDerivedRuntimeElementData({
+            effectiveValues: {
+                rows: [
+                    {
+                        id: 'row-2',
+                        values: {
+                            rowField: 'derived',
+                        },
+                    },
+                ],
+            },
+            elementStates: {
+                rows: {
+                    subStates: [
+                        {
+                            id: 'row-1',
+                            states: {
+                                rowField: {
+                                    error: 'Wrong row',
+                                },
+                            },
+                        },
+                        {
+                            id: 'row-2',
+                            states: {
+                                rowField: {
+                                    error: 'Right row',
+                                },
+                            },
+                        },
+                    ],
+                },
+            },
+        });
+
+        expect(resolveReplicatingContainerItemDerivedData(list, derivedData, 0).elementStates).toEqual({
+            rowField: {
+                error: 'Right row',
             },
         });
     });

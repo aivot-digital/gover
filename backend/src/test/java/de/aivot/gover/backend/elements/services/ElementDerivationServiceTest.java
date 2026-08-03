@@ -353,7 +353,8 @@ class ElementDerivationServiceTest {
         assertEquals("group_b", result.getEffectiveValues().get("parent"));
         assertEquals("row-1", firstRow.getId());
         assertNull(firstRow.getValues().get("child"));
-        assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("child").getError());
+        assertEquals("row-1", result.getElementStates().get("rows").getSubStates().getFirst().getId());
+        assertNull(result.getElementStates().get("rows").getSubStates().getFirst().getStates().get("child").getError());
     }
 
     @Test
@@ -390,7 +391,7 @@ class ElementDerivationServiceTest {
 
         assertEquals("group_b", firstRow.getValues().get("row_parent"));
         assertNull(firstRow.getValues().get("row_child"));
-        assertNull(result.getElementStates().get("rows").getSubStates().get(0).get("row_child").getError());
+        assertNull(result.getElementStates().get("rows").getSubStates().getFirst().getStates().get("row_child").getError());
     }
 
     @Test
@@ -459,7 +460,7 @@ class ElementDerivationServiceTest {
 
         assertEquals("visible value", firstRow.getValues().get("visible_child"));
         assertFalse(firstRow.getValues().containsKey("hidden_child"));
-        assertFalse(result.getElementStates().get("rows").getSubStates().get(0).get("hidden_child").getVisible());
+        assertFalse(result.getElementStates().get("rows").getSubStates().getFirst().getStates().get("hidden_child").getVisible());
     }
 
     private static DerivedRuntimeElementData derive(

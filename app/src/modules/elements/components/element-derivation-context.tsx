@@ -5,12 +5,16 @@ import {
     ComputedElementErrors,
     ComputedElementStates,
     ComputedElementValueSource,
+    createComputedElementSubState,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     hasAnyErrorRecursively,
+    isReplicatingContainerElementValue,
+    resolveComputedElementSubState,
+    resolveComputedElementSubStateStates,
 } from '../../../models/element-data';
 import {AnyElement} from '../../../models/elements/any-element';
-import React, {createContext, RefObject, useContext, useEffect, useMemo, useState} from 'react';
+import React, {createContext, RefObject, useContext, useEffect, useMemo, useRef, useState} from 'react';
 import {ElementWithParents, flattenElements, flattenElementsWithParents} from '../../../utils/flatten-elements';
 import {isAnyInputElement} from '../../../models/elements/form/input/any-input-element';
 import {isAnyElementWithChildren} from '../../../models/elements/any-element-with-children';
@@ -120,6 +124,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
         controlledDerivedData ?? createDerivedRuntimeElementData(),
     );
     const [suppressedErrorElementIds, setSuppressedErrorElementIds] = useState<string[]>([]);
+    const deriveRequestIdRef = useRef(0);
 
     const allElements = useMemo(() => {
         return flattenElements(element, false);
@@ -268,6 +273,7 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                 onDerivationStarted(normalizedAuthoredElementValues);
             }
 
+            const requestId = ++deriveRequestIdRef.current;
             let derivedRuntimeElementData = await (onDeriveOverride != null ? onDeriveOverride(normalizedAuthoredElementValues, skipErrorsForElements) : new ElementsApiService()
                 .derive({
                     element: element,
@@ -287,11 +293,13 @@ export function ElementDerivationContext(props: ElementDerivationContextProps) {
                     abort: abort,
                 }));
 
-            setInternalDerivedData(derivedRuntimeElementData);
-            onDerivedDataChange?.(derivedRuntimeElementData);
+            if (requestId === deriveRequestIdRef.current) {
+                setInternalDerivedData(derivedRuntimeElementData);
+                onDerivedDataChange?.(derivedRuntimeElementData);
 
-            if (onDerivationFinished != null) {
-                onDerivationFinished(derivedRuntimeElementData);
+                if (onDerivationFinished != null) {
+                    onDerivationFinished(derivedRuntimeElementData);
+                }
             }
 
             return derivedRuntimeElementData;
@@ -416,7 +424,10 @@ function clearComputedElementStateErrorsByElementId(
                 ...state,
                 error: elementIdSet.has(elementId) ? null : state?.error,
                 subStates: state?.subStates?.map((subState) => {
-                    return clearComputedElementStateErrorsByElementId(subState ?? {}, elementIdSet);
+                    return createComputedElementSubState(
+                        subState.id,
+                        clearComputedElementStateErrorsByElementId(resolveComputedElementSubStateStates(subState), elementIdSet),
+                    );
                 }) ?? null,
             },
         ]),
@@ -514,7 +525,11 @@ function patchComputedElementStatesWithAuthoredValues(
             nextElementStates[currentElement.id] = {
                 ...nextElementStates[currentElement.id],
                 subStates: Array.isArray(authoredValue) ?
-                    authoredValue.map((_, index) => currentElementState?.subStates?.[index] ?? {}) :
+                    authoredValue.map((row, index) => {
+                        const rowId = isReplicatingContainerElementValue(row) ? row.id : null;
+                        const previousSubState = resolveComputedElementSubState(currentElementState?.subStates, rowId, index);
+                        return createComputedElementSubState(rowId, resolveComputedElementSubStateStates(previousSubState));
+                    }) :
                     null,
             };
         }

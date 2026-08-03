@@ -2,6 +2,7 @@ package de.aivot.gover.backend.ozgCloud.services;
 
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.ComputedElementState;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
@@ -868,9 +869,12 @@ public class OZGCloudDataFormatService {
             var rowEffectiveValues = effectiveRows != null && index < effectiveRows.size()
                     ? toEffectiveElementValues(getRowValues(effectiveRows.get(index)))
                     : toEffectiveElementValues(rowAuthoredValues);
-            var rowElementStates = subStates != null && index < subStates.size()
-                    ? subStates.get(index)
-                    : new ComputedElementStates();
+            var rowElementStates = resolveRowElementStates(
+                    subStates,
+                    effectiveRows != null && index < effectiveRows.size() ? effectiveRows.get(index) : null,
+                    authoredRows != null && index < authoredRows.size() ? authoredRows.get(index) : null,
+                    index
+            );
 
             return new FormattingContext(
                     rowAuthoredValues,
@@ -881,6 +885,27 @@ public class OZGCloudDataFormatService {
         @Nonnull
         private AuthoredElementValues getRowValues(@Nullable ReplicatingContainerLayoutElementValue row) {
             return row != null && row.getValues() != null ? row.getValues() : new AuthoredElementValues();
+        }
+
+        @Nonnull
+        private ComputedElementStates resolveRowElementStates(@Nullable List<ComputedElementSubState> subStates,
+                                                              @Nullable ReplicatingContainerLayoutElementValue effectiveRow,
+                                                              @Nullable ReplicatingContainerLayoutElementValue authoredRow,
+                                                              int index) {
+            if (subStates == null) {
+                return new ComputedElementStates();
+            }
+
+            var rowId = effectiveRow != null && effectiveRow.getId() != null ? effectiveRow.getId() : authoredRow != null ? authoredRow.getId() : null;
+            if (rowId != null) {
+                for (ComputedElementSubState subState : subStates) {
+                    if (rowId.equals(subState.getId())) {
+                        return subState.getStates();
+                    }
+                }
+            }
+
+            return index >= 0 && index < subStates.size() ? subStates.get(index).getStates() : new ComputedElementStates();
         }
 
         @Nonnull

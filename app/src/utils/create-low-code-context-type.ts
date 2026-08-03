@@ -90,7 +90,7 @@ function elementToContextStateInterface({element, parents}: ElementWithParents):
         /** Gibt an, ob der effektive Wert authored oder derived ist. */
         valueSource: 'Authored' | 'Derived' | undefined | null;
         /** Enthält bei strukturierten Listen die States der einzelnen Datensätze. */
-        subStates: Record<string, ${createElementStateInterfaceName(element)}>[] | undefined | null;
+        subStates: {id: string | undefined | null; states: Record<string, ${createElementStateInterfaceName(element)}>}[] | undefined | null;
     }`;
 }
 

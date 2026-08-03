@@ -27,10 +27,15 @@ export interface ComputedElementState {
     errorDetails?: Record<string, any> | null;
     override?: AnyElement | null;
     valueSource?: ComputedElementValueSource | null;
-    subStates?: ComputedElementStates[] | null;
+    subStates?: ComputedElementSubState[] | null;
 }
 
 export type ComputedElementStates = Partial<Record<string, ComputedElementState>>;
+
+export interface ComputedElementSubState {
+    id?: string | null;
+    states?: ComputedElementStates | null;
+}
 
 export type ComputedElementError = Pick<ComputedElementState, 'error' | 'errorDetails' | 'subStates'>;
 
@@ -78,12 +83,64 @@ export function updateReplicatingContainerElementValues(row: any, values: Author
         {values};
 }
 
+export function resolveComputedElementSubStateStates(subState: ComputedElementSubState | ComputedElementStates | null | undefined): ComputedElementStates {
+    if (subState == null) {
+        return {};
+    }
+
+    if (isComputedElementSubState(subState)) {
+        return subState.states ?? {};
+    }
+
+    return subState as ComputedElementStates;
+}
+
+export function resolveComputedElementSubState(
+    subStates: Array<ComputedElementSubState | ComputedElementStates> | null | undefined,
+    id: string | null | undefined,
+    index: number,
+): ComputedElementSubState | ComputedElementStates | null {
+    if (subStates == null) {
+        return null;
+    }
+
+    if (id != null) {
+        const matchingSubState = subStates.find((subState) => (
+            isComputedElementSubState(subState) &&
+            subState.id === id
+        ));
+        if (matchingSubState != null) {
+            return matchingSubState;
+        }
+    }
+
+    return index >= 0 && index < subStates.length ? subStates[index] : null;
+}
+
+export function createComputedElementSubState(id: string | null | undefined, states: ComputedElementStates): ComputedElementSubState {
+    return {
+        id: id ?? null,
+        states,
+    };
+}
+
 export function isEffectiveValues(obj: any): obj is EffectiveElementValues {
     return obj != null && typeof obj === 'object' && !Array.isArray(obj);
 }
 
 export function isElementStates(obj: any): obj is ComputedElementStates {
     return obj != null && typeof obj === 'object' && !Array.isArray(obj);
+}
+
+export function isComputedElementSubState(obj: any): obj is ComputedElementSubState {
+    return obj != null &&
+        typeof obj === 'object' &&
+        !Array.isArray(obj) &&
+        (
+            Object.prototype.hasOwnProperty.call(obj, 'states') ||
+            Object.prototype.hasOwnProperty.call(obj, 'id')
+        ) &&
+        (obj.states == null || isElementStates(obj.states));
 }
 
 export function isDerivedRuntimeElementData(obj: any): obj is DerivedRuntimeElementData {
@@ -163,7 +220,14 @@ export function applyComputedErrors(computedErrors: ComputedElementErrors, compu
             nextState.subStates = computedSubStates == null ?
                 computedSubStates ?? null :
                 computedSubStates.map((computedSubState, index) => {
-                    return applyComputedErrors(computedSubState ?? {}, previousState?.subStates?.[index] ?? {});
+                    const previousSubState = resolveComputedElementSubState(previousState?.subStates, computedSubState?.id, index);
+                    return createComputedElementSubState(
+                        computedSubState?.id ?? (isComputedElementSubState(previousSubState) ? previousSubState.id : null),
+                        applyComputedErrors(
+                            resolveComputedElementSubStateStates(computedSubState),
+                            resolveComputedElementSubStateStates(previousSubState),
+                        ),
+                    );
                 });
         }
 
@@ -185,10 +249,10 @@ export function clearDerivedErrorsRecursively(derivedData: DerivedRuntimeElement
                 {
                     ...state,
                     error: null,
-                    subStates: state?.subStates?.map((subState) => clearDerivedErrorsRecursively({
+                    subStates: state?.subStates?.map((subState) => createComputedElementSubState(subState.id, clearDerivedErrorsRecursively({
                         effectiveValues: {},
-                        elementStates: subState ?? {},
-                    }).elementStates) ?? null,
+                        elementStates: resolveComputedElementSubStateStates(subState),
+                    }).elementStates)) ?? null,
                 },
             ]),
         ),
@@ -209,7 +273,7 @@ export function hasAnyErrorRecursively(elementStates: ComputedElementStates): bo
             }
 
             if (state.subStates != null) {
-                return state.subStates.some((subState) => hasAnyErrorRecursively(subState ?? {}));
+                return state.subStates.some((subState) => hasAnyErrorRecursively(resolveComputedElementSubStateStates(subState)));
             }
 
             return false;
@@ -229,7 +293,8 @@ function hasAnyErrorRecursivelyInElement(element: AnyElement, elementStates: Com
 
     if (isReplicatingContainerLayout(element)) {
         return state?.subStates?.some((subState) => {
-            return element.children?.some((child) => hasAnyErrorRecursivelyInElement(child, subState ?? {})) ?? false;
+            const subStateStates = resolveComputedElementSubStateStates(subState);
+            return element.children?.some((child) => hasAnyErrorRecursivelyInElement(child, subStateStates)) ?? false;
         }) ?? false;
     }
 

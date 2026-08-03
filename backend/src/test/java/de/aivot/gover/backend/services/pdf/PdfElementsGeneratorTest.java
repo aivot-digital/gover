@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.services.pdf;
 
 import de.aivot.gover.backend.elements.models.ComputedElementState;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
@@ -148,7 +149,7 @@ class PdfElementsGeneratorTest {
         var rowStates = new ComputedElementStates();
         rowStates.put("city", new ComputedElementState().setOverride(resolvedSelect));
         var states = new ComputedElementStates();
-        states.put("people", new ComputedElementState().setSubStates(List.of(rowStates)));
+        states.put("people", new ComputedElementState().setSubStates(List.of(ComputedElementSubState.of("row-1", rowStates))));
         var root = createRoot(replicatingContainer);
 
         var step = PdfElementsGenerator

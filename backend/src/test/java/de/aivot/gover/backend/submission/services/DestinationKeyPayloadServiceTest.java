@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.submission.services;
 
 import de.aivot.gover.backend.elements.models.ComputedElementState;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
@@ -116,8 +117,8 @@ class DestinationKeyPayloadServiceTest {
         effectiveValues.put("people", List.of(firstPerson, secondPerson));
 
         var peopleState = new ComputedElementState().setSubStates(List.of(
-                elementStatesWithOverride("rowFirstName", firstNameOverride),
-                elementStatesWithOverride("rowFirstName", firstNameOverride)
+                ComputedElementSubState.of("row-1", elementStatesWithOverride("rowFirstName", firstNameOverride)),
+                ComputedElementSubState.of("row-2", elementStatesWithOverride("rowFirstName", firstNameOverride))
         ));
         var elementStates = new ComputedElementStates();
         elementStates.put("people", peopleState);

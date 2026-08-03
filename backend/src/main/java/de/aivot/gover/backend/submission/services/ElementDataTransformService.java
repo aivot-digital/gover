@@ -3,6 +3,7 @@ package de.aivot.gover.backend.submission.services;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
 import de.aivot.gover.backend.elements.models.AuthoredElementValues;
 import de.aivot.gover.backend.elements.models.ComputedElementState;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
@@ -259,7 +260,7 @@ public class ElementDataTransformService {
             }
 
             var itemReplicationIndices = appendReplicationIndex(replicationIndices, itemIndex);
-            var itemElementStates = resolveReplicatingContainerItemStates(replicatingContainerState, itemIndex);
+            var itemElementStates = resolveReplicatingContainerItemStates(replicatingContainerState, rawItem, itemIndex);
 
             if (StringUtils.isNullOrEmpty(replicatingContainer.getDestinationKey())) {
                 for (var child : replicatingContainer.getChildren()) {
@@ -290,13 +291,33 @@ public class ElementDataTransformService {
 
     @Nonnull
     private ComputedElementStates resolveReplicatingContainerItemStates(@Nullable ComputedElementState elementState,
+                                                                        @Nullable Object rawItem,
                                                                         int itemIndex) {
         var subStates = elementState != null ? elementState.getSubStates() : null;
-        if (subStates != null && itemIndex >= 0 && itemIndex < subStates.size()) {
-            return subStates.get(itemIndex);
+        if (subStates == null) {
+            return new ComputedElementStates();
         }
 
-        return new ComputedElementStates();
+        var itemId = resolveReplicatingContainerItemId(rawItem);
+        if (itemId != null) {
+            for (ComputedElementSubState subState : subStates) {
+                if (itemId.equals(subState.getId())) {
+                    return subState.getStates();
+                }
+            }
+        }
+
+        return itemIndex >= 0 && itemIndex < subStates.size() ? subStates.get(itemIndex).getStates() : new ComputedElementStates();
+    }
+
+    @Nullable
+    private String resolveReplicatingContainerItemId(@Nullable Object rawItem) {
+        if (rawItem == null) {
+            return null;
+        }
+
+        var itemValues = ReplicatingContainerLayoutElement._formatValue(List.of(rawItem));
+        return itemValues == null || itemValues.isEmpty() ? null : itemValues.getFirst().getId();
     }
 
     @Nonnull

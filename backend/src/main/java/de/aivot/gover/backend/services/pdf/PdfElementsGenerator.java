@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.services.pdf;
 
 import de.aivot.gover.backend.elements.models.ComputedElementState;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.DerivedRuntimeElementData;
 import de.aivot.gover.backend.elements.models.EffectiveElementValues;
@@ -77,6 +78,37 @@ public class PdfElementsGenerator {
             effectiveValues.putAll(authoredValues);
         }
         return effectiveValues;
+    }
+
+    @Nullable
+    private static String resolveReplicatingContainerRowId(@Nullable Object row) {
+        if (row == null) {
+            return null;
+        }
+
+        var rows = ReplicatingContainerLayoutElement._formatValue(List.of(row));
+        return rows == null || rows.isEmpty() ? null : rows.getFirst().getId();
+    }
+
+    @Nonnull
+    private static ComputedElementStates resolveReplicatingContainerRowStates(@Nullable ComputedElementState elementState,
+                                                                              @Nullable Object row,
+                                                                              int index) {
+        var subStates = elementState != null ? elementState.getSubStates() : null;
+        if (subStates == null) {
+            return new ComputedElementStates();
+        }
+
+        var rowId = resolveReplicatingContainerRowId(row);
+        if (rowId != null) {
+            for (ComputedElementSubState subState : subStates) {
+                if (rowId.equals(subState.getId())) {
+                    return subState.getStates();
+                }
+            }
+        }
+
+        return index >= 0 && index < subStates.size() ? subStates.get(index).getStates() : new ComputedElementStates();
     }
 
     @Nullable
@@ -164,11 +196,7 @@ public class PdfElementsGenerator {
                 var placeholderValues = new LinkedList<DerivedRuntimeElementData>();
                 var amountOfPlaceholderDatasets = getBlankPrintPlaceholderCount(replicatingContainerLayout);
                 for (int i = 0; i < amountOfPlaceholderDatasets; i++) {
-                    var childStates = elementState != null &&
-                            elementState.getSubStates() != null &&
-                            i < elementState.getSubStates().size()
-                            ? elementState.getSubStates().get(i)
-                            : new ComputedElementStates();
+                    var childStates = resolveReplicatingContainerRowStates(elementState, null, i);
                     placeholderValues.add(new DerivedRuntimeElementData(new EffectiveElementValues(), childStates));
                 }
                 value = placeholderValues;
@@ -187,11 +215,7 @@ public class PdfElementsGenerator {
                             index++;
                             continue;
                         }
-                        var childStates = elementState != null &&
-                                elementState.getSubStates() != null &&
-                                index < elementState.getSubStates().size()
-                                ? elementState.getSubStates().get(index)
-                                : new ComputedElementStates();
+                        var childStates = resolveReplicatingContainerRowStates(elementState, val, index);
                         childElementData = new DerivedRuntimeElementData(childEffectiveValues, childStates);
                     }
 

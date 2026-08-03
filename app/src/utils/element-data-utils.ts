@@ -1,13 +1,18 @@
 import {
     AuthoredElementValues,
     ComputedElementState,
+    ComputedElementSubState,
     ComputedElementStates,
     ComputedElementValueSource,
+    createComputedElementSubState,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
     EffectiveElementValues,
     isAuthoredElementValues,
+    isReplicatingContainerElementValue,
     resolveReplicatingContainerElementValues,
+    resolveComputedElementSubState,
+    resolveComputedElementSubStateStates,
     type ReplicatingContainerElementValue,
     updateReplicatingContainerElementValues,
 } from '../models/element-data';
@@ -98,15 +103,16 @@ export function resolveReplicatingContainerItemDerivedData(
 ): DerivedRuntimeElementData {
     const rowEffectiveValues = derivedData.effectiveValues[element.id];
     const rowElementStates = resolveElementState(element, derivedData)?.subStates;
+    const rowValue = Array.isArray(rowEffectiveValues) ? rowEffectiveValues[index] : null;
+    const rowId = isReplicatingContainerElementValue(rowValue) ? rowValue.id : null;
     const rowValues = Array.isArray(rowEffectiveValues) ?
-        resolveReplicatingContainerElementValues(rowEffectiveValues[index]) :
+        resolveReplicatingContainerElementValues(rowValue) :
         null;
+    const rowSubState = resolveComputedElementSubState(rowElementStates, rowId, index);
 
     return createDerivedRuntimeElementData({
         effectiveValues: rowValues != null ? rowValues as EffectiveElementValues : {},
-        elementStates: Array.isArray(rowElementStates) && isAuthoredElementValues(rowElementStates[index]) ?
-            rowElementStates[index] as ComputedElementStates :
-            {},
+        elementStates: resolveComputedElementSubStateStates(rowSubState),
     });
 }
 
@@ -298,7 +304,8 @@ export function filterComputedElementStates(
 
     if (isReplicatingContainerLayout(currentElement)) {
         const filteredSubStates = (currentElementState?.subStates ?? [])
-            .map((childValues, index) => {
+            .map((subState, index) => {
+                const childValues = resolveComputedElementSubStateStates(subState);
                 let filteredChildValue: ComputedElementStates = {};
 
                 for (const child of currentElement.children || []) {
@@ -308,9 +315,9 @@ export function filterComputedElementStates(
                     };
                 }
 
-                return Object.keys(filteredChildValue).length > 0 ? filteredChildValue : undefined;
+                return Object.keys(filteredChildValue).length > 0 ? createComputedElementSubState(subState.id, filteredChildValue) : undefined;
             })
-            .filter((childValues): childValues is AuthoredElementValues => childValues != null);
+            .filter((childValues): childValues is ComputedElementSubState => childValues != null);
 
         if (filteredSubStates.length > 0) {
             filteredValues[currentElement.id] = {

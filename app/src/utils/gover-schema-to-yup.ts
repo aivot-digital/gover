@@ -16,8 +16,12 @@ import {
     AuthoredElementValues,
     ComputedElementErrors,
     ComputedElementStates,
+    createComputedElementSubState,
     createDerivedRuntimeElementData,
     DerivedRuntimeElementData,
+    isReplicatingContainerElementValue,
+    resolveComputedElementSubState,
+    resolveComputedElementSubStateStates,
     resolveReplicatingContainerElementValues,
 } from '../models/element-data';
 import {ChipInputFieldElement} from '../models/elements/form/input/chip-input-field-element';
@@ -272,29 +276,30 @@ function processDataKeyInputFieldToYup(elem: AnyInputElement): Schema {
 }
 
 function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: ComputedElementStates): Schema {
-    let childShape: Record<string, Schema> = {};
+    const rowSchema = yup.lazy((row, options) => {
+        const path = (options as {path?: string}).path;
+        const rowIndex = typeof path === 'string' ? parseArrayIndex(path) : -1;
+        const rowId = isReplicatingContainerElementValue(row) ? row.id : null;
+        const rowStates = resolveComputedElementSubStateStates(resolveComputedElementSubState(states[elem.id]?.subStates, rowId, rowIndex));
+        let childShape: Record<string, Schema> = {};
 
-    let childIndex = 0;
-    for (const child of elem.children ?? []) {
-        const childStates = states[elem.id]?.subStates?.[childIndex];
+        for (const child of elem.children ?? []) {
+            const childSchema = goverSchemaToYup(child, rowStates);
+            childShape = {
+                ...childShape,
+                ...childSchema,
+            };
+        }
 
-        const childSchema = goverSchemaToYup(child, childStates ?? {});
-        childShape = {
-            ...childShape,
-            ...childSchema,
-        };
-    }
-
-    const childSchema = yup
-        .object()
-        .shape(childShape);
-
-    const rowSchema = yup
-        .object()
-        .shape({
-            id: yup.string().nullable(),
-            values: childSchema,
-        });
+        return yup
+            .object()
+            .shape({
+                id: yup.string().nullable(),
+                values: yup
+                    .object()
+                    .shape(childShape),
+            });
+    });
 
     let elementShema: any = yup
         .array()
@@ -307,6 +312,11 @@ function replicatingContainerToYup(elem: ReplicatingContainerLayout, states: Com
     }
 
     return elementShema;
+}
+
+function parseArrayIndex(path: string): number {
+    const match = path.match(/\[(\d+)]$/);
+    return match == null ? -1 : parseInt(match[1], 10);
 }
 
 function chipInputFieldToYup(elem: ChipInputFieldElement): Schema {
@@ -731,7 +741,7 @@ export function mapFormManagerErrorsToComputedErrors(
             }
 
             return computedError.subStates.some((subState) => {
-                return subState != null && Object.values(subState).some((subStateError) => {
+                return Object.values(resolveComputedElementSubStateStates(subState)).some((subStateError) => {
                     return subStateError?.error != null || subStateError?.subStates != null;
                 });
             });
@@ -766,11 +776,11 @@ export function mapFormManagerErrorsToComputedErrors(
                             };
                         }
 
-                        return childComputedErrors;
+                        return createComputedElementSubState(isReplicatingContainerElementValue(childValue) ? childValue.id : null, childComputedErrors);
                     }) :
                     [];
 
-                if (elementError != null || rowErrors.some(hasComputedElementErrors)) {
+                if (elementError != null || rowErrors.some((rowError) => hasComputedElementErrors(rowError.states ?? {}))) {
                     nextComputedErrors[element.id] = {
                         ...(elementError != null ? {error: elementError} : {}),
                         subStates: rowErrors,

@@ -51,7 +51,7 @@ public class ElementStreamUtils {
             if (substates != null) {
                 for (var substate : substates) {
                     for (BaseElement child : replicatingContainerLayoutElement.getChildren()) {
-                        applyAction(child, substate, action);
+                        applyAction(child, substate.getStates(), action);
                     }
                 }
             }

@@ -1,6 +1,7 @@
 package de.aivot.gover.backend.elements.utils;
 
 import de.aivot.gover.backend.elements.models.ComputedElementState;
+import de.aivot.gover.backend.elements.models.ComputedElementSubState;
 import de.aivot.gover.backend.elements.models.ComputedElementStates;
 import de.aivot.gover.backend.elements.models.elements.BaseElement;
 import de.aivot.gover.backend.elements.models.elements.BaseFormElement;
@@ -132,7 +133,10 @@ class ElementStreamUtilsTest {
         var states = new ComputedElementStates();
         states.put("form", state("form-state"));
         states.put("step", state("step-state"));
-        states.put("replicating", state("replicating-state").setSubStates(List.of(rowOneStates, rowTwoStates)));
+        states.put("replicating", state("replicating-state").setSubStates(List.of(
+                ComputedElementSubState.of("row-1", rowOneStates),
+                ComputedElementSubState.of("row-2", rowTwoStates)
+        )));
         states.put("replicatingText", state("top-level-text-state"));
         states.put("after", state("after-state"));
         var visits = new ArrayList<String>();

@@ -68,8 +68,11 @@ describe('collectErrors', () => {
                 rows: {
                     subStates: [
                         {
-                            street: {
-                                error: 'Street is required',
+                            id: 'row-1',
+                            states: {
+                                street: {
+                                    error: 'Street is required',
+                                },
                             },
                         },
                     ],

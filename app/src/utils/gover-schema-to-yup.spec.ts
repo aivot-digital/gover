@@ -104,13 +104,19 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
             addresses: {
                 subStates: [
                     {
-                        street: {
-                            visible: false,
+                        id: 'row-1',
+                        states: {
+                            street: {
+                                visible: false,
+                            },
                         },
                     },
                     {
-                        street: {
-                            visible: true,
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                visible: true,
+                            },
                         },
                     },
                 ],
@@ -120,10 +126,16 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
         expect(computedErrors).toEqual({
             addresses: {
                 subStates: [
-                    {},
                     {
-                        street: {
-                            error: 'Street is required',
+                        id: 'row-1',
+                        states: {},
+                    },
+                    {
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                error: 'Street is required',
+                            },
                         },
                     },
                 ],
@@ -133,14 +145,20 @@ describe('mapFormManagerErrorsToComputedErrors', () => {
             addresses: {
                 subStates: [
                     {
-                        street: {
-                            visible: false,
+                        id: 'row-1',
+                        states: {
+                            street: {
+                                visible: false,
+                            },
                         },
                     },
                     {
-                        street: {
-                            visible: true,
-                            error: 'Street is required',
+                        id: 'row-2',
+                        states: {
+                            street: {
+                                visible: true,
+                                error: 'Street is required',
+                            },
                         },
                     },
                 ],

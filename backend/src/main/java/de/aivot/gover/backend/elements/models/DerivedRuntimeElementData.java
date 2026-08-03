@@ -83,7 +83,7 @@ public class DerivedRuntimeElementData implements Serializable {
                 .stream()
                 .anyMatch(elementState -> elementState.getError() != null || (
                         elementState.getSubStates() != null &&
-                                elementState.getSubStates().stream().anyMatch(DerivedRuntimeElementData::hasAnyError)
+                                elementState.getSubStates().stream().anyMatch(subState -> hasAnyError(subState.getStates()))
                 ));
     }
 

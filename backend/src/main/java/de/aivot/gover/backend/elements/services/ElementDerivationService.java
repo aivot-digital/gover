@@ -278,7 +278,7 @@ public class ElementDerivationService {
                             var childItemElementStates = new ComputedElementStates();
                             elementState
                                     .getSubStates()
-                                    .add(childItemElementStates);
+                                    .add(ComputedElementSubState.of(effectiveChildDataSet.getId(), childItemElementStates));
 
                             var childAuthoredElementValues = effectiveChildDataSet.getValues() == null
                                     ? new AuthoredElementValues()
