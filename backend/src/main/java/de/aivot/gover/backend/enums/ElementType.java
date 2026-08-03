@@ -65,7 +65,8 @@ public enum ElementType implements Identifiable<Integer> {
     ProcessAttachmentDisplay(45),
     ProcessInstanceAttachmentSetSelect(46),
     ProcessIdentityIdInput(47),
-    HtmlTemplateInput(48)
+    HtmlTemplateInput(48),
+    PaymentConfig(49),
     ;
 
     public static final String ID_FormLayout = "0";
@@ -117,6 +118,7 @@ public enum ElementType implements Identifiable<Integer> {
     public static final String ID_ProcessInstanceAttachmentSetSelect = "46";
     public static final String ID_ProcessIdentityIdInput = "47";
     public static final String ID_HtmlTemplateInput = "48";
+    public static final String ID_PaymentConfig = "49";
 
     private final Integer key;
 
@@ -166,8 +168,7 @@ public enum ElementType implements Identifiable<Integer> {
             case SubmitStep -> new SubmitStepElement();
             case SummaryStep -> new SummaryStepElement();
             case Image -> new ImageContentElement();
-            case SubmittedStep ->
-                    throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
+            case SubmittedStep -> throw new ElementDataConversionException("Element type SubmittedStep is no longer supported.");
             case FileUpload -> new FileUploadInputElement();
             case DialogLayout -> new DialogLayoutElement();
             case StepperLayout -> new StepperLayoutElement();
@@ -195,6 +196,7 @@ public enum ElementType implements Identifiable<Integer> {
             case ProcessInstanceAttachmentSetSelect -> new ProcessInstanceAttachmentSetSelectElement();
             case ProcessIdentityIdInput -> new ProcessIdentityIdInputElement();
             case HtmlTemplateInput -> new HtmlTemplateInputElement();
+            case PaymentConfig -> new PaymentConfigElement();
             default -> throw new ElementDataConversionException("Unsupported element type: %s", type.name());
         };
     }

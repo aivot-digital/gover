@@ -76,6 +76,7 @@ import java.util.UUID;
         @JsonSubTypes.Type(value = ProcessInstanceAttachmentSetSelectElement.class, name = ElementType.ID_ProcessInstanceAttachmentSetSelect),
         @JsonSubTypes.Type(value = ProcessIdentityIdInputElement.class, name = ElementType.ID_ProcessIdentityIdInput),
         @JsonSubTypes.Type(value = HtmlTemplateInputElement.class, name = ElementType.ID_HtmlTemplateInput),
+        @JsonSubTypes.Type(value = PaymentConfigElement.class, name = ElementType.ID_PaymentConfig)
 })
 public abstract class BaseElement implements Serializable {
     @Nonnull
