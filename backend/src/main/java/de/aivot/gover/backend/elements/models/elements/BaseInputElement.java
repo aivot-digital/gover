@@ -144,8 +144,11 @@ public abstract class BaseInputElement<T> extends BaseFormElement implements Inp
         return this;
     }
 
-    @Nullable
+    @Nonnull
     public Boolean getRequired() {
+        if (required == null) {
+            return false;
+        }
         return required;
     }
 
