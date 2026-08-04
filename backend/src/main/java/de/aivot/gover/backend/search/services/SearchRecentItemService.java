@@ -103,11 +103,13 @@ public class SearchRecentItemService {
         searchRecentItemRepository.deleteOverflow(userId, maxItemsPerUser);
     }
 
+    @Transactional
     @EventListener(ApplicationReadyEvent.class)
     public void deleteExpiredRecentItemsOnStartup() {
         deleteExpiredRecentItems("startup");
     }
 
+    @Transactional
     @Scheduled(cron = "0 30 3 * * *", zone = "${gover.timezone}")
     public void deleteExpiredRecentItemsNightly() {
         deleteExpiredRecentItems("daily-schedule");
