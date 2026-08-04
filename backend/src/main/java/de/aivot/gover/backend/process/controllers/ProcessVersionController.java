@@ -136,6 +136,11 @@ public class ProcessVersionController {
                         ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
                 );
 
+        newVersion
+                .setStatus(ProcessVersionStatus.Drafted)
+                .setPublished(null)
+                .setRevoked(null);
+
         var result = processDefinitionVersionService
                 .create(newVersion);
 
@@ -234,6 +239,7 @@ public class ProcessVersionController {
 
         updateDTO.setProcessId(existing.getProcessId());
         updateDTO.setProcessVersion(existing.getProcessVersion());
+        updateDTO.setStatus(existing.getStatus());
 
         var result = processDefinitionVersionService
                 .update(id, updateDTO);
