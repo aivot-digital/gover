@@ -1,4 +1,4 @@
-import {BaseCrudApiService} from '../../../services/base-crud-api-service';
+import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {type ProcessInstanceEventEntity, ProcessNodeExecutionLogLevel} from '../entities/process-instance-event-entity';
 
 interface ProcessInstanceEventFilter {
@@ -13,9 +13,7 @@ interface ProcessInstanceEventFilter {
     title?: string;
 }
 
-export class ProcessInstanceEventApiService extends BaseCrudApiService<
-    ProcessInstanceEventEntity,
-    ProcessInstanceEventEntity,
+export class ProcessInstanceEventApiService extends BaseReadApiService<
     ProcessInstanceEventEntity,
     ProcessInstanceEventEntity,
     number,

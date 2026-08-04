@@ -1,16 +1,12 @@
 package de.aivot.gover.backend.process.controllers;
 
-import de.aivot.gover.backend.audit.services.AuditLogService;
-import de.aivot.gover.backend.audit.services.AuditService;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.controllers.ProcessInstanceTaskController;
 import de.aivot.gover.backend.process.entities.ProcessInstanceTaskEntity;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.services.ProcessInstanceTaskService;
-import de.aivot.gover.backend.process.services.ProcessService;
 import de.aivot.gover.backend.process.workers.ProcessWorker;
-import de.aivot.gover.backend.department.services.DepartmentService;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import de.aivot.gover.backend.user.services.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,15 +34,9 @@ import static org.mockito.Mockito.when;
 
 class ProcessInstanceTaskControllerTest {
     @Mock
-    private AuditLogService auditLogService;
-    @Mock
     private UserService userService;
     @Mock
     private ProcessInstanceTaskService processInstanceTaskService;
-    @Mock
-    private DepartmentService departmentService;
-    @Mock
-    private ProcessService processService;
     @Mock
     private RabbitTemplate rabbitTemplate;
     @Mock
@@ -60,11 +50,8 @@ class ProcessInstanceTaskControllerTest {
         MockitoAnnotations.openMocks(this);
 
         controller = new ProcessInstanceTaskController(
-                new AuditService(auditLogService),
                 userService,
                 processInstanceTaskService,
-                departmentService,
-                processService,
                 rabbitTemplate,
                 permissionService
         );

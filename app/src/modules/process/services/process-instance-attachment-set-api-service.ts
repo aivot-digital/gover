@@ -1,4 +1,4 @@
-import {BaseCrudApiService} from '../../../services/base-crud-api-service';
+import {BaseReadApiService} from '../../../services/base-read-api-service';
 import {ProcessInstanceAttachmentSetEntity} from '../entities/process-instance-attachment-set-entity';
 
 interface ProcessInstanceAttachmentSetFilter {
@@ -8,9 +8,7 @@ interface ProcessInstanceAttachmentSetFilter {
     dataKey: string;
 }
 
-export class ProcessInstanceAttachmentSetApiService extends BaseCrudApiService<
-    ProcessInstanceAttachmentSetEntity,
-    ProcessInstanceAttachmentSetEntity,
+export class ProcessInstanceAttachmentSetApiService extends BaseReadApiService<
     ProcessInstanceAttachmentSetEntity,
     ProcessInstanceAttachmentSetEntity,
     number,

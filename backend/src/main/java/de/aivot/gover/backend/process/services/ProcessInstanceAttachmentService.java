@@ -4,7 +4,9 @@ import de.aivot.gover.backend.config.entities.SystemConfigEntity;
 import de.aivot.gover.backend.config.repositories.SystemConfigRepository;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
-import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.lib.services.CreateEntityService;
+import de.aivot.gover.backend.lib.services.DeleteEntityService;
+import de.aivot.gover.backend.lib.services.ReadEntityService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.process.entities.ProcessInstanceAttachmentEntity;
 import de.aivot.gover.backend.process.entities.ProcessInstanceEventEntity;
@@ -32,7 +34,9 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ProcessInstanceAttachmentService implements EntityService<ProcessInstanceAttachmentEntity, UUID> {
+public class ProcessInstanceAttachmentService implements ReadEntityService<ProcessInstanceAttachmentEntity, UUID>,
+        CreateEntityService<ProcessInstanceAttachmentEntity>,
+        DeleteEntityService<ProcessInstanceAttachmentEntity, UUID> {
     private static final Logger logger = LoggerFactory.getLogger(ProcessInstanceAttachmentService.class);
 
     private final ProcessInstanceAttachmentRepository processInstanceAttachmentRepository;
@@ -212,18 +216,6 @@ public class ProcessInstanceAttachmentService implements EntityService<ProcessIn
     @Override
     public boolean exists(@Nonnull Specification<ProcessInstanceAttachmentEntity> specification) {
         return processInstanceAttachmentRepository.exists(specification);
-    }
-
-    @Nonnull
-    @Override
-    public ProcessInstanceAttachmentEntity performUpdate(@Nonnull UUID key,
-                                                         @Nonnull ProcessInstanceAttachmentEntity entity,
-                                                         @Nonnull ProcessInstanceAttachmentEntity existingEntity) throws ResponseException {
-        existingEntity.setProcessInstanceId(entity.getProcessInstanceId());
-        existingEntity.setProcessInstanceTaskId(entity.getProcessInstanceTaskId());
-        existingEntity.setAttachmentSetId(entity.getAttachmentSetId());
-        existingEntity.setUploadedByUserId(entity.getUploadedByUserId());
-        return processInstanceAttachmentRepository.save(existingEntity);
     }
 
     @Override
