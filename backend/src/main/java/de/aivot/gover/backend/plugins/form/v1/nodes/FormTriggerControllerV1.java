@@ -2,7 +2,6 @@ package de.aivot.gover.backend.plugins.form.v1.nodes;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import de.aivot.gover.backend.asset.services.AssetService;
-import de.aivot.gover.backend.av.services.AVService;
 import de.aivot.gover.backend.captcha.services.CaptchaReplayGuard;
 import de.aivot.gover.backend.config.services.SystemConfigService;
 import de.aivot.gover.backend.core.services.ObjectMapperFactory;
@@ -22,7 +21,6 @@ import de.aivot.gover.backend.elements.services.ElementDerivationLogger;
 import de.aivot.gover.backend.elements.services.ElementDerivationService;
 import de.aivot.gover.backend.elements.utils.ElementFlattenUtils;
 import de.aivot.gover.backend.elements.utils.ElementStreamUtils;
-import de.aivot.gover.backend.identity.cache.repositories.IdentityCacheRepository;
 import de.aivot.gover.backend.identity.controllers.IdentityController;
 import de.aivot.gover.backend.identity.entities.IdentityProviderEntity;
 import de.aivot.gover.backend.identity.enums.IdentityProviderType;
@@ -37,9 +35,7 @@ import de.aivot.gover.backend.payment.entities.PaymentProviderEntity;
 import de.aivot.gover.backend.payment.exceptions.PaymentException;
 import de.aivot.gover.backend.payment.models.XBezahldienstePaymentRequest;
 import de.aivot.gover.backend.payment.repositories.PaymentProviderRepository;
-import de.aivot.gover.backend.payment.services.PaymentProviderService;
 import de.aivot.gover.backend.payment.services.PaymentRequestCreationService;
-import de.aivot.gover.backend.plugins.form.v1.services.FormPaymentService;
 import de.aivot.gover.backend.process.configs.DefaultStorageProcessAttachmentsSystemConfigDefinition;
 import de.aivot.gover.backend.process.entities.*;
 import de.aivot.gover.backend.process.enums.ProcessInstanceStatus;
@@ -69,7 +65,6 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.*;
 
@@ -80,7 +75,6 @@ public class FormTriggerControllerV1 {
     public static final String VERSION_QUERY_PARAM = "version";
 
     private final GoverConfig goverConfig;
-    private final FormPaymentService paymentService;
     private final IdentityProviderService identityProviderService;
     private final ElementDerivationService elementDerivationService;
     private final AssetService assetService;
@@ -104,14 +98,10 @@ public class FormTriggerControllerV1 {
     private final IdentityService identityService;
     private final PaymentRequestCreationService paymentRequestCreationService;
     private final PaymentProviderRepository paymentProviderRepository;
-    private final ProcessDataService processDataService;
 
     @Autowired
     public FormTriggerControllerV1(GoverConfig goverConfig,
-                                   FormPaymentService paymentService,
-                                   PaymentProviderService paymentProviderService,
                                    IdentityProviderService identityProviderService,
-                                   IdentityCacheRepository identityCacheRepository,
                                    ElementDerivationService elementDerivationService,
                                    AssetService assetService,
                                    ThemeService themeService,
@@ -125,17 +115,16 @@ public class FormTriggerControllerV1 {
                                    ProcessNodeDefinitionService processNodeDefinitionService,
                                    SystemConfigService systemConfigService,
                                    StorageProviderService storageProviderService,
-                                   AVService aVService,
                                    CaptchaReplayGuard captchaReplayGuard,
                                    ProcessInstanceService processInstanceService,
-                                   ProcessInstanceAttachmentService processInstanceAttachmentService,
                                    FileUploadMultipartInputService fileUploadMultipartInputService,
                                    ElementDataTransformService elementDataTransformService,
                                    ProcessNodeExecutionLoggerFactory processNodeExecutionLoggerFactory,
                                    FormTriggerNodeV1 formTriggerNodeV1,
-                                   IdentityService identityService, PaymentRequestCreationService paymentRequestCreationService, PaymentProviderRepository paymentProviderRepository, ProcessDataService processDataService) {
+                                   IdentityService identityService,
+                                   PaymentRequestCreationService paymentRequestCreationService,
+                                   PaymentProviderRepository paymentProviderRepository) {
         this.goverConfig = goverConfig;
-        this.paymentService = paymentService;
         this.identityProviderService = identityProviderService;
         this.elementDerivationService = elementDerivationService;
         this.assetService = assetService;
@@ -159,7 +148,6 @@ public class FormTriggerControllerV1 {
         this.identityService = identityService;
         this.paymentRequestCreationService = paymentRequestCreationService;
         this.paymentProviderRepository = paymentProviderRepository;
-        this.processDataService = processDataService;
     }
 
     @GetMapping("")
