@@ -811,6 +811,7 @@ function PaymentValueCalculationEditor(props: {
                     desiredReturnType={NoCodeDataType.Number}
                     onChange={(value) => props.onNoCodeChange(value?.noCode ?? null)}
                     disabled={props.disabled}
+                    disablePopoutModeWhenFormLayoutChild={true}
                 />
             }
 
