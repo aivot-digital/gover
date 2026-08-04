@@ -284,13 +284,15 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
             </Grid>
 
             <Box sx={{mt: 3.5}}>
-                <ElementEditorSectionHeader
-                    title="Antragsteller:in"
-                    variant="h5"
-                    disableMarginTop
+                <Typography variant="body1">
+                    Antragsteller:in
+                </Typography>
+                <Typography
+                    variant="caption"
+                    color="textDisabled"
                 >
                     Optionale Zuordnung von Formularwerten zu Zahlungsdaten.
-                </ElementEditorSectionHeader>
+                </Typography>
 
                 <CheckboxFieldComponent
                     label="Antragsteller:in zuordnen"
@@ -321,11 +323,9 @@ export function PaymentConfigView(props: BaseViewProps<PaymentConfigElement, Pay
                     alignItems="center"
                     justifyContent="space-between"
                 >
-                    <ElementEditorSectionHeader
-                        title="Zahlungsposten"
-                        variant="h5"
-                        disableMarginTop
-                    />
+                    <Typography variant="body1">
+                        Zahlungsposten
+                    </Typography>
 
                     <Button
                         variant="outlined"
@@ -395,17 +395,72 @@ function RequestorMappingEditor(props: {
             spacing={2}
             sx={{mt: 0.5}}
         >
-            <RequestorMappingField label="Nachname" value={value.lastNameDestinationKey} onChange={(next) => onChange('lastNameDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Vorname" value={value.firstNameDestinationKey} onChange={(next) => onChange('firstNameDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Geschlecht" value={value.genderDestinationKey} onChange={(next) => onChange('genderDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Ist Organisation" value={value.isOrganizationDestinationKey} onChange={(next) => onChange('isOrganizationDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Organisationsname" value={value.organizationNameDestinationKey} onChange={(next) => onChange('organizationNameDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Straße" value={value.streeDestinationKey} onChange={(next) => onChange('streeDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Hausnummer" value={value.houseNumberDestinationKey} onChange={(next) => onChange('houseNumberDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Adresszusatz" value={value.addressLineDestinationKey} onChange={(next) => onChange('addressLineDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Postleitzahl" value={value.postalCodeDestinationKey} onChange={(next) => onChange('postalCodeDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Ort" value={value.cityDestinationKey} onChange={(next) => onChange('cityDestinationKey', next)} disabled={disabled}/>
-            <RequestorMappingField label="Land" value={value.countryDestinationKey} onChange={(next) => onChange('countryDestinationKey', next)} disabled={disabled}/>
+            <RequestorMappingField
+                label="Nachname"
+                value={value.lastNameDestinationKey}
+                onChange={(next) => onChange('lastNameDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Vorname"
+                value={value.firstNameDestinationKey}
+                onChange={(next) => onChange('firstNameDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Geschlecht"
+                value={value.genderDestinationKey}
+                onChange={(next) => onChange('genderDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Ist Organisation"
+                value={value.isOrganizationDestinationKey}
+                onChange={(next) => onChange('isOrganizationDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Organisationsname"
+                value={value.organizationNameDestinationKey}
+                onChange={(next) => onChange('organizationNameDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Straße"
+                value={value.streeDestinationKey}
+                onChange={(next) => onChange('streeDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Hausnummer"
+                value={value.houseNumberDestinationKey}
+                onChange={(next) => onChange('houseNumberDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Adresszusatz"
+                value={value.addressLineDestinationKey}
+                onChange={(next) => onChange('addressLineDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Postleitzahl"
+                value={value.postalCodeDestinationKey}
+                onChange={(next) => onChange('postalCodeDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Ort"
+                value={value.cityDestinationKey}
+                onChange={(next) => onChange('cityDestinationKey', next)}
+                disabled={disabled}
+            />
+            <RequestorMappingField
+                label="Land"
+                value={value.countryDestinationKey}
+                onChange={(next) => onChange('countryDestinationKey', next)}
+                disabled={disabled}
+            />
         </Grid>
     );
 }
@@ -501,6 +556,7 @@ function PaymentConfigItemEditor(props: {
                         })}
                         options={IdTypeOptions}
                         disabled={disabled}
+                        required={true}
                     />
                 </Grid>
 
@@ -513,7 +569,6 @@ function PaymentConfigItemEditor(props: {
                             onChange={(predefinedId) => onChange({...item, predefinedId})}
                             required={true}
                             disabled={disabled}
-                            muiPassTroughProps={{margin: 'none'}}
                         />
                     </Grid>
                 }
@@ -542,6 +597,7 @@ function PaymentConfigItemEditor(props: {
                             })}
                             options={CostTypeOptions}
                             disabled={disabled}
+                            required={true}
                         />
                     </Grid>
 
@@ -560,21 +616,49 @@ function PaymentConfigItemEditor(props: {
                             />
                         </Grid>
                     }
+
+                    {
+                        item.costType === PaymentConfigElementValueItemCostType.VariableCosts &&
+                        <Grid size={{xs: 12, md: 6}}>
+                            <SelectFieldComponent
+                                label="Berechnung"
+                                value={item.variableCostsCalculationType}
+                                onChange={(variableCostsCalculationType) => onChange({
+                                    ...item,
+                                    variableCostsCalculationType,
+                                })}
+                                options={CalculationTypeOptions}
+                                disabled={disabled}
+                                required={true}
+                            />
+                        </Grid>
+                    }
                 </Grid>
 
                 {
                     item.costType === PaymentConfigElementValueItemCostType.VariableCosts &&
-                    <PaymentValueCalculationEditor
-                        label="Betrag berechnen"
-                        rootElement={rootElement}
-                        calculationType={item.variableCostsCalculationType}
-                        noCodeCalculation={item.variableCostsNoCodeCalculation}
-                        lowCodeCalculation={item.variableCostsLowCodeCalculation}
-                        onCalculationTypeChange={(variableCostsCalculationType) => onChange({...item, variableCostsCalculationType})}
-                        onNoCodeChange={(variableCostsNoCodeCalculation) => onChange({...item, variableCostsNoCodeCalculation})}
-                        onLowCodeChange={(variableCostsLowCodeCalculation) => onChange({...item, variableCostsLowCodeCalculation})}
-                        disabled={disabled}
-                    />
+                    <Box
+                        sx={{
+                            mt: 2,
+                        }}
+                    >
+                        <PaymentValueCalculationEditor
+                            label="Betrag berechnen"
+                            rootElement={rootElement}
+                            calculationType={item.variableCostsCalculationType}
+                            noCodeCalculation={item.variableCostsNoCodeCalculation}
+                            lowCodeCalculation={item.variableCostsLowCodeCalculation}
+                            onNoCodeChange={(variableCostsNoCodeCalculation) => onChange({
+                                ...item,
+                                variableCostsNoCodeCalculation,
+                            })}
+                            onLowCodeChange={(variableCostsLowCodeCalculation) => onChange({
+                                ...item,
+                                variableCostsLowCodeCalculation,
+                            })}
+                            disabled={disabled}
+                        />
+                    </Box>
                 }
             </Box>
 
@@ -601,6 +685,7 @@ function PaymentConfigItemEditor(props: {
                             })}
                             options={QuantityTypeOptions}
                             disabled={disabled}
+                            required={true}
                         />
                     </Grid>
 
@@ -621,21 +706,49 @@ function PaymentConfigItemEditor(props: {
                             />
                         </Grid>
                     }
+
+                    {
+                        item.quantityType === PaymentConfigElementValueItemQuantityType.VariableQuantity &&
+                        <Grid size={{xs: 12, md: 6}}>
+                            <SelectFieldComponent
+                                label="Berechnung"
+                                value={item.variableQuantityCalculationType}
+                                onChange={(variableQuantityCalculationType) => onChange({
+                                    ...item,
+                                    variableQuantityCalculationType,
+                                })}
+                                options={CalculationTypeOptions}
+                                disabled={disabled}
+                                required={true}
+                            />
+                        </Grid>
+                    }
                 </Grid>
 
                 {
                     item.quantityType === PaymentConfigElementValueItemQuantityType.VariableQuantity &&
-                    <PaymentValueCalculationEditor
-                        label="Menge berechnen"
-                        rootElement={rootElement}
-                        calculationType={item.variableQuantityCalculationType}
-                        noCodeCalculation={item.variableQuantityNoCodeCalculation}
-                        lowCodeCalculation={item.variableQuantityLowCodeCalculation}
-                        onCalculationTypeChange={(variableQuantityCalculationType) => onChange({...item, variableQuantityCalculationType})}
-                        onNoCodeChange={(variableQuantityNoCodeCalculation) => onChange({...item, variableQuantityNoCodeCalculation})}
-                        onLowCodeChange={(variableQuantityLowCodeCalculation) => onChange({...item, variableQuantityLowCodeCalculation})}
-                        disabled={disabled}
-                    />
+                    <Box
+                        sx={{
+                            mt: 2,
+                        }}
+                    >
+                        <PaymentValueCalculationEditor
+                            label="Menge berechnen"
+                            rootElement={rootElement}
+                            calculationType={item.variableQuantityCalculationType}
+                            noCodeCalculation={item.variableQuantityNoCodeCalculation}
+                            lowCodeCalculation={item.variableQuantityLowCodeCalculation}
+                            onNoCodeChange={(variableQuantityNoCodeCalculation) => onChange({
+                                ...item,
+                                variableQuantityNoCodeCalculation,
+                            })}
+                            onLowCodeChange={(variableQuantityLowCodeCalculation) => onChange({
+                                ...item,
+                                variableQuantityLowCodeCalculation,
+                            })}
+                            disabled={disabled}
+                        />
+                    </Box>
                 }
             </Box>
 
@@ -681,7 +794,6 @@ function PaymentValueCalculationEditor(props: {
     calculationType: PaymentConfigElementValueItemVariableValueCalculationType | null;
     noCodeCalculation: NoCodeOperand | null;
     lowCodeCalculation: JavascriptCode | null;
-    onCalculationTypeChange: (value: PaymentConfigElementValueItemVariableValueCalculationType | null) => void;
     onNoCodeChange: (value: NoCodeOperand | null) => void;
     onLowCodeChange: (value: JavascriptCode | null) => void;
     disabled: boolean;
@@ -689,47 +801,31 @@ function PaymentValueCalculationEditor(props: {
     const calculationType = props.calculationType ?? PaymentConfigElementValueItemVariableValueCalculationType.NoCode;
 
     return (
-        <Grid
-            container
-            spacing={2}
-            sx={{mt: 0.5}}
-        >
-            <Grid size={{xs: 12, md: 6}}>
-                <SelectFieldComponent
-                    label="Berechnung"
-                    value={calculationType}
-                    onChange={props.onCalculationTypeChange}
-                    options={CalculationTypeOptions}
+        <>
+            {
+                calculationType === PaymentConfigElementValueItemVariableValueCalculationType.NoCode &&
+                <NoCodeInputFieldComponent
+                    rootElement={props.rootElement}
+                    label={props.label}
+                    value={props.noCodeCalculation == null ? null : {noCode: props.noCodeCalculation}}
+                    desiredReturnType={NoCodeDataType.Number}
+                    onChange={(value) => props.onNoCodeChange(value?.noCode ?? null)}
                     disabled={props.disabled}
                 />
-            </Grid>
+            }
 
-            <Grid size={{xs: 12}}>
-                {
-                    calculationType === PaymentConfigElementValueItemVariableValueCalculationType.NoCode &&
-                    <NoCodeInputFieldComponent
-                        rootElement={props.rootElement}
-                        label={props.label}
-                        value={props.noCodeCalculation == null ? null : {noCode: props.noCodeCalculation}}
-                        desiredReturnType={NoCodeDataType.Number}
-                        onChange={(value) => props.onNoCodeChange(value?.noCode ?? null)}
-                        disabled={props.disabled}
-                    />
-                }
-
-                {
-                    calculationType === PaymentConfigElementValueItemVariableValueCalculationType.LowCode &&
-                    <CodeInputFieldComponent
-                        label={props.label}
-                        value={props.lowCodeCalculation?.code}
-                        onChange={(code) => props.onLowCodeChange(code == null ? null : {code})}
-                        language="javascript"
-                        height="220px"
-                        disabled={props.disabled}
-                    />
-                }
-            </Grid>
-        </Grid>
+            {
+                calculationType === PaymentConfigElementValueItemVariableValueCalculationType.LowCode &&
+                <CodeInputFieldComponent
+                    label={props.label}
+                    value={props.lowCodeCalculation?.code}
+                    onChange={(code) => props.onLowCodeChange(code == null ? null : {code})}
+                    language="javascript"
+                    height="220px"
+                    disabled={props.disabled}
+                />
+            }
+        </>
     );
 }
 
