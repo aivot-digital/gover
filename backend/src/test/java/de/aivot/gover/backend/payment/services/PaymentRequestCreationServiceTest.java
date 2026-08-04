@@ -1,0 +1,176 @@
+package de.aivot.gover.backend.payment.services;
+
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElementValue;
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElementValueItem;
+import de.aivot.gover.backend.elements.models.elements.form.input.PaymentConfigElementValueRequestorMapping;
+import de.aivot.gover.backend.enums.XBezahldienstGender;
+import de.aivot.gover.backend.javascript.models.JavascriptCode;
+import de.aivot.gover.backend.javascript.services.JavascriptEngineFactoryService;
+import de.aivot.gover.backend.nocode.models.NoCodeStaticValue;
+import de.aivot.gover.backend.nocode.services.NoCodeEvaluationService;
+import de.aivot.gover.backend.payment.exceptions.PaymentException;
+import de.aivot.gover.backend.process.models.ProcessExecutionData;
+import de.aivot.gover.backend.process.services.TemplateRenderService;
+import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+class PaymentRequestCreationServiceTest {
+    @Test
+    void shouldCreatePaymentRequestFromFixedItemAndRequestorMapping() throws PaymentException {
+        var processData = new ProcessExecutionData().addProcessData(Map.of(
+                "caseNumber", "AZ-1",
+                "name", "Ada",
+                "requestor", Map.of(
+                        "lastName", "Lovelace",
+                        "firstName", "Ada",
+                        "gender", "F",
+                        "city", "London",
+                        "country", "gb"
+                )
+        ));
+        var config = new PaymentConfigElementValue(
+                null,
+                "PAY {{ $.caseNumber }}",
+                "Fee for {{ $.name }}",
+                true,
+                new PaymentConfigElementValueRequestorMapping(
+                        "requestor.lastName",
+                        "requestor.firstName",
+                        "requestor.gender",
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "requestor.city",
+                        "requestor.country"
+                ),
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "fee-1",
+                        "Description {{ $.name }}",
+                        "REF-{{ $.caseNumber }}",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        new BigDecimal("10.00"),
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        2L,
+                        null,
+                        null,
+                        null,
+                        new BigDecimal("19.00"),
+                        Map.of("case", "{{ $.caseNumber }}")
+                ))
+        );
+
+        var request = createService().createRequest(config, processData, "/return");
+
+        assertEquals("PAY AZ-1", request.getPurpose());
+        assertEquals("Fee for Ada", request.getDescription());
+        assertEquals("/return", request.getRedirectUrl());
+        assertEquals(new BigDecimal("23.80"), request.getGrosAmount());
+        assertEquals("Lovelace", request.getRequestor().getLastName());
+        assertEquals(XBezahldienstGender.FEMALE, request.getRequestor().getGender());
+        assertEquals("London", request.getRequestor().getAddress().getCity());
+        assertEquals("GB", request.getRequestor().getAddress().getCountry());
+
+        var item = request.getItems().getFirst();
+        assertEquals("fee-1", item.getId());
+        assertEquals("REF-AZ-1", item.getReference());
+        assertEquals("Description Ada", item.getDescription());
+        assertEquals(2L, item.getQuantity());
+        assertEquals(new BigDecimal("10.00"), item.getSingleNetAmount());
+        assertEquals(new BigDecimal("1.90"), item.getSingleTaxAmount());
+        assertEquals(new BigDecimal("20.00"), item.getTotalNetAmount());
+        assertEquals(new BigDecimal("3.80"), item.getTotalTaxAmount());
+        assertEquals("AZ-1", item.getBookingData().get("case"));
+    }
+
+    @Test
+    void shouldEvaluateVariableCostsAndQuantity() throws PaymentException {
+        var processData = new ProcessExecutionData().addProcessData(Map.of("count", 2));
+        var config = new PaymentConfigElementValue(
+                null,
+                "Purpose",
+                "Description",
+                false,
+                null,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.AutoGeneratedUUID,
+                        null,
+                        "Variable",
+                        "VAR",
+                        PaymentConfigElementValueItem.CostType.VariableCosts,
+                        null,
+                        PaymentConfigElementValueItem.VariableValueCalculationType.NoCode,
+                        new NoCodeStaticValue(new BigDecimal("7.50")),
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.VariableQuantity,
+                        null,
+                        PaymentConfigElementValueItem.VariableValueCalculationType.LowCode,
+                        null,
+                        JavascriptCode.of("$.count + 1"),
+                        BigDecimal.ZERO,
+                        null
+                ))
+        );
+
+        var request = createService().createRequest(config, processData, "/return");
+
+        assertEquals(1, request.getItems().size());
+        assertEquals(3L, request.getItems().getFirst().getQuantity());
+        assertEquals(new BigDecimal("22.50"), request.getGrosAmount());
+    }
+
+    @Test
+    void shouldRejectRequestsWithoutPayableItems() {
+        var config = new PaymentConfigElementValue(
+                null,
+                "Purpose",
+                "Description",
+                false,
+                null,
+                List.of(new PaymentConfigElementValueItem(
+                        PaymentConfigElementValueItem.IdType.Predefined,
+                        "zero",
+                        "Zero",
+                        "ZERO",
+                        PaymentConfigElementValueItem.CostType.FixedCosts,
+                        BigDecimal.TEN,
+                        null,
+                        null,
+                        null,
+                        PaymentConfigElementValueItem.QuantityType.FixedQuantity,
+                        0L,
+                        null,
+                        null,
+                        null,
+                        BigDecimal.ZERO,
+                        null
+                ))
+        );
+
+        assertThrows(
+                PaymentException.class,
+                () -> createService().createRequest(config, new ProcessExecutionData(), "/return")
+        );
+    }
+
+    private static PaymentRequestCreationService createService() {
+        var javascriptEngineFactoryService = new JavascriptEngineFactoryService(List.of());
+        return new PaymentRequestCreationService(
+                new TemplateRenderService(javascriptEngineFactoryService),
+                new NoCodeEvaluationService(List.of()),
+                javascriptEngineFactoryService
+        );
+    }
+}
