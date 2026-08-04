@@ -188,10 +188,13 @@ public class ProcessEdgeController {
                 ProcessPermissionProvider.PROCESS_DEFINITION_UPDATE
         );
 
+        updateDTO
+                .setId(existing.getId())
+                .setProcessId(existing.getProcessId())
+                .setProcessVersion(existing.getProcessVersion());
+
         var existingMap = objectMapper
                 .convertValue(existing, java.util.Map.class);
-
-        updateDTO.setId(existing.getId());
 
         var result = processDefinitionEdgeService
                 .update(id, updateDTO);
