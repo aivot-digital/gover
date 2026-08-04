@@ -44,7 +44,7 @@ export interface PaymentConfigElementValueItem {
     variableQuantityCalculationType: PaymentConfigElementValueItemVariableValueCalculationType | null;
     variableQuantityNoCodeCalculation: NoCodeOperand | null;
     variableQuantityLowCodeCalculation: JavascriptCode | null;
-    taxRate: number | null;
+    fixedTaxRate: number | null;
     additionalBookingData: Record<string, string> | null;
 }
 

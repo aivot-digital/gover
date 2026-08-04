@@ -767,8 +767,8 @@ function PaymentConfigItemEditor(props: {
                     <Grid size={{xs: 12, md: 6}}>
                         <NumberFieldComponent
                             label="Steuersatz"
-                            value={item.taxRate}
-                            onChange={(taxRate) => onChange({...item, taxRate})}
+                            value={item.fixedTaxRate}
+                            onChange={(taxRate) => onChange({...item, fixedTaxRate: taxRate})}
                             decimalPlaces={2}
                             minValue={0}
                             maxValue={100}
@@ -977,7 +977,7 @@ function createPaymentItem(): PaymentConfigElementValueItem {
         variableQuantityCalculationType: PaymentConfigElementValueItemVariableValueCalculationType.NoCode,
         variableQuantityNoCodeCalculation: null,
         variableQuantityLowCodeCalculation: null,
-        taxRate: 0,
+        fixedTaxRate: 0,
         additionalBookingData: null,
     };
 }
@@ -1035,7 +1035,7 @@ function getPaymentItemSubtitle(item: PaymentConfigElementValueItem, isReadonly:
     return [
         cost,
         quantity,
-        item.taxRate != null ? `${item.taxRate}% Steuer` : undefined,
+        item.fixedTaxRate != null ? `${item.fixedTaxRate}% Steuer` : undefined,
         isReadonly ? 'Zum Anzeigen öffnen' : undefined,
     ]
         .filter((part) => part != null)
