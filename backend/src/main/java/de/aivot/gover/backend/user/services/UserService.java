@@ -3,10 +3,12 @@ package de.aivot.gover.backend.user.services;
 import de.aivot.gover.backend.lib.exceptions.ResponseException;
 import de.aivot.gover.backend.lib.models.Filter;
 import de.aivot.gover.backend.lib.services.EntityService;
+import de.aivot.gover.backend.permissions.services.PermissionService;
 import de.aivot.gover.backend.process.enums.ProcessTaskStatus;
 import de.aivot.gover.backend.process.repositories.ProcessInstanceTaskRepository;
 import de.aivot.gover.backend.user.entities.UserEntity;
 import de.aivot.gover.backend.user.models.KeycloakUser;
+import de.aivot.gover.backend.user.permissions.UserPermissionProvider;
 import de.aivot.gover.backend.user.repositories.UserRepository;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
@@ -31,6 +33,7 @@ public class UserService implements EntityService<UserEntity, String> {
 
     private final KeyCloakApiService keyCloakApiService;
     private final ImportedUserSystemRoleService importedUserSystemRoleService;
+    private final PermissionService permissionService;
     private final ProcessInstanceTaskRepository processInstanceTaskRepository;
     private final UserRepository userRepository;
 
@@ -38,11 +41,13 @@ public class UserService implements EntityService<UserEntity, String> {
     public UserService(
             KeyCloakApiService keyCloakApiService,
             ImportedUserSystemRoleService importedUserSystemRoleService,
+            PermissionService permissionService,
             ProcessInstanceTaskRepository processInstanceTaskRepository,
             UserRepository userRepository
     ) {
         this.keyCloakApiService = keyCloakApiService;
         this.importedUserSystemRoleService = importedUserSystemRoleService;
+        this.permissionService = permissionService;
         this.processInstanceTaskRepository = processInstanceTaskRepository;
         this.userRepository = userRepository;
     }
@@ -149,6 +154,10 @@ public class UserService implements EntityService<UserEntity, String> {
                                     @Nonnull UserEntity entity,
                                     @Nonnull UserEntity existingEntity) throws ResponseException {
 
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        var principal = authentication != null ? authentication.getPrincipal() : null;
+        var canUpdateAdministrativeFields = principal instanceof Jwt jwt &&
+                permissionService.hasSystemPermission(jwt, UserPermissionProvider.USER_UPDATE);
 
         var keycloakUserToUpdate = KeycloakUser
                 .from(existingEntity)
@@ -156,27 +165,18 @@ public class UserService implements EntityService<UserEntity, String> {
                 .setFirstName(entity.getFirstName())
                 .setLastName(entity.getLastName());
 
-        if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
-            var execUser = fromJWT(jwt)
-                    .orElseThrow(ResponseException::unauthorized);
-            if (execUser.getIsSuperAdmin()) {
-                keycloakUserToUpdate.setEnabled(entity.getEnabled());
-            }
+        if (canUpdateAdministrativeFields) {
+            keycloakUserToUpdate.setEnabled(entity.getEnabled());
         }
 
         var updatedKeycloakUser = keyCloakApiService
                 .updateUser(id, keycloakUserToUpdate);
 
         var userToUpdate = UserEntity
-                .from(updatedKeycloakUser);
-
-        if (SecurityContextHolder.getContext().getAuthentication().getPrincipal() instanceof Jwt jwt) {
-            var execUser = fromJWT(jwt)
-                    .orElseThrow(ResponseException::unauthorized);
-            if (execUser.getIsSuperAdmin()) {
-                userToUpdate.setSystemRoleId(entity.getSystemRoleId());
-            }
-        }
+                .from(updatedKeycloakUser)
+                .setSystemRoleId(canUpdateAdministrativeFields
+                        ? entity.getSystemRoleId()
+                        : existingEntity.getSystemRoleId());
 
         return userRepository.save(userToUpdate);
     }

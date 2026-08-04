@@ -526,7 +526,7 @@ class StaffProcessInstanceTaskViewControllerTest {
         private final UserEntity user;
 
         private TestUserService(UserEntity user) {
-            super(null, null, null, null);
+            super(null, null, null, null, null);
             this.user = user;
         }
 

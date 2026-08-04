@@ -348,9 +348,6 @@ export function DebugInformationDialog(props: DebugInformationDialogProps): Reac
             lines.push(`- email: ${anonymizeEmailKeepDomain(selfUser.email)}`);
             lines.push(`- enabled: ${toDebugBooleanString(selfUser.enabled)}`);
             lines.push(`- verified: ${toDebugBooleanString(selfUser.verified)}`);
-            lines.push(`- isSystemAdmin: ${toDebugBooleanString(selfUser.isSystemAdmin)}`);
-            lines.push(`- isSuperAdmin: ${toDebugBooleanString(selfUser.isSuperAdmin)}`);
-            lines.push(`- globalRole: ${selfUser.globalRole}`);
             lines.push(`- systemRoleId: ${selfUser.systemRoleId ?? 'none'}`);
             lines.push(`- deletedInIdp: ${toDebugBooleanString(selfUser.deletedInIdp)}`);
         }

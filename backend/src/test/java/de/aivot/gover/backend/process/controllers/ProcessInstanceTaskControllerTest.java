@@ -86,7 +86,6 @@ class ProcessInstanceTaskControllerTest {
         when(processInstanceTaskService.retrieve(task.getId())).thenReturn(Optional.of(task));
         when(processInstanceTaskService.update(task.getId(), task)).thenReturn(task);
         when(userService.fromJWT(jwt)).thenReturn(Optional.of(user));
-        when(user.asSuperAdmin()).thenReturn(Optional.of(user));
 
         var result = controller.rerunFailedTask(jwt, task.getId());
 

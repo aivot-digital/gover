@@ -13,8 +13,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.ColumnDefault;
 
-import java.util.Optional;
-
 @Entity
 @Table(name = "users")
 public class UserEntity {
@@ -64,49 +62,9 @@ public class UserEntity {
 
     // region Properties
 
-    /**
-     * @deprecated TODO: REMOVE
-     * @return
-     */
-    @Deprecated
-    public Boolean getIsSuperAdmin() {
-        return true;
-    }
-
-    /**
-     * @deprecated TODO: REMOVE
-     * @return
-     */
-    @Deprecated
-    public Boolean getIsSystemAdmin() {
-        return true;
-    }
-
     public boolean isArtificialUser() {
         // Check if the user ID is a placeholder ID (e.g., "0000-000-0000", "0000-000-0001", etc.)
         return id != null && id.matches("^[0-]+[0-9]{3}$");
-    }
-
-    // endregion
-
-    // region Transformers
-
-    @Deprecated
-    public Optional<UserEntity> asSuperAdmin() {
-        if (getIsSuperAdmin()) {
-            return Optional.of(this);
-        } else {
-            return Optional.empty();
-        }
-    }
-
-    @Deprecated
-    public Optional<UserEntity> asSystemAdmin() {
-        if (getIsSystemAdmin() || getIsSuperAdmin()) {
-            return Optional.of(this);
-        } else {
-            return Optional.empty();
-        }
     }
 
     // endregion
@@ -239,8 +197,8 @@ public class UserEntity {
         return systemRoleId;
     }
 
-    public UserEntity setSystemRoleId(@Nullable Integer globalRole) {
-        this.systemRoleId = globalRole;
+    public UserEntity setSystemRoleId(@Nullable Integer systemRoleId) {
+        this.systemRoleId = systemRoleId;
         return this;
     }
 
